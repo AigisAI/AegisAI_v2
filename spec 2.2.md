@@ -1,7 +1,7 @@
 # Aegisai Platform — Agent Development Specification
 
 > **문서 유형:** AI 에이전트 개발 착수용 기술 명세서
-> **버전:** v2.3 (v2.2 리뷰 반영 수정본 — 37건 정합성·기술·표기 오류 수정)
+> **버전:** v2.4 (v2.3 리뷰 반영 수정본 — 정합성·기술·표기 오류 수정)
 > **기준 PRD:** PRD_Aegisai_Platform v2.0
 > **작성일:** 2026-03-11
 
@@ -227,7 +227,7 @@ Aegisai/
         └── src/
             ├── index.ts
             └── types/
-                ├── common.ts          # ApiResponse, PageResponse, ErrorResponse, RepoListResult
+                ├── common.ts          # ApiResponse, SuccessResponse, PageResponse, ErrorResponse
                 ├── auth.ts
                 ├── repo.ts
                 ├── scan.ts            # ScanStatus enum, ScanSummary
@@ -740,7 +740,7 @@ export interface PageResponse<T> {
 #### `POST /api/auth/logout`
 
 ```typescript
-null  // 세션 삭제
+null  // 200 OK — 세션 삭제
 ```
 
 #### OAuth2 플로우
@@ -851,6 +851,7 @@ null  // 204 No Content
   startedAt: string | null;
   completedAt: string | null;
   errorMessage: string | null;
+  createdAt: string;
 }
 ```
 
@@ -892,7 +893,7 @@ PageResponse<ScanSummary>
 - `severity=HIGH&severity=LOW` (다중 선택)
 - `status=OPEN`
 - `page=1`, `size=20`
-- `sort=createdAt:desc` 또는 `sort=severity:asc` (severity 정렬은 CRITICAL(1) &gt; HIGH(2) &gt; MEDIUM(3) &gt; LOW(4) &gt; INFO(5) 커스텀 순서를 적용한다 — 알파벳순이 아님)
+- `sort=createdAt:desc` 또는 `sort=severity:asc` (severity 정렬은 `CRITICAL(1) > HIGH(2) > MEDIUM(3) > LOW(4) > INFO(5)` 커스텀 순서를 적용한다 — 알파벳순이 아님)
 
 ```typescript
 PageResponse<{
@@ -1209,12 +1210,12 @@ export class InternalAnalysisApiClient implements IAnalysisApiClient {
         ),
       );
       return response.data;
-    } catch (error) {
-      // AxiosError narrowing 후 상태 코드 분기
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       return {
         scanId: request.scanId,
         success: false,
-        errorMessage: error.message,
+        errorMessage: message,
         totalFiles: 0,
         totalLines: 0,
         vulnerabilities: [],
@@ -1395,7 +1396,7 @@ export class ScanService {
     prNumber: number;
   }) {
     const repos = await this.prisma.connectedRepo.findMany({
-      where: { provider: params.provider as any, providerRepoId: params.providerRepoId }
+      where: { provider: params.provider.toUpperCase() as RepoProvider, providerRepoId: params.providerRepoId }
     });
     if (repos.length === 0) return;
 
@@ -1457,7 +1458,7 @@ export class ScanProcessor extends WorkerHost {
 
       const decryptedAccessToken = this.authService.decryptToken(oauthToken.accessToken);
 
-      const gitClient = this.gitClientRegistry.get(scan.connectedRepo.provider as string);
+      const gitClient = this.gitClientRegistry.get(scan.connectedRepo.provider.toLowerCase());
       const commitSha = await gitClient.getLatestCommitSha(
         scan.connectedRepo.fullName,
         scan.branch,
@@ -1517,10 +1518,10 @@ export class ScanProcessor extends WorkerHost {
         }
       });
 
-    } catch (error) {
-      // TypeScript strict 모드에서 error는 unknown 타입이므로 instanceof Error 또는 AxiosError 타입 가드 적용 필요
-      // 토큰 만료 등 인증 에러 발생 시 사용자 친화적인 메시지 저장
-      const errorMessage = error.message?.includes('token') || error.response?.status === 401
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      const axiosStatus = (err as any)?.response?.status;
+      const errorMessage = error.message?.includes('token') || axiosStatus === 401
         ? '인증 토큰이 만료되었습니다. 다시 로그인하여 연동을 갱신해주세요.'
         : error.message;
 
@@ -1577,13 +1578,6 @@ export class LanguageHandlerRegistry {
   providers: [
     LanguageHandlerRegistry,
     JavaLanguageHandler,
-    {
-      provide: 'LANGUAGE_HANDLER_INIT',
-      useFactory: (registry: LanguageHandlerRegistry, java: JavaLanguageHandler) => {
-        registry.register(java);
-      },
-      inject: [LanguageHandlerRegistry, JavaLanguageHandler],
-    },
   ],
   exports: [LanguageHandlerRegistry],
 })
@@ -1925,9 +1919,7 @@ async function bootstrap() {
 pnpm install
 
 # 2. 인프라 시작
-docker-compose up -d
-
-# 3. apps/api/.env 작성 (부록 A 참고)
+docker compose up -d
 
 # 4. DB 마이그레이션
 pnpm db:migrate
@@ -2184,7 +2176,7 @@ const { data, isLoading, error } = useQuery({
 - VulnerabilityService: 필터/정렬/페이지네이션 쿼리 결과 검증
 - SessionAuthGuard: 미인증 요청 → 401 반환
 - OAuth 통합 테스트: strategy/service mock 기반 (실제 외부 provider 호출 불필요)
-- BullMQ 통합 테스트: @testcontainers/redis 또는 docker-compose의 Redis 서비스를 활용하여 BullMQ Worker 통합 테스트를 수행한다.
+- BullMQ 통합 테스트: @testcontainers/redis 또는 docker compose의 Redis 서비스를 활용하여 BullMQ Worker 통합 테스트를 수행한다.
 ```
 
 ---
@@ -2265,7 +2257,7 @@ INTERNAL_API_SECRET=
 
 ```text
 시작 전:
-[ ] docker-compose up -d 실행 → PostgreSQL, Redis 정상 동작 확인
+[ ] docker compose up -d 실행 → PostgreSQL, Redis 정상 동작 확인
 [ ] GitHub OAuth App 생성 → callback: http://localhost:3000/api/auth/github/callback
 [ ] apps/api/.env 작성 (부록 A 기준)
 [ ] pnpm install → pnpm db:migrate 실행
@@ -2277,7 +2269,7 @@ Phase 1 완료 기준:
 [ ] 세션 유지 확인 (GitHub 로그인 → /api/auth/me 응답)
 
 선택 통합 검증:
-[ ] docker-compose up ai-server 실행 → GET http://localhost:8000/health 응답 확인
+[ ] docker compose up ai-server 실행 → GET http://localhost:8000/health 응답 확인
 [ ] USE_INTERNAL_AI=true 설정 시 InternalAnalysisApiClient → apps/ai /analyze 호출 동작 확인
 
 Phase 2 완료 기준:
