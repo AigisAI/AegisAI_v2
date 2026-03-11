@@ -1,7 +1,7 @@
 # Aegisai Platform — Agent Development Specification
 
 > **문서 유형:** AI 에이전트 개발 착수용 기술 명세서
-> **버전:** v2.2 (v2.1 + v2.1.1 통합 — 명세 정합성 + 구현 상세 완비본)
+> **버전:** v2.3 (v2.2 리뷰 반영 수정본 — 37건 정합성·기술·표기 오류 수정)
 > **기준 PRD:** PRD_Aegisai_Platform v2.0
 > **작성일:** 2026-03-11
 
@@ -227,11 +227,11 @@ Aegisai/
         └── src/
             ├── index.ts
             └── types/
-                ├── common.ts
+                ├── common.ts          # ApiResponse, PageResponse, ErrorResponse, RepoListResult
                 ├── auth.ts
                 ├── repo.ts
-                ├── scan.ts
-                ├── vulnerability.ts
+                ├── scan.ts            # ScanStatus enum, ScanSummary
+                ├── vulnerability.ts   # Severity enum, VulnStatus enum, VulnerabilityDetail
                 └── dashboard.ts
 ```
 
@@ -239,7 +239,7 @@ Aegisai/
 
 ```text
 apps/api/
-├── package.json
+├── package.json              # package.json name: @aegisai/api
 ├── tsconfig.json
 ├── nest-cli.json
 ├── prisma/
@@ -252,7 +252,7 @@ apps/api/
     ├── app.module.ts         # 루트 모듈
     │
     ├── config/
-    │   ├── config.module.ts
+    │   ├── config.module.ts  # NestJS @nestjs/config ConfigModule의 래퍼 — 환경 변수 유효성 검사 및 타입 안전 접근 제공
     │   └── config.service.ts
     │
     ├── prisma/
@@ -302,7 +302,7 @@ apps/api/
     ├── client/
     │   ├── analysis/
     │   │   ├── analysis-api-client.interface.ts
-    │   │   ├── analysis-api.dto.ts
+    │   │   ├── analysis-api.dto.ts             # NestJS class-validator DTO: AnalysisRequest/Result의 런타임 검증용 클래스
     │   │   ├── mock-analysis-api.client.ts
     │   │   ├── internal-analysis-api.client.ts   # 선택 통합
     │   │   └── analysis-api.module.ts
@@ -339,7 +339,7 @@ apps/api/
 
 ```text
 apps/web/
-├── package.json
+├── package.json              # package.json name: @aegisai/web
 ├── vite.config.ts
 ├── tailwind.config.ts
 └── src/
@@ -384,7 +384,8 @@ apps/web/
     │   ├── auth.ts
     │   ├── repos.ts
     │   ├── scans.ts
-    │   └── vulnerabilities.ts
+    │   ├── vulnerabilities.ts
+    │   └── dashboard.ts
     │
     └── store/
         └── auth.store.ts      # Zustand — 인증 상태
@@ -497,6 +498,7 @@ model OAuthToken {
   refreshToken   String?      // MVP: 미사용, Phase 2에서 자동 갱신 구현
   expiresAt      DateTime?
   createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -547,7 +549,7 @@ model Scan {
 
   @@index([connectedRepoId])
   @@index([status])
-  @@index([createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)]) // Prisma 5.x에서 PostgreSQL provider일 때만 지원
 }
 
 model Vulnerability {
@@ -589,6 +591,8 @@ model Vulnerability {
 - **동일 `ConnectedRepo`에 대해 동시에 하나의 활성 스캔만 허용하는 정책은 서비스 레벨 규칙이다.** DB 레벨 유니크 제약이 아니다.
 - `userFeedback`는 사용자 판단 데이터를 보존하기 위한 필드이며, `status`는 최종 취약점 처리 상태를 나타낸다. MVP에서는 `PATCH /feedback` 호출 시 `feedback=ACCEPTED`이면 `status=ACCEPTED`, `feedback=REJECTED`이면 `status=REJECTED`로 동기화한다.
 - 필드명 `referenceLinks`는 API 응답 타입과 일치시킨다 (`references`로 혼용하지 않는다).
+- **API 레이어에서는 provider 값을 소문자('github', 'gitlab')로 주고받고, DB 저장 시 Prisma enum 대문자(GITHUB, GITLAB)로 변환한다. 변환은 Service 레이어에서 처리한다.**
+- `@@unique([userId, provider])` 제약으로 한 사용자당 provider별 토큰은 하나만 유지된다. 동일 provider 재인증 시 기존 토큰을 upsert로 갱신한다 (AuthService.findOrCreateUser 내부에서 처리).
 
 ### 5.2 ERD
 
@@ -611,6 +615,7 @@ erDiagram
         string refreshToken
         datetime expiresAt
         datetime createdAt
+        datetime updatedAt
     }
     ConnectedRepo {
         uuid id PK
@@ -694,7 +699,7 @@ erDiagram
 export interface SuccessResponse<T> {
   success: true;
   data: T;
-  message: null;
+  message: string | null;
   timestamp: string;
 }
 
@@ -752,6 +757,7 @@ GET /api/auth/gitlab/callback → GitLab 콜백 (Passport 처리)
 
 #### `GET /api/repos`
 
+// 현재 사용자의 전체 연동 레포를 배열로 반환한다. 연동 레포 수가 제한적이므로 별도 페이지네이션을 적용하지 않는다.
 ```typescript
 {
   id: string;
@@ -797,15 +803,19 @@ PageResponse<{
 { id: string; fullName: string; connectedAt: string; }
 ```
 
+> 서버는 요청받은 providerRepoId와 fullName이 실제 Git Provider API 응답과 일치하는지 검증한다. 위조된 cloneUrl 방지를 위해 서버가 직접 provider API를 호출하여 확인할 것을 권장한다.
+
 #### `DELETE /api/repos/:repoId`
 
 ```typescript
-null  // 200
+null  // 204 No Content
 ```
 
 ### 6.4 스캔
 
 #### `POST /api/scans` — 즉시 반환, BullMQ 비동기 처리
+
+> Controller에서 `@HttpCode(202)` 데코레이터를 명시하여 ResponseTransformInterceptor가 래핑하더라도 HTTP 202를 유지한다.
 
 ```typescript
 // Request
@@ -821,6 +831,8 @@ null  // 200
 ```
 
 #### `GET /api/scans/:scanId` — 스캔 상태 폴링
+
+> 인증 필수. 요청자가 해당 스캔의 ConnectedRepo 소유자인지 Scan → ConnectedRepo → User 경로로 검증한다.
 
 ```typescript
 {
@@ -842,6 +854,28 @@ null  // 200
 }
 ```
 
+```typescript
+/** packages/shared/src/types/scan.ts */
+export interface ScanSummary {
+  id: string;
+  repoFullName: string;
+  branch: string;
+  commitSha: string | null;
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED';
+  language: string;
+  totalFiles: number | null;
+  totalLines: number | null;
+  summary: {
+    critical: number; high: number; medium: number;
+    low: number; info: number;
+  };
+  startedAt: string | null;
+  completedAt: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+```
+
 #### `GET /api/repos/:repoId/scans?page=1&size=10`
 
 ```typescript
@@ -852,11 +886,13 @@ PageResponse<ScanSummary>
 
 #### `GET /api/scans/:scanId/vulnerabilities`
 
+> 인증 필수. 요청자가 해당 스캔의 ConnectedRepo 소유자인지 Scan → ConnectedRepo → User 경로로 검증한다.
+
 지원 쿼리 파라미터:
 - `severity=HIGH&severity=LOW` (다중 선택)
 - `status=OPEN`
 - `page=1`, `size=20`
-- `sort=createdAt:desc` 또는 `sort=severity:asc`
+- `sort=createdAt:desc` 또는 `sort=severity:asc` (severity 정렬은 CRITICAL(1) &gt; HIGH(2) &gt; MEDIUM(3) &gt; LOW(4) &gt; INFO(5) 커스텀 순서를 적용한다 — 알파벳순이 아님)
 
 ```typescript
 PageResponse<{
@@ -873,6 +909,8 @@ PageResponse<{
 ```
 
 #### `GET /api/vulnerabilities/:vulnId`
+
+> 인증 필수. 요청자가 해당 취약점이 속한 스캔의 ConnectedRepo 소유자인지 Scan → ConnectedRepo → User 경로로 검증한다.
 
 ```typescript
 {
@@ -902,7 +940,14 @@ PageResponse<{
 }
 ```
 
+```typescript
+/** packages/shared/src/types/vulnerability.ts */
+export interface VulnerabilityDetail { /* GET /api/vulnerabilities/:vulnId 응답과 동일 */ }
+```
+
 #### `PATCH /api/vulnerabilities/:vulnId/feedback`
+
+> 인증 필수. 해당 취약점이 속한 스캔의 ConnectedRepo 소유자만 피드백할 수 있다.
 
 ```typescript
 // Request
@@ -926,6 +971,7 @@ PageResponse<{
   trend: {
     date: string;               // "2026-03-08"
     critical: number; high: number; medium: number;
+    // MEDIUM 이상 심각도만 추이를 추적한다 (LOW, INFO는 노이즈 방지를 위해 제외)
   }[];                          // 최근 30일
 }
 ```
@@ -955,7 +1001,7 @@ PageResponse<{
 - GitHub/GitLab API 호출: 토큰당 요청 횟수 추적, Rate Limit 도달 시 429 반환
 - 구현: `@nestjs/throttler` 모듈 사용
 
-### 6.A Phase 2 예약 API
+### 6.9 Phase 2 예약 API
 
 #### `POST /api/vulnerabilities/:vulnId/suggest-change`
 
@@ -1296,8 +1342,9 @@ class ConsensusEngine:
 
 > **BullMQ 설정:**
 > - 동시성: `concurrency: 3`
-> - Job 타임아웃: **5분** (`timeout: 300000`)
+> - Job 타임아웃: **5분** (`timeout: 300000`) — Job 추가 시 개별 Job의 최대 처리 시간
 > - 재시도: 없음 (`attempts: 1`) — 실패 시 사용자가 수동으로 재스캔
+> - Worker 레벨 설정에서 `lockDuration: 600000` (10분, timeout의 2배)을 권장한다.
 >
 > **동시 스캔 중복 방지:** 서비스 레벨 규칙이다. 경쟁 상태를 줄이기 위해 운영 환경에서는 advisory lock 또는 BullMQ deduplication 도입을 권장한다.
 
@@ -1361,7 +1408,11 @@ export class ScanService {
       const scan = await this.prisma.scan.create({
         data: { connectedRepoId: repo.id, branch: params.branch, status: 'PENDING' }
       });
-      await this.scanQueue.add('execute-scan', { scanId: scan.id });
+      await this.scanQueue.add('execute-scan', { scanId: scan.id }, {
+        jobId: scan.id,
+        attempts: 1,
+        timeout: 300000,
+      });
     }
   }
 }
@@ -1374,6 +1425,8 @@ export class ScanProcessor extends WorkerHost {
     private prisma: PrismaService,
     private gitClientRegistry: GitClientRegistry,
     @Inject('IAnalysisApiClient') private analysisClient: IAnalysisApiClient,
+    // 대안: AuthService 대신 TokenCryptoUtil을 직접 주입하여 모듈 결합도를 줄일 수 있다.
+    // 이 경우 AuthModule에서 TokenCryptoUtil을 별도 export해야 한다.
     private authService: AuthService,
   ) {
     super();
@@ -1465,6 +1518,7 @@ export class ScanProcessor extends WorkerHost {
       });
 
     } catch (error) {
+      // TypeScript strict 모드에서 error는 unknown 타입이므로 instanceof Error 또는 AxiosError 타입 가드 적용 필요
       // 토큰 만료 등 인증 에러 발생 시 사용자 친화적인 메시지 저장
       const errorMessage = error.message?.includes('token') || error.response?.status === 401
         ? '인증 토큰이 만료되었습니다. 다시 로그인하여 연동을 갱신해주세요.'
@@ -1515,6 +1569,35 @@ export class LanguageHandlerRegistry {
 
 > 도메인 로직에 언어 문자열(`'java'`)을 산발적으로 직접 비교하지 않는다. 항상 Registry를 통해 처리한다.
 
+모듈 초기화 시 핸들러 등록 예시:
+
+```typescript
+// language/language.module.ts
+@Module({
+  providers: [
+    LanguageHandlerRegistry,
+    JavaLanguageHandler,
+    {
+      provide: 'LANGUAGE_HANDLER_INIT',
+      useFactory: (registry: LanguageHandlerRegistry, java: JavaLanguageHandler) => {
+        registry.register(java);
+      },
+      inject: [LanguageHandlerRegistry, JavaLanguageHandler],
+    },
+  ],
+  exports: [LanguageHandlerRegistry],
+})
+export class LanguageModule implements OnModuleInit {
+  constructor(
+    private registry: LanguageHandlerRegistry,
+    private java: JavaLanguageHandler,
+  ) {}
+  onModuleInit() {
+    this.registry.register(this.java);
+  }
+}
+```
+
 ### 8.3 Git Provider 클라이언트 구조
 
 ```typescript
@@ -1523,12 +1606,48 @@ export interface IGitProviderClient {
   getRepositories(accessToken: string, page: number, size: number): Promise<RepoListResult>;
   getLatestCommitSha(fullName: string, branch: string, accessToken: string): Promise<string>;
 }
+
+export interface RepoListResult {
+  items: {
+    providerRepoId: string;
+    fullName: string;
+    cloneUrl: string;
+    defaultBranch: string;
+    isPrivate: boolean;
+  }[];
+  totalCount: number;
+}
 ```
 
 구현 원칙:
 - `GithubClient`, `GitlabClient` 각각 구현, `GitClientRegistry`로 provider 문자열 기반 조회
 - 외부 API pagination과 내부 `PageResponse` pagination을 명시적으로 매핑한다
 - 401 → 토큰 만료/무효로 처리, 404 → 레포 접근 불가 또는 삭제로 처리
+
+모듈 초기화 시 클라이언트 등록 예시:
+
+```typescript
+// client/git/git-client.module.ts
+@Module({
+  providers: [
+    GitClientRegistry,
+    GithubClient,
+    GitlabClient,
+  ],
+  exports: [GitClientRegistry],
+})
+export class GitClientModule implements OnModuleInit {
+  constructor(
+    private registry: GitClientRegistry,
+    private github: GithubClient,
+    private gitlab: GitlabClient,
+  ) {}
+  onModuleInit() {
+    this.registry.register('github', this.github);
+    this.registry.register('gitlab', this.gitlab);
+  }
+}
+```
 
 ---
 
@@ -1551,6 +1670,7 @@ GITHUB_CLIENT_SECRET=xxx
 # GitLab Application 설정 — https://gitlab.com/-/user_settings/applications
 # Callback URL: http://localhost:3000/api/auth/gitlab/callback
 # Scopes: read_user, read_api
+# private 레포 코드 접근이 필요할 경우 read_repository scope 추가를 검토한다. read_api가 repository 접근을 포함하나 명시적 추가 권장.
 GITLAB_CLIENT_ID=xxx
 GITLAB_CLIENT_SECRET=xxx
 ```
@@ -1576,6 +1696,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 }
 
 // auth/strategies/gitlab.strategy.ts
+// passport-gitlab2 패키지의 Strategy를 import한다
 @Injectable()
 export class GitlabStrategy extends PassportStrategy(Strategy, 'gitlab') {
   constructor(private authService: AuthService, config: ConfigService) {
@@ -1705,6 +1826,7 @@ Docker Desktop
 ### 10.2 docker-compose.yml
 
 ```yaml
+# Docker Compose V2 기준 — version 키는 더 이상 필수가 아니므로 생략
 services:
   postgres:
     image: postgres:16-alpine
@@ -1759,6 +1881,8 @@ volumes:
   }
 }
 ```
+
+> **packages/shared 개발 모드 참고:** packages/shared는 TypeScript path alias 또는 tsconfig references로 소스를 직접 참조하므로 별도 빌드 없이 개발 모드에서 변경이 실시간 반영된다.
 
 ```yaml
 # pnpm-workspace.yaml
@@ -1988,7 +2112,7 @@ pnpm dev
 ### Phase 2 고급 기능 (PRD Phase 2)
 
 ```text
-[ ] TASK-21-P2: 피드백 기반 앙상블 가중치 자동 학습
+[ ] TASK-23-P2: 피드백 기반 앙상블 가중치 자동 학습
     - PATCH /feedback에서 수집된 ACCEPTED/REJECTED 데이터 집계
     - 모델별 정탐률 계산 → ConsensusEngine 가중치 동적 조정
     - 가중치 저장: DB 또는 별도 설정 테이블
@@ -2060,7 +2184,7 @@ const { data, isLoading, error } = useQuery({
 - VulnerabilityService: 필터/정렬/페이지네이션 쿼리 결과 검증
 - SessionAuthGuard: 미인증 요청 → 401 반환
 - OAuth 통합 테스트: strategy/service mock 기반 (실제 외부 provider 호출 불필요)
-- BullMQ 통합 테스트: 실제 Redis 컨테이너 사용 권장
+- BullMQ 통합 테스트: @testcontainers/redis 또는 docker-compose의 Redis 서비스를 활용하여 BullMQ Worker 통합 테스트를 수행한다.
 ```
 
 ---
@@ -2080,7 +2204,7 @@ const { data, isLoading, error } = useQuery({
 | `GITLAB_CLIENT_SECRET` | ✅ | GitLab Application Secret |
 | `APP_URL` | ✅ | API 서버 Base URL (OAuth 콜백용) |
 | `FRONTEND_URL` | ✅ | 프론트엔드 Base URL (CORS origin + OAuth 리다이렉트) |
-| `TOKEN_ENCRYPTION_KEY` | ✅ | OAuth 토큰 AES-256-GCM 암호화 키 (32바이트) |
+| `TOKEN_ENCRYPTION_KEY` | ✅ | OAuth 토큰 AES-256-GCM 암호화 키 (32바이트, hex 인코딩된 64자 문자열 또는 base64 인코딩된 44자 문자열로 전달. 예: `openssl rand -hex 32`) |
 | `NODE_ENV` | ✅ | `development` / `production` |
 | `AI_SERVER_URL` | - | apps/ai FastAPI 서버 URL (기본: `http://localhost:8000`) |
 | `USE_INTERNAL_AI` | - | `true` 설정 시 InternalAnalysisApiClient 활성화 |
@@ -2089,6 +2213,53 @@ const { data, isLoading, error } = useQuery({
 | `MODEL_B_ID` | - | 파인튜닝 모델 B 식별자 (apps/ai 환경변수) |
 | `OPENAI_API_KEY` | - | 파인튜닝 모델 호출용 (OpenAI 기반 파인튜닝 시) |
 | `GITHUB_APP_WEBHOOK_SECRET` | - | GitHub Webhook HMAC-SHA256 서명 검증 키 [Phase 2] |
+
+### 부록 A-1. `.env.example` 템플릿
+
+```dotenv
+# apps/api/.env.example
+
+# Database
+DATABASE_URL=postgresql://aegisai:aegisai@localhost:5432/aegisai
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Session
+SESSION_SECRET=change-me-to-a-random-string
+
+# GitHub OAuth App
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# GitLab OAuth Application
+GITLAB_CLIENT_ID=
+GITLAB_CLIENT_SECRET=
+
+# App URLs
+APP_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173
+
+# Token Encryption (AES-256-GCM, 32 bytes)
+# 생성 예시: openssl rand -hex 32
+TOKEN_ENCRYPTION_KEY=
+
+# Runtime
+NODE_ENV=development
+
+# AI Server (선택 통합)
+AI_SERVER_URL=http://localhost:8000
+USE_INTERNAL_AI=false
+INTERNAL_API_SECRET=
+
+# AI Model (apps/ai 환경변수)
+# MODEL_A_ID=
+# MODEL_B_ID=
+# OPENAI_API_KEY=
+
+# GitHub Webhook (Phase 2)
+# GITHUB_APP_WEBHOOK_SECRET=
+```
 
 ### 부록 B. 에이전트 개발 체크리스트
 
@@ -2102,7 +2273,7 @@ const { data, isLoading, error } = useQuery({
 Phase 1 완료 기준:
 [ ] MockAnalysisApiClient를 통한 스캔 E2E 동작
 [ ] GET /api/scans/:id → status: "DONE" + 취약점 데이터 (consensusScore 포함) 반환 확인
-[ ] GET /api/health → DB·Redis 연결 상태 확인
+[ ] GET /api/health → DB·Redis 연결 상태 확인 (TASK-14에서 구현, Phase 2 시작 시 우선 구현 필요)
 [ ] 세션 유지 확인 (GitHub 로그인 → /api/auth/me 응답)
 
 선택 통합 검증:
