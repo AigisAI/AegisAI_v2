@@ -1,7 +1,7 @@
 # Aegisai Platform — Agent Development Specification
 
 > **문서 유형:** AI 에이전트 개발 착수용 기술 명세서
-> **버전:** v2.5 (v2.4 리뷰 반영 — 핵심 모듈 코드, 공유 타입, 설정 누락 15건 보완)
+> **버전:** v2.6 (v2.5 리뷰 반영 — 보안·에러 처리·테스트·구조 개선 17건 보완)
 > **기준 PRD:** PRD_Aegisai_Platform v2.0
 > **작성일:** 2026-03-11
 
@@ -22,11 +22,18 @@
 1. [프로젝트 개요](#1-프로젝트-개요)
 2. [기술 스택](#2-기술-스택)
 3. [시스템 아키텍처](#3-시스템-아키텍처)
+   - 3.1 [핵심 설계 원칙](#31-핵심-설계-원칙)
+   - 3.2 [스캔 플로우 시퀀스 다이어그램](#32-스캔-플로우-시퀀스-다이어그램)
+   - 3.3 [OAuth 인증 플로우 시퀀스 다이어그램](#33-oauth-인증-플로우-시퀀스-다이어그램)
 4. [Monorepo 디렉토리 구조](#4-monorepo-디렉토리-구조)
 5. [Prisma 스키마](#5-prisma-스키마)
 6. [API 명세 (MVP)](#6-api-명세-mvp)
 7. [Analysis API 명세](#7-analysis-api-명세)
 8. [핵심 모듈 설계](#8-핵심-모듈-설계)
+   - 8.1 [ScanService + ScanProcessor 흐름](#81-scanservice--scanprocessor-흐름)
+   - 8.2 [ILanguageHandler — 언어 확장 구조](#82-ilanguagehandler--언어-확장-구조)
+   - 8.3 [Git Provider 클라이언트 구조](#83-git-provider-클라이언트-구조)
+   - 8.4 [에러 시나리오 및 복구 전략](#84-에러-시나리오-및-복구-전략)
 9. [GitHub/GitLab 연동 플로우](#9-githubgitlab-연동-플로우)
 10. [개발 환경 설정](#10-개발-환경-설정)
 11. [개발 태스크 (Phase별)](#11-개발-태스크-phase별)
@@ -64,6 +71,8 @@ Aegisai는 GitHub/GitLab 레포지토리를 연동하여 **Java 코드의 보안
 - GitHub Suggested Changes의 실제 운영 적용
 
 > `apps/ai`, GitHub Webhook, Suggested Changes 관련 내용은 **향후 확장 또는 선택 통합 경로를 위한 설계 명세**로 문서에 포함한다. 기본 Phase 1 구현 완료 기준은 `MockAnalysisApiClient` 기반 동작이다.
+
+> CI/CD 및 배포 파이프라인은 MVP 완성 후 별도 문서로 정의한다.
 
 ### 1.3 성공 기준 (Success Metrics)
 
@@ -117,7 +126,7 @@ pnpm workspace 기반 monorepo
 | Framework | React | 18.x |
 | Language | TypeScript | 5.x |
 | Build | Vite | 5.x |
-| UI Library | shadcn/ui + Tailwind CSS | latest |
+| UI Library | shadcn/ui + Tailwind CSS | shadcn/ui 2.x + Tailwind CSS 3.4.x |
 | Server State | TanStack Query | 5.x |
 | Client State | Zustand | 4.x |
 | HTTP Client | Axios (shared instance) | 1.x |
@@ -128,10 +137,10 @@ pnpm workspace 기반 monorepo
 
 | 항목 | 선택 | 버전 |
 |------|------|------|
-| Framework | FastAPI | latest |
+| Framework | FastAPI | 0.115.x |
 | Language | Python | 3.11+ |
-| ASGI | Uvicorn | latest |
-| HTTP Client | httpx | latest |
+| ASGI | Uvicorn | 0.32.x |
+| HTTP Client | httpx | 0.27.x |
 
 ### 2.5 Infrastructure (로컬 개발)
 
@@ -202,6 +211,63 @@ services:
 6. **타입 공유:** `packages/shared`의 타입을 API 응답 타입과 React 컴포넌트가 동시에 import한다.
 7. **CORS 명시 설정:** `FRONTEND_URL` 환경변수로 허용 origin을 관리한다.
 8. **Health Check 제공:** `GET /api/health` 엔드포인트로 API 서버 uptime과 DB/Redis 상태를 확인한다.
+
+### 3.2 스캔 플로우 시퀀스 다이어그램
+
+```mermaid
+sequenceDiagram
+    participant U as Browser
+    participant API as NestJS API
+    participant Q as BullMQ Queue
+    participant W as ScanProcessor (Worker)
+    participant Git as GitHub/GitLab API
+    participant AI as IAnalysisApiClient
+    participant DB as PostgreSQL
+
+    U->>API: POST /api/scans { repoId, branch }
+    API->>DB: 트랜잭션: 중복 체크 + Scan(PENDING) 생성
+    API->>Q: Job 등록 (scanId)
+    API-->>U: 202 { scanId, status: PENDING }
+
+    U->>API: GET /api/scans/:scanId (3초 폴링)
+    API-->>U: { status: PENDING }
+
+    Q->>W: Job 실행
+    W->>DB: Scan → RUNNING
+    W->>Git: getLatestCommitSha()
+    Git-->>W: commitSha
+    W->>AI: analyze({ scanId, cloneUrl, branch, ... })
+    AI-->>W: AnalysisResult { vulnerabilities[] }
+    W->>DB: Vulnerability.createMany()
+    W->>DB: Scan → DONE + 집계 저장
+
+    U->>API: GET /api/scans/:scanId (폴링)
+    API-->>U: { status: DONE, summary: { ... } }
+    U->>API: GET /api/scans/:scanId/vulnerabilities
+    API-->>U: PageResponse<VulnerabilityListItem>
+```
+
+### 3.3 OAuth 인증 플로우 시퀀스 다이어그램
+
+```mermaid
+sequenceDiagram
+    participant U as Browser
+    participant API as NestJS API
+    participant GH as GitHub OAuth
+    participant DB as PostgreSQL
+    participant Redis as Redis (Session)
+
+    U->>API: GET /api/auth/github
+    API->>GH: OAuth 리다이렉트 (state 포함)
+    GH->>U: GitHub 로그인 페이지
+    U->>GH: 사용자 인증 + 권한 동의
+    GH->>API: GET /api/auth/github/callback?code=xxx&state=yyy
+    API->>GH: code → accessToken 교환
+    GH-->>API: accessToken
+    API->>DB: User upsert + OAuthToken 저장 (AES-256-GCM 암호화)
+    API->>Redis: 세션 저장 (userId)
+    API-->>U: Set-Cookie: connect.sid → Redirect FRONTEND_URL/dashboard
+```
 
 ---
 
@@ -737,6 +803,8 @@ model Vulnerability {
 - 필드명 `referenceLinks`는 API 응답 타입과 일치시킨다 (`references`로 혼용하지 않는다).
 - **API 레이어에서는 provider 값을 소문자('github', 'gitlab')로 주고받고, DB 저장 시 Prisma enum 대문자(GITHUB, GITLAB)로 변환한다. 변환은 Service 레이어에서 처리한다.**
 - `@@unique([userId, provider])` 제약으로 한 사용자당 provider별 토큰은 하나만 유지된다. 동일 provider 재인증 시 기존 토큰을 upsert로 갱신한다 (AuthService.findOrCreateUser 내부에서 처리).
+- **`TOKEN_ENCRYPTION_KEY` 로테이션:** MVP에서는 단일 키를 사용한다. 키 교체가 필요한 경우를 대비하여 `OAuthToken` 레코드에 암호화 키 버전을 식별하는 확장 경로를 고려한다. 예: 암호화된 토큰 앞에 키 버전 프리픽스를 붙이는 방식 (`v1:<encrypted>`) 또는 별도 `keyVersion` 컬럼 추가. Phase 2에서 키 로테이션 전략을 정식으로 구현한다.
+- **`Scan` 비정규화 필드 동기화:** `Scan` 모델의 `vulnCritical`, `vulnHigh`, `vulnMedium`, `vulnLow`, `vulnInfo` 필드는 성능 최적화를 위한 비정규화 캐시이다. 이 값은 `ScanProcessor`가 스캔 완료 시 일회성으로 계산하여 저장한다. MVP에서는 취약점의 `status` 변경(OPEN→FIXED 등)이나 `userFeedback` 변경 시 이 비정규화 필드를 재계산하지 않는다. 대시보드의 `openVulnerabilities` 집계는 `Vulnerability` 테이블에서 직접 쿼리한다. Phase 2에서 취약점 상태 변경 시 `Scan` 비정규화 필드를 동기화하는 이벤트 기반 로직(또는 DB 트리거)을 도입한다.
 
 ### 5.2 ERD
 
@@ -837,6 +905,14 @@ erDiagram
   - `cookie.httpOnly`: `true`
 - 페이지네이션 기본값: `page=1`, `size=20`, **최대 size=100**
 - 모든 응답: `ApiResponse<T>` 래퍼 사용
+
+**CSRF 보호 전략:**
+
+`sameSite: 'lax'`는 GET 요청의 크로스사이트 전송만 허용하므로 대부분의 CSRF 공격을 방지하지만, state-changing POST/PATCH/DELETE 엔드포인트에 대한 추가 보호를 위해 **커스텀 헤더 검증** 방식을 적용한다.
+
+- 프론트엔드 Axios 인스턴스에서 모든 요청에 `X-Requested-With: XMLHttpRequest` 헤더를 포함한다.
+- 백엔드 `SessionAuthGuard`에서 POST/PATCH/DELETE 요청 시 `X-Requested-With` 헤더 존재를 검증한다. 누락 시 403 반환.
+- 이 방식은 브라우저의 CORS preflight 메커니즘과 결합하여 크로스사이트 요청 위조를 방지한다.
 
 ```typescript
 // packages/shared/src/types/common.ts
@@ -947,6 +1023,7 @@ GET /api/auth/gitlab/callback → GitLab 콜백 (Passport 처리)
 
 - 응답 TTL 5분 캐시 (`node-cache`)
 - 외부 Git provider API pagination을 내부 API pagination과 매핑한다.
+- **캐시 키 전략:** `repos-available:${userId}:${provider}:${page}:${size}` — 사용자별 + provider별 + 페이지별로 캐시를 분리한다. 새 레포 연동(`POST /api/repos`) 시 해당 사용자의 available 캐시를 전부 무효화한다.
 
 ```typescript
 PageResponse<{
@@ -975,7 +1052,7 @@ PageResponse<{
 { id: string; fullName: string; connectedAt: string; }
 ```
 
-> 서버는 요청받은 providerRepoId와 fullName이 실제 Git Provider API 응답과 일치하는지 검증한다. 위조된 cloneUrl 방지를 위해 서버가 직접 provider API를 호출하여 확인할 것을 권장한다.
+> 서버는 클라이언트가 전송한 `cloneUrl`, `fullName`, `defaultBranch`, `isPrivate` 값을 신뢰하지 않는다. `providerRepoId`와 `provider`를 기준으로 Git Provider API에서 레포 정보를 직접 조회하고, **조회된 값으로 덮어쓴 후** DB에 저장한다.
 >
 > 응답 코드:
 > ```
@@ -1053,6 +1130,12 @@ export interface ConnectRepoResponse {
 
 > 인증 필수. 요청자가 해당 스캔의 ConnectedRepo 소유자인지 Scan → ConnectedRepo → User 경로로 검증한다.
 
+**프론트엔드 폴링 설정:**
+- 폴링 간격: **3초**
+- 최대 폴링 시간: **10분** (3초 × 200회 = 600초, 이후 자동 중단 + "스캔이 예상보다 오래 걸리고 있습니다" 메시지 표시)
+- TanStack Query `refetchInterval` 사용, `DONE` 또는 `FAILED` 상태 수신 시 `refetchInterval: false`로 전환하여 폴링 중단
+- BullMQ Job 타임아웃(5분)보다 긴 10분으로 설정하여, Job 실패 후 상태가 FAILED로 업데이트되는 시간 여유를 둔다.
+
 ```typescript
 {
   id: string;
@@ -1129,6 +1212,18 @@ PageResponse<ScanSummary>
 - `status=OPEN`
 - `page=1`, `size=20`
 - `sort=createdAt:desc` 또는 `sort=severity:asc` (severity 정렬은 `CRITICAL(1) > HIGH(2) > MEDIUM(3) > LOW(4) > INFO(5)` 커스텀 순서를 적용한다 — 알파벳순이 아님)
+
+  **Severity 커스텀 정렬 구현:** Prisma는 enum 커스텀 정렬을 직접 지원하지 않으므로, **Prisma `$queryRaw`를 사용한 SQL `CASE WHEN` 구문**으로 구현한다.
+  ```sql
+  ORDER BY CASE severity
+    WHEN 'CRITICAL' THEN 1
+    WHEN 'HIGH' THEN 2
+    WHEN 'MEDIUM' THEN 3
+    WHEN 'LOW' THEN 4
+    WHEN 'INFO' THEN 5
+  END ASC
+  ```
+  또는 서비스 레이어에서 Prisma 결과를 가져온 후 `SEVERITY_ORDER` 상수 맵을 사용한 인메모리 정렬을 적용할 수 있다 (데이터량이 적은 MVP에서 유효).
 
 ```typescript
 PageResponse<{
@@ -1306,6 +1401,14 @@ export * from './types/dashboard';
 ```
 ```
 
+**대시보드 집계 쿼리 캐싱 전략:**
+- MVP에서는 매 요청마다 실시간 Prisma 집계 쿼리를 수행한다.
+- 데이터 증가 시 성능 저하가 예상되므로, Phase 2에서 다음 최적화를 적용한다:
+  - `node-cache`로 대시보드 응답을 **TTL 1분** 캐싱
+  - 캐시 키: `dashboard:${userId}` (사용자별 캐시)
+  - 스캔 완료 시(`ScanProcessor` DONE 처리 후) 해당 사용자의 대시보드 캐시를 무효화한다
+- 장기적으로 PostgreSQL Materialized View 또는 별도 집계 테이블 도입을 검토한다.
+
 ### 6.7 Health Check
 
 #### `GET /api/health` — 인증 불필요
@@ -1330,6 +1433,11 @@ export * from './types/dashboard';
 - `POST /api/scans`: **10 req/min** (스캔 남용 방지)
 - GitHub/GitLab API 호출: 토큰당 요청 횟수 추적, Rate Limit 도달 시 429 반환
 - 구현: `@nestjs/throttler` 모듈 사용
+
+**식별 기준:**
+- 인증 사용자: **세션 ID 기반** (connect.sid 쿠키)
+- 미인증 요청: **IP 기반** (`@nestjs/throttler`의 기본 동작 — `req.ip` 사용)
+- `X-Forwarded-For` 헤더 신뢰 설정: 리버스 프록시 뒤에서 운영 시 `app.set('trust proxy', 1)` 설정을 `main.ts`에 추가해야 한다. 미설정 시 모든 요청이 프록시 IP로 식별되어 Rate Limiting이 의도대로 동작하지 않는다.
 
 ### 6.9 Phase 2 예약 API
 
@@ -1861,8 +1969,23 @@ export class ScanProcessor extends WorkerHost {
       });
     }
   }
+
+  @OnWorkerEvent('failed')
+  onFailed(job: Job<{ scanId: string }>, error: Error) {
+    this.logger.error(
+      `Scan job failed: ${job.data.scanId}`,
+      error.stack,
+      'ScanProcessor',
+    );
+  }
 }
 ```
+
+> **BullMQ Dead Letter Queue:**
+> - `attempts: 1`이므로 실패한 Job은 BullMQ의 `failed` 상태로 남는다.
+> - 실패 Job 추적을 위해 `ScanProcessor`에 `@OnWorkerEvent('failed')` 데코레이터로 실패 이벤트 핸들러를 등록한다 (위 코드 참조).
+> - 핸들러에서 `Logger.error`로 scanId, 에러 메시지, 스택 트레이스를 기록한다.
+> - Phase 2에서 별도 Dead Letter Queue를 도입하여 실패 Job을 이동시키고, 관리자 대시보드에서 재처리하는 기능을 구현한다.
 
 #### scan.module.ts — ScanModule 전체 구성
 
@@ -2004,6 +2127,19 @@ export class GitClientModule implements OnModuleInit {
 }
 ```
 
+### 8.4 에러 시나리오 및 복구 전략
+
+| 시나리오 | 발생 지점 | 동작 | 사용자 알림 |
+|----------|----------|------|------------|
+| Analysis API 타임아웃 (5분 초과) | ScanProcessor | Scan → FAILED, `errorMessage: '분석 시간 초과'` | 폴링 응답에서 확인 |
+| Analysis API 부분 성공 (일부 파일만 분석) | IAnalysisApiClient | `success: true` + 실제 처리된 파일 수를 `totalFiles`에 반영 | 대시보드에서 totalFiles 확인 |
+| OAuth 토큰 만료 (401) | ScanProcessor → GitClient | Scan → FAILED, `errorMessage: '인증 토큰이 만료되었습니다. 다시 로그인하여 연동을 갱신해주세요.'` | 폴링 응답 + 프론트 토스트 |
+| DB 트랜잭션 실패 | ScanService.requestScan | 트랜잭션 롤백, HTTP 500 반환 | 프론트 글로벌 에러 핸들러 |
+| BullMQ Job과 DB 상태 불일치 | ScanProcessor catch 블록 | catch 블록에서 반드시 Scan 상태를 FAILED로 업데이트. 만약 이 업데이트마저 실패하면 NestJS Logger.error로 기록 (수동 복구 대상) | 관리자 로그 확인 |
+| Redis 연결 실패 | BullMQ Worker 시작 | Worker 재연결 시도 (BullMQ 기본 동작). Health Check에서 `redis: 'down'` 반환 | `/api/health` 모니터링 |
+| Git Provider API Rate Limit (403/429) | GitClient | 에러를 상위로 전파, Scan → FAILED, `errorMessage`에 Rate Limit 정보 포함 | 폴링 응답 |
+| 동시 스캔 중복 요청 경쟁 상태 | ScanService | Prisma 트랜잭션 격리로 방지. 트랜잭션 내부에서 중복 체크 + 생성을 원자적으로 수행 | 409 ConflictException |
+
 ---
 
 ## 9. GitHub/GitLab 연동 플로우
@@ -2031,6 +2167,8 @@ GITLAB_CLIENT_SECRET=xxx
 ```
 
 ### 9.3 Passport Strategy
+
+> **OAuth `state` 파라미터 검증:** `passport-github2`와 `passport-gitlab2`는 내부적으로 OAuth2 `state` 파라미터를 자동 생성·검증하여 CSRF 공격을 방지한다. `state` 파라미터는 세션에 저장되므로, 세션 설정이 OAuth 인증보다 먼저 초기화되어야 한다 (main.ts의 middleware 순서 참조).
 
 ```typescript
 // auth/strategies/github.strategy.ts
@@ -2627,6 +2765,21 @@ async getVulnerability(
 }
 ```
 
+**로깅 가이드:**
+
+- 모든 로그는 `NestJS Logger` 클래스를 사용한다 (`this.logger = new Logger(ClassName.name)`).
+- `console.log` 사용을 금지한다.
+- 로그 레벨: 개발 모드 `debug`, 운영 모드 `info` (ConfigService로 분기).
+- 에러 로그에는 반드시 **컨텍스트 정보**를 포함한다:
+  ```typescript
+  this.logger.error(
+    `Scan failed: ${scanId}`,
+    error.stack,
+    'ScanProcessor',
+  );
+  ```
+- 민감 정보(accessToken, 암호화 키) 로그 출력을 금지한다. 토큰 관련 로그는 마스킹 처리한다 (예: `token: ***${last4}`).
+
 ### Frontend (React/TypeScript)
 
 ```typescript
@@ -2656,6 +2809,14 @@ const { data, isLoading, error } = useQuery({
 | 단위 (Frontend) | Vitest + RTL | ScanStatusBadge, SeverityBadge, ConsensusScoreBadge |
 | API Mocking | MSW | 프론트 개발 중 백엔드 독립 |
 
+**테스트 커버리지 목표:**
+
+| 레이어 | 목표 커버리지 |
+|--------|-------------|
+| Service (비즈니스 로직) | **80% 이상** (라인 커버리지) |
+| Controller | **70% 이상** (주요 경로 + 에러 케이스) |
+| 프론트엔드 컴포넌트 | **주요 인터랙션 경로** (커버리지 수치 미강제) |
+
 ### 핵심 테스트 케이스
 
 ```text
@@ -2668,6 +2829,33 @@ const { data, isLoading, error } = useQuery({
 - OAuth 통합 테스트: strategy/service mock 기반 (실제 외부 provider 호출 불필요)
 - BullMQ 통합 테스트: @testcontainers/redis 또는 docker compose의 Redis 서비스를 활용하여 BullMQ Worker 통합 테스트를 수행한다.
 ```
+
+**E2E 시나리오 테스트 (Supertest 기반):**
+
+```text
+E2E-01: 인증 → 레포 연동 → 스캔 → 취약점 조회 전체 플로우
+  1. mock OAuth 콜백으로 세션 생성
+  2. POST /api/repos → 레포 연동
+  3. POST /api/scans → 스캔 시작
+  4. BullMQ Worker 완료 대기
+  5. GET /api/scans/:id → status: DONE 확인
+  6. GET /api/scans/:id/vulnerabilities → 취약점 목록 반환 확인
+  7. PATCH /api/vulnerabilities/:id/feedback → 피드백 반영 확인
+
+E2E-02: 미인증 접근 차단
+  1. 세션 없이 GET /api/repos → 401 확인
+  2. 세션 없이 POST /api/scans → 401 확인
+
+E2E-03: 동시 스캔 중복 방지
+  1. POST /api/scans → 202 확인
+  2. 동일 repoId로 POST /api/scans → 409 확인
+```
+
+**BullMQ 통합 테스트 환경:**
+- `@testcontainers/redis` 또는 docker compose의 Redis 서비스를 활용한다.
+- 테스트 전: `scan-jobs` 큐를 비운다 (`queue.obliterate({ force: true })`).
+- Worker 완료 대기: `QueueEvents`의 `completed` 이벤트를 listen하여 비동기 처리 완료를 확인한다.
+- 테스트 후: 생성된 데이터를 정리한다.
 
 ---
 
