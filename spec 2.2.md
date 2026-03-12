@@ -349,7 +349,8 @@ apps/api/
     │   ├── scan.module.ts
     │   ├── scan.controller.ts
     │   ├── scan.service.ts
-    │   └── scan.processor.ts
+    │   ├── scan.processor.ts
+    │   └── stuck-scan-recovery.task.ts  # RUNNING 상태 타임아웃 복구 스케줄러
     │
     ├── webhook/               # Phase 2 예약
     │   ├── webhook.module.ts
@@ -394,9 +395,12 @@ apps/api/
         │   ├── api-response.dto.ts
         │   └── pagination.dto.ts
         ├── decorators/
-        │   └── raw-body.decorator.ts
+        │   ├── raw-body.decorator.ts
+        │   └── resource-owner-check.decorator.ts
         ├── filters/
         │   └── global-exception.filter.ts
+        ├── guards/
+        │   └── resource-owner.guard.ts
         └── interceptors/
             └── response-transform.interceptor.ts
 ```
@@ -1043,16 +1047,12 @@ PageResponse<{
 {
   provider: 'github' | 'gitlab';
   providerRepoId: string;
-  fullName: string;
-  cloneUrl: string;
-  defaultBranch: string;
-  isPrivate: boolean;
 }
 // Response 201
 { id: string; fullName: string; connectedAt: string; }
 ```
 
-> 서버는 클라이언트가 전송한 `cloneUrl`, `fullName`, `defaultBranch`, `isPrivate` 값을 신뢰하지 않는다. `providerRepoId`와 `provider`를 기준으로 Git Provider API에서 레포 정보를 직접 조회하고, **조회된 값으로 덮어쓴 후** DB에 저장한다.
+> 서버는 `providerRepoId`와 `provider`를 기준으로 Git Provider API에서 레포 메타데이터(`fullName`, `cloneUrl`, `defaultBranch`, `isPrivate`)를 직접 조회하여 DB에 저장한다. 클라이언트가 전송한 메타데이터는 수신하지 않는다.
 >
 > 응답 코드:
 > ```
@@ -1094,10 +1094,6 @@ export interface AvailableRepoItem {
 export interface ConnectRepoRequest {
   provider: 'github' | 'gitlab';
   providerRepoId: string;
-  fullName: string;
-  cloneUrl: string;
-  defaultBranch: string;
-  isPrivate: boolean;
 }
 
 export interface ConnectRepoResponse {
@@ -1402,12 +1398,11 @@ export * from './types/dashboard';
 ```
 
 **대시보드 집계 쿼리 캐싱 전략:**
-- MVP에서는 매 요청마다 실시간 Prisma 집계 쿼리를 수행한다.
-- 데이터 증가 시 성능 저하가 예상되므로, Phase 2에서 다음 최적화를 적용한다:
+- **Phase 1에서도 다음 캐싱 최적화를 적용한다:**
   - `node-cache`로 대시보드 응답을 **TTL 1분** 캐싱
   - 캐시 키: `dashboard:${userId}` (사용자별 캐시)
   - 스캔 완료 시(`ScanProcessor` DONE 처리 후) 해당 사용자의 대시보드 캐시를 무효화한다
-- 장기적으로 PostgreSQL Materialized View 또는 별도 집계 테이블 도입을 검토한다.
+- 데이터가 더 증가하면 PostgreSQL Materialized View 또는 별도 집계 테이블 도입을 검토한다.
 
 ### 6.7 Health Check
 
@@ -1638,7 +1633,7 @@ export class InternalAnalysisApiClient implements IAnalysisApiClient {
           `${aiServerUrl}/analyze`,
           request,
           {
-            timeout: 300_000,   // 5분 — BullMQ Job 타임아웃과 동일
+            timeout: 270_000,   // 4분 30초 (BullMQ Job 타임아웃 5분보다 30초 짧게 설정)
             headers: {
               'Content-Type': 'application/json',
               'X-Internal-Secret': this.config.get('INTERNAL_API_SECRET'),
@@ -1794,6 +1789,7 @@ export class ScanService {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('scan-jobs') private scanQueue: Queue,
+    private languageHandlerRegistry: LanguageHandlerRegistry,
   ) {}
 
   async requestScan(userId: string, repoId: string, branch: string) {
@@ -1801,6 +1797,12 @@ export class ScanService {
       where: { id: repoId, userId },
     });
     if (!repo) throw new NotFoundException('연동된 레포를 찾을 수 없습니다.');
+
+    // Phase 1: language는 항상 "java" 기본값 사용 (DB 스키마 @default("java")).
+    // 향후 다중 언어 지원 시 요청 body에 language 필드를 추가하고 아래 검증 로직을 활용한다.
+    const language = 'java';
+    // 지원 여부 검증 — 미지원 언어이면 Error throw. Phase 1에서는 'java'만 등록되어 있으므로 항상 통과
+    this.languageHandlerRegistry.get(language);
 
     // 경쟁 상태 방지: 중복 체크 + 생성을 트랜잭션으로 처리
     const scan = await this.prisma.$transaction(async (tx) => {
@@ -1963,10 +1965,19 @@ export class ScanProcessor extends WorkerHost {
         ? '인증 토큰이 만료되었습니다. 다시 로그인하여 연동을 갱신해주세요.'
         : error.message;
 
-      await this.prisma.scan.update({
-        where: { id: scanId },
-        data: { status: 'FAILED', errorMessage, completedAt: new Date() }
-      });
+      try {
+        await this.prisma.scan.update({
+          where: { id: scanId },
+          data: { status: 'FAILED', errorMessage, completedAt: new Date() }
+        });
+      } catch (dbError) {
+        this.logger.error(
+          `CRITICAL: Failed to update scan status to FAILED. Scan ${scanId} may be stuck in RUNNING state.`,
+          dbError instanceof Error ? dbError.stack : String(dbError),
+          'ScanProcessor',
+        );
+        // RUNNING 상태 복구는 StuckScanRecoveryTask 스케줄러가 담당한다.
+      }
     }
   }
 
@@ -1987,6 +1998,48 @@ export class ScanProcessor extends WorkerHost {
 > - 핸들러에서 `Logger.error`로 scanId, 에러 메시지, 스택 트레이스를 기록한다.
 > - Phase 2에서 별도 Dead Letter Queue를 도입하여 실패 Job을 이동시키고, 관리자 대시보드에서 재처리하는 기능을 구현한다.
 
+#### RUNNING 상태 타임아웃 복구 스케줄러 (`StuckScanRecoveryTask`)
+
+> DB 업데이트 자체가 실패하여 스캔이 RUNNING 상태에 고착될 경우를 대비한 복구 스케줄러이다.
+> `@nestjs/schedule` 모듈 사용 (NestJS Cron).
+
+```typescript
+// scan/stuck-scan-recovery.task.ts
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class StuckScanRecoveryTask {
+  private readonly logger = new Logger(StuckScanRecoveryTask.name);
+  private readonly STUCK_THRESHOLD_MINUTES = 10;
+
+  constructor(private prisma: PrismaService) {}
+
+  // 5분마다 실행 — PENDING/RUNNING 상태로 10분 이상 멈춘 스캔을 FAILED로 전환
+  @Cron('*/5 * * * *')
+  async handleStuckScans() {
+    const threshold = new Date(Date.now() - this.STUCK_THRESHOLD_MINUTES * 60 * 1000);
+    const stuckScans = await this.prisma.scan.updateMany({
+      where: {
+        status: { in: ['PENDING', 'RUNNING'] },
+        updatedAt: { lt: threshold },
+      },
+      data: {
+        status: 'FAILED',
+        errorMessage: '스캔 처리 시간이 초과되어 자동으로 실패 처리되었습니다.',
+        completedAt: new Date(),
+      },
+    });
+    if (stuckScans.count > 0) {
+      this.logger.warn(`Recovered ${stuckScans.count} stuck scans`);
+    }
+  }
+}
+```
+
+> `StuckScanRecoveryTask`를 `ScanModule`의 `providers` 배열에 추가하고, `AppModule`에서 `ScheduleModule.forRoot()`를 imports에 등록한다.
+
 #### scan.module.ts — ScanModule 전체 구성
 
 ```typescript
@@ -1996,10 +2049,12 @@ import { BullModule } from '@nestjs/bullmq';
 import { ScanController } from './scan.controller';
 import { ScanService } from './scan.service';
 import { ScanProcessor } from './scan.processor';
+import { StuckScanRecoveryTask } from './stuck-scan-recovery.task';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AnalysisApiModule } from '../client/analysis/analysis-api.module';
 import { GitClientModule } from '../client/git/git-client.module';
 import { AuthModule } from '../auth/auth.module';
+import { LanguageModule } from '../language/language.module';
 
 @Module({
   imports: [
@@ -2007,16 +2062,74 @@ import { AuthModule } from '../auth/auth.module';
     PrismaModule,
     AnalysisApiModule,
     GitClientModule,
-    AuthModule,  // TokenCryptoUtil export 용도 (auth.module.ts에서 TokenCryptoUtil을 exports에 추가할 것)
+    AuthModule,      // TokenCryptoUtil export 용도 (auth.module.ts에서 TokenCryptoUtil을 exports에 추가할 것)
+    LanguageModule,  // LanguageHandlerRegistry — ScanService에서 언어 검증 시 필요
   ],
   controllers: [ScanController],
-  providers: [ScanService, ScanProcessor],
+  providers: [ScanService, ScanProcessor, StuckScanRecoveryTask],
   exports: [ScanService],  // WebhookModule에서 ScanService.requestScanFromPR() 호출 시 필요
 })
 export class ScanModule {}
 ```
 
 > **⚠️ `TokenCryptoUtil` export 설정:** `ScanProcessor`가 `TokenCryptoUtil`을 직접 주입받으므로, `auth.module.ts`의 `exports` 배열에 `TokenCryptoUtil`을 추가해야 한다. 또는 `TokenCryptoUtil`을 독립적인 `CryptoModule`로 분리하여 `ScanModule`에서 직접 import하는 방법도 가능하다 (결합도 최소화).
+
+#### TokenCryptoUtil — AES-256-GCM 토큰 암/복호화
+
+```typescript
+// auth/utils/token-crypto.util.ts
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '../../config/config.service';
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+
+@Injectable()
+export class TokenCryptoUtil {
+  private readonly algorithm = 'aes-256-gcm';
+  private readonly key: Buffer;
+
+  constructor(private readonly config: ConfigService) {
+    // TOKEN_ENCRYPTION_KEY: hex 인코딩된 64자 문자열 (32바이트)
+    const keyHex = this.config.get('TOKEN_ENCRYPTION_KEY');
+    this.key = Buffer.from(keyHex, 'hex');
+    if (this.key.length !== 32) {
+      throw new Error(
+        `Invalid TOKEN_ENCRYPTION_KEY: expected 32 bytes (64 hex characters), got ${this.key.length} bytes. ` +
+        'Generate a valid key using: openssl rand -hex 32'
+      );
+    }
+  }
+
+  /**
+   * 평문을 AES-256-GCM으로 암호화한다.
+   * 반환 포맷: `${iv_hex}:${authTag_hex}:${encrypted_hex}`
+   */
+  encrypt(plainText: string): string {
+    const iv = randomBytes(16); // 128-bit IV
+    const cipher = createCipheriv(this.algorithm, this.key, iv);
+    let encrypted = cipher.update(plainText, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag();
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+  }
+
+  /**
+   * `encrypt()`로 생성된 문자열을 복호화한다.
+   */
+  decrypt(encryptedText: string): string {
+    const [ivHex, authTagHex, encrypted] = encryptedText.split(':');
+    if (!ivHex || !authTagHex || !encrypted) {
+      throw new Error('Invalid encrypted token format. Expected format: {iv_hex}:{authTag_hex}:{encrypted_hex}');
+    }
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    const decipher = createDecipheriv(this.algorithm, this.key, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  }
+}
+```
 
 ### 8.2 ILanguageHandler — 언어 확장 구조
 
@@ -2135,10 +2248,177 @@ export class GitClientModule implements OnModuleInit {
 | Analysis API 부분 성공 (일부 파일만 분석) | IAnalysisApiClient | `success: true` + 실제 처리된 파일 수를 `totalFiles`에 반영 | 대시보드에서 totalFiles 확인 |
 | OAuth 토큰 만료 (401) | ScanProcessor → GitClient | Scan → FAILED, `errorMessage: '인증 토큰이 만료되었습니다. 다시 로그인하여 연동을 갱신해주세요.'` | 폴링 응답 + 프론트 토스트 |
 | DB 트랜잭션 실패 | ScanService.requestScan | 트랜잭션 롤백, HTTP 500 반환 | 프론트 글로벌 에러 핸들러 |
-| BullMQ Job과 DB 상태 불일치 | ScanProcessor catch 블록 | catch 블록에서 반드시 Scan 상태를 FAILED로 업데이트. 만약 이 업데이트마저 실패하면 NestJS Logger.error로 기록 (수동 복구 대상) | 관리자 로그 확인 |
+| BullMQ Job과 DB 상태 불일치 | ScanProcessor catch 블록 | catch 블록에서 반드시 Scan 상태를 FAILED로 업데이트. 만약 이 업데이트마저 실패하면 NestJS Logger.error로 기록하고, 별도 RUNNING 상태 타임아웃 스케줄러(StuckScanRecoveryTask)로 복구한다. | 관리자 로그 확인 |
 | Redis 연결 실패 | BullMQ Worker 시작 | Worker 재연결 시도 (BullMQ 기본 동작). Health Check에서 `redis: 'down'` 반환 | `/api/health` 모니터링 |
 | Git Provider API Rate Limit (403/429) | GitClient | 에러를 상위로 전파, Scan → FAILED, `errorMessage`에 Rate Limit 정보 포함 | 폴링 응답 |
 | 동시 스캔 중복 요청 경쟁 상태 | ScanService | Prisma 트랜잭션 격리로 방지. 트랜잭션 내부에서 중복 체크 + 생성을 원자적으로 수행 | 409 ConflictException |
+
+#### GlobalExceptionFilter — 전역 예외 처리 필터
+
+```typescript
+// common/filters/global-exception.filter.ts
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Response } from 'express';
+import type { ErrorResponse } from '@aegisai/shared';
+
+@Catch()
+export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name);
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = '서버 내부 오류가 발생했습니다.';
+    let errorCode = 'INTERNAL_ERROR';
+
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const res = exception.getResponse();
+      message = typeof res === 'string' ? res : (res as any).message ?? message;
+      errorCode = (res as any).errorCode ?? this.statusToErrorCode(status);
+    }
+
+    if (status >= 500) {
+      this.logger.error(
+        `[${errorCode}] ${message}`,
+        exception instanceof Error ? exception.stack : undefined,
+      );
+    }
+
+    const errorResponse: ErrorResponse = {
+      success: false,
+      data: null,
+      message,
+      errorCode,
+      timestamp: new Date().toISOString(),
+    };
+
+    response.status(status).json(errorResponse);
+  }
+
+  private statusToErrorCode(status: number): string {
+    const map: Record<number, string> = {
+      400: 'BAD_REQUEST',
+      401: 'UNAUTHORIZED',
+      403: 'FORBIDDEN',
+      404: 'NOT_FOUND',
+      409: 'CONFLICT',
+      429: 'TOO_MANY_REQUESTS',
+    };
+    return map[status] ?? 'INTERNAL_ERROR';
+  }
+}
+```
+
+#### ResponseTransformInterceptor — 응답 자동 래핑 인터셉터
+
+```typescript
+// common/interceptors/response-transform.interceptor.ts
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Observable, map } from 'rxjs';
+import { Reflector } from '@nestjs/core';
+import type { SuccessResponse } from '@aegisai/shared';
+
+@Injectable()
+export class ResponseTransformInterceptor<T> implements NestInterceptor<T, SuccessResponse<T>> {
+  constructor(private reflector: Reflector) {}
+
+  intercept(context: ExecutionContext, next: CallHandler): Observable<SuccessResponse<T>> {
+    return next.handle().pipe(
+      map((data) => {
+        // @HttpCode() 데코레이터로 설정한 상태 코드를 보존한다 (예: 202)
+        // NestJS는 @HttpCode()가 있으면 이미 response.statusCode를 설정한 상태이므로 별도 처리 불필요
+
+        // Health Check 등 래핑 제외가 필요한 경우 커스텀 데코레이터로 처리:
+        // @SkipTransform() → Reflector로 확인 후 raw data 반환
+        const skipTransform = this.reflector.get<boolean>('skipTransform', context.getHandler());
+        if (skipTransform) return data as any;
+
+        return {
+          success: true as const,
+          data,
+          message: null,
+          timestamp: new Date().toISOString(),
+        };
+      }),
+    );
+  }
+}
+```
+
+#### ResourceOwnerGuard — 리소스 소유권 검증 가드
+
+```typescript
+// common/guards/resource-owner.guard.ts
+import { Injectable, CanActivate, ExecutionContext, NotFoundException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { PrismaService } from '../../prisma/prisma.service';
+
+/**
+ * 리소스 소유권 검증 가드.
+ *
+ * @ResourceOwnerCheck('scan') → Scan → ConnectedRepo → User 경로 검증
+ * @ResourceOwnerCheck('vulnerability') → Vulnerability → Scan → ConnectedRepo → User 경로 검증
+ *
+ * URL 파라미터에서 리소스 ID를 추출하여 소유권을 확인한다.
+ * 파라미터 이름은 :scanId, :vulnId 등 리소스 타입에 따라 자동 매핑된다.
+ */
+@Injectable()
+export class ResourceOwnerGuard implements CanActivate {
+  constructor(
+    private reflector: Reflector,
+    private prisma: PrismaService,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const resourceType = this.reflector.get<string>('resourceType', context.getHandler());
+    if (!resourceType) return true;
+
+    const request = context.switchToHttp().getRequest();
+    const userId = request.user?.id;
+    if (!userId) return false; // SessionAuthGuard가 먼저 적용되어야 한다 (미인증 요청은 여기에 도달하지 않아야 함)
+
+    switch (resourceType) {
+      case 'scan':
+        return this.verifyScanOwner(request.params.scanId, userId);
+      case 'vulnerability':
+        return this.verifyVulnerabilityOwner(request.params.vulnId, userId);
+      default:
+        return true;
+    }
+  }
+
+  private async verifyScanOwner(scanId: string, userId: string): Promise<boolean> {
+    const scan = await this.prisma.scan.findUnique({
+      where: { id: scanId },
+      include: { connectedRepo: { select: { userId: true } } },
+    });
+    if (!scan) throw new NotFoundException('스캔을 찾을 수 없습니다.');
+    return scan.connectedRepo.userId === userId;
+  }
+
+  private async verifyVulnerabilityOwner(vulnId: string, userId: string): Promise<boolean> {
+    const vuln = await this.prisma.vulnerability.findUnique({
+      where: { id: vulnId },
+      include: { scan: { include: { connectedRepo: { select: { userId: true } } } } },
+    });
+    if (!vuln) throw new NotFoundException('취약점을 찾을 수 없습니다.');
+    return vuln.scan.connectedRepo.userId === userId;
+  }
+}
+
+// common/decorators/resource-owner-check.decorator.ts
+import { SetMetadata } from '@nestjs/common';
+export const ResourceOwnerCheck = (resourceType: string) => SetMetadata('resourceType', resourceType);
+
+// 사용 예시 (Controller):
+// @Get(':scanId')
+// @UseGuards(SessionAuthGuard, ResourceOwnerGuard)
+// @ResourceOwnerCheck('scan')
+// async getScan(@Param('scanId') scanId: string) { ... }
+```
 
 ---
 
@@ -2258,6 +2538,34 @@ headers: {
 }
 ```
 
+### 9.4-1 GitLab API 호출 헤더
+
+```typescript
+// GitLab API 헤더
+headers: {
+  'Authorization': `Bearer ${accessToken}`,
+  'Content-Type': 'application/json',
+}
+```
+
+### 9.4-2 GitHub / GitLab OAuth 프로필 객체 구조
+
+`AuthService.findOrCreateUser()`에서 provider별로 다른 profile 필드 구조를 처리한다.
+
+```typescript
+// GitHub profile 구조
+// profile.id            → providerUserId (number → string 변환)
+// profile.emails[0]?.value → email
+// profile.displayName ?? profile.username → name
+// profile.photos[0]?.value → avatarUrl
+
+// GitLab profile 구조
+// profile.id            → providerUserId (number → string 변환)
+// profile.emails[0]?.value → email
+// profile.displayName   → name
+// profile.avatarUrl     → avatarUrl
+```
+
 ### 9.5 GitHub Webhook — PR 자동 트리거 [Phase 2]
 
 > **`rawBody` 사전 설정 필요:** `main.ts`에서 아래 설정을 추가해야 한다.
@@ -2340,6 +2648,21 @@ async createSuggestedChange(params: {
   return { commentId: String(response.data.id), htmlUrl: response.data.html_url };
 }
 ```
+
+### 9.7 GitLab Webhook — MR 자동 트리거 [Phase 2]
+
+```typescript
+// Phase 2: GitLab Webhook — Merge Request 자동 트리거
+// Webhook URL: https://{APP_URL}/api/webhook/gitlab
+// Secret Token: GITLAB_WEBHOOK_SECRET (X-Gitlab-Token 헤더로 검증)
+// 이벤트: Merge Request Events (open, update)
+```
+
+> GitLab Webhook 설정:
+> - Project → Settings → Webhooks에서 URL 등록
+> - Secret Token: `GITLAB_WEBHOOK_SECRET` 환경변수 값 입력
+> - Trigger: Merge request events 체크
+> - GitLab은 `X-Gitlab-Token` 헤더로 secret을 평문 비교하므로 GitHub HMAC 방식과 다름에 주의한다.
 
 ---
 
@@ -2463,6 +2786,43 @@ export class ConfigModule {}
 ```
 
 > **참고:** `joi` 패키지를 `apps/api` 의존성에 추가해야 한다 (`pnpm --filter @aegisai/api add joi`). 앱 시작 시 환경변수가 스키마를 통과하지 못하면 NestJS가 즉시 오류를 발생시켜 잘못된 설정으로 서버가 기동되는 것을 방지한다.
+
+#### config.service.ts — 타입 안전 환경변수 접근
+
+```typescript
+// config/config.service.ts
+import { Injectable } from '@nestjs/common';
+import { ConfigService as NestConfigService } from '@nestjs/config';
+
+@Injectable()
+export class ConfigService {
+  constructor(private readonly nestConfig: NestConfigService) {}
+
+  /**
+   * 환경변수 값을 타입 안전하게 조회한다.
+   * Joi 스키마에서 required로 정의된 변수는 undefined가 아님이 보장된다.
+   */
+  get(key: string): string {
+    const value = this.nestConfig.get<string>(key);
+    if (value === undefined) {
+      throw new Error(`Missing environment variable: ${key}`);
+    }
+    return value;
+  }
+
+  getOptional(key: string): string | undefined {
+    return this.nestConfig.get<string>(key);
+  }
+
+  isProduction(): boolean {
+    return this.get('NODE_ENV') === 'production';
+  }
+
+  isDevelopment(): boolean {
+    return this.get('NODE_ENV') === 'development';
+  }
+}
+```
 
 ### 10.4 main.ts 핵심 설정
 
@@ -2798,9 +3158,116 @@ const { data, isLoading, error } = useQuery({
 });
 ```
 
----
+#### 핵심 프론트엔드 패턴 구현 예시
 
-## 13. 테스트 전략
+```tsx
+// apps/web/src/router.tsx
+import { createBrowserRouter } from 'react-router-dom';
+import { AppShell } from './components/layout/AppShell';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ReposPage } from './pages/ReposPage';
+import { ScanPage } from './pages/ScanPage';
+import { VulnerabilitiesPage } from './pages/VulnerabilitiesPage';
+import { VulnerabilityDetailPage } from './pages/VulnerabilityDetailPage';
+
+export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
+  {
+    path: '/',
+    element: (
+      <ProtectedRoute>
+        <AppShell />
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <DashboardPage /> },
+      { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'repos', element: <ReposPage /> },
+      { path: 'scan', element: <ScanPage /> },
+      { path: 'scans/:scanId/vulnerabilities', element: <VulnerabilitiesPage /> },
+      { path: 'vulnerabilities/:vulnId', element: <VulnerabilityDetailPage /> },
+    ],
+  },
+]);
+```
+
+```tsx
+// apps/web/src/components/layout/ProtectedRoute.tsx
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+
+  return <>{children}</>;
+}
+```
+
+```typescript
+// apps/web/src/api/client.ts
+import axios from 'axios';
+
+export const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api',
+  withCredentials: true, // 세션 쿠키 전달 필수
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest', // CSRF 보호
+  },
+});
+
+// 401 인터셉터 — 인증 만료 시 로그인 페이지로 리다이렉트
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      window.location.href = '/login';
+      return Promise.reject(error);
+    }
+    return Promise.reject(error);
+  },
+);
+```
+
+```typescript
+// apps/web/src/hooks/useAuth.ts
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { AuthUser } from '@aegisai/shared';
+import { apiClient } from '../api/client';
+
+export function useAuth() {
+  const queryClient = useQueryClient();
+
+  const { data: user, isLoading } = useQuery<AuthUser | null>({
+    queryKey: ['auth', 'me'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get('/auth/me');
+        return res.data.data;
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5분
+    retry: false,
+  });
+
+  const logout = async () => {
+    await apiClient.post('/auth/logout');
+    queryClient.setQueryData(['auth', 'me'], null);
+    window.location.href = '/login';
+  };
+
+  return { user: user ?? null, isLoading, logout };
+}
+```
+
+
 
 | 레이어 | 도구 | 핵심 테스트 |
 |--------|------|-------------|
