@@ -39,6 +39,7 @@
 11. [개발 태스크 (Phase별)](#11-개발-태스크-phase별)
 12. [코딩 컨벤션](#12-코딩-컨벤션)
 13. [테스트 전략](#13-테스트-전략)
+   - 13-1. [운영 및 모니터링 전략](#13-1-운영-및-모니터링-전략-phase-2-로드맵)
 14. [부록](#14-부록)
 
 ---
@@ -1512,7 +1513,21 @@ export interface AnalysisRequest {
   language: string;         // 현재 허용값은 "java"뿐이지만 인터페이스는 확장 가능
   accessToken: string;      // private 레포용 Git 토큰 (복호화된 값 전달)
 }
+```
 
+> **⚠️ `accessToken` 전달 구간 보안 전제조건:**
+>
+> `AnalysisRequest.accessToken`은 AES-256-GCM 복호화된 OAuth 토큰 평문이 `ScanProcessor` → `IAnalysisApiClient` 구현체로 전달되는 구간이다. 구현체별 보안 전제조건은 다음과 같다:
+>
+> | 구현체 | 전달 구간 | 보안 전제조건 |
+> |--------|----------|-------------|
+> | `MockAnalysisApiClient` | 인메모리 (네트워크 미사용) | ✅ 안전 — 프로세스 내부 호출 |
+> | `InternalAnalysisApiClient` → `apps/ai` | Docker 내부 네트워크 (localhost / docker bridge) | ⚠️ 로컬 개발: 안전. **운영 배포 시 반드시 mTLS 또는 서비스 메시(Istio/Linkerd) 적용 필수.** `X-Internal-Secret` 헤더만으로는 네트워크 스니핑 방어 불가 |
+> | 향후 외부 Analysis API 연동 | 외부 네트워크 | 🚨 **HTTPS 필수.** HTTP 사용 시 토큰 탈취 위험. `AI_SERVER_URL` 환경변수가 `https://`로 시작하는지 `ConfigModule` Joi 스키마에서 검증 권장 |
+>
+> **MVP 최소 조치:** `InternalAnalysisApiClient`에서 `AI_SERVER_URL`이 `http://localhost` 또는 `http://ai-server` (Docker 서비스명)가 아닌 경우 경고 로그를 출력한다. 운영 환경(`NODE_ENV=production`)에서 `http://` URL 사용 시 시작 시점에 `Logger.warn`을 발생시킨다.
+
+```typescript
 /** 각 LLM 모델 하나의 분석 결과 */
 export interface ModelResult {
   model: string;            // e.g. "claude-3-5-sonnet", "gemini-2.0-flash"
@@ -3416,6 +3431,54 @@ E2E-04: 보안/응답 예외 규칙 확인
 - 테스트 전: `scan-jobs` 큐를 비운다 (`queue.obliterate({ force: true })`).
 - Worker 완료 대기: `QueueEvents`의 `completed` 이벤트를 listen하여 비동기 처리 완료를 확인한다.
 - 테스트 후: 생성된 데이터를 정리한다.
+
+---
+
+### 13-1. 운영 및 모니터링 전략 (Phase 2 로드맵)
+
+> MVP(Phase 1)에서는 `GET /api/health` 엔드포인트와 NestJS Logger 기반 로깅만 제공한다. 아래 항목은 Phase 2에서 순차적으로 도입한다.
+
+#### 로깅 및 관찰성 (Observability)
+
+| 항목 | Phase 1 현황 | Phase 2 목표 |
+|------|-------------|-------------|
+| 로깅 | NestJS built-in Logger (stdout) | 구조화 JSON 로깅 (pino / winston) + 로그 수집 파이프라인 (ELK 또는 Loki) |
+| 메트릭 | 없음 | Prometheus 메트릭 엔드포인트 (`/api/metrics`) — API 응답 시간, 스캔 처리량, 큐 대기 수 |
+| 트레이싱 | 없음 | OpenTelemetry 기반 분산 트레이싱 (Jaeger/Tempo) — 스캔 요청 → BullMQ → Analysis API 전체 흐름 추적 |
+| 알림 | 없음 | Health Check 실패, 스캔 실패율 임계치 초과, Redis/DB 연결 장애 시 알림 (Slack/이메일) |
+
+#### 배포 및 인프라
+
+| 항목 | Phase 2 목표 |
+|------|-------------|
+| 컨테이너화 | apps/api, apps/web, apps/ai 각각 프로덕션 Dockerfile 작성 (멀티 스테이지 빌드) |
+| CI/CD | GitHub Actions — lint, test, build, Docker 이미지 빌드/푸시, 스테이징 자동 배포 |
+| 오케스트레이션 | Docker Compose(스테이징) → Kubernetes(프로덕션) 마이그레이션 경로 정의 |
+| 시크릿 관리 | `.env` 파일 → AWS Secrets Manager / HashiCorp Vault 전환 |
+| DB 백업 | PostgreSQL 일일 자동 백업 + Point-in-Time Recovery 설정 |
+
+#### 성능 모니터링 기준
+
+| 지표 | 임계치 | 알림 조건 |
+|------|--------|----------|
+| API 응답 시간 (p95) | 500ms 이내 | 3분 연속 초과 시 경고 |
+| 스캔 실패율 | 10% 미만 | 1시간 내 실패율 10% 초과 시 경고 |
+| BullMQ 큐 대기 수 | 50개 미만 | 대기 Job 50개 초과 + 5분 지속 시 경고 |
+| DB 연결 풀 사용률 | 80% 미만 | 80% 초과 시 경고 |
+| Redis 메모리 사용량 | maxmemory의 70% 미만 | 70% 초과 시 경고 |
+
+#### 데이터 보존 정책
+
+| 데이터 | 보존 기간 | 정리 전략 |
+|--------|----------|----------|
+| Scan 레코드 | 1년 | `completedAt` 기준 1년 경과 시 soft delete 또는 아카이브 테이블 이동 |
+| Vulnerability 레코드 | Scan과 동일 | Scan 삭제/아카이브 시 cascade |
+| OAuthToken | 사용자 계정 존재 시 유지 | 사용자 삭제 시 cascade (Prisma onDelete 설정 완료) |
+| BullMQ 실패 Job | 30일 | `removeOnFail: { age: 2592000 }` 설정 (Phase 2) — 2592000초 = 30일 |
+| Redis 세션 | 24시간 (maxAge) | express-session TTL 자동 만료 |
+| 로그 데이터 | 90일 | 로그 수집 시스템의 보존 정책으로 관리 |
+
+> **Phase 1 즉시 적용 가능 사항:** `docker-compose.yml`의 PostgreSQL 서비스에 `--log-statement=all` 옵션을 추가하여 개발 중 slow query를 추적한다. 운영 전환 시 `--log-min-duration-statement=1000` (1초 이상 쿼리만 로깅)으로 변경한다.
 
 ---
 
