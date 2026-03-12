@@ -114,6 +114,7 @@ pnpm workspace 기반 monorepo
 | API Docs | @nestjs/swagger | - | `/api-docs` 자동 생성 |
 | Queue | BullMQ | 5.x | 비동기 스캔 Job 처리 (Redis 기반) |
 | Rate Limiting | @nestjs/throttler | 5.x | API 요청 제한 |
+| Scheduler | @nestjs/schedule | 4.x | StuckScanRecoveryTask Cron 스케줄러 |
 | Logging | NestJS built-in Logger | - | 개발: debug, 운영: info |
 | Testing | Jest + Supertest + @testcontainers/postgresql | - | 단위/통합 테스트 |
 
@@ -388,6 +389,7 @@ apps/api/
     │       └── java.language-handler.ts
     │
     ├── health/
+    │   ├── health.module.ts
     │   └── health.controller.ts
     │
     └── common/
@@ -396,11 +398,13 @@ apps/api/
         │   └── pagination.dto.ts
         ├── decorators/
         │   ├── raw-body.decorator.ts
-        │   └── resource-owner-check.decorator.ts
+        │   ├── resource-owner-check.decorator.ts
+        │   └── skip-transform.decorator.ts
         ├── filters/
         │   └── global-exception.filter.ts
         ├── guards/
-        │   └── resource-owner.guard.ts
+        │   ├── resource-owner.guard.ts
+        │   └── session-aware-throttler.guard.ts
         └── interceptors/
             └── response-transform.interceptor.ts
 ```
@@ -410,9 +414,8 @@ apps/api/
 ```typescript
 // apps/api/src/app.module.ts
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
@@ -423,10 +426,11 @@ import { ScanModule } from './scan/scan.module';
 import { VulnerabilityModule } from './vulnerability/vulnerability.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
-import { WebhookModule } from './webhook/webhook.module';
 import { LanguageModule } from './language/language.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
+import { SessionAwareThrottlerGuard } from './common/guards/session-aware-throttler.guard';
 
 @Module({
   imports: [
@@ -464,9 +468,12 @@ import { ResponseTransformInterceptor } from './common/interceptors/response-tra
 
     // 6. 유틸리티 모듈
     HealthModule,
+    ScheduleModule.forRoot(),  // StuckScanRecoveryTask Cron 스케줄러
 
     // 7. Phase 2 예약
-    WebhookModule,
+    // WebhookModule은 Phase 2에서만 추가한다.
+    // import { WebhookModule } from './webhook/webhook.module';
+    // WebhookModule,
   ],
   providers: [
     // 글로벌 예외 필터
@@ -474,7 +481,7 @@ import { ResponseTransformInterceptor } from './common/interceptors/response-tra
     // 글로벌 응답 래핑 인터셉터
     { provide: APP_INTERCEPTOR, useClass: ResponseTransformInterceptor },
     // 글로벌 Rate Limiting 가드
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: SessionAwareThrottlerGuard },
   ],
 })
 export class AppModule {}
@@ -617,6 +624,8 @@ apps/ai/
   "include": ["src"]
 }
 ```
+
+> **⚠️ moduleResolution 호환성 주의:** `"moduleResolution": "bundler"`는 Vite(apps/web)와는 호환되나, NestJS(apps/api)는 일반적으로 `"node16"` 또는 `"node"` 모드를 사용한다. apps/api에서 `@aegisai/shared`를 tsconfig paths로 직접 소스 참조할 경우 문제가 없지만, 빌드된 `.d.ts`를 참조하는 경우 module resolution 불일치가 발생할 수 있다. 이상이 생기면 shared의 `moduleResolution`을 `"node16"`으로 변경하고 apps/web의 vite.config.ts에서 별도 alias를 설정한다.
 
 #### apps/api/package.json 및 apps/web/package.json — 공유 타입 참조
 
@@ -802,7 +811,7 @@ model Vulnerability {
 - `provider` 필드는 `String` 대신 `RepoProvider` enum을 사용하여 DB 레벨에서 타입 안전성을 보장한다.
 - `providerRepoId`는 GitHub(숫자)와 GitLab(숫자/문자 혼용)의 ID 타입 차이를 흡수하기 위해 문자열로 저장한다.
 - `Scan.language`는 확장성을 위해 문자열로 유지하되, 애플리케이션 레벨에서는 `LanguageHandlerRegistry`에 등록된 언어만 허용한다.
-- **동일 `ConnectedRepo`에 대해 동시에 하나의 활성 스캔만 허용하는 정책은 서비스 레벨 규칙이다.** DB 레벨 유니크 제약이 아니다.
+- **동일 `ConnectedRepo`에 대해 동시에 하나의 활성 스캔만 허용하는 정책은 서비스 + DB 락 기반 규칙이다.** DB 스키마에 단순 유니크 제약을 두지는 않지만, `ScanService.requestScan()`에서 PostgreSQL advisory lock(예: `pg_advisory_xact_lock`) 또는 동등한 직렬화 메커니즘을 사용해 경쟁 상태를 차단해야 한다. 단순 `findFirst()` 후 `create()`만으로는 보장되지 않는다.
 - `userFeedback`는 사용자 판단 데이터를 보존하기 위한 필드이며, `status`는 최종 취약점 처리 상태를 나타낸다. MVP에서는 `PATCH /feedback` 호출 시 `feedback=ACCEPTED`이면 `status=ACCEPTED`, `feedback=REJECTED`이면 `status=REJECTED`로 동기화한다.
 - 필드명 `referenceLinks`는 API 응답 타입과 일치시킨다 (`references`로 혼용하지 않는다).
 - **API 레이어에서는 provider 값을 소문자('github', 'gitlab')로 주고받고, DB 저장 시 Prisma enum 대문자(GITHUB, GITLAB)로 변환한다. 변환은 Service 레이어에서 처리한다.**
@@ -908,7 +917,9 @@ erDiagram
   - `cookie.sameSite`: `'lax'`
   - `cookie.httpOnly`: `true`
 - 페이지네이션 기본값: `page=1`, `size=20`, **최대 size=100**
-- 모든 응답: `ApiResponse<T>` 래퍼 사용
+- 모든 JSON 응답은 기본적으로 `ApiResponse<T>` 래퍼 사용
+- **아래 API 예시의 JSON 본문은 모두 `data` 내부 payload만 표기한다.** 실제 wire response는 `ResponseTransformInterceptor`에 의해 `{ success, data, message, timestamp }` 형태로 감싸진다.
+- 예외: `GET /api/health`는 로드밸런서/오케스트레이터 호환을 위해 `@SkipTransform()`을 적용한 raw JSON 응답을 사용한다.
 
 **CSRF 보호 전략:**
 
@@ -950,7 +961,7 @@ export interface PageResponse<T> {
 #### `GET /api/auth/me`
 
 ```typescript
-// 200
+// 200 - ApiResponse<AuthUser>. 아래는 data payload 예시
 {
   id: string;
   email: string | null;
@@ -964,7 +975,7 @@ export interface PageResponse<T> {
 #### `POST /api/auth/logout`
 
 ```typescript
-null  // 200 OK — 세션 삭제
+null  // 200 OK — ApiResponse<null>의 data payload
 ```
 
 ```typescript
@@ -1027,7 +1038,13 @@ GET /api/auth/gitlab/callback → GitLab 콜백 (Passport 처리)
 
 - 응답 TTL 5분 캐시 (`node-cache`)
 - 외부 Git provider API pagination을 내부 API pagination과 매핑한다.
-- **캐시 키 전략:** `repos-available:${userId}:${provider}:${page}:${size}` — 사용자별 + provider별 + 페이지별로 캐시를 분리한다. 새 레포 연동(`POST /api/repos`) 시 해당 사용자의 available 캐시를 전부 무효화한다.
+- **캐시 키 전략:** `repos-available:${userId}:${provider}:${page}:${size}` — 사용자별 + provider별 + 페이지별로 캐시를 분리한다. 새 레포 연동(`POST /api/repos`) 또는 레포 해제(`DELETE /api/repos/:repoId`) 시 해당 사용자의 available 캐시를 전부 무효화한다.
+- **캐시 무효화 구현:** `node-cache`는 prefix 기반 일괄 삭제 API가 없으므로 `cache.keys()`로 전체 키를 조회한 후 prefix가 `repos-available:${userId}:`인 키를 필터링하여 `cache.del(keys)`로 삭제한다:
+  ```typescript
+  const prefix = `repos-available:${userId}:`;
+  const keysToDelete = this.cache.keys().filter(k => k.startsWith(prefix));
+  this.cache.del(keysToDelete);
+  ```
 
 ```typescript
 PageResponse<{
@@ -1048,7 +1065,7 @@ PageResponse<{
   provider: 'github' | 'gitlab';
   providerRepoId: string;
 }
-// Response 201
+// Response 201 - ApiResponse<ConnectedRepoSummary>. 아래는 data payload 예시
 { id: string; fullName: string; connectedAt: string; }
 ```
 
@@ -1065,6 +1082,13 @@ PageResponse<{
 
 ```typescript
 null  // 204 No Content
+// ⚠️ @HttpCode(204)와 @SkipTransform()을 함께 적용하여 ResponseTransformInterceptor 래핑을 제외한다.
+// Controller 예시:
+// @Delete(':repoId')
+// @HttpCode(204)
+// @SkipTransform()
+// @UseGuards(SessionAuthGuard)
+// async deleteRepo(@Param('repoId') repoId: string, @CurrentUser() user: AuthUser) { ... }
 ```
 
 ```typescript
@@ -1130,7 +1154,7 @@ export interface ConnectRepoResponse {
 - 폴링 간격: **3초**
 - 최대 폴링 시간: **10분** (3초 × 200회 = 600초, 이후 자동 중단 + "스캔이 예상보다 오래 걸리고 있습니다" 메시지 표시)
 - TanStack Query `refetchInterval` 사용, `DONE` 또는 `FAILED` 상태 수신 시 `refetchInterval: false`로 전환하여 폴링 중단
-- BullMQ Job 타임아웃(5분)보다 긴 10분으로 설정하여, Job 실패 후 상태가 FAILED로 업데이트되는 시간 여유를 둔다.
+- 앱 레벨 스캔 타임아웃(5분)과 stuck scan 복구 지연을 고려해 10분까지 폴링한다. BullMQ 자체 옵션만으로는 전체 실행 시간 제한이 보장되지 않으므로, 실제 타임아웃 판정은 `ScanProcessor`와 `StuckScanRecoveryTask`가 담당한다.
 
 ```typescript
 {
@@ -1192,6 +1216,17 @@ export interface ScanRequestResponse {
 ```
 
 #### `GET /api/repos/:repoId/scans?page=1&size=10`
+
+> 인증 필수. 요청자가 해당 ConnectedRepo의 소유자인지 검증한다.
+>
+> 정렬: `createdAt:desc` 고정 (최신 스캔 우선)
+>
+> 응답 코드:
+> ```
+> // 200 — ApiResponse<PageResponse<ScanSummary>>
+> // 401 — 미인증
+> // 404 — 해당 레포가 없거나 접근 권한 없음
+> ```
 
 ```typescript
 PageResponse<ScanSummary>
@@ -1395,7 +1430,6 @@ export * from './types/scan';
 export * from './types/vulnerability';
 export * from './types/dashboard';
 ```
-```
 
 **대시보드 집계 쿼리 캐싱 전략:**
 - **Phase 1에서도 다음 캐싱 최적화를 적용한다:**
@@ -1407,6 +1441,8 @@ export * from './types/dashboard';
 ### 6.7 Health Check
 
 #### `GET /api/health` — 인증 불필요
+
+> `@SkipTransform()` 적용. 운영 헬스체커가 고정된 raw JSON 형태를 기대하므로 `ApiResponse<T>` 래퍼를 사용하지 않는다.
 
 ```typescript
 {
@@ -1433,6 +1469,8 @@ export * from './types/dashboard';
 - 인증 사용자: **세션 ID 기반** (connect.sid 쿠키)
 - 미인증 요청: **IP 기반** (`@nestjs/throttler`의 기본 동작 — `req.ip` 사용)
 - `X-Forwarded-For` 헤더 신뢰 설정: 리버스 프록시 뒤에서 운영 시 `app.set('trust proxy', 1)` 설정을 `main.ts`에 추가해야 한다. 미설정 시 모든 요청이 프록시 IP로 식별되어 Rate Limiting이 의도대로 동작하지 않는다.
+- 구현 시 `ThrottlerGuard`를 그대로 쓰지 않고, 인증 여부에 따라 `sessionID ?? req.ip`를 반환하는 커스텀 가드를 사용한다.
+- `POST /api/scans`에는 `@Throttle({ scan: { limit: 10, ttl: 60000 } })`를 명시해 기본 한도와 별도 적용한다.
 
 ### 6.9 Phase 2 예약 API
 
@@ -1463,7 +1501,7 @@ export interface IAnalysisApiClient {
    * Phase 1: MockAnalysisApiClient
    * 선택 통합: InternalAnalysisApiClient → apps/ai
    */
-  analyze(request: AnalysisRequest): Promise<AnalysisResult>;
+  analyze(request: AnalysisRequest, options?: { signal?: AbortSignal }): Promise<AnalysisResult>;
 }
 
 export interface AnalysisRequest {
@@ -1524,7 +1562,7 @@ export interface AnalysisResult {
 @Injectable()
 export class MockAnalysisApiClient implements IAnalysisApiClient {
 
-  async analyze(request: AnalysisRequest): Promise<AnalysisResult> {
+  async analyze(request: AnalysisRequest, _options?: { signal?: AbortSignal }): Promise<AnalysisResult> {
     // 실제 API 지연 시뮬레이션 (3~8초)
     await new Promise(resolve =>
       setTimeout(resolve, 3000 + Math.random() * 5000)
@@ -1624,8 +1662,9 @@ export class InternalAnalysisApiClient implements IAnalysisApiClient {
     private readonly config: ConfigService,
   ) {}
 
-  async analyze(request: AnalysisRequest): Promise<AnalysisResult> {
+  async analyze(request: AnalysisRequest, options?: { signal?: AbortSignal }): Promise<AnalysisResult> {
     const aiServerUrl = this.config.get('AI_SERVER_URL');  // http://localhost:8000
+    const { signal } = options ?? {};
 
     try {
       const response = await firstValueFrom(
@@ -1633,7 +1672,8 @@ export class InternalAnalysisApiClient implements IAnalysisApiClient {
           `${aiServerUrl}/analyze`,
           request,
           {
-            timeout: 270_000,   // 4분 30초 (BullMQ Job 타임아웃 5분보다 30초 짧게 설정)
+            timeout: 270_000,   // 4분 30초 (앱 레벨 스캔 타임아웃 5분보다 30초 짧게 설정)
+            signal,
             headers: {
               'Content-Type': 'application/json',
               'X-Internal-Secret': this.config.get('INTERNAL_API_SECRET'),
@@ -1775,11 +1815,11 @@ class ConsensusEngine:
 
 > **BullMQ 설정:**
 > - 동시성: `concurrency: 3`
-> - Job 타임아웃: **5분** (`timeout: 300000`) — Job 추가 시 개별 Job의 최대 처리 시간
+> - 앱 레벨 스캔 타임아웃: **5분** — `ScanProcessor` 내부에서 `AbortController`/`Promise.race` 등으로 외부 호출 시간을 제한하고, 타임아웃 시 Scan을 `FAILED`로 전환한다.
 > - 재시도: 없음 (`attempts: 1`) — 실패 시 사용자가 수동으로 재스캔
-> - Worker 레벨 설정에서 `lockDuration: 600000` (10분, timeout의 2배)을 권장한다.
+> - Worker 레벨 설정에서 `lockDuration: 600000` (10분)을 권장한다.
 >
-> **동시 스캔 중복 방지:** 서비스 레벨 규칙이다. 경쟁 상태를 줄이기 위해 운영 환경에서는 advisory lock 또는 BullMQ deduplication 도입을 권장한다.
+> **동시 스캔 중복 방지:** MVP 필수 규칙이다. `ConnectedRepo` 단위 PostgreSQL advisory lock(또는 동등한 분산 락)을 잡은 뒤 활성 스캔 존재 여부를 확인하고 생성해야 한다. BullMQ `jobId`만으로는 DB 레코드 중복 생성을 막지 못한다.
 
 ```typescript
 // scan/scan.service.ts
@@ -1804,8 +1844,10 @@ export class ScanService {
     // 지원 여부 검증 — 미지원 언어이면 Error throw. Phase 1에서는 'java'만 등록되어 있으므로 항상 통과
     this.languageHandlerRegistry.get(language);
 
-    // 경쟁 상태 방지: 중복 체크 + 생성을 트랜잭션으로 처리
+    // 경쟁 상태 방지: repoId 단위 advisory lock을 먼저 획득한 뒤 중복 체크 + 생성을 처리
     const scan = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${repoId}))`;
+
       const active = await tx.scan.findFirst({
         where: { connectedRepoId: repoId, status: { in: ['PENDING', 'RUNNING'] } }
       });
@@ -1819,7 +1861,6 @@ export class ScanService {
     await this.scanQueue.add('execute-scan', { scanId: scan.id }, {
       jobId: scan.id,
       attempts: 1,
-      timeout: 300000,
     });
 
     return {
@@ -1843,26 +1884,32 @@ export class ScanService {
     if (repos.length === 0) return;
 
     for (const repo of repos) {
-      const active = await this.prisma.scan.findFirst({
-        where: { connectedRepoId: repo.id, status: { in: ['PENDING', 'RUNNING'] } }
-      });
-      if (active) continue;
+      const scan = await this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${repo.id}))`;
 
-      const scan = await this.prisma.scan.create({
-        data: { connectedRepoId: repo.id, branch: params.branch, status: 'PENDING' }
+        const active = await tx.scan.findFirst({
+          where: { connectedRepoId: repo.id, status: { in: ['PENDING', 'RUNNING'] } }
+        });
+        if (active) return null;
+
+        return tx.scan.create({
+          data: { connectedRepoId: repo.id, branch: params.branch, status: 'PENDING' }
+        });
       });
+      if (!scan) continue;
+
       await this.scanQueue.add('execute-scan', { scanId: scan.id }, {
         jobId: scan.id,
         attempts: 1,
-        timeout: 300000,
       });
     }
   }
 }
 
 // scan/scan.processor.ts
-@Processor('scan-jobs')
+@Processor('scan-jobs', { concurrency: 3, lockDuration: 600_000 })  // lockDuration: 10분 (ms)
 export class ScanProcessor extends WorkerHost {
+  private readonly logger = new Logger(ScanProcessor.name);
 
   constructor(
     private prisma: PrismaService,
@@ -1905,14 +1952,33 @@ export class ScanProcessor extends WorkerHost {
         decryptedAccessToken,
       );
 
-      const result = await this.analysisClient.analyze({
-        scanId,
-        cloneUrl: scan.connectedRepo.cloneUrl,
-        branch: scan.branch,
-        commitSha,
-        language: scan.language,
-        accessToken: decryptedAccessToken,
-      });
+      // 앱 레벨 스캔 타임아웃: 5분
+      // 중요: Promise.race만으로는 HTTP 요청이 실제 중단되지 않을 수 있으므로,
+      // AbortController.signal을 analysisClient → Axios/HTTP 레이어까지 전달해야 한다.
+      const SCAN_TIMEOUT_MS = 5 * 60 * 1000;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
+      let result: AnalysisResult;
+      try {
+        result = await Promise.race([
+          this.analysisClient.analyze(
+            {
+              scanId,
+              cloneUrl: scan.connectedRepo.cloneUrl,
+              branch: scan.branch,
+              commitSha,
+              language: scan.language,
+              accessToken: decryptedAccessToken,
+            },
+            { signal: controller.signal },
+          ),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('분석 시간 초과 (5분)')), SCAN_TIMEOUT_MS)
+          ),
+        ]);
+      } finally {
+        clearTimeout(timeout);  // 성공/실패 모두 timeout 정리 (리소스 누수 방지)
+      }
 
       if (!result.success) {
         throw new Error(result.errorMessage ?? 'Analysis API 호출에 실패했습니다.');
@@ -2058,7 +2124,10 @@ import { LanguageModule } from '../language/language.module';
 
 @Module({
   imports: [
-    BullModule.registerQueue({ name: 'scan-jobs' }),
+    BullModule.registerQueue({
+      name: 'scan-jobs',
+      defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: false },
+    }),
     PrismaModule,
     AnalysisApiModule,
     GitClientModule,
@@ -2104,7 +2173,7 @@ export class TokenCryptoUtil {
    * 반환 포맷: `${iv_hex}:${authTag_hex}:${encrypted_hex}`
    */
   encrypt(plainText: string): string {
-    const iv = randomBytes(16); // 128-bit IV
+    const iv = randomBytes(12); // 96-bit IV (NIST SP 800-38D AES-GCM 표준 권장)
     const cipher = createCipheriv(this.algorithm, this.key, iv);
     let encrypted = cipher.update(plainText, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -2448,7 +2517,7 @@ GITLAB_CLIENT_SECRET=xxx
 
 ### 9.3 Passport Strategy
 
-> **OAuth `state` 파라미터 검증:** `passport-github2`와 `passport-gitlab2`는 내부적으로 OAuth2 `state` 파라미터를 자동 생성·검증하여 CSRF 공격을 방지한다. `state` 파라미터는 세션에 저장되므로, 세션 설정이 OAuth 인증보다 먼저 초기화되어야 한다 (main.ts의 middleware 순서 참조).
+> **OAuth `state` 파라미터 검증:** `passport-github2`와 `passport-gitlab2`에서 `state: true`를 명시적으로 활성화해야 OAuth2 `state`가 생성·검증된다. `state` 값은 세션에 저장되므로, 세션 설정이 OAuth 인증보다 먼저 초기화되어야 한다 (main.ts의 middleware 순서 참조).
 
 ```typescript
 // auth/strategies/github.strategy.ts
@@ -2459,6 +2528,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
       clientID: config.get('GITHUB_CLIENT_ID'),
       clientSecret: config.get('GITHUB_CLIENT_SECRET'),
       callbackURL: `${config.get('APP_URL')}/api/auth/github/callback`,
+      state: true,
       scope: ['read:user', 'user:email', 'repo'],
     });
   }
@@ -2477,6 +2547,7 @@ export class GitlabStrategy extends PassportStrategy(Strategy, 'gitlab') {
       clientID: config.get('GITLAB_CLIENT_ID'),
       clientSecret: config.get('GITLAB_CLIENT_SECRET'),
       callbackURL: `${config.get('APP_URL')}/api/auth/gitlab/callback`,
+      state: true,
       scope: ['read_user', 'read_api'],
     });
   }
@@ -2538,7 +2609,7 @@ headers: {
 }
 ```
 
-### 9.4-1 GitLab API 호출 헤더
+### 9.5 GitLab API 호출 헤더
 
 ```typescript
 // GitLab API 헤더
@@ -2548,7 +2619,7 @@ headers: {
 }
 ```
 
-### 9.4-2 GitHub / GitLab OAuth 프로필 객체 구조
+### 9.6 GitHub / GitLab OAuth 프로필 객체 구조
 
 `AuthService.findOrCreateUser()`에서 provider별로 다른 profile 필드 구조를 처리한다.
 
@@ -2566,7 +2637,7 @@ headers: {
 // profile.avatarUrl     → avatarUrl
 ```
 
-### 9.5 GitHub Webhook — PR 자동 트리거 [Phase 2]
+### 9.7 GitHub Webhook — PR 자동 트리거 [Phase 2]
 
 > **`rawBody` 사전 설정 필요:** `main.ts`에서 아래 설정을 추가해야 한다.
 >
@@ -2612,7 +2683,7 @@ async handleGithubWebhook(
 
 > **설정:** Webhook URL: `https://{APP_URL}/api/webhook/github` (global prefix `/api` 포함 필수), Content type: `application/json`, Secret: `GITHUB_APP_WEBHOOK_SECRET`
 
-### 9.6 GitHub Suggested Changes API [Phase 2]
+### 9.8 GitHub Suggested Changes API [Phase 2]
 
 > **주의:** 단일 라인 코멘트에 `start_line`을 포함하면 `422 Unprocessable Entity` 오류가 발생한다.
 
@@ -2649,7 +2720,7 @@ async createSuggestedChange(params: {
 }
 ```
 
-### 9.7 GitLab Webhook — MR 자동 트리거 [Phase 2]
+### 9.9 GitLab Webhook — MR 자동 트리거 [Phase 2]
 
 ```typescript
 // Phase 2: GitLab Webhook — Merge Request 자동 트리거
@@ -2770,12 +2841,13 @@ import { ConfigService } from './config.service';
         GITLAB_CLIENT_SECRET: Joi.string().required(),
         APP_URL: Joi.string().uri().required(),
         FRONTEND_URL: Joi.string().uri().required(),
-        TOKEN_ENCRYPTION_KEY: Joi.string().min(32).required(),
+        TOKEN_ENCRYPTION_KEY: Joi.string().length(64).required(),  // hex 인코딩 32바이트 = 64자
         NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
         AI_SERVER_URL: Joi.string().uri().default('http://localhost:8000'),
         USE_INTERNAL_AI: Joi.string().valid('true', 'false').default('false'),
         INTERNAL_API_SECRET: Joi.string().optional().allow(''),
         GITHUB_APP_WEBHOOK_SECRET: Joi.string().optional().allow(''),
+        GITLAB_WEBHOOK_SECRET: Joi.string().optional().allow(''),
       }),
     }),
   ],
@@ -2831,8 +2903,8 @@ export class ConfigService {
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from './config/config.service';  // 커스텀 ConfigService (타입 안전 get() 메서드 제공)
 import * as session from 'express-session';
 import * as passport from 'passport';
 import RedisStore from 'connect-redis';
@@ -2845,6 +2917,9 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
+
+  // 리버스 프록시 뒤 배포 시 req.ip / secure cookie 판정 보정
+  app.set('trust proxy', 1);
 
   // CORS 설정 — 프론트엔드(5173)와 API(3000) 포트가 다르므로 필수
   app.enableCors({
@@ -2895,6 +2970,8 @@ async function bootstrap() {
 }
 bootstrap();
 ```
+
+> Rate limiting은 `APP_GUARD`에 기본 `ThrottlerGuard`를 그대로 등록하지 말고, 인증 사용자는 `req.sessionID`, 미인증 사용자는 `req.ip`를 tracker로 사용하는 커스텀 가드(`SessionAwareThrottlerGuard`)로 교체한다. `POST /api/scans`에는 별도 named throttler를 명시적으로 연결한다.
 
 ### 10.5 실행 순서
 
@@ -2988,8 +3065,9 @@ pnpm dev
 
 [ ] TASK-08: BullMQ 스캔 큐 + ScanProcessor 구현
     - @nestjs/bullmq, bullmq 설치 및 BullModule 설정 (Redis 연결)
-    - Job 설정: timeout 5분, attempts 1, concurrency 3
-    - ScanService.requestScan() — PENDING 저장 + Job 등록 (PENDING/RUNNING 중복 체크)
+    - Job 설정: attempts 1, concurrency 3, lockDuration 10분
+    - 앱 레벨 스캔 타임아웃 5분 구현 (AbortController 또는 동등한 취소 전파 포함)
+    - ScanService.requestScan() — PENDING 저장 + Job 등록 (advisory lock 기반 PENDING/RUNNING 중복 방지)
     - ScanProcessor(WorkerHost) — 섹션 8.1 전체 흐름 구현
       (토큰 복호화, Git 커밋 SHA 조회, Analysis API 호출, DB 저장, 상태 전환)
     - Prisma Json 컬럼 저장 시 InputJsonValue 캐스팅 적용
@@ -3025,22 +3103,25 @@ pnpm dev
 [ ] TASK-13: 공통 처리
     - GlobalExceptionFilter — ErrorResponse 형식으로 에러 응답 표준화
     - ResponseTransformInterceptor — ApiResponse<T> 자동 래핑 (Controller는 raw data만 반환)
+    - SkipTransform 데코레이터 구현 (health, 204 응답 예외 처리)
+    - SessionAwareThrottlerGuard 구현 (세션 ID/IP 기준 tracker)
     - @nestjs/swagger 설정 및 /api-docs 확인
     - @nestjs/throttler Rate Limiting 설정 (섹션 6.8 기준)
 
 [ ] TASK-14: Health Check + DB 시드
+    - HealthModule 구현 및 AppModule 등록
     - HealthController: GET /api/health (DB·Redis 연결 상태 확인, 섹션 6.7 기준)
     - prisma/seed.ts: 개발용 시드 데이터 (User, ConnectedRepo, Scan, Vulnerability — consensusScore 포함)
     - package.json prisma.seed 설정
 
 [ ] TASK-15-P2: GitHub Webhook — PR 자동 트리거 [Phase 2]
-    - WebhookModule, WebhookController 구현 (섹션 9.5)
+    - WebhookModule, WebhookController 구현 (섹션 9.7)
     - HMAC-SHA256 서명 검증 (rawBody 설정 필요)
     - pull_request opened/synchronize → ScanService.requestScanFromPR() 연동
     - 통합 테스트: Webhook payload 시뮬레이션 → BullMQ Job 등록 확인
 
 [ ] TASK-16-P2: GitHub Suggested Changes [Phase 2]
-    - GithubClient.createSuggestedChange() 구현 (섹션 9.6)
+    - GithubClient.createSuggestedChange() 구현 (섹션 9.8)
     - VulnerabilityController: POST /api/vulnerabilities/:vulnId/suggest-change
     - unified diff → suggestion 코드 블록 변환 유틸
     - 통합 테스트
@@ -3222,10 +3303,11 @@ export const apiClient = axios.create({
 });
 
 // 401 인터셉터 — 인증 만료 시 로그인 페이지로 리다이렉트
+// ⚠️ /login 페이지에서는 리다이렉트하지 않아 무한루프를 방지한다
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && window.location.pathname !== '/login') {
       window.location.href = '/login';
       return Promise.reject(error);
     }
@@ -3267,7 +3349,7 @@ export function useAuth() {
 }
 ```
 
-
+## 13. 테스트 전략
 
 | 레이어 | 도구 | 핵심 테스트 |
 |--------|------|-------------|
@@ -3293,6 +3375,11 @@ export function useAuth() {
 - ScanProcessor: Analysis API 실패 → FAILED 상태 전환 + 에러 메시지 저장
 - VulnerabilityService: 필터/정렬/페이지네이션 쿼리 결과 검증
 - SessionAuthGuard: 미인증 요청 → 401 반환
+- SessionAuthGuard: X-Requested-With 누락 POST/PATCH/DELETE 요청 → 403 반환
+- HealthController: GET /api/health → raw JSON 응답 확인 (ApiResponse 래핑 없음)
+- RepoController: DELETE /api/repos/:repoId → 204 No Content 확인
+- Throttling: POST /api/scans 한도 초과 → 429 반환 확인
+- SessionAwareThrottlerGuard: 인증 사용자는 sessionID, 미인증 사용자는 IP 기준 추적 확인
 - OAuth 통합 테스트: strategy/service mock 기반 (실제 외부 provider 호출 불필요)
 - BullMQ 통합 테스트: @testcontainers/redis 또는 docker compose의 Redis 서비스를 활용하여 BullMQ Worker 통합 테스트를 수행한다.
 ```
@@ -3316,6 +3403,12 @@ E2E-02: 미인증 접근 차단
 E2E-03: 동시 스캔 중복 방지
   1. POST /api/scans → 202 확인
   2. 동일 repoId로 POST /api/scans → 409 확인
+
+E2E-04: 보안/응답 예외 규칙 확인
+  1. X-Requested-With 없이 POST /api/scans → 403 확인
+  2. GET /api/health → raw JSON 확인 (success/data 래퍼 없음)
+  3. DELETE /api/repos/:repoId → 204 No Content 확인
+  4. POST /api/scans 반복 호출 → 429 확인
 ```
 
 **BullMQ 통합 테스트 환경:**
@@ -3343,6 +3436,7 @@ E2E-03: 동시 스캔 중복 방지
 | `FRONTEND_URL` | ✅ | 프론트엔드 Base URL (CORS origin + OAuth 리다이렉트) |
 | `TOKEN_ENCRYPTION_KEY` | ✅ | OAuth 토큰 AES-256-GCM 암호화 키 (32바이트, hex 인코딩된 64자 문자열 또는 base64 인코딩된 44자 문자열로 전달. 예: `openssl rand -hex 32`) |
 | `NODE_ENV` | ✅ | `development` / `production` |
+| `VITE_API_URL` | - | 프론트엔드에서 사용하는 API 서버 URL (기본: `http://localhost:3000/api`, `apps/web/.env`에 설정) |
 | `AI_SERVER_URL` | - | apps/ai FastAPI 서버 URL (기본: `http://localhost:8000`) |
 | `USE_INTERNAL_AI` | - | `true` 설정 시 InternalAnalysisApiClient 활성화 |
 | `INTERNAL_API_SECRET` | - | NestJS → apps/ai 내부 호출 인증 시크릿 |
@@ -3350,6 +3444,7 @@ E2E-03: 동시 스캔 중복 방지
 | `MODEL_B_ID` | - | 파인튜닝 모델 B 식별자 (apps/ai 환경변수) |
 | `OPENAI_API_KEY` | - | 파인튜닝 모델 호출용 (OpenAI 기반 파인튜닝 시) |
 | `GITHUB_APP_WEBHOOK_SECRET` | - | GitHub Webhook HMAC-SHA256 서명 검증 키 [Phase 2] |
+| `GITLAB_WEBHOOK_SECRET` | - | GitLab Webhook Secret Token 평문 검증 키 [Phase 2] |
 
 ### 부록 A-1. `.env.example` 템플릿
 
@@ -3384,6 +3479,9 @@ TOKEN_ENCRYPTION_KEY=
 # Runtime
 NODE_ENV=development
 
+# Frontend (apps/web/.env 에 설정)
+# VITE_API_URL=http://localhost:3000/api
+
 # AI Server (선택 통합)
 AI_SERVER_URL=http://localhost:8000
 USE_INTERNAL_AI=false
@@ -3394,8 +3492,9 @@ INTERNAL_API_SECRET=
 # MODEL_B_ID=
 # OPENAI_API_KEY=
 
-# GitHub Webhook (Phase 2)
+# Webhook Secrets (Phase 2)
 # GITHUB_APP_WEBHOOK_SECRET=
+# GITLAB_WEBHOOK_SECRET=
 ```
 
 ### 부록 B. 에이전트 개발 체크리스트
@@ -3410,7 +3509,7 @@ INTERNAL_API_SECRET=
 Phase 1 완료 기준:
 [ ] MockAnalysisApiClient를 통한 스캔 E2E 동작
 [ ] GET /api/scans/:id → status: "DONE" + 취약점 데이터 (consensusScore 포함) 반환 확인
-[ ] GET /api/health → DB·Redis 연결 상태 확인 (TASK-14에서 구현, Phase 2 시작 시 우선 구현 필요)
+[ ] GET /api/health → DB·Redis 연결 상태 확인
 [ ] 세션 유지 확인 (GitHub 로그인 → /api/auth/me 응답)
 
 선택 통합 검증:
