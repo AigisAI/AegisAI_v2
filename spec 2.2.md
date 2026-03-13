@@ -1,16 +1,16 @@
 # Aegisai Platform — Agent Development Specification
 
 > **문서 유형:** AI 에이전트 개발 착수용 기술 명세서
-> **버전:** v2.6 (v2.5 리뷰 반영 — 보안·에러 처리·테스트·구조 개선 17건 보완)
+> **버전:** v2.7 (v2.6 리뷰 반영 — 분석 서버 연동 구조 개선: 백엔드 코드 수집 방식 전환, 보안 강화, 관심사 분리)
 > **기준 PRD:** PRD_Aegisai_Platform v2.0
-> **작성일:** 2026-03-11
+> **작성일:** 2026-03-13
 
 ---
 
 ## ⚠️ 에이전트 착수 전 필독 — 핵심 제약 조건
 
 1. 분석 대상 언어는 **현재 Java만 허용**한다. 단, 서비스 코드 전반에서 언어 분기 문자열을 직접 하드코딩하지 말고 `ILanguageHandler` 플러그인 구조를 통해 처리한다.
-2. **코드 파일 직접 업로드 기능은 구현하지 않는다.** 분석 대상 코드는 연동된 GitHub/GitLab 저장소의 clone/API 접근을 통해 수집한다.
+2. **코드 파일 직접 업로드 기능은 구현하지 않는다.** 분석 대상 코드는 연동된 GitHub/GitLab 저장소의 API를 통해 **백엔드(NestJS ScanProcessor)가 수집**하며, 수집된 파일 배열(`files[]`)을 분석 서버에 전달한다. 분석 서버는 Git 클라이언트·파일 시스템·보안 토큰을 직접 다루지 않는다.
 3. **취약점 탐지 로직은 SaaS 백엔드(apps/api)에서 직접 구현하지 않는다.** 백엔드는 `IAnalysisApiClient` 인터페이스를 통해 외부 분석 시스템에 위임한다. Phase 1 기본 구현은 `MockAnalysisApiClient`이며, `apps/ai` 연동은 선택적 통합 경로로 제공한다.
 4. 프론트엔드와 백엔드는 모두 TypeScript를 사용하며, 공유 타입은 `packages/shared` 패키지에서 관리한다.
 5. 모든 인터페이스와 추상화는 **확장성 우선**으로 설계한다.
@@ -33,7 +33,8 @@
    - 8.1 [ScanService + ScanProcessor 흐름](#81-scanservice--scanprocessor-흐름)
    - 8.2 [ILanguageHandler — 언어 확장 구조](#82-ilanguagehandler--언어-확장-구조)
    - 8.3 [Git Provider 클라이언트 구조](#83-git-provider-클라이언트-구조)
-   - 8.4 [에러 시나리오 및 복구 전략](#84-에러-시나리오-및-복구-전략)
+   - 8.4 [CodeCollectorService — 코드 수집 전담 서비스](#84-codecollectorservice--코드-수집-전담-서비스-v27-신규)
+   - 8.5 [에러 시나리오 및 복구 전략](#85-에러-시나리오-및-복구-전략)
 9. [GitHub/GitLab 연동 플로우](#9-githubgitlab-연동-플로우)
 10. [개발 환경 설정](#10-개발-환경-설정)
 11. [개발 태스크 (Phase별)](#11-개발-태스크-phase별)
@@ -238,7 +239,12 @@ sequenceDiagram
     W->>DB: Scan → RUNNING
     W->>Git: getLatestCommitSha()
     Git-->>W: commitSha
-    W->>AI: analyze({ scanId, cloneUrl, branch, ... })
+    W->>Git: getFileTree() — 파일 메타데이터 목록 조회 (API 1회)
+    Git-->>W: FileTree (경로·크기 목록)
+    Note over W: LanguageHandler로 확장자·제외패턴·크기 필터링
+    W->>Git: 파일 수 ≤ 30 → getFileContent() × N (병렬)<br/>파일 수 > 30 → Tarball 다운로드 후 필터링
+    Git-->>W: 파일 내용 배열
+    W->>AI: analyze({ scanId, language, files[] })
     AI-->>W: AnalysisResult { vulnerabilities[] }
     W->>DB: Vulnerability.createMany()
     W->>DB: Scan → DONE + 집계 저장
@@ -352,7 +358,9 @@ apps/api/
     │   ├── scan.controller.ts
     │   ├── scan.service.ts
     │   ├── scan.processor.ts
-    │   └── stuck-scan-recovery.task.ts  # RUNNING 상태 타임아웃 복구 스케줄러
+    │   ├── stuck-scan-recovery.task.ts  # RUNNING 상태 타임아웃 복구 스케줄러
+    │   └── services/
+    │       └── code-collector.service.ts  # 코드 수집 전담 서비스 (v2.7 신규)
     │
     ├── webhook/               # Phase 2 예약
     │   ├── webhook.module.ts
@@ -550,7 +558,7 @@ apps/web/
 apps/ai/
 ├── main.py                   # FastAPI 앱 진입점 (포트: 8000)
 ├── requirements.txt
-├── Dockerfile                # ⚠️ git 패키지 설치 필수
+├── Dockerfile                # git 패키지 불필요 (v2.7: 백엔드가 코드 수집 담당)
 ├── .env
 │
 ├── routers/
@@ -578,7 +586,7 @@ apps/ai/
 
 > **원칙:**
 > - `apps/ai`는 선택 통합 경로이며, Phase 1 완료의 필수 조건이 아니다.
-> - Dockerfile 작성 시 `RUN apt-get update && apt-get install -y git`를 반드시 포함한다.
+> - Dockerfile에 `git` 패키지를 설치할 필요가 없다. 백엔드(NestJS ScanProcessor)가 코드를 수집하여 `files[]`로 전달하므로 AI 서버는 Git 접근이 불필요하다.
 > - `training/`은 배포 이미지에 포함하지 않는다.
 > - `schemas/`의 필드명·타입은 NestJS 측 타입과 1:1로 맞춘다.
 
@@ -1505,27 +1513,37 @@ export interface IAnalysisApiClient {
   analyze(request: AnalysisRequest, options?: { signal?: AbortSignal }): Promise<AnalysisResult>;
 }
 
+export interface AnalysisFileItem {
+  path: string;    // 레포 루트 기준 상대 경로 (예: "src/main/java/com/example/UserRepository.java")
+  content: string; // 파일 내용 (UTF-8 텍스트)
+}
+
 export interface AnalysisRequest {
   scanId: string;
-  cloneUrl: string;
-  branch: string;
-  commitSha?: string;
   language: string;         // 현재 허용값은 "java"뿐이지만 인터페이스는 확장 가능
-  accessToken: string;      // private 레포용 Git 토큰 (복호화된 값 전달)
+  files: AnalysisFileItem[]; // 백엔드가 수집한 코드 파일 배열
 }
 ```
 
-> **⚠️ `accessToken` 전달 구간 보안 전제조건:**
+> **v2.7 변경 사항 — `AnalysisRequest` 필드 변경:**
 >
-> `AnalysisRequest.accessToken`은 AES-256-GCM 복호화된 OAuth 토큰 평문이 `ScanProcessor` → `IAnalysisApiClient` 구현체로 전달되는 구간이다. 구현체별 보안 전제조건은 다음과 같다:
+> | 필드 | v2.6 | v2.7 | 변경 이유 |
+> |------|------|------|-----------|
+> | `cloneUrl` | ✅ 있음 | ❌ 제거 | AI 서버가 Git 접근하지 않음 |
+> | `branch` | ✅ 있음 | ❌ 제거 | 동일 |
+> | `commitSha` | ✅ 있음 | ❌ 제거 | 동일 |
+> | `accessToken` | ✅ 있음 | ❌ 제거 | **보안 핵심 개선: OAuth 토큰 평문이 분석 서버에 전달되지 않음** |
+> | `files` | ❌ 없음 | ✅ 추가 | 백엔드가 수집한 코드 파일 배열 전달 |
+
+> **보안 개선 — `accessToken` 전달 구간 단순화:**
 >
-> | 구현체 | 전달 구간 | 보안 전제조건 |
-> |--------|----------|-------------|
+> v2.7부터 `accessToken`(복호화된 OAuth 토큰)은 `ScanProcessor` → `GitProviderClient` 구간(프로세스 내부 호출)에서만 사용되며, 분석 서버로 전달되지 않는다. 구간별 보안 상태:
+>
+> | 구현체 | 전달 구간 | 보안 상태 |
+> |--------|----------|-----------|
 > | `MockAnalysisApiClient` | 인메모리 (네트워크 미사용) | ✅ 안전 — 프로세스 내부 호출 |
-> | `InternalAnalysisApiClient` → `apps/ai` | Docker 내부 네트워크 (localhost / docker bridge) | ⚠️ 로컬 개발: 안전. **운영 배포 시 반드시 mTLS 또는 서비스 메시(Istio/Linkerd) 적용 필수.** `X-Internal-Secret` 헤더만으로는 네트워크 스니핑 방어 불가 |
-> | 향후 외부 Analysis API 연동 | 외부 네트워크 | 🚨 **HTTPS 필수.** HTTP 사용 시 토큰 탈취 위험. `AI_SERVER_URL` 환경변수가 `https://`로 시작하는지 `ConfigModule` Joi 스키마에서 검증 권장 |
->
-> **MVP 최소 조치:** `InternalAnalysisApiClient`에서 `AI_SERVER_URL`이 `http://localhost` 또는 `http://ai-server` (Docker 서비스명)가 아닌 경우 경고 로그를 출력한다. 운영 환경(`NODE_ENV=production`)에서 `http://` URL 사용 시 시작 시점에 `Logger.warn`을 발생시킨다.
+> | `InternalAnalysisApiClient` → `apps/ai` | Docker 내부 네트워크 (files[] 전달) | ✅ 토큰 미전달. files[] 내용은 코드 텍스트이므로 mTLS 없이도 토큰 탈취 위험 없음 |
+> | 향후 외부 Analysis API 연동 | 외부 네트워크 | ⚠️ **HTTPS 권장.** 코드 내용 기밀 보호를 위해 `AI_SERVER_URL`이 `https://`인지 검증 권장 |
 
 ```typescript
 /** 각 LLM 모델 하나의 분석 결과 */
@@ -1583,11 +1601,17 @@ export class MockAnalysisApiClient implements IAnalysisApiClient {
       setTimeout(resolve, 3000 + Math.random() * 5000)
     );
 
+    // files[] 기반: 수집된 파일 수와 총 라인 수를 Mock에서 계산
+    const totalFiles = request.files.length;
+    const totalLines = request.files.reduce(
+      (sum, f) => sum + f.content.split('\n').length, 0
+    );
+
     return {
       scanId: request.scanId,
       success: true,
-      totalFiles: 24,
-      totalLines: 3842,
+      totalFiles,
+      totalLines,
       vulnerabilities: [
         {
           title: 'SQL Injection — UserRepository.findByName()',
@@ -1643,26 +1667,30 @@ export class MockAnalysisApiClient implements IAnalysisApiClient {
 // client/analysis/analysis-api.module.ts
 
 @Module({
+  imports: [HttpModule],  // @nestjs/axios — InternalAnalysisApiClient 사용 시 필요
   providers: [
+    MockAnalysisApiClient,
+    InternalAnalysisApiClient,
     {
       provide: 'IAnalysisApiClient',
-      useClass: MockAnalysisApiClient,
-      // ⚠️ InternalAnalysisApiClient 전환 방법:
-      // USE_INTERNAL_AI=true 환경변수 설정 후 아래 factory 패턴으로 교체:
-      //
-      // useFactory: (httpService: HttpService, config: ConfigService) =>
-      //   config.get('USE_INTERNAL_AI') === 'true'
-      //     ? new InternalAnalysisApiClient(httpService, config)
-      //     : new MockAnalysisApiClient(),
-      // inject: [HttpService, ConfigService],
-      //
-      // InternalAnalysisApiClient 사용 시 HttpModule(@nestjs/axios)을 반드시 imports에 등록할 것.
+      useFactory: (
+        httpService: HttpService,
+        config: ConfigService,
+        mock: MockAnalysisApiClient,
+        internal: InternalAnalysisApiClient,
+      ) =>
+        config.get('USE_INTERNAL_AI') === 'true' ? internal : mock,
+      inject: [HttpService, ConfigService, MockAnalysisApiClient, InternalAnalysisApiClient],
     },
   ],
   exports: ['IAnalysisApiClient'],
 })
 export class AnalysisApiModule {}
 ```
+
+> **환경변수 `USE_INTERNAL_AI`:**
+> - `false` (기본값, Phase 1): `MockAnalysisApiClient` 사용 — 코드 변경 없이 즉시 개발 가능
+> - `true` (선택 통합): `InternalAnalysisApiClient` 사용 → `apps/ai` FastAPI 서버 호출
 
 ### 7.4 InternalAnalysisApiClient (NestJS → apps/ai 호출, 선택 통합)
 
@@ -1685,7 +1713,12 @@ export class InternalAnalysisApiClient implements IAnalysisApiClient {
       const response = await firstValueFrom(
         this.httpService.post<AnalysisResult>(
           `${aiServerUrl}/analyze`,
-          request,
+          // v2.7: cloneUrl, accessToken 전달 제거 — files[] 전달
+          {
+            scanId: request.scanId,
+            language: request.language,
+            files: request.files,
+          },
           {
             timeout: 270_000,   // 4분 30초 (앱 레벨 스캔 타임아웃 5분보다 30초 짧게 설정)
             signal,
@@ -1719,15 +1752,17 @@ export class InternalAnalysisApiClient implements IAnalysisApiClient {
 ```python
 # apps/ai/schemas/request.py
 from pydantic import BaseModel
-from typing import Optional
+from typing import List
+
+class AnalysisFileItem(BaseModel):
+    path: str     # 레포 루트 기준 상대 경로
+    content: str  # 파일 내용 (UTF-8 텍스트)
 
 class AnalyzeRequest(BaseModel):
     scanId: str
-    cloneUrl: str
-    branch: str
-    commitSha: Optional[str] = None
     language: str           # 현재 "java" 고정
-    accessToken: str        # private 레포 접근용 Git 토큰
+    files: List[AnalysisFileItem]  # 백엔드가 수집한 코드 파일 배열
+    # v2.7: cloneUrl, branch, commitSha, accessToken 제거 — 백엔드가 코드를 수집하여 전달
 
 # apps/ai/schemas/response.py
 from pydantic import BaseModel
@@ -1797,11 +1832,15 @@ async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
     valid_results = [r for r in results if not isinstance(r, Exception)]
     vulnerabilities = ConsensusEngine.aggregate(valid_results)
 
+    # v2.7: totalFiles, totalLines는 전달받은 files[] 기반으로 계산
+    total_files = len(request.files)
+    total_lines = sum(f.content.count('\n') + 1 for f in request.files)
+
     return AnalyzeResponse(
         scanId=request.scanId,
         success=True,
-        totalFiles=0,   # 구현체에서 실제 값으로 채울 것
-        totalLines=0,
+        totalFiles=total_files,
+        totalLines=total_lines,
         vulnerabilities=vulnerabilities,
     )
 ```
@@ -1931,6 +1970,8 @@ export class ScanProcessor extends WorkerHost {
     private gitClientRegistry: GitClientRegistry,
     @Inject('IAnalysisApiClient') private analysisClient: IAnalysisApiClient,
     private tokenCrypto: TokenCryptoUtil,  // ← AuthService 대신 직접 주입 (모듈 결합도 최소화)
+    private codeCollector: CodeCollectorService,        // v2.7 신규
+    private languageHandlerRegistry: LanguageHandlerRegistry, // v2.7 신규
   ) {
     super();
   }
@@ -1952,7 +1993,7 @@ export class ScanProcessor extends WorkerHost {
       if (!scan) throw new Error(`Scan not found: ${scanId}`);
 
       // ⚠️ OAuthToken.accessToken은 AES-256-GCM으로 암호화 저장됨.
-      // 반드시 AuthService.decryptToken()으로 복호화 후 Analysis API에 전달해야 한다.
+      // 복호화된 토큰은 GitProviderClient 호출에만 사용하며, 분석 서버로 전달하지 않는다.
       const oauthToken = scan.connectedRepo.user.oauthTokens.find(
         t => t.provider === scan.connectedRepo.provider
       );
@@ -1960,12 +2001,30 @@ export class ScanProcessor extends WorkerHost {
 
       const decryptedAccessToken = this.tokenCrypto.decrypt(oauthToken.accessToken);
 
+      // commitSha 조회 (DB 저장 및 이력 추적용)
       const gitClient = this.gitClientRegistry.get(scan.connectedRepo.provider.toLowerCase());
       const commitSha = await gitClient.getLatestCommitSha(
         scan.connectedRepo.fullName,
         scan.branch,
         decryptedAccessToken,
       );
+
+      // v2.7: 백엔드가 코드를 수집하여 files[]로 분석 서버에 전달
+      const handler = this.languageHandlerRegistry.get(scan.language);
+      const collected = await this.codeCollector.collect(
+        scan.connectedRepo.provider.toLowerCase(),
+        scan.connectedRepo.fullName,
+        scan.branch,
+        decryptedAccessToken,
+        handler,
+      );
+
+      if (collected.truncated) {
+        this.logger.warn(
+          `Scan ${scanId}: code collection truncated (maxFiles/maxTotalSize limit reached). ` +
+          `Collected ${collected.totalFiles} files.`,
+        );
+      }
 
       // 앱 레벨 스캔 타임아웃: 5분
       // 중요: Promise.race만으로는 HTTP 요청이 실제 중단되지 않을 수 있으므로,
@@ -1979,11 +2038,8 @@ export class ScanProcessor extends WorkerHost {
           this.analysisClient.analyze(
             {
               scanId,
-              cloneUrl: scan.connectedRepo.cloneUrl,
-              branch: scan.branch,
-              commitSha,
               language: scan.language,
-              accessToken: decryptedAccessToken,
+              files: collected.files,  // v2.7: cloneUrl/accessToken 대신 files[] 전달
             },
             { signal: controller.signal },
           ),
@@ -2023,13 +2079,14 @@ export class ScanProcessor extends WorkerHost {
         })),
       });
 
+      // v2.7: totalFiles, totalLines를 백엔드에서 직접 계산 (AI 서버 의존 제거)
       await this.prisma.scan.update({
         where: { id: scanId },
         data: {
           status: 'DONE',
           commitSha,
-          totalFiles: result.totalFiles,
-          totalLines: result.totalLines,
+          totalFiles: collected.totalFiles,
+          totalLines: collected.totalLines,
           vulnCritical: result.vulnerabilities.filter(v => v.severity === 'CRITICAL').length,
           vulnHigh: result.vulnerabilities.filter(v => v.severity === 'HIGH').length,
           vulnMedium: result.vulnerabilities.filter(v => v.severity === 'MEDIUM').length,
@@ -2131,6 +2188,7 @@ import { ScanController } from './scan.controller';
 import { ScanService } from './scan.service';
 import { ScanProcessor } from './scan.processor';
 import { StuckScanRecoveryTask } from './stuck-scan-recovery.task';
+import { CodeCollectorService } from './services/code-collector.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AnalysisApiModule } from '../client/analysis/analysis-api.module';
 import { GitClientModule } from '../client/git/git-client.module';
@@ -2147,10 +2205,10 @@ import { LanguageModule } from '../language/language.module';
     AnalysisApiModule,
     GitClientModule,
     AuthModule,      // TokenCryptoUtil export 용도 (auth.module.ts에서 TokenCryptoUtil을 exports에 추가할 것)
-    LanguageModule,  // LanguageHandlerRegistry — ScanService에서 언어 검증 시 필요
+    LanguageModule,  // LanguageHandlerRegistry — ScanService, ScanProcessor에서 언어 검증 시 필요
   ],
   controllers: [ScanController],
-  providers: [ScanService, ScanProcessor, StuckScanRecoveryTask],
+  providers: [ScanService, ScanProcessor, StuckScanRecoveryTask, CodeCollectorService],  // v2.7: CodeCollectorService 추가
   exports: [ScanService],  // WebhookModule에서 ScanService.requestScanFromPR() 호출 시 필요
 })
 export class ScanModule {}
@@ -2222,7 +2280,10 @@ export class TokenCryptoUtil {
 export interface ILanguageHandler {
   getLanguage(): string;
   getFileExtensions(): string[];
-  preProcess?(request: AnalysisRequest): AnalysisRequest;
+  /** 수집 제외 경로 패턴 (minimatch glob 형식) */
+  getExcludePatterns(): string[];
+  /** 단일 파일 최대 크기 (bytes). 이를 초과하는 파일은 수집에서 제외 */
+  getMaxFileSize(): number;
 }
 
 // language/handlers/java.language-handler.ts
@@ -2230,6 +2291,18 @@ export interface ILanguageHandler {
 export class JavaLanguageHandler implements ILanguageHandler {
   getLanguage() { return 'java'; }
   getFileExtensions() { return ['.java']; }
+  getExcludePatterns() {
+    return [
+      '**/test/**',
+      '**/generated/**',
+      '**/build/**',
+      '**/target/**',
+      '**/node_modules/**',
+      '**/vendor/**',
+    ];
+  }
+  /** 100KB 초과 Java 파일은 자동생성 코드일 가능성이 높아 수집 제외 */
+  getMaxFileSize() { return 100 * 1024; }
 }
 
 // language/language-handler.registry.ts
@@ -2280,6 +2353,38 @@ export class LanguageModule implements OnModuleInit {
 export interface IGitProviderClient {
   getRepositories(accessToken: string, page: number, size: number): Promise<RepoListResult>;
   getLatestCommitSha(fullName: string, branch: string, accessToken: string): Promise<string>;
+  /**
+   * 레포지토리 전체 파일 트리 조회 (내용 없음, 메타데이터만).
+   * GitHub: GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1
+   * GitLab: GET /projects/{id}/repository/tree?recursive=true&ref={branch}
+   * API 1회 호출로 전체 경로·크기 목록을 반환하여 필터링 후 선택적으로 내용을 조회한다.
+   */
+  getFileTree(fullName: string, branch: string, accessToken: string): Promise<FileTreeItem[]>;
+  /**
+   * 단일 파일 내용 조회.
+   * GitHub: GET /repos/{owner}/{repo}/contents/{path}?ref={branch}
+   * GitLab: GET /projects/{id}/repository/files/{path}/raw?ref={branch}
+   */
+  getFileContent(fullName: string, filePath: string, branch: string, accessToken: string): Promise<string>;
+  /**
+   * Tarball 방식으로 파일 내용 일괄 수집 (선택적 구현, Rate Limit 절약).
+   * GitHub: GET /repos/{owner}/{repo}/tarball/{branch}
+   * GitLab: GET /projects/{id}/repository/archive?sha={branch}
+   * 미구현 시 CodeCollectorService가 collectByContentsApi로 자동 fallback한다.
+   */
+  collectByTarball?(
+    fullName: string,
+    branch: string,
+    accessToken: string,
+    items: FileTreeItem[],
+    maxTotalSize: number,
+  ): Promise<AnalysisFileItem[]>;
+}
+
+export interface FileTreeItem {
+  path: string;   // 레포 루트 기준 상대 경로
+  size: number;   // 파일 크기 (bytes). 디렉토리는 0
+  type: 'blob' | 'tree';  // blob: 파일, tree: 디렉토리
 }
 
 export interface RepoListResult {
@@ -2324,7 +2429,176 @@ export class GitClientModule implements OnModuleInit {
 }
 ```
 
-### 8.4 에러 시나리오 및 복구 전략
+### 8.4 CodeCollectorService — 코드 수집 전담 서비스 (v2.7 신규)
+
+> **핵심 원칙:** 백엔드(NestJS ScanProcessor)가 코드를 수집하고, 분석 서버는 순수하게 코드 분석만 수행한다.
+> 이 서비스는 `apps/api/src/scan/services/code-collector.service.ts`에 위치한다.
+
+```typescript
+// scan/services/code-collector.service.ts
+import { minimatch } from 'minimatch';  // pnpm add minimatch
+
+export interface CollectionConfig {
+  maxFiles: number;       // 수집 파일 수 상한 (기본 500)
+  maxTotalSize: number;   // 전체 수집 크기 상한 (기본 10MB)
+  concurrency: number;    // 병렬 파일 내용 조회 수 (기본 10)
+  tarballThreshold: number; // 이 수 초과 시 Tarball 전략 사용 (기본 30)
+}
+
+export interface CollectionResult {
+  files: AnalysisFileItem[];
+  totalFiles: number;     // 수집된 파일 수
+  totalLines: number;     // 수집된 총 라인 수
+  truncated: boolean;     // maxFiles 또는 maxTotalSize 제한으로 잘렸는지 여부
+}
+
+@Injectable()
+export class CodeCollectorService {
+  private readonly logger = new Logger(CodeCollectorService.name);
+
+  private readonly DEFAULT_CONFIG: CollectionConfig = {
+    maxFiles: 500,
+    maxTotalSize: 10 * 1024 * 1024,  // 10MB
+    concurrency: 10,
+    tarballThreshold: 30,
+  };
+
+  constructor(private readonly gitClientRegistry: GitClientRegistry) {}
+
+  async collect(
+    provider: string,
+    fullName: string,
+    branch: string,
+    accessToken: string,
+    handler: ILanguageHandler,
+    config: Partial<CollectionConfig> = {},
+  ): Promise<CollectionResult> {
+    const cfg = { ...this.DEFAULT_CONFIG, ...config };
+    const gitClient = this.gitClientRegistry.get(provider);
+
+    // 1단계: 파일 트리 조회 (API 1회, 내용 없음)
+    const tree = await gitClient.getFileTree(fullName, branch, accessToken);
+
+    const extensions = handler.getFileExtensions();
+    const excludePatterns = handler.getExcludePatterns();
+    const maxFileSize = handler.getMaxFileSize();
+
+    // 2단계: 언어 핸들러 기준으로 필터링
+    const candidates = tree.filter(item => {
+      if (item.type !== 'blob') return false;
+      if (!extensions.some(ext => item.path.endsWith(ext))) return false;
+      if (item.size > maxFileSize) return false;
+      if (excludePatterns.some(pattern => minimatch(item.path, pattern))) return false;
+      return true;
+    });
+
+    this.logger.log(
+      `Code collection: tree=${tree.length} total → candidates=${candidates.length} matched`,
+    );
+
+    // 3단계: 수집량 제한 적용 (파일 수)
+    const limited = candidates.slice(0, cfg.maxFiles);
+    const truncated = candidates.length > cfg.maxFiles;
+
+    // 4단계: 하이브리드 수집 전략
+    //   - 파일 수 ≤ tarballThreshold: 개별 Contents API (간단, 빠름)
+    //   - 파일 수 > tarballThreshold: Tarball 다운로드 후 필터링 (Rate Limit 절약)
+    const files: AnalysisFileItem[] =
+      limited.length <= cfg.tarballThreshold
+        ? await this.collectByContentsApi(gitClient, fullName, branch, accessToken, limited, cfg)
+        : await this.collectByTarball(gitClient, fullName, branch, accessToken, limited, cfg);
+
+    const totalFiles = files.length;
+    const totalLines = files.reduce((sum, f) => sum + f.content.split('\n').length, 0);
+
+    this.logger.log(
+      `Code collection complete: collected=${totalFiles} files, lines=${totalLines}, truncated=${truncated || files.length < limited.length}`,
+    );
+
+    return { files, totalFiles, totalLines, truncated: truncated || files.length < limited.length };
+  }
+
+  /** 개별 Contents API 방식: 동시성 제한으로 병렬 수집 */
+  private async collectByContentsApi(
+    gitClient: IGitProviderClient,
+    fullName: string,
+    branch: string,
+    accessToken: string,
+    items: FileTreeItem[],
+    cfg: CollectionConfig,
+  ): Promise<AnalysisFileItem[]> {
+    const results: AnalysisFileItem[] = [];
+    let totalSize = 0;
+    let reachedSizeLimit = false;
+
+    // concurrency 제한: chunk 단위로 병렬 처리
+    for (let i = 0; i < items.length && !reachedSizeLimit; i += cfg.concurrency) {
+      const chunk = items.slice(i, i + cfg.concurrency);
+      const fetched = await Promise.allSettled(
+        chunk.map(item => gitClient.getFileContent(fullName, item.path, branch, accessToken)),
+      );
+
+      for (let j = 0; j < fetched.length; j++) {
+        const result = fetched[j];
+        if (result.status === 'rejected') continue;
+
+        const content = result.value;
+        const size = Buffer.byteLength(content, 'utf8');
+        if (totalSize + size > cfg.maxTotalSize) {
+          reachedSizeLimit = true;
+          break;
+        }
+
+        totalSize += size;
+        results.push({ path: chunk[j].path, content });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Tarball 방식: API 1회 호출로 전체 레포를 다운로드하고 대상 파일만 추출.
+   * GitHub: GET /repos/{owner}/{repo}/tarball/{branch}
+   * Rate Limit 호출 횟수를 1회로 줄여 대형 레포에서 유리하다.
+   * IGitProviderClient의 선택적 메서드 collectByTarball()에 위임한다.
+   * 구현체가 해당 메서드를 제공하지 않으면 collectByContentsApi로 자동 fallback한다.
+   */
+  private async collectByTarball(
+    gitClient: IGitProviderClient,
+    fullName: string,
+    branch: string,
+    accessToken: string,
+    items: FileTreeItem[],
+    cfg: CollectionConfig,
+  ): Promise<AnalysisFileItem[]> {
+    if (gitClient.collectByTarball) {
+      return gitClient.collectByTarball(fullName, branch, accessToken, items, cfg.maxTotalSize);
+    }
+    // fallback: 개별 Contents API 사용
+    this.logger.warn(`Tarball not supported for ${fullName}. Falling back to Contents API.`);
+    return this.collectByContentsApi(gitClient, fullName, branch, accessToken, items, cfg);
+  }
+}
+```
+
+> **GitHub API Rate Limit 대응 전략:**
+>
+> | 조건 | 전략 | 이유 |
+> |------|------|------|
+> | 수집 대상 파일 ≤ 30개 | 개별 Contents API (`getFileContent()` × N) | 간단, 빠름, 구현 단순 |
+> | 수집 대상 파일 > 30개 | Tarball 다운로드 후 필터링 | API 호출 1회로 Rate Limit 절약 |
+>
+> **수집 제한 (CollectionConfig 기본값):**
+>
+> | 설정 | 기본값 | 설명 |
+> |------|--------|------|
+> | `maxFiles` | 500 | 수집 파일 수 상한. 초과 시 `truncated: true` |
+> | `maxTotalSize` | 10MB | 전체 수집 크기 상한. 초과 시 수집 중단 |
+> | `concurrency` | 10 | 병렬 API 호출 수 (동시 연결 제한) |
+> | `tarballThreshold` | 30 | 이 수 초과 시 Tarball 전략 전환 |
+
+### 8.5 에러 시나리오 및 복구 전략
 
 | 시나리오 | 발생 지점 | 동작 | 사용자 알림 |
 |----------|----------|------|------------|
@@ -2334,8 +2608,11 @@ export class GitClientModule implements OnModuleInit {
 | DB 트랜잭션 실패 | ScanService.requestScan | 트랜잭션 롤백, HTTP 500 반환 | 프론트 글로벌 에러 핸들러 |
 | BullMQ Job과 DB 상태 불일치 | ScanProcessor catch 블록 | catch 블록에서 반드시 Scan 상태를 FAILED로 업데이트. 만약 이 업데이트마저 실패하면 NestJS Logger.error로 기록하고, 별도 RUNNING 상태 타임아웃 스케줄러(StuckScanRecoveryTask)로 복구한다. | 관리자 로그 확인 |
 | Redis 연결 실패 | BullMQ Worker 시작 | Worker 재연결 시도 (BullMQ 기본 동작). Health Check에서 `redis: 'down'` 반환 | `/api/health` 모니터링 |
-| Git Provider API Rate Limit (403/429) | GitClient | 에러를 상위로 전파, Scan → FAILED, `errorMessage`에 Rate Limit 정보 포함 | 폴링 응답 |
+| Git Provider API Rate Limit (403/429) | CodeCollectorService | 에러를 상위로 전파, Scan → FAILED, `errorMessage`에 Rate Limit 정보 포함 | 폴링 응답 |
 | 동시 스캔 중복 요청 경쟁 상태 | ScanService | Prisma 트랜잭션 격리로 방지. 트랜잭션 내부에서 중복 체크 + 생성을 원자적으로 수행 | 409 ConflictException |
+| 코드 수집 실패 (GitHub API 오류) | CodeCollectorService | 에러를 상위로 전파, Scan → FAILED, `errorMessage: '코드 수집 중 오류가 발생했습니다.'` | 폴링 응답 |
+| 수집 대상 파일 0개 (해당 언어 파일 없음) | CodeCollectorService | 빈 files[]로 분석 요청 → success: true, vulnerabilities: [] 반환, Scan → DONE | 대시보드에서 totalFiles=0 확인 |
+| 수집량 제한 초과 (maxFiles/maxTotalSize) | CodeCollectorService | 부분 수집 후 분석 진행, `truncated: true`를 로그에 기록 | Scan → DONE (부분 분석 완료) |
 
 #### GlobalExceptionFilter — 전역 예외 처리 필터
 
@@ -3065,18 +3342,26 @@ pnpm dev
     - Mock 단위 테스트: analyze() 호출 → AnalysisResult 반환 확인
 
 [ ] TASK-06: ILanguageHandler 플러그인 구조
-    - ILanguageHandler 인터페이스 작성
-    - JavaLanguageHandler 구현
+    - ILanguageHandler 인터페이스 작성 (getLanguage, getFileExtensions, getExcludePatterns, getMaxFileSize)
+    - JavaLanguageHandler 구현 (제외 패턴: test/generated/build/target/node_modules/vendor, maxFileSize: 100KB)
     - LanguageHandlerRegistry 작성
     - 등록 및 조회 단위 테스트
 
 [ ] TASK-07: IGitProviderClient 구현
-    - IGitProviderClient 인터페이스 작성
-    - GithubClient 구현 (레포 목록, 브랜치 커밋 SHA 조회)
+    - IGitProviderClient 인터페이스 작성 (getRepositories, getLatestCommitSha, getFileTree, getFileContent)
+    - GithubClient 구현 (레포 목록, 브랜치 커밋 SHA 조회, 파일 트리 조회, 파일 내용 조회, Tarball 다운로드)
     - GitlabClient 구현 (동일)
     - GitClientRegistry — provider 문자열로 클라이언트 조회
     - 외부 API pagination ↔ 내부 PageResponse 매핑
-    - 에러 핸들링 (401 토큰 만료, 404 레포 없음)
+    - 에러 핸들링 (401 토큰 만료, 404 레포 없음, 403/429 Rate Limit)
+
+[ ] TASK-07b: CodeCollectorService 구현 (v2.7 신규)
+    - code-collector.service.ts 작성 (섹션 8.4 기준)
+    - LanguageHandler 필터링 (확장자, 제외 패턴, 파일 크기)
+    - 하이브리드 수집 전략: 파일 수 ≤ 30 → 개별 Contents API, > 30 → Tarball
+    - 수집 제한 적용 (maxFiles: 500, maxTotalSize: 10MB, concurrency: 10)
+    - 수집 통계 로깅 (tree total → candidates → collected 형식)
+    - 단위 테스트: 필터링 로직, 제한 적용, truncated 반환 확인
 
 [ ] TASK-08: BullMQ 스캔 큐 + ScanProcessor 구현
     - @nestjs/bullmq, bullmq 설치 및 BullModule 설정 (Redis 연결)
@@ -3084,7 +3369,8 @@ pnpm dev
     - 앱 레벨 스캔 타임아웃 5분 구현 (AbortController 또는 동등한 취소 전파 포함)
     - ScanService.requestScan() — PENDING 저장 + Job 등록 (advisory lock 기반 PENDING/RUNNING 중복 방지)
     - ScanProcessor(WorkerHost) — 섹션 8.1 전체 흐름 구현
-      (토큰 복호화, Git 커밋 SHA 조회, Analysis API 호출, DB 저장, 상태 전환)
+      (토큰 복호화, Git 커밋 SHA 조회, CodeCollectorService로 파일 수집, Analysis API 호출, DB 저장, 상태 전환)
+    - totalFiles, totalLines는 CodeCollectorService 결과에서 직접 계산 (AI 서버 의존 제거)
     - Prisma Json 컬럼 저장 시 InputJsonValue 캐스팅 적용
     - 통합 테스트: requestScan() → Job 처리 → Scan DONE + Vulnerability 저장 확인
 ```
@@ -3577,7 +3863,7 @@ Phase 1 완료 기준:
 
 선택 통합 검증:
 [ ] docker compose up ai-server 실행 → GET http://localhost:8000/health 응답 확인
-[ ] USE_INTERNAL_AI=true 설정 시 InternalAnalysisApiClient → apps/ai /analyze 호출 동작 확인
+[ ] USE_INTERNAL_AI=true 설정 시 InternalAnalysisApiClient → apps/ai /analyze 호출 동작 확인 (files[] 전달, accessToken 미전달 확인)
 
 Phase 2 완료 기준:
 [ ] /api-docs (Swagger)에서 전체 엔드포인트 테스트 통과
