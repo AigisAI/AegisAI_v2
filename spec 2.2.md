@@ -1,7 +1,7 @@
 # Aegisai Platform — Agent Development Specification
 
 > **문서 유형:** AI 에이전트 개발 착수용 기술 명세서
-> **버전:** v2.8 (v2.7 기반 — PDF 리포트 Phase 1 필수 기능 추가)
+> **버전:** v2.8 (v2.7 리뷰 반영 — TOKEN_ENCRYPTION_KEY hex 전용 통일, StuckScanRecovery 상태별 임계치 분리, CodeCollector 실패 가시화, Provider Rate Limit 처리 명확화)
 > **기준 PRD:** PRD_Aegisai_Platform v2.0
 > **작성일:** 2026-03-13
 
@@ -1611,7 +1611,18 @@ export * from './types/dashboard';
 
 - 인증 사용자: **100 req/min**, 미인증: **20 req/min**
 - `POST /api/scans`: **10 req/min** (스캔 남용 방지)
-- GitHub/GitLab API 호출: 토큰당 요청 횟수 추적, Rate Limit 도달 시 429 반환
+**외부 Git Provider API Rate Limit 처리:**
+
+- GitHub API Rate Limit: 인증된 요청 기준 **5,000 req/hour** (OAuth 토큰 기준)
+- GitLab API Rate Limit: **인스턴스 설정에 따라 상이** (SaaS 기본 300 req/min)
+- 외부 Provider API 호출 시 응답 헤더(`X-RateLimit-Remaining`, `X-RateLimit-Reset`)를 확인한다.
+- **Rate Limit 도달 시 처리 전략:**
+  - `403` 또는 `429` 응답 수신 시 해당 스캔을 즉시 FAILED 처리하지 않고, `X-RateLimit-Reset` 헤더의 타임스탬프를 확인한다. `403`은 인증 실패(401과 다름)로도 사용되므로, `X-RateLimit-Remaining` 또는 `X-RateLimit-Reset` 헤더가 존재할 때만 Rate Limit으로 간주하고, 해당 헤더가 없으면 인증/권한 오류로 처리한다.
+  - 리셋 시간이 **2분 이내**이면 해당 시간만큼 대기 후 재시도한다 (최대 1회).
+  - 리셋 시간이 **2분 초과**이면 Scan → FAILED, `errorMessage`에 Rate Limit 정보와 예상 리셋 시간을 포함한다.
+  - 에러 메시지 예시: `'GitHub API 요청 한도에 도달했습니다. {reset_time}에 다시 시도해주세요.'`
+- **CodeCollectorService 통합:** 코드 수집 중 Rate Limit 발생 시 위 전략을 적용한다. 개별 파일 조회(`getFileContent`) 실패는 `skippedFiles`에 기록하고, Tree API 또는 Tarball API Rate Limit은 전체 수집 실패로 처리한다.
+- **MVP 최소 구현:** Phase 1에서는 Rate Limit 응답 시 즉시 에러를 상위로 전파하여 Scan → FAILED 처리한다. 리셋 시간 대기 재시도는 Phase 2에서 구현한다.
 - 구현: `@nestjs/throttler` 모듈 사용
 
 **식별 기준:**
@@ -2166,6 +2177,14 @@ export class ScanProcessor extends WorkerHost {
         );
       }
 
+      // 수집 실패 파일이 있으면 경고 로그 기록
+      if (collected.skippedFiles.length > 0) {
+        this.logger.warn(
+          `Scan ${scanId}: ${collected.skippedFiles.length} files skipped during collection. ` +
+          `Examples: ${collected.skippedFiles.slice(0, 3).map(f => f.path).join(', ')}`,
+        );
+      }
+
       // 앱 레벨 스캔 타임아웃: 5분
       // 중요: Promise.race만으로는 HTTP 요청이 실제 중단되지 않을 수 있으므로,
       // AbortController.signal을 analysisClient → Axios/HTTP 레이어까지 전달해야 한다.
@@ -2280,6 +2299,7 @@ export class ScanProcessor extends WorkerHost {
 
 > DB 업데이트 자체가 실패하여 스캔이 RUNNING 상태에 고착될 경우를 대비한 복구 스케줄러이다.
 > `@nestjs/schedule` 모듈 사용 (NestJS Cron).
+> 5분마다 실행 — RUNNING 10분 초과, PENDING 30분 초과 스캔을 FAILED로 전환. 상태별 임계치가 다른 이유: PENDING은 큐 대기 시간이 피크 타임에 길어질 수 있고, RUNNING은 앱 레벨 타임아웃(5분) + DB 업데이트 실패 여유분을 반영한다.
 
 ```typescript
 // scan/stuck-scan-recovery.task.ts
@@ -2290,27 +2310,51 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class StuckScanRecoveryTask {
   private readonly logger = new Logger(StuckScanRecoveryTask.name);
-  private readonly STUCK_THRESHOLD_MINUTES = 10;
+
+  // PENDING과 RUNNING에 서로 다른 임계치를 적용한다
+  private readonly PENDING_THRESHOLD_MINUTES = 30;  // PENDING: 큐 대기 허용 시간 (피크 타임 고려)
+  private readonly RUNNING_THRESHOLD_MINUTES = 10;  // RUNNING: 앱 타임아웃(5분) + 여유분
 
   constructor(private prisma: PrismaService) {}
 
-  // 5분마다 실행 — PENDING/RUNNING 상태로 10분 이상 멈춘 스캔을 FAILED로 전환
+  // 5분마다 실행
   @Cron('*/5 * * * *')
   async handleStuckScans() {
-    const threshold = new Date(Date.now() - this.STUCK_THRESHOLD_MINUTES * 60 * 1000);
-    const stuckScans = await this.prisma.scan.updateMany({
+    const now = Date.now();
+
+    // RUNNING 상태: 10분 초과 → FAILED
+    const runningThreshold = new Date(now - this.RUNNING_THRESHOLD_MINUTES * 60 * 1000);
+    const stuckRunning = await this.prisma.scan.updateMany({
       where: {
-        status: { in: ['PENDING', 'RUNNING'] },
-        updatedAt: { lt: threshold },
+        status: 'RUNNING',
+        updatedAt: { lt: runningThreshold },
       },
       data: {
         status: 'FAILED',
-        errorMessage: '스캔 처리 시간이 초과되어 자동으로 실패 처리되었습니다.',
+        errorMessage: '스캔 실행 시간이 초과되어 자동으로 실패 처리되었습니다.',
         completedAt: new Date(),
       },
     });
-    if (stuckScans.count > 0) {
-      this.logger.warn(`Recovered ${stuckScans.count} stuck scans`);
+
+    // PENDING 상태: 30분 초과 → FAILED
+    const pendingThreshold = new Date(now - this.PENDING_THRESHOLD_MINUTES * 60 * 1000);
+    const stuckPending = await this.prisma.scan.updateMany({
+      where: {
+        status: 'PENDING',
+        updatedAt: { lt: pendingThreshold },
+      },
+      data: {
+        status: 'FAILED',
+        errorMessage: '스캔 대기 시간이 초과되어 자동으로 실패 처리되었습니다. 큐가 혼잡할 수 있습니다.',
+        completedAt: new Date(),
+      },
+    });
+
+    const totalRecovered = stuckRunning.count + stuckPending.count;
+    if (totalRecovered > 0) {
+      this.logger.warn(
+        `Recovered ${totalRecovered} stuck scans (RUNNING: ${stuckRunning.count}, PENDING: ${stuckPending.count})`,
+      );
     }
   }
 }
@@ -2543,6 +2587,7 @@ export interface RepoListResult {
 - `GithubClient`, `GitlabClient` 각각 구현, `GitClientRegistry`로 provider 문자열 기반 조회
 - 외부 API pagination과 내부 `PageResponse` pagination을 명시적으로 매핑한다
 - 401 → 토큰 만료/무효로 처리, 404 → 레포 접근 불가 또는 삭제로 처리
+- 403/429 → Git Provider Rate Limit 도달. 응답 헤더 `X-RateLimit-Remaining`, `X-RateLimit-Reset`을 파싱하여 에러 메시지에 리셋 시간을 포함한다. MVP에서는 즉시 에러 전파, Phase 2에서 리셋 시간 대기 재시도 구현.
 
 모듈 초기화 시 클라이언트 등록 예시:
 
@@ -2590,6 +2635,7 @@ export interface CollectionResult {
   totalFiles: number;     // 수집된 파일 수
   totalLines: number;     // 수집된 총 라인 수
   truncated: boolean;     // maxFiles 또는 maxTotalSize 제한으로 잘렸는지 여부
+  skippedFiles: { path: string; reason: string }[];  // 🆕 수집 실패/건너뛴 파일 목록
 }
 
 @Injectable()
@@ -2643,10 +2689,16 @@ export class CodeCollectorService {
     // 4단계: 하이브리드 수집 전략
     //   - 파일 수 ≤ tarballThreshold: 개별 Contents API (간단, 빠름)
     //   - 파일 수 > tarballThreshold: Tarball 다운로드 후 필터링 (Rate Limit 절약)
-    const files: AnalysisFileItem[] =
-      limited.length <= cfg.tarballThreshold
-        ? await this.collectByContentsApi(gitClient, fullName, branch, accessToken, limited, cfg)
-        : await this.collectByTarball(gitClient, fullName, branch, accessToken, limited, cfg);
+    let files: AnalysisFileItem[];
+    let skippedFiles: { path: string; reason: string }[] = [];
+
+    if (limited.length <= cfg.tarballThreshold) {
+      const collected = await this.collectByContentsApi(gitClient, fullName, branch, accessToken, limited, cfg);
+      files = collected.files;
+      skippedFiles = collected.skippedFiles;
+    } else {
+      files = await this.collectByTarball(gitClient, fullName, branch, accessToken, limited, cfg);
+    }
 
     const totalFiles = files.length;
     const totalLines = files.reduce((sum, f) => sum + f.content.split('\n').length, 0);
@@ -2655,7 +2707,7 @@ export class CodeCollectorService {
       `Code collection complete: collected=${totalFiles} files, lines=${totalLines}, truncated=${truncated || files.length < limited.length}`,
     );
 
-    return { files, totalFiles, totalLines, truncated: truncated || files.length < limited.length };
+    return { files, totalFiles, totalLines, truncated: truncated || files.length < limited.length, skippedFiles };
   }
 
   /** 개별 Contents API 방식: 동시성 제한으로 병렬 수집 */
@@ -2666,8 +2718,9 @@ export class CodeCollectorService {
     accessToken: string,
     items: FileTreeItem[],
     cfg: CollectionConfig,
-  ): Promise<AnalysisFileItem[]> {
+  ): Promise<{ files: AnalysisFileItem[]; skippedFiles: { path: string; reason: string }[] }> {
     const results: AnalysisFileItem[] = [];
+    const skippedFiles: { path: string; reason: string }[] = [];
     let totalSize = 0;
     let reachedSizeLimit = false;
 
@@ -2680,7 +2733,10 @@ export class CodeCollectorService {
 
       for (let j = 0; j < fetched.length; j++) {
         const result = fetched[j];
-        if (result.status === 'rejected') continue;
+        if (result.status === 'rejected') {
+          skippedFiles.push({ path: chunk[j].path, reason: String(result.reason) });
+          continue;
+        }
 
         const content = result.value;
         const size = Buffer.byteLength(content, 'utf8');
@@ -2694,7 +2750,7 @@ export class CodeCollectorService {
       }
     }
 
-    return results;
+    return { files: results, skippedFiles };
   }
 
   /**
@@ -2748,7 +2804,7 @@ export class CodeCollectorService {
 | DB 트랜잭션 실패 | ScanService.requestScan | 트랜잭션 롤백, HTTP 500 반환 | 프론트 글로벌 에러 핸들러 |
 | BullMQ Job과 DB 상태 불일치 | ScanProcessor catch 블록 | catch 블록에서 반드시 Scan 상태를 FAILED로 업데이트. 만약 이 업데이트마저 실패하면 NestJS Logger.error로 기록하고, 별도 RUNNING 상태 타임아웃 스케줄러(StuckScanRecoveryTask)로 복구한다. | 관리자 로그 확인 |
 | Redis 연결 실패 | BullMQ Worker 시작 | Worker 재연결 시도 (BullMQ 기본 동작). Health Check에서 `redis: 'down'` 반환 | `/api/health` 모니터링 |
-| Git Provider API Rate Limit (403/429) | CodeCollectorService | 에러를 상위로 전파, Scan → FAILED, `errorMessage`에 Rate Limit 정보 포함 | 폴링 응답 |
+| Git Provider API Rate Limit (403/429) | GitClient / CodeCollectorService | MVP: 에러를 상위로 전파, Scan → FAILED. `errorMessage`에 Rate Limit 리셋 시간 포함 (예: 'GitHub API 요청 한도에 도달했습니다. 14:30에 다시 시도해주세요.'). Phase 2: 리셋 시간 2분 이내이면 대기 후 1회 재시도 | 폴링 응답에서 에러 메시지 확인 |
 | 동시 스캔 중복 요청 경쟁 상태 | ScanService | Prisma 트랜잭션 격리로 방지. 트랜잭션 내부에서 중복 체크 + 생성을 원자적으로 수행 | 409 ConflictException |
 | 코드 수집 실패 (GitHub API 오류) | CodeCollectorService | 에러를 상위로 전파, Scan → FAILED, `errorMessage: '코드 수집 중 오류가 발생했습니다.'` | 폴링 응답 |
 | 수집 대상 파일 0개 (해당 언어 파일 없음) | CodeCollectorService | 빈 files[]로 분석 요청 → success: true, vulnerabilities: [] 반환, Scan → DONE | 대시보드에서 totalFiles=0 확인 |
@@ -4147,7 +4203,7 @@ E2E-05: PDF 리포트 생성 및 다운로드
 | `GITLAB_CLIENT_SECRET` | ✅ | GitLab Application Secret |
 | `APP_URL` | ✅ | API 서버 Base URL (OAuth 콜백용) |
 | `FRONTEND_URL` | ✅ | 프론트엔드 Base URL (CORS origin + OAuth 리다이렉트) |
-| `TOKEN_ENCRYPTION_KEY` | ✅ | OAuth 토큰 AES-256-GCM 암호화 키 (32바이트, hex 인코딩된 64자 문자열 또는 base64 인코딩된 44자 문자열로 전달. 예: `openssl rand -hex 32`) |
+| `TOKEN_ENCRYPTION_KEY` | ✅ | OAuth 토큰 AES-256-GCM 암호화 키 (32바이트, **hex 인코딩된 64자 문자열**. 생성: `openssl rand -hex 32`) |
 | `NODE_ENV` | ✅ | `development` / `production` |
 | `VITE_API_URL` | - | 프론트엔드에서 사용하는 API 서버 URL (기본: `http://localhost:3000/api`, `apps/web/.env`에 설정) |
 | `AI_SERVER_URL` | - | apps/ai FastAPI 서버 URL (기본: `http://localhost:8000`) |
