@@ -1,7 +1,7 @@
 # Aegisai Platform — Agent Development Specification
 
 > **문서 유형:** AI 에이전트 개발 착수용 기술 명세서
-> **버전:** v2.7 (v2.6 리뷰 반영 — 분석 서버 연동 구조 개선: 백엔드 코드 수집 방식 전환, 보안 강화, 관심사 분리)
+> **버전:** v2.8 (v2.7 기반 — PDF 리포트 Phase 1 필수 기능 추가)
 > **기준 PRD:** PRD_Aegisai_Platform v2.0
 > **작성일:** 2026-03-13
 
@@ -35,6 +35,7 @@
    - 8.3 [Git Provider 클라이언트 구조](#83-git-provider-클라이언트-구조)
    - 8.4 [CodeCollectorService — 코드 수집 전담 서비스](#84-codecollectorservice--코드-수집-전담-서비스-v27-신규)
    - 8.5 [에러 시나리오 및 복구 전략](#85-에러-시나리오-및-복구-전략)
+   - 8.6 [ReportService + ReportProcessor — PDF 리포트 생성](#86-reportservice--reportprocessor--pdf-리포트-생성)
 9. [GitHub/GitLab 연동 플로우](#9-githubgitlab-연동-플로우)
 10. [개발 환경 설정](#10-개발-환경-설정)
 11. [개발 태스크 (Phase별)](#11-개발-태스크-phase별)
@@ -60,12 +61,12 @@ Aegisai는 GitHub/GitLab 레포지토리를 연동하여 **Java 코드의 보안
 | 5 | 대시보드 | 취약점 현황 요약 (심각도별 분포, 추이) |
 | 6 | 취약점 상세 | 파일·라인·코드 스니펫·수정 제안·신뢰도 점수 표시 |
 | 7 | 스캔 히스토리 | 프로젝트별 스캔 이력 관리 |
+| 8 | PDF 리포트 내보내기 | 스캔 결과를 PDF로 다운로드 (취약점 목록, 코드 스니펫, 수정 제안 포함) |
 
 ### 1.2 이번 구현에서 제외
 
 - 코드 파일 직접 업로드
 - SaaS 백엔드 내부의 자체 취약점 탐지 엔진 구현
-- PDF 리포트 내보내기
 - RBAC / 팀 기능
 - 실시간 스캔 상태 스트리밍 (WebSocket/SSE)
 - 피드백 기반 앙상블 가중치 자동 학습
@@ -119,6 +120,7 @@ pnpm workspace 기반 monorepo
 | Scheduler | @nestjs/schedule | 4.x | StuckScanRecoveryTask Cron 스케줄러 |
 | Logging | NestJS built-in Logger | - | 개발: debug, 운영: info |
 | Testing | Jest + Supertest + @testcontainers/postgresql | - | 단위/통합 테스트 |
+| PDF 생성 | Puppeteer | 23.x | HTML → PDF 변환, 차트/코드 스니펫 렌더링 |
 
 > **Redis 용도:** Phase 1부터 Redis를 도입하여 (1) BullMQ Job Queue, (2) express-session 세션 스토어로 사용한다. 범용 캐싱(node-cache → Redis 전환)은 Phase 2에서 진행한다.
 
@@ -362,6 +364,12 @@ apps/api/
     │   └── services/
     │       └── code-collector.service.ts  # 코드 수집 전담 서비스 (v2.7 신규)
     │
+    ├── report/
+    │   ├── report.module.ts
+    │   ├── report.controller.ts
+    │   ├── report.service.ts
+    │   └── report.processor.ts       # BullMQ Worker — PDF 생성 비동기 처리
+    │
     ├── webhook/               # Phase 2 예약
     │   ├── webhook.module.ts
     │   └── webhook.controller.ts
@@ -436,6 +444,7 @@ import { VulnerabilityModule } from './vulnerability/vulnerability.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { LanguageModule } from './language/language.module';
+import { ReportModule } from './report/report.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
@@ -474,6 +483,7 @@ import { SessionAwareThrottlerGuard } from './common/guards/session-aware-thrott
     VulnerabilityModule,
     DashboardModule,
     LanguageModule,
+    ReportModule,
 
     // 6. 유틸리티 모듈
     HealthModule,
@@ -514,7 +524,8 @@ apps/web/
     │   ├── ReposPage.tsx
     │   ├── ScanPage.tsx
     │   ├── VulnerabilitiesPage.tsx
-    │   └── VulnerabilityDetailPage.tsx
+    │   ├── VulnerabilityDetailPage.tsx
+    │   └── ReportPage.tsx           # (선택) 리포트 상태/다운로드 페이지
     │
     ├── components/
     │   ├── layout/
@@ -533,12 +544,15 @@ apps/web/
     │       ├── CodeDiffViewer.tsx
     │       ├── ConsensusScoreBadge.tsx  # consensusScore 시각화
     │       └── ModelResultsPanel.tsx    # 모델별 판단 근거 아코디언
+    │   └── report/
+    │       └── DownloadReportButton.tsx  # 스캔 상세에서 PDF 다운로드 트리거
     │
     ├── hooks/
     │   ├── useAuth.ts
     │   ├── useRepos.ts
     │   ├── useScan.ts
-    │   └── useVulnerabilities.ts
+    │   ├── useVulnerabilities.ts
+    │   └── useReport.ts
     │
     ├── api/
     │   ├── client.ts          # Axios 인스턴스 + 인터셉터
@@ -546,7 +560,8 @@ apps/web/
     │   ├── repos.ts
     │   ├── scans.ts
     │   ├── vulnerabilities.ts
-    │   └── dashboard.ts
+    │   ├── dashboard.ts
+    │   └── reports.ts
     │
     └── store/
         └── auth.store.ts      # Zustand — 인증 상태
@@ -661,6 +676,44 @@ apps/ai/
 
 > **개발 모드:** `tsconfig references` 또는 path alias 를 통해 `packages/shared/src` 소스를 직접 참조하므로, 개발 중에는 별도 빌드 없이 변경이 실시간 반영된다. **배포 빌드** 시에는 `pnpm --filter @aegisai/shared build`로 `.d.ts` + `.js`를 먼저 생성한다.
 
+#### packages/shared/src/types/report.ts — PDF 리포트 공유 타입
+
+```typescript
+/** packages/shared/src/types/report.ts */
+export type ReportStatus = 'GENERATING' | 'READY' | 'FAILED';
+
+export interface ReportRequestResponse {
+  reportId: string;
+  status: 'GENERATING';
+  message: string;
+}
+
+export interface ReportDetail {
+  id: string;
+  scanId: string;
+  status: ReportStatus;
+  downloadUrl: string | null;
+  createdAt: string;
+  expiresAt: string | null;
+}
+```
+
+`packages/shared/src/index.ts`에 다음을 추가한다:
+
+```typescript
+export * from './types/report';
+```
+
+또한 공유 타입 디렉토리 구조에 `report.ts`를 포함한다:
+
+```text
+packages/shared/src/types/
+    ├── common.ts            # ApiResponse<T>, PageResponse<T>, ErrorResponse
+    ├── scan.ts              # ScanStatus, ScanDetail 등
+    ├── vulnerability.ts     # Severity, VulnStatus, VulnerabilityItem 등
+    └── report.ts            # ReportStatus, ReportDetail
+```
+
 ---
 
 ## 5. Prisma 스키마
@@ -709,6 +762,12 @@ enum UserFeedback {
   REJECTED
 }
 
+enum ReportStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String?         @unique
@@ -719,6 +778,7 @@ model User {
 
   oauthTokens    OAuthToken[]
   connectedRepos ConnectedRepo[]
+  reports        Report[]
 }
 
 model OAuthToken {
@@ -778,6 +838,7 @@ model Scan {
 
   connectedRepo   ConnectedRepo   @relation(fields: [connectedRepoId], references: [id], onDelete: Cascade)
   vulnerabilities Vulnerability[]
+  reports         Report[]
 
   @@index([connectedRepoId])
   @@index([status])
@@ -812,6 +873,25 @@ model Vulnerability {
   @@index([scanId])
   @@index([severity])
   @@index([status])
+}
+
+model Report {
+  id           String       @id @default(uuid())
+  scanId       String
+  userId       String
+  status       ReportStatus @default(GENERATING)
+  filePath     String?      // 생성된 PDF 파일 경로 (로컬 또는 S3 키)
+  downloadUrl  String?      // Presigned URL 또는 직접 다운로드 경로
+  expiresAt    DateTime?    // 다운로드 URL 만료 시각
+  errorMessage String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  scan Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+  @@index([userId])
 }
 ```
 
@@ -906,11 +986,25 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
+    Report {
+        uuid id PK
+        uuid scanId FK
+        uuid userId FK
+        ReportStatus status
+        string filePath
+        string downloadUrl
+        datetime expiresAt
+        string errorMessage
+        datetime createdAt
+        datetime updatedAt
+    }
 
     User ||--o{ OAuthToken : "has (1 per provider)"
     User ||--o{ ConnectedRepo : "connects"
     ConnectedRepo ||--o{ Scan : "triggers"
     Scan ||--o{ Vulnerability : "discovers"
+    Scan ||--o{ Report : "generates"
+    User ||--o{ Report : "requests"
 ```
 
 ---
@@ -1467,7 +1561,53 @@ export * from './types/dashboard';
 
 판정 규칙: DB와 Redis가 모두 `up`이면 `ok`, 하나라도 `down`이면 `degraded`.
 
-### 6.8 Rate Limiting
+### 6.8 PDF 리포트
+
+#### `POST /api/reports/scans/:scanId/pdf` — PDF 리포트 생성 요청 (비동기)
+
+> 인증 필수. 해당 스캔의 ConnectedRepo 소유자만 요청 가능.
+> Controller에서 `@HttpCode(202)` 데코레이터를 명시한다.
+
+```typescript
+// Response 202 — ApiResponse 의 data payload
+{
+  reportId: string;
+  status: 'GENERATING';
+  message: string;
+}
+// 404 — 스캔을 찾을 수 없음
+// 400 — 스캔이 DONE 상태가 아님 (PENDING/RUNNING/FAILED 상태에서는 리포트 생성 불가)
+```
+
+#### `GET /api/reports/:reportId` — 리포트 상태 조회
+
+> 인증 필수. 리포트 소유자만 조회 가능.
+
+```typescript
+{
+  id: string;
+  scanId: string;
+  status: 'GENERATING' | 'READY' | 'FAILED';
+  downloadUrl: string | null;  // READY 상태일 때만 존재 (S3 Presigned URL 또는 로컬 경로)
+  createdAt: string;
+  expiresAt: string | null;    // 다운로드 URL 만료 시각
+}
+```
+
+#### `GET /api/reports/:reportId/download` — PDF 파일 다운로드
+
+> 인증 필수. 리포트 소유자만 다운로드 가능.
+> `Content-Type: application/pdf` 응답.
+> `@SkipTransform()` 적용 (바이너리 응답이므로 ApiResponse 래핑 제외).
+
+```typescript
+// 200 — PDF 바이너리 스트림
+// Content-Disposition: attachment; filename="aegisai-scan-report-{scanId}.pdf"
+// 404 — 리포트를 찾을 수 없거나 아직 생성 중
+// 410 — 리포트 만료 (다운로드 URL 유효기간 초과)
+```
+
+### 6.9 Rate Limiting
 
 - 인증 사용자: **100 req/min**, 미인증: **20 req/min**
 - `POST /api/scans`: **10 req/min** (스캔 남용 방지)
@@ -1481,7 +1621,7 @@ export * from './types/dashboard';
 - 구현 시 `ThrottlerGuard`를 그대로 쓰지 않고, 인증 여부에 따라 `sessionID ?? req.ip`를 반환하는 커스텀 가드를 사용한다.
 - `POST /api/scans`에는 `@Throttle({ scan: { limit: 10, ttl: 60000 } })`를 명시해 기본 한도와 별도 적용한다.
 
-### 6.9 Phase 2 예약 API
+### 6.10 Phase 2 예약 API
 
 #### `POST /api/vulnerabilities/:vulnId/suggest-change`
 
@@ -2613,6 +2753,10 @@ export class CodeCollectorService {
 | 코드 수집 실패 (GitHub API 오류) | CodeCollectorService | 에러를 상위로 전파, Scan → FAILED, `errorMessage: '코드 수집 중 오류가 발생했습니다.'` | 폴링 응답 |
 | 수집 대상 파일 0개 (해당 언어 파일 없음) | CodeCollectorService | 빈 files[]로 분석 요청 → success: true, vulnerabilities: [] 반환, Scan → DONE | 대시보드에서 totalFiles=0 확인 |
 | 수집량 제한 초과 (maxFiles/maxTotalSize) | CodeCollectorService | 부분 수집 후 분석 진행, `truncated: true`를 로그에 기록 | Scan → DONE (부분 분석 완료) |
+| PDF 생성 실패 (Puppeteer 오류) | ReportProcessor | Report → FAILED + errorMessage. 1회 재시도 후에도 실패 시 최종 FAILED | 리포트 상태 조회 시 확인 |
+| 스캔 미완료 상태에서 리포트 요청 | ReportService | 400 BadRequest ('완료된 스캔에 대해서만 리포트를 생성할 수 있습니다.') | API 응답에서 확인 |
+| 리포트 다운로드 URL 만료 | ReportController | 410 Gone ('리포트가 만료되었습니다. 새로 생성해주세요.') | API 응답에서 확인 |
+| 리포트 중복 생성 요청 | ReportService | 기존 GENERATING 상태 리포트의 reportId 반환 (중복 Job 방지) | API 응답에서 기존 reportId 확인 |
 
 #### GlobalExceptionFilter — 전역 예외 처리 필터
 
@@ -2779,6 +2923,193 @@ export const ResourceOwnerCheck = (resourceType: string) => SetMetadata('resourc
 // @UseGuards(SessionAuthGuard, ResourceOwnerGuard)
 // @ResourceOwnerCheck('scan')
 // async getScan(@Param('scanId') scanId: string) { ... }
+```
+
+### 8.6 ReportService + ReportProcessor — PDF 리포트 생성
+
+> PDF 리포트는 스캔 완료(DONE) 상태에서만 생성 가능하다. 생성은 비동기로 처리한다.
+
+**생성 흐름:**
+
+```text
+사용자: POST /api/reports/scans/:scanId/pdf
+  → ReportService.requestReport(userId, scanId)
+    → Scan 상태 확인 (DONE이 아니면 400)
+    → Report 레코드 생성 (GENERATING)
+    → BullMQ 'report-jobs' 큐에 Job 등록
+    → 202 반환 { reportId, status: 'GENERATING' }
+
+ReportProcessor (Worker):
+  1. Scan + Vulnerabilities 데이터 조회
+  2. HTML 템플릿 렌더링 (Handlebars 또는 EJS)
+     - 스캔 요약 (레포명, 브랜치, 날짜, 파일 수, 라인 수)
+     - 심각도별 분포 (테이블)
+     - 취약점 상세 목록 (제목, 설명, 파일경로, 코드 스니펫, 수정 제안, CWE/OWASP)
+     - consensusScore 및 모델별 판단 근거
+  3. Puppeteer → PDF 변환
+  4. PDF 저장 (MVP: 로컬 파일시스템 ./reports/, Phase 2: S3)
+  5. Report 상태 → READY + filePath/downloadUrl 업데이트
+  에러 시: Report 상태 → FAILED + errorMessage 기록
+```
+
+```typescript
+// report/report.service.ts
+@Injectable()
+export class ReportService {
+  constructor(
+    private prisma: PrismaService,
+    @InjectQueue('report-jobs') private reportQueue: Queue,
+  ) {}
+
+  async requestReport(userId: string, scanId: string) {
+    // 스캔 존재 및 소유권 확인
+    const scan = await this.prisma.scan.findFirst({
+      where: { id: scanId },
+      include: { connectedRepo: { select: { userId: true } } },
+    });
+    if (!scan) throw new NotFoundException('스캔을 찾을 수 없습니다.');
+    if (scan.connectedRepo.userId !== userId) throw new ForbiddenException();
+    if (scan.status !== 'DONE') {
+      throw new BadRequestException('완료된 스캔에 대해서만 리포트를 생성할 수 있습니다.');
+    }
+
+    // 이미 생성 중인 리포트가 있는지 확인
+    const existing = await this.prisma.report.findFirst({
+      where: { scanId, userId, status: 'GENERATING' },
+    });
+    if (existing) {
+      return { reportId: existing.id, status: 'GENERATING' as const, message: '리포트가 이미 생성 중입니다.' };
+    }
+
+    const report = await this.prisma.report.create({
+      data: { scanId, userId, status: 'GENERATING' },
+    });
+
+    await this.reportQueue.add('generate-report', { reportId: report.id }, {
+      jobId: report.id,
+      attempts: 2,        // 최대 2회 시도 (1회 재시도 포함)
+      backoff: { type: 'fixed', delay: 5000 },
+    });
+
+    return {
+      reportId: report.id,
+      status: 'GENERATING' as const,
+      message: 'PDF 리포트 생성이 시작되었습니다.',
+    };
+  }
+}
+```
+
+```typescript
+// report/report.processor.ts
+@Processor('report-jobs', { concurrency: 2 })
+export class ReportProcessor extends WorkerHost {
+  private readonly logger = new Logger(ReportProcessor.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private pdfGenerator: PdfGeneratorService,  // Puppeteer 래퍼
+  ) {
+    super();
+  }
+
+  async process(job: Job<{ reportId: string }>) {
+    const { reportId } = job.data;
+
+    try {
+      const report = await this.prisma.report.findUnique({
+        where: { id: reportId },
+        include: {
+          scan: {
+            include: {
+              connectedRepo: true,
+              vulnerabilities: { orderBy: { severity: 'desc' } },
+            },
+          },
+        },
+      });
+
+      if (!report) throw new Error(`Report not found: ${reportId}`);
+
+      // PDF 생성 (Puppeteer)
+      const pdfBuffer = await this.pdfGenerator.generateScanReport(report.scan);
+
+      // MVP: 로컬 저장 (Phase 2에서 S3로 전환)
+      const fileName = `aegisai-scan-report-${report.scanId}.pdf`;
+      const filePath = join(process.cwd(), 'reports', fileName);
+      await mkdir(join(process.cwd(), 'reports'), { recursive: true });
+      await writeFile(filePath, pdfBuffer);
+
+      await this.prisma.report.update({
+        where: { id: reportId },
+        data: {
+          status: 'READY',
+          filePath,
+          downloadUrl: `/api/reports/${reportId}/download`,
+          expiresAt: new Date(Date.now() + Number(process.env.REPORT_EXPIRY_HOURS || 24) * 60 * 60 * 1000), // REPORT_EXPIRY_HOURS 기준 만료
+        },
+      });
+
+      this.logger.log(`Report generated: ${reportId} → ${filePath}`);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      await this.prisma.report.update({
+        where: { id: reportId },
+        data: { status: 'FAILED', errorMessage: error.message },
+      });
+      this.logger.error(`Report generation failed: ${reportId}`, error.stack);
+      throw err; // BullMQ 재시도 트리거
+    }
+  }
+}
+```
+
+**PDF 템플릿 구성:**
+
+```text
+PDF 리포트 포함 내용:
+1. 헤더: Aegisai 로고, 생성 일시
+2. 스캔 요약: 레포명, 브랜치, 커밋 SHA, 스캔 일시, 분석 파일 수/라인 수
+3. 심각도별 분포 테이블: CRITICAL / HIGH / MEDIUM / LOW / INFO 건수
+4. 취약점 상세 목록 (severity 높은 순 정렬):
+   - 제목, 설명
+   - 파일 경로 + 라인 번호
+   - 코드 스니펫 (구문 강조)
+   - 수정 제안 (diff 형식)
+   - CWE/CVE/OWASP 참조
+   - Consensus Score + 모델별 판단 근거 (consensusScore < 1.0 시)
+5. 푸터: 페이지 번호, "Aegisai에 의해 자동 생성됨" 면책 문구
+```
+
+**BullMQ 설정:**
+- 큐 이름: `report-jobs`
+- 동시성: `concurrency: 2` (Puppeteer 메모리 사용량 고려)
+- 재시도: `attempts: 2`, `backoff: fixed 5초`
+- `removeOnComplete: true`, `removeOnFail: false`
+
+**MVP 저장 전략:**
+- MVP에서는 로컬 파일시스템(`./reports/` 디렉토리)에 PDF를 저장한다.
+- 다운로드는 `ReportController`에서 `res.sendFile()`로 직접 서빙한다.
+- 보존 기간: 24시간. `expiresAt` 이후 요청 시 410 Gone 반환.
+- Phase 2에서 S3 + Presigned URL로 전환한다.
+- 만료된 리포트 파일 정리: `@Cron('0 3 * * *')` (매일 새벽 3시) 스케줄러로 `expiresAt < now()` 파일 삭제.
+
+**ReportModule 구성:**
+
+```typescript
+// report/report.module.ts
+@Module({
+  imports: [
+    BullModule.registerQueue({
+      name: 'report-jobs',
+      defaultJobOptions: { attempts: 2, removeOnComplete: true, removeOnFail: false },
+    }),
+    PrismaModule,
+  ],
+  controllers: [ReportController],
+  providers: [ReportService, ReportProcessor, PdfGeneratorService],
+})
+export class ReportModule {}
 ```
 
 ---
@@ -3373,6 +3704,16 @@ pnpm dev
     - totalFiles, totalLines는 CodeCollectorService 결과에서 직접 계산 (AI 서버 의존 제거)
     - Prisma Json 컬럼 저장 시 InputJsonValue 캐스팅 적용
     - 통합 테스트: requestScan() → Job 처리 → Scan DONE + Vulnerability 저장 확인
+
+[ ] TASK-08b: PDF 리포트 생성 (Phase 1)
+    - Report 모델 추가 (Prisma migration)
+    - ReportModule, ReportController, ReportService, ReportProcessor 구현
+    - PdfGeneratorService: Puppeteer 기반 HTML → PDF 변환
+    - HTML 템플릿 작성 (스캔 요약, 심각도 분포, 취약점 상세 목록)
+    - BullMQ 'report-jobs' 큐 설정 (concurrency: 2, attempts: 2)
+    - MVP 로컬 파일 저장 (./reports/) + 다운로드 엔드포인트
+    - 만료 리포트 정리 스케줄러 (24시간 후 파일 삭제)
+    - 통합 테스트: POST /api/reports/scans/:scanId/pdf → GENERATING → READY → 다운로드 확인
 ```
 
 ### Phase 2 — REST API 레이어
@@ -3407,7 +3748,7 @@ pnpm dev
     - SkipTransform 데코레이터 구현 (health, 204 응답 예외 처리)
     - SessionAwareThrottlerGuard 구현 (세션 ID/IP 기준 tracker)
     - @nestjs/swagger 설정 및 /api-docs 확인
-    - @nestjs/throttler Rate Limiting 설정 (섹션 6.8 기준)
+    - @nestjs/throttler Rate Limiting 설정 (섹션 6.9 기준)
 
 [ ] TASK-14: Health Check + DB 시드
     - HealthModule 구현 및 AppModule 등록
@@ -3464,6 +3805,11 @@ pnpm dev
     - ModelResultsPanel — consensusScore < 1.0 시 모델별 판단 근거 아코디언
     - Accept/Reject 피드백 버튼
 
+[ ] TASK-21b: PDF 리포트 다운로드 UI
+    - DownloadReportButton 컴포넌트 (스캔 상세 페이지에 배치)
+    - useReport 훅 (리포트 생성 요청 + 상태 폴링)
+    - 리포트 생성 중 → 스피너 표시, 완료 → 다운로드 링크 활성화
+
 [ ] TASK-22: 대시보드
     - StatCard (심각도별 카운트)
     - SeverityPieChart (Recharts)
@@ -3479,6 +3825,11 @@ pnpm dev
     - 모델별 정탐률 계산 → ConsensusEngine 가중치 동적 조정
     - 가중치 저장: DB 또는 별도 설정 테이블
     - 관리자용 GET /api/admin/consensus-weights 엔드포인트
+
+[ ] TASK-26-P2: PDF 리포트 S3 전환
+    - 로컬 파일 저장 → S3 업로드 전환
+    - S3 Presigned URL 기반 다운로드
+    - S3 Lifecycle Rule로 자동 만료
 ```
 
 ---
@@ -3683,6 +4034,11 @@ export function useAuth() {
 - SessionAwareThrottlerGuard: 인증 사용자는 sessionID, 미인증 사용자는 IP 기준 추적 확인
 - OAuth 통합 테스트: strategy/service mock 기반 (실제 외부 provider 호출 불필요)
 - BullMQ 통합 테스트: @testcontainers/redis 또는 docker compose의 Redis 서비스를 활용하여 BullMQ Worker 통합 테스트를 수행한다.
+- ReportService: requestReport() → BullMQ 'report-jobs' Job 등록 확인
+- ReportService: DONE이 아닌 스캔에 대한 리포트 요청 → 400 반환 확인
+- ReportProcessor: PDF 생성 → Report READY 상태 전환 + 파일 존재 확인
+- ReportController: GET /api/reports/:reportId/download → PDF 바이너리 응답 확인
+- ReportController: 만료된 리포트 다운로드 → 410 Gone 반환 확인
 ```
 
 **E2E 시나리오 테스트 (Supertest 기반):**
@@ -3710,6 +4066,14 @@ E2E-04: 보안/응답 예외 규칙 확인
   2. GET /api/health → raw JSON 확인 (success/data 래퍼 없음)
   3. DELETE /api/repos/:repoId → 204 No Content 확인
   4. POST /api/scans 반복 호출 → 429 확인
+
+E2E-05: PDF 리포트 생성 및 다운로드
+  1. 스캔 완료 (DONE) 상태 확보
+  2. POST /api/reports/scans/:scanId/pdf → 202 확인
+  3. GET /api/reports/:reportId → status: GENERATING 확인
+  4. BullMQ Worker 완료 대기
+  5. GET /api/reports/:reportId → status: READY + downloadUrl 확인
+  6. GET /api/reports/:reportId/download → Content-Type: application/pdf 확인
 ```
 
 **BullMQ 통합 테스트 환경:**
@@ -3794,6 +4158,8 @@ E2E-04: 보안/응답 예외 규칙 확인
 | `OPENAI_API_KEY` | - | 파인튜닝 모델 호출용 (OpenAI 기반 파인튜닝 시) |
 | `GITHUB_APP_WEBHOOK_SECRET` | - | GitHub Webhook HMAC-SHA256 서명 검증 키 [Phase 2] |
 | `GITLAB_WEBHOOK_SECRET` | - | GitLab Webhook Secret Token 평문 검증 키 [Phase 2] |
+| `REPORTS_DIR` | - | PDF 리포트 저장 디렉토리 (기본: `./reports`). Phase 2에서 S3 전환 시 미사용 |
+| `REPORT_EXPIRY_HOURS` | - | 리포트 다운로드 URL 유효 시간 (기본: 24시간) |
 
 ### 부록 A-1. `.env.example` 템플릿
 
@@ -3844,6 +4210,10 @@ INTERNAL_API_SECRET=
 # Webhook Secrets (Phase 2)
 # GITHUB_APP_WEBHOOK_SECRET=
 # GITLAB_WEBHOOK_SECRET=
+
+# PDF Reports
+REPORTS_DIR=./reports
+REPORT_EXPIRY_HOURS=24
 ```
 
 ### 부록 B. 에이전트 개발 체크리스트
@@ -3860,6 +4230,7 @@ Phase 1 완료 기준:
 [ ] GET /api/scans/:id → status: "DONE" + 취약점 데이터 (consensusScore 포함) 반환 확인
 [ ] GET /api/health → DB·Redis 연결 상태 확인
 [ ] 세션 유지 확인 (GitHub 로그인 → /api/auth/me 응답)
+[ ] POST /api/reports/scans/:scanId/pdf → 리포트 생성 → PDF 다운로드 동작 확인
 
 선택 통합 검증:
 [ ] docker compose up ai-server 실행 → GET http://localhost:8000/health 응답 확인
