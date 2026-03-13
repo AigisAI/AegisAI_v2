@@ -1,7 +1,7 @@
 # Aegisai Platform — Agent Development Specification
 
 > **문서 유형:** AI 에이전트 개발 착수용 기술 명세서
-> **버전:** v2.9 (v2.8 기반 — Phase 2~3 로드맵 섹션 추가: CI/CD, HA/DR, 과금, 이메일 알림/PDF, 보안 인증, 이용약관)
+> **버전:** v3.0 (v2.9 기반 — MVP 기준 정합성 보강, 브랜치 조회 API 추가, CSRF 정책 강화, 성공 지표 측정 기준 명확화)
 > **기준 PRD:** PRD_Aegisai_Platform v2.0
 > **작성일:** 2026-03-13
 
@@ -14,6 +14,13 @@
 3. **취약점 탐지 로직은 SaaS 백엔드(apps/api)에서 직접 구현하지 않는다.** 백엔드는 `IAnalysisApiClient` 인터페이스를 통해 외부 분석 시스템에 위임한다. Phase 1 기본 구현은 `MockAnalysisApiClient`이며, `apps/ai` 연동은 선택적 통합 경로로 제공한다.
 4. 프론트엔드와 백엔드는 모두 TypeScript를 사용하며, 공유 타입은 `packages/shared` 패키지에서 관리한다.
 5. 모든 인터페이스와 추상화는 **확장성 우선**으로 설계한다.
+
+### 문서 적용 규칙
+
+- 이 문서는 **MVP 구현 기준 명세 + 향후 확장 로드맵**을 함께 담는다.
+- 섹션/문단에 **`Phase 2 로드맵`**, **`Phase 3 로드맵`**, **`선택 통합`**, **`향후 확장`** 표시가 없으면 **MVP 구현 필수 요구사항**으로 간주한다.
+- 로드맵 섹션은 설계 방향을 공유하기 위한 **참고 정보**이며, MVP 완료 판정 기준에는 포함하지 않는다.
+- 구현 우선순위 판단 시에는 항상 **1. 프로젝트 개요 → 6. API 명세 → 8. 핵심 모듈 설계 → 11. 개발 태스크** 순으로 해석한다.
 
 ---
 
@@ -88,15 +95,15 @@ Aegisai는 GitHub/GitLab 레포지토리를 연동하여 **Java 코드의 보안
 
 > `apps/ai`, GitHub Webhook, Suggested Changes 관련 내용은 **향후 확장 또는 선택 통합 경로를 위한 설계 명세**로 문서에 포함한다. 기본 Phase 1 구현 완료 기준은 `MockAnalysisApiClient` 기반 동작이다.
 
-> CI/CD 및 배포 파이프라인은 MVP 완성 후 별도 문서로 정의한다.
+> CI/CD, HA/DR, 과금, 보안 인증, 약관/개인정보처리방침 관련 하위 섹션은 **로드맵 참고용 요약**이다. 구현 착수의 1차 기준은 아니며, 실제 운영 전환 시 별도 실행 문서 또는 ADR로 구체화한다.
 
 ### 1.3 성공 기준 (Success Metrics)
 
 | 지표 | 목표값 |
 |------|--------|
-| 사용성 | GitHub 연동 후 첫 PR 분석까지 **1분 이내** |
-| 분석 속도 | 코드 1,000라인당 분석 + 패치 생성 **30초 이내** |
-| 효율성 | 수동 코드 리뷰 대비 취약점 수정 시간 **50% 단축** |
+| 사용성 | GitHub/GitLab 연동 후 **첫 레포 연결 + 기본 브랜치 스캔 요청까지 1분 이내** |
+| 분석 속도 | **기준 저장소(Java 1,000 LOC, Git provider API 정상 응답, `MockAnalysisApiClient` 기준)** 첫 결과 생성 **30초 이내** |
+| 효율성 | 내부 파일럿 기준, 수동 코드 리뷰 대비 **취약점 검토 + 수정 초안 확인 시간 50% 단축** |
 
 ---
 
@@ -1027,7 +1034,7 @@ erDiagram
 ### 6.1 공통 규칙
 
 - Base URL: `/api`
-- 인증: Session Cookie (`connect.sid`) — Passport.js 세션
+- 인증: Session Cookie (기본값: `connect.sid`, 환경변수 `SESSION_COOKIE_NAME`으로 변경 가능) — Passport.js 세션
   - 세션 TTL: **24시간** (`maxAge: 86400000`)
   - `cookie.secure`: production에서만 `true`
   - `cookie.sameSite`: `'lax'`
@@ -1037,13 +1044,45 @@ erDiagram
 - **아래 API 예시의 JSON 본문은 모두 `data` 내부 payload만 표기한다.** 실제 wire response는 `ResponseTransformInterceptor`에 의해 `{ success, data, message, timestamp }` 형태로 감싸진다.
 - 예외: `GET /api/health`는 로드밸런서/오케스트레이터 호환을 위해 `@SkipTransform()`을 적용한 raw JSON 응답을 사용한다.
 
+**배포/도메인 정책:**
+
+- 세션 쿠키 인증을 유지하려면 프론트엔드와 API는 **same-site** 조건을 만족해야 한다.
+- 로컬 개발 기준: `http://localhost:5173` ↔ `http://localhost:3000`
+- 운영 권장 기준: `https://app.example.com` ↔ `https://api.example.com`처럼 **동일 eTLD+1** 하위 도메인 구성
+- 프론트엔드와 API를 완전히 다른 사이트로 분리해야 하는 경우(`example-app.com` ↔ `example-api.net`)에는 현재 세션 쿠키 전략 대신 토큰 기반 인증 또는 `SameSite=None; Secure` 재설계가 필요하다. 이는 MVP 범위 밖이다.
+
 **CSRF 보호 전략:**
 
-`sameSite: 'lax'`는 GET 요청의 크로스사이트 전송만 허용하므로 대부분의 CSRF 공격을 방지하지만, state-changing POST/PATCH/DELETE 엔드포인트에 대한 추가 보호를 위해 **커스텀 헤더 검증** 방식을 적용한다.
+세션 쿠키 기반 인증을 사용하므로 `sameSite: 'lax'`만으로 CSRF 방어를 충분하다고 간주하지 않는다. MVP에서도 **Double Submit Cookie** 전략을 적용한다.
 
-- 프론트엔드 Axios 인스턴스에서 모든 요청에 `X-Requested-With: XMLHttpRequest` 헤더를 포함한다.
-- 백엔드 `SessionAuthGuard`에서 POST/PATCH/DELETE 요청 시 `X-Requested-With` 헤더 존재를 검증한다. 누락 시 403 반환.
-- 이 방식은 브라우저의 CORS preflight 메커니즘과 결합하여 크로스사이트 요청 위조를 방지한다.
+- 백엔드는 세션 생성 성공 시점과 `GET /api/auth/me` 응답 시점에 난수 기반 CSRF 쿠키(기본값: `csrf_token`, 환경변수 `CSRF_COOKIE_NAME`)를 발급한다.
+- CSRF 쿠키는 프론트엔드가 읽어 헤더에 복사할 수 있도록 `httpOnly: false`, `sameSite: 'lax'`로 설정한다.
+- 프론트엔드는 모든 POST/PATCH/DELETE 요청에 `X-CSRF-Token` 헤더로 동일 값을 전송한다.
+- 백엔드 `SessionAuthGuard`는 state-changing 요청에서 **세션 존재 + CSRF 쿠키 존재 + `X-CSRF-Token` 헤더 존재 + 두 값 일치**를 모두 검증한다. 하나라도 실패하면 403을 반환한다.
+- `SessionAuthGuard`는 CSRF 실패 시 `ForbiddenException({ message: 'CSRF 검증에 실패했습니다.', errorCode: 'CSRF_TOKEN_INVALID' })`를 명시적으로 던져 API 계약과 에러 코드를 일치시킨다.
+- `X-Requested-With: XMLHttpRequest` 헤더는 CSRF 1차 방어 수단이 아니라, AJAX 요청 식별과 디버깅 편의를 위한 **보조 헤더**로만 유지한다.
+
+**에러 코드 규칙:**
+
+- `errorCode`는 사람이 읽는 `message`와 별도로, 프론트엔드 분기 처리에 사용하는 **안정적인 문자열 식별자**다.
+- 단순 HTTP 상태 매핑(`BAD_REQUEST`, `UNAUTHORIZED`)만으로 부족한 경우, 컨트롤러/서비스는 반드시 **도메인 전용 errorCode**를 지정한다.
+- 동일한 실패 원인은 항상 동일한 `errorCode`를 반환한다.
+
+| 상황 | HTTP | errorCode |
+|------|------|-----------|
+| 미인증 요청 | 401 | `UNAUTHORIZED` |
+| CSRF 검증 실패 | 403 | `CSRF_TOKEN_INVALID` |
+| 리소스 소유권 불일치 | 403 | `FORBIDDEN_RESOURCE_ACCESS` |
+| 레포 없음 | 404 | `REPO_NOT_FOUND` |
+| 스캔 없음 | 404 | `SCAN_NOT_FOUND` |
+| 취약점 없음 | 404 | `VULNERABILITY_NOT_FOUND` |
+| 동일 레포 활성 스캔 존재 | 409 | `SCAN_ALREADY_RUNNING` |
+| 잘못된 브랜치 | 400 | `INVALID_BRANCH` |
+| OAuth 토큰 만료 | 401 | `OAUTH_TOKEN_EXPIRED` |
+| Git provider rate limit | 502 | `GIT_PROVIDER_RATE_LIMITED` |
+| Git provider 일시 장애 | 502 | `GIT_PROVIDER_UNAVAILABLE` |
+| 분석 API 실패 | 502 | `ANALYSIS_API_FAILED` |
+| PDF 생성 실패 | 500 | `REPORT_GENERATION_FAILED` |
 
 ```typescript
 // packages/shared/src/types/common.ts
@@ -1070,6 +1109,18 @@ export interface PageResponse<T> {
   page: number;
   totalPages: number;
 }
+
+/**
+ * Git Provider API처럼 totalCount를 안정적으로 제공하지 않는 목록 응답용.
+ * 브랜치/외부 레포 목록처럼 upstream이 cursor/link 기반일 때 사용한다.
+ */
+export interface CursorPageResponse<T> {
+  items: T[];
+  page: number;
+  size: number;
+  hasNextPage: boolean;
+  nextPage: number | null;
+}
 ```
 
 ### 6.2 인증
@@ -1088,11 +1139,15 @@ export interface PageResponse<T> {
 // 401 — 미인증
 ```
 
+> 인증된 세션이 유효하면 응답과 함께 최신 CSRF 쿠키를 재발급한다. 프론트엔드는 이후 state-changing 요청에 이 값을 `X-CSRF-Token` 헤더로 복사한다.
+
 #### `POST /api/auth/logout`
 
 ```typescript
 null  // 200 OK — ApiResponse<null>의 data payload
 ```
+
+> `POST /api/auth/logout` 역시 state-changing 요청이므로 `X-CSRF-Token` 헤더 검증 대상이다.
 
 ```typescript
 // packages/shared/src/types/auth.ts
@@ -1141,14 +1196,33 @@ GET /api/auth/gitlab/callback → GitLab 콜백 (Passport 처리)
 >     scans: {
 >       orderBy: { createdAt: 'desc' },
 >       take: 1,
->       select: { completedAt: true, status: true },
+>       select: { createdAt: true, status: true },
 >     },
 >   },
 > });
 > // 각 repo에 대해:
-> // lastScanAt = repo.scans[0]?.completedAt ?? null
+> // lastScanAt = repo.scans[0]?.createdAt ?? null
 > // lastScanStatus = repo.scans[0]?.status ?? null
 > ```
+
+#### `GET /api/repos/:repoId/branches?page=1&size=50`
+
+- 사용자가 스캔 전 브랜치를 선택할 수 있도록 현재 연동 레포의 브랜치 목록을 페이지네이션으로 반환한다.
+- 인증 필수. 요청자가 해당 `repoId`의 소유자인지 검증한다.
+- 기본값 `page=1`, `size=50`, 최대 `size=100`
+- 브랜치 목록 응답은 **사용자별 + repoId별 + page/size별 TTL 1분 캐시**를 적용할 수 있다.
+
+```typescript
+CursorPageResponse<{
+  name: string;
+  isDefault: boolean;
+  lastCommitSha: string | null;
+}>
+```
+
+> **의도:** 프론트엔드 `ScanPage`는 자유 입력 대신 이 엔드포인트로 받은 브랜치 목록에서 선택하도록 구현한다. 사용자가 오래된 화면을 보고 있을 수 있으므로, 서버는 `POST /api/scans` 시점에도 브랜치 존재 여부를 다시 검증해야 한다.
+>
+> **페이지네이션 계약:** GitHub/GitLab 브랜치 API는 total count를 안정적으로 제공하지 않으므로 이 엔드포인트는 `PageResponse`가 아니라 `CursorPageResponse`를 사용한다. `hasNextPage`는 upstream의 Link 헤더 또는 다음 페이지 존재 여부로 계산한다.
 
 #### `GET /api/repos/available?provider=github&page=1&size=30`
 
@@ -1163,7 +1237,7 @@ GET /api/auth/gitlab/callback → GitLab 콜백 (Passport 처리)
   ```
 
 ```typescript
-PageResponse<{
+CursorPageResponse<{
   providerRepoId: string;
   fullName: string;
   cloneUrl: string;
@@ -1172,6 +1246,8 @@ PageResponse<{
   alreadyConnected: boolean;
 }>
 ```
+
+> **페이지네이션 계약:** GitHub/GitLab의 레포 목록 API는 provider마다 total count 제공 방식이 다르거나 누락될 수 있다. 따라서 내부 API도 `CursorPageResponse`를 사용하며, `hasNextPage`를 기준으로 다음 페이지 로딩 여부를 판단한다.
 
 #### `POST /api/repos`
 
@@ -1197,7 +1273,7 @@ PageResponse<{
 #### `DELETE /api/repos/:repoId`
 
 ```typescript
-null  // 204 No Content
+// 204 No Content — 응답 본문 없음
 // ⚠️ @HttpCode(204)와 @SkipTransform()을 함께 적용하여 ResponseTransformInterceptor 래핑을 제외한다.
 // Controller 예시:
 // @Delete(':repoId')
@@ -1220,6 +1296,12 @@ export interface ConnectedRepoItem {
   isPrivate: boolean;
   lastScanAt: string | null;
   lastScanStatus: ScanStatus | null;
+}
+
+export interface RepoBranchItem {
+  name: string;
+  isDefault: boolean;
+  lastCommitSha: string | null;
 }
 
 export interface AvailableRepoItem {
@@ -1260,7 +1342,12 @@ export interface ConnectRepoResponse {
   message: string;
 }
 // 409 — 동일 레포에 PENDING 또는 RUNNING 스캔 존재 시
+// 400 — branch가 공백이거나, 요청 시점에 Git Provider 상에 존재하지 않는 경우
+// 401 — 연동 토큰이 만료되었거나 유효하지 않은 경우
+// 502 — Git Provider 브랜치 검증 호출 실패(일시 장애, rate limit 등)
 ```
+
+> 서버는 스캔 Job을 큐에 넣기 전에 `branch` 문자열 trim/빈값 검증을 수행하고, Git Provider API로 해당 브랜치의 최신 커밋 SHA 조회를 시도하여 **브랜치 존재 여부를 선검증**한다. 이 검증을 통과한 경우에만 Scan 레코드를 생성한다.
 
 #### `GET /api/scans/:scanId` — 스캔 상태 폴링
 
@@ -1579,13 +1666,19 @@ export * from './types/dashboard';
 #### `POST /api/reports/scans/:scanId/pdf` — PDF 리포트 생성 요청 (비동기)
 
 > 인증 필수. 해당 스캔의 ConnectedRepo 소유자만 요청 가능.
-> Controller에서 `@HttpCode(202)` 데코레이터를 명시한다.
+> 새 리포트를 생성하는 경우 `202 Accepted`, 아직 만료되지 않은 READY 리포트를 재사용하는 경우 `200 OK`를 반환한다.
 
 ```typescript
 // Response 202 — ApiResponse 의 data payload
 {
   reportId: string;
   status: 'GENERATING';
+  message: string;
+}
+// 또는 200 — 아직 유효한 READY 리포트가 있으면 재사용
+{
+  reportId: string;
+  status: 'READY';
   message: string;
 }
 // 404 — 스캔을 찾을 수 없음
@@ -1602,6 +1695,7 @@ export * from './types/dashboard';
   scanId: string;
   status: 'GENERATING' | 'READY' | 'FAILED';
   downloadUrl: string | null;  // READY 상태일 때만 존재 (S3 Presigned URL 또는 로컬 경로)
+  errorMessage: string | null; // FAILED 상태일 때 원인 표시
   createdAt: string;
   expiresAt: string | null;    // 다운로드 URL 만료 시각
 }
@@ -2047,20 +2141,52 @@ export class ScanService {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('scan-jobs') private scanQueue: Queue,
+    private gitClientRegistry: GitClientRegistry,
+    private tokenCrypto: TokenCryptoUtil,
     private languageHandlerRegistry: LanguageHandlerRegistry,
   ) {}
 
   async requestScan(userId: string, repoId: string, branch: string) {
     const repo = await this.prisma.connectedRepo.findFirst({
       where: { id: repoId, userId },
+      include: { user: { include: { oauthTokens: true } } },
     });
     if (!repo) throw new NotFoundException('연동된 레포를 찾을 수 없습니다.');
+
+    const normalizedBranch = branch.trim();
+    if (!normalizedBranch) {
+      throw new BadRequestException('branch는 비어 있을 수 없습니다.');
+    }
 
     // Phase 1: language는 항상 "java" 기본값 사용 (DB 스키마 @default("java")).
     // 향후 다중 언어 지원 시 요청 body에 language 필드를 추가하고 아래 검증 로직을 활용한다.
     const language = 'java';
     // 지원 여부 검증 — 미지원 언어이면 Error throw. Phase 1에서는 'java'만 등록되어 있으므로 항상 통과
     this.languageHandlerRegistry.get(language);
+
+    const oauthToken = repo.user.oauthTokens.find(
+      t => t.provider === repo.provider,
+    );
+    if (!oauthToken) {
+      throw new UnauthorizedException('연동 토큰이 없습니다. 다시 로그인해주세요.');
+    }
+
+    const accessToken = this.tokenCrypto.decrypt(oauthToken.accessToken);
+    const gitClient = this.gitClientRegistry.get(repo.provider.toLowerCase());
+
+    // 큐 등록 전에 branch 존재 여부를 즉시 검증하여 UX를 개선한다.
+    try {
+      await gitClient.getLatestCommitSha(repo.fullName, normalizedBranch, accessToken);
+    } catch (error) {
+      const status = (error as any)?.response?.status;
+      if (status === 401) {
+        throw new UnauthorizedException('연동 토큰이 만료되었습니다. 다시 로그인해주세요.');
+      }
+      if (status === 404) {
+        throw new BadRequestException('존재하지 않거나 접근할 수 없는 브랜치입니다.');
+      }
+      throw new BadGatewayException('Git Provider 브랜치 검증에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
 
     // 경쟁 상태 방지: repoId 단위 advisory lock을 먼저 획득한 뒤 중복 체크 + 생성을 처리
     const scan = await this.prisma.$transaction(async (tx) => {
@@ -2072,7 +2198,7 @@ export class ScanService {
       if (active) throw new ConflictException('이미 대기 중이거나 실행 중인 스캔이 있습니다.');
 
       return tx.scan.create({
-        data: { connectedRepoId: repoId, branch, status: 'PENDING' }
+        data: { connectedRepoId: repoId, branch: normalizedBranch, status: 'PENDING' }
       });
     });
 
@@ -2549,6 +2675,7 @@ export class LanguageModule implements OnModuleInit {
 // client/git/git-provider-client.interface.ts
 export interface IGitProviderClient {
   getRepositories(accessToken: string, page: number, size: number): Promise<RepoListResult>;
+  getBranches(fullName: string, page: number, size: number, accessToken: string): Promise<BranchListResult>;
   getLatestCommitSha(fullName: string, branch: string, accessToken: string): Promise<string>;
   /**
    * 레포지토리 전체 파일 트리 조회 (내용 없음, 메타데이터만).
@@ -2575,7 +2702,10 @@ export interface IGitProviderClient {
     accessToken: string,
     items: FileTreeItem[],
     maxTotalSize: number,
-  ): Promise<AnalysisFileItem[]>;
+  ): Promise<{
+    files: AnalysisFileItem[];
+    skippedFiles: { path: string; reason: string }[];
+  }>;
 }
 
 export interface FileTreeItem {
@@ -2592,13 +2722,24 @@ export interface RepoListResult {
     defaultBranch: string;
     isPrivate: boolean;
   }[];
-  totalCount: number;
+  hasNextPage: boolean;
+}
+
+export interface BranchListResult {
+  items: {
+    name: string;
+    isDefault: boolean;
+    lastCommitSha: string | null;
+  }[];
+  hasNextPage: boolean;
 }
 ```
 
 구현 원칙:
 - `GithubClient`, `GitlabClient` 각각 구현, `GitClientRegistry`로 provider 문자열 기반 조회
-- 외부 API pagination과 내부 `PageResponse` pagination을 명시적으로 매핑한다
+- 외부 API pagination과 내부 `CursorPageResponse` pagination을 명시적으로 매핑한다
+- GitHub는 주로 `Link` 헤더(rel="next") 기반, GitLab은 `X-Next-Page`/`X-Page` 헤더 기반으로 `hasNextPage`를 계산한다. `totalCount`를 억지로 역산하지 않는다.
+- 브랜치 목록 조회는 UI 표시용이며, `POST /api/scans`에서 `getLatestCommitSha()`를 통해 최종 존재 여부를 다시 검증한다
 - 401 → 토큰 만료/무효로 처리, 404 → 레포 접근 불가 또는 삭제로 처리
 - 403/429 → Git Provider Rate Limit 도달. 응답 헤더 `X-RateLimit-Remaining`, `X-RateLimit-Reset`을 파싱하여 에러 메시지에 리셋 시간을 포함한다. MVP에서는 즉시 에러 전파, Phase 2에서 리셋 시간 대기 재시도 구현.
 
@@ -2710,7 +2851,9 @@ export class CodeCollectorService {
       files = collected.files;
       skippedFiles = collected.skippedFiles;
     } else {
-      files = await this.collectByTarball(gitClient, fullName, branch, accessToken, limited, cfg);
+      const collected = await this.collectByTarball(gitClient, fullName, branch, accessToken, limited, cfg);
+      files = collected.files;
+      skippedFiles = collected.skippedFiles;
     }
 
     const totalFiles = files.length;
@@ -2780,7 +2923,7 @@ export class CodeCollectorService {
     accessToken: string,
     items: FileTreeItem[],
     cfg: CollectionConfig,
-  ): Promise<AnalysisFileItem[]> {
+  ): Promise<{ files: AnalysisFileItem[]; skippedFiles: { path: string; reason: string }[] }> {
     if (gitClient.collectByTarball) {
       return gitClient.collectByTarball(fullName, branch, accessToken, items, cfg.maxTotalSize);
     }
@@ -2822,10 +2965,10 @@ export class CodeCollectorService {
 | 코드 수집 실패 (GitHub API 오류) | CodeCollectorService | 에러를 상위로 전파, Scan → FAILED, `errorMessage: '코드 수집 중 오류가 발생했습니다.'` | 폴링 응답 |
 | 수집 대상 파일 0개 (해당 언어 파일 없음) | CodeCollectorService | 빈 files[]로 분석 요청 → success: true, vulnerabilities: [] 반환, Scan → DONE | 대시보드에서 totalFiles=0 확인 |
 | 수집량 제한 초과 (maxFiles/maxTotalSize) | CodeCollectorService | 부분 수집 후 분석 진행, `truncated: true`를 로그에 기록 | Scan → DONE (부분 분석 완료) |
-| PDF 생성 실패 (Puppeteer 오류) | ReportProcessor | Report → FAILED + errorMessage. 1회 재시도 후에도 실패 시 최종 FAILED | 리포트 상태 조회 시 확인 |
+| PDF 생성 실패 (Puppeteer 오류) | ReportProcessor | 1차 실패 시 상태는 `GENERATING` 유지 + `errorMessage`에 "재시도 예정" 기록, 최종 시도까지 실패하면 `FAILED`로 전환 | 리포트 상태 조회 시 확인 |
 | 스캔 미완료 상태에서 리포트 요청 | ReportService | 400 BadRequest ('완료된 스캔에 대해서만 리포트를 생성할 수 있습니다.') | API 응답에서 확인 |
 | 리포트 다운로드 URL 만료 | ReportController | 410 Gone ('리포트가 만료되었습니다. 새로 생성해주세요.') | API 응답에서 확인 |
-| 리포트 중복 생성 요청 | ReportService | 기존 GENERATING 상태 리포트의 reportId 반환 (중복 Job 방지) | API 응답에서 기존 reportId 확인 |
+| 리포트 중복 생성 요청 | ReportService | 기존 GENERATING 상태 리포트의 reportId 반환. 만료되지 않은 READY 리포트가 있으면 그것을 재사용 | API 응답에서 기존 reportId 확인 |
 
 #### GlobalExceptionFilter — 전역 예외 처리 필터
 
@@ -2850,7 +2993,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
-      message = typeof res === 'string' ? res : (res as any).message ?? message;
+      message = this.extractMessage(res, message);
       errorCode = (res as any).errorCode ?? this.statusToErrorCode(status);
     }
 
@@ -2872,6 +3015,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     response.status(status).json(errorResponse);
   }
 
+  private extractMessage(response: unknown, fallback: string): string {
+    if (typeof response === 'string') return response;
+    const message = (response as any)?.message;
+    if (Array.isArray(message)) return message.join('; ');
+    if (typeof message === 'string' && message.trim().length > 0) return message;
+    return fallback;
+  }
+
   private statusToErrorCode(status: number): string {
     const map: Record<number, string> = {
       400: 'BAD_REQUEST',
@@ -2885,6 +3036,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 }
 ```
+
+> 구현 원칙:
+> - 도메인 예외(`ScanAlreadyRunningException`, `InvalidBranchException` 등)를 도입할 수 있다면 `errorCode`를 예외 클래스 수준에서 고정한다.
+> - `GlobalExceptionFilter`의 status 기반 fallback은 최후의 기본값일 뿐이며, 사용자 액션 분기가 필요한 실패는 반드시 명시적 `errorCode`를 부여한다.
 
 #### ResponseTransformInterceptor — 응답 자동 래핑 인터셉터
 
@@ -2926,7 +3081,14 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<T, Succe
 
 ```typescript
 // common/guards/resource-owner.guard.ts
-import { Injectable, CanActivate, ExecutionContext, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  NotFoundException,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -2952,7 +3114,12 @@ export class ResourceOwnerGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const userId = request.user?.id;
-    if (!userId) return false; // SessionAuthGuard가 먼저 적용되어야 한다 (미인증 요청은 여기에 도달하지 않아야 함)
+    if (!userId) {
+      throw new UnauthorizedException({
+        message: '인증이 필요합니다.',
+        errorCode: 'UNAUTHORIZED',
+      });
+    }
 
     switch (resourceType) {
       case 'scan':
@@ -2970,7 +3137,13 @@ export class ResourceOwnerGuard implements CanActivate {
       include: { connectedRepo: { select: { userId: true } } },
     });
     if (!scan) throw new NotFoundException('스캔을 찾을 수 없습니다.');
-    return scan.connectedRepo.userId === userId;
+    if (scan.connectedRepo.userId !== userId) {
+      throw new ForbiddenException({
+        message: '해당 스캔에 접근할 권한이 없습니다.',
+        errorCode: 'FORBIDDEN_RESOURCE_ACCESS',
+      });
+    }
+    return true;
   }
 
   private async verifyVulnerabilityOwner(vulnId: string, userId: string): Promise<boolean> {
@@ -2979,7 +3152,13 @@ export class ResourceOwnerGuard implements CanActivate {
       include: { scan: { include: { connectedRepo: { select: { userId: true } } } } },
     });
     if (!vuln) throw new NotFoundException('취약점을 찾을 수 없습니다.');
-    return vuln.scan.connectedRepo.userId === userId;
+    if (vuln.scan.connectedRepo.userId !== userId) {
+      throw new ForbiddenException({
+        message: '해당 취약점에 접근할 권한이 없습니다.',
+        errorCode: 'FORBIDDEN_RESOURCE_ACCESS',
+      });
+    }
+    return true;
   }
 }
 
@@ -3004,6 +3183,7 @@ export const ResourceOwnerCheck = (resourceType: string) => SetMetadata('resourc
 사용자: POST /api/reports/scans/:scanId/pdf
   → ReportService.requestReport(userId, scanId)
     → Scan 상태 확인 (DONE이 아니면 400)
+    → 기존 GENERATING 리포트가 있으면 재사용, 유효한 READY 리포트가 있으면 200으로 즉시 반환
     → Report 레코드 생성 (GENERATING)
     → BullMQ 'report-jobs' 큐에 Job 등록
     → 202 반환 { reportId, status: 'GENERATING' }
@@ -3018,7 +3198,7 @@ ReportProcessor (Worker):
   3. Puppeteer → PDF 변환
   4. PDF 저장 (MVP: 로컬 파일시스템 ./reports/, Phase 2: S3)
   5. Report 상태 → READY + filePath/downloadUrl 업데이트
-  에러 시: Report 상태 → FAILED + errorMessage 기록
+  에러 시: 최종 재시도 전까지는 Report 상태를 GENERATING으로 유지하고 errorMessage에 재시도 예정 정보를 기록, 마지막 시도 실패 시 FAILED로 전환
 ```
 
 ```typescript
@@ -3037,17 +3217,36 @@ export class ReportService {
       include: { connectedRepo: { select: { userId: true } } },
     });
     if (!scan) throw new NotFoundException('스캔을 찾을 수 없습니다.');
-    if (scan.connectedRepo.userId !== userId) throw new ForbiddenException();
+    if (scan.connectedRepo.userId !== userId) {
+      throw new ForbiddenException({
+        message: '해당 스캔 리포트에 접근할 권한이 없습니다.',
+        errorCode: 'FORBIDDEN_RESOURCE_ACCESS',
+      });
+    }
     if (scan.status !== 'DONE') {
       throw new BadRequestException('완료된 스캔에 대해서만 리포트를 생성할 수 있습니다.');
     }
 
-    // 이미 생성 중인 리포트가 있는지 확인
+    // 이미 생성 중이거나, 아직 유효한 READY 리포트가 있으면 재사용
     const existing = await this.prisma.report.findFirst({
-      where: { scanId, userId, status: 'GENERATING' },
+      where: {
+        scanId,
+        userId,
+        OR: [
+          { status: 'GENERATING' },
+          { status: 'READY', expiresAt: { gt: new Date() } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
     });
     if (existing) {
-      return { reportId: existing.id, status: 'GENERATING' as const, message: '리포트가 이미 생성 중입니다.' };
+      return {
+        reportId: existing.id,
+        status: existing.status as 'GENERATING' | 'READY',
+        message: existing.status === 'READY'
+          ? '기존에 생성된 리포트를 재사용합니다.'
+          : '리포트가 이미 생성 중입니다.',
+      };
     }
 
     const report = await this.prisma.report.create({
@@ -3092,7 +3291,8 @@ export class ReportProcessor extends WorkerHost {
           scan: {
             include: {
               connectedRepo: true,
-              vulnerabilities: { orderBy: { severity: 'desc' } },
+              // Prisma/PostgreSQL enum 선언 순서가 CRITICAL → INFO 이므로 asc가 "심각도 높은 순"이다.
+              vulnerabilities: { orderBy: { severity: 'asc' } },
             },
           },
         },
@@ -3122,9 +3322,12 @@ export class ReportProcessor extends WorkerHost {
       this.logger.log(`Report generated: ${reportId} → ${filePath}`);
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error(String(err));
+      const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
       await this.prisma.report.update({
         where: { id: reportId },
-        data: { status: 'FAILED', errorMessage: error.message },
+        data: isFinalAttempt
+          ? { status: 'FAILED', errorMessage: error.message }
+          : { status: 'GENERATING', errorMessage: `재시도 예정: ${error.message}` },
       });
       this.logger.error(`Report generation failed: ${reportId}`, error.stack);
       throw err; // BullMQ 재시도 트리거
@@ -3533,6 +3736,9 @@ import { ConfigService } from './config.service';
         GITLAB_CLIENT_SECRET: Joi.string().required(),
         APP_URL: Joi.string().uri().required(),
         FRONTEND_URL: Joi.string().uri().required(),
+        SESSION_COOKIE_NAME: Joi.string().default('connect.sid'),
+        CSRF_COOKIE_NAME: Joi.string().default('csrf_token'),
+        COOKIE_DOMAIN: Joi.string().optional().allow(''),
         TOKEN_ENCRYPTION_KEY: Joi.string().length(64).required(),  // hex 인코딩 32바이트 = 64자
         NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
         AI_SERVER_URL: Joi.string().uri().default('http://localhost:8000'),
@@ -3550,6 +3756,8 @@ export class ConfigModule {}
 ```
 
 > **참고:** `joi` 패키지를 `apps/api` 의존성에 추가해야 한다 (`pnpm --filter @aegisai/api add joi`). 앱 시작 시 환경변수가 스키마를 통과하지 못하면 NestJS가 즉시 오류를 발생시켜 잘못된 설정으로 서버가 기동되는 것을 방지한다.
+>
+> `COOKIE_DOMAIN`은 로컬 개발에서는 비워두고, 운영에서는 `.example.com`처럼 프론트/API가 공유하는 상위 도메인으로 설정할 수 있다. 단, 브라우저 쿠키 정책상 실제 배포 도메인과 일치해야 한다.
 
 #### config.service.ts — 타입 안전 환경변수 접근
 
@@ -3617,6 +3825,8 @@ async function bootstrap() {
   app.enableCors({
     origin: configService.get('FRONTEND_URL'),
     credentials: true,  // 세션 쿠키 전달 허용
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'X-Requested-With', 'X-CSRF-Token'],
   });
 
   // Global Validation Pipe
@@ -3632,6 +3842,7 @@ async function bootstrap() {
 
   // 세션 설정
   app.use(session({
+    name: configService.get('SESSION_COOKIE_NAME'),
     store: new RedisStore({ client: redisClient }),
     secret: configService.get('SESSION_SECRET'),
     resave: false,
@@ -3641,6 +3852,7 @@ async function bootstrap() {
       httpOnly: true,
       secure: configService.get('NODE_ENV') === 'production',
       sameSite: 'lax',
+      domain: configService.getOptional('COOKIE_DOMAIN') || undefined,
     },
   }));
 
@@ -3664,6 +3876,8 @@ bootstrap();
 ```
 
 > Rate limiting은 `APP_GUARD`에 기본 `ThrottlerGuard`를 그대로 등록하지 말고, 인증 사용자는 `req.sessionID`, 미인증 사용자는 `req.ip`를 tracker로 사용하는 커스텀 가드(`SessionAwareThrottlerGuard`)로 교체한다. `POST /api/scans`에는 별도 named throttler를 명시적으로 연결한다.
+>
+> CSRF 쿠키는 세션 미들웨어와 별개로 `AuthController` 또는 전용 미들웨어에서 발급한다. 쿠키 이름은 `CSRF_COOKIE_NAME` 환경변수로 관리하고, 속성은 `httpOnly: false`, `sameSite: 'lax'`, `secure: production`, `domain: COOKIE_DOMAIN`을 사용한다.
 
 ### 10.5 실행 순서
 
@@ -3729,6 +3943,7 @@ pnpm dev
     - ⚠️ auth.serializer.ts 작성 (PassportSerializer 상속 — serializeUser/deserializeUser 필수)
     - 세션 설정 (express-session + connect-redis, TTL 24시간, httpOnly, sameSite: lax)
     - Passport middleware 등록 순서 준수: session → initialize → session
+    - CSRF 방어: 세션 생성 시 `csrf_token` 쿠키 발급 + SessionAuthGuard의 `X-CSRF-Token` 검증
     - OAuth 성공 시 FRONTEND_URL/dashboard로 리다이렉트
     - AuthController: GET /api/auth/me, POST /api/auth/logout
     - SessionAuthGuard, CurrentUser 데코레이터
@@ -3748,8 +3963,8 @@ pnpm dev
     - 등록 및 조회 단위 테스트
 
 [ ] TASK-07: IGitProviderClient 구현
-    - IGitProviderClient 인터페이스 작성 (getRepositories, getLatestCommitSha, getFileTree, getFileContent)
-    - GithubClient 구현 (레포 목록, 브랜치 커밋 SHA 조회, 파일 트리 조회, 파일 내용 조회, Tarball 다운로드)
+    - IGitProviderClient 인터페이스 작성 (getRepositories, getBranches, getLatestCommitSha, getFileTree, getFileContent)
+    - GithubClient 구현 (레포 목록, 브랜치 목록/커밋 SHA 조회, 파일 트리 조회, 파일 내용 조회, Tarball 다운로드)
     - GitlabClient 구현 (동일)
     - GitClientRegistry — provider 문자열로 클라이언트 조회
     - 외부 API pagination ↔ 내부 PageResponse 매핑
@@ -3791,9 +4006,10 @@ pnpm dev
 
 ```text
 [ ] TASK-09: Repo API
-    - RepoService: 연동 레포 CRUD, available 레포 조회 (GitProviderClient 활용)
+    - RepoService: 연동 레포 CRUD, available 레포 조회, 브랜치 목록 조회 (GitProviderClient 활용)
     - RepoController: 섹션 6.3 전체 엔드포인트
     - node-cache로 /repos/available 응답 캐싱 (TTL 5분)
+    - /repos/:repoId/branches 응답 캐싱 (TTL 1분)
     - 통합 테스트 (Supertest)
 
 [ ] TASK-10: Scan API
@@ -3863,7 +4079,7 @@ pnpm dev
     - 연동 해제
 
 [ ] TASK-20: 스캔 실행 및 상태
-    - ScanPage — 레포/브랜치 선택 → 스캔 시작
+    - ScanPage — 레포 선택 시 브랜치 목록 조회 → 브랜치 선택 → 스캔 시작
     - 3초 폴링 (DONE/FAILED 시 자동 중단)
     - ScanStatusBadge 컴포넌트
 
@@ -4056,8 +4272,27 @@ export const apiClient = axios.create({
   withCredentials: true, // 세션 쿠키 전달 필수
   headers: {
     'Content-Type': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest', // CSRF 보호
+    'X-Requested-With': 'XMLHttpRequest',
   },
+});
+
+function getCookie(name: string): string | null {
+  const cookie = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${name}=`));
+  return cookie ? decodeURIComponent(cookie.split('=')[1]) : null;
+}
+
+apiClient.interceptors.request.use((config) => {
+  const method = config.method?.toUpperCase();
+  if (method && ['POST', 'PATCH', 'DELETE'].includes(method)) {
+    const csrfToken = getCookie('csrf_token');
+    if (csrfToken) {
+      config.headers = config.headers ?? {};
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
+  }
+  return config;
 });
 
 // 401 인터셉터 — 인증 만료 시 로그인 페이지로 리다이렉트
@@ -4133,9 +4368,10 @@ export function useAuth() {
 - ScanProcessor: Analysis API 실패 → FAILED 상태 전환 + 에러 메시지 저장
 - VulnerabilityService: 필터/정렬/페이지네이션 쿼리 결과 검증
 - SessionAuthGuard: 미인증 요청 → 401 반환
-- SessionAuthGuard: X-Requested-With 누락 POST/PATCH/DELETE 요청 → 403 반환
+- SessionAuthGuard: `csrf_token` 쿠키 또는 `X-CSRF-Token` 헤더 누락/불일치 POST/PATCH/DELETE 요청 → 403 반환
 - HealthController: GET /api/health → raw JSON 응답 확인 (ApiResponse 래핑 없음)
 - RepoController: DELETE /api/repos/:repoId → 204 No Content 확인
+- RepoController: GET /api/repos/:repoId/branches → 브랜치 목록/페이지네이션 반환 확인
 - Throttling: POST /api/scans 한도 초과 → 429 반환 확인
 - SessionAwareThrottlerGuard: 인증 사용자는 sessionID, 미인증 사용자는 IP 기준 추적 확인
 - OAuth 통합 테스트: strategy/service mock 기반 (실제 외부 provider 호출 불필요)
@@ -4153,11 +4389,12 @@ export function useAuth() {
 E2E-01: 인증 → 레포 연동 → 스캔 → 취약점 조회 전체 플로우
   1. mock OAuth 콜백으로 세션 생성
   2. POST /api/repos → 레포 연동
-  3. POST /api/scans → 스캔 시작
-  4. BullMQ Worker 완료 대기
-  5. GET /api/scans/:id → status: DONE 확인
-  6. GET /api/scans/:id/vulnerabilities → 취약점 목록 반환 확인
-  7. PATCH /api/vulnerabilities/:id/feedback → 피드백 반영 확인
+  3. GET /api/repos/:repoId/branches → 브랜치 목록 조회
+  4. POST /api/scans → 스캔 시작
+  5. BullMQ Worker 완료 대기
+  6. GET /api/scans/:id → status: DONE 확인
+  7. GET /api/scans/:id/vulnerabilities → 취약점 목록 반환 확인
+  8. PATCH /api/vulnerabilities/:id/feedback → 피드백 반영 확인
 
 E2E-02: 미인증 접근 차단
   1. 세션 없이 GET /api/repos → 401 확인
@@ -4167,13 +4404,18 @@ E2E-03: 동시 스캔 중복 방지
   1. POST /api/scans → 202 확인
   2. 동일 repoId로 POST /api/scans → 409 확인
 
-E2E-04: 보안/응답 예외 규칙 확인
-  1. X-Requested-With 없이 POST /api/scans → 403 확인
-  2. GET /api/health → raw JSON 확인 (success/data 래퍼 없음)
-  3. DELETE /api/repos/:repoId → 204 No Content 확인
-  4. POST /api/scans 반복 호출 → 429 확인
+E2E-04: 브랜치 검증
+  1. 존재하지 않는 branch로 POST /api/scans → 400 확인
+  2. 존재하는 branch로 POST /api/scans → 202 확인
 
-E2E-05: PDF 리포트 생성 및 다운로드
+E2E-05: 보안/응답 예외 규칙 확인
+  1. `X-CSRF-Token` 없이 POST /api/scans → 403 확인
+  2. 쿠키와 다른 `X-CSRF-Token`으로 POST /api/scans → 403 확인
+  3. GET /api/health → raw JSON 확인 (success/data 래퍼 없음)
+  4. DELETE /api/repos/:repoId → 204 No Content 확인
+  5. POST /api/scans 반복 호출 → 429 확인
+
+E2E-06: PDF 리포트 생성 및 다운로드
   1. 스캔 완료 (DONE) 상태 확보
   2. POST /api/reports/scans/:scanId/pdf → 202 확인
   3. GET /api/reports/:reportId → status: GENERATING 확인
@@ -4451,6 +4693,9 @@ Phase 1 (MVP)              Phase 2 (운영)              Phase 3 (스케일)
 | `GITLAB_CLIENT_SECRET` | ✅ | GitLab Application Secret |
 | `APP_URL` | ✅ | API 서버 Base URL (OAuth 콜백용) |
 | `FRONTEND_URL` | ✅ | 프론트엔드 Base URL (CORS origin + OAuth 리다이렉트) |
+| `SESSION_COOKIE_NAME` | - | 세션 쿠키 이름 (기본: `connect.sid`) |
+| `CSRF_COOKIE_NAME` | - | CSRF 쿠키 이름 (기본: `csrf_token`) |
+| `COOKIE_DOMAIN` | - | 운영 쿠키 도메인 (예: `.example.com`, 로컬은 비움) |
 | `TOKEN_ENCRYPTION_KEY` | ✅ | OAuth 토큰 AES-256-GCM 암호화 키 (32바이트, **hex 인코딩된 64자 문자열**. 생성: `openssl rand -hex 32`) |
 | `NODE_ENV` | ✅ | `development` / `production` |
 | `VITE_API_URL` | - | 프론트엔드에서 사용하는 API 서버 URL (기본: `http://localhost:3000/api`, `apps/web/.env`에 설정) |
@@ -4490,6 +4735,11 @@ GITLAB_CLIENT_SECRET=
 # App URLs
 APP_URL=http://localhost:3000
 FRONTEND_URL=http://localhost:5173
+
+# Cookie
+SESSION_COOKIE_NAME=connect.sid
+CSRF_COOKIE_NAME=csrf_token
+# COOKIE_DOMAIN=.example.com
 
 # Token Encryption (AES-256-GCM, 32 bytes)
 # 생성 예시: openssl rand -hex 32
