@@ -1,7 +1,7 @@
 # Aegisai Platform — Agent Development Specification
 
 > **문서 유형:** AI 에이전트 개발 착수용 기술 명세서
-> **버전:** v2.8 (v2.7 리뷰 반영 — TOKEN_ENCRYPTION_KEY hex 전용 통일, StuckScanRecovery 상태별 임계치 분리, CodeCollector 실패 가시화, Provider Rate Limit 처리 명확화)
+> **버전:** v2.9 (v2.8 기반 — Phase 2~3 로드맵 섹션 추가: CI/CD, HA/DR, 과금, 이메일 알림/PDF, 보안 인증, 이용약관)
 > **기준 PRD:** PRD_Aegisai_Platform v2.0
 > **작성일:** 2026-03-13
 
@@ -42,7 +42,16 @@
 12. [코딩 컨벤션](#12-코딩-컨벤션)
 13. [테스트 전략](#13-테스트-전략)
    - 13-1. [운영 및 모니터링 전략](#13-1-운영-및-모니터링-전략-phase-2-로드맵)
+   - 13-2. [CI/CD 파이프라인 및 배포 전략 (Phase 2 로드맵)](#13-2-cicd-파이프라인-및-배포-전략-phase-2-로드맵)
+   - 13-3. [고가용성(HA) 및 재해복구(DR) 설계 (Phase 2 로드맵)](#13-3-고가용성ha-및-재해복구dr-설계-phase-2-로드맵)
 14. [부록](#14-부록)
+   - [부록 A. 환경 변수 목록](#부록-a-환경-변수-목록)
+   - [부록 A-1. `.env.example` 템플릿](#부록-a-1-envexample-템플릿)
+   - [부록 B. 에이전트 개발 체크리스트](#부록-b-에이전트-개발-체크리스트)
+   - [부록 C. 과금/결제 시스템 설계 (Phase 3 로드맵)](#부록-c-과금결제-시스템-설계-phase-3-로드맵)
+   - [부록 D. 이메일 알림 및 PDF 리포트 (Phase 2 로드맵)](#부록-d-이메일-알림-및-pdf-리포트-phase-2-로드맵)
+   - [부록 E. 보안 인증 및 컴플라이언스 (Phase 3 로드맵)](#부록-e-보안-인증-및-컴플라이언스-phase-3-로드맵)
+   - [부록 F. 이용약관 및 개인정보처리방침 (Phase 2 로드맵)](#부록-f-이용약관-및-개인정보처리방침-phase-2-로드맵)
 
 ---
 
@@ -72,6 +81,10 @@ Aegisai는 GitHub/GitLab 레포지토리를 연동하여 **Java 코드의 보안
 - 피드백 기반 앙상블 가중치 자동 학습
 - GitHub PR 자동 트리거 스캔 기능의 실제 운영 적용
 - GitHub Suggested Changes의 실제 운영 적용
+- 과금/결제 시스템 (구독, 사용량 제한)
+- 이메일 알림 (스캔 완료, CRITICAL 탐지 등)
+- 이용약관 / 개인정보처리방침 페이지
+- SOC 2 / ISO 27001 보안 인증 대응
 
 > `apps/ai`, GitHub Webhook, Suggested Changes 관련 내용은 **향후 확장 또는 선택 통합 경로를 위한 설계 명세**로 문서에 포함한다. 기본 Phase 1 구현 완료 기준은 `MockAnalysisApiClient` 기반 동작이다.
 
@@ -3882,10 +3895,47 @@ pnpm dev
     - 가중치 저장: DB 또는 별도 설정 테이블
     - 관리자용 GET /api/admin/consensus-weights 엔드포인트
 
-[ ] TASK-26-P2: PDF 리포트 S3 전환
-    - 로컬 파일 저장 → S3 업로드 전환
-    - S3 Presigned URL 기반 다운로드
-    - S3 Lifecycle Rule로 자동 만료
+[ ] TASK-24-P2: CI/CD 파이프라인 구축
+    - GitHub Actions 워크플로우 (lint, test, build, push)
+    - apps/api, apps/web, apps/ai Dockerfile 작성 (멀티 스테이지)
+    - 스테이징 자동 배포, 프로덕션 수동 승인 배포
+
+[ ] TASK-25-P2: 이메일 알림 시스템
+    - NotificationPreference 모델 추가 (Prisma migration)
+    - BullMQ 'email-jobs' 큐 + EmailProcessor 구현
+    - React Email 템플릿 작성 (스캔 완료, CRITICAL 알림, 스캔 실패)
+    - AWS SES 또는 Resend 연동
+    - 알림 설정 API (GET/PATCH /api/notifications/preferences)
+
+[ ] TASK-26-P2: PDF 리포트 생성
+    - Report 모델 추가 (Prisma migration)
+    - BullMQ 'report-jobs' 큐 + ReportProcessor 구현
+    - Puppeteer 기반 HTML → PDF 변환
+    - S3 업로드 + Presigned URL 다운로드
+    - 리포트 API (POST/GET /api/reports)
+
+[ ] TASK-27-P2: 이용약관 / 개인정보처리방침 페이지
+    - apps/web 정적 마크다운 페이지 구현 (/terms, /privacy)
+    - 라우터 추가 (인증 불필요)
+    - OAuth 최초 로그인 시 동의 흐름 구현
+    - User.termsAcceptedAt, privacyAcceptedAt 필드 추가
+```
+
+### Phase 3 고급 기능 (PRD Phase 3)
+
+```text
+[ ] TASK-28-P3: 과금/결제 시스템
+    - Subscription, UsageRecord 모델 추가
+    - Stripe Billing 연동 (Checkout, Customer Portal, Webhook)
+    - ScanService에 플랜 체크 로직 삽입
+    - 과금 API (GET/POST /api/billing/*)
+    - 프론트엔드 과금 페이지 (구독 관리, 사용량 표시)
+
+[ ] TASK-29-P3: 보안 인증 대응 (SOC 2 준비)
+    - AuditLog 모델 추가 + 감사 로그 미들웨어 구현
+    - 데이터 내보내기 API (GET /api/account/data-export)
+    - 계정 삭제 API (DELETE /api/account)
+    - 데이터 보존 정책 자동화 (Scan/Vulnerability TTL 적용)
 ```
 
 ---
@@ -4188,6 +4238,204 @@ E2E-05: PDF 리포트 생성 및 다운로드
 
 ---
 
+### 13-2. CI/CD 파이프라인 및 배포 전략 (Phase 2 로드맵)
+
+> MVP(Phase 1)에서는 로컬 개발 환경과 `docker compose`만 사용한다. 아래는 Phase 2에서 구축할 CI/CD 파이프라인 및 배포 전략 설계이다.
+
+#### CI 파이프라인 (GitHub Actions)
+
+| 단계 | 트리거 | 동작 |
+|------|--------|------|
+| Lint + Type Check | PR 생성/업데이트 | `pnpm lint` + `tsc --noEmit` (apps/api, apps/web, packages/shared) |
+| Unit Test | PR 생성/업데이트 | `pnpm --filter @aegisai/api test` + `pnpm --filter @aegisai/web test` |
+| Integration Test | PR 생성/업데이트 (main 브랜치 대상) | `@testcontainers` 기반 PostgreSQL + Redis 통합 테스트 |
+| Build | main 머지 | Docker 멀티 스테이지 빌드 (apps/api, apps/web, apps/ai 각각) |
+| Push | main 머지 | Docker 이미지 → Container Registry (GitHub Container Registry 또는 AWS ECR) |
+| Deploy | main 머지 (자동) / 태그 (수동) | 스테이징: 자동 배포, 프로덕션: 수동 승인 후 배포 |
+
+**PR 체크 필수 통과 조건:**
+- Lint, Type Check, Unit Test 전체 통과
+- 테스트 커버리지 하락 방지 (현재 대비 -5% 이상 하락 시 실패)
+
+#### CD 배포 전략
+
+```text
+배포 타깃: AWS (기본 추천) 또는 동등 클라우드
+├── 스테이징: ECS Fargate 또는 Cloud Run
+├── 프로덕션: ECS Fargate + ALB (초기) → EKS 전환 (스케일링 필요 시)
+└── DB: RDS PostgreSQL (Multi-AZ), ElastiCache Redis
+```
+
+**무중단 배포 (Zero-Downtime Deployment):**
+
+| 전략 | 적용 대상 | 설명 |
+|------|----------|------|
+| Rolling Update | apps/api (기본) | ECS/K8s 기본 전략. 새 컨테이너 헬스체크 통과 후 기존 컨테이너 제거 |
+| Blue-Green | 프로덕션 릴리스 | ALB 타깃 그룹 전환. 즉시 롤백 가능 |
+| Canary | Phase 3 고급 | 트래픽의 5% → 20% → 100% 점진적 전환 |
+
+**롤백 전략:**
+- 배포 후 5분 이내 Health Check 실패율 > 10% → 자동 롤백 (이전 태스크 정의로 복귀)
+- 수동 롤백: 이전 Docker 이미지 태그로 재배포 (< 3분)
+- DB 마이그레이션 롤백: Prisma `prisma migrate resolve` + 수동 down migration SQL 준비
+
+**DB 마이그레이션 안전 규칙:**
+- 컬럼 삭제는 2단계로 진행: (1) 코드에서 참조 제거 배포 → (2) 다음 릴리스에서 컬럼 삭제
+- `NOT NULL` 컬럼 추가 시 반드시 `DEFAULT` 값을 지정하여 기존 행 호환
+- 인덱스 생성은 `CONCURRENTLY` 옵션 사용 (Prisma raw migration SQL)
+
+#### Dockerfile 예시 (apps/api)
+
+```dockerfile
+# apps/api/Dockerfile
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+
+FROM base AS deps
+WORKDIR /app
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/shared/package.json ./packages/shared/
+RUN pnpm install --frozen-lockfile --filter @aegisai/api...
+
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY . .
+RUN pnpm --filter @aegisai/shared build
+RUN pnpm --filter @aegisai/api build
+RUN pnpm --filter @aegisai/api exec prisma generate
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
+COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./prisma
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+USER nestjs
+EXPOSE 3000
+CMD ["node", "dist/main.js"]
+```
+
+#### GitHub Actions 워크플로우 구조
+
+```yaml
+# .github/workflows/ci.yml (핵심 구조)
+name: CI
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @aegisai/shared build
+      - run: pnpm --filter @aegisai/api lint
+      - run: pnpm --filter @aegisai/web lint
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: aegisai_test
+          POSTGRES_USER: aegisai
+          POSTGRES_PASSWORD: aegisai
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @aegisai/api test
+      - run: pnpm --filter @aegisai/web test
+
+  build-and-push:
+    needs: [lint-and-typecheck, test]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}/api:${{ github.sha }}
+```
+
+---
+
+### 13-3. 고가용성(HA) 및 재해복구(DR) 설계 (Phase 2 로드맵)
+
+> MVP에서는 단일 인스턴스로 운영한다. 아래는 서비스 성장에 따른 HA/DR 확장 경로이다.
+
+#### 아키텍처 진화 경로
+
+```text
+Phase 1 (MVP)              Phase 2 (운영)              Phase 3 (스케일)
+─────────────              ──────────────              ───────────────
+단일 Docker Compose   →    ECS Fargate + ALB      →    EKS + Multi-AZ
+로컬 PostgreSQL       →    RDS Multi-AZ           →    RDS Read Replica + pgBouncer
+로컬 Redis            →    ElastiCache (단일)     →    ElastiCache (클러스터 모드)
+수동 배포             →    GitHub Actions CI/CD   →    ArgoCD + GitOps
+```
+
+#### 고가용성 설계
+
+| 컴포넌트 | Phase 2 | Phase 3 |
+|----------|---------|---------|
+| API 서버 (apps/api) | ECS 서비스 최소 2 태스크 + ALB 헬스체크 | K8s Deployment (replicas: 3) + HPA |
+| BullMQ Worker | 별도 ECS 서비스 (최소 2 태스크) | K8s Deployment + KEDA 기반 큐 길이 오토스케일링 |
+| PostgreSQL | RDS Multi-AZ (자동 페일오버) | RDS Multi-AZ + Read Replica (읽기 부하 분산) |
+| Redis | ElastiCache 단일 노드 (자동 백업) | ElastiCache 클러스터 모드 (샤딩 + 레플리카) |
+| 프론트엔드 (apps/web) | S3 + CloudFront (정적 호스팅) | 동일 (CDN 엣지 캐시) |
+| AI 서버 (apps/ai) | ECS Fargate (GPU 필요 시 EC2) | K8s + GPU 노드풀 |
+
+**세션 스토어 HA:**
+- Phase 1: 단일 Redis 인스턴스 (세션 손실 시 재로그인)
+- Phase 2: ElastiCache 자동 백업 + Multi-AZ 레플리카
+- `express-session`의 `store` 설정은 변경 불필요 (Redis URL만 변경)
+
+#### 재해복구(DR) 계획
+
+| 항목 | RPO (복구 시점 목표) | RTO (복구 시간 목표) | 전략 |
+|------|---------------------|---------------------|------|
+| PostgreSQL | 5분 | 30분 | RDS 자동 백업 (5분 간격 트랜잭션 로그) + 일일 스냅샷 |
+| Redis (세션/큐) | N/A (휘발성 허용) | 5분 | 세션 손실 시 재로그인, BullMQ Job은 DB 상태로 복구 |
+| Docker 이미지 | N/A | 즉시 | Container Registry에 모든 버전 보존 |
+| 코드 저장소 | 0 (Git) | 즉시 | GitHub 자체 이중화 |
+| 환경변수/시크릿 | N/A | 10분 | AWS Secrets Manager (버전 관리 포함) |
+
+**멀티 리전 전략 (Phase 3, 필요 시):**
+- Active-Standby 구성: Primary(ap-northeast-2) + Standby(us-west-2)
+- Route 53 Health Check 기반 자동 페일오버
+- RDS Cross-Region Read Replica → 프로모션
+- 현실적으로 MVP 이후 트래픽 규모를 확인한 후 도입 여부를 결정한다
+
+#### 백업 정책
+
+| 대상 | 주기 | 보존 기간 | 저장 위치 |
+|------|------|----------|----------|
+| DB 자동 백업 | 연속 (트랜잭션 로그) | 7일 | RDS 자동 (같은 리전) |
+| DB 일일 스냅샷 | 1일 | 30일 | RDS 스냅샷 (같은 리전) |
+| DB 월간 스냅샷 | 1월 | 1년 | S3 Cross-Region Copy |
+| Redis 백업 | 1일 | 3일 | ElastiCache 자동 백업 |
+| Docker 이미지 | 배포 시 | 최근 50개 태그 | Container Registry |
+
+---
+
 ## 14. 부록
 
 ### 부록 A. 환경 변수 목록
@@ -4303,6 +4551,383 @@ Phase 3 완료 기준:
 [ ] CORS 정상 동작 확인 (localhost:5173 → localhost:3000)
 [ ] GitHub 로그인 → 레포 연동 → 스캔 → 취약점 상세 전체 플로우 브라우저에서 동작
 [ ] TASK-17~TASK-22 모든 페이지 및 컴포넌트 정상 렌더링 확인
+```
+
+---
+
+### 부록 C. 과금/결제 시스템 설계 (Phase 3 로드맵)
+
+> MVP에서는 모든 기능을 무료로 제공한다. 아래는 SaaS 과금 모델 도입 시 기술 설계이다.
+
+#### 과금 모델 (안)
+
+| 플랜 | 월 가격 | 포함 항목 | 초과 과금 |
+|------|--------|----------|----------|
+| Free | ₩0 | 3 레포, 월 10회 스캔, 공개 레포만 | 불가 (업그레이드 안내) |
+| Pro | ₩29,000 / 사용자 | 무제한 레포, 월 100회 스캔, 비공개 레포 | ₩300 / 추가 스캔 |
+| Team | ₩49,000 / 사용자 | Pro + RBAC, 팀 대시보드, 우선 지원 | ₩250 / 추가 스캔 |
+| Enterprise | 별도 협의 | Team + SSO/SAML, SLA, 전용 인스턴스 | 별도 협의 |
+
+> 위 가격은 예시이며, 실제 출시 전 시장 조사를 통해 결정한다.
+
+#### 기술 스택
+
+| 항목 | 선택 | 이유 |
+|------|------|------|
+| 결제 게이트웨이 | Stripe | 글로벌 지원, 구독 관리 내장, Webhook 기반 이벤트 처리 |
+| 한국 결제 (대안) | Toss Payments | 국내 카드/간편결제, Stripe 미지원 시 대안 |
+| 구독 관리 | Stripe Billing | 플랜 변경, 프로레이션, 인보이스 자동 발행 |
+| 사용량 추적 | 내부 구현 (DB 기반) | 스캔 횟수, 레포 수를 DB에서 실시간 집계 |
+
+#### DB 스키마 확장 (안)
+
+```prisma
+// Phase 3에서 추가할 모델
+
+enum PlanType {
+  FREE
+  PRO
+  TEAM
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model Subscription {
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  plan              PlanType           @default(FREE)
+  status            SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId  String?            @unique
+  stripeSubId       String?            @unique
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean           @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UsageRecord {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // 'scan', 'repo_connect'
+  count     Int      @default(1)
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, type, periodStart])
+}
+```
+
+#### API 엔드포인트 (Phase 3 예약)
+
+```text
+GET    /api/billing/subscription       — 현재 구독 정보 조회
+POST   /api/billing/checkout           — Stripe Checkout 세션 생성 → 리다이렉트
+POST   /api/billing/portal             — Stripe Customer Portal 세션 생성 (플랜 변경/취소)
+POST   /api/billing/webhook            — Stripe Webhook 수신 (서명 검증 필수)
+GET    /api/billing/usage              — 현재 기간 사용량 조회
+```
+
+#### 사용량 제한 적용 지점
+
+```text
+ScanService.requestScan()에 플랜 체크 로직 삽입:
+1. user.subscription.plan 조회
+2. 현재 기간 스캔 횟수 조회 (UsageRecord)
+3. 플랜 한도 초과 시 → 402 Payment Required + 업그레이드 안내 메시지
+4. 한도 내 → 스캔 실행 + UsageRecord 기록
+```
+
+#### MVP 사전 준비 사항
+
+- `User` 모델에 `subscription` relation 추가를 **Phase 3 시점에** 수행한다.
+- Phase 1에서는 모든 사용자가 암묵적으로 무제한 플랜이다 (제한 로직 없음).
+- Stripe API Key는 환경변수(`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`)로 관리한다.
+
+---
+
+### 부록 D. 이메일 알림 및 PDF 리포트 (Phase 2 로드맵)
+
+> MVP에서는 알림 및 리포트 기능을 제공하지 않는다. 아래는 Phase 2에서 도입할 설계이다.
+
+#### 이메일 알림
+
+**기술 스택:**
+
+| 항목 | 선택 | 이유 |
+|------|------|------|
+| 발송 서비스 | AWS SES 또는 Resend | 비용 효율, API 기반 발송, 템플릿 관리 |
+| 템플릿 엔진 | React Email (mjml 기반) | TypeScript 호환, 반응형 이메일, 컴포넌트 재사용 |
+| 큐잉 | BullMQ (기존 Redis 활용) | 발송 실패 재시도, 비동기 처리 |
+
+**알림 트리거 및 템플릿:**
+
+| 트리거 | 제목 예시 | 수신자 | 우선순위 |
+|--------|----------|--------|---------|
+| 스캔 완료 (DONE) | `[Aegisai] {repoName} 스캔 완료 — {critical}건 CRITICAL 발견` | 스캔 요청자 | Phase 2 필수 |
+| CRITICAL 취약점 발견 | `[Aegisai] 🚨 CRITICAL 취약점 {count}건 — {repoName}` | 스캔 요청자 | Phase 2 필수 |
+| 스캔 실패 (FAILED) | `[Aegisai] {repoName} 스캔 실패 — {errorMessage}` | 스캔 요청자 | Phase 2 필수 |
+| 주간 요약 리포트 | `[Aegisai] 주간 보안 리포트 — {date}` | 전체 활성 사용자 | Phase 2 선택 |
+| 새 사용자 가입 환영 | `Aegisai에 오신 것을 환영합니다` | 가입자 | Phase 2 선택 |
+
+**사용자 알림 설정:**
+
+```prisma
+// Phase 2에서 추가할 모델
+model NotificationPreference {
+  id                String  @id @default(uuid())
+  userId            String  @unique
+  scanComplete      Boolean @default(true)
+  criticalAlert     Boolean @default(true)
+  scanFailed        Boolean @default(true)
+  weeklyDigest      Boolean @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+```
+
+**API 엔드포인트:**
+
+```text
+GET    /api/notifications/preferences         — 알림 설정 조회
+PATCH  /api/notifications/preferences         — 알림 설정 변경
+POST   /api/notifications/test                — 테스트 이메일 발송 (개발용)
+```
+
+**구현 흐름:**
+
+```text
+ScanProcessor DONE 처리
+  → NotificationService.sendScanComplete(scan, user)
+    → NotificationPreference 확인 (scanComplete: true?)
+    → BullMQ 'email-jobs' 큐에 Job 등록
+      → EmailProcessor: React Email 렌더링 → SES/Resend API 발송
+        → 실패 시 3회 재시도 (exponential backoff)
+```
+
+#### PDF 리포트
+
+**기술 스택:**
+
+| 항목 | 선택 | 이유 |
+|------|------|------|
+| PDF 생성 | Puppeteer (Headless Chrome) | HTML → PDF 변환, 복잡한 레이아웃 지원, 차트 렌더링 가능 |
+| 대안 | @react-pdf/renderer | 경량, 서버 사이드 React 컴포넌트 기반. 차트 렌더링 제한적 |
+| 템플릿 | React 컴포넌트 (SSR) | 프론트엔드 컴포넌트 재사용 가능 |
+
+**리포트 유형:**
+
+| 유형 | 내용 | 트리거 |
+|------|------|--------|
+| 스캔 리포트 | 단일 스캔 결과 상세 (취약점 목록, 코드 스니펫, 수정 제안) | 사용자 수동 다운로드 |
+| 프로젝트 요약 | 레포별 스캔 히스토리, 취약점 추이, 심각도 분포 차트 | 사용자 수동 다운로드 |
+| 주간/월간 리포트 | 전체 레포 보안 현황 요약, 해결/미해결 비율 | 스케줄 자동 생성 |
+
+**API 엔드포인트:**
+
+```text
+POST   /api/reports/scans/:scanId/pdf         — 스캔 리포트 PDF 생성 요청 (비동기)
+GET    /api/reports/:reportId                  — 리포트 상태 조회 + 다운로드 URL
+GET    /api/reports/:reportId/download         — PDF 파일 다운로드 (S3 Presigned URL 리다이렉트)
+```
+
+**생성 흐름:**
+
+```text
+POST /api/reports/scans/:scanId/pdf
+  → Report 레코드 생성 (status: GENERATING)
+  → BullMQ 'report-jobs' 큐에 Job 등록
+    → ReportProcessor:
+      1. Scan + Vulnerabilities 데이터 조회
+      2. React 컴포넌트 → HTML 렌더링
+      3. Puppeteer → PDF 변환
+      4. S3 업로드 (presigned URL 생성)
+      5. Report → READY + downloadUrl 저장
+  → 클라이언트: 폴링 또는 이메일 알림으로 완료 확인
+```
+
+**저장 및 보존:**
+- PDF 파일: S3 버킷 (`aegisai-reports-{env}`)
+- 보존 기간: 30일 (S3 Lifecycle Rule로 자동 삭제)
+- 다운로드: S3 Presigned URL (유효 기간: 1시간)
+
+---
+
+### 부록 E. 보안 인증 및 컴플라이언스 (Phase 3 로드맵)
+
+> MVP에서는 기본적인 보안 조치(AES-256-GCM 토큰 암호화, CSRF 보호, 세션 관리)만 적용한다. 아래는 서비스 확장 시 필요한 보안 인증 및 규제 대응 설계이다.
+
+#### 보안 인증 로드맵
+
+| 인증 | 대상 | 목표 시기 | 비고 |
+|------|------|----------|------|
+| SOC 2 Type I | 전체 서비스 | 서비스 출시 후 6개월 | 보안 통제 설계 평가. Type II (운영 효과 평가)는 Type I 취득 후 6개월 뒤 진행 |
+| ISO 27001 | 전체 서비스 | 서비스 출시 후 12개월 | 정보보안 관리체계(ISMS) 인증 |
+| ISMS-P | 한국 시장 | 필요 시 | 개인정보보호 관리체계 인증 (한국 규제 대응) |
+
+#### SOC 2 대응을 위한 기술 요구사항
+
+| 통제 영역 | 현재 상태 (Phase 1) | Phase 2/3 목표 |
+|----------|--------------------|--------------| 
+| 접근 통제 | OAuth 세션 기반 인증 | RBAC 도입, MFA(Phase 3), 감사 로그(Audit Log) |
+| 변경 관리 | Git 기반 코드 관리 | PR 승인 필수, 자동화된 CI/CD, 배포 이력 추적 |
+| 데이터 암호화 | OAuth 토큰 AES-256-GCM | 전송 중: TLS 1.2+ 필수, 저장 시: RDS/S3 암호화 활성화 |
+| 모니터링 | NestJS Logger | 구조화 로깅 + 중앙 수집, 이상 탐지 알림 |
+| 인시던트 대응 | 없음 | 인시던트 대응 절차(IRP) 문서화, PagerDuty/Opsgenie 연동 |
+| 벤더 관리 | 없음 | 서드파티 서비스(Stripe, AWS, GitHub) 보안 평가 문서화 |
+
+**감사 로그 (Audit Log) 설계:**
+
+```prisma
+// Phase 2에서 추가
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String   // 'scan.create', 'repo.connect', 'vuln.feedback', 'auth.login', 'auth.logout'
+  resourceType String? // 'Scan', 'ConnectedRepo', 'Vulnerability'
+  resourceId  String?
+  metadata    Json?    // 변경 전/후 값, IP, User-Agent 등
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+}
+```
+
+#### GDPR / 개인정보보호 대응
+
+| 요구사항 | 구현 방안 |
+|----------|----------|
+| 데이터 최소 수집 | OAuth 프로필에서 필수 정보(id, name, email, avatar)만 저장. 코드는 분석 후 메모리에서 즉시 해제 (DB 미저장) |
+| 동의 기반 처리 | OAuth 인증 시 서비스 이용약관 + 개인정보처리방침 동의 확인 |
+| 데이터 접근 요청 (DSAR) | `GET /api/account/data-export` — 사용자 관련 전체 데이터 JSON 내보내기 |
+| 삭제 요청 (잊힐 권리) | `DELETE /api/account` — 사용자 계정 + 관련 데이터 전체 삭제 (Prisma cascade) |
+| 데이터 이동성 | 위 data-export API로 대응 |
+| 데이터 처리자 계약 (DPA) | AWS, GitHub 등 서드파티와의 DPA 체결 확인 |
+| 위반 통지 | 데이터 침해 발생 시 72시간 내 감독기관 통지 절차 문서화 |
+
+**코드 데이터 보안 원칙:**
+- 사용자 코드(`files[]`)는 `ScanProcessor` 실행 중 메모리에만 존재한다.
+- 코드 내용은 DB에 저장하지 않는다. `Vulnerability.codeSnippet`은 취약점 주변 코드 조각(최대 10줄)만 저장한다.
+- `MockAnalysisApiClient`: 인메모리 처리, 네트워크 전송 없음.
+- `InternalAnalysisApiClient`: Docker 내부 네트워크로만 전송. 외부 네트워크 전송 시 HTTPS 필수.
+- Phase 2에서 코드 분석 완료 후 명시적 메모리 해제 확인 로직을 추가한다.
+
+#### 환경변수 추가 (Phase 2/3)
+
+| 변수명 | Phase | 설명 |
+|--------|-------|------|
+| `AUDIT_LOG_ENABLED` | Phase 2 | 감사 로그 활성화 (`true`/`false`) |
+| `DATA_RETENTION_DAYS` | Phase 2 | 스캔 데이터 보존 일수 (기본 365) |
+| `GDPR_MODE` | Phase 3 | EU 사용자 대상 GDPR 강화 모드 활성화 |
+
+---
+
+### 부록 F. 이용약관 및 개인정보처리방침 (Phase 2 로드맵)
+
+> MVP에서는 법적 문서 페이지를 제공하지 않는다. Phase 2에서 서비스 공개 전에 반드시 준비해야 한다.
+
+#### 필요 페이지 목록
+
+| 페이지 | URL | 설명 | 구현 방식 |
+|--------|-----|------|----------|
+| 이용약관 | `/terms` | 서비스 이용 조건, 책임 제한, 지적재산권 | 정적 마크다운 페이지 |
+| 개인정보처리방침 | `/privacy` | 수집 정보, 처리 목적, 보존 기간, 제3자 제공, 사용자 권리 | 정적 마크다운 페이지 |
+| 쿠키 정책 | `/cookies` | 사용 쿠키 목록, 목적, 관리 방법 | 정적 마크다운 페이지 (개인정보처리방침에 통합 가능) |
+| 오픈소스 라이선스 | `/licenses` | 사용 중인 OSS 라이선스 고지 | 빌드 시 자동 생성 (license-checker 도구 활용) |
+
+#### 프론트엔드 구현
+
+```text
+apps/web/src/
+├── pages/
+│   ├── legal/
+│   │   ├── TermsPage.tsx         # /terms
+│   │   ├── PrivacyPage.tsx       # /privacy
+│   │   └── CookiePolicyPage.tsx  # /cookies (선택)
+│   └── ...
+├── content/
+│   ├── terms.md                  # 이용약관 마크다운 원본
+│   ├── privacy.md                # 개인정보처리방침 마크다운 원본
+│   └── cookies.md                # 쿠키 정책 마크다운 원본
+└── ...
+```
+
+- 법적 문서는 마크다운으로 작성하여 `content/` 디렉토리에 보관한다.
+- 프론트엔드에서 `react-markdown` 등으로 렌더링한다.
+- 별도의 CMS나 백엔드 API는 불필요하다 (정적 콘텐츠).
+- 법적 문서 내용은 법률 자문을 받아 작성한다 (기술팀 작성 범위 밖).
+
+#### 라우터 설정 추가
+
+```tsx
+// apps/web/src/router.tsx — Phase 2에서 추가할 라우트
+{ path: '/terms', element: <TermsPage /> },
+{ path: '/privacy', element: <PrivacyPage /> },
+{ path: '/cookies', element: <CookiePolicyPage /> },
+```
+
+> 이 페이지들은 인증 없이 접근 가능해야 한다 (`ProtectedRoute` 밖에 배치).
+
+#### OAuth 동의 흐름 연동
+
+Phase 2에서 OAuth 로그인 플로우에 이용약관 동의 절차를 추가한다:
+
+```text
+GitHub OAuth 콜백 → 최초 로그인 여부 확인
+  → 최초 로그인 → /onboarding (이용약관 + 개인정보처리방침 동의 체크)
+    → 동의 완료 → User.termsAcceptedAt 저장 → /dashboard 리다이렉트
+  → 기존 사용자 → /dashboard 리다이렉트
+```
+
+```prisma
+// Phase 2에서 User 모델에 추가
+model User {
+  // ... 기존 필드
+  termsAcceptedAt     DateTime?   // 이용약관 동의 일시
+  privacyAcceptedAt   DateTime?   // 개인정보처리방침 동의 일시
+}
+```
+
+#### 이용약관 핵심 포함 사항 (법률 자문 체크리스트)
+
+```text
+[ ] 서비스 정의 및 이용 조건
+[ ] 사용자 계정 관리 책임
+[ ] 금지 행위 (악의적 코드 스캔, 타인 레포 무단 접근 시도 등)
+[ ] 지적재산권 (사용자 코드 소유권 보장, 분석 결과 저작권)
+[ ] 서비스 가용성 보장 제한 (SLA 미제공 시 면책)
+[ ] 책임 제한 (보안 취약점 미탐지에 대한 면책)
+[ ] 서비스 변경/종료 고지
+[ ] 분쟁 해결 (준거법, 관할 법원)
+```
+
+#### 개인정보처리방침 핵심 포함 사항 (법률 자문 체크리스트)
+
+```text
+[ ] 수집하는 개인정보 항목 (이름, 이메일, GitHub/GitLab ID, 아바타 URL)
+[ ] 수집 방법 (OAuth 인증 시 자동 수집)
+[ ] 이용 목적 (서비스 제공, 보안 분석, 사용자 식별)
+[ ] 보존 기간 (계정 유지 시 보존, 탈퇴 시 즉시 삭제)
+[ ] 제3자 제공 (AWS 인프라, GitHub/GitLab API — 데이터 처리 위탁)
+[ ] 사용자 권리 (접근, 정정, 삭제, 이동, 처리 거부)
+[ ] 쿠키 사용 (세션 쿠키: connect.sid, 목적: 인증 유지)
+[ ] 개인정보 보호책임자 연락처
+[ ] 국외 이전 (AWS 리전 소재 국가 고지)
 ```
 
 ---
