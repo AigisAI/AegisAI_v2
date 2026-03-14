@@ -56,6 +56,7 @@ Do not start User Story work until the remaining Phase 2 tasks are complete.
 
 ## Branch Context
 
-- Current branch: `feat/04-specify`
-- Suggested continuation target: keep working on this branch until the current issue scope is
-  split or merged
+- Current issue: `#13`
+- Current branch target: `feat/13-workspace-bootstrap`
+- Suggested continuation target: continue Phase 2 work on the issue-aligned branch for the
+  current ticket
