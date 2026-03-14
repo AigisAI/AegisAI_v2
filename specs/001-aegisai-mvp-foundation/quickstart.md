@@ -52,17 +52,17 @@ If you already know the MVP architecture and only need execution detail, re-read
 `plan.md`, and `tasks.md`, then use the supporting docs only when the task touches contracts,
 entities, or architectural constraints.
 
-## If You Want To Use Spec Kit Scripts On The Current Branch
+## If You Want To Use Spec Kit Scripts On A GitHub-Style Branch
 
-The repository is not currently checked out to a `001-...` style feature branch. In the
-current PowerShell session, set:
+The repository may be checked out to a GitHub-style branch such as
+`feat/<issue-number>-<short-feature>`. In the current PowerShell session, set:
 
 ```powershell
 $env:SPECIFY_FEATURE = "001-aegisai-mvp-foundation"
 ```
 
 This makes Spec Kit scripts resolve the baseline feature directory without forcing a branch
-switch.
+name change.
 
 ## Completion Gate
 

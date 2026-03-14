@@ -69,6 +69,7 @@ if ($PathsOnly) {
         [PSCustomObject]@{
             REPO_ROOT    = $paths.REPO_ROOT
             BRANCH       = $paths.CURRENT_BRANCH
+            ACTIVE_FEATURE = $paths.ACTIVE_FEATURE
             FEATURE_DIR  = $paths.FEATURE_DIR
             FEATURE_SPEC = $paths.FEATURE_SPEC
             IMPL_PLAN    = $paths.IMPL_PLAN
@@ -77,6 +78,7 @@ if ($PathsOnly) {
     } else {
         Write-Output "REPO_ROOT: $($paths.REPO_ROOT)"
         Write-Output "BRANCH: $($paths.CURRENT_BRANCH)"
+        Write-Output "ACTIVE_FEATURE: $($paths.ACTIVE_FEATURE)"
         Write-Output "FEATURE_DIR: $($paths.FEATURE_DIR)"
         Write-Output "FEATURE_SPEC: $($paths.FEATURE_SPEC)"
         Write-Output "IMPL_PLAN: $($paths.IMPL_PLAN)"

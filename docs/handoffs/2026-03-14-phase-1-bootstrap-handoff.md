@@ -58,5 +58,6 @@ Do not start User Story work until the remaining Phase 2 tasks are complete.
 
 - Current issue: `#13`
 - Current branch target: `feat/13-workspace-bootstrap`
+- GitHub workflow source of truth: `docs/github-conventions.md`
 - Suggested continuation target: continue Phase 2 work on the issue-aligned branch for the
   current ticket
