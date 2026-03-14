@@ -2,11 +2,12 @@
 
 ## Start Here
 
-- Product baseline: [`spec 2.2.md`](./spec%202.2.md)
-- Agent operating guide: [`AGENTS.md`](./AGENTS.md)
-- Baseline implementation package: [`specs/001-aegisai-mvp-foundation/spec.md`](./specs/001-aegisai-mvp-foundation/spec.md)
-- Execution plan: [`specs/001-aegisai-mvp-foundation/plan.md`](./specs/001-aegisai-mvp-foundation/plan.md)
-- Task list: [`specs/001-aegisai-mvp-foundation/tasks.md`](./specs/001-aegisai-mvp-foundation/tasks.md)
+This repository is organized around an agent-first MVP baseline for AegisAI.
 
-The repository is now prepared so an implementation agent can start from the baseline MVP
-feature package without first re-deriving scope from the product spec.
+- Agents should start with [`AGENTS.md`](./AGENTS.md).
+- The canonical execution path lives in [`specs/001-aegisai-mvp-foundation/quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md).
+- The background product baseline lives in [`spec 2.2.md`](./spec%202.2.md).
+- The active implementation package lives in [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/).
+
+If you are starting development work, follow the agent path `AGENTS.md -> quickstart.md ->
+feature package` instead of jumping directly to `tasks.md`.
