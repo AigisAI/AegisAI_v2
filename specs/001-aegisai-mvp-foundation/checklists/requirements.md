@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning  
 **Created**: 2026-03-13  
-**Feature**: [spec.md](/c:/Users/권태욱/Desktop/AegisAI_v2/specs/001-aegisai-mvp-foundation/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

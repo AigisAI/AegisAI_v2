@@ -1,11 +1,17 @@
 # AegisAI Agent Start Guide
 
-## Start Here
+## Mandatory Start Path
 
-- Primary product spec: `spec 2.2.md`
-- Repository constitution: `.specify/memory/constitution.md`
-- Baseline implementation package: `specs/001-aegisai-mvp-foundation/`
-- Task entry point: `specs/001-aegisai-mvp-foundation/tasks.md`
+1. Open the canonical execution entry point: [`specs/001-aegisai-mvp-foundation/quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md)
+2. Follow the read order and execution flow defined there before touching code.
+3. Use [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) as the default implementation target unless a narrower active feature replaces it.
+
+## Core References
+
+- Canonical execution entry point: [`specs/001-aegisai-mvp-foundation/quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md)
+- Primary product baseline: [`spec 2.2.md`](./spec%202.2.md)
+- Repository constitution: [`.specify/memory/constitution.md`](./.specify/memory/constitution.md)
+- Baseline implementation package: [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/)
 
 ## Active Feature Baseline
 
@@ -22,13 +28,20 @@ $env:SPECIFY_FEATURE = "001-aegisai-mvp-foundation"
 
 This makes Spec Kit scripts resolve the baseline feature directory directly.
 
-## Required Reading Order
+## Document Precedence
 
-1. `spec 2.2.md`
-2. `.specify/memory/constitution.md`
-3. `specs/001-aegisai-mvp-foundation/spec.md`
-4. `specs/001-aegisai-mvp-foundation/plan.md`
-5. `specs/001-aegisai-mvp-foundation/tasks.md`
+1. `AGENTS.md` defines how agents enter the repository and the guardrails they must preserve.
+2. `quickstart.md` defines the canonical read order, execution flow, and completion flow.
+3. The active feature package defines implementation-ready scope and task detail.
+4. `spec 2.2.md` and `.specify/memory/constitution.md` remain baseline constraints and architecture references.
+
+## Agent Execution Policy
+
+- Start from `quickstart.md`; do not begin directly from `tasks.md`.
+- Treat `quickstart.md` as the single source of truth for execution order and validation flow.
+- Use `README.md` as a lightweight landing page, not as an execution checklist.
+- Return to supporting docs when a task touches contracts, entities, architecture boundaries, or guardrails.
+- If implementation-ready docs and baseline docs appear to diverge on scope or acceptance, stop and resolve the mismatch before coding.
 
 ## Non-Negotiable Rules
 
@@ -39,9 +52,7 @@ This makes Spec Kit scripts resolve the baseline feature directory directly.
 - Shared API contracts belong in `packages/shared`.
 - Sessions, CSRF protection, throttling, health checks, and critical integration tests are required.
 
-## Recommended Execution Order
+## Completion Gate
 
-1. Complete setup and foundational tasks first.
-2. Deliver User Story 1 end to end before touching later stories.
-3. Add User Story 2 and User Story 3 incrementally.
-4. Finish with cross-cutting hardening and quickstart validation.
+- Re-run the final validation path from [`quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md) before claiming completion.
+- Keep entrypoint docs synchronized whenever execution guidance changes.
