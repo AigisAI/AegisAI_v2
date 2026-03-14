@@ -20,7 +20,7 @@ Use the following format for working branches:
 
 Examples:
 
-- `feat/13-workspace-bootstrap`
+- `feat/4-github-setup`
 - `fix/21-auth-timeout`
 - `refactor/34-scan-service-cleanup`
 
@@ -61,7 +61,7 @@ Issue references may be added in the footer when needed.
 
 The active implementation package still lives under `specs/001-aegisai-mvp-foundation/`.
 
-When you are working on a GitHub-style branch such as `feat/13-workspace-bootstrap`, use
+When you are working on a GitHub-style branch such as `feat/4-github-setup`, use
 `SPECIFY_FEATURE` to point Spec Kit scripts at the active feature directory when needed:
 
 ```powershell

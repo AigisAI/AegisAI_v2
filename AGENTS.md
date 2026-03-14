@@ -38,7 +38,7 @@ $env:SPECIFY_FEATURE = "001-aegisai-mvp-foundation"
 ```
 
 This makes Spec Kit scripts resolve the active feature directory directly while you continue
-working on GitHub-style branches such as `feat/13-workspace-bootstrap`.
+working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 
 ## Document Precedence
 
