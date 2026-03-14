@@ -32,12 +32,12 @@ validation of each story.
 
 **Purpose**: Create the pnpm workspace, package boundaries, and local development shell.
 
-- [ ] T001 Create root workspace files in `package.json`, `pnpm-workspace.yaml`, `.npmrc`, and `docker-compose.yml`
-- [ ] T002 Create backend package scaffolding in `apps/api/package.json`, `apps/api/tsconfig.json`, `apps/api/nest-cli.json`, and `apps/api/src/main.ts`
-- [ ] T003 [P] Create frontend package scaffolding in `apps/web/package.json`, `apps/web/tsconfig.json`, `apps/web/vite.config.ts`, and `apps/web/src/main.tsx`
-- [ ] T004 [P] Create shared package scaffolding in `packages/shared/package.json`, `packages/shared/tsconfig.json`, and `packages/shared/src/index.ts`
-- [ ] T005 Configure top-level developer commands in root `package.json` and add baseline environment examples in `.env.example`, `apps/api/.env.example`, and `apps/web/.env.example`
-- [ ] T006 [P] Add workspace lint, test, and typecheck configuration in `apps/api/package.json`, `apps/web/package.json`, and any root config files selected in the plan
+- [x] T001 Create root workspace files in `package.json`, `pnpm-workspace.yaml`, `.npmrc`, and `docker-compose.yml`
+- [x] T002 Create backend package scaffolding in `apps/api/package.json`, `apps/api/tsconfig.json`, `apps/api/nest-cli.json`, and `apps/api/src/main.ts`
+- [x] T003 [P] Create frontend package scaffolding in `apps/web/package.json`, `apps/web/tsconfig.json`, `apps/web/vite.config.ts`, and `apps/web/src/main.tsx`
+- [x] T004 [P] Create shared package scaffolding in `packages/shared/package.json`, `packages/shared/tsconfig.json`, and `packages/shared/src/index.ts`
+- [x] T005 Configure top-level developer commands in root `package.json` and add baseline environment examples in `.env.example`, `apps/api/.env.example`, and `apps/web/.env.example`
+- [x] T006 [P] Add workspace lint, test, and typecheck configuration in `apps/api/package.json`, `apps/web/package.json`, and any root config files selected in the plan
 
 ---
 
@@ -58,7 +58,7 @@ validation of each story.
 - [ ] T015 [P] Implement report infrastructure in `apps/api/src/report/report.module.ts`, `apps/api/src/report/report.service.ts`, `apps/api/src/report/report.processor.ts`, and a PDF generator service file under `apps/api/src/report/`
 - [ ] T016 Implement common backend behavior in `apps/api/src/common/filters/global-exception.filter.ts`, `apps/api/src/common/interceptors/response-transform.interceptor.ts`, `apps/api/src/common/decorators/skip-transform.decorator.ts`, `apps/api/src/common/guards/session-aware-throttler.guard.ts`, and `apps/api/src/health/health.controller.ts`
 - [ ] T017 [P] Create frontend application shell and API foundation in `apps/web/src/App.tsx`, `apps/web/src/router.tsx`, `apps/web/src/api/client.ts`, `apps/web/src/hooks/useAuth.ts`, `apps/web/src/store/auth.store.ts`, and `apps/web/src/components/layout/AppShell.tsx`
-- [ ] T018 Create baseline backend and frontend test harnesses in `apps/api/test/`, `apps/web/src/**/*.test.tsx`, and any shared test setup files selected by the implementation
+- [x] T018 Create baseline backend and frontend test harnesses in `apps/api/test/`, `apps/web/src/**/*.test.tsx`, and any shared test setup files selected by the implementation
 
 **Checkpoint**: Foundation ready. User stories can now proceed with clear contracts and shared infrastructure.
 

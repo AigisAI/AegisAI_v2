@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.pnpm-store/
+.turbo/
+.idea/
+.vscode/
+*.tsbuildinfo
+.env
+.env.local
+apps/api/.env
+apps/web/.env
+apps/api/tmp/
+*.log
