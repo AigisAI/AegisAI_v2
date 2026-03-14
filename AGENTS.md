@@ -18,15 +18,27 @@
 - Feature id: `001-aegisai-mvp-foundation`
 - Use this feature package as the default implementation target until a narrower feature spec replaces it.
 
-## If You Need Spec Kit Scripts Without Changing Branches
+## GitHub Workflow Convention
 
-The current git branch is not a Spec Kit feature branch. In a PowerShell session, run:
+The repository-level GitHub workflow convention is documented in
+[`docs/github-conventions.md`](./docs/github-conventions.md).
+
+- Use `feat/<issue-number>-<short-feature>` for feature branches
+- Use `fix/`, `refactor/`, `release/`, and `hotfix/` with the same issue-number pattern
+- Use commit messages in the format `<type>: <description>`
+- Keep issue titles and PR titles identical
+- Treat `dev` as the default integration branch and `main` as the release-ready branch
+
+## If You Need Spec Kit Scripts From GitHub-Style Branches
+
+GitHub branch names do not need to match the spec directory name. In a PowerShell session, run:
 
 ```powershell
 $env:SPECIFY_FEATURE = "001-aegisai-mvp-foundation"
 ```
 
-This makes Spec Kit scripts resolve the baseline feature directory directly.
+This makes Spec Kit scripts resolve the active feature directory directly while you continue
+working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 
 ## Document Precedence
 

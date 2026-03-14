@@ -49,6 +49,7 @@ if ($Json) {
         IMPL_PLAN = $paths.IMPL_PLAN
         SPECS_DIR = $paths.FEATURE_DIR
         BRANCH = $paths.CURRENT_BRANCH
+        ACTIVE_FEATURE = $paths.ACTIVE_FEATURE
         HAS_GIT = $paths.HAS_GIT
     }
     $result | ConvertTo-Json -Compress
@@ -57,5 +58,6 @@ if ($Json) {
     Write-Output "IMPL_PLAN: $($paths.IMPL_PLAN)"
     Write-Output "SPECS_DIR: $($paths.FEATURE_DIR)"
     Write-Output "BRANCH: $($paths.CURRENT_BRANCH)"
+    Write-Output "ACTIVE_FEATURE: $($paths.ACTIVE_FEATURE)"
     Write-Output "HAS_GIT: $($paths.HAS_GIT)"
 }
