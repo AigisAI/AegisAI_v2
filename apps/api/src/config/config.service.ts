@@ -1,22 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 
+import type { EnvironmentVariables } from './config.types';
+
+type ConfigKey = keyof EnvironmentVariables;
+
 @Injectable()
 export class ConfigService {
-  constructor(private readonly nestConfig: NestConfigService) {}
+  constructor(private readonly nestConfig: NestConfigService<EnvironmentVariables, true>) {}
 
-  get(key: string): string {
-    const value = this.nestConfig.get<string>(key);
+  get<K extends ConfigKey>(key: K): EnvironmentVariables[K] {
+    const value = this.nestConfig.get(key, { infer: true });
 
     if (value === undefined) {
-      throw new Error(`Missing environment variable: ${key}`);
+      throw new Error(`Missing environment variable: ${String(key)}`);
     }
 
     return value;
   }
 
-  getOptional(key: string): string | undefined {
-    return this.nestConfig.get<string>(key);
+  getOptional<K extends ConfigKey>(key: K): EnvironmentVariables[K] | undefined {
+    return this.nestConfig.get(key, { infer: true });
   }
 
   isProduction(): boolean {

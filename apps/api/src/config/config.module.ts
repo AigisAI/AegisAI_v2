@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 
+import { ENV_FILE_PATHS } from './config.paths';
 import { ConfigService } from './config.service';
 
 @Module({
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ENV_FILE_PATHS,
       validationSchema: Joi.object({
         NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
         PORT: Joi.number().port().default(3000),
