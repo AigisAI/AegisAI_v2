@@ -4696,7 +4696,7 @@ Phase 1 (MVP)              Phase 2 (운영)              Phase 3 (스케일)
 | `SESSION_COOKIE_NAME` | - | 세션 쿠키 이름 (기본: `connect.sid`) |
 | `CSRF_COOKIE_NAME` | - | CSRF 쿠키 이름 (기본: `csrf_token`) |
 | `COOKIE_DOMAIN` | - | 운영 쿠키 도메인 (예: `.example.com`, 로컬은 비움) |
-| `TOKEN_ENCRYPTION_KEY` | ✅ | OAuth 토큰 AES-256-GCM 암호화 키 (32바이트, **hex 인코딩된 64자 문자열**. 생성: `openssl rand -hex 32`) |
+| `TOKEN_ENCRYPTION_KEY` | ✅ | OAuth 토큰 AES-256-GCM 암호화 키 (32바이트, **hex 인코딩된 64자 문자열**. 환경별로 고유하게 생성해야 하며 예제 값을 재사용하면 안 된다. 생성: `openssl rand -hex 32`) |
 | `NODE_ENV` | ✅ | `development` / `production` |
 | `VITE_API_URL` | - | 프론트엔드에서 사용하는 API 서버 URL (기본: `http://localhost:3000/api`, `apps/web/.env`에 설정) |
 | `AI_SERVER_URL` | - | apps/ai FastAPI 서버 URL (기본: `http://localhost:8000`) |
@@ -4743,7 +4743,8 @@ CSRF_COOKIE_NAME=csrf_token
 
 # Token Encryption (AES-256-GCM, 32 bytes)
 # 생성 예시: openssl rand -hex 32
-TOKEN_ENCRYPTION_KEY=
+# Generate a unique key per environment: openssl rand -hex 32
+TOKEN_ENCRYPTION_KEY=REPLACE_WITH_YOUR_OWN_64_HEX_CHARACTER_KEY
 
 # Runtime
 NODE_ENV=development
