@@ -14,18 +14,20 @@ const files = {
   envExample: new URL('../../deploy/oracle/.env.example', import.meta.url)
 };
 
+const readNormalizedText = (fileUrl) => readFileSync(fileUrl, 'utf8').replace(/\r\n/g, '\n');
+
 test('cd workflow and oracle deployment files enforce the split infra/app deploy path', () => {
   for (const [name, fileUrl] of Object.entries(files)) {
     assert.equal(existsSync(fileUrl), true, `Expected ${name} file to exist at ${fileUrl.pathname}`);
   }
 
-  const workflow = readFileSync(files.workflow, 'utf8');
-  const apiDockerfile = readFileSync(files.apiDockerfile, 'utf8');
-  const webDockerfile = readFileSync(files.webDockerfile, 'utf8');
-  const infraCompose = readFileSync(files.infraCompose, 'utf8');
-  const appCompose = readFileSync(files.appCompose, 'utf8');
-  const deployScript = readFileSync(files.deployScript, 'utf8');
-  const envExample = readFileSync(files.envExample, 'utf8');
+  const workflow = readNormalizedText(files.workflow);
+  const apiDockerfile = readNormalizedText(files.apiDockerfile);
+  const webDockerfile = readNormalizedText(files.webDockerfile);
+  const infraCompose = readNormalizedText(files.infraCompose);
+  const appCompose = readNormalizedText(files.appCompose);
+  const deployScript = readNormalizedText(files.deployScript);
+  const envExample = readNormalizedText(files.envExample);
 
   assert.match(workflow, /^name:\s*CD/m);
   assert.match(workflow, /push:\s*[\s\S]*branches:\s*[\s\S]*- main/m);
