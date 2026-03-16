@@ -51,7 +51,7 @@ CREATE TABLE "ConnectedRepo" (
     "providerRepoId" TEXT NOT NULL,
     "fullName" TEXT NOT NULL,
     "cloneUrl" TEXT NOT NULL,
-    "defaultBranch" TEXT NOT NULL DEFAULT 'main',
+    "defaultBranch" TEXT NOT NULL,
     "isPrivate" BOOLEAN NOT NULL DEFAULT false,
     "connectedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -179,4 +179,3 @@ ALTER TABLE "Report" ADD CONSTRAINT "Report_scanId_fkey" FOREIGN KEY ("scanId") 
 
 -- AddForeignKey
 ALTER TABLE "Report" ADD CONSTRAINT "Report_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-

@@ -82,7 +82,7 @@ model ConnectedRepo {
   providerRepoId String
   fullName       String
   cloneUrl       String
-  defaultBranch  String       @default("main")
+  defaultBranch  String
   isPrivate      Boolean      @default(false)
   connectedAt    DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

@@ -825,7 +825,7 @@ model ConnectedRepo {
   providerRepoId String       // GitHub/GitLab의 레포 고유 ID (문자열로 저장 — int/string 타입 차이 흡수)
   fullName       String       // "owner/repo-name"
   cloneUrl       String
-  defaultBranch  String       @default("main")
+  defaultBranch  String
   isPrivate      Boolean      @default(false)
   connectedAt    DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
