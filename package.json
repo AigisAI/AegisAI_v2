@@ -12,7 +12,8 @@
     "dev:api": "corepack pnpm --filter @aegisai/api dev",
     "dev:web": "corepack pnpm --filter @aegisai/web dev",
     "lint": "corepack pnpm -r lint",
-    "test": "corepack pnpm -r test",
+    "test": "corepack pnpm -r test && node --test test/github-actions/*.test.mjs",
+    "test:ci-workflow": "node --test test/github-actions/*.test.mjs",
     "typecheck": "corepack pnpm -r typecheck"
   },
   "devDependencies": {

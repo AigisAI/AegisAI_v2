@@ -26,3 +26,12 @@ The repository follows the GitHub workflow convention documented in
 Spec Kit feature docs still live in [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/),
 so GitHub-style working branches may still need `SPECIFY_FEATURE` when running Spec Kit
 helpers.
+
+## CI
+
+GitHub Actions runs the same baseline verification path used locally:
+
+- `corepack pnpm lint`
+- `corepack pnpm test`
+- `corepack pnpm typecheck`
+- `corepack pnpm build`
