@@ -80,6 +80,15 @@ CREATE TABLE "Scan" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
+    CONSTRAINT "Scan_non_negative_metrics_check" CHECK (
+      ("totalFiles" IS NULL OR "totalFiles" >= 0)
+      AND ("totalLines" IS NULL OR "totalLines" >= 0)
+      AND "vulnCritical" >= 0
+      AND "vulnHigh" >= 0
+      AND "vulnMedium" >= 0
+      AND "vulnLow" >= 0
+      AND "vulnInfo" >= 0
+    ),
     CONSTRAINT "Scan_pkey" PRIMARY KEY ("id")
 );
 
@@ -107,6 +116,10 @@ CREATE TABLE "Vulnerability" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
+    CONSTRAINT "Vulnerability_valid_line_range_check" CHECK (
+      "lineStart" > 0
+      AND ("lineEnd" IS NULL OR "lineEnd" >= "lineStart")
+    ),
     CONSTRAINT "Vulnerability_pkey" PRIMARY KEY ("id")
 );
 
