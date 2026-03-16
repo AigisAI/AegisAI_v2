@@ -95,7 +95,7 @@ jobs:
       - name: Upload deployment files
         shell: bash
         run: |
-          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.prod.yml deploy/oracle/deploy.sh '${{ secrets.ORACLE_VPS_USER }}@${{ secrets.ORACLE_VPS_HOST }}:${{ secrets.ORACLE_DEPLOY_PATH }}/'
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/deploy.sh '${{ secrets.ORACLE_VPS_USER }}@${{ secrets.ORACLE_VPS_HOST }}:${{ secrets.ORACLE_DEPLOY_PATH }}/'
           scp -i ~/.ssh/id_ed25519 .oracle-deploy.env '${{ secrets.ORACLE_VPS_USER }}@${{ secrets.ORACLE_VPS_HOST }}:${{ secrets.ORACLE_DEPLOY_PATH }}/.oracle-deploy.env'
 
       - name: Deploy over SSH
