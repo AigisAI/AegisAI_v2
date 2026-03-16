@@ -35,3 +35,28 @@ GitHub Actions runs the same baseline verification path used locally:
 - `corepack pnpm test`
 - `corepack pnpm typecheck`
 - `corepack pnpm build`
+
+## CD
+
+Production CD targets a single Oracle Cloud VPS.
+
+- Registry: `ghcr.io`
+- Trigger: `main` push or manual `workflow_dispatch`
+- Runtime: Docker Compose on the VPS
+- Deploy path files: `deploy/oracle/docker-compose.prod.yml`, `deploy/oracle/deploy.sh`, and a server-managed `.env`
+
+Required GitHub secrets for CD:
+
+- `ORACLE_VPS_HOST`
+- `ORACLE_VPS_USER`
+- `ORACLE_VPS_SSH_PRIVATE_KEY`
+- `ORACLE_DEPLOY_PATH`
+- `GHCR_USERNAME`
+- `GHCR_READ_TOKEN`
+
+One-time VPS setup:
+
+1. Install Docker Engine and Docker Compose plugin.
+2. Create the deploy directory (for example `/opt/aegisai`).
+3. Copy `deploy/oracle/.env.example` to `.env` on the VPS and fill in production values.
+4. Open ports `80` (web) and any additional ports you intentionally expose.

@@ -1,0 +1,17 @@
+.git
+.github
+.codex
+.specify
+node_modules
+**/node_modules
+**/dist
+coverage
+.pnpm-store
+.turbo
+*.log
+.env
+.env.local
+apps/api/.env
+apps/web/.env
+deploy/oracle/.env
+docs/superpowers
