@@ -43,9 +43,10 @@ Production CD targets a single Oracle Cloud VPS.
 - Registry: `ghcr.io`
 - Trigger: `main` push or manual `workflow_dispatch`
 - Runtime: Docker Compose on the VPS
-- Deploy path files: `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, `deploy/oracle/deploy.sh`, and a server-managed `.env`
+- Deploy path files: `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, `deploy/oracle/deploy.sh`, a server-managed `.env`, and the one-time helper `deploy/oracle/bootstrap-infra.sh`
 - Automated rollout scope: app stack only (`api`, `web`)
 - Manual bootstrap scope: infra stack (`postgres`, `redis`)
+- Detailed runbook: [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md)
 
 Required GitHub secrets for CD:
 
@@ -56,11 +57,4 @@ Required GitHub secrets for CD:
 - `GHCR_USERNAME`
 - `GHCR_READ_TOKEN`
 
-One-time VPS setup:
-
-1. Install Docker Engine and Docker Compose plugin.
-2. Create the deploy directory (for example `/opt/aegisai`).
-3. Copy `deploy/oracle/.env.example` to `.env` on the VPS and fill in production values.
-4. Copy `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, and `deploy/oracle/deploy.sh` to the VPS deploy directory.
-5. Start infra once with `docker compose -f docker-compose.infra.yml up -d`.
-6. Open ports `80` (web) and any additional ports you intentionally expose.
+For first-time Oracle Cloud setup, follow the runbook in [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md) rather than reproducing the steps manually from memory.

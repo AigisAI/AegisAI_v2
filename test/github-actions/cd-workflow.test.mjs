@@ -11,7 +11,9 @@ const files = {
   infraCompose: new URL('../../deploy/oracle/docker-compose.infra.yml', import.meta.url),
   appCompose: new URL('../../deploy/oracle/docker-compose.app.yml', import.meta.url),
   deployScript: new URL('../../deploy/oracle/deploy.sh', import.meta.url),
-  envExample: new URL('../../deploy/oracle/.env.example', import.meta.url)
+  envExample: new URL('../../deploy/oracle/.env.example', import.meta.url),
+  bootstrapDoc: new URL('../../deploy/oracle/BOOTSTRAP.md', import.meta.url),
+  bootstrapScript: new URL('../../deploy/oracle/bootstrap-infra.sh', import.meta.url)
 };
 
 const readNormalizedText = (fileUrl) => readFileSync(fileUrl, 'utf8').replace(/\r\n/g, '\n');
@@ -28,6 +30,8 @@ test('cd workflow and oracle deployment files enforce the split infra/app deploy
   const appCompose = readNormalizedText(files.appCompose);
   const deployScript = readNormalizedText(files.deployScript);
   const envExample = readNormalizedText(files.envExample);
+  const bootstrapDoc = readNormalizedText(files.bootstrapDoc);
+  const bootstrapScript = readNormalizedText(files.bootstrapScript);
 
   assert.match(workflow, /^name:\s*CD/m);
   assert.match(workflow, /push:\s*[\s\S]*branches:\s*[\s\S]*- main/m);
@@ -69,4 +73,15 @@ test('cd workflow and oracle deployment files enforce the split infra/app deploy
   assert.match(envExample, /REDIS_URL=redis:\/\/redis:6379/);
   assert.match(envExample, /SESSION_SECRET=/);
   assert.match(envExample, /TOKEN_ENCRYPTION_KEY=/);
+
+  assert.match(bootstrapDoc, /Oracle Cloud/i);
+  assert.match(bootstrapDoc, /ORACLE_VPS_HOST/);
+  assert.match(bootstrapDoc, /GHCR_READ_TOKEN/);
+  assert.match(bootstrapDoc, /docker-compose\.infra\.yml/);
+  assert.match(bootstrapDoc, /docker compose -f docker-compose\.infra\.yml up -d/);
+  assert.match(bootstrapDoc, /\.env/);
+
+  assert.match(bootstrapScript, /^#!\/bin\/sh/m);
+  assert.match(bootstrapScript, /docker compose -f docker-compose\.infra\.yml up -d/);
+  assert.match(bootstrapScript, /docker-compose\.infra\.yml/);
 });
