@@ -37,8 +37,12 @@ test('cd workflow and oracle deployment files enforce the split infra/app deploy
   assert.match(workflow, /push:\s*[\s\S]*branches:\s*[\s\S]*- main/m);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /docker\/login-action@v3/);
+  assert.match(workflow, /docker\/setup-qemu-action@v3/);
   assert.match(workflow, /docker\/build-push-action@v6/);
   assert.match(workflow, /ghcr\.io/);
+  assert.match(workflow, /platforms:\s*linux\/amd64,linux\/arm64/m);
+  assert.match(workflow, /Validate deployment secrets/);
+  assert.match(workflow, /Missing required GitHub Actions secrets for production deploy/);
   assert.match(workflow, /ssh-keyscan/);
   assert.match(workflow, /scp /);
   assert.match(workflow, /ssh /);

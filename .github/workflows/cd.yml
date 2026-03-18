@@ -26,6 +26,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -48,6 +51,7 @@ jobs:
         with:
           context: .
           file: apps/api/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-api:${{ steps.prep.outputs.image_tag }}
 
@@ -56,6 +60,7 @@ jobs:
         with:
           context: .
           file: apps/web/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-web:${{ steps.prep.outputs.image_tag }}
 
@@ -64,30 +69,53 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     environment: production
+    env:
+      ORACLE_VPS_HOST: ${{ secrets.ORACLE_VPS_HOST }}
+      ORACLE_VPS_USER: ${{ secrets.ORACLE_VPS_USER }}
+      ORACLE_VPS_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_VPS_SSH_PRIVATE_KEY }}
+      ORACLE_DEPLOY_PATH: ${{ secrets.ORACLE_DEPLOY_PATH }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate deployment secrets
+        shell: bash
+        run: |
+          missing=()
+          for secret_name in ORACLE_VPS_HOST ORACLE_VPS_USER ORACLE_VPS_SSH_PRIVATE_KEY ORACLE_DEPLOY_PATH GHCR_USERNAME GHCR_READ_TOKEN; do
+            if [[ -z "${!secret_name}" ]]; then
+              missing+=("$secret_name")
+            fi
+          done
+
+          if (( ${#missing[@]} > 0 )); then
+            echo "Missing required GitHub Actions secrets for production deploy: ${missing[*]}" >&2
+            echo "Configure them before running the CD workflow." >&2
+            exit 1
+          fi
+
       - name: Configure SSH access
         shell: bash
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' '${{ secrets.ORACLE_VPS_SSH_PRIVATE_KEY }}' > ~/.ssh/id_ed25519
+          printf '%s\n' "$ORACLE_VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H '${{ secrets.ORACLE_VPS_HOST }}' >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$ORACLE_VPS_HOST" >> ~/.ssh/known_hosts
 
       - name: Create deploy path on VPS
         shell: bash
         run: |
-          ssh -i ~/.ssh/id_ed25519 '${{ secrets.ORACLE_VPS_USER }}@${{ secrets.ORACLE_VPS_HOST }}' "mkdir -p '${{ secrets.ORACLE_DEPLOY_PATH }}'"
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "mkdir -p '$ORACLE_DEPLOY_PATH'"
 
       - name: Prepare remote deploy variables
         shell: bash
         run: |
           cat <<EOF > .oracle-deploy.env
-          GHCR_USERNAME=${{ secrets.GHCR_USERNAME }}
-          GHCR_READ_TOKEN=${{ secrets.GHCR_READ_TOKEN }}
+          GHCR_USERNAME=$GHCR_USERNAME
+          GHCR_READ_TOKEN=$GHCR_READ_TOKEN
           GHCR_OWNER=${{ needs.build-and-push.outputs.ghcr_owner }}
           IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}
           EOF
@@ -95,10 +123,10 @@ jobs:
       - name: Upload deployment files
         shell: bash
         run: |
-          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/deploy.sh '${{ secrets.ORACLE_VPS_USER }}@${{ secrets.ORACLE_VPS_HOST }}:${{ secrets.ORACLE_DEPLOY_PATH }}/'
-          scp -i ~/.ssh/id_ed25519 .oracle-deploy.env '${{ secrets.ORACLE_VPS_USER }}@${{ secrets.ORACLE_VPS_HOST }}:${{ secrets.ORACLE_DEPLOY_PATH }}/.oracle-deploy.env'
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/deploy.sh "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
+          scp -i ~/.ssh/id_ed25519 .oracle-deploy.env "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/.oracle-deploy.env"
 
       - name: Deploy over SSH
         shell: bash
         run: |
-          ssh -i ~/.ssh/id_ed25519 '${{ secrets.ORACLE_VPS_USER }}@${{ secrets.ORACLE_VPS_HOST }}' "cd '${{ secrets.ORACLE_DEPLOY_PATH }}' && set -a && . ./.oracle-deploy.env && set +a && sh ./deploy.sh && rm -f ./.oracle-deploy.env"
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "cd '$ORACLE_DEPLOY_PATH' && set -a && . ./.oracle-deploy.env && set +a && sh ./deploy.sh && rm -f ./.oracle-deploy.env"
