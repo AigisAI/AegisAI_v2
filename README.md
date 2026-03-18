@@ -54,6 +54,8 @@ Required GitHub secrets for CD:
 - `GHCR_USERNAME`
 - `GHCR_READ_TOKEN`
 
+The deploy job targets the `production` GitHub environment, so set these as available secrets before running CD. If any are blank or missing, the workflow now fails early with a clear validation error instead of reaching the SSH steps.
+
 One-time VPS setup:
 
 1. Install Docker Engine and Docker Compose plugin.
