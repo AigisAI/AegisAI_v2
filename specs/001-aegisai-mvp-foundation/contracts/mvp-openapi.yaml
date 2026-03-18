@@ -1,0 +1,667 @@
+openapi: 3.1.0
+info:
+  title: AegisAI MVP API
+  version: 0.1.0
+  description: Baseline contract for the AegisAI MVP defined in spec 2.2.md.
+servers:
+  - url: http://localhost:3000/api
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Raw health payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /auth/me:
+    get:
+      summary: Get the current authenticated user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Authenticated user response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/logout:
+    post:
+      summary: Log out the current user
+      operationId: logout
+      responses:
+        '204':
+          description: Session cleared
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /repos/available:
+    get:
+      summary: List repositories available from connected providers
+      operationId: listAvailableRepos
+      responses:
+        '200':
+          description: Paginated provider repository list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderRepoPageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /repos:
+    post:
+      summary: Connect a repository
+      operationId: connectRepo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectRepoRequest'
+      responses:
+        '201':
+          description: Repository connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectedRepoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /repos/{repoId}:
+    delete:
+      summary: Disconnect a repository
+      operationId: disconnectRepo
+      parameters:
+        - $ref: '#/components/parameters/RepoId'
+      responses:
+        '204':
+          description: Repository disconnected
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /repos/{repoId}/branches:
+    get:
+      summary: List branches for a connected repository
+      operationId: listBranches
+      parameters:
+        - $ref: '#/components/parameters/RepoId'
+      responses:
+        '200':
+          description: Branch list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchPageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /scans:
+    post:
+      summary: Request a repository scan
+      operationId: requestScan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestScanRequest'
+      responses:
+        '202':
+          description: Scan accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanRequestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /scans/{scanId}:
+    get:
+      summary: Get scan status and summary
+      operationId: getScan
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      responses:
+        '200':
+          description: Scan detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /scans/{scanId}/vulnerabilities:
+    get:
+      summary: List vulnerabilities for a scan
+      operationId: listScanVulnerabilities
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      responses:
+        '200':
+          description: Vulnerability page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityPageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /vulnerabilities/{vulnId}:
+    get:
+      summary: Get vulnerability detail
+      operationId: getVulnerability
+      parameters:
+        - $ref: '#/components/parameters/VulnId'
+      responses:
+        '200':
+          description: Vulnerability detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /vulnerabilities/{vulnId}/feedback:
+    patch:
+      summary: Submit user feedback for a vulnerability
+      operationId: updateVulnerabilityFeedback
+      parameters:
+        - $ref: '#/components/parameters/VulnId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VulnerabilityFeedbackRequest'
+      responses:
+        '200':
+          description: Updated vulnerability detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /dashboard:
+    get:
+      summary: Get dashboard summary
+      operationId: getDashboard
+      responses:
+        '200':
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /reports/scans/{scanId}/pdf:
+    post:
+      summary: Request PDF report generation for a completed scan
+      operationId: requestPdfReport
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      responses:
+        '202':
+          description: Report generation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportRequestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /reports/{reportId}:
+    get:
+      summary: Get report status
+      operationId: getReport
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Report detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /reports/{reportId}/download:
+    get:
+      summary: Download a generated PDF report
+      operationId: downloadReport
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: PDF binary
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Report expired
+components:
+  parameters:
+    RepoId:
+      name: repoId
+      in: path
+      required: true
+      schema:
+        type: string
+    ScanId:
+      name: scanId
+      in: path
+      required: true
+      schema:
+        type: string
+    VulnId:
+      name: vulnId
+      in: path
+      required: true
+      schema:
+        type: string
+    ReportId:
+      name: reportId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: Bad request
+    Unauthorized:
+      description: Unauthorized
+    Forbidden:
+      description: Forbidden
+    NotFound:
+      description: Resource not found
+    Conflict:
+      description: Conflict
+    TooManyRequests:
+      description: Too many requests
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        uptimeSeconds:
+          type: number
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+      required: [status, uptimeSeconds, dependencies]
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+      required: [id, email, displayName]
+    ProviderRepo:
+      type: object
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+          enum: [github, gitlab]
+        owner:
+          type: string
+        name:
+          type: string
+        defaultBranch:
+          type: string
+      required: [id, provider, owner, name, defaultBranch]
+    ConnectedRepo:
+      type: object
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+          enum: [github, gitlab]
+        owner:
+          type: string
+        name:
+          type: string
+        defaultBranch:
+          type: string
+      required: [id, provider, owner, name, defaultBranch]
+    Branch:
+      type: object
+      properties:
+        name:
+          type: string
+        commitSha:
+          type: string
+      required: [name, commitSha]
+    ScanSummary:
+      type: object
+      properties:
+        totalFindings:
+          type: integer
+        severityCounts:
+          type: object
+          additionalProperties:
+            type: integer
+      required: [totalFindings, severityCounts]
+    ScanDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        repoId:
+          type: string
+        branch:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, RUNNING, DONE, FAILED]
+        summary:
+          $ref: '#/components/schemas/ScanSummary'
+      required: [id, repoId, branch, status]
+    ModelResult:
+      type: object
+      properties:
+        model:
+          type: string
+        decision:
+          type: string
+        reasoning:
+          type: string
+      required: [model, decision, reasoning]
+    Vulnerability:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        severity:
+          type: string
+          enum: [CRITICAL, HIGH, MEDIUM, LOW, INFO]
+        filePath:
+          type: string
+        lineStart:
+          type: integer
+        lineEnd:
+          type: integer
+        confidenceScore:
+          type: number
+        consensusScore:
+          type: number
+      required: [id, title, severity, filePath, lineStart, lineEnd, confidenceScore, consensusScore]
+    VulnerabilityDetail:
+      allOf:
+        - $ref: '#/components/schemas/Vulnerability'
+        - type: object
+          properties:
+            description:
+              type: string
+            recommendation:
+              type: string
+            codeSnippet:
+              type: string
+            modelResults:
+              type: array
+              items:
+                $ref: '#/components/schemas/ModelResult'
+            feedback:
+              type: string
+              enum: [OPEN, ACCEPTED, REJECTED, FIXED]
+          required: [description, recommendation, codeSnippet, modelResults, feedback]
+    DashboardSummary:
+      type: object
+      properties:
+        severityCounts:
+          type: object
+          additionalProperties:
+            type: integer
+        trend:
+          type: array
+          items:
+            type: object
+        recentScans:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanDetail'
+      required: [severityCounts, trend, recentScans]
+    ReportDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        scanId:
+          type: string
+        status:
+          type: string
+          enum: [GENERATING, READY, FAILED]
+        downloadUrl:
+          type: string
+          nullable: true
+      required: [id, scanId, status]
+    ApiEnvelopeAuthUser:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/AuthUser'
+      required: [success, data]
+    ApiEnvelopeConnectedRepo:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ConnectedRepo'
+      required: [success, data]
+    ApiEnvelopeScanRequest:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ScanRequestAccepted'
+      required: [success, data]
+    ApiEnvelopeScanDetail:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ScanDetail'
+      required: [success, data]
+    ApiEnvelopeVulnerabilityDetail:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/VulnerabilityDetail'
+      required: [success, data]
+    ApiEnvelopeDashboard:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/DashboardSummary'
+      required: [success, data]
+    ApiEnvelopeReportDetail:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ReportDetail'
+      required: [success, data]
+    ProviderRepoPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderRepo'
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+      required: [items, page, size, total]
+    BranchPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Branch'
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+      required: [items, page, size, total]
+    VulnerabilityPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vulnerability'
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+      required: [items, page, size, total]
+    ProviderRepoPageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ProviderRepoPage'
+      required: [success, data]
+    BranchPageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/BranchPage'
+      required: [success, data]
+    VulnerabilityPageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/VulnerabilityPage'
+      required: [success, data]
+    ConnectRepoRequest:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [github, gitlab]
+        providerRepoId:
+          type: string
+      required: [provider, providerRepoId]
+    RequestScanRequest:
+      type: object
+      properties:
+        repoId:
+          type: string
+        branch:
+          type: string
+      required: [repoId, branch]
+    ScanRequestAccepted:
+      type: object
+      properties:
+        scanId:
+          type: string
+        status:
+          type: string
+          enum: [PENDING]
+      required: [scanId, status]
+    VulnerabilityFeedbackRequest:
+      type: object
+      properties:
+        feedback:
+          type: string
+          enum: [ACCEPTED, REJECTED]
+      required: [feedback]
+    ReportRequestAccepted:
+      type: object
+      properties:
+        reportId:
+          type: string
+        status:
+          type: string
+          enum: [GENERATING]
+        message:
+          type: string
+      required: [reportId, status, message]
+    AuthUserResponse:
+      $ref: '#/components/schemas/ApiEnvelopeAuthUser'
+    ConnectedRepoResponse:
+      $ref: '#/components/schemas/ApiEnvelopeConnectedRepo'
+    ScanRequestResponse:
+      $ref: '#/components/schemas/ApiEnvelopeScanRequest'
+    ScanDetailResponse:
+      $ref: '#/components/schemas/ApiEnvelopeScanDetail'
+    VulnerabilityDetailResponse:
+      $ref: '#/components/schemas/ApiEnvelopeVulnerabilityDetail'
+    DashboardResponse:
+      $ref: '#/components/schemas/ApiEnvelopeDashboard'
+    ReportDetailResponse:
+      $ref: '#/components/schemas/ApiEnvelopeReportDetail'
+    ReportRequestResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ReportRequestAccepted'
+      required: [success, data]

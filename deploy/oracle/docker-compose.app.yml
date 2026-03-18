@@ -1,0 +1,25 @@
+services:
+  api:
+    image: ghcr.io/${GHCR_OWNER}/aegisai-api:${IMAGE_TAG}
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - platform
+    expose:
+      - "3000"
+
+  web:
+    image: ghcr.io/${GHCR_OWNER}/aegisai-web:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - platform
+    ports:
+      - "80:80"
+
+networks:
+  platform:
+    external: true
+    name: aegisai-platform
