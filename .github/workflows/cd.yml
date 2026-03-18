@@ -64,6 +64,30 @@ jobs:
           push: true
           tags: ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-web:${{ steps.prep.outputs.image_tag }}
 
+      - name: Verify multi-arch image manifests
+        shell: bash
+        run: |
+          verify_manifest() {
+            image="$1"
+
+            echo "Inspecting $image"
+            manifest="$(docker buildx imagetools inspect "$image")"
+            printf '%s\n' "$manifest"
+
+            printf '%s\n' "$manifest" | grep -q 'linux/amd64' || {
+              echo "Missing linux/amd64 manifest for $image" >&2
+              exit 1
+            }
+
+            printf '%s\n' "$manifest" | grep -q 'linux/arm64' || {
+              echo "Missing linux/arm64 manifest for $image" >&2
+              exit 1
+            }
+          }
+
+          verify_manifest "ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-api:${{ steps.prep.outputs.image_tag }}"
+          verify_manifest "ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-web:${{ steps.prep.outputs.image_tag }}"
+
   deploy:
     name: Deploy to Oracle Cloud VPS
     needs: build-and-push
