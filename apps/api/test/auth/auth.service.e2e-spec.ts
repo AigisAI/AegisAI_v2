@@ -88,6 +88,61 @@ describe('AuthService', () => {
     });
   });
 
+  it('preserves the stored email when a returning provider profile omits it', async () => {
+    const prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'user-1',
+          email: 'stored@example.com',
+          name: 'Stored User',
+          avatarUrl: 'https://example.com/stored.png',
+          oauthTokens: [{ provider: 'GITHUB' }]
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'user-1' })
+      },
+      oAuthToken: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'token-1',
+          userId: 'user-1'
+        }),
+        upsert: jest.fn().mockResolvedValue({ id: 'token-1' })
+      }
+    };
+    const tokenCrypto = {
+      encrypt: jest.fn((value: string) => `enc(${value})`)
+    };
+
+    const service = new AuthService(prisma as never, tokenCrypto as never);
+
+    await expect(
+      service.findOrCreateUser(
+        'github',
+        {
+          id: 'github-123',
+          username: 'octocat',
+          displayName: 'Octo Cat',
+          emails: [],
+          photos: [{ value: 'https://example.com/octo.png' }]
+        },
+        'github-access-token'
+      )
+    ).resolves.toEqual({
+      id: 'user-1',
+      email: 'stored@example.com',
+      name: 'Stored User',
+      avatarUrl: 'https://example.com/stored.png',
+      connectedProviders: ['github']
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: {
+        name: 'Octo Cat',
+        avatarUrl: 'https://example.com/octo.png'
+      }
+    });
+  });
+
   it('reuses an existing email-matched user for a gitlab login', async () => {
     const prisma = {
       user: {

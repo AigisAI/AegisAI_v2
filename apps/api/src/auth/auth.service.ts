@@ -15,6 +15,12 @@ interface NormalizedProviderProfile {
   avatarUrl: string | null;
 }
 
+interface UserUpdateData {
+  email?: string | null;
+  name: string;
+  avatarUrl: string | null;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -41,13 +47,10 @@ export class AuthService {
     let userId: string;
 
     if (existingToken) {
+      const userUpdateData = this.buildUserUpdateData(normalizedProfile);
       const user = await this.prisma.user.update({
         where: { id: existingToken.userId },
-        data: {
-          email: normalizedProfile.email,
-          name: normalizedProfile.name,
-          avatarUrl: normalizedProfile.avatarUrl
-        }
+        data: userUpdateData
       });
 
       userId = user.id;
@@ -60,13 +63,10 @@ export class AuthService {
         : null;
 
       if (existingUser) {
+        const userUpdateData = this.buildUserUpdateData(normalizedProfile);
         const user = await this.prisma.user.update({
           where: { id: existingUser.id },
-          data: {
-            email: normalizedProfile.email,
-            name: normalizedProfile.name,
-            avatarUrl: normalizedProfile.avatarUrl
-          }
+          data: userUpdateData
         });
 
         userId = user.id;
@@ -161,5 +161,18 @@ export class AuthService {
       name: profile.displayName ?? profile.username ?? `gitlab-${String(profile.id)}`,
       avatarUrl: 'avatarUrl' in profile ? profile.avatarUrl ?? null : null
     };
+  }
+
+  private buildUserUpdateData(normalizedProfile: NormalizedProviderProfile): UserUpdateData {
+    const userUpdateData: UserUpdateData = {
+      name: normalizedProfile.name,
+      avatarUrl: normalizedProfile.avatarUrl
+    };
+
+    if (normalizedProfile.email !== null) {
+      userUpdateData.email = normalizedProfile.email;
+    }
+
+    return userUpdateData;
   }
 }
