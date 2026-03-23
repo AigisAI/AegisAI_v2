@@ -46,7 +46,8 @@ describe('App bootstrap (e2e)', () => {
         $connect: jest.fn().mockResolvedValue(undefined),
         $disconnect: jest.fn().mockResolvedValue(undefined),
         onModuleInit: jest.fn().mockResolvedValue(undefined),
-        onModuleDestroy: jest.fn().mockResolvedValue(undefined)
+        onModuleDestroy: jest.fn().mockResolvedValue(undefined),
+        $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }])
       })
       .compile();
 
@@ -61,16 +62,39 @@ describe('App bootstrap (e2e)', () => {
     }
   });
 
-  it('returns bootstrap metadata from GET /api', async () => {
+  it('wraps GET /api responses in the shared success envelope', async () => {
     await request(app.getHttpServer())
       .get('/api')
       .expect(200)
       .expect(({ body }) => {
         expect(body).toMatchObject({
-          docs: 'specs/001-aegisai-mvp-foundation/quickstart.md',
-          service: 'api',
-          status: 'bootstrapped'
+          success: true,
+          data: {
+            docs: 'specs/001-aegisai-mvp-foundation/quickstart.md',
+            service: 'api',
+            status: 'bootstrapped'
+          },
+          message: null
         });
+        expect(body.timestamp).toEqual(expect.any(String));
+      });
+  });
+
+  it('keeps GET /api/health as a raw response', async () => {
+    await request(app.getHttpServer())
+      .get('/api/health')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.success).toBeUndefined();
+        expect(body).toMatchObject({
+          status: 'degraded',
+          services: {
+            database: 'up',
+            redis: 'down'
+          }
+        });
+        expect(body.uptime).toEqual(expect.any(Number));
+        expect(body.timestamp).toEqual(expect.any(String));
       });
   });
 });
