@@ -32,6 +32,17 @@ export interface ConnectRepoRequest {
   providerRepoId: string;
 }
 
+export interface ListAvailableReposQuery {
+  provider: Provider;
+  page?: number;
+  size?: number;
+}
+
+export interface ListRepoBranchesQuery {
+  page?: number;
+  size?: number;
+}
+
 export interface ConnectRepoResponse {
   id: string;
   fullName: string;

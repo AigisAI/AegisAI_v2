@@ -92,6 +92,39 @@ describe('GithubClient', () => {
     });
   });
 
+  it('loads repository metadata directly by provider repo id', async () => {
+    const http = createHttpService();
+    http.get.mockReturnValueOnce(
+      of(
+        createAxiosResponse({
+          id: 101,
+          full_name: 'aegisai/platform',
+          clone_url: 'https://github.com/aegisai/platform.git',
+          default_branch: 'main',
+          private: true
+        })
+      )
+    );
+    const client = new GithubClient(http as never);
+
+    await expect(client.getRepository('101', 'github-token')).resolves.toEqual({
+      providerRepoId: '101',
+      fullName: 'aegisai/platform',
+      cloneUrl: 'https://github.com/aegisai/platform.git',
+      defaultBranch: 'main',
+      isPrivate: true
+    });
+
+    expect(http.get).toHaveBeenCalledWith(
+      'https://api.github.com/repositories/101',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer github-token'
+        })
+      })
+    );
+  });
+
   it('decodes repository file contents from GitHub base64 payloads', async () => {
     const http = createHttpService();
     http.get.mockReturnValueOnce(

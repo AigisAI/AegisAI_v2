@@ -45,6 +45,7 @@ export interface IGitProviderClient {
   readonly provider: Provider;
 
   getRepositories(accessToken: string, page: number, size: number): Promise<RepoListResult>;
+  getRepository(providerRepoId: string, accessToken: string): Promise<ProviderRepoListItem>;
   getBranches(
     fullName: string,
     page: number,
