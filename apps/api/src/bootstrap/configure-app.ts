@@ -9,6 +9,7 @@ import { ConfigService } from '../config/config.service';
 
 export async function configureApp(app: INestApplication): Promise<void> {
   const config = app.get(ConfigService);
+  const httpAdapter = app.getHttpAdapter().getInstance() as { set?: (name: string, value: unknown) => void };
   const sessionOptions: session.SessionOptions = {
     name: config.get('SESSION_COOKIE_NAME'),
     secret: config.get('SESSION_SECRET'),
@@ -32,6 +33,10 @@ export async function configureApp(app: INestApplication): Promise<void> {
   }
 
   app.setGlobalPrefix('api');
+  if (config.isProduction()) {
+    httpAdapter.set?.('trust proxy', 1);
+  }
+
   app.use(cookieParser());
   app.use(session(sessionOptions));
   app.use(passport.initialize());

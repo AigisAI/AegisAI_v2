@@ -109,8 +109,19 @@ describe('AuthController (e2e)', () => {
     }
   });
 
-  it('returns 401 from GET /api/auth/me when no session is present', async () => {
-    await request(app.getHttpServer()).get('/api/auth/me').expect(401);
+  it('returns the shared error envelope from GET /api/auth/me when no session is present', async () => {
+    await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .expect(401)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          success: false,
+          data: null,
+          errorCode: 'UNAUTHORIZED'
+        });
+        expect(body.message).toEqual(expect.any(String));
+        expect(body.timestamp).toEqual(expect.any(String));
+      });
   });
 
   it('creates a session on github callback, returns the current user, and logs out with csrf', async () => {
@@ -124,13 +135,18 @@ describe('AuthController (e2e)', () => {
     const meResponse = await agent.get('/api/auth/me').expect(200);
     const csrfToken = findCookie(meResponse.headers['set-cookie'], 'csrf_token');
 
-    expect(meResponse.body).toEqual({
-      id: 'user-1',
-      email: 'user@example.com',
-      name: 'Aegis User',
-      avatarUrl: 'https://example.com/avatar.png',
-      connectedProviders: ['github']
+    expect(meResponse.body).toMatchObject({
+      success: true,
+      data: {
+        id: 'user-1',
+        email: 'user@example.com',
+        name: 'Aegis User',
+        avatarUrl: 'https://example.com/avatar.png',
+        connectedProviders: ['github']
+      },
+      message: null
     });
+    expect(meResponse.body.timestamp).toEqual(expect.any(String));
     expect(csrfToken).toMatch(/[A-Fa-f0-9]{64}/);
 
     const logoutResponse = await agent
