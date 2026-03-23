@@ -8,7 +8,14 @@ import type {
 
 @Injectable()
 export class MockAnalysisApiClient implements IAnalysisApiClient {
-  async analyze(request: AnalysisRequest): Promise<AnalysisResult> {
+  async analyze(
+    request: AnalysisRequest,
+    options?: { signal?: AbortSignal }
+  ): Promise<AnalysisResult> {
+    throwIfAborted(options?.signal);
+    await Promise.resolve();
+    throwIfAborted(options?.signal);
+
     const totalFiles = request.files.length;
     const totalLines = request.files.reduce((sum, file) => sum + countLines(file.content), 0);
 
@@ -69,4 +76,29 @@ function countLines(content: string): number {
   }
 
   return normalized.split(/\r?\n/).length;
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal) {
+    return;
+  }
+
+  if (typeof signal.throwIfAborted === 'function') {
+    signal.throwIfAborted();
+    return;
+  }
+
+  if (signal.aborted) {
+    throw createAbortError();
+  }
+}
+
+function createAbortError(): Error {
+  if (typeof DOMException !== 'undefined') {
+    return new DOMException('The operation was aborted.', 'AbortError');
+  }
+
+  return Object.assign(new Error('The operation was aborted.'), {
+    name: 'AbortError'
+  });
 }
