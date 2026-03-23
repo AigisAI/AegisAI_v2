@@ -13,6 +13,7 @@ import type {
   BranchListResult,
   FileTreeItem,
   IGitProviderClient,
+  ProviderRepoListItem,
   RepoListResult
 } from './git-provider-client.interface';
 
@@ -81,6 +82,33 @@ export class GithubClient implements IGitProviderClient {
           isPrivate: repository.private
         })),
         hasNextPage: this.hasNextLink(response.headers?.link)
+      };
+    });
+  }
+
+  async getRepository(
+    providerRepoId: string,
+    accessToken: string
+  ): Promise<ProviderRepoListItem> {
+    return this.wrapRequest(async () => {
+      const response = await firstValueFrom(
+        this.http.get<GithubRepositoryResponse>(
+          `${this.baseUrl}/repositories/${encodeURIComponent(providerRepoId)}`,
+          {
+            headers: this.buildHeaders(accessToken)
+          }
+        )
+      );
+
+      return {
+        providerRepoId: String(response.data.id),
+        fullName: response.data.full_name,
+        cloneUrl: response.data.clone_url,
+        defaultBranch: this.requireString(
+          response.data.default_branch,
+          `GitHub repository ${response.data.full_name} is missing a default branch`
+        ),
+        isPrivate: response.data.private
       };
     });
   }

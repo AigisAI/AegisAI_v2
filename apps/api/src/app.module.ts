@@ -16,6 +16,7 @@ import { ConfigService } from './config/config.service';
 import { HealthModule } from './health/health.module';
 import { LanguageModule } from './language/language.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RepoModule } from './repo/repo.module';
 import { ScanModule } from './scan/scan.module';
 
 const runtimeFeatureModules = process.env.NODE_ENV === 'test' ? [HealthModule] : [ScanModule, HealthModule];
@@ -44,6 +45,7 @@ const runtimeFeatureModules = process.env.NODE_ENV === 'test' ? [HealthModule] :
     ]),
     PrismaModule,
     AuthModule,
+    RepoModule,
     GitClientModule,
     LanguageModule,
     AnalysisApiModule,

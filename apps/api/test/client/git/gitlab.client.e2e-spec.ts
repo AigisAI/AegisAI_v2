@@ -68,6 +68,39 @@ describe('GitlabClient', () => {
     ]);
   });
 
+  it('loads repository metadata directly by provider repo id', async () => {
+    const http = createHttpService();
+    http.get.mockReturnValueOnce(
+      of(
+        createAxiosResponse({
+          id: 55,
+          path_with_namespace: 'aegisai/platform',
+          http_url_to_repo: 'https://gitlab.com/aegisai/platform.git',
+          default_branch: 'main',
+          visibility: 'private'
+        })
+      )
+    );
+    const client = new GitlabClient(http as never);
+
+    await expect(client.getRepository('55', 'gitlab-token')).resolves.toEqual({
+      providerRepoId: '55',
+      fullName: 'aegisai/platform',
+      cloneUrl: 'https://gitlab.com/aegisai/platform.git',
+      defaultBranch: 'main',
+      isPrivate: true
+    });
+
+    expect(http.get).toHaveBeenCalledWith(
+      'https://gitlab.com/api/v4/projects/55',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer gitlab-token'
+        })
+      })
+    );
+  });
+
   it('fetches raw file contents from GitLab', async () => {
     const http = createHttpService();
     http.get.mockReturnValueOnce(of(createAxiosResponse('class Main {}')));

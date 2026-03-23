@@ -13,6 +13,7 @@ import type {
   BranchListResult,
   FileTreeItem,
   IGitProviderClient,
+  ProviderRepoListItem,
   RepoListResult
 } from './git-provider-client.interface';
 
@@ -72,6 +73,33 @@ export class GitlabClient implements IGitProviderClient {
           isPrivate: project.visibility !== 'public'
         })),
         hasNextPage: this.hasNextPage(response.headers)
+      };
+    });
+  }
+
+  async getRepository(
+    providerRepoId: string,
+    accessToken: string
+  ): Promise<ProviderRepoListItem> {
+    return this.wrapRequest(async () => {
+      const response = await firstValueFrom(
+        this.http.get<GitlabProjectResponse>(
+          `${this.baseUrl}/projects/${encodeURIComponent(providerRepoId)}`,
+          {
+            headers: this.buildHeaders(accessToken)
+          }
+        )
+      );
+
+      return {
+        providerRepoId: String(response.data.id),
+        fullName: response.data.path_with_namespace,
+        cloneUrl: response.data.http_url_to_repo,
+        defaultBranch: this.requireString(
+          response.data.default_branch,
+          `GitLab project ${response.data.path_with_namespace} is missing a default branch`
+        ),
+        isPrivate: response.data.visibility !== 'public'
       };
     });
   }
