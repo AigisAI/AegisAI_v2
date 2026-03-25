@@ -7,6 +7,10 @@ describe('ConnectedRepo Prisma schema', () => {
     join(__dirname, '../../prisma/migrations/20260315215651_init/migration.sql'),
     'utf8'
   );
+  const followupMigration = readFileSync(
+    join(__dirname, '../../prisma/migrations/20260325234500_scan_constraints_followups/migration.sql'),
+    'utf8'
+  );
 
   it('requires defaultBranch to be set explicitly instead of relying on a Prisma default', () => {
     const defaultBranchLine = schema
@@ -36,5 +40,13 @@ describe('ConnectedRepo Prisma schema', () => {
     expect(initialMigration).toContain('CONSTRAINT "Vulnerability_valid_line_range_check" CHECK');
     expect(initialMigration).toContain('"lineStart" > 0');
     expect(initialMigration).toContain('"lineEnd" IS NULL OR "lineEnd" >= "lineStart"');
+  });
+
+  it('guards consensus scores and active scans with follow-up database constraints', () => {
+    expect(followupMigration).toContain('Vulnerability_consensus_score_range_check');
+    expect(followupMigration).toContain('"consensusScore" >= 0');
+    expect(followupMigration).toContain('"consensusScore" <= 1');
+    expect(followupMigration).toContain('Scan_active_branch_unique_idx');
+    expect(followupMigration).toContain(`WHERE "status" IN ('PENDING', 'RUNNING')`);
   });
 });

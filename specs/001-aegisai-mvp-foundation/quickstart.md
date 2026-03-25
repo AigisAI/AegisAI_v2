@@ -76,10 +76,10 @@ Before claiming the MVP baseline is ready:
 ## First Commands Once The Workspace Exists
 
 ```powershell
-pnpm install
-pnpm dev
-pnpm lint
-pnpm test
+corepack pnpm install
+corepack pnpm dev
+corepack pnpm lint
+corepack pnpm test
 ```
 
 ## Implementation Notes

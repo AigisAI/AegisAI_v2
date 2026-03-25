@@ -1,3 +1,5 @@
+import type { PageResponse, PageQuery } from './common';
+
 export interface ScanSeveritySummary {
   critical: number;
   high: number;
@@ -36,3 +38,9 @@ export interface ScanRequestResponse {
   status: 'PENDING';
   message: string;
 }
+
+export interface ListRepoScansQuery extends PageQuery {
+  repoId: string;
+}
+
+export type RepoScanListResponse = PageResponse<ScanSummary>;

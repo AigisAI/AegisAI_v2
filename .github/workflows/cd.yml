@@ -96,7 +96,7 @@ jobs:
     env:
       ORACLE_VPS_HOST: ${{ secrets.ORACLE_VPS_HOST }}
       ORACLE_VPS_USER: ${{ secrets.ORACLE_VPS_USER }}
-      ORACLE_VPS_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_VPS_SSH_PRIVATE_KEY }}
+      ORACLE_VPS_KNOWN_HOSTS: ${{ secrets.ORACLE_VPS_KNOWN_HOSTS }}
       ORACLE_DEPLOY_PATH: ${{ secrets.ORACLE_DEPLOY_PATH }}
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
       GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
@@ -107,9 +107,11 @@ jobs:
 
       - name: Validate deployment secrets
         shell: bash
+        env:
+          ORACLE_VPS_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_VPS_SSH_PRIVATE_KEY }}
         run: |
           missing=()
-          for secret_name in ORACLE_VPS_HOST ORACLE_VPS_USER ORACLE_VPS_SSH_PRIVATE_KEY ORACLE_DEPLOY_PATH GHCR_USERNAME GHCR_READ_TOKEN; do
+          for secret_name in ORACLE_VPS_HOST ORACLE_VPS_USER ORACLE_VPS_SSH_PRIVATE_KEY ORACLE_VPS_KNOWN_HOSTS ORACLE_DEPLOY_PATH GHCR_USERNAME GHCR_READ_TOKEN; do
             if [[ -z "${!secret_name}" ]]; then
               missing+=("$secret_name")
             fi
@@ -123,11 +125,14 @@ jobs:
 
       - name: Configure SSH access
         shell: bash
+        env:
+          ORACLE_VPS_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_VPS_SSH_PRIVATE_KEY }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$ORACLE_VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$ORACLE_VPS_HOST" >> ~/.ssh/known_hosts
+          printf '%s\n' "$ORACLE_VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
       - name: Create deploy path on VPS
         shell: bash
@@ -147,10 +152,17 @@ jobs:
       - name: Upload deployment files
         shell: bash
         run: |
-          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/deploy.sh "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/deploy.sh deploy/oracle/bootstrap-infra.sh "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
           scp -i ~/.ssh/id_ed25519 .oracle-deploy.env "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/.oracle-deploy.env"
 
       - name: Deploy over SSH
         shell: bash
         run: |
-          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "cd '$ORACLE_DEPLOY_PATH' && set -a && . ./.oracle-deploy.env && set +a && sh ./deploy.sh && rm -f ./.oracle-deploy.env"
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "cd '$ORACLE_DEPLOY_PATH' && trap 'rm -f ./.oracle-deploy.env' EXIT && set -a && . ./.oracle-deploy.env && set +a && sh ./deploy.sh"
+
+      - name: Cleanup deployment secrets
+        if: always()
+        shell: bash
+        run: |
+          rm -f ./.oracle-deploy.env
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "rm -f '$ORACLE_DEPLOY_PATH/.oracle-deploy.env'" || true

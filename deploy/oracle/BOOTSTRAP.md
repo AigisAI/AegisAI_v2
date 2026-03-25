@@ -53,6 +53,7 @@ Copy these files into the deploy directory:
 - `docker-compose.infra.yml`
 - `docker-compose.app.yml`
 - `deploy.sh`
+- `bootstrap-infra.sh`
 
 Create `.env` from `deploy/oracle/.env.example` and fill in production values.
 
@@ -88,6 +89,7 @@ Set these repository secrets before triggering CD:
 - `ORACLE_VPS_HOST`
 - `ORACLE_VPS_USER`
 - `ORACLE_VPS_SSH_PRIVATE_KEY`
+- `ORACLE_VPS_KNOWN_HOSTS`
 - `ORACLE_DEPLOY_PATH`
 - `GHCR_USERNAME`
 - `GHCR_READ_TOKEN`

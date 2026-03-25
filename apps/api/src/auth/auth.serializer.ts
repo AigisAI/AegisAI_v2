@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+癤퓁mport { Injectable } from '@nestjs/common';
 import { PassportSerializer } from '@nestjs/passport';
 import type { AuthUser } from '@aegisai/shared';
 
@@ -14,12 +14,12 @@ export class AuthSerializer extends PassportSerializer {
     done(null, user.id);
   }
 
-  async deserializeUser(payload: string, done: (err: Error | null, user?: AuthUser) => void): Promise<void> {
+  async deserializeUser(payload: string, done: (err: Error | null, user?: AuthUser | false) => void): Promise<void> {
     try {
       const user = await this.authService.getSessionUserById(payload);
 
       if (!user) {
-        done(new UnauthorizedException({ message: '인증된 사용자를 찾을 수 없습니다.', errorCode: 'UNAUTHORIZED' }));
+        done(null, false);
         return;
       }
 
