@@ -3,7 +3,7 @@ import cookieParser from 'cookie-parser';
 import { RedisStore } from 'connect-redis';
 import session from 'express-session';
 import passport from 'passport';
-import { createClient } from 'redis';
+import { createClient, type RedisClientType } from 'redis';
 
 import { ConfigService } from '../config/config.service';
 
@@ -30,6 +30,7 @@ export async function configureApp(app: INestApplication): Promise<void> {
     const redisClient = createClient({ url: config.get('REDIS_URL') });
     await redisClient.connect();
     sessionOptions.store = new RedisStore({ client: redisClient });
+    wrapAppCloseWithRedisCleanup(app, redisClient);
   }
 
   app.setGlobalPrefix('api');
@@ -41,4 +42,21 @@ export async function configureApp(app: INestApplication): Promise<void> {
   app.use(session(sessionOptions));
   app.use(passport.initialize());
   app.use(passport.session());
+}
+
+function wrapAppCloseWithRedisCleanup(
+  app: INestApplication,
+  redisClient: Pick<RedisClientType, 'disconnect' | 'isOpen'>
+): void {
+  const originalClose = app.close.bind(app);
+
+  app.close = async () => {
+    try {
+      if (redisClient.isOpen) {
+        await redisClient.disconnect();
+      }
+    } finally {
+      await originalClose();
+    }
+  };
 }

@@ -37,6 +37,7 @@ interface GithubRepositoryMetadataResponse {
 }
 
 interface GithubTreeResponse {
+  truncated?: boolean;
   tree: Array<{
     path: string;
     size?: number;
@@ -187,6 +188,13 @@ export class GithubClient implements IGitProviderClient {
           }
         )
       );
+
+      if (response.data.truncated) {
+        throw new GitProviderUnavailableError(
+          `GitHub tree response for ${fullName} at ${branch} was truncated`,
+          this.provider
+        );
+      }
 
       return response.data.tree.map((item) => ({
         path: item.path,

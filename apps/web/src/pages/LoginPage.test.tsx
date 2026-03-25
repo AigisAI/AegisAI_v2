@@ -63,6 +63,9 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     expect(screen.getByText(/checking your session/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /continue with github/i })
+    ).not.toBeInTheDocument();
   });
 
   it("renders an oauth failure message from the query string", () => {

@@ -9,6 +9,7 @@ import type {
   IAnalysisApiClient,
   VulnerabilityItem
 } from '../client/analysis/analysis-api-client.interface';
+import { parseAnalysisResultDto } from '../client/analysis/analysis-api.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenCryptoUtil } from '../auth/utils/token-crypto.util';
 import { SCAN_QUEUE } from './scan.constants';
@@ -66,11 +67,14 @@ export class ScanProcessor extends WorkerHost {
         provider: scan.connectedRepo.provider.toLowerCase() as Provider,
         fullName: scan.connectedRepo.fullName,
         branch: scan.branch,
+        commitSha: scan.commitSha,
         accessToken,
         language: scan.language,
         scanId: scan.id
       });
-      const analysisResult = await this.analysisClient.analyze(collection.analysisRequest);
+      const analysisResult = parseAnalysisResultDto(
+        await this.analysisClient.analyze(collection.analysisRequest)
+      );
 
       if (!analysisResult.success) {
         throw new Error(analysisResult.errorMessage ?? 'Analysis failed');

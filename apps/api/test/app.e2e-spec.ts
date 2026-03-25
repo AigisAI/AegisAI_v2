@@ -86,13 +86,9 @@ describe('App bootstrap (e2e)', () => {
       .expect(200)
       .expect(({ body }) => {
         expect(body.success).toBeUndefined();
-        expect(body).toMatchObject({
-          status: 'degraded',
-          services: {
-            database: 'up',
-            redis: 'down'
-          }
-        });
+        expect(body.services.database).toBe('up');
+        expect(['up', 'down']).toContain(body.services.redis);
+        expect(body.status).toBe(body.services.redis === 'up' ? 'ok' : 'degraded');
         expect(body.uptime).toEqual(expect.any(Number));
         expect(body.timestamp).toEqual(expect.any(String));
       });

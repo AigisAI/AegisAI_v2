@@ -123,25 +123,26 @@ export class RepoService {
 
   async connectRepo(input: { userId: string } & ConnectRepoRequest): Promise<ConnectRepoResponse> {
     const { client, accessToken, providerEnum } = await this.resolveProviderClient(input.userId, input.provider);
-    const existingRepo = await this.prisma.connectedRepo.findUnique({
-      where: {
-        userId_provider_providerRepoId: {
-          userId: input.userId,
-          provider: providerEnum,
-          providerRepoId: input.providerRepoId
-        }
-      }
-    });
-
-    if (existingRepo) {
-      throw new ConflictException({
-        message: 'Repository is already connected.',
-        errorCode: 'REPO_ALREADY_CONNECTED'
-      });
-    }
 
     try {
       const repository = await client.getRepository(input.providerRepoId, accessToken);
+      const existingRepo = await this.prisma.connectedRepo.findUnique({
+        where: {
+          userId_provider_providerRepoId: {
+            userId: input.userId,
+            provider: providerEnum,
+            providerRepoId: repository.providerRepoId
+          }
+        }
+      });
+
+      if (existingRepo) {
+        throw new ConflictException({
+          message: 'Repository is already connected.',
+          errorCode: 'REPO_ALREADY_CONNECTED'
+        });
+      }
+
       const connectedRepo = await this.prisma.connectedRepo.create({
         data: {
           userId: input.userId,

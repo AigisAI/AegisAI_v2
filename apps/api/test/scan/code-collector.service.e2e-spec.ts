@@ -71,12 +71,12 @@ describe('CodeCollectorService', () => {
     expect(gitClientRegistry.get).toHaveBeenCalledWith('github');
     expect(languageHandlerRegistry.get).toHaveBeenCalledWith('java');
     expect(gitClient.getLatestCommitSha).toHaveBeenCalledWith('acme/service', 'main', 'token-1');
-    expect(gitClient.getFileTree).toHaveBeenCalledWith('acme/service', 'main', 'token-1');
+    expect(gitClient.getFileTree).toHaveBeenCalledWith('acme/service', 'commit-123', 'token-1');
     expect(gitClient.getFileContent).toHaveBeenCalledTimes(1);
     expect(gitClient.getFileContent).toHaveBeenCalledWith(
       'acme/service',
       'src/App.java',
-      'main',
+      'commit-123',
       'token-1'
     );
   });

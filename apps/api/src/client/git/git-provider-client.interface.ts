@@ -27,7 +27,7 @@ export interface BranchListResult {
 export interface FileTreeItem {
   path: string;
   size: number;
-  type: 'blob' | 'tree';
+  type: 'blob' | 'tree' | 'submodule';
 }
 
 export interface AnalysisFileItem {

@@ -25,22 +25,8 @@ export class ScanController {
   @Post('scans')
   @HttpCode(202)
   async requestScan(@CurrentUser() user: AuthUser, @Body() body: Partial<ScanRequestBody>) {
-    const repoId = body.repoId?.trim();
-    const branch = body.branch?.trim();
-
-    if (!repoId) {
-      throw new BadRequestException({
-        message: 'repoId is required.',
-        errorCode: 'BAD_REQUEST'
-      });
-    }
-
-    if (!branch) {
-      throw new BadRequestException({
-        message: 'branch is required.',
-        errorCode: 'BAD_REQUEST'
-      });
-    }
+    const repoId = this.requireTrimmedString(body.repoId, 'repoId');
+    const branch = this.requireTrimmedString(body.branch, 'branch');
 
     return this.scanService.createScan({
       userId: user.id,
@@ -87,5 +73,16 @@ export class ScanController {
       page: input.page,
       size: input.size
     };
+  }
+
+  private requireTrimmedString(value: unknown, fieldName: string): string {
+    if (typeof value !== 'string' || !value.trim()) {
+      throw new BadRequestException({
+        message: `${fieldName} is required.`,
+        errorCode: 'BAD_REQUEST'
+      });
+    }
+
+    return value.trim();
   }
 }

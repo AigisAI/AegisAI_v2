@@ -3,6 +3,7 @@ import type { AxiosResponse } from 'axios';
 import { of, throwError } from 'rxjs';
 
 import {
+  GitProviderUnavailableError,
   GitProviderRateLimitError,
   GitProviderUnauthorizedError
 } from '../../../src/client/git/git-provider-client.errors';
@@ -140,6 +141,23 @@ describe('GithubClient', () => {
     await expect(
       client.getFileContent('aegisai/platform', 'src/Main.java', 'main', 'github-token')
     ).resolves.toBe('class Demo {}');
+  });
+
+  it('fails fast when GitHub returns a truncated recursive tree', async () => {
+    const http = createHttpService();
+    http.get.mockReturnValueOnce(
+      of(
+        createAxiosResponse({
+          truncated: true,
+          tree: [{ path: 'src/Main.java', size: 128, type: 'blob' }]
+        })
+      )
+    );
+    const client = new GithubClient(http as never);
+
+    await expect(
+      client.getFileTree('aegisai/platform', 'main', 'github-token')
+    ).rejects.toBeInstanceOf(GitProviderUnavailableError);
   });
 
   it('translates 401 responses into a provider unauthorized error', async () => {

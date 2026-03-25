@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  ServiceUnavailableException
+} from '@nestjs/common';
 import { GitProviderNotFoundError } from '../../src/client/git/git-provider-client.errors';
 
 import { SCAN_PROCESS_JOB } from '../../src/scan/scan.constants';
@@ -6,6 +11,15 @@ import { ScanService } from '../../src/scan/scan.service';
 
 describe('ScanService', () => {
   it('creates a pending scan and enqueues the processor job', async () => {
+    const scanDelegate = {
+      findFirst: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue({
+        id: 'scan-1',
+        status: 'PENDING',
+        commitSha: 'commit-123'
+      }),
+      update: jest.fn()
+    };
     const prisma = {
       connectedRepo: {
         findFirst: jest.fn().mockResolvedValue({
@@ -20,13 +34,10 @@ describe('ScanService', () => {
           accessToken: 'enc(access-token)'
         })
       },
-      scan: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({
-          id: 'scan-1',
-          status: 'PENDING'
-        })
-      }
+      scan: scanDelegate,
+      $transaction: jest.fn().mockImplementation(async (callback: (tx: { scan: typeof scanDelegate }) => Promise<unknown>) =>
+        callback({ scan: scanDelegate })
+      )
     };
     const queue = {
       add: jest.fn().mockResolvedValue({ id: 'scan-1' })
@@ -65,17 +76,21 @@ describe('ScanService', () => {
         userId: 'user-1'
       }
     });
-    expect(prisma.scan.findFirst).toHaveBeenCalledWith({
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable'
+    });
+    expect(scanDelegate.findFirst).toHaveBeenCalledWith({
       where: {
         connectedRepoId: 'repo-1',
         branch: 'main',
         status: { in: ['PENDING', 'RUNNING'] }
       }
     });
-    expect(prisma.scan.create).toHaveBeenCalledWith({
+    expect(scanDelegate.create).toHaveBeenCalledWith({
       data: {
         connectedRepoId: 'repo-1',
         branch: 'main',
+        commitSha: 'commit-123',
         language: 'java',
         status: 'PENDING'
       }
@@ -89,6 +104,14 @@ describe('ScanService', () => {
   });
 
   it('rejects duplicate active scans for the same repository branch', async () => {
+    const scanDelegate = {
+      findFirst: jest.fn().mockResolvedValue({
+        id: 'scan-existing',
+        status: 'RUNNING'
+      }),
+      create: jest.fn(),
+      update: jest.fn()
+    };
     const prisma = {
       connectedRepo: {
         findFirst: jest.fn().mockResolvedValue({
@@ -103,12 +126,10 @@ describe('ScanService', () => {
           accessToken: 'enc(access-token)'
         })
       },
-      scan: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'scan-existing',
-          status: 'RUNNING'
-        })
-      }
+      scan: scanDelegate,
+      $transaction: jest.fn().mockImplementation(async (callback: (tx: { scan: typeof scanDelegate }) => Promise<unknown>) =>
+        callback({ scan: scanDelegate })
+      )
     };
     const gitClients = {
       get: jest.fn().mockReturnValue({
@@ -174,8 +195,11 @@ describe('ScanService', () => {
         })
       },
       scan: {
-        findFirst: jest.fn()
-      }
+        findFirst: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn()
+      },
+      $transaction: jest.fn()
     };
     const gitClients = {
       get: jest.fn().mockReturnValue({
@@ -202,6 +226,75 @@ describe('ScanService', () => {
         branch: 'missing'
       })
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('marks the scan failed when queue enqueue fails after the row is created', async () => {
+    const scanDelegate = {
+      findFirst: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue({
+        id: 'scan-1',
+        status: 'PENDING',
+        commitSha: 'commit-123'
+      }),
+      update: jest.fn().mockResolvedValue({
+        id: 'scan-1',
+        status: 'FAILED'
+      })
+    };
+    const prisma = {
+      connectedRepo: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'repo-1',
+          userId: 'user-1',
+          fullName: 'acme/service',
+          provider: 'GITHUB'
+        })
+      },
+      oAuthToken: {
+        findFirst: jest.fn().mockResolvedValue({
+          accessToken: 'enc(access-token)'
+        })
+      },
+      scan: scanDelegate,
+      $transaction: jest.fn().mockImplementation(async (callback: (tx: { scan: typeof scanDelegate }) => Promise<unknown>) =>
+        callback({ scan: scanDelegate })
+      )
+    };
+    const queue = {
+      add: jest.fn().mockRejectedValue(new Error('Redis unavailable'))
+    };
+    const gitClients = {
+      get: jest.fn().mockReturnValue({
+        getLatestCommitSha: jest.fn().mockResolvedValue('commit-123')
+      })
+    };
+    const tokenCrypto = {
+      decrypt: jest.fn().mockReturnValue('access-token')
+    };
+
+    const service = new ScanService(
+      prisma as never,
+      queue as never,
+      gitClients as never,
+      tokenCrypto as never
+    );
+
+    await expect(
+      service.createScan({
+        userId: 'user-1',
+        connectedRepoId: 'repo-1',
+        branch: 'main'
+      })
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+
+    expect(scanDelegate.update).toHaveBeenCalledWith({
+      where: { id: 'scan-1' },
+      data: {
+        status: 'FAILED',
+        errorMessage: 'Redis unavailable',
+        completedAt: expect.any(Date)
+      }
+    });
   });
 
   it('returns scan detail scoped to the authenticated user', async () => {

@@ -9,10 +9,13 @@ import axios from "axios";
 import { apiClient, resolveApiBaseUrl, unwrapApiResponse } from "./client";
 
 export function getProviderLoginUrl(provider: Provider): string {
-  return new URL(
-    `auth/${provider}`,
-    `${resolveApiBaseUrl().replace(/\/$/, "")}/`
-  ).toString();
+  const baseUrl = resolveApiBaseUrl().replace(/\/$/, "");
+
+  try {
+    return new URL(`auth/${provider}`, `${baseUrl}/`).toString();
+  } catch {
+    return `${baseUrl}/auth/${provider}`.replace(/(?<!:)\/{2,}/g, "/");
+  }
 }
 
 export async function fetchCurrentUser(): Promise<AuthMeResponse | null> {
