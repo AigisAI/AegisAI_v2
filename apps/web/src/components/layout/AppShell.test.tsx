@@ -22,6 +22,7 @@ describe("AppShell", () => {
       },
       isLoading: false,
       isAuthenticated: true,
+      bootstrapState: "ready",
       logout: vi.fn(),
       refresh: vi.fn(),
     });

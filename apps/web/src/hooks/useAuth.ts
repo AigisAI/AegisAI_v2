@@ -11,6 +11,8 @@ import { useAuthStore } from "../store/auth.store";
 
 const AUTH_QUERY_KEY = ["auth", "me"] as const;
 
+type AuthBootstrapState = "loading" | "ready" | "error";
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
@@ -55,6 +57,7 @@ export function useAuth() {
     user,
     isLoading: !initialized && meQuery.isLoading,
     isAuthenticated: Boolean(user),
+    bootstrapState: getBootstrapState(initialized, meQuery.status),
     logout: async () => {
       await logoutMutation.mutateAsync();
     },
@@ -64,4 +67,19 @@ export function useAuth() {
       });
     },
   };
+}
+
+function getBootstrapState(
+  initialized: boolean,
+  status: "pending" | "error" | "success"
+): AuthBootstrapState {
+  if (!initialized && status === "pending") {
+    return "loading";
+  }
+
+  if (status === "error") {
+    return "error";
+  }
+
+  return "ready";
 }

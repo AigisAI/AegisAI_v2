@@ -121,6 +121,128 @@ button {
   padding: 24px;
 }
 
+.login-page {
+  min-height: 100vh;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.login-hero {
+  width: min(1080px, 100%);
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.login-copy,
+.login-card {
+  border: 1px solid rgba(22, 32, 42, 0.08);
+  background: rgba(255, 252, 247, 0.9);
+  box-shadow: 0 18px 40px rgba(22, 32, 42, 0.08);
+  border-radius: 28px;
+}
+
+.login-copy {
+  padding: 40px;
+  display: grid;
+  gap: 18px;
+  align-content: center;
+  background:
+    radial-gradient(circle at top right, rgba(184, 140, 89, 0.18), transparent 32%),
+    rgba(255, 252, 247, 0.92);
+}
+
+.login-copy h1,
+.login-card h2 {
+  margin: 0;
+  line-height: 1.05;
+}
+
+.login-copy h1 {
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  max-width: 12ch;
+}
+
+.login-lead,
+.login-card-copy,
+.provider-button-copy,
+.login-loading p {
+  margin: 0;
+  color: #475569;
+}
+
+.login-trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.login-trust-strip span {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(22, 32, 42, 0.06);
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+.login-card {
+  padding: 32px;
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.provider-actions {
+  display: grid;
+  gap: 14px;
+}
+
+.provider-button {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(22, 32, 42, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 245, 239, 0.92));
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.provider-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(22, 32, 42, 0.1);
+  border-color: rgba(22, 32, 42, 0.2);
+}
+
+.provider-button-eyebrow {
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7c8797;
+}
+
+.login-alert,
+.login-loading {
+  border-radius: 18px;
+  padding: 16px 18px;
+}
+
+.login-alert {
+  background: rgba(183, 74, 74, 0.08);
+  border: 1px solid rgba(183, 74, 74, 0.18);
+  color: #8e2f2f;
+}
+
+.login-loading {
+  background: rgba(22, 32, 42, 0.05);
+  border: 1px solid rgba(22, 32, 42, 0.08);
+}
+
 .ghost-button {
   border: 1px solid rgba(22, 32, 42, 0.12);
   border-radius: 999px;
@@ -143,5 +265,18 @@ button {
   .app-sidebar {
     border-right: 0;
     border-bottom: 1px solid rgba(22, 32, 42, 0.08);
+  }
+
+  .login-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .login-copy,
+  .login-card {
+    padding: 28px;
+  }
+
+  .login-copy h1 {
+    max-width: none;
   }
 }

@@ -1,7 +1,19 @@
-import type { ApiResponse, AuthMeResponse, LogoutResponse } from "@aegisai/shared";
+import type {
+  ApiResponse,
+  AuthMeResponse,
+  LogoutResponse,
+  Provider,
+} from "@aegisai/shared";
 import axios from "axios";
 
-import { apiClient, unwrapApiResponse } from "./client";
+import { apiClient, resolveApiBaseUrl, unwrapApiResponse } from "./client";
+
+export function getProviderLoginUrl(provider: Provider): string {
+  return new URL(
+    `auth/${provider}`,
+    `${resolveApiBaseUrl().replace(/\/$/, "")}/`
+  ).toString();
+}
 
 export async function fetchCurrentUser(): Promise<AuthMeResponse | null> {
   try {
