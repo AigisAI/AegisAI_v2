@@ -55,7 +55,7 @@ export function useAuth() {
 
   return {
     user,
-    isLoading: !initialized && meQuery.isLoading,
+    isLoading: !initialized || meQuery.isLoading,
     isAuthenticated: Boolean(user),
     bootstrapState: getBootstrapState(initialized, meQuery.status),
     logout: async () => {

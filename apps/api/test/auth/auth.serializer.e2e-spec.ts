@@ -1,6 +1,4 @@
 import type { AuthUser } from '@aegisai/shared';
-import { UnauthorizedException } from '@nestjs/common';
-
 import { AuthSerializer } from '../../src/auth/auth.serializer';
 
 describe('AuthSerializer', () => {
@@ -36,7 +34,7 @@ describe('AuthSerializer', () => {
     expect(done).toHaveBeenCalledWith(null, authUser);
   });
 
-  it('fails deserialization when the user is missing', async () => {
+  it('treats a missing persisted user as an anonymous session', async () => {
     const serializer = new AuthSerializer({
       getSessionUserById: jest.fn().mockResolvedValue(null)
     } as never);
@@ -45,7 +43,6 @@ describe('AuthSerializer', () => {
 
     await serializer.deserializeUser('missing-user', done);
 
-    expect(done).toHaveBeenCalled();
-    expect(done.mock.calls[0][0]).toBeInstanceOf(UnauthorizedException);
+    expect(done).toHaveBeenCalledWith(null, false);
   });
 });

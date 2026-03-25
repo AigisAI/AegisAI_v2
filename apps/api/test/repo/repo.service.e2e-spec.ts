@@ -179,6 +179,15 @@ describe('RepoService', () => {
     });
 
     expect(client.getRepository).toHaveBeenCalledWith('101', 'github-token');
+    expect(prisma.connectedRepo.findUnique).toHaveBeenCalledWith({
+      where: {
+        userId_provider_providerRepoId: {
+          userId: 'user-1',
+          provider: 'GITHUB',
+          providerRepoId: '101'
+        }
+      }
+    });
     expect(prisma.connectedRepo.create).toHaveBeenCalledWith({
       data: {
         userId: 'user-1',
@@ -192,7 +201,7 @@ describe('RepoService', () => {
     });
   });
 
-  it('rejects duplicate repository connections for the same user and provider repo id', async () => {
+  it('rejects duplicate repository connections after canonical provider repo lookup', async () => {
     const prisma = {
       oAuthToken: {
         findFirst: jest.fn().mockResolvedValue({
@@ -205,17 +214,26 @@ describe('RepoService', () => {
         })
       }
     };
+    const client = createGitProviderClient({
+      getRepository: jest.fn().mockResolvedValue({
+        providerRepoId: '101',
+        fullName: 'acme/service',
+        cloneUrl: 'https://github.com/acme/service.git',
+        defaultBranch: 'main',
+        isPrivate: true
+      })
+    });
     const service = new RepoService(
       prisma as never,
-      { get: jest.fn() } as never,
-      { decrypt: jest.fn() } as never
+      { get: jest.fn().mockReturnValue(client) } as never,
+      { decrypt: jest.fn().mockReturnValue('github-token') } as never
     );
 
     await expect(
       service.connectRepo({
         userId: 'user-1',
         provider: 'github',
-        providerRepoId: '101'
+        providerRepoId: 'acme/service'
       })
     ).rejects.toBeInstanceOf(ConflictException);
   });

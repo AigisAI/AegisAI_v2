@@ -128,6 +128,22 @@ describe('ScanController (e2e)', () => {
     });
   });
 
+  it('returns 400 when POST /api/scans receives non-string identifiers', async () => {
+    await request(app.getHttpServer())
+      .post('/api/scans')
+      .send({
+        repoId: 123,
+        branch: true
+      })
+      .expect(400)
+      .expect(({ body }) => {
+        expect(body.success).toBe(false);
+        expect(body.errorCode).toBe('BAD_REQUEST');
+      });
+
+    expect(scanService.createScan).not.toHaveBeenCalled();
+  });
+
   it('returns wrapped scan detail from GET /api/scans/:scanId', async () => {
     scanService.getScanDetail.mockResolvedValue({
       id: 'scan-1',

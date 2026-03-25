@@ -52,6 +52,7 @@ describe('GitlabClient', () => {
         createAxiosResponse(
           [
             { path: 'src', type: 'tree', size: 0 },
+            { path: 'vendor/submodule', type: 'commit', size: 0 },
             { path: 'src/Main.java', type: 'blob', size: 128 }
           ],
           {
@@ -64,6 +65,7 @@ describe('GitlabClient', () => {
 
     await expect(client.getFileTree('aegisai/platform', 'main', 'gitlab-token')).resolves.toEqual([
       { path: 'src', type: 'tree', size: 0 },
+      { path: 'vendor/submodule', type: 'submodule', size: 0 },
       { path: 'src/Main.java', type: 'blob', size: 128 }
     ]);
   });

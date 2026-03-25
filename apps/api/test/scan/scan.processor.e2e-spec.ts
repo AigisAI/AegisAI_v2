@@ -206,4 +206,85 @@ describe('ScanProcessor', () => {
     expect(prisma.vulnerability.deleteMany).not.toHaveBeenCalled();
     expect(prisma.vulnerability.createMany).not.toHaveBeenCalled();
   });
+
+  it('marks the scan failed when the analysis payload is malformed', async () => {
+    const prisma = {
+      scan: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'scan-1',
+          branch: 'main',
+          commitSha: 'commit-123',
+          language: 'java',
+          connectedRepo: {
+            id: 'repo-1',
+            userId: 'user-1',
+            provider: 'GITHUB',
+            fullName: 'acme/service'
+          }
+        }),
+        update: jest
+          .fn()
+          .mockResolvedValueOnce({ id: 'scan-1', status: 'RUNNING' })
+          .mockResolvedValueOnce({ id: 'scan-1', status: 'FAILED' })
+      },
+      oAuthToken: {
+        findFirst: jest.fn().mockResolvedValue({
+          accessToken: 'enc(access-token)'
+        })
+      },
+      vulnerability: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn()
+      }
+    };
+    const processor = new ScanProcessor(
+      prisma as never,
+      { decrypt: jest.fn().mockReturnValue('access-token') } as never,
+      {
+        collect: jest.fn().mockResolvedValue({
+          analysisRequest: {
+            scanId: 'scan-1',
+            language: 'java',
+            files: [{ path: 'src/App.java', content: 'class App {}' }]
+          },
+          commitSha: 'commit-123',
+          totalFiles: 1,
+          totalLines: 1,
+          skippedFiles: []
+        })
+      } as never,
+      {
+        analyze: jest.fn().mockResolvedValue({
+          scanId: 'scan-1',
+          success: true,
+          totalFiles: 1,
+          totalLines: 1,
+          vulnerabilities: [
+            {
+              title: 'Invalid score',
+              description: 'Malformed provider payload.',
+              severity: 'HIGH',
+              filePath: 'src/App.java',
+              lineStart: 10,
+              consensusScore: 1.5,
+              modelResults: []
+            }
+          ]
+        })
+      } as never
+    );
+
+    await expect(processor.process({ data: { scanId: 'scan-1' } } as never)).rejects.toThrow(
+      'consensusScore'
+    );
+
+    expect(prisma.scan.update).toHaveBeenNthCalledWith(2, {
+      where: { id: 'scan-1' },
+      data: {
+        status: 'FAILED',
+        errorMessage: expect.stringContaining('consensusScore'),
+        completedAt: expect.any(Date)
+      }
+    });
+  });
 });

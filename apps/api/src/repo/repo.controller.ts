@@ -57,14 +57,7 @@ export class RepoController {
     @Body() body: Partial<ConnectRepoRequest>
   ) {
     const provider = this.parseProvider(body.provider);
-    const providerRepoId = body.providerRepoId?.trim();
-
-    if (!providerRepoId) {
-      throw new BadRequestException({
-        message: 'providerRepoId is required.',
-        errorCode: 'BAD_REQUEST'
-      });
-    }
+    const providerRepoId = this.requireTrimmedString(body.providerRepoId, 'providerRepoId');
 
     return this.repoService.connectRepo({
       userId: user.id,
@@ -130,5 +123,16 @@ export class RepoController {
       page: input.page,
       size: input.size
     };
+  }
+
+  private requireTrimmedString(value: unknown, fieldName: string): string {
+    if (typeof value !== 'string' || !value.trim()) {
+      throw new BadRequestException({
+        message: `${fieldName} is required.`,
+        errorCode: 'BAD_REQUEST'
+      });
+    }
+
+    return value.trim();
   }
 }

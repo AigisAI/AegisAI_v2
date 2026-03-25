@@ -1,4 +1,6 @@
 export const ANALYSIS_API_CLIENT = 'IAnalysisApiClient';
+export const ANALYSIS_SEVERITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'] as const;
+export type AnalysisSeverity = (typeof ANALYSIS_SEVERITIES)[number];
 
 export interface AnalysisFileItem {
   path: string;
@@ -14,14 +16,14 @@ export interface AnalysisRequest {
 export interface ModelResult {
   model: string;
   detected: boolean;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+  severity: AnalysisSeverity;
   reasoning: string;
 }
 
 export interface VulnerabilityItem {
   title: string;
   description: string;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+  severity: AnalysisSeverity;
   filePath: string;
   lineStart: number;
   lineEnd?: number;

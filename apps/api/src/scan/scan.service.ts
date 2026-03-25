@@ -15,7 +15,7 @@ import {
   NotFoundException,
   ServiceUnavailableException
 } from '@nestjs/common';
-import { RepoProvider, ScanStatus } from '@prisma/client';
+import { Prisma, RepoProvider, ScanStatus } from '@prisma/client';
 import type { Queue } from 'bullmq';
 
 import {
@@ -62,33 +62,71 @@ export class ScanService {
     }
 
     const connectedRepo = await this.getOwnedRepo(input.userId, input.connectedRepoId);
-    await this.assertBranchExists(input.userId, connectedRepo.provider, connectedRepo.fullName, branch);
+    const commitSha = await this.assertBranchExists(
+      input.userId,
+      connectedRepo.provider,
+      connectedRepo.fullName,
+      branch
+    );
 
-    const existingScan = await this.prisma.scan.findFirst({
-      where: {
-        connectedRepoId: input.connectedRepoId,
-        branch,
-        status: { in: [ScanStatus.PENDING, ScanStatus.RUNNING] }
+    let scan;
+
+    try {
+      scan = await this.prisma.$transaction(
+        async (tx) => {
+          const existingScan = await tx.scan.findFirst({
+            where: {
+              connectedRepoId: input.connectedRepoId,
+              branch,
+              status: { in: [ScanStatus.PENDING, ScanStatus.RUNNING] }
+            }
+          });
+
+          if (existingScan) {
+            throw this.createActiveScanConflict();
+          }
+
+          return tx.scan.create({
+            data: {
+              connectedRepoId: input.connectedRepoId,
+              branch,
+              commitSha,
+              language: input.language ?? 'java',
+              status: ScanStatus.PENDING
+            }
+          });
+        },
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+        }
+      );
+    } catch (error) {
+      if (error instanceof ConflictException || isActiveScanTransactionConflict(error)) {
+        throw this.createActiveScanConflict();
       }
-    });
 
-    if (existingScan) {
-      throw new ConflictException({
-        message: 'An active scan already exists for this repository branch.',
-        errorCode: 'SCAN_ALREADY_ACTIVE'
-      });
+      throw error;
     }
 
-    const scan = await this.prisma.scan.create({
-      data: {
-        connectedRepoId: input.connectedRepoId,
-        branch,
-        language: input.language ?? 'java',
-        status: ScanStatus.PENDING
-      }
-    });
+    try {
+      await this.scanQueue.add(SCAN_PROCESS_JOB, { scanId: scan.id }, { jobId: scan.id });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to enqueue scan.';
 
-    await this.scanQueue.add(SCAN_PROCESS_JOB, { scanId: scan.id }, { jobId: scan.id });
+      await this.prisma.scan.update({
+        where: { id: scan.id },
+        data: {
+          status: ScanStatus.FAILED,
+          errorMessage: message,
+          completedAt: new Date()
+        }
+      });
+
+      throw new ServiceUnavailableException({
+        message: 'Scan queue is unavailable.',
+        errorCode: 'SCAN_QUEUE_UNAVAILABLE'
+      });
+    }
 
     return {
       scanId: scan.id,
@@ -184,7 +222,7 @@ export class ScanService {
     providerEnum: RepoProvider,
     fullName: string,
     branch: string
-  ): Promise<void> {
+  ): Promise<string> {
     const provider = providerEnum.toLowerCase() as Provider;
     const persistedToken = await this.prisma.oAuthToken.findFirst({
       where: {
@@ -203,7 +241,7 @@ export class ScanService {
     const accessToken = this.tokenCrypto.decrypt(persistedToken.accessToken);
 
     try {
-      await this.gitClients.get(provider).getLatestCommitSha(fullName, branch, accessToken);
+      return await this.gitClients.get(provider).getLatestCommitSha(fullName, branch, accessToken);
     } catch (error) {
       if (error instanceof GitProviderNotFoundError) {
         throw new BadRequestException({
@@ -238,6 +276,13 @@ export class ScanService {
 
       throw error;
     }
+  }
+
+  private createActiveScanConflict(): ConflictException {
+    return new ConflictException({
+      message: 'An active scan already exists for this repository branch.',
+      errorCode: 'SCAN_ALREADY_ACTIVE'
+    });
   }
 
   private toScanSummary(scan: {
@@ -283,4 +328,13 @@ export class ScanService {
       createdAt: scan.createdAt.toISOString()
     };
   }
+}
+
+function isActiveScanTransactionConflict(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    ['P2002', 'P2034'].includes((error as { code?: string }).code ?? '')
+  );
 }

@@ -47,9 +47,14 @@ test('cd workflow and oracle deployment files enforce the split infra/app deploy
   assert.match(workflow, /grep -q 'linux\/arm64'/);
   assert.match(workflow, /Validate deployment secrets/);
   assert.match(workflow, /Missing required GitHub Actions secrets for production deploy/);
-  assert.match(workflow, /ssh-keyscan/);
+  assert.match(workflow, /ORACLE_VPS_KNOWN_HOSTS/);
+  assert.doesNotMatch(workflow, /ssh-keyscan/);
   assert.match(workflow, /scp /);
   assert.match(workflow, /ssh /);
+  assert.match(workflow, /if:\s*always\(\)/);
+  assert.match(workflow, /rm -f \.\/\.oracle-deploy\.env/);
+  assert.doesNotMatch(workflow, /deploy:[\s\S]*?env:[\s\S]*?ORACLE_VPS_SSH_PRIVATE_KEY[\s\S]*?steps:/);
+  assert.match(workflow, /Configure SSH access[\s\S]*env:\s*[\s\S]*ORACLE_VPS_SSH_PRIVATE_KEY/);
   assert.match(workflow, /docker-compose\.infra\.yml/);
   assert.match(workflow, /docker-compose\.app\.yml/);
 
@@ -84,8 +89,10 @@ test('cd workflow and oracle deployment files enforce the split infra/app deploy
 
   assert.match(bootstrapDoc, /Oracle Cloud/i);
   assert.match(bootstrapDoc, /ORACLE_VPS_HOST/);
+  assert.match(bootstrapDoc, /ORACLE_VPS_KNOWN_HOSTS/);
   assert.match(bootstrapDoc, /GHCR_READ_TOKEN/);
   assert.match(bootstrapDoc, /docker-compose\.infra\.yml/);
+  assert.match(bootstrapDoc, /bootstrap-infra\.sh/);
   assert.match(bootstrapDoc, /docker compose -f docker-compose\.infra\.yml up -d/);
   assert.match(bootstrapDoc, /\.env/);
 

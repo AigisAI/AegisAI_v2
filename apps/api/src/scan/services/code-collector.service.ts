@@ -9,6 +9,7 @@ interface CollectCodeInput {
   provider: Provider;
   fullName: string;
   branch: string;
+  commitSha?: string | null;
   accessToken: string;
   language: string;
   scanId: string;
@@ -37,10 +38,10 @@ export class CodeCollectorService {
   async collect(input: CollectCodeInput): Promise<CodeCollectionResult> {
     const gitClient = this.gitClientRegistry.get(input.provider);
     const languageHandler = this.languageHandlerRegistry.get(input.language);
-    const [commitSha, fileTree] = await Promise.all([
-      gitClient.getLatestCommitSha(input.fullName, input.branch, input.accessToken),
-      gitClient.getFileTree(input.fullName, input.branch, input.accessToken)
-    ]);
+    const commitSha =
+      input.commitSha ??
+      (await gitClient.getLatestCommitSha(input.fullName, input.branch, input.accessToken));
+    const fileTree = await gitClient.getFileTree(input.fullName, commitSha, input.accessToken);
     const excludePatterns = languageHandler.getExcludePatterns();
 
     const files: AnalysisRequest['files'] = [];
@@ -69,7 +70,7 @@ export class CodeCollectorService {
       const content = await gitClient.getFileContent(
         input.fullName,
         item.path,
-        input.branch,
+        commitSha,
         input.accessToken
       );
 

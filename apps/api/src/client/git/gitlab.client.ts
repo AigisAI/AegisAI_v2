@@ -35,7 +35,7 @@ interface GitlabBranchResponse {
 
 interface GitlabTreeEntryResponse {
   path: string;
-  type: 'blob' | 'tree' | string;
+  type: 'blob' | 'tree' | 'commit' | string;
   size?: number;
 }
 
@@ -327,7 +327,12 @@ export class GitlabClient implements IGitProviderClient {
     return {
       path: entry.path,
       size: entry.size ?? 0,
-      type: entry.type === 'tree' ? 'tree' : 'blob'
+      type:
+        entry.type === 'tree'
+          ? 'tree'
+          : entry.type === 'commit'
+            ? 'submodule'
+            : 'blob'
     };
   }
 }

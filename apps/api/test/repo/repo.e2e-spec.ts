@@ -218,6 +218,22 @@ describe('RepoController (e2e)', () => {
     });
   });
 
+  it('returns 400 from POST /api/repos when providerRepoId is not a string', async () => {
+    await request(app.getHttpServer())
+      .post('/api/repos')
+      .send({
+        provider: 'github',
+        providerRepoId: 101
+      })
+      .expect(400)
+      .expect(({ body }) => {
+        expect(body.success).toBe(false);
+        expect(body.errorCode).toBe('BAD_REQUEST');
+      });
+
+    expect(repoService.connectRepo).not.toHaveBeenCalled();
+  });
+
   it('returns raw 204 from DELETE /api/repos/:repoId', async () => {
     repoService.disconnectRepo.mockResolvedValue(undefined);
 

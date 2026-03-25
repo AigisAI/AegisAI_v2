@@ -1,12 +1,17 @@
 import type { InternalAxiosRequestConfig } from "axios";
 import type { ErrorResponse, SuccessResponse } from "@aegisai/shared";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   attachCsrfHeader,
   shouldRedirectToLogin,
   unwrapApiResponse,
 } from "./client";
+import { getProviderLoginUrl } from "./auth";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("api client helpers", () => {
   it("attaches the csrf token for mutating requests", () => {
@@ -47,6 +52,12 @@ describe("api client helpers", () => {
         requestUrl: "/repos",
       })
     ).toBe(true);
+  });
+
+  it("builds provider login URLs from relative API base paths", () => {
+    vi.stubEnv("VITE_API_URL", "/api");
+
+    expect(getProviderLoginUrl("github")).toBe("/api/auth/github");
   });
 
   it("unwraps successful API envelopes", () => {

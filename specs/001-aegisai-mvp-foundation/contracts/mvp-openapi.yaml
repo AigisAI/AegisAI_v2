@@ -5,11 +5,14 @@ info:
   description: Baseline contract for the AegisAI MVP defined in spec 2.2.md.
 servers:
   - url: http://localhost:3000/api
+security:
+  - sessionCookie: []
 paths:
   /health:
     get:
       summary: Health check
       operationId: getHealth
+      security: []
       responses:
         '200':
           description: Raw health payload
@@ -17,6 +20,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+  /auth/github:
+    get:
+      summary: Start GitHub OAuth login
+      operationId: githubLogin
+      security: []
+      responses:
+        '302':
+          description: Redirect to GitHub OAuth consent
+  /auth/github/callback:
+    get:
+      summary: Complete GitHub OAuth login
+      operationId: githubCallback
+      security: []
+      responses:
+        '302':
+          description: Redirect to the frontend dashboard
+  /auth/gitlab:
+    get:
+      summary: Start GitLab OAuth login
+      operationId: gitlabLogin
+      security: []
+      responses:
+        '302':
+          description: Redirect to GitLab OAuth consent
+  /auth/gitlab/callback:
+    get:
+      summary: Complete GitLab OAuth login
+      operationId: gitlabCallback
+      security: []
+      responses:
+        '302':
+          description: Redirect to the frontend dashboard
   /auth/me:
     get:
       summary: Get the current authenticated user
@@ -35,24 +70,27 @@ paths:
       summary: Log out the current user
       operationId: logout
       responses:
-        '204':
-          description: Session cleared
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /repos/available:
-    get:
-      summary: List repositories available from connected providers
-      operationId: listAvailableRepos
-      responses:
         '200':
-          description: Paginated provider repository list
+          description: Session cleared
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProviderRepoPageResponse'
+                type: 'null'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /repos:
+    get:
+      summary: List connected repositories
+      operationId: listConnectedRepos
+      responses:
+        '200':
+          description: Connected repositories for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectedRepoListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       summary: Connect a repository
       operationId: connectRepo
@@ -69,6 +107,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConnectedRepoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /repos/available:
+    get:
+      summary: List repositories available from connected providers
+      operationId: listAvailableRepos
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [github, gitlab]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated provider repository list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderRepoPageResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /repos/{repoId}:
@@ -97,6 +165,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BranchPageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /repos/{repoId}/scans:
+    get:
+      summary: List scans for a connected repository
+      operationId: listRepoScans
+      parameters:
+        - $ref: '#/components/parameters/RepoId'
+      responses:
+        '200':
+          description: Scan history page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepoScanPageResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -270,6 +355,11 @@ paths:
         '410':
           description: Report expired
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: connect.sid
   parameters:
     RepoId:
       name: repoId
@@ -314,41 +404,48 @@ components:
       properties:
         status:
           type: string
-        uptimeSeconds:
+        uptime:
           type: number
-        dependencies:
+        services:
           type: object
           additionalProperties:
             type: string
-      required: [status, uptimeSeconds, dependencies]
+        timestamp:
+          type: string
+      required: [status, uptime, services, timestamp]
     AuthUser:
       type: object
       properties:
         id:
           type: string
         email:
-          type: string
-        displayName:
+          type: [string, 'null']
+        name:
           type: string
         avatarUrl:
-          type: string
-          nullable: true
-      required: [id, email, displayName]
+          type: [string, 'null']
+        connectedProviders:
+          type: array
+          items:
+            type: string
+            enum: [github, gitlab]
+      required: [id, name, connectedProviders]
     ProviderRepo:
       type: object
       properties:
-        id:
+        providerRepoId:
           type: string
-        provider:
+        fullName:
           type: string
-          enum: [github, gitlab]
-        owner:
-          type: string
-        name:
+        cloneUrl:
           type: string
         defaultBranch:
           type: string
-      required: [id, provider, owner, name, defaultBranch]
+        isPrivate:
+          type: boolean
+        alreadyConnected:
+          type: boolean
+      required: [providerRepoId, fullName, cloneUrl, defaultBranch, isPrivate, alreadyConnected]
     ConnectedRepo:
       type: object
       properties:
@@ -357,46 +454,75 @@ components:
         provider:
           type: string
           enum: [github, gitlab]
-        owner:
+        fullName:
           type: string
-        name:
+        cloneUrl:
           type: string
         defaultBranch:
           type: string
-      required: [id, provider, owner, name, defaultBranch]
+        isPrivate:
+          type: boolean
+        lastScanAt:
+          type: [string, 'null']
+        lastScanStatus:
+          type: [string, 'null']
+          enum: [PENDING, RUNNING, DONE, FAILED, null]
+      required: [id, provider, fullName, cloneUrl, defaultBranch, isPrivate, lastScanAt, lastScanStatus]
     Branch:
       type: object
       properties:
         name:
           type: string
-        commitSha:
-          type: string
-      required: [name, commitSha]
+        isDefault:
+          type: boolean
+        lastCommitSha:
+          type: [string, 'null']
+      required: [name, isDefault, lastCommitSha]
     ScanSummary:
       type: object
       properties:
-        totalFindings:
+        critical:
           type: integer
-        severityCounts:
-          type: object
-          additionalProperties:
-            type: integer
-      required: [totalFindings, severityCounts]
+        high:
+          type: integer
+        medium:
+          type: integer
+        low:
+          type: integer
+        info:
+          type: integer
+      required: [critical, high, medium, low, info]
     ScanDetail:
       type: object
       properties:
         id:
           type: string
-        repoId:
+        repoFullName:
           type: string
         branch:
           type: string
+        commitSha:
+          type: [string, 'null']
         status:
           type: string
           enum: [PENDING, RUNNING, DONE, FAILED]
+        language:
+          type: string
+        totalFiles:
+          type: [integer, 'null']
+        totalLines:
+          type: [integer, 'null']
         summary:
           $ref: '#/components/schemas/ScanSummary'
-      required: [id, repoId, branch, status]
+        startedAt:
+          type: [string, 'null']
+        completedAt:
+          type: [string, 'null']
+        errorMessage:
+          type: [string, 'null']
+        createdAt:
+          type: string
+      required: [id, repoFullName, branch, commitSha, status, language, totalFiles, totalLines, summary, startedAt, completedAt, errorMessage, createdAt]
     ModelResult:
       type: object
       properties:
@@ -441,6 +567,7 @@ components:
               type: string
             modelResults:
               type: array
+              maxItems: 10
               items:
                 $ref: '#/components/schemas/ModelResult'
             feedback:
@@ -474,8 +601,7 @@ components:
           type: string
           enum: [GENERATING, READY, FAILED]
         downloadUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
       required: [id, scanId, status]
     ApiEnvelopeAuthUser:
       type: object
@@ -544,9 +670,11 @@ components:
           type: integer
         size:
           type: integer
-        total:
-          type: integer
-      required: [items, page, size, total]
+        hasNextPage:
+          type: boolean
+        nextPage:
+          type: [integer, 'null']
+      required: [items, page, size, hasNextPage, nextPage]
     BranchPage:
       type: object
       properties:
@@ -558,9 +686,29 @@ components:
           type: integer
         size:
           type: integer
-        total:
+        hasNextPage:
+          type: boolean
+        nextPage:
+          type: [integer, 'null']
+      required: [items, page, size, hasNextPage, nextPage]
+    ConnectedRepoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/ConnectedRepo'
+    RepoScanPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanDetail'
+        totalCount:
           type: integer
-      required: [items, page, size, total]
+        page:
+          type: integer
+        totalPages:
+          type: integer
+      required: [items, totalCount, page, totalPages]
     VulnerabilityPage:
       type: object
       properties:
@@ -582,7 +730,11 @@ components:
           type: boolean
         data:
           $ref: '#/components/schemas/ProviderRepoPage'
-      required: [success, data]
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
     BranchPageResponse:
       type: object
       properties:
@@ -590,7 +742,11 @@ components:
           type: boolean
         data:
           $ref: '#/components/schemas/BranchPage'
-      required: [success, data]
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
     VulnerabilityPageResponse:
       type: object
       properties:
@@ -645,12 +801,36 @@ components:
       required: [reportId, status, message]
     AuthUserResponse:
       $ref: '#/components/schemas/ApiEnvelopeAuthUser'
+    ConnectedRepoListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ConnectedRepoList'
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
     ConnectedRepoResponse:
       $ref: '#/components/schemas/ApiEnvelopeConnectedRepo'
     ScanRequestResponse:
       $ref: '#/components/schemas/ApiEnvelopeScanRequest'
     ScanDetailResponse:
       $ref: '#/components/schemas/ApiEnvelopeScanDetail'
+    RepoScanPageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/RepoScanPage'
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
     VulnerabilityDetailResponse:
       $ref: '#/components/schemas/ApiEnvelopeVulnerabilityDetail'
     DashboardResponse:

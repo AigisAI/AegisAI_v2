@@ -73,6 +73,8 @@ describe("useAuth", () => {
 
     renderHarness();
 
+    expect(screen.getByTestId("loading-state")).toHaveTextContent("loading");
+
     await waitFor(() => {
       expect(screen.getByTestId("bootstrap-state")).toHaveTextContent("error");
       expect(useAuthStore.getState().user).toBeNull();
