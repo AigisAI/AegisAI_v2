@@ -19,7 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RepoModule } from './repo/repo.module';
 import { ScanModule } from './scan/scan.module';
 
-const runtimeFeatureModules = process.env.NODE_ENV === 'test' ? [HealthModule] : [ScanModule, HealthModule];
+const runtimeFeatureModules = [ScanModule, HealthModule];
 
 @Module({
   imports: [
