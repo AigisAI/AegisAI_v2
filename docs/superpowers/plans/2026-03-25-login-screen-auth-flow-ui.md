@@ -4,7 +4,7 @@
 
 **Goal:** Replace the frontend login placeholder with a real OAuth login UI and wire the `/login` route to the existing session bootstrap flow.
 
-**Architecture:** Keep the current route tree and auth foundation intact, then layer a focused login-page UI on top. The main work is in `LoginPage`, a small `useAuth` enhancement, minimal API URL helpers for provider entrypoints, and targeted tests.
+**Architecture:** Keep the current route tree and auth foundation intact, then layer a focused login-page UI on top. Use the Stitch-generated desktop login direction as the visual source of truth, then translate it into `LoginPage`, the existing auth foundation, and targeted tests without broadening the redesign beyond this route.
 
 **Tech Stack:** React, React Router, TanStack Query, Zustand, Vitest, Testing Library
 

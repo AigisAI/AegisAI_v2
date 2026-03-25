@@ -7,14 +7,16 @@ const providerActions = [
   {
     provider: "github",
     label: "Continue with GitHub",
-    eyebrow: "OAuth provider",
-    description: "Connect your GitHub repositories and start the first Java security scan.",
+    eyebrow: "Repository provider",
+    description: "Connect GitHub repositories and move directly into branch-aware Java scanning.",
+    glyph: "GH",
   },
   {
     provider: "gitlab",
     label: "Continue with GitLab",
     eyebrow: "Self-managed friendly",
-    description: "Use the same session flow for GitLab-hosted repositories and branch scans.",
+    description: "Use the same session flow for GitLab-hosted repositories and queued scans.",
+    glyph: "GL",
   },
 ] as const;
 
@@ -46,13 +48,25 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
+      <header className="login-header" aria-label="AegisAI sign-in header">
+        <div>
+          <p className="eyebrow">AegisAI</p>
+          <p className="login-header-title">Security workspace for repository trust decisions</p>
+        </div>
+        <p className="login-header-meta">Session-first access for Java repository scanning</p>
+      </header>
+
       <section className="login-hero">
         <div className="login-copy">
-          <p className="eyebrow">AegisAI MVP</p>
-          <h1>Secure Java repository scanning without leaving your provider flow.</h1>
+          <p className="eyebrow">Editorial security login</p>
+          <h1>Secure Java scanning that stays in your provider flow.</h1>
           <p className="login-lead">
-            Start with GitHub or GitLab, keep session-based access, and move straight into
-            repository connection and queued scanning once authentication completes.
+            Authenticate with GitHub or GitLab, keep session-based control, and move straight
+            into repository connection and queued branch scans once sign-in completes.
+          </p>
+          <p className="login-support-copy">
+            AegisAI only uses provider-authorized repository, branch, and scan context. Your
+            access stays explicit from the first screen.
           </p>
 
           <div className="login-trust-strip" aria-label="Session and repository access notes">
@@ -60,32 +74,47 @@ export function LoginPage() {
             <span>Provider OAuth only</span>
             <span>Java-first MVP</span>
           </div>
+
+          <dl className="login-facts" aria-label="Security-first access highlights">
+            <div>
+              <dt>01</dt>
+              <dd>Authenticate once, then continue into repository selection without a detached auth silo.</dd>
+            </div>
+            <div>
+              <dt>02</dt>
+              <dd>OAuth tokens are scoped to repository discovery, branch context, and scan execution.</dd>
+            </div>
+          </dl>
         </div>
 
         <div className="login-card">
-          <p className="eyebrow">Sign in to continue</p>
-          <h2>Choose your repository provider</h2>
-          <p className="login-card-copy">
-            AegisAI uses your provider session only to discover repositories, branches, and
-            scan context.
-          </p>
+          <div className="login-card-header">
+            <p className="eyebrow">Access portal</p>
+            <h2>Choose a provider and enter the workspace.</h2>
+            <p className="login-card-copy">
+              Use the same session flow for repository discovery, branch validation, and scan
+              kickoff. Nothing starts until you authorize the provider you trust.
+            </p>
+          </div>
 
           {errorMessage ? (
             <div className="login-alert" role="alert">
-              {errorMessage}
+              <strong>Authentication did not complete.</strong>
+              <p>{errorMessage}</p>
             </div>
           ) : null}
 
           {!errorMessage && bootstrapErrorMessage ? (
             <div className="login-alert" role="alert">
-              {bootstrapErrorMessage}
+              <strong>Existing session unavailable.</strong>
+              <p>{bootstrapErrorMessage}</p>
             </div>
           ) : null}
 
           {isLoading ? (
             <div className="login-loading" role="status">
               <strong>Checking your session...</strong>
-              <p>If you already signed in, we will take you back to the workspace.</p>
+              <p>If you already signed in, we will route you back to the protected workspace.</p>
             </div>
           ) : (
             <div className="provider-actions">
@@ -95,13 +124,23 @@ export function LoginPage() {
                   className="provider-button"
                   href={getProviderLoginUrl(action.provider)}
                 >
-                  <span className="provider-button-eyebrow">{action.eyebrow}</span>
+                  <span className="provider-button-topline">
+                    <span className="provider-glyph" aria-hidden="true">
+                      {action.glyph}
+                    </span>
+                    <span className="provider-button-eyebrow">{action.eyebrow}</span>
+                  </span>
                   <strong>{action.label}</strong>
                   <span className="provider-button-copy">{action.description}</span>
                 </a>
               ))}
             </div>
           )}
+
+          <div className="login-footer-note">
+            <p>Security architecture remains session-aware and provider-scoped from first login.</p>
+            <p>Continue with the provider that owns the repositories you want to scan.</p>
+          </div>
         </div>
       </section>
     </main>

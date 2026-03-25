@@ -39,8 +39,9 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     expect(
-      screen.getByRole("heading", { name: /secure java repository scanning/i })
+      screen.getByRole("heading", { name: /secure java scanning that stays in your provider flow/i })
     ).toBeInTheDocument();
+    expect(screen.getByText(/session-based auth/i)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /continue with github/i })
     ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");

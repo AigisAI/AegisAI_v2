@@ -36,6 +36,24 @@ Why this approach:
   state machines.
 - It preserves the current `AppShell` and route foundation instead of rebuilding routing.
 
+## Stitch Direction
+
+Frontend design direction for this issue is generated through Stitch rather than manual in-flow
+screen invention.
+
+Working design references:
+- Stitch project: `projects/861350607109533974`
+- Primary desktop screen direction: `projects/861350607109533974/screens/89b2a1abe3c840e48c4dc63ba37fad63`
+
+The chosen direction is a trust-first editorial security login page:
+- warm ivory and parchment surfaces instead of dark cyber palettes
+- deep ink typography with serif display treatment for the hero
+- restrained brass accents for action emphasis
+- two-column desktop composition with an editorial value block and a separate access portal
+
+The implementation may simplify decorative details from the Stitch screen, but it should preserve
+that visual hierarchy and tone.
+
 ## User Flow
 
 ### Unauthenticated
@@ -93,7 +111,8 @@ When `GET /api/auth/me` fails because of a transient network or server problem:
 - Small trust/info strip for session/repository access notes
 
 Visual direction:
-- Preserve the warm editorial palette already introduced in `styles.css`
+- Follow the Stitch-generated trust-first editorial security direction
+- Use warm editorial surfaces, deep ink typography, and restrained brass accents
 - Make the login page feel more intentional than the placeholder
 - Keep the rest of the application untouched
 
