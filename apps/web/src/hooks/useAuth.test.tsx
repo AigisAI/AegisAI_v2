@@ -25,7 +25,8 @@ function renderHarness() {
 
     return (
       <div>
-        <span>{auth.isLoading ? "loading" : "ready"}</span>
+        <span data-testid="loading-state">{auth.isLoading ? "loading" : "ready"}</span>
+        <span data-testid="bootstrap-state">{auth.bootstrapState}</span>
         <span>{auth.user?.name ?? "guest"}</span>
         <button onClick={() => void auth.logout()}>logout</button>
       </div>
@@ -58,9 +59,23 @@ describe("useAuth", () => {
     renderHarness();
 
     expect(await screen.findByText("Aegis User")).toBeInTheDocument();
+    expect(screen.getByTestId("loading-state")).toHaveTextContent("ready");
+    expect(screen.getByTestId("bootstrap-state")).toHaveTextContent("ready");
 
     await waitFor(() => {
       expect(useAuthStore.getState().user?.id).toBe("user-1");
+      expect(useAuthStore.getState().initialized).toBe(true);
+    });
+  });
+
+  it("exposes an error bootstrap state when GET /api/auth/me fails", async () => {
+    vi.mocked(fetchCurrentUser).mockRejectedValue(new Error("session bootstrap failed"));
+
+    renderHarness();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("bootstrap-state")).toHaveTextContent("error");
+      expect(useAuthStore.getState().user).toBeNull();
       expect(useAuthStore.getState().initialized).toBe(true);
     });
   });

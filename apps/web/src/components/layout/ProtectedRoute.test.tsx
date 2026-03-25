@@ -19,6 +19,7 @@ describe("ProtectedRoute", () => {
       user: null,
       isLoading: false,
       isAuthenticated: false,
+      bootstrapState: "ready",
       logout: vi.fn(),
       refresh: vi.fn(),
     });
@@ -53,6 +54,7 @@ describe("ProtectedRoute", () => {
       },
       isLoading: false,
       isAuthenticated: true,
+      bootstrapState: "ready",
       logout: vi.fn(),
       refresh: vi.fn(),
     });
