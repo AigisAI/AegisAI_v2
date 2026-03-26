@@ -1,19 +1,23 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, type RouteObject } from "react-router-dom";
 
 import { AppShell } from "./components/layout/AppShell";
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { DashboardPage } from "./pages/DashboardPage";
+import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ReposPage } from "./pages/ReposPage";
 import { ScanPage } from "./pages/ScanPage";
 
-export const router = createBrowserRouter([
+export const routes: RouteObject[] = [
+  {
+    path: "/",
+    element: <LandingPage />,
+  },
   {
     path: "/login",
     element: <LoginPage />,
   },
   {
-    path: "/",
     element: (
       <ProtectedRoute>
         <AppShell />
@@ -21,21 +25,19 @@ export const router = createBrowserRouter([
     ),
     children: [
       {
-        index: true,
-        element: <Navigate replace to="/dashboard" />,
-      },
-      {
-        path: "dashboard",
+        path: "/dashboard",
         element: <DashboardPage />,
       },
       {
-        path: "repos",
+        path: "/repos",
         element: <ReposPage />,
       },
       {
-        path: "scan",
+        path: "/scan",
         element: <ScanPage />,
       },
     ],
   },
-]);
+];
+
+export const router = createBrowserRouter(routes);
