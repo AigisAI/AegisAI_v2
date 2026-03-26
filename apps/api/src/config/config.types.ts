@@ -27,4 +27,5 @@ export interface EnvironmentVariables {
   GITLAB_WEBHOOK_SECRET: string;
   REPORT_STORAGE_PATH: string;
   REPORT_EXPIRY_HOURS: number;
+  TEAMS_WEBHOOK_URL: string;
 }

@@ -9,7 +9,8 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('normalizes HttpException responses into the shared error shape', () => {
-    const filter = new GlobalExceptionFilter();
+    const notifier = { notifyRuntimeError: jest.fn().mockResolvedValue(undefined) };
+    const filter = new GlobalExceptionFilter(notifier as never);
     const response = createResponse();
 
     filter.catch(
@@ -28,10 +29,12 @@ describe('GlobalExceptionFilter', () => {
       errorCode: 'FORBIDDEN_RESOURCE_ACCESS',
       timestamp: expect.any(String)
     });
+    expect(notifier.notifyRuntimeError).not.toHaveBeenCalled();
   });
 
   it('falls back to a 500 internal error shape and logs server errors', () => {
-    const filter = new GlobalExceptionFilter();
+    const notifier = { notifyRuntimeError: jest.fn().mockResolvedValue(undefined) };
+    const filter = new GlobalExceptionFilter(notifier as never);
     const response = createResponse();
     const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
 
@@ -46,6 +49,14 @@ describe('GlobalExceptionFilter', () => {
       timestamp: expect.any(String)
     });
     expect(loggerSpy).toHaveBeenCalled();
+    expect(notifier.notifyRuntimeError).toHaveBeenCalledWith({
+      status: 500,
+      errorCode: 'INTERNAL_ERROR',
+      message: 'Internal server error.',
+      method: 'GET',
+      path: '/',
+      timestamp: expect.any(String)
+    });
   });
 });
 
@@ -59,7 +70,11 @@ function createResponse() {
 function createHost(response: ReturnType<typeof createResponse>) {
   return {
     switchToHttp: () => ({
-      getResponse: () => response
+      getResponse: () => response,
+      getRequest: () => ({
+        method: 'GET',
+        originalUrl: '/'
+      })
     })
   };
 }
