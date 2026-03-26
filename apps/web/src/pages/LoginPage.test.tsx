@@ -39,9 +39,14 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     expect(
-      screen.getByRole("heading", { name: /secure java scanning that stays in your provider flow/i })
+      screen.getByRole("heading", { name: /secure repository access/i })
     ).toBeInTheDocument();
-    expect(screen.getByText(/session-based auth/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /continue with your provider/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/session-based access/i)).toBeInTheDocument();
+    expect(screen.getByText(/provider oauth only/i)).toBeInTheDocument();
+    expect(screen.getByText(/java-first analysis/i)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /continue with github/i })
     ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
@@ -72,7 +77,7 @@ describe("LoginPage", () => {
     renderLoginPage("/login?error=oauth_failed");
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /login did not complete successfully/i
+      /authentication could not be completed/i
     );
   });
 
@@ -110,7 +115,7 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /we could not verify your existing session/i
+      /existing session unavailable/i
     );
   });
 });
