@@ -15,6 +15,7 @@ import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
 import { HealthModule } from './health/health.module';
 import { LanguageModule } from './language/language.module';
+import { ObservabilityModule } from './observability/observability.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RepoModule } from './repo/repo.module';
 import { ScanModule } from './scan/scan.module';
@@ -49,6 +50,7 @@ const runtimeFeatureModules = [ScanModule, HealthModule];
     GitClientModule,
     LanguageModule,
     AnalysisApiModule,
+    ObservabilityModule,
     ...runtimeFeatureModules
   ],
   controllers: [AppController],

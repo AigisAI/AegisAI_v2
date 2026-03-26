@@ -137,7 +137,7 @@ jobs:
       - name: Create deploy path on VPS
         shell: bash
         run: |
-          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "mkdir -p '$ORACLE_DEPLOY_PATH'"
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "mkdir -p '$ORACLE_DEPLOY_PATH' '$ORACLE_DEPLOY_PATH/grafana/provisioning/datasources'"
 
       - name: Prepare remote deploy variables
         shell: bash
@@ -152,7 +152,8 @@ jobs:
       - name: Upload deployment files
         shell: bash
         run: |
-          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/deploy.sh deploy/oracle/bootstrap-infra.sh "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/docker-compose.observability.yml deploy/oracle/deploy.sh deploy/oracle/bootstrap-infra.sh deploy/oracle/bootstrap-observability.sh deploy/oracle/loki-config.yml deploy/oracle/promtail-config.yml "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/grafana/provisioning/datasources/loki.yml "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/grafana/provisioning/datasources/loki.yml"
           scp -i ~/.ssh/id_ed25519 .oracle-deploy.env "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/.oracle-deploy.env"
 
       - name: Deploy over SSH
@@ -166,3 +167,72 @@ jobs:
         run: |
           rm -f ./.oracle-deploy.env
           ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "rm -f '$ORACLE_DEPLOY_PATH/.oracle-deploy.env'" || true
+
+  notify-teams:
+    name: Notify Teams
+    needs:
+      - build-and-push
+      - deploy
+    if: always()
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      BUILD_RESULT: ${{ needs.build-and-push.result }}
+      DEPLOY_RESULT: ${{ needs.deploy.result }}
+      REPOSITORY: ${{ github.repository }}
+      REF_NAME: ${{ github.ref_name }}
+      RUN_ID: ${{ github.run_id }}
+      SHA: ${{ github.sha }}
+      ACTOR: ${{ github.actor }}
+
+    steps:
+      - name: Notify Teams
+        if: ${{ env.TEAMS_WEBHOOK_URL != '' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          status="success"
+          color="2EB886"
+          title="AegisAI CD succeeded"
+
+          if [[ "$BUILD_RESULT" != "success" || "$DEPLOY_RESULT" != "success" ]]; then
+            status="failure"
+            color="E81123"
+            title="AegisAI CD failed"
+          fi
+
+          export STATUS="$status"
+          export COLOR="$color"
+          export TITLE="$title"
+          export RUN_URL="https://github.com/$REPOSITORY/actions/runs/$RUN_ID"
+
+          python3 - <<'PY' > teams-payload.json
+          import json
+          import os
+
+          payload = {
+              "@type": "MessageCard",
+              "@context": "https://schema.org/extensions",
+              "themeColor": os.environ["COLOR"],
+              "summary": os.environ["TITLE"],
+              "title": os.environ["TITLE"],
+              "sections": [
+                  {
+                      "facts": [
+                          {"name": "Repository", "value": os.environ["REPOSITORY"]},
+                          {"name": "Branch", "value": os.environ["REF_NAME"]},
+                          {"name": "Commit", "value": os.environ["SHA"]},
+                          {"name": "Actor", "value": os.environ["ACTOR"]},
+                          {"name": "Build job", "value": os.environ["BUILD_RESULT"]},
+                          {"name": "Deploy job", "value": os.environ["DEPLOY_RESULT"]},
+                      ],
+                      "text": f"Run details: {os.environ['RUN_URL']}"
+                  }
+              ]
+          }
+
+          print(json.dumps(payload))
+          PY
+
+          curl -sSf -H "Content-Type: application/json" --data @teams-payload.json "$TEAMS_WEBHOOK_URL"
