@@ -130,6 +130,338 @@ button {
   padding: 28px;
 }
 
+.repos-page {
+  display: grid;
+  gap: 32px;
+}
+
+.repos-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+  gap: 28px;
+  align-items: end;
+}
+
+.repos-hero-copy {
+  display: grid;
+  gap: 18px;
+}
+
+.repos-hero-copy h2,
+.repos-section-heading h3,
+.repos-aside-card h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+  line-height: 1.04;
+  color: var(--ink-strong);
+}
+
+.repos-hero-copy h2 {
+  font-size: clamp(2.9rem, 5vw, 5rem);
+}
+
+.repos-hero-accent {
+  max-width: 42rem;
+  padding-left: 22px;
+  border-left: 4px solid var(--brass-deep);
+}
+
+.repos-hero-accent p,
+.repos-toolbar-copy,
+.repos-record-copy p,
+.repos-state-copy,
+.repos-alert p,
+.repos-aside-copy {
+  margin: 0;
+  color: var(--ink-muted);
+  line-height: 1.7;
+}
+
+.repos-hero-panel,
+.repos-section,
+.repos-aside-card {
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(122, 89, 8, 0.06);
+  box-shadow: 0 18px 40px rgba(27, 28, 25, 0.06);
+}
+
+.repos-hero-panel {
+  min-height: 220px;
+  padding: 28px;
+  display: flex;
+  align-items: end;
+  justify-content: end;
+  background:
+    linear-gradient(180deg, rgba(251, 249, 244, 0.16), rgba(251, 249, 244, 0.88)),
+    radial-gradient(circle at top left, rgba(181, 141, 61, 0.28), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(64, 94, 146, 0.14), transparent 26%),
+    var(--surface-low);
+}
+
+.repos-hero-panel-kicker {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--brass-deep);
+  font-size: 1.3rem;
+}
+
+.repos-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0 4px;
+}
+
+.repos-provider-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.repos-filter-button,
+.repos-primary-action,
+.repos-secondary-action,
+.repos-record-body {
+  font: inherit;
+}
+
+.repos-filter-button {
+  border: 1px solid rgba(210, 197, 178, 0.7);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--ink-muted);
+  border-radius: 999px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.repos-filter-button.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--brass-deep), var(--brass-warm));
+}
+
+.repos-alert {
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--danger-soft);
+  border: 1px solid rgba(186, 26, 26, 0.12);
+  color: var(--danger-ink);
+}
+
+.repos-alert strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.repos-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.8fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.repos-main,
+.repos-aside {
+  display: grid;
+  gap: 24px;
+}
+
+.repos-section,
+.repos-aside-card {
+  padding: 26px;
+}
+
+.repos-section-heading {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.repos-section-heading h3,
+.repos-aside-card h3 {
+  font-size: clamp(1.7rem, 2vw, 2.35rem);
+}
+
+.repos-list {
+  display: grid;
+  gap: 16px;
+}
+
+.repos-record {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--surface-low);
+}
+
+.repos-record.is-selected {
+  background: linear-gradient(180deg, rgba(213, 224, 247, 0.32), rgba(245, 243, 238, 0.92));
+}
+
+.repos-record-body {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repos-record-header,
+.repos-available-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.repos-provider-badge,
+.repos-privacy-badge,
+.repos-connected-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.repos-provider-badge {
+  background: rgba(213, 224, 247, 0.72);
+  color: #425067;
+}
+
+.repos-privacy-badge {
+  background: rgba(228, 226, 221, 0.85);
+  color: var(--ink-muted);
+}
+
+.repos-connected-chip {
+  background: rgba(122, 89, 8, 0.12);
+  color: var(--brass-deep);
+}
+
+.repos-record-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.repos-record-copy h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  letter-spacing: -0.03em;
+}
+
+.repos-record-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.repos-record-meta dt {
+  margin: 0 0 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.repos-record-meta dd {
+  margin: 0;
+  color: var(--ink-strong);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.repos-primary-action,
+.repos-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+.repos-primary-action {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, var(--brass-deep), var(--brass-warm));
+}
+
+.repos-secondary-action {
+  border: 1px solid rgba(122, 89, 8, 0.18);
+  background: transparent;
+  color: var(--brass-deep);
+}
+
+.repos-primary-action:disabled,
+.repos-secondary-action:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.repos-branch-list,
+.repos-protocol-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repos-branch-list li,
+.repos-protocol-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--surface-low);
+}
+
+.repos-branch-list strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.repos-branch-list span {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+}
+
+.repos-branch-list code {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.repos-protocol-list li {
+  justify-content: flex-start;
+  color: var(--ink-muted);
+}
+
 .standalone-page {
   min-height: 100vh;
   display: grid;
@@ -873,7 +1205,8 @@ button {
   }
 
   .landing-step-grid-v2,
-  .login-trust-grid-v2 {
+  .login-trust-grid-v2,
+  .repos-record-meta {
     grid-template-columns: 1fr;
   }
 
@@ -885,6 +1218,14 @@ button {
 
   .login-card-v2 {
     padding: 32px 24px;
+  }
+
+  .repos-hero,
+  .repos-layout,
+  .repos-toolbar {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
