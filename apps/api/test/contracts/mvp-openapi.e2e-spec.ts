@@ -5,7 +5,7 @@ describe('MVP OpenAPI contract', () => {
   const contract = readFileSync(
     join(__dirname, '../../../../specs/001-aegisai-mvp-foundation/contracts/mvp-openapi.yaml'),
     'utf8'
-  );
+  ).replace(/\r\n/g, '\n');
 
   it('documents the currently implemented auth, repo, and scan endpoints', () => {
     expect(contract).toContain('/auth/github:');
