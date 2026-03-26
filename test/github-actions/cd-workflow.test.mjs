@@ -78,7 +78,9 @@ test('cd workflow and oracle deployment files enforce the split infra/app deploy
   assert.match(workflow, /docker-compose\.infra\.yml/);
   assert.match(workflow, /docker-compose\.app\.yml/);
 
-  assert.match(apiDockerfile, /FROM node:20-alpine/);
+  assert.match(apiDockerfile, /FROM node:20-bookworm-slim AS builder/);
+  assert.match(apiDockerfile, /FROM node:20-bookworm-slim AS runner/);
+  assert.match(apiDockerfile, /apt-get install -y --no-install-recommends openssl ca-certificates/);
   assert.match(apiDockerfile, /corepack pnpm --filter @aegisai\/api build/);
   assert.match(apiDockerfile, /CMD \["node", "apps\/api\/dist\/apps\/api\/src\/main\.js"\]/);
 
