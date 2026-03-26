@@ -21,14 +21,21 @@ describe("LandingPage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /precision security for java ecosystems/i,
+        name: /security for java, built by engineers/i,
       })
     ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /product/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /security/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /pricing/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /resources/i })).toBeInTheDocument();
+    const githubCtas = screen.getAllByRole("link", { name: /connect github/i });
+
+    expect(githubCtas).toHaveLength(3);
+    githubCtas.forEach((link) => {
+      expect(link).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
+    });
     expect(
-      screen.getByRole("link", { name: /start with github/i })
-    ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
-    expect(
-      screen.getByRole("link", { name: /start with gitlab/i })
+      screen.getByRole("link", { name: /connect gitlab/i })
     ).toHaveAttribute("href", "http://localhost:3000/api/auth/gitlab");
     expect(screen.getByRole("link", { name: /log in/i })).toHaveAttribute(
       "href",
@@ -39,17 +46,23 @@ describe("LandingPage", () => {
   it("renders the product trust story and scan workflow", () => {
     renderLandingPage();
 
-    expect(screen.getByText(/provider-scoped access/i)).toBeInTheDocument();
-    expect(screen.getByText(/session-first orchestration/i)).toBeInTheDocument();
-    expect(screen.getByText(/java-first analysis/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /connect provider/i })
+      screen.getByText(/trusted by security-first teams/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /choose repository and branch/i })
+      screen.getByRole("heading", { name: /scan repositories/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /run scan/i })
+      screen.getByRole("heading", { name: /identify vulnerabilities/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /streamline fixes/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/we don't just look for matches/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /secure your codebase today/i })
     ).toBeInTheDocument();
   });
 });

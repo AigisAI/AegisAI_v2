@@ -40,21 +40,21 @@ describe("LoginPage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /secure access for repository scanning/i,
+        name: /authenticate your security/i,
       })
     ).toBeInTheDocument();
+    expect(screen.getByText(/provider-scoped, session-controlled access/i)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /back to overview/i })
     ).toHaveAttribute("href", "/");
-    expect(screen.getByText(/session-based access/i)).toBeInTheDocument();
-    expect(screen.getByText(/provider oauth only/i)).toBeInTheDocument();
-    expect(screen.getByText(/java-first analysis/i)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /continue with github/i })
     ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
     expect(
       screen.getByRole("link", { name: /continue with gitlab/i })
     ).toHaveAttribute("href", "http://localhost:3000/api/auth/gitlab");
+    expect(screen.getByText(/soc2 compliant/i)).toBeInTheDocument();
+    expect(screen.getByText(/encrypted sessions/i)).toBeInTheDocument();
   });
 
   it("renders a loading state during auth bootstrap", () => {
@@ -69,10 +69,10 @@ describe("LoginPage", () => {
 
     renderLoginPage();
 
-    expect(screen.getByText(/checking your session/i)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/awaiting provider response/i);
     expect(
-      screen.queryByRole("link", { name: /continue with github/i })
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: /continue with github/i })
+    ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
   });
 
   it("renders an oauth failure message from the query string", () => {
