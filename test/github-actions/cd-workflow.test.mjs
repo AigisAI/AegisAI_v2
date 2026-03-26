@@ -60,7 +60,7 @@ test('cd workflow and oracle deployment files enforce the split infra/app deploy
 
   assert.match(apiDockerfile, /FROM node:20-alpine/);
   assert.match(apiDockerfile, /corepack pnpm --filter @aegisai\/api build/);
-  assert.match(apiDockerfile, /CMD \["node", "apps\/api\/dist\/main\.js"\]/);
+  assert.match(apiDockerfile, /CMD \["node", "apps\/api\/dist\/apps\/api\/src\/main\.js"\]/);
 
   assert.match(webDockerfile, /FROM nginx:1\.27-alpine/);
   assert.match(webDockerfile, /COPY --from=builder \/app\/apps\/web\/dist/);
