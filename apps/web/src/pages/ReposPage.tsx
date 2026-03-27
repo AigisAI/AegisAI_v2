@@ -1,6 +1,7 @@
 import type { Provider } from "@aegisai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import {
   connectRepo,
@@ -294,19 +295,30 @@ export function ReposPage() {
                 {branchInsightQuery.isLoading ? (
                   <p className="repos-state-copy">Loading branch insight...</p>
                 ) : branchInsightQuery.data?.items.length ? (
-                  <ul className="repos-branch-list">
-                    {branchInsightQuery.data.items.map((branch) => (
-                      <li key={branch.name}>
-                        <div>
-                          <strong>{branch.name}</strong>
-                          <span>
-                            {branch.isDefault ? "Default branch" : "Branch"}
-                          </span>
-                        </div>
-                        <code>{branch.lastCommitSha ?? "No commit SHA"}</code>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="repos-branch-list">
+                      {branchInsightQuery.data.items.map((branch) => (
+                        <li key={branch.name}>
+                          <div>
+                            <strong>{branch.name}</strong>
+                            <span>
+                              {branch.isDefault ? "Default branch" : "Branch"}
+                            </span>
+                          </div>
+                          <code>{branch.lastCommitSha ?? "No commit SHA"}</code>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="repos-branch-actions">
+                      <Link
+                        className="repos-primary-action"
+                        to={`/scan?repo=${selectedRepo.id}`}
+                      >
+                        Open scan workspace
+                      </Link>
+                    </div>
+                  </>
                 ) : (
                   <p className="repos-state-copy">No branch metadata available yet.</p>
                 )}

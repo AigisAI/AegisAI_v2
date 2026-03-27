@@ -26,10 +26,10 @@ const mockedRequestScan = vi.mocked(requestScan);
 const mockedListRepoScans = vi.mocked(listRepoScans);
 const mockedGetScan = vi.mocked(getScan);
 
-function renderScanPage() {
+function renderScanPage(initialEntries = ["/scan"]) {
   return render(
     <QueryClientProvider client={createQueryClient()}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <ScanPage />
       </MemoryRouter>
     </QueryClientProvider>
@@ -243,6 +243,73 @@ describe("ScanPage", () => {
     expect(await screen.findByText(/scan queued successfully/i)).toBeInTheDocument();
   });
 
+  it("redirects repeat requests toward the active scan instead of queueing a duplicate", async () => {
+    const user = userEvent.setup();
+
+    renderScanPage();
+
+    const activeScanButton = await screen.findByRole("button", {
+      name: /view active scan/i,
+    });
+    await user.click(activeScanButton);
+
+    expect(mockedRequestScan).not.toHaveBeenCalled();
+    expect(await screen.findByText(/a scan is already active for this branch/i)).toBeInTheDocument();
+  });
+
+  it("uses the repository query parameter as the initial scan context", async () => {
+    renderScanPage(["/scan?repo=repo-2"]);
+
+    const repositorySelect = (await screen.findByLabelText(
+      /repository selector/i
+    )) as HTMLSelectElement;
+    const branchSelect = (await screen.findByLabelText(
+      /branch selector/i
+    )) as HTMLSelectElement;
+
+    expect(repositorySelect.value).toBe("repo-2");
+    expect(branchSelect.value).toBe("trunk");
+    expect(screen.getByText(/no scans have been queued for this repository yet/i)).toBeInTheDocument();
+  });
+
+  it("allows switching away from a repository seeded by the query parameter", async () => {
+    const user = userEvent.setup();
+
+    renderScanPage(["/scan?repo=repo-1"]);
+
+    const repositorySelect = (await screen.findByLabelText(
+      /repository selector/i
+    )) as HTMLSelectElement;
+    const branchSelect = (await screen.findByLabelText(
+      /branch selector/i
+    )) as HTMLSelectElement;
+
+    await user.selectOptions(repositorySelect, "repo-2");
+
+    await waitFor(() => {
+      expect(repositorySelect.value).toBe("repo-2");
+      expect(branchSelect.value).toBe("trunk");
+    });
+  });
+
+  it("ignores stale repository query parameters until a connected repository is validated", async () => {
+    renderScanPage(["/scan?repo=repo-stale"]);
+
+    const repositorySelect = (await screen.findByLabelText(
+      /repository selector/i
+    )) as HTMLSelectElement;
+
+    await waitFor(() => {
+      expect(repositorySelect.value).toBe("repo-1");
+      expect(mockedListRepoBranches.mock.calls.map(([repoId]) => repoId)).not.toContain(
+        "repo-stale"
+      );
+      expect(mockedListRepoScans.mock.calls.map(([repoId]) => repoId)).not.toContain(
+        "repo-stale"
+      );
+    });
+  });
+
   it("renders a connect-first empty state when no repositories are available for scanning", async () => {
     mockedListConnectedRepos.mockResolvedValueOnce([]);
 
@@ -252,5 +319,24 @@ describe("ScanPage", () => {
       await screen.findByText(/connect a repository before requesting a scan/i)
     ).toBeInTheDocument();
     expect(screen.getByText(/recent scans will appear once a repository is linked/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /go to repository connections/i })).toHaveAttribute(
+      "href",
+      "/repos"
+    );
+  });
+
+  it("surfaces a branch guardrail when the selected repository has no branch metadata", async () => {
+    mockedListRepoBranches.mockImplementationOnce(async () => ({
+      items: [],
+      page: 1,
+      size: 30,
+      hasNextPage: false,
+      nextPage: null,
+    }));
+
+    renderScanPage();
+
+    expect(await screen.findByText(/no branch metadata is available for this repository/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /queue java scan/i })).toBeDisabled();
   });
 });

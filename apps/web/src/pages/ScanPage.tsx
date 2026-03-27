@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { listConnectedRepos, listRepoBranches } from "../api/repos";
 import { getScan, listRepoScans, requestScan } from "../api/scans";
@@ -10,6 +11,8 @@ const ACTIVE_SCAN_STATUSES = new Set(["PENDING", "RUNNING"]);
 
 export function ScanPage() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedRepoId = searchParams.get("repo");
   const [selectedRepoId, setSelectedRepoId] = useState<string | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
@@ -21,21 +24,36 @@ export function ScanPage() {
   });
 
   useEffect(() => {
+    const connectedRepoIds = new Set(connectedReposQuery.data?.map((repo) => repo.id) ?? []);
     const firstRepoId = connectedReposQuery.data?.[0]?.id ?? null;
+    const requestedConnectedRepoId =
+      requestedRepoId && connectedRepoIds.has(requestedRepoId) ? requestedRepoId : null;
 
-    if (!selectedRepoId && firstRepoId) {
+    if (!selectedRepoId || !connectedRepoIds.has(selectedRepoId)) {
+      if (requestedConnectedRepoId) {
+        setSelectedRepoId(requestedConnectedRepoId);
+        return;
+      }
+
       setSelectedRepoId(firstRepoId);
       return;
     }
+  }, [connectedReposQuery.data, requestedRepoId, selectedRepoId]);
 
-    if (
-      selectedRepoId &&
-      connectedReposQuery.data &&
-      !connectedReposQuery.data.some((repo) => repo.id === selectedRepoId)
-    ) {
-      setSelectedRepoId(firstRepoId);
+  useEffect(() => {
+    if (!connectedReposQuery.data) {
+      return;
     }
-  }, [connectedReposQuery.data, selectedRepoId]);
+
+    if (selectedRepoId && requestedRepoId !== selectedRepoId) {
+      setSearchParams({ repo: selectedRepoId }, { replace: true });
+      return;
+    }
+
+    if (!selectedRepoId && requestedRepoId) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [requestedRepoId, selectedRepoId, setSearchParams]);
 
   const selectedRepo =
     connectedReposQuery.data?.find((repo) => repo.id === selectedRepoId) ?? null;
@@ -121,13 +139,19 @@ export function ScanPage() {
 
   const selectedScan = selectedScanQuery.data ?? selectedScanSummary;
   const branchOptions = branchesQuery.data?.items ?? [];
+  const activeBranchScan =
+    recentScansQuery.data?.items.find(
+      (scan) => scan.branch === selectedBranch && ACTIVE_SCAN_STATUSES.has(scan.status)
+    ) ?? null;
+  const hasBranchMetadata = branchOptions.length > 0;
 
   const requestDisabled =
     !selectedRepoId ||
     !selectedBranch ||
     requestScanMutation.isPending ||
     connectedReposQuery.isLoading ||
-    branchesQuery.isLoading;
+    branchesQuery.isLoading ||
+    !hasBranchMetadata;
 
   const totals = useMemo(() => {
     if (!selectedScan) {
@@ -145,6 +169,31 @@ export function ScanPage() {
       lines: selectedScan.totalLines ?? "—",
     };
   }, [selectedScan]);
+
+  const selectedScanNarrative = useMemo(() => {
+    if (!selectedScan) {
+      return "Choose a recent scan or queue a branch review to see the narrative here.";
+    }
+
+    switch (selectedScan.status) {
+      case "PENDING":
+        return "The branch snapshot is queued. AegisAI will collect the selected repository state before Java analysis begins.";
+      case "RUNNING":
+        return "This branch is already under review. Stay on the active scan instead of queueing a duplicate request.";
+      case "FAILED":
+        return "The review stopped before completion. Re-queue the branch after repository access or provider status is healthy again.";
+      case "DONE":
+        return "The branch review is complete. Use the severity matrix below to decide whether another scan or vulnerability review should follow.";
+      default:
+        return "AegisAI is tracking the current branch review status here.";
+    }
+  }, [selectedScan]);
+
+  const primaryActionLabel = activeBranchScan
+    ? "View active scan"
+    : requestScanMutation.isPending
+      ? "Queueing..."
+      : "Queue Java scan";
 
   return (
     <section className="scan-page">
@@ -249,12 +298,24 @@ export function ScanPage() {
                     <strong>Branch archive unavailable</strong>
                     <p>{getErrorMessage(branchesQuery.error)}</p>
                   </div>
+                ) : selectedRepoId && !branchesQuery.isLoading && !branchOptions.length ? (
+                  <div className="scan-inline-alert scan-inline-alert-neutral" role="status">
+                    <strong>No branch metadata is available for this repository.</strong>
+                    <p>Reconnect the source or return to repository connections before queueing a new review.</p>
+                  </div>
                 ) : null}
 
                 {requestScanMutation.error ? (
                   <div className="scan-inline-alert" role="alert">
                     <strong>Scan request failed</strong>
                     <p>{getErrorMessage(requestScanMutation.error)}</p>
+                  </div>
+                ) : null}
+
+                {activeBranchScan ? (
+                  <div className="scan-inline-alert scan-inline-alert-neutral" role="status">
+                    <strong>An active scan already covers this branch.</strong>
+                    <p>Open the current review instead of creating a duplicate queue entry.</p>
                   </div>
                 ) : null}
 
@@ -268,6 +329,12 @@ export function ScanPage() {
                     className="scan-primary-action"
                     disabled={requestDisabled}
                     onClick={() => {
+                      if (activeBranchScan) {
+                        setSelectedScanId(activeBranchScan.id);
+                        setSubmissionMessage("A scan is already active for this branch.");
+                        return;
+                      }
+
                       if (!selectedRepoId || !selectedBranch) {
                         return;
                       }
@@ -279,7 +346,7 @@ export function ScanPage() {
                     }}
                     type="button"
                   >
-                    {requestScanMutation.isPending ? "Queueing..." : "Queue Java scan"}
+                    {primaryActionLabel}
                   </button>
                 </div>
 
@@ -293,6 +360,11 @@ export function ScanPage() {
               <div className="scan-empty-state">
                 <strong>Connect a repository before requesting a scan.</strong>
                 <p>Recent scans will appear once a repository is linked and queued.</p>
+                <div className="scan-empty-actions">
+                  <Link className="scan-secondary-link" to="/repos">
+                    Go to repository connections
+                  </Link>
+                </div>
               </div>
             )}
           </section>
@@ -400,6 +472,8 @@ export function ScanPage() {
                     </div>
                   ))}
                 </div>
+
+                <p className="scan-detail-narrative">{selectedScanNarrative}</p>
 
                 {selectedScan.errorMessage ? (
                   <div className="scan-inline-alert" role="alert">
