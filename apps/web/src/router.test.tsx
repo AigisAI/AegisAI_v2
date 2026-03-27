@@ -11,4 +11,9 @@ describe("router", () => {
     expect(routes[1]?.path).toBe("/login");
     expect(routes[2]?.path).toBeUndefined();
   });
+
+  it("exposes the vulnerability review workspace inside the protected scan routes", () => {
+    const protectedChildren = routes[2]?.children ?? [];
+    expect(protectedChildren.some((route) => route.path === "/scan/:scanId/review")).toBe(true);
+  });
 });

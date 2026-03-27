@@ -165,26 +165,52 @@ describe("ScanPage", () => {
       };
     });
 
-    mockedGetScan.mockResolvedValue({
-      id: "scan-1",
-      repoFullName: "acme/payments-service",
-      branch: "main",
-      commitSha: "abc1234",
-      status: "RUNNING",
-      language: "java",
-      totalFiles: 42,
-      totalLines: 8140,
-      summary: {
-        critical: 1,
-        high: 2,
-        medium: 4,
-        low: 1,
-        info: 0,
-      },
-      startedAt: "2026-03-27T08:00:00.000Z",
-      completedAt: null,
-      errorMessage: null,
-      createdAt: "2026-03-27T07:58:00.000Z",
+    mockedGetScan.mockImplementation(async (scanId) => {
+      if (scanId === "scan-0") {
+        return {
+          id: "scan-0",
+          repoFullName: "acme/payments-service",
+          branch: "release/2026",
+          commitSha: "def5678",
+          status: "DONE",
+          language: "java",
+          totalFiles: 40,
+          totalLines: 7990,
+          summary: {
+            critical: 0,
+            high: 1,
+            medium: 3,
+            low: 2,
+            info: 1,
+          },
+          startedAt: "2026-03-26T08:00:00.000Z",
+          completedAt: "2026-03-26T08:06:00.000Z",
+          errorMessage: null,
+          createdAt: "2026-03-26T07:58:00.000Z",
+        };
+      }
+
+      return {
+        id: "scan-1",
+        repoFullName: "acme/payments-service",
+        branch: "main",
+        commitSha: "abc1234",
+        status: "RUNNING",
+        language: "java",
+        totalFiles: 42,
+        totalLines: 8140,
+        summary: {
+          critical: 1,
+          high: 2,
+          medium: 4,
+          low: 1,
+          info: 0,
+        },
+        startedAt: "2026-03-27T08:00:00.000Z",
+        completedAt: null,
+        errorMessage: null,
+        createdAt: "2026-03-27T07:58:00.000Z",
+      };
     });
 
     mockedRequestScan.mockResolvedValue({
@@ -267,8 +293,10 @@ describe("ScanPage", () => {
       /branch selector/i
     )) as HTMLSelectElement;
 
-    expect(repositorySelect.value).toBe("repo-2");
-    expect(branchSelect.value).toBe("trunk");
+    await waitFor(() => {
+      expect(repositorySelect.value).toBe("repo-2");
+      expect(branchSelect.value).toBe("trunk");
+    });
     expect(screen.getByText(/no scans have been queued for this repository yet/i)).toBeInTheDocument();
   });
 
@@ -338,5 +366,18 @@ describe("ScanPage", () => {
 
     expect(await screen.findByText(/no branch metadata is available for this repository/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /queue java scan/i })).toBeDisabled();
+  });
+
+  it("links completed scans into the vulnerability review workspace", async () => {
+    const user = userEvent.setup();
+
+    renderScanPage();
+
+    await user.click(await screen.findByRole("button", { name: /scan-0/i }));
+
+    expect(await screen.findByRole("link", { name: /open vulnerability review/i })).toHaveAttribute(
+      "href",
+      "/scan/scan-0/review"
+    );
   });
 });
