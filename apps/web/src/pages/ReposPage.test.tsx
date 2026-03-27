@@ -162,6 +162,11 @@ describe("ReposPage", () => {
     expect(
       await within(branchInsightSection!).findByText("release/2026")
     ).toBeInTheDocument();
+    expect(
+      within(branchInsightSection!).getByRole("link", {
+        name: /open scan workspace/i,
+      })
+    ).toHaveAttribute("href", "/scan?repo=repo-1");
 
     await user.click(
       screen.getByRole("button", { name: /connect acme\/billing-api/i })

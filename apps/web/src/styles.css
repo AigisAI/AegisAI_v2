@@ -401,6 +401,7 @@ button {
   border-radius: 999px;
   padding: 0 16px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .repos-primary-action {
@@ -455,6 +456,12 @@ button {
 .repos-branch-list code {
   font-size: 0.82rem;
   color: var(--ink-muted);
+}
+
+.repos-branch-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 18px;
 }
 
 .repos-protocol-list li {
@@ -1391,6 +1398,12 @@ button {
   margin-bottom: 6px;
 }
 
+.scan-inline-alert-neutral {
+  background: rgba(213, 224, 247, 0.28);
+  border: 1px solid rgba(64, 94, 146, 0.14);
+  color: #425067;
+}
+
 .scan-empty-state {
   padding: 22px;
   border-radius: 16px;
@@ -1400,6 +1413,23 @@ button {
 .scan-empty-state strong {
   display: block;
   margin-bottom: 8px;
+}
+
+.scan-empty-actions {
+  display: flex;
+  margin-top: 16px;
+}
+
+.scan-secondary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(122, 89, 8, 0.18);
+  color: var(--brass-deep);
+  text-decoration: none;
 }
 
 .scan-history-list {
@@ -1523,6 +1553,12 @@ button {
 .scan-summary-band strong {
   color: var(--ink-strong);
   font-size: 1.1rem;
+}
+
+.scan-detail-narrative {
+  margin: 18px 0 0;
+  color: var(--ink-muted);
+  line-height: 1.7;
 }
 
 .scan-trust-list {
