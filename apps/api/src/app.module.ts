@@ -19,6 +19,7 @@ import { ObservabilityModule } from './observability/observability.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RepoModule } from './repo/repo.module';
 import { ScanModule } from './scan/scan.module';
+import { VulnerabilityModule } from './vulnerability/vulnerability.module';
 
 const runtimeFeatureModules = [ScanModule, HealthModule];
 
@@ -47,6 +48,7 @@ const runtimeFeatureModules = [ScanModule, HealthModule];
     PrismaModule,
     AuthModule,
     RepoModule,
+    VulnerabilityModule,
     GitClientModule,
     LanguageModule,
     AnalysisApiModule,
