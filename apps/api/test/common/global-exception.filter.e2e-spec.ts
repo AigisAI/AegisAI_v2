@@ -9,8 +9,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('normalizes HttpException responses into the shared error shape', () => {
-    const notifier = { notifyRuntimeError: jest.fn().mockResolvedValue(undefined) };
-    const filter = new GlobalExceptionFilter(notifier as never);
+    const filter = new GlobalExceptionFilter();
     const response = createResponse();
 
     filter.catch(
@@ -29,12 +28,10 @@ describe('GlobalExceptionFilter', () => {
       errorCode: 'FORBIDDEN_RESOURCE_ACCESS',
       timestamp: expect.any(String)
     });
-    expect(notifier.notifyRuntimeError).not.toHaveBeenCalled();
   });
 
-  it('falls back to a 500 internal error shape and logs server errors', () => {
-    const notifier = { notifyRuntimeError: jest.fn().mockResolvedValue(undefined) };
-    const filter = new GlobalExceptionFilter(notifier as never);
+  it('falls back to a 500 internal error shape and logs runtime_error server errors', () => {
+    const filter = new GlobalExceptionFilter();
     const response = createResponse();
     const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
 
@@ -48,15 +45,12 @@ describe('GlobalExceptionFilter', () => {
       errorCode: 'INTERNAL_ERROR',
       timestamp: expect.any(String)
     });
-    expect(loggerSpy).toHaveBeenCalled();
-    expect(notifier.notifyRuntimeError).toHaveBeenCalledWith({
-      status: 500,
-      errorCode: 'INTERNAL_ERROR',
-      message: 'Internal server error.',
-      method: 'GET',
-      path: '/',
-      timestamp: expect.any(String)
-    });
+    expect(loggerSpy).toHaveBeenCalledTimes(1);
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"marker":"runtime_error"');
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"status":500');
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"errorCode":"INTERNAL_ERROR"');
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"method":"GET"');
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"path":"/"');
   });
 });
 

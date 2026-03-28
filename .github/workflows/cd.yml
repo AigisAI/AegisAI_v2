@@ -137,7 +137,7 @@ jobs:
       - name: Create deploy path on VPS
         shell: bash
         run: |
-          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "mkdir -p '$ORACLE_DEPLOY_PATH' '$ORACLE_DEPLOY_PATH/grafana/provisioning/datasources'"
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "mkdir -p '$ORACLE_DEPLOY_PATH' '$ORACLE_DEPLOY_PATH/alloy'"
 
       - name: Prepare remote deploy variables
         shell: bash
@@ -152,8 +152,8 @@ jobs:
       - name: Upload deployment files
         shell: bash
         run: |
-          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/docker-compose.observability.yml deploy/oracle/deploy.sh deploy/oracle/bootstrap-infra.sh deploy/oracle/bootstrap-observability.sh deploy/oracle/loki-config.yml deploy/oracle/promtail-config.yml "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
-          scp -i ~/.ssh/id_ed25519 deploy/oracle/grafana/provisioning/datasources/loki.yml "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/grafana/provisioning/datasources/loki.yml"
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/deploy.sh deploy/oracle/bootstrap-infra.sh deploy/oracle/install-alloy.sh "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/alloy/config.alloy "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/alloy/config.alloy"
           scp -i ~/.ssh/id_ed25519 .oracle-deploy.env "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/.oracle-deploy.env"
 
       - name: Deploy over SSH
