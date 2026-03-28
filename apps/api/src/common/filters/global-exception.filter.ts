@@ -9,13 +9,9 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-import { TeamsNotifierService } from '../../observability/teams-notifier.service';
-
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
-
-  constructor(private readonly teamsNotifier: TeamsNotifierService) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const request = host.switchToHttp().getRequest<Request>();
@@ -31,15 +27,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error(`[${errorCode}] ${message}`, exception instanceof Error ? exception.stack : undefined);
-      void this.teamsNotifier.notifyRuntimeError({
-        status,
-        errorCode,
-        message,
-        method: request.method,
-        path: request.originalUrl || request.url || '/',
-        timestamp
-      });
+      this.logger.error(
+        JSON.stringify({
+          marker: 'runtime_error',
+          status,
+          errorCode,
+          method: request.method,
+          path: request.originalUrl || request.url || '/',
+          message,
+          timestamp
+        }),
+        exception instanceof Error ? exception.stack : undefined
+      );
     }
 
     response.status(status).json(payload);

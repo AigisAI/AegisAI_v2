@@ -43,10 +43,11 @@ Production CD targets a single Oracle Cloud VPS.
 - Registry: `ghcr.io`
 - Trigger: `main` push or manual `workflow_dispatch`
 - Runtime: Docker Compose on the VPS
-- Deploy path files: `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, `deploy/oracle/docker-compose.observability.yml`, `deploy/oracle/deploy.sh`, a server-managed `.env`, and the one-time helpers `deploy/oracle/bootstrap-infra.sh`, `deploy/oracle/bootstrap-observability.sh`
+- Deploy path files: `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, `deploy/oracle/deploy.sh`, `deploy/oracle/bootstrap-infra.sh`, `deploy/oracle/install-alloy.sh`, `deploy/oracle/alloy/config.alloy`, and a server-managed `.env`
 - Automated rollout scope: app stack only (`api`, `web`)
 - Manual bootstrap scope: infra stack (`postgres`, `redis`)
-- Manual observability scope: `loki`, `promtail`, `grafana`
+- Observability collection: Grafana Alloy on the Oracle VPS
+- Observability surface: Grafana Cloud dashboards, Explore, and alerting
 - Detailed runbook: [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md)
 
 Required GitHub secrets for CD:
@@ -67,12 +68,8 @@ Optional production secret:
 
 When configured, CD posts a high-signal success/failure notification to Microsoft Teams without blocking the deploy if the webhook itself fails.
 
-The observability stack is bootstrapped separately from the normal deploy. After copying files to the VPS and preparing `.env`, operators can run:
-
-```sh
-sh ./bootstrap-observability.sh
-```
-
-This brings up Grafana on port `3001` and keeps Loki internal to the VPS.
+Grafana Cloud replaces the previous idea of a VPS-hosted Grafana or Loki stack. Operators
+install the Docker integration in Grafana Cloud, install Grafana Alloy on the Oracle VPS, and
+use Grafana Cloud for logs, metrics, dashboards, and alert routing.
 
 For first-time Oracle Cloud setup, follow the runbook in [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md) rather than reproducing the steps manually from memory.
