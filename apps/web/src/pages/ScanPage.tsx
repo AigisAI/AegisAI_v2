@@ -475,6 +475,17 @@ export function ScanPage() {
 
                 <p className="scan-detail-narrative">{selectedScanNarrative}</p>
 
+                {selectedScan.status === "DONE" ? (
+                  <div className="scan-detail-actions">
+                    <Link
+                      className="scan-secondary-link scan-secondary-link-strong"
+                      to={`/scan/${selectedScan.id}/review`}
+                    >
+                      Open vulnerability review
+                    </Link>
+                  </div>
+                ) : null}
+
                 {selectedScan.errorMessage ? (
                   <div className="scan-inline-alert" role="alert">
                     <strong>Scan error</strong>

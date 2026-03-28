@@ -7,6 +7,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ReposPage } from "./pages/ReposPage";
 import { ScanPage } from "./pages/ScanPage";
+import { VulnerabilityReviewPage } from "./pages/VulnerabilityReviewPage";
 
 export const routes: RouteObject[] = [
   {
@@ -35,6 +36,10 @@ export const routes: RouteObject[] = [
       {
         path: "/scan",
         element: <ScanPage />,
+      },
+      {
+        path: "/scan/:scanId/review",
+        element: <VulnerabilityReviewPage />,
       },
     ],
   },
