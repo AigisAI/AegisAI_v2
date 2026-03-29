@@ -34,7 +34,8 @@ import { ConfigService } from './config.service';
         GITHUB_APP_WEBHOOK_SECRET: Joi.string().allow('').optional(),
         GITLAB_WEBHOOK_SECRET: Joi.string().allow('').optional(),
         REPORT_STORAGE_PATH: Joi.string().default('./tmp/reports'),
-        REPORT_EXPIRY_HOURS: Joi.number().integer().positive().default(24)
+        REPORT_EXPIRY_HOURS: Joi.number().integer().positive().default(24),
+        TEAMS_WEBHOOK_URL: Joi.string().uri().allow('').optional()
       })
     })
   ],

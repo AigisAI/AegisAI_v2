@@ -18,6 +18,15 @@ describe('MVP OpenAPI contract', () => {
     expect(contract).toContain("operationId: connectRepo");
   });
 
+  it('documents the current vulnerability review endpoints and feedback contract', () => {
+    expect(contract).toContain('/scans/{scanId}/vulnerabilities:');
+    expect(contract).toContain('/vulnerabilities/{vulnId}:');
+    expect(contract).toContain('/vulnerabilities/{vulnId}/feedback:\n    post:');
+    expect(contract).toContain('operationId: submitVulnerabilityFeedback');
+    expect(contract).toContain("$ref: '#/components/schemas/VulnerabilityFeedbackResponse'");
+    expect(contract).not.toContain('/vulnerabilities/{vulnId}/feedback:\n    patch:');
+  });
+
   it('uses the current auth, health, and session security shapes', () => {
     expect(contract).toContain('securitySchemes:');
     expect(contract).toContain('sessionCookie:');

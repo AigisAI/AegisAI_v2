@@ -243,6 +243,8 @@ paths:
                 $ref: '#/components/schemas/VulnerabilityPageResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
   /vulnerabilities/{vulnId}:
@@ -260,12 +262,14 @@ paths:
                 $ref: '#/components/schemas/VulnerabilityDetailResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
   /vulnerabilities/{vulnId}/feedback:
-    patch:
+    post:
       summary: Submit user feedback for a vulnerability
-      operationId: updateVulnerabilityFeedback
+      operationId: submitVulnerabilityFeedback
       parameters:
         - $ref: '#/components/parameters/VulnId'
       requestBody:
@@ -276,13 +280,15 @@ paths:
               $ref: '#/components/schemas/VulnerabilityFeedbackRequest'
       responses:
         '200':
-          description: Updated vulnerability detail
+          description: Recorded reviewer feedback
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VulnerabilityDetailResponse'
+                $ref: '#/components/schemas/VulnerabilityFeedbackResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -528,11 +534,21 @@ components:
       properties:
         model:
           type: string
-        decision:
+        detected:
+          type: boolean
+        severity:
           type: string
         reasoning:
           type: string
-      required: [model, decision, reasoning]
+      required: [model, detected, severity, reasoning]
+    ReferenceLink:
+      type: object
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+      required: [title, url]
     Vulnerability:
       type: object
       properties:
@@ -548,12 +564,15 @@ components:
         lineStart:
           type: integer
         lineEnd:
-          type: integer
-        confidenceScore:
-          type: number
-        consensusScore:
-          type: number
-      required: [id, title, severity, filePath, lineStart, lineEnd, confidenceScore, consensusScore]
+          type: [integer, 'null']
+        cweId:
+          type: [string, 'null']
+        owaspCategory:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [OPEN, FIXED, ACCEPTED, REJECTED]
+      required: [id, title, severity, filePath, lineStart, status]
     VulnerabilityDetail:
       allOf:
         - $ref: '#/components/schemas/Vulnerability'
@@ -561,19 +580,28 @@ components:
           properties:
             description:
               type: string
-            recommendation:
-              type: string
+            fixSuggestion:
+              type: [string, 'null']
+            fixExplanation:
+              type: [string, 'null']
             codeSnippet:
-              type: string
+              type: [string, 'null']
+            cveId:
+              type: [string, 'null']
+            referenceLinks:
+              type: [array, 'null']
+              items:
+                $ref: '#/components/schemas/ReferenceLink'
+            consensusScore:
+              type: [number, 'null']
             modelResults:
-              type: array
-              maxItems: 10
+              type: [array, 'null']
               items:
                 $ref: '#/components/schemas/ModelResult'
-            feedback:
-              type: string
-              enum: [OPEN, ACCEPTED, REJECTED, FIXED]
-          required: [description, recommendation, codeSnippet, modelResults, feedback]
+            userFeedback:
+              type: [string, 'null']
+              enum: [ACCEPTED, REJECTED, null]
+          required: [description]
     DashboardSummary:
       type: object
       properties:
@@ -642,7 +670,23 @@ components:
           type: boolean
         data:
           $ref: '#/components/schemas/VulnerabilityDetail'
-      required: [success, data]
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
+    ApiEnvelopeVulnerabilityFeedback:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/VulnerabilityFeedback'
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
     ApiEnvelopeDashboard:
       type: object
       properties:
@@ -718,11 +762,11 @@ components:
             $ref: '#/components/schemas/Vulnerability'
         page:
           type: integer
-        size:
+        totalCount:
           type: integer
-        total:
+        totalPages:
           type: integer
-      required: [items, page, size, total]
+      required: [items, page, totalCount, totalPages]
     ProviderRepoPageResponse:
       type: object
       properties:
@@ -754,7 +798,11 @@ components:
           type: boolean
         data:
           $ref: '#/components/schemas/VulnerabilityPage'
-      required: [success, data]
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
     ConnectRepoRequest:
       type: object
       properties:
@@ -788,6 +836,18 @@ components:
           type: string
           enum: [ACCEPTED, REJECTED]
       required: [feedback]
+    VulnerabilityFeedback:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [ACCEPTED, REJECTED]
+        userFeedback:
+          type: string
+          enum: [ACCEPTED, REJECTED]
+      required: [id, status, userFeedback]
     ReportRequestAccepted:
       type: object
       properties:
@@ -833,6 +893,8 @@ components:
       required: [success, data, message, timestamp]
     VulnerabilityDetailResponse:
       $ref: '#/components/schemas/ApiEnvelopeVulnerabilityDetail'
+    VulnerabilityFeedbackResponse:
+      $ref: '#/components/schemas/ApiEnvelopeVulnerabilityFeedback'
     DashboardResponse:
       $ref: '#/components/schemas/ApiEnvelopeDashboard'
     ReportDetailResponse:

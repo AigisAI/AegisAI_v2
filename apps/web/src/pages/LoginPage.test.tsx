@@ -39,15 +39,22 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     expect(
-      screen.getByRole("heading", { name: /secure java scanning that stays in your provider flow/i })
+      screen.getByRole("heading", {
+        name: /authenticate your security/i,
+      })
     ).toBeInTheDocument();
-    expect(screen.getByText(/session-based auth/i)).toBeInTheDocument();
+    expect(screen.getByText(/provider-scoped, session-controlled access/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /back to overview/i })
+    ).toHaveAttribute("href", "/");
     expect(
       screen.getByRole("link", { name: /continue with github/i })
     ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
     expect(
       screen.getByRole("link", { name: /continue with gitlab/i })
     ).toHaveAttribute("href", "http://localhost:3000/api/auth/gitlab");
+    expect(screen.getByText(/soc2 compliant/i)).toBeInTheDocument();
+    expect(screen.getByText(/encrypted sessions/i)).toBeInTheDocument();
   });
 
   it("renders a loading state during auth bootstrap", () => {
@@ -62,17 +69,17 @@ describe("LoginPage", () => {
 
     renderLoginPage();
 
-    expect(screen.getByText(/checking your session/i)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/awaiting provider response/i);
     expect(
-      screen.queryByRole("link", { name: /continue with github/i })
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: /continue with github/i })
+    ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
   });
 
   it("renders an oauth failure message from the query string", () => {
     renderLoginPage("/login?error=oauth_failed");
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /login did not complete successfully/i
+      /authentication could not be completed/i
     );
   });
 
@@ -110,7 +117,7 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /we could not verify your existing session/i
+      /existing session unavailable/i
     );
   });
 });

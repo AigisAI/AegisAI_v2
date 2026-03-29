@@ -43,9 +43,11 @@ Production CD targets a single Oracle Cloud VPS.
 - Registry: `ghcr.io`
 - Trigger: `main` push or manual `workflow_dispatch`
 - Runtime: Docker Compose on the VPS
-- Deploy path files: `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, `deploy/oracle/deploy.sh`, a server-managed `.env`, and the one-time helper `deploy/oracle/bootstrap-infra.sh`
+- Deploy path files: `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, `deploy/oracle/deploy.sh`, `deploy/oracle/bootstrap-infra.sh`, `deploy/oracle/install-alloy.sh`, `deploy/oracle/alloy/config.alloy`, and a server-managed `.env`
 - Automated rollout scope: app stack only (`api`, `web`)
 - Manual bootstrap scope: infra stack (`postgres`, `redis`)
+- Observability collection: Grafana Alloy on the Oracle VPS
+- Observability surface: Grafana Cloud dashboards, Explore, and alerting
 - Detailed runbook: [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md)
 
 Required GitHub secrets for CD:
@@ -53,10 +55,21 @@ Required GitHub secrets for CD:
 - `ORACLE_VPS_HOST`
 - `ORACLE_VPS_USER`
 - `ORACLE_VPS_SSH_PRIVATE_KEY`
+- `ORACLE_VPS_KNOWN_HOSTS`
 - `ORACLE_DEPLOY_PATH`
 - `GHCR_USERNAME`
 - `GHCR_READ_TOKEN`
 
 The deploy job targets the `production` GitHub environment, so set these as available secrets before running CD. If any are blank or missing, the workflow now fails early with a clear validation error instead of reaching the SSH steps.
+
+Optional production secret:
+
+- `TEAMS_WEBHOOK_URL`
+
+When configured, CD posts a high-signal success/failure notification to Microsoft Teams without blocking the deploy if the webhook itself fails.
+
+Grafana Cloud replaces the previous idea of a VPS-hosted Grafana or Loki stack. Operators
+install the Docker integration in Grafana Cloud, install Grafana Alloy on the Oracle VPS, and
+use Grafana Cloud for logs, metrics, dashboards, and alert routing.
 
 For first-time Oracle Cloud setup, follow the runbook in [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md) rather than reproducing the steps manually from memory.
