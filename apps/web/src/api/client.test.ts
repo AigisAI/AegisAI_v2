@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   attachCsrfHeader,
+  resolveApiBaseUrl,
   shouldRedirectToLogin,
   unwrapApiResponse,
 } from "./client";
@@ -58,6 +59,25 @@ describe("api client helpers", () => {
     vi.stubEnv("VITE_API_URL", "/api");
 
     expect(getProviderLoginUrl("github")).toBe("/api/auth/github");
+  });
+
+  it("uses VITE_API_URL when it is set", () => {
+    vi.stubEnv("VITE_API_URL", "https://api.example.com");
+
+    expect(resolveApiBaseUrl()).toBe("https://api.example.com");
+  });
+
+  it("uses VITE_API_BASE_URL when VITE_API_URL is not set", () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://base.example.com");
+
+    expect(resolveApiBaseUrl()).toBe("https://base.example.com");
+  });
+
+  it("prefers VITE_API_URL when both env vars are set", () => {
+    vi.stubEnv("VITE_API_URL", "https://api.example.com");
+    vi.stubEnv("VITE_API_BASE_URL", "https://base.example.com");
+
+    expect(resolveApiBaseUrl()).toBe("https://api.example.com");
   });
 
   it("unwraps successful API envelopes", () => {
