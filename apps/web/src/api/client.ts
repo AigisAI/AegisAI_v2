@@ -22,7 +22,17 @@ interface ApiClientOptions {
 }
 
 export function resolveApiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
+  const viteApiUrl = import.meta.env.VITE_API_URL?.trim();
+  if (viteApiUrl && viteApiUrl.length > 0) {
+    return viteApiUrl;
+  }
+
+  const viteApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (viteApiBaseUrl && viteApiBaseUrl.length > 0) {
+    return viteApiBaseUrl;
+  }
+
+  return "http://localhost:3000/api";
 }
 
 export function getCookie(name: string, cookieSource = document.cookie): string | null {
