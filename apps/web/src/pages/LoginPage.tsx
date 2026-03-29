@@ -1,4 +1,4 @@
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 
 import { getProviderLoginUrl } from "../api/auth";
 import { useAuth } from "../hooks/useAuth";
@@ -7,15 +7,15 @@ const providerActions = [
   {
     provider: "github",
     label: "Continue with GitHub",
-    eyebrow: "Repository provider",
-    description: "Connect GitHub repositories and move directly into branch-aware Java scanning.",
+    description:
+      "Authorize repository access through GitHub and move directly into secure orchestration.",
     glyph: "GH",
   },
   {
     provider: "gitlab",
     label: "Continue with GitLab",
-    eyebrow: "Self-managed friendly",
-    description: "Use the same session flow for GitLab-hosted repositories and queued scans.",
+    description:
+      "Use the same controlled access flow for GitLab-hosted repositories and scan entry.",
     glyph: "GL",
   },
 ] as const;
@@ -26,10 +26,10 @@ function getAuthErrorMessage(errorCode: string | null): string | null {
   }
 
   if (errorCode === "oauth_failed") {
-    return "Login did not complete successfully. Please choose a provider and try again.";
+    return "Authentication could not be completed. Please choose a provider and try again.";
   }
 
-  return "We could not complete sign-in. Please try again.";
+  return "We could not complete secure sign-in. Please try again.";
 }
 
 export function LoginPage() {
@@ -43,106 +43,93 @@ export function LoginPage() {
   const errorMessage = getAuthErrorMessage(searchParams.get("error"));
   const bootstrapErrorMessage =
     bootstrapState === "error"
-      ? "We could not verify your existing session. You can still choose a provider and try again."
+      ? "We could not verify your existing session. You can still continue with a provider."
       : null;
 
   return (
-    <main className="login-page">
-      <header className="login-header" aria-label="AegisAI sign-in header">
-        <div>
-          <p className="eyebrow">AegisAI</p>
-          <p className="login-header-title">Security workspace for repository trust decisions</p>
+    <main className="login-page-v2">
+      <header className="login-topbar-v2">
+        <div className="login-topbar-inner-v2">
+          <div className="login-brand-group-v2">
+            <span className="login-wordmark-v2">AegisAI</span>
+
+            <nav className="login-topnav-v2" aria-label="Public login navigation">
+              <a href="/#security">Security</a>
+              <a href="/#resources">Support</a>
+            </nav>
+          </div>
+
+          <div className="login-topbar-actions-v2">
+            <a className="landing-inline-link" href="/#pricing">
+              Enterprise
+            </a>
+          </div>
         </div>
-        <p className="login-header-meta">Session-first access for Java repository scanning</p>
       </header>
 
-      <section className="login-hero">
-        <div className="login-copy">
-          <p className="eyebrow">Editorial security login</p>
-          <h1>Secure Java scanning that stays in your provider flow.</h1>
-          <p className="login-lead">
-            Authenticate with GitHub or GitLab, keep session-based control, and move straight
-            into repository connection and queued branch scans once sign-in completes.
+      <div className="login-shell-v2">
+        <section className="login-intro-v2">
+          <h1>Authenticate Your Security</h1>
+          <p>
+            AegisAI uses provider-scoped, session-controlled access to preserve trust from sign-in
+            through repository-scoped Java analysis.
           </p>
-          <p className="login-support-copy">
-            AegisAI only uses provider-authorized repository, branch, and scan context. Your
-            access stays explicit from the first screen.
-          </p>
+        </section>
 
-          <div className="login-trust-strip" aria-label="Session and repository access notes">
-            <span>Session-based auth</span>
-            <span>Provider OAuth only</span>
-            <span>Java-first MVP</span>
-          </div>
+        <section className="login-card-v2" aria-label="Secure provider access">
+          <div className="login-card-accent" aria-hidden="true" />
 
-          <dl className="login-facts" aria-label="Security-first access highlights">
-            <div>
-              <dt>01</dt>
-              <dd>Authenticate once, then continue into repository selection without a detached auth silo.</dd>
-            </div>
-            <div>
-              <dt>02</dt>
-              <dd>OAuth tokens are scoped to repository discovery, branch context, and scan execution.</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="login-card">
-          <div className="login-card-header">
-            <p className="eyebrow">Access portal</p>
-            <h2>Choose a provider and enter the workspace.</h2>
-            <p className="login-card-copy">
-              Use the same session flow for repository discovery, branch validation, and scan
-              kickoff. Nothing starts until you authorize the provider you trust.
-            </p>
-          </div>
-
-          {errorMessage ? (
-            <div className="login-alert" role="alert">
-              <strong>Authentication did not complete.</strong>
-              <p>{errorMessage}</p>
+          {(errorMessage || bootstrapErrorMessage) && !isLoading ? (
+            <div className="login-alert-v2" role="alert">
+              <strong>
+                {errorMessage ? "Authentication unavailable" : "Existing session unavailable"}
+              </strong>
+              <p>{errorMessage ?? bootstrapErrorMessage}</p>
             </div>
           ) : null}
 
-          {!errorMessage && bootstrapErrorMessage ? (
-            <div className="login-alert" role="alert">
-              <strong>Existing session unavailable.</strong>
-              <p>{bootstrapErrorMessage}</p>
-            </div>
-          ) : null}
-
-          {isLoading ? (
-            <div className="login-loading" role="status">
-              <strong>Checking your session...</strong>
-              <p>If you already signed in, we will route you back to the protected workspace.</p>
-            </div>
-          ) : (
-            <div className="provider-actions">
-              {providerActions.map((action) => (
-                <a
-                  key={action.provider}
-                  className="provider-button"
-                  href={getProviderLoginUrl(action.provider)}
-                >
-                  <span className="provider-button-topline">
-                    <span className="provider-glyph" aria-hidden="true">
-                      {action.glyph}
-                    </span>
-                    <span className="provider-button-eyebrow">{action.eyebrow}</span>
+          <div className="login-provider-actions-v2">
+            {providerActions.map((action) => (
+              <a
+                key={action.provider}
+                className="login-provider-button-v2"
+                href={getProviderLoginUrl(action.provider)}
+              >
+                <div className="login-provider-copy-v2">
+                  <span className="login-provider-glyph-v2" aria-hidden="true">
+                    {action.glyph}
                   </span>
-                  <strong>{action.label}</strong>
-                  <span className="provider-button-copy">{action.description}</span>
-                </a>
-              ))}
-            </div>
-          )}
-
-          <div className="login-footer-note">
-            <p>Security architecture remains session-aware and provider-scoped from first login.</p>
-            <p>Continue with the provider that owns the repositories you want to scan.</p>
+                  <span>{action.label}</span>
+                </div>
+                <span className="login-provider-arrow-v2" aria-hidden="true">
+                  -&gt;
+                </span>
+                <p>{action.description}</p>
+              </a>
+            ))}
           </div>
+
+          <div className="login-status-block-v2">
+            {isLoading ? (
+              <div className="login-loading-row-v2" role="status">
+                <span className="login-loading-spinner-v2" aria-hidden="true" />
+                <span>Awaiting Provider Response</span>
+              </div>
+            ) : null}
+
+            <div className="login-trust-grid-v2">
+              <div className="login-trust-chip-v2 login-trust-chip-strong-v2">SOC2 Compliant</div>
+              <div className="login-trust-chip-v2">Encrypted Sessions</div>
+            </div>
+          </div>
+        </section>
+
+        <div className="login-backlink-wrap-v2">
+          <Link className="login-back-link-v2" to="/">
+            Back to overview
+          </Link>
         </div>
-      </section>
+      </div>
     </main>
   );
 }

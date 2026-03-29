@@ -1,6 +1,8 @@
 import type {
   ApiResponse,
   AvailableRepoListResponse,
+  ConnectRepoRequest,
+  ConnectRepoResponse,
   ConnectedRepoListResponse,
   ListAvailableReposQuery,
   ListRepoBranchesQuery,
@@ -39,4 +41,19 @@ export async function listRepoBranches(
   );
 
   return unwrapApiResponse(response.data);
+}
+
+export async function connectRepo(
+  input: ConnectRepoRequest
+): Promise<ConnectRepoResponse> {
+  const response = await apiClient.post<ApiResponse<ConnectRepoResponse>>(
+    "/repos",
+    input
+  );
+
+  return unwrapApiResponse(response.data);
+}
+
+export async function disconnectRepo(repoId: string): Promise<void> {
+  await apiClient.delete(`/repos/${repoId}`);
 }

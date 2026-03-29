@@ -30,7 +30,7 @@ describe('GlobalExceptionFilter', () => {
     });
   });
 
-  it('falls back to a 500 internal error shape and logs server errors', () => {
+  it('falls back to a 500 internal error shape and logs runtime_error server errors', () => {
     const filter = new GlobalExceptionFilter();
     const response = createResponse();
     const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
@@ -45,7 +45,12 @@ describe('GlobalExceptionFilter', () => {
       errorCode: 'INTERNAL_ERROR',
       timestamp: expect.any(String)
     });
-    expect(loggerSpy).toHaveBeenCalled();
+    expect(loggerSpy).toHaveBeenCalledTimes(1);
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"marker":"runtime_error"');
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"status":500');
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"errorCode":"INTERNAL_ERROR"');
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"method":"GET"');
+    expect(String(loggerSpy.mock.calls[0]?.[0])).toContain('"path":"/"');
   });
 });
 
@@ -59,7 +64,11 @@ function createResponse() {
 function createHost(response: ReturnType<typeof createResponse>) {
   return {
     switchToHttp: () => ({
-      getResponse: () => response
+      getResponse: () => response,
+      getRequest: () => ({
+        method: 'GET',
+        originalUrl: '/'
+      })
     })
   };
 }

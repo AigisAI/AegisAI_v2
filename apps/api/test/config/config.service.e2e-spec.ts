@@ -21,7 +21,8 @@ describe('ConfigService', () => {
       get: (key: string) => {
         const values: Record<string, unknown> = {
           PORT: 3000,
-          REPORT_EXPIRY_HOURS: 24
+          REPORT_EXPIRY_HOURS: 24,
+          TEAMS_WEBHOOK_URL: 'https://teams.example/webhook'
         };
 
         return values[key];
@@ -31,6 +32,7 @@ describe('ConfigService', () => {
     expect(service.get('PORT')).toBe(3000);
     expect(typeof service.get('PORT')).toBe('number');
     expect(service.getOptional('REPORT_EXPIRY_HOURS')).toBe(24);
+    expect(service.getOptional('TEAMS_WEBHOOK_URL')).toBe('https://teams.example/webhook');
   });
 
   it('throws when a required value is missing', () => {
