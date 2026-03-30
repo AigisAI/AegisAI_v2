@@ -32,7 +32,7 @@ export function resolveApiBaseUrl(): string {
     return viteApiBaseUrl;
   }
 
-  return "http://localhost:3000/api";
+  return "/api";
 }
 
 export function getCookie(name: string, cookieSource = document.cookie): string | null {

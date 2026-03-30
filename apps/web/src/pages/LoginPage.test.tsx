@@ -49,10 +49,10 @@ describe("LoginPage", () => {
     ).toHaveAttribute("href", "/");
     expect(
       screen.getByRole("link", { name: /continue with github/i })
-    ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
+    ).toHaveAttribute("href", "/api/auth/github");
     expect(
       screen.getByRole("link", { name: /continue with gitlab/i })
-    ).toHaveAttribute("href", "http://localhost:3000/api/auth/gitlab");
+    ).toHaveAttribute("href", "/api/auth/gitlab");
     expect(screen.getByText(/soc2 compliant/i)).toBeInTheDocument();
     expect(screen.getByText(/encrypted sessions/i)).toBeInTheDocument();
   });
@@ -72,7 +72,7 @@ describe("LoginPage", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/awaiting provider response/i);
     expect(
       screen.getByRole("link", { name: /continue with github/i })
-    ).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
+    ).toHaveAttribute("href", "/api/auth/github");
   });
 
   it("renders an oauth failure message from the query string", () => {
