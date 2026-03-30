@@ -11,6 +11,17 @@ export class GitlabAuthGuard extends AuthGuard('gitlab') {
     super();
   }
 
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const activated = await super.canActivate(context);
+    const request = context.switchToHttp().getRequest<RequestWithSessionUser>();
+
+    if (request.user) {
+      await super.logIn(request);
+    }
+
+    return Boolean(activated);
+  }
+
   getAuthenticateOptions(context: ExecutionContext): Record<string, string> {
     const request = context.switchToHttp().getRequest();
 
@@ -19,3 +30,8 @@ export class GitlabAuthGuard extends AuthGuard('gitlab') {
     };
   }
 }
+
+type RequestWithSessionUser = {
+  user?: unknown;
+  logIn: (user: unknown, callback: (error?: Error | null) => void) => void;
+};
