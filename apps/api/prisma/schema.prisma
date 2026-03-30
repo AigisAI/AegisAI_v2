@@ -43,6 +43,7 @@ enum ReportStatus {
   GENERATING
   READY
   FAILED
+  EXPIRED
 }
 
 model User {

@@ -87,20 +87,25 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   assert.match(infraCompose, /redis:7-alpine/);
   assert.match(infraCompose, /postgres-data:/);
   assert.match(infraCompose, /redis-data:/);
+  assert.match(infraCompose, /^name:\s*aegisai-infra/m);
   assert.match(infraCompose, /name:\s*aegisai-platform/m);
 
   assert.match(appCompose, /ghcr\.io\/\$\{GHCR_OWNER\}\/aegisai-api:\$\{IMAGE_TAG\}/);
   assert.match(appCompose, /ghcr\.io\/\$\{GHCR_OWNER\}\/aegisai-web:\$\{IMAGE_TAG\}/);
+  assert.match(appCompose, /^name:\s*aegisai-app/m);
   assert.match(appCompose, /external:\s*true/);
   assert.match(appCompose, /api:\n[\s\S]*env_file:/m);
+  assert.match(appCompose, /api:\n[\s\S]*dns_opt:\n[\s\S]*- ndots:0/m);
   assert.match(appCompose, /api:\n[\s\S]*healthcheck:\n[\s\S]*127\.0\.0\.1:3000\/api\/health/m);
   assert.match(appCompose, /web:\n[\s\S]*ports:\n[\s\S]*- "80:80"/m);
+  assert.match(appCompose, /web:\n[\s\S]*dns_opt:\n[\s\S]*- ndots:0/m);
   assert.match(appCompose, /web:\n[\s\S]*depends_on:\n[\s\S]*api:\n[\s\S]*condition:\s*service_healthy/m);
   assert.match(appCompose, /web:\n[\s\S]*healthcheck:\n[\s\S]*127\.0\.0\.1\/api\/health/m);
 
   assert.match(deployScript, /docker login ghcr\.io/);
   assert.match(deployScript, /docker compose -f docker-compose\.app\.yml pull/);
-  assert.match(deployScript, /docker compose -f docker-compose\.app\.yml up -d --remove-orphans/);
+  assert.match(deployScript, /docker compose -f docker-compose\.app\.yml up -d/);
+  assert.doesNotMatch(deployScript, /--remove-orphans/);
 
   assert.match(envExample, /DATABASE_URL=postgresql:\/\/postgres:/);
   assert.match(envExample, /REDIS_URL=redis:\/\/redis:6379/);
@@ -121,6 +126,8 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   assert.match(bootstrapDoc, /Docker integration/i);
   assert.match(bootstrapDoc, /Explore/i);
   assert.match(bootstrapDoc, /TEAMS_WEBHOOK_URL/);
+  assert.match(bootstrapDoc, /aegisai-app/i);
+  assert.match(bootstrapDoc, /aegisai-infra/i);
   assert.doesNotMatch(bootstrapDoc, /Grafana is reachable on `http:\/\/<server-ip>:3001`/i);
   assert.doesNotMatch(bootstrapDoc, /docker-compose\.observability\.yml/);
   assert.doesNotMatch(bootstrapDoc, /bootstrap-observability\.sh/);
