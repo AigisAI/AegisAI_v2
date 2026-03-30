@@ -61,6 +61,11 @@ describe("api client helpers", () => {
     expect(getProviderLoginUrl("github")).toBe("/api/auth/github");
   });
 
+  it("defaults to same-origin /api when no API env vars are set", () => {
+    expect(resolveApiBaseUrl()).toBe("/api");
+    expect(getProviderLoginUrl("github")).toBe("/api/auth/github");
+  });
+
   it("uses VITE_API_URL when it is set", () => {
     vi.stubEnv("VITE_API_URL", "https://api.example.com");
 
