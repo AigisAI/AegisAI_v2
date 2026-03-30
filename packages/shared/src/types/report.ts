@@ -1,4 +1,4 @@
-export type ReportStatus = 'GENERATING' | 'READY' | 'FAILED';
+export type ReportStatus = 'GENERATING' | 'READY' | 'FAILED' | 'EXPIRED';
 
 export interface ReportRequestResponse {
   reportId: string;
