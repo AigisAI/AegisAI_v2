@@ -104,6 +104,7 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
 
   assert.match(deployScript, /docker login ghcr\.io/);
   assert.match(deployScript, /docker compose -f docker-compose\.app\.yml pull/);
+  assert.match(deployScript, /prisma:migrate:deploy/);
   assert.match(deployScript, /docker compose -f docker-compose\.app\.yml up -d/);
   assert.doesNotMatch(deployScript, /--remove-orphans/);
 

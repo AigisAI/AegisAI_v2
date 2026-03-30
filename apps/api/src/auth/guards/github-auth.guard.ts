@@ -11,6 +11,17 @@ export class GithubAuthGuard extends AuthGuard('github') {
     super();
   }
 
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const activated = await super.canActivate(context);
+    const request = context.switchToHttp().getRequest<RequestWithSessionUser>();
+
+    if (request.user) {
+      await super.logIn(request);
+    }
+
+    return Boolean(activated);
+  }
+
   getAuthenticateOptions(context: ExecutionContext): Record<string, string> {
     const request = context.switchToHttp().getRequest();
 
@@ -19,3 +30,8 @@ export class GithubAuthGuard extends AuthGuard('github') {
     };
   }
 }
+
+type RequestWithSessionUser = {
+  user?: unknown;
+  logIn: (user: unknown, callback: (error?: Error | null) => void) => void;
+};
