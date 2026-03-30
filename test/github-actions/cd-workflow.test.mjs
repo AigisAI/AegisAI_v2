@@ -28,6 +28,7 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   const workflow = readNormalizedText(files.workflow);
   const apiDockerfile = readNormalizedText(files.apiDockerfile);
   const webDockerfile = readNormalizedText(files.webDockerfile);
+  const webNginx = readNormalizedText(files.webNginx);
   const infraCompose = readNormalizedText(files.infraCompose);
   const appCompose = readNormalizedText(files.appCompose);
   const deployScript = readNormalizedText(files.deployScript);
@@ -78,6 +79,9 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
 
   assert.match(webDockerfile, /FROM nginx:1\.27-alpine/);
   assert.match(webDockerfile, /COPY --from=builder \/app\/apps\/web\/dist/);
+  assert.match(webNginx, /resolver 127\.0\.0\.11 ipv6=off valid=10s;/);
+  assert.match(webNginx, /set \$api_upstream api:3000;/);
+  assert.match(webNginx, /proxy_pass http:\/\/\$api_upstream;/);
 
   assert.match(infraCompose, /postgres:16-alpine/);
   assert.match(infraCompose, /redis:7-alpine/);
