@@ -32,11 +32,11 @@ describe("LandingPage", () => {
 
     expect(githubCtas).toHaveLength(3);
     githubCtas.forEach((link) => {
-      expect(link).toHaveAttribute("href", "http://localhost:3000/api/auth/github");
+      expect(link).toHaveAttribute("href", "/api/auth/github");
     });
     expect(
       screen.getByRole("link", { name: /connect gitlab/i })
-    ).toHaveAttribute("href", "http://localhost:3000/api/auth/gitlab");
+    ).toHaveAttribute("href", "/api/auth/gitlab");
     expect(screen.getByRole("link", { name: /log in/i })).toHaveAttribute(
       "href",
       "/login"

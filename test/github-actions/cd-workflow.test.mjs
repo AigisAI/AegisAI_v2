@@ -28,6 +28,7 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   const workflow = readNormalizedText(files.workflow);
   const apiDockerfile = readNormalizedText(files.apiDockerfile);
   const webDockerfile = readNormalizedText(files.webDockerfile);
+  const webNginx = readNormalizedText(files.webNginx);
   const infraCompose = readNormalizedText(files.infraCompose);
   const appCompose = readNormalizedText(files.appCompose);
   const deployScript = readNormalizedText(files.deployScript);
@@ -78,6 +79,9 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
 
   assert.match(webDockerfile, /FROM nginx:1\.27-alpine/);
   assert.match(webDockerfile, /COPY --from=builder \/app\/apps\/web\/dist/);
+  assert.match(webNginx, /resolver 127\.0\.0\.11 ipv6=off valid=10s;/);
+  assert.match(webNginx, /set \$api_upstream api:3000;/);
+  assert.match(webNginx, /proxy_pass http:\/\/\$api_upstream;/);
 
   assert.match(infraCompose, /postgres:16-alpine/);
   assert.match(infraCompose, /redis:7-alpine/);
@@ -89,7 +93,10 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   assert.match(appCompose, /ghcr\.io\/\$\{GHCR_OWNER\}\/aegisai-web:\$\{IMAGE_TAG\}/);
   assert.match(appCompose, /external:\s*true/);
   assert.match(appCompose, /api:\n[\s\S]*env_file:/m);
+  assert.match(appCompose, /api:\n[\s\S]*healthcheck:\n[\s\S]*127\.0\.0\.1:3000\/api\/health/m);
   assert.match(appCompose, /web:\n[\s\S]*ports:\n[\s\S]*- "80:80"/m);
+  assert.match(appCompose, /web:\n[\s\S]*depends_on:\n[\s\S]*api:\n[\s\S]*condition:\s*service_healthy/m);
+  assert.match(appCompose, /web:\n[\s\S]*healthcheck:\n[\s\S]*127\.0\.0\.1\/api\/health/m);
 
   assert.match(deployScript, /docker login ghcr\.io/);
   assert.match(deployScript, /docker compose -f docker-compose\.app\.yml pull/);
