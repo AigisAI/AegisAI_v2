@@ -1,9 +1,13 @@
+name: aegisai-app
+
 services:
   api:
     image: ghcr.io/${GHCR_OWNER}/aegisai-api:${IMAGE_TAG}
     restart: unless-stopped
     env_file:
       - .env
+    dns_opt:
+      - ndots:0
     networks:
       - platform
     expose:
@@ -27,6 +31,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    dns_opt:
+      - ndots:0
     networks:
       - platform
     ports:
