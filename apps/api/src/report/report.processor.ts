@@ -56,9 +56,11 @@ export class ReportProcessor extends WorkerHost {
       throw new Error(`Report not found: ${job.data.reportId}`);
     }
 
+    let filePath: string | undefined;
+
     try {
       const pdf = await this.pdfGenerator.generateScanReport(report.scan);
-      const filePath = await this.storage.write({
+      filePath = await this.storage.write({
         reportId: report.id,
         scanId: report.scanId,
         pdf
@@ -82,15 +84,33 @@ export class ReportProcessor extends WorkerHost {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Report generation failed';
 
-      await this.prisma.report.update({
-        where: {
-          id: report.id
-        },
-        data: {
-          status: ReportStatus.FAILED,
-          errorMessage: message
+      if (filePath) {
+        try {
+          await this.storage.delete(filePath);
+        } catch (cleanupError) {
+          this.logger.error(
+            `Failed to clean up generated report file for ${report.id}.`,
+            cleanupError as Error
+          );
         }
-      });
+      }
+
+      try {
+        await this.prisma.report.update({
+          where: {
+            id: report.id
+          },
+          data: {
+            status: ReportStatus.FAILED,
+            errorMessage: message
+          }
+        });
+      } catch (updateError) {
+        this.logger.error(
+          `Failed to persist report failure state: ${report.id}`,
+          updateError as Error
+        );
+      }
 
       this.logger.error(`Report generation failed: ${report.id}`, error as Error);
       throw error;

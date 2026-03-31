@@ -3,6 +3,12 @@
 This runbook prepares a single Oracle Cloud VPS for the AegisAI production deploy while
 using Grafana Cloud for dashboards, logs, metrics, and runtime alerting.
 
+The deployment is intentionally split into two Compose projects:
+- `aegisai-infra` for `postgres` and `redis`
+- `aegisai-app` for `api` and `web`
+
+Both projects share the external Docker network `aegisai-platform`.
+
 ## 1. Provision The Oracle VPS
 
 Prepare one Ubuntu-based Oracle Cloud Compute instance with:
@@ -106,6 +112,11 @@ docker compose -f docker-compose.infra.yml up -d
 
 This creates the shared `postgres` and `redis` stack used by the app deployment.
 
+Do not tear down the app stack with `--remove-orphans` against the same project directory unless
+you intentionally want Compose to clean unrelated services. The repo-managed deploy script keeps
+the app refresh to `docker compose -f docker-compose.app.yml up -d` so the `aegisai-infra` stack
+stays intact.
+
 ## 8. Install And Start Grafana Alloy
 
 Run the helper from the deploy directory:
@@ -153,6 +164,8 @@ The current workflow deploys on:
 After bootstrap, trigger one deployment and confirm:
 - `docker compose -f docker-compose.app.yml ps`
 - `docker compose -f docker-compose.infra.yml ps`
+- `docker compose -f docker-compose.app.yml config | grep '^name:'`
+- `docker compose -f docker-compose.infra.yml config | grep '^name:'`
 - the web container is reachable on port `80`
 - Grafana Cloud Explore shows new Docker logs for `api` and `web`
 - the Docker integration dashboards begin to populate
