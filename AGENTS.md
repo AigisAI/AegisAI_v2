@@ -64,7 +64,15 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 - Shared API contracts belong in `packages/shared`.
 - Sessions, CSRF protection, throttling, health checks, and critical integration tests are required.
 
+## Frontend Design Tooling
+
+- When frontend design work is needed, use Stitch as the default design tool instead of designing screens manually inside the coding workflow.
+- When using Stitch for frontend design generation, default supported model selection to `GEMINI_3_1_PRO`.
+- Treat `GEMINI_3_FLASH` as opt-in only when the user explicitly asks for a faster draft-first pass.
+- This rule applies to Stitch MCP or SDK flows that expose a `modelId` or equivalent model selector.
+
 ## Completion Gate
 
 - Re-run the final validation path from [`quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md) before claiming completion.
+- Re-check [`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md) when Phase 6 hardening or release-readiness is part of the task.
 - Keep entrypoint docs synchronized whenever execution guidance changes.

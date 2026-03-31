@@ -55,7 +55,7 @@ validation of each story.
 - [x] T012 Implement provider client abstractions in `apps/api/src/client/git/git-provider-client.interface.ts`, `apps/api/src/client/git/github.client.ts`, `apps/api/src/client/git/gitlab.client.ts`, `apps/api/src/client/git/git-client.registry.ts`, and `apps/api/src/client/git/git-client.module.ts`
 - [x] T013 [P] Implement language and analysis abstractions in `apps/api/src/language/language-handler.interface.ts`, `apps/api/src/language/language-handler.registry.ts`, `apps/api/src/language/handlers/java.language-handler.ts`, `apps/api/src/client/analysis/analysis-api-client.interface.ts`, `apps/api/src/client/analysis/analysis-api.dto.ts`, `apps/api/src/client/analysis/mock-analysis-api.client.ts`, and `apps/api/src/client/analysis/analysis-api.module.ts`
 - [x] T014 Implement scan infrastructure in `apps/api/src/scan/scan.module.ts`, `apps/api/src/scan/scan.service.ts`, `apps/api/src/scan/scan.processor.ts`, `apps/api/src/scan/stuck-scan-recovery.task.ts`, and `apps/api/src/scan/services/code-collector.service.ts`
-- [ ] T015 [P] Implement report infrastructure in `apps/api/src/report/report.module.ts`, `apps/api/src/report/report.service.ts`, `apps/api/src/report/report.processor.ts`, and a PDF generator service file under `apps/api/src/report/`
+- [x] T015 [P] Implement report infrastructure in `apps/api/src/report/report.module.ts`, `apps/api/src/report/report.service.ts`, `apps/api/src/report/report.processor.ts`, `apps/api/src/report/report-expiry.task.ts`, and report services under `apps/api/src/report/services/`
 - [x] T016 Implement common backend behavior in `apps/api/src/common/filters/global-exception.filter.ts`, `apps/api/src/common/interceptors/response-transform.interceptor.ts`, `apps/api/src/common/decorators/skip-transform.decorator.ts`, `apps/api/src/common/guards/session-aware-throttler.guard.ts`, and `apps/api/src/health/health.controller.ts`
 - [x] T017 [P] Create frontend application shell and API foundation in `apps/web/src/App.tsx`, `apps/web/src/router.tsx`, `apps/web/src/api/client.ts`, `apps/web/src/hooks/useAuth.ts`, `apps/web/src/store/auth.store.ts`, and `apps/web/src/components/layout/AppShell.tsx`
 - [x] T018 Create baseline backend and frontend test harnesses in `apps/api/test/`, `apps/web/src/**/*.test.tsx`, and any shared test setup files selected by the implementation
@@ -126,16 +126,16 @@ a completed scan, poll for readiness, and download the PDF.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T038 [P] [US3] Add dashboard and report API coverage in `apps/api/test/dashboard/dashboard.e2e-spec.ts` and `apps/api/test/report/report.e2e-spec.ts`
-- [ ] T039 [P] [US3] Add dashboard and report UI tests in `apps/web/src/pages/DashboardPage.test.tsx` and `apps/web/src/components/report/DownloadReportButton.test.tsx`
+- [x] T038 [P] [US3] Add dashboard and report API coverage in `apps/api/test/dashboard/dashboard.e2e-spec.ts`, `apps/api/test/dashboard/dashboard.service.e2e-spec.ts`, `apps/api/test/report/report.e2e-spec.ts`, and `apps/api/test/report/report.service.e2e-spec.ts`
+- [x] T039 [P] [US3] Add dashboard and report UI tests in `apps/web/src/pages/DashboardPage.test.tsx`
 
 ### Implementation for User Story 3
 
-- [ ] T040 [P] [US3] Implement dashboard backend module in `apps/api/src/dashboard/dashboard.module.ts`, `apps/api/src/dashboard/dashboard.service.ts`, and `apps/api/src/dashboard/dashboard.controller.ts`
-- [ ] T041 [P] [US3] Implement dashboard frontend experience in `apps/web/src/pages/DashboardPage.tsx`, `apps/web/src/components/dashboard/StatCard.tsx`, `apps/web/src/components/dashboard/SeverityPieChart.tsx`, and `apps/web/src/components/dashboard/TrendLineChart.tsx`
-- [ ] T042 [US3] Implement report request, status, and download endpoints in `apps/api/src/report/report.controller.ts` and `apps/api/src/report/report.service.ts`
-- [ ] T043 [US3] Implement report frontend flow in `apps/web/src/api/reports.ts`, `apps/web/src/hooks/useReport.ts`, and `apps/web/src/components/report/DownloadReportButton.tsx`
-- [ ] T044 [US3] Add report templates and file-lifecycle behavior in report generator files under `apps/api/src/report/`
+- [x] T040 [P] [US3] Implement dashboard backend module in `apps/api/src/dashboard/dashboard.module.ts`, `apps/api/src/dashboard/dashboard.service.ts`, and `apps/api/src/dashboard/dashboard.controller.ts`
+- [x] T041 [P] [US3] Implement dashboard frontend experience in `apps/web/src/pages/DashboardPage.tsx` and supporting workspace styles in `apps/web/src/styles.css`
+- [x] T042 [US3] Implement report request, status, and download endpoints in `apps/api/src/report/report.controller.ts` and `apps/api/src/report/report.service.ts`
+- [x] T043 [US3] Implement report frontend flow in `apps/web/src/api/reports.ts` and `apps/web/src/pages/DashboardPage.tsx`
+- [x] T044 [US3] Add report templates and file-lifecycle behavior in `apps/api/src/report/services/pdf-generator.service.ts`, `apps/api/src/report/services/report-storage.service.ts`, and `apps/api/src/report/report-expiry.task.ts`
 
 **Checkpoint**: All three MVP user stories work independently.
 
@@ -145,10 +145,10 @@ a completed scan, poll for readiness, and download the PDF.
 
 **Purpose**: Harden the MVP and align docs and validation paths.
 
-- [ ] T045 [P] Update documentation entry points in `README.md`, `AGENTS.md`, and any package readmes created during implementation
-- [ ] T046 Run security and behavior review for sessions, CSRF, throttling, raw health responses, and report download expiry across touched backend files
-- [ ] T047 [P] Add or refine regression coverage for queue recovery, provider errors, and frontend error states in existing backend/frontend test paths
-- [ ] T048 Validate the quickstart flow in `specs/001-aegisai-mvp-foundation/quickstart.md` against the implemented workspace commands
+- [x] T045 [P] Update documentation entry points in `README.md`, `AGENTS.md`, and feature-package completion docs
+- [x] T046 Run security and behavior review for sessions, CSRF, throttling, raw health responses, and report download expiry across touched backend files and record it in `specs/001-aegisai-mvp-foundation/hardening-review.md`
+- [x] T047 [P] Add or refine regression coverage for queue recovery, provider errors, and frontend error states in `apps/api/test/scan/stuck-scan-recovery.task.e2e-spec.ts`, `apps/api/test/repo/repo.service.e2e-spec.ts`, `apps/web/src/api/client.test.ts`, `apps/web/src/pages/LoginPage.test.tsx`, and `apps/web/src/pages/DashboardPage.test.tsx`
+- [x] T048 Validate the quickstart flow in `specs/001-aegisai-mvp-foundation/quickstart.md` against the implemented workspace commands and repo entrypoint docs
 
 ---
 

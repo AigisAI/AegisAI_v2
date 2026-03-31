@@ -1,3 +1,4 @@
+import type { ConnectedRepoItem } from './repo';
 import type { ScanSummary, ScanSeveritySummary } from './scan';
 
 export interface TrendItem {
@@ -13,4 +14,11 @@ export interface DashboardData {
   openVulnerabilities: ScanSeveritySummary;
   recentScans: ScanSummary[];
   trend: TrendItem[];
+}
+
+export interface DashboardWorkspaceData extends DashboardData {
+  connectedRepos: ConnectedRepoItem[];
+  completedScans: ScanSummary[];
+  severitySummary: ScanSeveritySummary;
+  degraded: boolean;
 }

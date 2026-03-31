@@ -323,6 +323,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /reports/{reportId}:
     get:
       summary: Get report status
@@ -356,6 +360,8 @@ paths:
                 format: binary
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
         '410':
@@ -602,22 +608,59 @@ components:
               type: [string, 'null']
               enum: [ACCEPTED, REJECTED, null]
           required: [description]
-    DashboardSummary:
+    TrendItem:
       type: object
       properties:
-        severityCounts:
-          type: object
-          additionalProperties:
-            type: integer
+        date:
+          type: string
+        critical:
+          type: integer
+        high:
+          type: integer
+        medium:
+          type: integer
+      required: [date, critical, high, medium]
+    DashboardWorkspace:
+      type: object
+      properties:
+        totalRepos:
+          type: integer
+        totalScans:
+          type: integer
+        openVulnerabilities:
+          $ref: '#/components/schemas/ScanSummary'
+        connectedRepos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectedRepo'
+        completedScans:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanDetail'
+        severitySummary:
+          $ref: '#/components/schemas/ScanSummary'
+        degraded:
+          type: boolean
         trend:
           type: array
           items:
-            type: object
+            $ref: '#/components/schemas/TrendItem'
         recentScans:
           type: array
           items:
             $ref: '#/components/schemas/ScanDetail'
-      required: [severityCounts, trend, recentScans]
+      required:
+        [
+          totalRepos,
+          totalScans,
+          openVulnerabilities,
+          connectedRepos,
+          completedScans,
+          severitySummary,
+          degraded,
+          trend,
+          recentScans
+        ]
     ReportDetail:
       type: object
       properties:
@@ -627,10 +670,16 @@ components:
           type: string
         status:
           type: string
-          enum: [GENERATING, READY, FAILED]
+          enum: [GENERATING, READY, FAILED, EXPIRED]
         downloadUrl:
           type: [string, 'null']
-      required: [id, scanId, status]
+        errorMessage:
+          type: [string, 'null']
+        createdAt:
+          type: string
+        expiresAt:
+          type: [string, 'null']
+      required: [id, scanId, status, downloadUrl, errorMessage, createdAt, expiresAt]
     ApiEnvelopeAuthUser:
       type: object
       properties:
@@ -693,7 +742,7 @@ components:
         success:
           type: boolean
         data:
-          $ref: '#/components/schemas/DashboardSummary'
+          $ref: '#/components/schemas/DashboardWorkspace'
       required: [success, data]
     ApiEnvelopeReportDetail:
       type: object
@@ -702,7 +751,11 @@ components:
           type: boolean
         data:
           $ref: '#/components/schemas/ReportDetail'
-      required: [success, data]
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
     ProviderRepoPage:
       type: object
       properties:
@@ -855,7 +908,7 @@ components:
           type: string
         status:
           type: string
-          enum: [GENERATING]
+          enum: [GENERATING, READY]
         message:
           type: string
       required: [reportId, status, message]
@@ -906,4 +959,8 @@ components:
           type: boolean
         data:
           $ref: '#/components/schemas/ReportRequestAccepted'
-      required: [success, data]
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]

@@ -13,6 +13,7 @@ import { SessionAwareThrottlerGuard } from './common/guards/session-aware-thrott
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { LanguageModule } from './language/language.module';
 import { ObservabilityModule } from './observability/observability.module';
@@ -49,6 +50,7 @@ const runtimeFeatureModules = [ScanModule, HealthModule, ReportModule];
     PrismaModule,
     AuthModule,
     RepoModule,
+    DashboardModule,
     VulnerabilityModule,
     GitClientModule,
     LanguageModule,

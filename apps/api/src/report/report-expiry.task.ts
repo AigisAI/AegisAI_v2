@@ -45,23 +45,51 @@ export class ReportExpiryTask implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    const cleanupFailedIds: string[] = [];
+    const cleanupSucceededIds: string[] = [];
+
     for (const report of expiredReports) {
-      if (report.filePath) {
-        await this.storage.delete(report.filePath);
+      try {
+        if (report.filePath) {
+          await this.storage.delete(report.filePath);
+        }
+
+        cleanupSucceededIds.push(report.id);
+      } catch (error) {
+        cleanupFailedIds.push(report.id);
+        this.logger.error(
+          `Failed to delete expired report file for report ${report.id}.`,
+          error as Error
+        );
       }
     }
 
-    if (expiredReports.length > 0) {
+    if (cleanupSucceededIds.length > 0) {
       await this.prisma.report.updateMany({
         where: {
           id: {
-            in: expiredReports.map((report) => report.id)
+            in: cleanupSucceededIds
           }
         },
         data: {
           status: ReportStatus.EXPIRED,
           downloadUrl: null,
           errorMessage: 'Report expired.'
+        }
+      });
+    }
+
+    if (cleanupFailedIds.length > 0) {
+      await this.prisma.report.updateMany({
+        where: {
+          id: {
+            in: cleanupFailedIds
+          }
+        },
+        data: {
+          status: ReportStatus.EXPIRED,
+          downloadUrl: null,
+          errorMessage: 'Report expired. Local file cleanup failed.'
         }
       });
     }
