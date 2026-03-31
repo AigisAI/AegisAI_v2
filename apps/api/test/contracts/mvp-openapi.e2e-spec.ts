@@ -12,10 +12,12 @@ describe('MVP OpenAPI contract', () => {
     expect(contract).toContain('/auth/github/callback:');
     expect(contract).toContain('/auth/gitlab:');
     expect(contract).toContain('/auth/gitlab/callback:');
+    expect(contract).toContain('/dashboard:');
     expect(contract).toContain('/repos/{repoId}/scans:');
     expect(contract.match(/^\s{2}\/repos:$/gm)).toHaveLength(1);
     expect(contract).toContain('/repos:\n    get:');
     expect(contract).toContain("operationId: connectRepo");
+    expect(contract).toContain('operationId: getDashboard');
   });
 
   it('documents the current vulnerability review endpoints and feedback contract', () => {

@@ -608,22 +608,59 @@ components:
               type: [string, 'null']
               enum: [ACCEPTED, REJECTED, null]
           required: [description]
-    DashboardSummary:
+    TrendItem:
       type: object
       properties:
-        severityCounts:
-          type: object
-          additionalProperties:
-            type: integer
+        date:
+          type: string
+        critical:
+          type: integer
+        high:
+          type: integer
+        medium:
+          type: integer
+      required: [date, critical, high, medium]
+    DashboardWorkspace:
+      type: object
+      properties:
+        totalRepos:
+          type: integer
+        totalScans:
+          type: integer
+        openVulnerabilities:
+          $ref: '#/components/schemas/ScanSummary'
+        connectedRepos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectedRepo'
+        completedScans:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanDetail'
+        severitySummary:
+          $ref: '#/components/schemas/ScanSummary'
+        degraded:
+          type: boolean
         trend:
           type: array
           items:
-            type: object
+            $ref: '#/components/schemas/TrendItem'
         recentScans:
           type: array
           items:
             $ref: '#/components/schemas/ScanDetail'
-      required: [severityCounts, trend, recentScans]
+      required:
+        [
+          totalRepos,
+          totalScans,
+          openVulnerabilities,
+          connectedRepos,
+          completedScans,
+          severitySummary,
+          degraded,
+          trend,
+          recentScans
+        ]
     ReportDetail:
       type: object
       properties:
@@ -705,7 +742,7 @@ components:
         success:
           type: boolean
         data:
-          $ref: '#/components/schemas/DashboardSummary'
+          $ref: '#/components/schemas/DashboardWorkspace'
       required: [success, data]
     ApiEnvelopeReportDetail:
       type: object
