@@ -8,17 +8,18 @@ import {
   Res,
   UseGuards
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import type session from 'express-session';
 
 import { ConfigService } from '../config/config.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthService } from './auth.service';
+import { buildFrontendRedirectUrl, shouldUseSecureCookies } from './auth-runtime.util';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 import { GitlabAuthGuard } from './guards/gitlab-auth.guard';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 
-type RequestWithSession = {
+type RequestWithSession = Request & {
   session?: session.Session & Partial<session.SessionData>;
   logout?: (callback: (error?: Error | null) => void) => void;
 };
@@ -36,9 +37,9 @@ export class AuthController {
 
   @Get('github/callback')
   @UseGuards(GithubAuthGuard)
-  githubCallback(@Res() response: Response): void {
-    this.issueCsrfCookie(response);
-    response.redirect(new URL('/dashboard', this.config.get('FRONTEND_URL')).toString());
+  githubCallback(@Req() request: Request, @Res() response: Response): void {
+    this.issueCsrfCookie(request, response);
+    response.redirect(buildFrontendRedirectUrl(request, this.config.get('FRONTEND_URL'), '/dashboard'));
   }
 
   @Get('gitlab')
@@ -47,18 +48,19 @@ export class AuthController {
 
   @Get('gitlab/callback')
   @UseGuards(GitlabAuthGuard)
-  gitlabCallback(@Res() response: Response): void {
-    this.issueCsrfCookie(response);
-    response.redirect(new URL('/dashboard', this.config.get('FRONTEND_URL')).toString());
+  gitlabCallback(@Req() request: Request, @Res() response: Response): void {
+    this.issueCsrfCookie(request, response);
+    response.redirect(buildFrontendRedirectUrl(request, this.config.get('FRONTEND_URL'), '/dashboard'));
   }
 
   @Get('me')
   @UseGuards(SessionAuthGuard)
   getMe(
+    @Req() request: Request,
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) response: Response
   ): AuthMeResponse {
-    this.issueCsrfCookie(response);
+    this.issueCsrfCookie(request, response);
     return user;
   }
 
@@ -74,24 +76,24 @@ export class AuthController {
     response.clearCookie(this.config.get('SESSION_COOKIE_NAME'), {
       httpOnly: true,
       sameSite: 'lax',
-      secure: this.config.isProduction(),
+      secure: shouldUseSecureCookies(request, this.config.get('APP_URL')),
       domain: this.config.getOptional('COOKIE_DOMAIN') || undefined
     });
     response.clearCookie(this.config.get('CSRF_COOKIE_NAME'), {
       httpOnly: false,
       sameSite: 'lax',
-      secure: this.config.isProduction(),
+      secure: shouldUseSecureCookies(request, this.config.get('APP_URL')),
       domain: this.config.getOptional('COOKIE_DOMAIN') || undefined
     });
 
     response.status(200).json(null);
   }
 
-  private issueCsrfCookie(response: Response): void {
+  private issueCsrfCookie(request: Request, response: Response): void {
     response.cookie(this.config.get('CSRF_COOKIE_NAME'), this.authService.createCsrfToken(), {
       httpOnly: false,
       sameSite: 'lax',
-      secure: this.config.isProduction(),
+      secure: shouldUseSecureCookies(request, this.config.get('APP_URL')),
       domain: this.config.getOptional('COOKIE_DOMAIN') || undefined
     });
   }

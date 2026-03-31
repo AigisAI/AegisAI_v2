@@ -22,5 +22,6 @@ export IMAGE_TAG
 
 echo "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 docker compose -f docker-compose.app.yml pull
-docker compose -f docker-compose.app.yml up -d --remove-orphans
+docker compose -f docker-compose.app.yml run --rm --no-deps api sh -lc "corepack pnpm --filter @aegisai/api prisma:migrate:deploy"
+docker compose -f docker-compose.app.yml up -d
 docker image prune -f

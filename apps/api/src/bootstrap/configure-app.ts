@@ -19,7 +19,7 @@ export async function configureApp(app: INestApplication): Promise<void> {
       maxAge: 86400000,
       httpOnly: true,
       sameSite: 'lax',
-      secure: config.isProduction(),
+      secure: 'auto',
       domain: config.getOptional('COOKIE_DOMAIN') || undefined
     }
   };
