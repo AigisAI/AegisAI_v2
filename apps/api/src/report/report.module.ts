@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '../config/config.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { REPORT_QUEUE } from './report.constants';
+import { ReportController } from './report.controller';
 import { ReportExpiryTask } from './report-expiry.task';
 import { ReportProcessor } from './report.processor';
 import { ReportService } from './report.service';
@@ -34,6 +35,7 @@ const queueProviders =
 
 @Module({
   imports: [...queueImports, PrismaModule, ConfigModule],
+  controllers: [ReportController],
   providers: [
     ReportService,
     PdfGeneratorService,
