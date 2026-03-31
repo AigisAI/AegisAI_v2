@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { access, mkdir, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 
@@ -44,6 +44,10 @@ export class ReportStorageService {
     await rm(this.resolve(filePath), {
       force: true
     });
+  }
+
+  async read(filePath: string): Promise<Buffer> {
+    return readFile(this.resolve(filePath));
   }
 
   private getStorageDir(): string {

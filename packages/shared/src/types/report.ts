@@ -1,5 +1,13 @@
 export type ReportStatus = 'GENERATING' | 'READY' | 'FAILED' | 'EXPIRED';
 
+export interface RequestReportParams {
+  scanId: string;
+}
+
+export interface ReportParams {
+  reportId: string;
+}
+
 export interface ReportRequestResponse {
   reportId: string;
   status: 'GENERATING' | 'READY';

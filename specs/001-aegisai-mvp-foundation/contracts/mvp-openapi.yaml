@@ -323,6 +323,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /reports/{reportId}:
     get:
       summary: Get report status
@@ -356,6 +360,8 @@ paths:
                 format: binary
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
         '410':
@@ -627,10 +633,16 @@ components:
           type: string
         status:
           type: string
-          enum: [GENERATING, READY, FAILED]
+          enum: [GENERATING, READY, FAILED, EXPIRED]
         downloadUrl:
           type: [string, 'null']
-      required: [id, scanId, status]
+        errorMessage:
+          type: [string, 'null']
+        createdAt:
+          type: string
+        expiresAt:
+          type: [string, 'null']
+      required: [id, scanId, status, downloadUrl, errorMessage, createdAt, expiresAt]
     ApiEnvelopeAuthUser:
       type: object
       properties:
@@ -702,7 +714,11 @@ components:
           type: boolean
         data:
           $ref: '#/components/schemas/ReportDetail'
-      required: [success, data]
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
     ProviderRepoPage:
       type: object
       properties:
@@ -855,7 +871,7 @@ components:
           type: string
         status:
           type: string
-          enum: [GENERATING]
+          enum: [GENERATING, READY]
         message:
           type: string
       required: [reportId, status, message]
@@ -906,4 +922,8 @@ components:
           type: boolean
         data:
           $ref: '#/components/schemas/ReportRequestAccepted'
-      required: [success, data]
+        message:
+          type: [string, 'null']
+        timestamp:
+          type: string
+      required: [success, data, message, timestamp]
