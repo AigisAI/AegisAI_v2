@@ -23,6 +23,7 @@ document first, then move through the linked docs in order instead of jumping st
 - `contracts/analysis-api.md`: backend-to-analysis integration boundary
 - `plan.md`: implementation approach and project structure
 - `tasks.md`: execution-ordered task list
+- `hardening-review.md`: Phase 6 security and behavior review anchor
 - `checklists/requirements.md`: spec quality audit trail
 
 ## Required Read Order
@@ -35,7 +36,8 @@ document first, then move through the linked docs in order instead of jumping st
 6. `specs/001-aegisai-mvp-foundation/contracts/analysis-api.md`
 7. `specs/001-aegisai-mvp-foundation/plan.md`
 8. `specs/001-aegisai-mvp-foundation/tasks.md`
-9. `specs/001-aegisai-mvp-foundation/checklists/requirements.md`
+9. `specs/001-aegisai-mvp-foundation/hardening-review.md`
+10. `specs/001-aegisai-mvp-foundation/checklists/requirements.md`
 
 ## Execution Flow
 
@@ -69,9 +71,10 @@ name change.
 Before claiming the MVP baseline is ready:
 
 1. Re-run the final validation and documentation tasks from `tasks.md`.
-2. Re-check [`checklists/requirements.md`](./checklists/requirements.md) to confirm the implementation still matches the approved feature baseline.
-3. Verify that the startup commands below still match the workspace reality.
-4. Update `README.md` and `AGENTS.md` if the canonical execution path changed while implementing.
+2. Re-check [`hardening-review.md`](./hardening-review.md) and confirm the implementation still matches the shipped session, CSRF, throttling, health, expiry, and regression expectations.
+3. Re-check [`checklists/requirements.md`](./checklists/requirements.md) to confirm the implementation still matches the approved feature baseline.
+4. Verify that the startup and final validation commands below still match the workspace reality.
+5. Update `README.md` and `AGENTS.md` if the canonical execution path changed while implementing.
 
 ## First Commands Once The Workspace Exists
 
@@ -80,6 +83,15 @@ corepack pnpm install
 corepack pnpm dev
 corepack pnpm lint
 corepack pnpm test
+```
+
+## Final Validation Commands
+
+```powershell
+corepack pnpm lint
+corepack pnpm test
+corepack pnpm typecheck
+corepack pnpm build
 ```
 
 ## Implementation Notes
