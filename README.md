@@ -12,6 +12,20 @@ This repository is organized around an agent-first MVP baseline for AegisAI.
 If you are starting development work, follow the agent path `AGENTS.md -> quickstart.md ->
 feature package` instead of jumping directly to `tasks.md`.
 
+## MVP Completion
+
+When validating the shipped MVP baseline, use the completion flow in
+[`specs/001-aegisai-mvp-foundation/quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md)
+and the hardening checkpoints in
+[`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md).
+
+The final validation path is:
+
+- `corepack pnpm lint`
+- `corepack pnpm test`
+- `corepack pnpm typecheck`
+- `corepack pnpm build`
+
 ## GitHub Conventions
 
 The repository follows the GitHub workflow convention documented in
