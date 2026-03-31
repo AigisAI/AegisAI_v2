@@ -1,11 +1,14 @@
 import type { ReportDetail, ReportRequestResponse } from '@aegisai/shared';
 import {
   BadRequestException,
+  ConflictException,
+  GoneException,
   Injectable,
   NotFoundException,
   ServiceUnavailableException
 } from '@nestjs/common';
 import { ReportStatus, ScanStatus } from '@prisma/client';
+import path from 'node:path';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -16,6 +19,20 @@ import { ReportStorageService } from './services/report-storage.service';
 interface RequestReportInput {
   userId: string;
   scanId: string;
+}
+
+interface CreateGeneratingReportResult {
+  report: {
+    id: string;
+    status: ReportStatus;
+  };
+  reused: boolean;
+}
+
+interface ReportDownloadPayload {
+  fileName: string;
+  mimeType: 'application/pdf';
+  buffer: Buffer;
 }
 
 @Injectable()
@@ -50,16 +67,7 @@ export class ReportService {
       });
     }
 
-    const existing = await this.prisma.report.findFirst({
-      where: {
-        scanId: input.scanId,
-        userId: input.userId,
-        status: {
-          in: [ReportStatus.GENERATING, ReportStatus.READY]
-        }
-      },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
-    });
+    const existing = await this.findReusableReport(input.userId, input.scanId);
 
     if (existing?.status === ReportStatus.GENERATING) {
       return {
@@ -70,10 +78,7 @@ export class ReportService {
     }
 
     if (existing?.status === ReportStatus.READY) {
-      const isExpired = existing.expiresAt !== null && existing.expiresAt.getTime() <= Date.now();
-      const hasFile = existing.filePath ? await this.storage.exists(existing.filePath) : false;
-
-      if (!isExpired && hasFile) {
+      if (await this.canReuseReadyReport(existing.id, existing.expiresAt, existing.filePath)) {
         return {
           reportId: existing.id,
           status: 'READY',
@@ -93,13 +98,23 @@ export class ReportService {
       });
     }
 
-    const report = await this.prisma.report.create({
-      data: {
-        scanId: input.scanId,
-        userId: input.userId,
-        status: ReportStatus.GENERATING
-      }
-    });
+    const { report, reused } = await this.createGeneratingReport(input.userId, input.scanId);
+
+    if (reused && report.status === ReportStatus.GENERATING) {
+      return {
+        reportId: report.id,
+        status: 'GENERATING',
+        message: 'A PDF report is already being generated.'
+      };
+    }
+
+    if (reused && report.status === ReportStatus.READY) {
+      return {
+        reportId: report.id,
+        status: 'READY',
+        message: 'An existing PDF report is still available.'
+      };
+    }
 
     try {
       await this.reportQueue.add(
@@ -136,17 +151,7 @@ export class ReportService {
   }
 
   async getReportDetail(userId: string, reportId: string): Promise<ReportDetail> {
-    const report = await this.prisma.report.findFirst({
-      where: {
-        id: reportId,
-        userId,
-        scan: {
-          connectedRepo: {
-            userId
-          }
-        }
-      }
-    });
+    const report = await this.findOwnedReport(userId, reportId);
 
     if (!report) {
       throw new NotFoundException({
@@ -166,11 +171,211 @@ export class ReportService {
     };
   }
 
+  async getReportDownload(userId: string, reportId: string): Promise<ReportDownloadPayload> {
+    const report = await this.findOwnedReport(userId, reportId);
+
+    if (!report) {
+      throw new NotFoundException({
+        message: 'Report not found.',
+        errorCode: 'REPORT_NOT_FOUND'
+      });
+    }
+
+    if (report.status === ReportStatus.GENERATING) {
+      throw new ConflictException({
+        message: 'Report generation is still in progress.',
+        errorCode: 'REPORT_NOT_READY'
+      });
+    }
+
+    if (report.status === ReportStatus.FAILED) {
+      throw new ConflictException({
+        message: report.errorMessage ?? 'Report generation failed.',
+        errorCode: 'REPORT_FAILED'
+      });
+    }
+
+    if (report.status === ReportStatus.EXPIRED) {
+      throw new GoneException({
+        message: 'Report expired.',
+        errorCode: 'REPORT_EXPIRED'
+      });
+    }
+
+    if (await this.shouldExpireReport(report.expiresAt, report.filePath)) {
+      await this.expireReport(report.id);
+
+      throw new GoneException({
+        message: 'Report expired.',
+        errorCode: 'REPORT_EXPIRED'
+      });
+    }
+
+    try {
+      return {
+        fileName: path.basename(report.filePath!),
+        mimeType: 'application/pdf',
+        buffer: await this.storage.read(report.filePath!)
+      };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        await this.expireReport(report.id);
+
+        throw new GoneException({
+          message: 'Report expired.',
+          errorCode: 'REPORT_EXPIRED'
+        });
+      }
+
+      throw error;
+    }
+  }
+
   private toErrorMessage(error: unknown): string {
     if (error instanceof Error && error.message) {
       return error.message;
     }
 
     return 'Unknown report queue failure';
+  }
+
+  private async findReusableReport(userId: string, scanId: string) {
+    return this.prisma.report.findFirst({
+      where: {
+        scanId,
+        userId,
+        status: {
+          in: [ReportStatus.GENERATING, ReportStatus.READY]
+        }
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
+    });
+  }
+
+  private async findOwnedReport(userId: string, reportId: string) {
+    return this.prisma.report.findFirst({
+      where: {
+        id: reportId,
+        userId,
+        scan: {
+          connectedRepo: {
+            userId
+          }
+        }
+      }
+    });
+  }
+
+  private async canReuseReadyReport(
+    reportId: string,
+    expiresAt: Date | null,
+    filePath: string | null
+  ): Promise<boolean> {
+    const isExpired = expiresAt !== null && expiresAt.getTime() <= Date.now();
+    const hasFile = filePath ? await this.storage.exists(filePath) : false;
+
+    if (isExpired || !hasFile) {
+      return false;
+    }
+
+    const refreshed = await this.prisma.report.findUnique({
+      where: {
+        id: reportId
+      }
+    });
+
+    if (!refreshed || refreshed.status !== ReportStatus.READY) {
+      return false;
+    }
+
+    const refreshedExpired =
+      refreshed.expiresAt !== null && refreshed.expiresAt.getTime() <= Date.now();
+    const refreshedHasFile = refreshed.filePath
+      ? await this.storage.exists(refreshed.filePath)
+      : false;
+
+    return !refreshedExpired && refreshedHasFile;
+  }
+
+  private async shouldExpireReport(expiresAt: Date | null, filePath: string | null) {
+    const isExpired = expiresAt !== null && expiresAt.getTime() <= Date.now();
+    const hasFile = filePath ? await this.storage.exists(filePath) : false;
+
+    return isExpired || !hasFile;
+  }
+
+  private async createGeneratingReport(
+    userId: string,
+    scanId: string
+  ): Promise<CreateGeneratingReportResult> {
+    try {
+      return {
+        report: await this.prisma.report.create({
+          data: {
+            scanId,
+            userId,
+            status: ReportStatus.GENERATING
+          }
+        }),
+        reused: false
+      };
+    } catch (error) {
+      if (!this.isReusableReportConflict(error)) {
+        throw error;
+      }
+
+      const existing = await this.findReusableReport(userId, scanId);
+
+      if (!existing) {
+        throw error;
+      }
+
+      if (existing.status === ReportStatus.READY) {
+        const isReusable = await this.canReuseReadyReport(
+          existing.id,
+          existing.expiresAt,
+          existing.filePath
+        );
+
+        if (!isReusable) {
+          await this.prisma.report.update({
+            where: { id: existing.id },
+            data: {
+              status: ReportStatus.EXPIRED,
+              downloadUrl: null,
+              errorMessage: 'Report expired.'
+            }
+          });
+          throw error;
+        }
+      }
+
+      return {
+        report: existing,
+        reused: true
+      };
+    }
+  }
+
+  private isReusableReportConflict(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2002'
+    );
+  }
+
+  private async expireReport(reportId: string): Promise<void> {
+    await this.prisma.report.update({
+      where: {
+        id: reportId
+      },
+      data: {
+        status: ReportStatus.EXPIRED,
+        downloadUrl: null,
+        errorMessage: 'Report expired.'
+      }
+    });
   }
 }

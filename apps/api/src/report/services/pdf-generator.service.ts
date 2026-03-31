@@ -10,7 +10,7 @@ interface ReportVulnerabilitySummary {
   fixSuggestion: string | null;
 }
 
-interface ReportScanSummary {
+export interface ReportScanSummary {
   id: string;
   branch: string;
   commitSha: string | null;
@@ -31,12 +31,22 @@ interface ReportScanSummary {
 export class PdfGeneratorService {
   async generateScanReport(scan: ReportScanSummary): Promise<Buffer> {
     const pdf = await PDFDocument.create();
-    const page = pdf.addPage([595, 842]);
+    const pageSize: [number, number] = [595, 842];
+    const topStart = 800;
+    const bottomMargin = 60;
+    let page = pdf.addPage(pageSize);
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-    let cursorY = 800;
+    let cursorY = topStart;
     const drawLine = (text: string, weight: 'normal' | 'bold' = 'normal', size = 11) => {
+      const nextCursorY = cursorY - (size + 8);
+
+      if (nextCursorY < bottomMargin) {
+        page = pdf.addPage(pageSize);
+        cursorY = topStart;
+      }
+
       page.drawText(text, {
         x: 40,
         y: cursorY,
@@ -60,7 +70,7 @@ export class PdfGeneratorService {
     if (scan.vulnerabilities.length === 0) {
       drawLine('No vulnerabilities recorded for this scan.');
     } else {
-      for (const vulnerability of scan.vulnerabilities.slice(0, 20)) {
+      for (const vulnerability of scan.vulnerabilities) {
         drawLine(
           `[${vulnerability.severity}] ${vulnerability.title} - ${vulnerability.filePath}:${vulnerability.lineStart}`,
           'bold',

@@ -11,6 +11,13 @@ describe('ConnectedRepo Prisma schema', () => {
     join(__dirname, '../../prisma/migrations/20260325234500_scan_constraints_followups/migration.sql'),
     'utf8'
   );
+  const reportActiveUniqueMigration = readFileSync(
+    join(
+      __dirname,
+      '../../prisma/migrations/20260331022000_report_active_status_unique/migration.sql'
+    ),
+    'utf8'
+  );
 
   it('requires defaultBranch to be set explicitly instead of relying on a Prisma default', () => {
     const defaultBranchLine = schema
@@ -48,5 +55,23 @@ describe('ConnectedRepo Prisma schema', () => {
     expect(followupMigration).toContain('"consensusScore" <= 1');
     expect(followupMigration).toContain('Scan_active_branch_unique_idx');
     expect(followupMigration).toContain(`WHERE "status" IN ('PENDING', 'RUNNING')`);
+  });
+
+  it('deduplicates active reports before enforcing the active report unique index', () => {
+    expect(reportActiveUniqueMigration).toContain('ROW_NUMBER() OVER');
+    expect(reportActiveUniqueMigration).toContain(`PARTITION BY "scanId", "userId"`);
+    expect(reportActiveUniqueMigration).toContain(`CASE WHEN "status" = 'READY' THEN 0 ELSE 1 END`);
+    expect(reportActiveUniqueMigration).toContain(
+      `Duplicate active report failed during active report deduplication.`
+    );
+    expect(reportActiveUniqueMigration).toContain(
+      `Report expired during active report deduplication.`
+    );
+
+    expect(reportActiveUniqueMigration.indexOf('UPDATE "Report"')).toBeGreaterThanOrEqual(0);
+    expect(reportActiveUniqueMigration.indexOf('CREATE UNIQUE INDEX')).toBeGreaterThanOrEqual(0);
+    expect(reportActiveUniqueMigration.indexOf('UPDATE "Report"')).toBeLessThan(
+      reportActiveUniqueMigration.indexOf('CREATE UNIQUE INDEX')
+    );
   });
 });
