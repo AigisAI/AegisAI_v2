@@ -31,8 +31,12 @@ export class ReportStorageService {
     try {
       await access(this.resolve(filePath), fsConstants.F_OK);
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return false;
+      }
+
+      throw error;
     }
   }
 

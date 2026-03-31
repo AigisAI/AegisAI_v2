@@ -70,6 +70,12 @@ describe('ReportService', () => {
   });
 
   it('reuses an in-flight generating report for the same scan and user', async () => {
+    const queue = {
+      add: jest.fn()
+    };
+    const storage = {
+      exists: jest.fn()
+    };
     const prisma = {
       scan: {
         findFirst: jest.fn().mockResolvedValue({
@@ -90,11 +96,7 @@ describe('ReportService', () => {
       }
     };
 
-    const service = new ReportService(
-      prisma as never,
-      { add: jest.fn() } as never,
-      { exists: jest.fn() } as never
-    );
+    const service = new ReportService(prisma as never, queue as never, storage as never);
 
     await expect(
       service.requestReport({
@@ -106,9 +108,17 @@ describe('ReportService', () => {
       status: 'GENERATING',
       message: 'A PDF report is already being generated.'
     });
+
+    expect(prisma.report.create).not.toHaveBeenCalled();
+    expect(prisma.report.update).not.toHaveBeenCalled();
+    expect(storage.exists).not.toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
   it('reuses a ready report when it is not expired and the file still exists', async () => {
+    const queue = {
+      add: jest.fn()
+    };
     const prisma = {
       scan: {
         findFirst: jest.fn().mockResolvedValue({
@@ -126,6 +136,12 @@ describe('ReportService', () => {
           expiresAt: new Date(Date.now() + 60_000),
           filePath: './tmp/reports/report-1.pdf'
         }),
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'report-1',
+          status: 'READY',
+          expiresAt: new Date(Date.now() + 60_000),
+          filePath: './tmp/reports/report-1.pdf'
+        }),
         create: jest.fn(),
         update: jest.fn()
       }
@@ -134,11 +150,7 @@ describe('ReportService', () => {
       exists: jest.fn().mockResolvedValue(true)
     };
 
-    const service = new ReportService(
-      prisma as never,
-      { add: jest.fn() } as never,
-      storage as never
-    );
+    const service = new ReportService(prisma as never, queue as never, storage as never);
 
     await expect(
       service.requestReport({
@@ -150,6 +162,66 @@ describe('ReportService', () => {
       status: 'READY',
       message: 'An existing PDF report is still available.'
     });
+
+    expect(storage.exists).toHaveBeenCalledTimes(2);
+    expect(storage.exists).toHaveBeenNthCalledWith(1, './tmp/reports/report-1.pdf');
+    expect(storage.exists).toHaveBeenNthCalledWith(2, './tmp/reports/report-1.pdf');
+    expect(prisma.report.create).not.toHaveBeenCalled();
+    expect(prisma.report.update).not.toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('returns the existing generating report when create hits a uniqueness conflict', async () => {
+    const duplicateError = Object.assign(new Error('duplicate report'), {
+      code: 'P2002'
+    });
+    const reportDelegate = {
+      findFirst: jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: 'report-existing',
+          status: 'GENERATING'
+        }),
+      create: jest.fn().mockRejectedValue(duplicateError),
+      update: jest.fn()
+    };
+    const queue = {
+      add: jest.fn()
+    };
+    const prisma = {
+      scan: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'scan-1',
+          status: 'DONE',
+          connectedRepo: {
+            userId: 'user-1'
+          }
+        })
+      },
+      report: reportDelegate
+    };
+
+    const service = new ReportService(
+      prisma as never,
+      queue as never,
+      { exists: jest.fn() } as never
+    );
+
+    await expect(
+      service.requestReport({
+        userId: 'user-1',
+        scanId: 'scan-1'
+      })
+    ).resolves.toEqual({
+      reportId: 'report-existing',
+      status: 'GENERATING',
+      message: 'A PDF report is already being generated.'
+    });
+
+    expect(reportDelegate.create).toHaveBeenCalledTimes(1);
+    expect(reportDelegate.update).not.toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
   it('rejects report generation when the scan is not done', async () => {
