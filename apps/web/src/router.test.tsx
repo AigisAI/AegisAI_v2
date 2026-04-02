@@ -7,13 +7,14 @@ describe("router", () => {
     expect(routes[0]?.path).toBe("/");
   });
 
-  it("keeps /login separate from the protected workspace routes", () => {
+  it("keeps the public routes separate from the protected workspace routes", () => {
     expect(routes[1]?.path).toBe("/login");
-    expect(routes[2]?.path).toBeUndefined();
+    expect(routes[2]?.path).toBe("/pricing");
+    expect(routes[3]?.path).toBeUndefined();
   });
 
   it("exposes the vulnerability review workspace inside the protected scan routes", () => {
-    const protectedChildren = routes[2]?.children ?? [];
+    const protectedChildren = routes[3]?.children ?? [];
     expect(protectedChildren.some((route) => route.path === "/scan/:scanId/review")).toBe(true);
   });
 });
