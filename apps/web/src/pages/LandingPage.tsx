@@ -60,7 +60,7 @@ export function LandingPage() {
             <nav className="landing-topnav" aria-label="Public">
               <a href="#product">Product</a>
               <a href="#security">Security</a>
-              <a href="#pricing">Pricing</a>
+              <Link to="/pricing">Pricing</Link>
               <a href="#resources">Resources</a>
             </nav>
           </div>
@@ -215,9 +215,14 @@ export function LandingPage() {
             Join security-first engineering teams that trust AegisAI to safeguard the Java systems
             they cannot afford to get wrong.
           </p>
-          <a className="landing-primary-cta-v2" href={getProviderLoginUrl("github")}>
-            Connect GitHub
-          </a>
+          <div className="landing-cta-row-v2">
+            <a className="landing-primary-cta-v2" href={getProviderLoginUrl("github")}>
+              Connect GitHub
+            </a>
+            <Link className="landing-secondary-cta-v2" to="/pricing">
+              View pricing
+            </Link>
+          </div>
           <span className="landing-pricing-note">Free tier available for Open Source</span>
         </section>
 

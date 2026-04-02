@@ -60,9 +60,9 @@ export function LoginPage() {
           </div>
 
           <div className="login-topbar-actions-v2">
-            <a className="landing-inline-link" href="/#pricing">
+            <Link className="landing-inline-link" to="/pricing">
               Enterprise
-            </a>
+            </Link>
           </div>
         </div>
       </header>
