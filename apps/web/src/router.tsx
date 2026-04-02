@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
+import { PricingPage } from "./pages/PricingPage";
 import { ReposPage } from "./pages/ReposPage";
 import { ScanPage } from "./pages/ScanPage";
 import { VulnerabilityReviewPage } from "./pages/VulnerabilityReviewPage";
@@ -17,6 +18,10 @@ export const routes: RouteObject[] = [
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/pricing",
+    element: <PricingPage />,
   },
   {
     element: (

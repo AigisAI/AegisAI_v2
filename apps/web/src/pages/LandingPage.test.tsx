@@ -26,7 +26,10 @@ describe("LandingPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /product/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /security/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /pricing/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^pricing$/i })).toHaveAttribute(
+      "href",
+      "/pricing"
+    );
     expect(screen.getByRole("link", { name: /resources/i })).toBeInTheDocument();
     const githubCtas = screen.getAllByRole("link", { name: /connect github/i });
 
@@ -40,6 +43,10 @@ describe("LandingPage", () => {
     expect(screen.getByRole("link", { name: /log in/i })).toHaveAttribute(
       "href",
       "/login"
+    );
+    expect(screen.getByRole("link", { name: /view pricing/i })).toHaveAttribute(
+      "href",
+      "/pricing"
     );
   });
 
