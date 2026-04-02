@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { fetchCurrentUser, logout } from "../api/auth";
@@ -68,6 +69,28 @@ describe("useAuth", () => {
     });
   });
 
+  it("clears local auth state when logout succeeds", async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      name: "Aegis User",
+      avatarUrl: null,
+      connectedProviders: ["github"],
+    });
+    vi.mocked(logout).mockResolvedValue(null);
+
+    renderHarness();
+
+    expect(await screen.findByText("Aegis User")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /logout/i }));
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().user).toBeNull();
+      expect(useAuthStore.getState().initialized).toBe(true);
+    });
+  });
+
   it("exposes an error bootstrap state when GET /api/auth/me fails", async () => {
     vi.mocked(fetchCurrentUser).mockRejectedValue(new Error("session bootstrap failed"));
 
@@ -77,6 +100,32 @@ describe("useAuth", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("bootstrap-state")).toHaveTextContent("error");
+      expect(useAuthStore.getState().user).toBeNull();
+      expect(useAuthStore.getState().initialized).toBe(true);
+    });
+  });
+
+  it("clears local auth state when logout returns unauthorized", async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      name: "Aegis User",
+      avatarUrl: null,
+      connectedProviders: ["github"],
+    });
+    vi.mocked(logout).mockRejectedValue({
+      response: {
+        status: 401,
+      },
+    });
+
+    renderHarness();
+
+    expect(await screen.findByText("Aegis User")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /logout/i }));
+
+    await waitFor(() => {
       expect(useAuthStore.getState().user).toBeNull();
       expect(useAuthStore.getState().initialized).toBe(true);
     });

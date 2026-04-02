@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import axios from "axios";
 import { useEffect } from "react";
 
 import { fetchCurrentUser, logout as logoutRequest } from "../api/auth";
@@ -41,15 +42,19 @@ export function useAuth() {
     }
   }, [meQuery.data, meQuery.status, setUser, clearUser, markInitialized]);
 
+  const finalizeLogout = async () => {
+    await queryClient.cancelQueries({
+      queryKey: AUTH_QUERY_KEY,
+    });
+    clearUser();
+    markInitialized();
+    queryClient.setQueryData(AUTH_QUERY_KEY, null);
+  };
+
   const logoutMutation = useMutation({
     mutationFn: logoutRequest,
     onSuccess: async () => {
-      clearUser();
-      markInitialized();
-      queryClient.setQueryData(AUTH_QUERY_KEY, null);
-      await queryClient.invalidateQueries({
-        queryKey: AUTH_QUERY_KEY,
-      });
+      await finalizeLogout();
     },
   });
 
@@ -59,7 +64,16 @@ export function useAuth() {
     isAuthenticated: Boolean(user),
     bootstrapState: getBootstrapState(initialized, meQuery.status),
     logout: async () => {
-      await logoutMutation.mutateAsync();
+      try {
+        await logoutMutation.mutateAsync();
+      } catch (error) {
+        if (isTerminalLogoutError(error)) {
+          await finalizeLogout();
+          return;
+        }
+
+        throw error;
+      }
     },
     refresh: async () => {
       await queryClient.invalidateQueries({
@@ -82,4 +96,24 @@ function getBootstrapState(
   }
 
   return "ready";
+}
+
+function isTerminalLogoutError(error: unknown): boolean {
+  const status = getErrorStatus(error);
+
+  return status === 401 || status === 403;
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (axios.isAxiosError(error)) {
+    return error.response?.status;
+  }
+
+  if (typeof error !== "object" || error === null || !("response" in error)) {
+    return undefined;
+  }
+
+  const { response } = error as { response?: { status?: unknown } };
+
+  return typeof response?.status === "number" ? response.status : undefined;
 }
