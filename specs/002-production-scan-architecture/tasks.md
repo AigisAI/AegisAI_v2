@@ -33,6 +33,21 @@
 - [x] T017 Add scan request create/status endpoints with canonical scan key and isolation escalation
 - [x] T018 Add e2e coverage for Control Plane skeleton behavior
 
+## Phase 6: Token Broker & Audit Skeleton
+
+- [x] T019 Add Token Broker issue endpoint returning credential metadata only
+- [x] T020 Add tenant-scoped audit event read endpoint
+- [x] T021 Record token issuance audit events without persisting token values
+- [x] T022 Add e2e coverage for token non-persistence and audit reads
+
+## Phase 7: Scan Plane Mock Pipeline Skeleton
+
+- [x] T023 Add mock Scan Plane run endpoint for deterministic scanner metadata
+- [x] T024 Emit Opengrep, Trivy, and Syft scanner run records
+- [x] T025 Emit one normalized finding and one redacted short-lived evidence pack
+- [x] T026 Add tenant-scoped scanner run, finding, and evidence read endpoints
+- [x] T027 Add e2e coverage for Scan Plane mock pipeline behavior and leakage guardrails
+
 ## Deferred
 
 - [ ] Implement GitHub App installation runtime
