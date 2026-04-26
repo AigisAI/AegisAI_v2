@@ -40,6 +40,14 @@
 - [x] T021 Record token issuance audit events without persisting token values
 - [x] T022 Add e2e coverage for token non-persistence and audit reads
 
+## Phase 7: Scan Plane Mock Pipeline Skeleton
+
+- [x] T023 Add mock Scan Plane run endpoint for deterministic scanner metadata
+- [x] T024 Emit Opengrep, Trivy, and Syft scanner run records
+- [x] T025 Emit one normalized finding and one redacted short-lived evidence pack
+- [x] T026 Add tenant-scoped scanner run, finding, and evidence read endpoints
+- [x] T027 Add e2e coverage for Scan Plane mock pipeline behavior and leakage guardrails
+
 ## Deferred
 
 - [ ] Implement GitHub App installation runtime
