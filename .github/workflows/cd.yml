@@ -64,6 +64,30 @@ jobs:
           push: true
           tags: ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-web:${{ steps.prep.outputs.image_tag }}
 
+      - name: Verify multi-arch image manifests
+        shell: bash
+        run: |
+          verify_manifest() {
+            image="$1"
+
+            echo "Inspecting $image"
+            manifest="$(docker buildx imagetools inspect "$image")"
+            printf '%s\n' "$manifest"
+
+            printf '%s\n' "$manifest" | grep -q 'linux/amd64' || {
+              echo "Missing linux/amd64 manifest for $image" >&2
+              exit 1
+            }
+
+            printf '%s\n' "$manifest" | grep -q 'linux/arm64' || {
+              echo "Missing linux/arm64 manifest for $image" >&2
+              exit 1
+            }
+          }
+
+          verify_manifest "ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-api:${{ steps.prep.outputs.image_tag }}"
+          verify_manifest "ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-web:${{ steps.prep.outputs.image_tag }}"
+
   deploy:
     name: Deploy to Oracle Cloud VPS
     needs: build-and-push
@@ -72,7 +96,7 @@ jobs:
     env:
       ORACLE_VPS_HOST: ${{ secrets.ORACLE_VPS_HOST }}
       ORACLE_VPS_USER: ${{ secrets.ORACLE_VPS_USER }}
-      ORACLE_VPS_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_VPS_SSH_PRIVATE_KEY }}
+      ORACLE_VPS_KNOWN_HOSTS: ${{ secrets.ORACLE_VPS_KNOWN_HOSTS }}
       ORACLE_DEPLOY_PATH: ${{ secrets.ORACLE_DEPLOY_PATH }}
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
       GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
@@ -83,9 +107,11 @@ jobs:
 
       - name: Validate deployment secrets
         shell: bash
+        env:
+          ORACLE_VPS_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_VPS_SSH_PRIVATE_KEY }}
         run: |
           missing=()
-          for secret_name in ORACLE_VPS_HOST ORACLE_VPS_USER ORACLE_VPS_SSH_PRIVATE_KEY ORACLE_DEPLOY_PATH GHCR_USERNAME GHCR_READ_TOKEN; do
+          for secret_name in ORACLE_VPS_HOST ORACLE_VPS_USER ORACLE_VPS_SSH_PRIVATE_KEY ORACLE_VPS_KNOWN_HOSTS ORACLE_DEPLOY_PATH GHCR_USERNAME GHCR_READ_TOKEN; do
             if [[ -z "${!secret_name}" ]]; then
               missing+=("$secret_name")
             fi
@@ -99,16 +125,19 @@ jobs:
 
       - name: Configure SSH access
         shell: bash
+        env:
+          ORACLE_VPS_SSH_PRIVATE_KEY: ${{ secrets.ORACLE_VPS_SSH_PRIVATE_KEY }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$ORACLE_VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$ORACLE_VPS_HOST" >> ~/.ssh/known_hosts
+          printf '%s\n' "$ORACLE_VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
       - name: Create deploy path on VPS
         shell: bash
         run: |
-          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "mkdir -p '$ORACLE_DEPLOY_PATH'"
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "mkdir -p '$ORACLE_DEPLOY_PATH' '$ORACLE_DEPLOY_PATH/alloy'"
 
       - name: Prepare remote deploy variables
         shell: bash
@@ -123,10 +152,87 @@ jobs:
       - name: Upload deployment files
         shell: bash
         run: |
-          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.prod.yml deploy/oracle/deploy.sh "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/docker-compose.infra.yml deploy/oracle/docker-compose.app.yml deploy/oracle/deploy.sh deploy/oracle/bootstrap-infra.sh deploy/oracle/install-alloy.sh "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/"
+          scp -i ~/.ssh/id_ed25519 deploy/oracle/alloy/config.alloy "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/alloy/config.alloy"
           scp -i ~/.ssh/id_ed25519 .oracle-deploy.env "$ORACLE_VPS_USER@$ORACLE_VPS_HOST:$ORACLE_DEPLOY_PATH/.oracle-deploy.env"
 
       - name: Deploy over SSH
         shell: bash
         run: |
-          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "cd '$ORACLE_DEPLOY_PATH' && set -a && . ./.oracle-deploy.env && set +a && sh ./deploy.sh && rm -f ./.oracle-deploy.env"
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "cd '$ORACLE_DEPLOY_PATH' && trap 'rm -f ./.oracle-deploy.env' EXIT && set -a && . ./.oracle-deploy.env && set +a && sh ./deploy.sh"
+
+      - name: Cleanup deployment secrets
+        if: always()
+        shell: bash
+        run: |
+          rm -f ./.oracle-deploy.env
+          ssh -i ~/.ssh/id_ed25519 "$ORACLE_VPS_USER@$ORACLE_VPS_HOST" "rm -f '$ORACLE_DEPLOY_PATH/.oracle-deploy.env'" || true
+
+  notify-teams:
+    name: Notify Teams
+    needs:
+      - build-and-push
+      - deploy
+    if: always()
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      BUILD_RESULT: ${{ needs.build-and-push.result }}
+      DEPLOY_RESULT: ${{ needs.deploy.result }}
+      REPOSITORY: ${{ github.repository }}
+      REF_NAME: ${{ github.ref_name }}
+      RUN_ID: ${{ github.run_id }}
+      SHA: ${{ github.sha }}
+      ACTOR: ${{ github.actor }}
+
+    steps:
+      - name: Notify Teams
+        if: ${{ env.TEAMS_WEBHOOK_URL != '' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          status="success"
+          color="2EB886"
+          title="AegisAI CD succeeded"
+
+          if [[ "$BUILD_RESULT" != "success" || "$DEPLOY_RESULT" != "success" ]]; then
+            status="failure"
+            color="E81123"
+            title="AegisAI CD failed"
+          fi
+
+          export STATUS="$status"
+          export COLOR="$color"
+          export TITLE="$title"
+          export RUN_URL="https://github.com/$REPOSITORY/actions/runs/$RUN_ID"
+
+          python3 - <<'PY' > teams-payload.json
+          import json
+          import os
+
+          payload = {
+              "@type": "MessageCard",
+              "@context": "https://schema.org/extensions",
+              "themeColor": os.environ["COLOR"],
+              "summary": os.environ["TITLE"],
+              "title": os.environ["TITLE"],
+              "sections": [
+                  {
+                      "facts": [
+                          {"name": "Repository", "value": os.environ["REPOSITORY"]},
+                          {"name": "Branch", "value": os.environ["REF_NAME"]},
+                          {"name": "Commit", "value": os.environ["SHA"]},
+                          {"name": "Actor", "value": os.environ["ACTOR"]},
+                          {"name": "Build job", "value": os.environ["BUILD_RESULT"]},
+                          {"name": "Deploy job", "value": os.environ["DEPLOY_RESULT"]},
+                      ],
+                      "text": f"Run details: {os.environ['RUN_URL']}"
+                  }
+              ]
+          }
+
+          print(json.dumps(payload))
+          PY
+
+          curl -sSf -H "Content-Type: application/json" --data @teams-payload.json "$TEAMS_WEBHOOK_URL"

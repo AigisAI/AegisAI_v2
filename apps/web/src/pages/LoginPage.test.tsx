@@ -1,0 +1,123 @@
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useAuth } from "../hooks/useAuth";
+import { LoginPage } from "./LoginPage";
+
+vi.mock("../hooks/useAuth", () => ({
+  useAuth: vi.fn(),
+}));
+
+const mockedUseAuth = vi.mocked(useAuth);
+
+function renderLoginPage(initialEntry = "/login") {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<div>dashboard landing</div>} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
+describe("LoginPage", () => {
+  beforeEach(() => {
+    mockedUseAuth.mockReset();
+    mockedUseAuth.mockReturnValue({
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+      bootstrapState: "ready",
+      logout: vi.fn(),
+      refresh: vi.fn(),
+    });
+  });
+
+  it("renders provider CTAs for unauthenticated users", () => {
+    renderLoginPage();
+
+    expect(
+      screen.getByRole("heading", {
+        name: /authenticate your security/i,
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/provider-scoped, session-controlled access/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /back to overview/i })
+    ).toHaveAttribute("href", "/");
+    expect(
+      screen.getByRole("link", { name: /continue with github/i })
+    ).toHaveAttribute("href", "/api/auth/github");
+    expect(
+      screen.getByRole("link", { name: /continue with gitlab/i })
+    ).toHaveAttribute("href", "/api/auth/gitlab");
+    expect(screen.getByText(/soc2 compliant/i)).toBeInTheDocument();
+    expect(screen.getByText(/encrypted sessions/i)).toBeInTheDocument();
+  });
+
+  it("renders a loading state during auth bootstrap", () => {
+    mockedUseAuth.mockReturnValue({
+      user: null,
+      isLoading: true,
+      isAuthenticated: false,
+      bootstrapState: "loading",
+      logout: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    renderLoginPage();
+
+    expect(screen.getByRole("status")).toHaveTextContent(/awaiting provider response/i);
+    expect(
+      screen.getByRole("link", { name: /continue with github/i })
+    ).toHaveAttribute("href", "/api/auth/github");
+  });
+
+  it("renders an oauth failure message from the query string", () => {
+    renderLoginPage("/login?error=oauth_failed");
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /authentication could not be completed/i
+    );
+  });
+
+  it("redirects authenticated users away from /login", () => {
+    mockedUseAuth.mockReturnValue({
+      user: {
+        id: "user-1",
+        email: "user@example.com",
+        name: "Aegis User",
+        avatarUrl: null,
+        connectedProviders: ["github"],
+      },
+      isLoading: false,
+      isAuthenticated: true,
+      bootstrapState: "ready",
+      logout: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    renderLoginPage();
+
+    expect(screen.getByText("dashboard landing")).toBeInTheDocument();
+  });
+
+  it("renders retry guidance when session bootstrap fails", () => {
+    mockedUseAuth.mockReturnValue({
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+      bootstrapState: "error",
+      logout: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    renderLoginPage();
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /existing session unavailable/i
+    );
+  });
+});

@@ -2,7 +2,7 @@
 
 ## Start Here
 
-This repository is organized around an agent-first MVP baseline for AegisAI.
+This repository is organized around the production scan architecture baseline for AegisAI.
 
 - Agents should start with [`AGENTS.md`](./AGENTS.md).
 - The canonical execution path lives in [`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md).
@@ -12,6 +12,20 @@ This repository is organized around an agent-first MVP baseline for AegisAI.
 
 If you are starting development work, follow the agent path `AGENTS.md -> quickstart.md ->
 feature package` instead of jumping directly to `tasks.md`.
+
+## Completion
+
+When validating the active production scan architecture milestone, use the completion flow in
+[`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md).
+The legacy MVP hardening review remains available for tasks that explicitly touch the shipped
+MVP baseline: [`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md).
+
+The final validation path is:
+
+- `corepack pnpm lint`
+- `corepack pnpm test`
+- `corepack pnpm typecheck`
+- `corepack pnpm build`
 
 ## GitHub Conventions
 
@@ -46,10 +60,12 @@ Control, Scan, AI, and Data/Security planes with stronger-than-pod scan isolatio
 - Registry: `ghcr.io`
 - Trigger: `main` push or manual `workflow_dispatch`
 - Runtime: Docker Compose on the VPS
-- Deploy path files: `deploy/oracle/docker-compose.prod.yml`, `deploy/oracle/deploy.sh`, `deploy/oracle/install-alloy.sh`, `deploy/oracle/alloy/config.alloy`, and a server-managed `.env`
-- Application rollout: `api` and `web` containers on the Oracle VPS
+- Deploy path files: `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, `deploy/oracle/deploy.sh`, `deploy/oracle/bootstrap-infra.sh`, `deploy/oracle/install-alloy.sh`, `deploy/oracle/alloy/config.alloy`, and a server-managed `.env`
+- Automated rollout scope: app stack only (`api`, `web`)
+- Manual bootstrap scope: infra stack (`postgres`, `redis`)
 - Observability collection: Grafana Alloy on the Oracle VPS
 - Observability surface: Grafana Cloud dashboards, Explore, and alerting
+- Detailed runbook: [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md)
 
 Required GitHub secrets for dev/demo CD:
 
@@ -60,27 +76,20 @@ Required GitHub secrets for dev/demo CD:
 - `ORACLE_DEPLOY_PATH`
 - `GHCR_USERNAME`
 - `GHCR_READ_TOKEN`
+
+Optional production secret:
+
 - `TEAMS_WEBHOOK_URL`
 
 The deploy job currently targets the `production` GitHub environment for compatibility with
-existing workflow settings, but architecturally this path is dev/demo. Set these secrets
-before running CD. If any are blank or missing, the workflow fails early with a clear
-validation error instead of reaching the SSH steps.
+existing workflow settings, but architecturally this path is dev/demo. Set the required secrets
+before running CD. If any are blank or missing, the workflow fails early with a clear validation
+error instead of reaching the SSH steps.
+
+When configured, CD posts a high-signal success/failure notification to Microsoft Teams without blocking the deploy if the webhook itself fails.
 
 Grafana Cloud replaces the previous idea of a VPS-hosted Grafana or Loki stack. Operators
 install the Docker integration in Grafana Cloud, install Grafana Alloy on the Oracle VPS, and
 use Grafana Cloud for logs, metrics, dashboards, and alert routing.
 
-GitHub Actions still sends deploy-result notifications to Teams separately from Grafana Cloud
-runtime alerts.
-
-One-time VPS setup:
-
-1. Install Docker Engine and Docker Compose plugin.
-2. Create the deploy directory (for example `/opt/aegisai`).
-3. Copy `deploy/oracle/.env.example` to `.env` on the VPS and fill in production values.
-4. Create the Grafana Cloud stack and Docker integration.
-5. Run `deploy/oracle/install-alloy.sh` from the deploy directory.
-6. Open port `80` for the web container.
-
-For the full Cloud-first operator flow, follow [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md).
+For first-time Oracle Cloud setup, follow the runbook in [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md) rather than reproducing the steps manually from memory.

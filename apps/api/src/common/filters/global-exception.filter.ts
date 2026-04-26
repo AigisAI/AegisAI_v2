@@ -1,94 +1,80 @@
+import type { ErrorResponse } from '@aegisai/shared';
 import {
   ArgumentsHost,
   Catch,
   ExceptionFilter,
   HttpException,
   HttpStatus,
-  Injectable,
   Logger
-} from "@nestjs/common";
-
-interface ErrorResponseBody {
-  success: false;
-  data: null;
-  message: string;
-  errorCode: string;
-  timestamp: string;
-}
+} from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 @Catch()
-@Injectable()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const request = host.switchToHttp().getRequest<{
-      method: string;
-      originalUrl?: string;
-      url?: string;
-    }>();
-    const response = host.switchToHttp().getResponse<{
-      status(code: number): { json(body: ErrorResponseBody): void };
-    }>();
-    const normalized = this.normalizeException(exception);
+    const request = host.switchToHttp().getRequest<Request>();
+    const response = host.switchToHttp().getResponse<Response>();
+    const { status, message, errorCode } = this.normalizeException(exception);
     const timestamp = new Date().toISOString();
-    const payload: ErrorResponseBody = {
+    const payload: ErrorResponse = {
       success: false,
       data: null,
-      message: normalized.message,
-      errorCode: normalized.errorCode,
+      message,
+      errorCode,
       timestamp
     };
 
-    if (normalized.status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
         JSON.stringify({
-          marker: "runtime_error",
-          status: normalized.status,
-          errorCode: normalized.errorCode,
+          marker: 'runtime_error',
+          status,
+          errorCode,
           method: request.method,
-          path: request.originalUrl || request.url || "/",
-          message: normalized.message,
+          path: request.originalUrl || request.url || '/',
+          message,
           timestamp
         }),
         exception instanceof Error ? exception.stack : undefined
       );
     }
 
-    response.status(normalized.status).json(payload);
+    response.status(status).json(payload);
   }
 
   private normalizeException(exception: unknown) {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const body = exception.getResponse();
-      const fallbackMessage = exception.message || "Request failed.";
-      const message = this.extractMessage(body, fallbackMessage);
-      const errorCode = this.extractErrorCode(body) ?? this.statusToErrorCode(status);
+      const response = exception.getResponse();
+      const fallbackMessage = exception.message || 'Request failed.';
+      const message = this.extractMessage(response, fallbackMessage);
+      const errorCode = this.extractErrorCode(response) ?? this.statusToErrorCode(status);
 
       return { status, message, errorCode };
     }
 
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: "Internal server error.",
-      errorCode: "INTERNAL_ERROR"
+      message: 'Internal server error.',
+      errorCode: 'INTERNAL_ERROR'
     };
   }
 
-  private extractMessage(body: string | object, fallback: string): string {
-    if (typeof body === "string") {
-      return body;
+  private extractMessage(response: string | object, fallback: string): string {
+    if (typeof response === 'string') {
+      return response;
     }
 
-    if (body && typeof body === "object") {
-      const { message } = body as { message?: string | string[] };
+    if (response && typeof response === 'object') {
+      const message = (response as { message?: string | string[] }).message;
 
       if (Array.isArray(message)) {
         return message[0] ?? fallback;
       }
 
-      if (typeof message === "string") {
+      if (typeof message === 'string') {
         return message;
       }
     }
@@ -96,30 +82,30 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return fallback;
   }
 
-  private extractErrorCode(body: string | object): string | null {
-    if (!body || typeof body !== "object") {
+  private extractErrorCode(response: string | object): string | null {
+    if (!response || typeof response !== 'object') {
       return null;
     }
 
-    return (body as { errorCode?: string }).errorCode ?? null;
+    return (response as { errorCode?: string }).errorCode ?? null;
   }
 
   private statusToErrorCode(status: number): string {
     switch (status) {
       case HttpStatus.BAD_REQUEST:
-        return "BAD_REQUEST";
+        return 'BAD_REQUEST';
       case HttpStatus.UNAUTHORIZED:
-        return "UNAUTHORIZED";
+        return 'UNAUTHORIZED';
       case HttpStatus.FORBIDDEN:
-        return "FORBIDDEN";
+        return 'FORBIDDEN';
       case HttpStatus.NOT_FOUND:
-        return "NOT_FOUND";
+        return 'NOT_FOUND';
       case HttpStatus.CONFLICT:
-        return "CONFLICT";
+        return 'CONFLICT';
       case HttpStatus.TOO_MANY_REQUESTS:
-        return "TOO_MANY_REQUESTS";
+        return 'TOO_MANY_REQUESTS';
       default:
-        return "INTERNAL_ERROR";
+        return 'INTERNAL_ERROR';
     }
   }
 }
