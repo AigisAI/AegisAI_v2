@@ -7,9 +7,11 @@ const reportExpiryHours: number = config.get('REPORT_EXPIRY_HOURS');
 const databaseUrl: string = config.get('DATABASE_URL');
 const optionalPort: number | undefined = config.getOptional('PORT');
 const optionalCookieDomain: string | undefined = config.getOptional('COOKIE_DOMAIN');
+const optionalTeamsWebhookUrl: string | undefined = config.getOptional('TEAMS_WEBHOOK_URL');
 
 void port;
 void reportExpiryHours;
 void databaseUrl;
 void optionalPort;
 void optionalCookieDomain;
+void optionalTeamsWebhookUrl;

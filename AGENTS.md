@@ -81,5 +81,6 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 ## Completion Gate
 
 - Re-run the final validation path from [`quickstart.md`](./specs/002-production-scan-architecture/quickstart.md) before claiming completion.
+- Re-check [`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md) only when legacy MVP hardening or release-readiness is explicitly part of the task.
 - Keep entrypoint docs synchronized whenever execution guidance changes.
 
