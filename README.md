@@ -2,22 +2,23 @@
 
 ## Start Here
 
-This repository is organized around an agent-first MVP baseline for AegisAI.
+This repository is organized around the production scan architecture baseline for AegisAI.
 
 - Agents should start with [`AGENTS.md`](./AGENTS.md).
-- The canonical execution path lives in [`specs/001-aegisai-mvp-foundation/quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md).
-- The background product baseline lives in [`spec 2.2.md`](./spec%202.2.md).
-- The active implementation package lives in [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/).
+- The canonical execution path lives in [`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md).
+- The production product baseline is `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`.
+- The active implementation package lives in [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/).
+- The legacy MVP baseline remains available in [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) and [`spec 2.2.md`](./spec%202.2.md).
 
 If you are starting development work, follow the agent path `AGENTS.md -> quickstart.md ->
 feature package` instead of jumping directly to `tasks.md`.
 
-## MVP Completion
+## Completion
 
-When validating the shipped MVP baseline, use the completion flow in
-[`specs/001-aegisai-mvp-foundation/quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md)
-and the hardening checkpoints in
-[`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md).
+When validating the active production scan architecture milestone, use the completion flow in
+[`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md).
+The legacy MVP hardening review remains available for tasks that explicitly touch the shipped
+MVP baseline: [`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md).
 
 The final validation path is:
 
@@ -37,9 +38,9 @@ The repository follows the GitHub workflow convention documented in
 - Issue titles and PR titles must match
 - `dev` is the default integration branch and `main` remains the release-ready branch
 
-Spec Kit feature docs still live in [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/),
-so GitHub-style working branches may still need `SPECIFY_FEATURE` when running Spec Kit
-helpers.
+Spec Kit feature docs now live in [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/),
+so GitHub-style working branches may need `SPECIFY_FEATURE=002-production-scan-architecture`
+when running Spec Kit helpers.
 
 ## CI
 
@@ -52,7 +53,9 @@ GitHub Actions runs the same baseline verification path used locally:
 
 ## CD
 
-Production CD targets a single Oracle Cloud VPS.
+The current Oracle Cloud VPS CD path is retained for dev/demo deployments. It is not the
+production topology for the production scan architecture, which is defined around separated
+Control, Scan, AI, and Data/Security planes with stronger-than-pod scan isolation.
 
 - Registry: `ghcr.io`
 - Trigger: `main` push or manual `workflow_dispatch`
@@ -64,7 +67,7 @@ Production CD targets a single Oracle Cloud VPS.
 - Observability surface: Grafana Cloud dashboards, Explore, and alerting
 - Detailed runbook: [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md)
 
-Required GitHub secrets for CD:
+Required GitHub secrets for dev/demo CD:
 
 - `ORACLE_VPS_HOST`
 - `ORACLE_VPS_USER`
@@ -74,11 +77,14 @@ Required GitHub secrets for CD:
 - `GHCR_USERNAME`
 - `GHCR_READ_TOKEN`
 
-The deploy job targets the `production` GitHub environment, so set these as available secrets before running CD. If any are blank or missing, the workflow now fails early with a clear validation error instead of reaching the SSH steps.
-
 Optional production secret:
 
 - `TEAMS_WEBHOOK_URL`
+
+The deploy job currently targets the `production` GitHub environment for compatibility with
+existing workflow settings, but architecturally this path is dev/demo. Set the required secrets
+before running CD. If any are blank or missing, the workflow fails early with a clear validation
+error instead of reaching the SSH steps.
 
 When configured, CD posts a high-signal success/failure notification to Microsoft Teams without blocking the deploy if the webhook itself fails.
 

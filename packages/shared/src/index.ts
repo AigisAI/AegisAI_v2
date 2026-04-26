@@ -7,3 +7,4 @@ export * from './types/scan';
 export * from './types/vulnerability';
 export * from './types/dashboard';
 export * from './types/report';
+export * from './types/production-architecture';

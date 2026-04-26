@@ -13,6 +13,7 @@ import { SessionAwareThrottlerGuard } from './common/guards/session-aware-thrott
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
+import { ControlPlaneModule } from './control-plane/control-plane.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { LanguageModule } from './language/language.module';
@@ -52,6 +53,7 @@ const runtimeFeatureModules = [ScanModule, HealthModule, ReportModule];
     RepoModule,
     DashboardModule,
     VulnerabilityModule,
+    ControlPlaneModule,
     GitClientModule,
     LanguageModule,
     AnalysisApiModule,

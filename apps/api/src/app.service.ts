@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 export class AppService {
   getBootstrapState() {
     return {
-      docs: "specs/001-aegisai-mvp-foundation/quickstart.md",
+      docs: "specs/002-production-scan-architecture/quickstart.md",
       service: "api",
       status: "bootstrapped"
     };

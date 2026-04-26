@@ -59,11 +59,12 @@ Issue references may be added in the footer when needed.
 
 ## Spec Kit Compatibility
 
-The active implementation package still lives under `specs/001-aegisai-mvp-foundation/`.
+The active implementation package lives under `specs/002-production-scan-architecture/`.
+The previous `specs/001-aegisai-mvp-foundation/` package remains a legacy MVP baseline.
 
 When you are working on a GitHub-style branch such as `feat/4-github-setup`, use
 `SPECIFY_FEATURE` to point Spec Kit scripts at the active feature directory when needed:
 
 ```powershell
-$env:SPECIFY_FEATURE = "001-aegisai-mvp-foundation"
+$env:SPECIFY_FEATURE = "002-production-scan-architecture"
 ```
