@@ -4,6 +4,17 @@ import request from "supertest";
 
 describe("Control Plane skeleton (e2e)", () => {
   let app: INestApplication;
+  let prismaMock: {
+    $connect: jest.Mock;
+    $disconnect: jest.Mock;
+    onModuleInit: jest.Mock;
+    onModuleDestroy: jest.Mock;
+    $queryRawUnsafe: jest.Mock;
+    tenant: { upsert: jest.Mock };
+    scmIntegration: { upsert: jest.Mock };
+    repositoryBinding: { upsert: jest.Mock; deleteMany: jest.Mock };
+    auditEvent: { create: jest.Mock };
+  };
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
@@ -27,17 +38,26 @@ describe("Control Plane skeleton (e2e)", () => {
       import("../../src/prisma/prisma.service")
     ]);
 
+    prismaMock = {
+      $connect: jest.fn().mockResolvedValue(undefined),
+      $disconnect: jest.fn().mockResolvedValue(undefined),
+      onModuleInit: jest.fn().mockResolvedValue(undefined),
+      onModuleDestroy: jest.fn().mockResolvedValue(undefined),
+      $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }]),
+      tenant: { upsert: jest.fn().mockResolvedValue({}) },
+      scmIntegration: { upsert: jest.fn().mockResolvedValue({}) },
+      repositoryBinding: {
+        upsert: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 })
+      },
+      auditEvent: { create: jest.fn().mockResolvedValue({}) }
+    };
+
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule]
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        $connect: jest.fn().mockResolvedValue(undefined),
-        $disconnect: jest.fn().mockResolvedValue(undefined),
-        onModuleInit: jest.fn().mockResolvedValue(undefined),
-        onModuleDestroy: jest.fn().mockResolvedValue(undefined),
-        $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }])
-      })
+      .useValue(prismaMock)
       .overrideProvider(GithubAppInstallationClient)
       .useValue({
         listInstallationRepositories: jest.fn().mockResolvedValue([
@@ -70,6 +90,14 @@ describe("Control Plane skeleton (e2e)", () => {
 
     return body as T;
   };
+
+  beforeEach(() => {
+    prismaMock.tenant.upsert.mockClear();
+    prismaMock.scmIntegration.upsert.mockClear();
+    prismaMock.repositoryBinding.upsert.mockClear();
+    prismaMock.repositoryBinding.deleteMany.mockClear();
+    prismaMock.auditEvent.create.mockClear();
+  });
 
   it("installs a GitHub App integration and exposes tenant-scoped repository bindings", async () => {
     const install = await request(app.getHttpServer())
@@ -166,6 +194,145 @@ describe("Control Plane skeleton (e2e)", () => {
         isPrivate: true
       })
     ]);
+  });
+
+  it("persists GitHub App installation state without storing runtime token values", async () => {
+    const install = await request(app.getHttpServer())
+      .post("/api/integrations/github/install")
+      .send({
+        tenantId: "tenant_persisted_github_app",
+        externalInstallationId: "98766",
+        repoReadPrincipalId: "github-app-installation:98766:repo-read",
+        commentWritePrincipalId: "github-app-installation:98766:comment-write"
+      })
+      .expect(201);
+
+    const installData = dataOf<Record<string, unknown>>(install.body);
+
+    expect(prismaMock.tenant.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "tenant_persisted_github_app" }
+      })
+    );
+    expect(prismaMock.scmIntegration.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          tenantId_provider_externalInstallationId: {
+            tenantId: "tenant_persisted_github_app",
+            provider: "GITHUB",
+            externalInstallationId: "98766"
+          }
+        }
+      })
+    );
+    expect(prismaMock.repositoryBinding.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          tenantId_scmIntegrationId_providerRepoId: {
+            tenantId: "tenant_persisted_github_app",
+            scmIntegrationId: installData.id,
+            providerRepoId: "3003"
+          }
+        }
+      })
+    );
+    expect(prismaMock.auditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId: "tenant_persisted_github_app",
+          eventType: "github_app.installation.persisted",
+          targetType: "scm_integration",
+          targetId: installData.id
+        })
+      })
+    );
+    expect(JSON.stringify(prismaMock.scmIntegration.upsert.mock.calls)).not.toMatch(
+      /accessToken|installation-token|secretValue|tokenValue/i
+    );
+  });
+
+  it("reconciles GitHub installation repository webhook changes into tenant bindings", async () => {
+    const install = await request(app.getHttpServer())
+      .post("/api/integrations/github/install")
+      .send({
+        tenantId: "tenant_webhook_github_app",
+        externalInstallationId: "98767",
+        repoReadPrincipalId: "github-app-installation:98767:repo-read",
+        commentWritePrincipalId: "github-app-installation:98767:comment-write"
+      })
+      .expect(201);
+
+    const installData = dataOf<Record<string, unknown>>(install.body);
+
+    const webhook = await request(app.getHttpServer())
+      .post("/api/webhooks/github")
+      .set("X-GitHub-Event", "installation_repositories")
+      .send({
+        tenantId: "tenant_webhook_github_app",
+        action: "added",
+        installation: { id: "98767" },
+        repositories_added: [
+          {
+            id: 4004,
+            full_name: "acme/new-service",
+            default_branch: "trunk",
+            private: false
+          }
+        ],
+        repositories_removed: [
+          {
+            id: 3003,
+            full_name: "acme/runtime-bound"
+          }
+        ]
+      })
+      .expect(202);
+
+    expect(dataOf<Record<string, unknown>>(webhook.body)).toMatchObject({
+      acknowledged: true,
+      provider: "GITHUB",
+      event: "installation_repositories",
+      externalInstallationId: "98767",
+      addedRepositoryCount: 1,
+      removedRepositoryCount: 1
+    });
+
+    const repositories = await request(app.getHttpServer())
+      .get("/api/repository-bindings")
+      .query({ tenantId: "tenant_webhook_github_app" })
+      .expect(200);
+
+    expect(dataOf<Array<Record<string, unknown>>>(repositories.body)).toEqual([
+      expect.objectContaining({
+        tenantId: "tenant_webhook_github_app",
+        scmIntegrationId: installData.id,
+        providerRepoId: "4004",
+        fullName: "acme/new-service",
+        defaultBranch: "trunk",
+        isPrivate: false
+      })
+    ]);
+    expect(prismaMock.repositoryBinding.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          tenantId_scmIntegrationId_providerRepoId: {
+            tenantId: "tenant_webhook_github_app",
+            scmIntegrationId: installData.id,
+            providerRepoId: "4004"
+          }
+        }
+      })
+    );
+    expect(prismaMock.repositoryBinding.deleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          tenantId: "tenant_webhook_github_app",
+          scmIntegrationId: installData.id,
+          providerRepoId: { in: ["3003"] }
+        }
+      })
+    );
+    expect(JSON.stringify(webhook.body)).not.toMatch(/accessToken|installation-token|secretValue|tokenValue/i);
   });
 
   it("creates scan requests with canonical keys and risk-based isolation escalation", async () => {

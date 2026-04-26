@@ -15,6 +15,37 @@ export interface InstallRepositoryInput {
   isPrivate: boolean;
 }
 
+export interface GithubWebhookRepositoryInput {
+  id?: string | number;
+  providerRepoId?: string;
+  full_name?: string;
+  fullName?: string;
+  default_branch?: string;
+  defaultBranch?: string;
+  private?: boolean;
+  isPrivate?: boolean;
+}
+
+export interface GithubInstallationWebhookInput {
+  tenantId?: string;
+  action: string;
+  installation: {
+    id: string | number;
+  };
+  repositories?: GithubWebhookRepositoryInput[];
+  repositories_added?: GithubWebhookRepositoryInput[];
+  repositories_removed?: GithubWebhookRepositoryInput[];
+}
+
+export interface GithubInstallationWebhookAck {
+  acknowledged: true;
+  provider: "GITHUB";
+  event: string;
+  externalInstallationId: string;
+  addedRepositoryCount: number;
+  removedRepositoryCount: number;
+}
+
 export interface InstallIntegrationInput {
   tenantId: string;
   externalInstallationId: string;
