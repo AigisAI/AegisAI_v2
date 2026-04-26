@@ -33,6 +33,13 @@
 - [x] T017 Add scan request create/status endpoints with canonical scan key and isolation escalation
 - [x] T018 Add e2e coverage for Control Plane skeleton behavior
 
+## Phase 6: Token Broker & Audit Skeleton
+
+- [x] T019 Add Token Broker issue endpoint returning credential metadata only
+- [x] T020 Add tenant-scoped audit event read endpoint
+- [x] T021 Record token issuance audit events without persisting token values
+- [x] T022 Add e2e coverage for token non-persistence and audit reads
+
 ## Deferred
 
 - [ ] Implement GitHub App installation runtime
