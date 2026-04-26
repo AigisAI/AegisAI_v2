@@ -2,20 +2,22 @@
 
 ## Mandatory Start Path
 
-1. Open the canonical execution entry point: [`specs/001-aegisai-mvp-foundation/quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md)
+1. Open the canonical execution entry point: [`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md)
 2. Follow the read order and execution flow defined there before touching code.
-3. Use [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) as the default implementation target unless a narrower active feature replaces it.
+3. Use [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/) as the default implementation target unless a narrower active feature replaces it.
 
 ## Core References
 
-- Canonical execution entry point: [`specs/001-aegisai-mvp-foundation/quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md)
-- Primary product baseline: [`spec 2.2.md`](./spec%202.2.md)
+- Canonical execution entry point: [`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md)
+- Primary product baseline: `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`
+- Legacy product baseline: [`spec 2.2.md`](./spec%202.2.md)
 - Repository constitution: [`.specify/memory/constitution.md`](./.specify/memory/constitution.md)
-- Baseline implementation package: [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/)
+- Active implementation package: [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/)
+- Legacy MVP package: [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/)
 
 ## Active Feature Baseline
 
-- Feature id: `001-aegisai-mvp-foundation`
+- Feature id: `002-production-scan-architecture`
 - Use this feature package as the default implementation target until a narrower feature spec replaces it.
 
 ## GitHub Workflow Convention
@@ -34,7 +36,7 @@ The repository-level GitHub workflow convention is documented in
 GitHub branch names do not need to match the spec directory name. In a PowerShell session, run:
 
 ```powershell
-$env:SPECIFY_FEATURE = "001-aegisai-mvp-foundation"
+$env:SPECIFY_FEATURE = "002-production-scan-architecture"
 ```
 
 This makes Spec Kit scripts resolve the active feature directory directly while you continue
@@ -44,8 +46,10 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 
 1. `AGENTS.md` defines how agents enter the repository and the guardrails they must preserve.
 2. `quickstart.md` defines the canonical read order, execution flow, and completion flow.
-3. The active feature package defines implementation-ready scope and task detail.
-4. `spec 2.2.md` and `.specify/memory/constitution.md` remain baseline constraints and architecture references.
+3. `Security Scan SaaS Final Specification.docx` is the highest-priority product, platform, security, and operations baseline.
+4. The active feature package defines implementation-ready scope and task detail.
+5. `spec 2.2.md` and `001-aegisai-mvp-foundation` remain legacy MVP references.
+6. `.specify/memory/constitution.md` remains a repository guardrail reference.
 
 ## Agent Execution Policy
 
@@ -57,14 +61,25 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 
 ## Non-Negotiable Rules
 
-- Stay inside MVP scope unless the current spec explicitly reclassifies roadmap work.
-- Keep repository access in the NestJS backend and analysis behind `IAnalysisApiClient`.
+- Stay inside the active production architecture milestone unless the current spec explicitly reclassifies deferred work.
+- Keep user authentication separate from SCM integration credentials.
+- Model GitHub Cloud repository access through GitHub App installation and GitLab Cloud access through scoped integration plus webhook flows.
+- Keep Scan Plane, AI Plane, and Data/Security Plane boundaries explicit.
 - Do not add direct source upload.
-- Java is the only MVP language, but extensibility must stay plugin-based through `ILanguageHandler`.
+- Do not execute customer code, install packages, or build customer repositories.
+- AI is advisory-only and must not create authoritative findings or override policy.
 - Shared API contracts belong in `packages/shared`.
 - Sessions, CSRF protection, throttling, health checks, and critical integration tests are required.
 
+## Frontend Design Tooling
+
+- When frontend design work is needed, use Stitch as the default design tool instead of designing screens manually inside the coding workflow.
+- When using Stitch for frontend design generation, default supported model selection to `GEMINI_3_1_PRO`.
+- Treat `GEMINI_3_FLASH` as opt-in only when the user explicitly asks for a faster draft-first pass.
+- This rule applies to Stitch MCP or SDK flows that expose a `modelId` or equivalent model selector.
+
 ## Completion Gate
 
-- Re-run the final validation path from [`quickstart.md`](./specs/001-aegisai-mvp-foundation/quickstart.md) before claiming completion.
+- Re-run the final validation path from [`quickstart.md`](./specs/002-production-scan-architecture/quickstart.md) before claiming completion.
 - Keep entrypoint docs synchronized whenever execution guidance changes.
+

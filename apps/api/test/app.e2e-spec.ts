@@ -28,7 +28,7 @@ describe("App bootstrap (e2e)", () => {
       .expect(200)
       .expect(({ body }) => {
         expect(body).toMatchObject({
-          docs: "specs/001-aegisai-mvp-foundation/quickstart.md",
+          docs: "specs/002-production-scan-architecture/quickstart.md",
           service: "api",
           status: "bootstrapped"
         });
