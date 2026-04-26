@@ -1,8 +1,16 @@
+import { QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "react-router-dom";
+
+import { AppErrorBoundary } from "./components/common/AppErrorBoundary";
+import { appQueryClient } from "./query-client";
+import { router } from "./router";
+
 export default function App() {
   return (
-    <main>
-      <h1>AegisAI MVP Foundation</h1>
-      <p>The monorepo workspace is bootstrapped and ready for Phase 2 foundation work.</p>
-    </main>
+    <AppErrorBoundary>
+      <QueryClientProvider client={appQueryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }

@@ -1,0 +1,78 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "docker_logs" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.containers.targets
+  labels        = { "instance" = sys.env("GRAFANA_CLOUD_INSTANCE_NAME"), "platform" = "docker", "source" = "oracle-vps" }
+  relabel_rules = discovery.relabel.docker_logs.rules
+  forward_to    = [loki.write.grafana_cloud.receiver]
+}
+
+loki.write "grafana_cloud" {
+  external_labels = {
+    stack = sys.env("GRAFANA_CLOUD_INSTANCE_NAME")
+  }
+
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOGS_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOGS_USERNAME")
+      password = sys.env("GRAFANA_CLOUD_LOGS_PASSWORD")
+    }
+  }
+}
+
+prometheus.exporter.cadvisor "docker" {
+  docker_host      = "unix:///var/run/docker.sock"
+  storage_duration = "5m"
+}
+
+prometheus.scrape "docker" {
+  targets         = prometheus.exporter.cadvisor.docker.targets
+  scrape_interval = "10s"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  external_labels = {
+    instance = sys.env("GRAFANA_CLOUD_INSTANCE_NAME")
+    source   = "oracle-vps"
+  }
+
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_METRICS_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_METRICS_USERNAME")
+      password = sys.env("GRAFANA_CLOUD_METRICS_PASSWORD")
+    }
+  }
+}

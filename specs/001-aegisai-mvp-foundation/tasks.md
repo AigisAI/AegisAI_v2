@@ -47,17 +47,17 @@ validation of each story.
 
 **⚠️ CRITICAL**: No user story work should begin until this phase is complete.
 
-- [ ] T007 Create Prisma baseline schema and initial migration in `apps/api/prisma/schema.prisma` and `apps/api/prisma/migrations/`
-- [ ] T008 [P] Create shared contract types in `packages/shared/src/types/common.ts`, `packages/shared/src/types/auth.ts`, `packages/shared/src/types/repo.ts`, `packages/shared/src/types/scan.ts`, `packages/shared/src/types/vulnerability.ts`, `packages/shared/src/types/dashboard.ts`, and `packages/shared/src/types/report.ts`
-- [ ] T009 [P] Create config and Prisma infrastructure in `apps/api/src/config/config.module.ts`, `apps/api/src/config/config.service.ts`, `apps/api/src/prisma/prisma.module.ts`, and `apps/api/src/prisma/prisma.service.ts`
-- [ ] T010 Implement auth and session foundation in `apps/api/src/auth/auth.module.ts`, `apps/api/src/auth/auth.service.ts`, `apps/api/src/auth/auth.serializer.ts`, `apps/api/src/auth/guards/session-auth.guard.ts`, `apps/api/src/auth/decorators/current-user.decorator.ts`, and `apps/api/src/auth/utils/token-crypto.util.ts`
-- [ ] T011 [P] Implement OAuth provider strategies in `apps/api/src/auth/strategies/github.strategy.ts` and `apps/api/src/auth/strategies/gitlab.strategy.ts`
-- [ ] T012 Implement provider client abstractions in `apps/api/src/client/git/git-provider-client.interface.ts`, `apps/api/src/client/git/github.client.ts`, `apps/api/src/client/git/gitlab.client.ts`, `apps/api/src/client/git/git-client.registry.ts`, and `apps/api/src/client/git/git-client.module.ts`
-- [ ] T013 [P] Implement language and analysis abstractions in `apps/api/src/language/language-handler.interface.ts`, `apps/api/src/language/language-handler.registry.ts`, `apps/api/src/language/handlers/java.language-handler.ts`, `apps/api/src/client/analysis/analysis-api-client.interface.ts`, `apps/api/src/client/analysis/analysis-api.dto.ts`, `apps/api/src/client/analysis/mock-analysis-api.client.ts`, and `apps/api/src/client/analysis/analysis-api.module.ts`
-- [ ] T014 Implement scan infrastructure in `apps/api/src/scan/scan.module.ts`, `apps/api/src/scan/scan.service.ts`, `apps/api/src/scan/scan.processor.ts`, `apps/api/src/scan/stuck-scan-recovery.task.ts`, and `apps/api/src/scan/services/code-collector.service.ts`
-- [ ] T015 [P] Implement report infrastructure in `apps/api/src/report/report.module.ts`, `apps/api/src/report/report.service.ts`, `apps/api/src/report/report.processor.ts`, and a PDF generator service file under `apps/api/src/report/`
-- [ ] T016 Implement common backend behavior in `apps/api/src/common/filters/global-exception.filter.ts`, `apps/api/src/common/interceptors/response-transform.interceptor.ts`, `apps/api/src/common/decorators/skip-transform.decorator.ts`, `apps/api/src/common/guards/session-aware-throttler.guard.ts`, and `apps/api/src/health/health.controller.ts`
-- [ ] T017 [P] Create frontend application shell and API foundation in `apps/web/src/App.tsx`, `apps/web/src/router.tsx`, `apps/web/src/api/client.ts`, `apps/web/src/hooks/useAuth.ts`, `apps/web/src/store/auth.store.ts`, and `apps/web/src/components/layout/AppShell.tsx`
+- [x] T007 Create Prisma baseline schema and initial migration in `apps/api/prisma/schema.prisma` and `apps/api/prisma/migrations/`
+- [x] T008 [P] Create shared contract types in `packages/shared/src/types/common.ts`, `packages/shared/src/types/auth.ts`, `packages/shared/src/types/repo.ts`, `packages/shared/src/types/scan.ts`, `packages/shared/src/types/vulnerability.ts`, `packages/shared/src/types/dashboard.ts`, and `packages/shared/src/types/report.ts`
+- [x] T009 [P] Create config and Prisma infrastructure in `apps/api/src/config/config.module.ts`, `apps/api/src/config/config.service.ts`, `apps/api/src/prisma/prisma.module.ts`, and `apps/api/src/prisma/prisma.service.ts`
+- [x] T010 Implement auth and session foundation in `apps/api/src/auth/auth.module.ts`, `apps/api/src/auth/auth.service.ts`, `apps/api/src/auth/auth.serializer.ts`, `apps/api/src/auth/guards/session-auth.guard.ts`, `apps/api/src/auth/decorators/current-user.decorator.ts`, and `apps/api/src/auth/utils/token-crypto.util.ts`
+- [x] T011 [P] Implement OAuth provider strategies in `apps/api/src/auth/strategies/github.strategy.ts` and `apps/api/src/auth/strategies/gitlab.strategy.ts`
+- [x] T012 Implement provider client abstractions in `apps/api/src/client/git/git-provider-client.interface.ts`, `apps/api/src/client/git/github.client.ts`, `apps/api/src/client/git/gitlab.client.ts`, `apps/api/src/client/git/git-client.registry.ts`, and `apps/api/src/client/git/git-client.module.ts`
+- [x] T013 [P] Implement language and analysis abstractions in `apps/api/src/language/language-handler.interface.ts`, `apps/api/src/language/language-handler.registry.ts`, `apps/api/src/language/handlers/java.language-handler.ts`, `apps/api/src/client/analysis/analysis-api-client.interface.ts`, `apps/api/src/client/analysis/analysis-api.dto.ts`, `apps/api/src/client/analysis/mock-analysis-api.client.ts`, and `apps/api/src/client/analysis/analysis-api.module.ts`
+- [x] T014 Implement scan infrastructure in `apps/api/src/scan/scan.module.ts`, `apps/api/src/scan/scan.service.ts`, `apps/api/src/scan/scan.processor.ts`, `apps/api/src/scan/stuck-scan-recovery.task.ts`, and `apps/api/src/scan/services/code-collector.service.ts`
+- [x] T015 [P] Implement report infrastructure in `apps/api/src/report/report.module.ts`, `apps/api/src/report/report.service.ts`, `apps/api/src/report/report.processor.ts`, `apps/api/src/report/report-expiry.task.ts`, and report services under `apps/api/src/report/services/`
+- [x] T016 Implement common backend behavior in `apps/api/src/common/filters/global-exception.filter.ts`, `apps/api/src/common/interceptors/response-transform.interceptor.ts`, `apps/api/src/common/decorators/skip-transform.decorator.ts`, `apps/api/src/common/guards/session-aware-throttler.guard.ts`, and `apps/api/src/health/health.controller.ts`
+- [x] T017 [P] Create frontend application shell and API foundation in `apps/web/src/App.tsx`, `apps/web/src/router.tsx`, `apps/web/src/api/client.ts`, `apps/web/src/hooks/useAuth.ts`, `apps/web/src/store/auth.store.ts`, and `apps/web/src/components/layout/AppShell.tsx`
 - [x] T018 Create baseline backend and frontend test harnesses in `apps/api/test/`, `apps/web/src/**/*.test.tsx`, and any shared test setup files selected by the implementation
 
 **Checkpoint**: Foundation ready. User stories can now proceed with clear contracts and shared infrastructure.
@@ -73,21 +73,21 @@ wait for the worker to finish, and verify the scan summary is returned.
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T019 [P] [US1] Add auth and session integration coverage in `apps/api/test/auth/auth.e2e-spec.ts`
-- [ ] T020 [P] [US1] Add repository and branch contract coverage in `apps/api/test/repo/repo.e2e-spec.ts`
-- [ ] T021 [P] [US1] Add queue-backed scan processing coverage in `apps/api/test/scan/scan.e2e-spec.ts`
-- [ ] T022 [P] [US1] Add login and scan page interaction coverage in `apps/web/src/pages/LoginPage.test.tsx` and `apps/web/src/pages/ScanPage.test.tsx`
+- [x] T019 [P] [US1] Add auth and session integration coverage in `apps/api/test/auth/auth.e2e-spec.ts`
+- [x] T020 [P] [US1] Add repository and branch contract coverage in `apps/api/test/repo/repo.e2e-spec.ts`
+- [x] T021 [P] [US1] Add queue-backed scan processing coverage in `apps/api/test/scan/scan.e2e-spec.ts`
+- [x] T022 [P] [US1] Add login and scan page interaction coverage in `apps/web/src/pages/LoginPage.test.tsx` and `apps/web/src/pages/ScanPage.test.tsx`
 
 ### Implementation for User Story 1
 
-- [ ] T023 [US1] Implement auth controller endpoints in `apps/api/src/auth/auth.controller.ts`
-- [ ] T024 [US1] Implement repository service and controller in `apps/api/src/repo/repo.service.ts`, `apps/api/src/repo/repo.controller.ts`, and `apps/api/src/repo/repo.module.ts`
-- [ ] T025 [US1] Implement scan controller request and status endpoints in `apps/api/src/scan/scan.controller.ts`
-- [ ] T026 [US1] Wire backend modules and global middleware in `apps/api/src/app.module.ts`
-- [ ] T027 [P] [US1] Implement frontend auth flow in `apps/web/src/pages/LoginPage.tsx`, `apps/web/src/components/layout/ProtectedRoute.tsx`, and `apps/web/src/hooks/useAuth.ts`
-- [ ] T028 [P] [US1] Implement repository connection UX in `apps/web/src/pages/ReposPage.tsx`, `apps/web/src/components/scan/RepoSelector.tsx`, and `apps/web/src/api/repos.ts`
-- [ ] T029 [US1] Implement scan request and polling UX in `apps/web/src/pages/ScanPage.tsx`, `apps/web/src/components/scan/ScanStatusBadge.tsx`, `apps/web/src/hooks/useScan.ts`, and `apps/web/src/api/scans.ts`
-- [ ] T030 [US1] Validate duplicate-scan prevention, branch validation, and provider error mapping across `apps/api/src/scan/scan.service.ts` and `apps/api/src/client/git/`
+- [x] T023 [US1] Implement auth controller endpoints in `apps/api/src/auth/auth.controller.ts`
+- [x] T024 [US1] Implement repository service and controller in `apps/api/src/repo/repo.service.ts`, `apps/api/src/repo/repo.controller.ts`, and `apps/api/src/repo/repo.module.ts`
+- [x] T025 [US1] Implement scan controller request and status endpoints in `apps/api/src/scan/scan.controller.ts`
+- [x] T026 [US1] Wire backend modules and global middleware in `apps/api/src/app.module.ts`
+- [x] T027 [P] [US1] Implement frontend auth flow in `apps/web/src/pages/LoginPage.tsx`, `apps/web/src/components/layout/ProtectedRoute.tsx`, and `apps/web/src/hooks/useAuth.ts`
+- [x] T028 [P] [US1] Implement repository connection UX in `apps/web/src/pages/ReposPage.tsx`, `apps/web/src/components/scan/RepoSelector.tsx`, and `apps/web/src/api/repos.ts`
+- [x] T029 [US1] Implement scan request and polling UX in `apps/web/src/pages/ScanPage.tsx`, `apps/web/src/components/scan/ScanStatusBadge.tsx`, `apps/web/src/hooks/useScan.ts`, and `apps/web/src/api/scans.ts`
+- [x] T030 [US1] Validate duplicate-scan prevention, branch validation, and provider error mapping across `apps/api/src/scan/scan.service.ts` and `apps/api/src/client/git/`
 
 **Checkpoint**: User Story 1 is fully functional and testable independently.
 
@@ -102,16 +102,16 @@ and persist feedback updates.
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T031 [P] [US2] Add vulnerability list and detail API coverage in `apps/api/test/vulnerability/vulnerability.e2e-spec.ts`
-- [ ] T032 [P] [US2] Add frontend vulnerability flow tests in `apps/web/src/pages/VulnerabilitiesPage.test.tsx` and `apps/web/src/pages/VulnerabilityDetailPage.test.tsx`
+- [x] T031 [P] [US2] Add vulnerability list and detail API coverage in `apps/api/test/vulnerability/vulnerability.e2e-spec.ts`
+- [x] T032 [P] [US2] Add frontend vulnerability flow tests in `apps/web/src/pages/VulnerabilityReviewPage.test.tsx` and supporting scan/router tests under `apps/web/src/`
 
 ### Implementation for User Story 2
 
-- [ ] T033 [P] [US2] Implement vulnerability backend module in `apps/api/src/vulnerability/vulnerability.module.ts`, `apps/api/src/vulnerability/vulnerability.service.ts`, and `apps/api/src/vulnerability/vulnerability.controller.ts`
-- [ ] T034 [P] [US2] Implement vulnerability API clients and hooks in `apps/web/src/api/vulnerabilities.ts` and `apps/web/src/hooks/useVulnerabilities.ts`
-- [ ] T035 [US2] Implement vulnerability list UX in `apps/web/src/pages/VulnerabilitiesPage.tsx`, `apps/web/src/components/vulnerability/VulnCard.tsx`, and `apps/web/src/components/vulnerability/SeverityBadge.tsx`
-- [ ] T036 [US2] Implement vulnerability detail UX in `apps/web/src/pages/VulnerabilityDetailPage.tsx`, `apps/web/src/components/vulnerability/CodeDiffViewer.tsx`, `apps/web/src/components/vulnerability/ConsensusScoreBadge.tsx`, and `apps/web/src/components/vulnerability/ModelResultsPanel.tsx`
-- [ ] T037 [US2] Implement feedback persistence and UI actions in `apps/api/src/vulnerability/vulnerability.service.ts` and `apps/web/src/pages/VulnerabilityDetailPage.tsx`
+- [x] T033 [P] [US2] Implement vulnerability backend module in `apps/api/src/vulnerability/vulnerability.module.ts`, `apps/api/src/vulnerability/vulnerability.service.ts`, and `apps/api/src/vulnerability/vulnerability.controller.ts`
+- [x] T034 [P] [US2] Implement vulnerability API clients and review data loading in `apps/web/src/api/vulnerabilities.ts` and `apps/web/src/pages/VulnerabilityReviewPage.tsx`
+- [x] T035 [US2] Implement vulnerability list UX in `apps/web/src/pages/VulnerabilityReviewPage.tsx` and associated review workspace styles in `apps/web/src/styles.css`
+- [x] T036 [US2] Implement vulnerability detail UX in `apps/web/src/pages/VulnerabilityReviewPage.tsx` for code evidence, consensus, and model reasoning panels
+- [x] T037 [US2] Implement feedback persistence and UI actions in `apps/api/src/vulnerability/vulnerability.service.ts`, `apps/api/src/vulnerability/vulnerability.controller.ts`, and `apps/web/src/pages/VulnerabilityReviewPage.tsx`
 
 **Checkpoint**: User Stories 1 and 2 both work independently.
 
@@ -126,16 +126,16 @@ a completed scan, poll for readiness, and download the PDF.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T038 [P] [US3] Add dashboard and report API coverage in `apps/api/test/dashboard/dashboard.e2e-spec.ts` and `apps/api/test/report/report.e2e-spec.ts`
-- [ ] T039 [P] [US3] Add dashboard and report UI tests in `apps/web/src/pages/DashboardPage.test.tsx` and `apps/web/src/components/report/DownloadReportButton.test.tsx`
+- [x] T038 [P] [US3] Add dashboard and report API coverage in `apps/api/test/dashboard/dashboard.e2e-spec.ts`, `apps/api/test/dashboard/dashboard.service.e2e-spec.ts`, `apps/api/test/report/report.e2e-spec.ts`, and `apps/api/test/report/report.service.e2e-spec.ts`
+- [x] T039 [P] [US3] Add dashboard and report UI tests in `apps/web/src/pages/DashboardPage.test.tsx`
 
 ### Implementation for User Story 3
 
-- [ ] T040 [P] [US3] Implement dashboard backend module in `apps/api/src/dashboard/dashboard.module.ts`, `apps/api/src/dashboard/dashboard.service.ts`, and `apps/api/src/dashboard/dashboard.controller.ts`
-- [ ] T041 [P] [US3] Implement dashboard frontend experience in `apps/web/src/pages/DashboardPage.tsx`, `apps/web/src/components/dashboard/StatCard.tsx`, `apps/web/src/components/dashboard/SeverityPieChart.tsx`, and `apps/web/src/components/dashboard/TrendLineChart.tsx`
-- [ ] T042 [US3] Implement report request, status, and download endpoints in `apps/api/src/report/report.controller.ts` and `apps/api/src/report/report.service.ts`
-- [ ] T043 [US3] Implement report frontend flow in `apps/web/src/api/reports.ts`, `apps/web/src/hooks/useReport.ts`, and `apps/web/src/components/report/DownloadReportButton.tsx`
-- [ ] T044 [US3] Add report templates and file-lifecycle behavior in report generator files under `apps/api/src/report/`
+- [x] T040 [P] [US3] Implement dashboard backend module in `apps/api/src/dashboard/dashboard.module.ts`, `apps/api/src/dashboard/dashboard.service.ts`, and `apps/api/src/dashboard/dashboard.controller.ts`
+- [x] T041 [P] [US3] Implement dashboard frontend experience in `apps/web/src/pages/DashboardPage.tsx` and supporting workspace styles in `apps/web/src/styles.css`
+- [x] T042 [US3] Implement report request, status, and download endpoints in `apps/api/src/report/report.controller.ts` and `apps/api/src/report/report.service.ts`
+- [x] T043 [US3] Implement report frontend flow in `apps/web/src/api/reports.ts` and `apps/web/src/pages/DashboardPage.tsx`
+- [x] T044 [US3] Add report templates and file-lifecycle behavior in `apps/api/src/report/services/pdf-generator.service.ts`, `apps/api/src/report/services/report-storage.service.ts`, and `apps/api/src/report/report-expiry.task.ts`
 
 **Checkpoint**: All three MVP user stories work independently.
 
@@ -145,10 +145,10 @@ a completed scan, poll for readiness, and download the PDF.
 
 **Purpose**: Harden the MVP and align docs and validation paths.
 
-- [ ] T045 [P] Update documentation entry points in `README.md`, `AGENTS.md`, and any package readmes created during implementation
-- [ ] T046 Run security and behavior review for sessions, CSRF, throttling, raw health responses, and report download expiry across touched backend files
-- [ ] T047 [P] Add or refine regression coverage for queue recovery, provider errors, and frontend error states in existing backend/frontend test paths
-- [ ] T048 Validate the quickstart flow in `specs/001-aegisai-mvp-foundation/quickstart.md` against the implemented workspace commands
+- [x] T045 [P] Update documentation entry points in `README.md`, `AGENTS.md`, and feature-package completion docs
+- [x] T046 Run security and behavior review for sessions, CSRF, throttling, raw health responses, and report download expiry across touched backend files and record it in `specs/001-aegisai-mvp-foundation/hardening-review.md`
+- [x] T047 [P] Add or refine regression coverage for queue recovery, provider errors, and frontend error states in `apps/api/test/scan/stuck-scan-recovery.task.e2e-spec.ts`, `apps/api/test/repo/repo.service.e2e-spec.ts`, `apps/web/src/api/client.test.ts`, `apps/web/src/pages/LoginPage.test.tsx`, and `apps/web/src/pages/DashboardPage.test.tsx`
+- [x] T048 Validate the quickstart flow in `specs/001-aegisai-mvp-foundation/quickstart.md` against the implemented workspace commands and repo entrypoint docs
 
 ---
 
