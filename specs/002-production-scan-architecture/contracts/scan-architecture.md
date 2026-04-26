@@ -47,6 +47,13 @@ Token Broker issue requests are tenant, repository, and scan scoped. The request
 include a principal, fixed commit SHA, TTL, and audit reason. The token value itself must
 not be persisted or logged.
 
+## GitHub App Installation Runtime
+
+GitHub Cloud repository access is modeled through a GitHub App installation principal.
+The Control Plane may exchange an app JWT for a short-lived installation token to list
+installation repositories and create repository bindings. Installation token values are
+runtime-only and must not be returned by public APIs, stored in tenant records, or logged.
+
 ## Scan Plane Boundary
 
 Scan Plane accepts scan-scoped repository access and emits scanner runs, raw artifact
