@@ -55,9 +55,15 @@
 - [x] T030 Add GitHub App runtime configuration placeholders without making token values persistent
 - [x] T031 Add e2e coverage for installation repository binding and missing credential guardrails
 
+## Phase 9: GitHub App Installation State and Webhook Slice
+
+- [x] T032 Persist GitHub App installation metadata through tenant-scoped Prisma upserts without token values
+- [x] T033 Add GitHub installation repository webhook acknowledgement endpoint
+- [x] T034 Reconcile GitHub installation repository added/removed events into repository bindings
+- [x] T035 Add e2e coverage for installation persistence, webhook reconciliation, and token leakage guardrails
+
 ## Deferred
 
-- [ ] Persist GitHub App installation state and reconcile installation webhooks
 - [ ] Implement GitLab Cloud integration runtime
 - [ ] Implement Token Broker credential issuance
 - [ ] Implement Opengrep/Trivy/Syft sandbox execution

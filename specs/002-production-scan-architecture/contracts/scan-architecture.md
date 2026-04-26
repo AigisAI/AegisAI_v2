@@ -54,6 +54,11 @@ The Control Plane may exchange an app JWT for a short-lived installation token t
 installation repositories and create repository bindings. Installation token values are
 runtime-only and must not be returned by public APIs, stored in tenant records, or logged.
 
+Installation state is persisted as tenant-scoped `ScmIntegration` and `RepositoryBinding`
+records. The Control Plane may acknowledge GitHub `installation_repositories` webhooks and
+reconcile repository additions/removals into repository bindings. Webhook acknowledgements
+must not include or persist GitHub App installation token values.
+
 ## Scan Plane Boundary
 
 Scan Plane accepts scan-scoped repository access and emits scanner runs, raw artifact
