@@ -13,6 +13,7 @@ import type {
   InstallIntegrationInput,
   InstallIntegrationOptions
 } from "./control-plane.types";
+import { GithubAppInstallationClient } from "./github-app-installation.client";
 
 @Injectable()
 export class ControlPlaneService {
@@ -23,6 +24,25 @@ export class ControlPlaneService {
   private integrationSequence = 0;
   private repositorySequence = 0;
   private scanSequence = 0;
+
+  constructor(private readonly githubAppInstallationClient: GithubAppInstallationClient) {}
+
+  async installGithubAppIntegration(input: InstallIntegrationInput): Promise<ControlPlaneIntegration> {
+    const repositories =
+      input.repositories ??
+      (await this.githubAppInstallationClient.listInstallationRepositories(input.externalInstallationId));
+
+    return this.installIntegration(
+      {
+        ...input,
+        repositories
+      },
+      {
+        provider: "GITHUB",
+        integrationType: "GITHUB_APP"
+      }
+    );
+  }
 
   installIntegration(
     input: InstallIntegrationInput,

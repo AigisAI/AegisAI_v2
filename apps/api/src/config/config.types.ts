@@ -11,6 +11,8 @@ export interface EnvironmentVariables {
   CSRF_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
+  GITHUB_APP_ID: string;
+  GITHUB_APP_PRIVATE_KEY: string;
   GITLAB_CLIENT_ID: string;
   GITLAB_CLIENT_SECRET: string;
   APP_URL: string;

@@ -9,10 +9,7 @@ export class IntegrationsController {
 
   @Post("github/install")
   installGithub(@Body() body: InstallIntegrationInput) {
-    return this.controlPlaneService.installIntegration(body, {
-      provider: "GITHUB",
-      integrationType: "GITHUB_APP"
-    });
+    return this.controlPlaneService.installGithubAppIntegration(body);
   }
 
   @Post("gitlab/install")

@@ -48,9 +48,16 @@
 - [x] T026 Add tenant-scoped scanner run, finding, and evidence read endpoints
 - [x] T027 Add e2e coverage for Scan Plane mock pipeline behavior and leakage guardrails
 
+## Phase 8: GitHub App Installation Runtime Slice
+
+- [x] T028 Add GitHub App installation client for app JWT, installation token exchange, and repository listing
+- [x] T029 Allow GitHub App install endpoint to build repository bindings from installation metadata
+- [x] T030 Add GitHub App runtime configuration placeholders without making token values persistent
+- [x] T031 Add e2e coverage for installation repository binding and missing credential guardrails
+
 ## Deferred
 
-- [ ] Implement GitHub App installation runtime
+- [ ] Persist GitHub App installation state and reconcile installation webhooks
 - [ ] Implement GitLab Cloud integration runtime
 - [ ] Implement Token Broker credential issuance
 - [ ] Implement Opengrep/Trivy/Syft sandbox execution

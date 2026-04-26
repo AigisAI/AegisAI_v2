@@ -21,8 +21,9 @@ describe("Control Plane skeleton (e2e)", () => {
     process.env.TOKEN_ENCRYPTION_KEY =
       "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
-    const [{ AppModule }, { PrismaService }] = await Promise.all([
+    const [{ AppModule }, { GithubAppInstallationClient }, { PrismaService }] = await Promise.all([
       import("../../src/app.module"),
+      import("../../src/control-plane/github-app-installation.client"),
       import("../../src/prisma/prisma.service")
     ]);
 
@@ -36,6 +37,17 @@ describe("Control Plane skeleton (e2e)", () => {
         onModuleInit: jest.fn().mockResolvedValue(undefined),
         onModuleDestroy: jest.fn().mockResolvedValue(undefined),
         $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }])
+      })
+      .overrideProvider(GithubAppInstallationClient)
+      .useValue({
+        listInstallationRepositories: jest.fn().mockResolvedValue([
+          {
+            providerRepoId: "3003",
+            fullName: "acme/runtime-bound",
+            defaultBranch: "main",
+            isPrivate: true
+          }
+        ])
       })
       .compile();
 
@@ -112,6 +124,44 @@ describe("Control Plane skeleton (e2e)", () => {
         scmIntegrationId: installData.id,
         providerRepoId: "1001",
         fullName: "acme/payments",
+        defaultBranch: "main",
+        isPrivate: true
+      })
+    ]);
+  });
+
+  it("loads GitHub App installation repositories when install payload omits repository bindings", async () => {
+    const install = await request(app.getHttpServer())
+      .post("/api/integrations/github/install")
+      .send({
+        tenantId: "tenant_github_app",
+        externalInstallationId: "98765",
+        repoReadPrincipalId: "github-app-installation:98765:repo-read",
+        commentWritePrincipalId: "github-app-installation:98765:comment-write"
+      })
+      .expect(201);
+
+    const installData = dataOf<Record<string, unknown>>(install.body);
+    expect(installData).toMatchObject({
+      provider: "GITHUB",
+      integrationType: "GITHUB_APP",
+      tenantId: "tenant_github_app",
+      externalInstallationId: "98765",
+      status: "ACTIVE"
+    });
+    expect(JSON.stringify(installData)).not.toMatch(/accessToken|tokenValue|secretValue/i);
+
+    const repositories = await request(app.getHttpServer())
+      .get("/api/repository-bindings")
+      .query({ tenantId: "tenant_github_app" })
+      .expect(200);
+
+    expect(dataOf<Array<Record<string, unknown>>>(repositories.body)).toEqual([
+      expect.objectContaining({
+        tenantId: "tenant_github_app",
+        scmIntegrationId: installData.id,
+        providerRepoId: "3003",
+        fullName: "acme/runtime-bound",
         defaultBranch: "main",
         isPrivate: true
       })

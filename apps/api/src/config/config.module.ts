@@ -19,6 +19,8 @@ import { ConfigService } from './config.service';
         CSRF_SECRET: Joi.string().min(16).required(),
         GITHUB_CLIENT_ID: Joi.string().required(),
         GITHUB_CLIENT_SECRET: Joi.string().required(),
+        GITHUB_APP_ID: Joi.string().allow('').default(''),
+        GITHUB_APP_PRIVATE_KEY: Joi.string().allow('').default(''),
         GITLAB_CLIENT_ID: Joi.string().required(),
         GITLAB_CLIENT_SECRET: Joi.string().required(),
         APP_URL: Joi.string().uri().required(),
