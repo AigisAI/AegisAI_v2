@@ -22,6 +22,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ReportModule } from './report/report.module';
 import { RepoModule } from './repo/repo.module';
 import { ScanModule } from './scan/scan.module';
+import { ScanPlaneModule } from './scan-plane/scan-plane.module';
 import { TokenBrokerModule } from './token-broker/token-broker.module';
 import { VulnerabilityModule } from './vulnerability/vulnerability.module';
 
@@ -56,6 +57,7 @@ const runtimeFeatureModules = [ScanModule, HealthModule, ReportModule];
     VulnerabilityModule,
     ControlPlaneModule,
     TokenBrokerModule,
+    ScanPlaneModule,
     GitClientModule,
     LanguageModule,
     AnalysisApiModule,
