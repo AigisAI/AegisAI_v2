@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { TokenBrokerIssueRequest } from "../../../../packages/shared/src";
 
+import { TokenCredentialIssuerService } from "./token-credential-issuer.service";
 import type { TokenBrokerAuditEvent, TokenBrokerIssueResponse } from "./token-broker.types";
 
 @Injectable()
@@ -9,10 +10,14 @@ export class TokenBrokerService {
   private credentialSequence = 0;
   private auditSequence = 0;
 
+  constructor(private readonly tokenCredentialIssuer: TokenCredentialIssuerService) {}
+
   issue(input: TokenBrokerIssueRequest): TokenBrokerIssueResponse {
+    const issuedCredential = this.tokenCredentialIssuer.issue(input);
     const response: TokenBrokerIssueResponse = {
       ...input,
       credentialId: `credential_${++this.credentialSequence}`,
+      ...issuedCredential,
       expiresInSeconds: input.ttlSeconds,
       auditEventType: "token.issued"
     };

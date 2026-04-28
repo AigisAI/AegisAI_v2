@@ -69,9 +69,15 @@
 - [x] T038 Add GitLab runtime configuration placeholder without persisting runtime token values
 - [x] T039 Add e2e coverage for GitLab repository binding and runtime token leakage guardrails
 
+## Phase 11: Token Broker Credential Issuance Slice
+
+- [x] T040 Add scan-scoped short-lived credential value issuance
+- [x] T041 Return credential value only to the Token Broker issue caller with explicit expiration metadata
+- [x] T042 Keep token values out of tenant-scoped audit events
+- [x] T043 Add e2e coverage for unique credential values and audit leakage guardrails
+
 ## Deferred
 
-- [ ] Implement Token Broker credential issuance
 - [ ] Implement Opengrep/Trivy/Syft sandbox execution
 - [ ] Implement evidence object storage and TTL deletion
 - [ ] Implement policy-as-code engine

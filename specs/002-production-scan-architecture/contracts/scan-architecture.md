@@ -47,6 +47,11 @@ Token Broker issue requests are tenant, repository, and scan scoped. The request
 include a principal, fixed commit SHA, TTL, and audit reason. The token value itself must
 not be persisted or logged.
 
+Token Broker issue responses may include a short-lived `SCM_REPOSITORY_ACCESS` credential
+value for the immediate caller. Credential values are tenant/repository/scan/commit scoped,
+expire according to the requested TTL, and must never appear in audit events or persisted
+records.
+
 ## GitHub App Installation Runtime
 
 GitHub Cloud repository access is modeled through a GitHub App installation principal.
