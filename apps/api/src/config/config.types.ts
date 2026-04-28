@@ -15,6 +15,7 @@ export interface EnvironmentVariables {
   GITHUB_APP_PRIVATE_KEY: string;
   GITLAB_CLIENT_ID: string;
   GITLAB_CLIENT_SECRET: string;
+  GITLAB_API_BASE_URL: string;
   APP_URL: string;
   FRONTEND_URL: string;
   SESSION_COOKIE_NAME: string;

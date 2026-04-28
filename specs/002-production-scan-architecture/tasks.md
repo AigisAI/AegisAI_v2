@@ -62,9 +62,15 @@
 - [x] T034 Reconcile GitHub installation repository added/removed events into repository bindings
 - [x] T035 Add e2e coverage for installation persistence, webhook reconciliation, and token leakage guardrails
 
+## Phase 10: GitLab Cloud Integration Runtime Slice
+
+- [x] T036 Add GitLab Cloud integration client for runtime token repository listing
+- [x] T037 Allow GitLab install endpoint to build repository bindings from GitLab project metadata
+- [x] T038 Add GitLab runtime configuration placeholder without persisting runtime token values
+- [x] T039 Add e2e coverage for GitLab repository binding and runtime token leakage guardrails
+
 ## Deferred
 
-- [ ] Implement GitLab Cloud integration runtime
 - [ ] Implement Token Broker credential issuance
 - [ ] Implement Opengrep/Trivy/Syft sandbox execution
 - [ ] Implement evidence object storage and TTL deletion

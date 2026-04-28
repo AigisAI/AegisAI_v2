@@ -53,6 +53,7 @@ export interface InstallIntegrationInput {
   commentWritePrincipalId?: string;
   integrationAdminPrincipalId?: string;
   repositories?: InstallRepositoryInput[];
+  runtimeAccessToken?: string;
 }
 
 export interface CreateScanRequestInput {

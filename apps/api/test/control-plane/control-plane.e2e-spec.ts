@@ -15,6 +15,9 @@ describe("Control Plane skeleton (e2e)", () => {
     repositoryBinding: { upsert: jest.Mock; deleteMany: jest.Mock };
     auditEvent: { create: jest.Mock };
   };
+  let gitlabCloudIntegrationClientMock: {
+    listIntegrationRepositories: jest.Mock;
+  };
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
@@ -32,9 +35,15 @@ describe("Control Plane skeleton (e2e)", () => {
     process.env.TOKEN_ENCRYPTION_KEY =
       "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
-    const [{ AppModule }, { GithubAppInstallationClient }, { PrismaService }] = await Promise.all([
+    const [
+      { AppModule },
+      { GithubAppInstallationClient },
+      { GitlabCloudIntegrationClient },
+      { PrismaService }
+    ] = await Promise.all([
       import("../../src/app.module"),
       import("../../src/control-plane/github-app-installation.client"),
+      import("../../src/control-plane/gitlab-cloud-integration.client"),
       import("../../src/prisma/prisma.service")
     ]);
 
@@ -51,6 +60,16 @@ describe("Control Plane skeleton (e2e)", () => {
         deleteMany: jest.fn().mockResolvedValue({ count: 1 })
       },
       auditEvent: { create: jest.fn().mockResolvedValue({}) }
+    };
+    gitlabCloudIntegrationClientMock = {
+      listIntegrationRepositories: jest.fn().mockResolvedValue([
+        {
+          providerRepoId: "7007",
+          fullName: "acme/gitlab-runtime",
+          defaultBranch: "main",
+          isPrivate: true
+        }
+      ])
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -69,6 +88,8 @@ describe("Control Plane skeleton (e2e)", () => {
           }
         ])
       })
+      .overrideProvider(GitlabCloudIntegrationClient)
+      .useValue(gitlabCloudIntegrationClientMock)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -97,6 +118,7 @@ describe("Control Plane skeleton (e2e)", () => {
     prismaMock.repositoryBinding.upsert.mockClear();
     prismaMock.repositoryBinding.deleteMany.mockClear();
     prismaMock.auditEvent.create.mockClear();
+    gitlabCloudIntegrationClientMock.listIntegrationRepositories.mockClear();
   });
 
   it("installs a GitHub App integration and exposes tenant-scoped repository bindings", async () => {
@@ -333,6 +355,51 @@ describe("Control Plane skeleton (e2e)", () => {
       })
     );
     expect(JSON.stringify(webhook.body)).not.toMatch(/accessToken|installation-token|secretValue|tokenValue/i);
+  });
+
+  it("loads GitLab Cloud integration repositories when install payload omits repository bindings", async () => {
+    const install = await request(app.getHttpServer())
+      .post("/api/integrations/gitlab/install")
+      .send({
+        tenantId: "tenant_gitlab_cloud",
+        externalInstallationId: "group:acme",
+        repoReadPrincipalId: "gitlab-cloud:group:acme:repo-read",
+        commentWritePrincipalId: "gitlab-cloud:group:acme:comment-write",
+        runtimeAccessToken: "gitlab-runtime-token"
+      })
+      .expect(201);
+
+    const installData = dataOf<Record<string, unknown>>(install.body);
+
+    expect(gitlabCloudIntegrationClientMock.listIntegrationRepositories).toHaveBeenCalledWith(
+      "group:acme",
+      "gitlab-runtime-token"
+    );
+    expect(installData).toMatchObject({
+      provider: "GITLAB",
+      integrationType: "GITLAB_CLOUD_INTEGRATION",
+      tenantId: "tenant_gitlab_cloud",
+      externalInstallationId: "group:acme",
+      status: "ACTIVE"
+    });
+    expect(JSON.stringify(installData)).not.toMatch(/runtimeAccessToken|gitlab-runtime-token|tokenValue|secretValue/i);
+
+    const repositories = await request(app.getHttpServer())
+      .get("/api/repository-bindings")
+      .query({ tenantId: "tenant_gitlab_cloud" })
+      .expect(200);
+
+    expect(dataOf<Array<Record<string, unknown>>>(repositories.body)).toEqual([
+      expect.objectContaining({
+        tenantId: "tenant_gitlab_cloud",
+        scmIntegrationId: installData.id,
+        providerRepoId: "7007",
+        fullName: "acme/gitlab-runtime",
+        defaultBranch: "main",
+        isPrivate: true
+      })
+    ]);
+    expect(JSON.stringify(repositories.body)).not.toMatch(/runtimeAccessToken|gitlab-runtime-token|tokenValue|secretValue/i);
   });
 
   it("creates scan requests with canonical keys and risk-based isolation escalation", async () => {

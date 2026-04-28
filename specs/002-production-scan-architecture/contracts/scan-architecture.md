@@ -59,6 +59,14 @@ records. The Control Plane may acknowledge GitHub `installation_repositories` we
 reconcile repository additions/removals into repository bindings. Webhook acknowledgements
 must not include or persist GitHub App installation token values.
 
+## GitLab Cloud Integration Runtime
+
+GitLab Cloud repository access is modeled through project/group integration metadata and
+webhook flows. The Control Plane may use a runtime-only GitLab access token to list
+accessible projects and create repository bindings for a tenant-scoped
+`GITLAB_CLOUD_INTEGRATION`. GitLab runtime token values must not be returned by public APIs,
+stored in integration records, repository bindings, or logs.
+
 ## Scan Plane Boundary
 
 Scan Plane accepts scan-scoped repository access and emits scanner runs, raw artifact

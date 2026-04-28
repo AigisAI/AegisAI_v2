@@ -6,6 +6,7 @@ import { ControlPlaneService } from "./control-plane.service";
 import { GithubAppInstallationClient } from "./github-app-installation.client";
 import { GithubAppInstallationStateService } from "./github-app-installation-state.service";
 import { GithubWebhooksController } from "./github-webhooks.controller";
+import { GitlabCloudIntegrationClient } from "./gitlab-cloud-integration.client";
 import { IntegrationsController } from "./integrations.controller";
 import { RepositoryBindingsController } from "./repository-bindings.controller";
 import { ScanRequestsController } from "./scan-requests.controller";
@@ -21,12 +22,14 @@ import { ScanRequestsController } from "./scan-requests.controller";
   providers: [
     ControlPlaneService,
     GithubAppInstallationClient,
-    GithubAppInstallationStateService
+    GithubAppInstallationStateService,
+    GitlabCloudIntegrationClient
   ],
   exports: [
     ControlPlaneService,
     GithubAppInstallationClient,
-    GithubAppInstallationStateService
+    GithubAppInstallationStateService,
+    GitlabCloudIntegrationClient
   ]
 })
 export class ControlPlaneModule {}

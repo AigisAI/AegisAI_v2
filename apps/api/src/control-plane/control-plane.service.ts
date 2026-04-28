@@ -19,6 +19,7 @@ import type {
 } from "./control-plane.types";
 import { GithubAppInstallationClient } from "./github-app-installation.client";
 import { GithubAppInstallationStateService } from "./github-app-installation-state.service";
+import { GitlabCloudIntegrationClient } from "./gitlab-cloud-integration.client";
 
 @Injectable()
 export class ControlPlaneService {
@@ -32,7 +33,8 @@ export class ControlPlaneService {
 
   constructor(
     private readonly githubAppInstallationClient: GithubAppInstallationClient,
-    private readonly githubAppInstallationState: GithubAppInstallationStateService
+    private readonly githubAppInstallationState: GithubAppInstallationStateService,
+    private readonly gitlabCloudIntegrationClient: GitlabCloudIntegrationClient
   ) {}
 
   async installGithubAppIntegration(input: InstallIntegrationInput): Promise<ControlPlaneIntegration> {
@@ -54,6 +56,27 @@ export class ControlPlaneService {
     await this.githubAppInstallationState.persistInstallation(integration, repositories);
 
     return integration;
+  }
+
+  async installGitlabCloudIntegration(input: InstallIntegrationInput): Promise<ControlPlaneIntegration> {
+    const repositories =
+      input.repositories ??
+      (await this.gitlabCloudIntegrationClient.listIntegrationRepositories(
+        input.externalInstallationId,
+        input.runtimeAccessToken
+      ));
+
+    return this.installIntegration(
+      {
+        ...input,
+        repositories,
+        runtimeAccessToken: undefined
+      },
+      {
+        provider: "GITLAB",
+        integrationType: "GITLAB_CLOUD_INTEGRATION"
+      }
+    );
   }
 
   installIntegration(
