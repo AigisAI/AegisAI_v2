@@ -59,7 +59,7 @@ describe("Token Broker and audit skeleton (e2e)", () => {
     return body as T;
   };
 
-  it("issues scan-scoped credential metadata without returning token values", async () => {
+  it("issues scan-scoped short-lived credential values without persisting them", async () => {
     const response = await request(app.getHttpServer())
       .post("/api/token-broker/issue")
       .send({
@@ -83,10 +83,32 @@ describe("Token Broker and audit skeleton (e2e)", () => {
       commitSha: "abc123",
       ttlSeconds: 600,
       expiresInSeconds: 600,
-      auditEventType: "token.issued"
+      auditEventType: "token.issued",
+      credentialType: "SCM_REPOSITORY_ACCESS"
     });
     expect(responseData.credentialId).toMatch(/^credential_/);
-    expect(JSON.stringify(responseData)).not.toMatch(/tokenValue|secretValue|accessToken|refreshToken/i);
+    expect(responseData.credentialValue).toMatch(/^aegis_tb_/);
+    expect(new Date(responseData.issuedAt as string).toISOString()).toBe(responseData.issuedAt);
+    expect(new Date(responseData.expiresAt as string).getTime()).toBeGreaterThan(
+      new Date(responseData.issuedAt as string).getTime()
+    );
+
+    const secondResponse = await request(app.getHttpServer())
+      .post("/api/token-broker/issue")
+      .send({
+        tenantId: "tenant_gamma",
+        repositoryBindingId: "repository_binding_1",
+        scanRequestId: "scan_request_1",
+        principal: "REPO_READ",
+        commitSha: "abc123",
+        ttlSeconds: 600,
+        auditReason: "scan-fetch"
+      })
+      .expect(201);
+
+    expect(dataOf<Record<string, unknown>>(secondResponse.body).credentialValue).not.toBe(
+      responseData.credentialValue
+    );
   });
 
   it("records tenant-scoped audit events for token issuance", async () => {
@@ -126,6 +148,8 @@ describe("Token Broker and audit skeleton (e2e)", () => {
         })
       })
     ]);
-    expect(JSON.stringify(auditData)).not.toMatch(/tokenValue|secretValue|accessToken|refreshToken/i);
+    expect(JSON.stringify(auditData)).not.toMatch(
+      /credentialValue|aegis_tb_|tokenValue|secretValue|accessToken|refreshToken/i
+    );
   });
 });

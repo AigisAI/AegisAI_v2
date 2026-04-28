@@ -2,6 +2,10 @@ import type { AuditEvent, ScmPrincipal, TokenBrokerIssueRequest } from "../../..
 
 export interface TokenBrokerIssueResponse extends TokenBrokerIssueRequest {
   credentialId: string;
+  credentialType: "SCM_REPOSITORY_ACCESS";
+  credentialValue: string;
+  issuedAt: string;
+  expiresAt: string;
   expiresInSeconds: number;
   auditEventType: "token.issued";
 }
