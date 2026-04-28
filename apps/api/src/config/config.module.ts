@@ -23,6 +23,7 @@ import { ConfigService } from './config.service';
         GITHUB_APP_PRIVATE_KEY: Joi.string().allow('').default(''),
         GITLAB_CLIENT_ID: Joi.string().required(),
         GITLAB_CLIENT_SECRET: Joi.string().required(),
+        GITLAB_API_BASE_URL: Joi.string().uri().default('https://gitlab.com/api/v4'),
         APP_URL: Joi.string().uri().required(),
         FRONTEND_URL: Joi.string().uri().required(),
         SESSION_COOKIE_NAME: Joi.string().default('connect.sid'),

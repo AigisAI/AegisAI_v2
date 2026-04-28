@@ -14,10 +14,7 @@ export class IntegrationsController {
 
   @Post("gitlab/install")
   installGitlab(@Body() body: InstallIntegrationInput) {
-    return this.controlPlaneService.installIntegration(body, {
-      provider: "GITLAB",
-      integrationType: "GITLAB_CLOUD_INTEGRATION"
-    });
+    return this.controlPlaneService.installGitlabCloudIntegration(body);
   }
 
   @Get()
