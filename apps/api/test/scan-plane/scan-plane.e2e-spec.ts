@@ -133,4 +133,82 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
     expect(evidenceData).toHaveLength(1);
     expect(evidenceData[0].objectKey).toContain("tenant_reads/scan_request_2/evidence/");
   });
+
+  it("executes scanner adapters through sandbox metadata without package install or credential leakage", async () => {
+    const response = await request(app.getHttpServer())
+      .post("/api/scan-plane/scanner-runs/execute")
+      .send({
+        tenantId: "tenant_exec",
+        scanRequestId: "scan_request_3",
+        scannerSetVersion: "scanner-set-v2",
+        workspaceRef: "sandbox://tenant_exec/scan_request_3/workspace",
+        isolationClass: "HARDENED",
+        timeoutSeconds: 120
+      })
+      .expect(201);
+
+    const responseData = dataOf<{
+      scannerRuns: Array<Record<string, unknown>>;
+      evidencePacks: Array<Record<string, unknown>>;
+      adapterInvocations: Array<{
+        scanner: string;
+        command: string;
+        args: string[];
+        sandbox: Record<string, unknown>;
+      }>;
+    }>(response.body);
+
+    expect(responseData.scannerRuns).toEqual([
+      expect.objectContaining({ scanner: "OPENGREP", status: "COMPLETED" }),
+      expect.objectContaining({ scanner: "TRIVY", status: "COMPLETED" }),
+      expect.objectContaining({ scanner: "SYFT", status: "COMPLETED" })
+    ]);
+    expect(responseData.adapterInvocations).toEqual([
+      expect.objectContaining({
+        scanner: "OPENGREP",
+        command: "opengrep",
+        args: expect.arrayContaining(["--json", "--timeout", "120", "sandbox://tenant_exec/scan_request_3/workspace"]),
+        sandbox: expect.objectContaining({
+          isolationClass: "HARDENED",
+          networkEgress: false,
+          readOnlyWorkspace: true,
+          packageInstallAllowed: false,
+          buildAllowed: false
+        })
+      }),
+      expect.objectContaining({
+        scanner: "TRIVY",
+        command: "trivy",
+        args: expect.arrayContaining(["fs", "--format", "json", "--timeout", "120s", "sandbox://tenant_exec/scan_request_3/workspace"]),
+        sandbox: expect.objectContaining({
+          networkEgress: false,
+          readOnlyWorkspace: true,
+          packageInstallAllowed: false,
+          buildAllowed: false
+        })
+      }),
+      expect.objectContaining({
+        scanner: "SYFT",
+        command: "syft",
+        args: expect.arrayContaining(["sandbox://tenant_exec/scan_request_3/workspace", "-o", "json"]),
+        sandbox: expect.objectContaining({
+          networkEgress: false,
+          readOnlyWorkspace: true,
+          packageInstallAllowed: false,
+          buildAllowed: false
+        })
+      })
+    ]);
+    expect(responseData.evidencePacks).toEqual([
+      expect.objectContaining({
+        tenantId: "tenant_exec",
+        scanRequestId: "scan_request_3",
+        classification: "SHORT_LIVED_EVIDENCE",
+        redacted: true
+      })
+    ]);
+    expect(JSON.stringify(responseData)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|npm install|pip install|mvn package|gradle build/i
+    );
+  });
 });

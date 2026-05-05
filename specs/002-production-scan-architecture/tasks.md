@@ -76,9 +76,15 @@
 - [x] T042 Keep token values out of tenant-scoped audit events
 - [x] T043 Add e2e coverage for unique credential values and audit leakage guardrails
 
+## Phase 12: Sandbox Scanner Execution Adapter Slice
+
+- [x] T044 Add Opengrep, Trivy, and Syft sandbox scanner adapter invocation boundary
+- [x] T045 Return scanner run metadata for sandboxed scanner execution requests
+- [x] T046 Attach read-only workspace, no-network, no-package-install, and no-build sandbox metadata
+- [x] T047 Add e2e coverage for scanner adapter execution and credential/source leakage guardrails
+
 ## Deferred
 
-- [ ] Implement Opengrep/Trivy/Syft sandbox execution
 - [ ] Implement evidence object storage and TTL deletion
 - [ ] Implement policy-as-code engine
 - [ ] Implement AI detector/planner inference

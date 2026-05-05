@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 
 import { ScanPlaneService } from "./scan-plane.service";
-import type { RunMockScanPlaneInput } from "./scan-plane.types";
+import type { RunMockScanPlaneInput, RunSandboxScannersInput } from "./scan-plane.types";
 
 @Controller("scan-plane")
 export class ScanPlaneController {
@@ -10,6 +10,11 @@ export class ScanPlaneController {
   @Post("mock-runs")
   runMockPipeline(@Body() body: RunMockScanPlaneInput) {
     return this.scanPlaneService.runMockPipeline(body);
+  }
+
+  @Post("scanner-runs/execute")
+  runSandboxScanners(@Body() body: RunSandboxScannersInput) {
+    return this.scanPlaneService.runSandboxScanners(body);
   }
 
   @Get("scanner-runs")
