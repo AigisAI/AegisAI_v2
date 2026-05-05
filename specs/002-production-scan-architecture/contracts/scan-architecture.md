@@ -78,6 +78,14 @@ Scan Plane accepts scan-scoped repository access and emits scanner runs, raw art
 references, normalized findings, evidence metadata, and audit events. It must not receive
 comment-write or integration-admin authority.
 
+Opengrep, Trivy, and Syft execution is exposed through scanner adapter invocation metadata.
+Adapters must run against a scan-scoped read-only workspace reference with network egress
+disabled, package installation disabled, build commands disabled, and customer code
+execution disabled. Scanner execution responses may include scanner run records, raw
+artifact references, adapter command metadata, and redacted short-lived evidence metadata;
+they must not include SCM credentials, full repository archives, package install commands,
+or build commands.
+
 ## AI Plane Boundary
 
 AI advisory requests contain a normalized finding, reduced redacted evidence, and model

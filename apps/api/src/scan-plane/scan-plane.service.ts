@@ -4,9 +4,12 @@ import { createEvidencePackMetadata } from "../../../../packages/shared/src";
 import type {
   DeterministicScannerKind,
   MockScanPlaneRunResult,
-  RunMockScanPlaneInput
+  RunMockScanPlaneInput,
+  RunSandboxScannersInput,
+  SandboxScannerExecutionResult
 } from "./scan-plane.types";
 import type { EvidencePack, NormalizedFinding, ScannerRun } from "../../../../packages/shared/src";
+import { ScannerSandboxAdapterService } from "./scanner-sandbox-adapter.service";
 
 @Injectable()
 export class ScanPlaneService {
@@ -17,6 +20,8 @@ export class ScanPlaneService {
   private scannerRunSequence = 0;
   private findingSequence = 0;
   private evidenceSequence = 0;
+
+  constructor(private readonly scannerSandboxAdapter: ScannerSandboxAdapterService) {}
 
   runMockPipeline(input: RunMockScanPlaneInput): MockScanPlaneRunResult {
     const scanners: DeterministicScannerKind[] = ["OPENGREP", "TRIVY", "SYFT"];
@@ -40,6 +45,39 @@ export class ScanPlaneService {
       scannerRuns,
       findings: [finding],
       evidencePacks: [evidence]
+    };
+  }
+
+  runSandboxScanners(input: RunSandboxScannersInput): SandboxScannerExecutionResult {
+    const adapterInvocations = this.scannerSandboxAdapter.buildInvocations(input);
+    const scannerRuns = adapterInvocations.map((invocation) => ({
+      id: `scanner_run_${++this.scannerRunSequence}`,
+      tenantId: input.tenantId,
+      scanRequestId: input.scanRequestId,
+      scanner: invocation.scanner,
+      scannerVersion: this.scannerSandboxAdapter.scannerVersion(
+        invocation.scanner,
+        input.scannerSetVersion
+      ),
+      status: "COMPLETED" as const,
+      rawArtifactObjectKey: `${input.tenantId}/${input.scanRequestId}/raw/${invocation.scanner.toLowerCase()}.json`
+    }));
+    const evidence = createEvidencePackMetadata({
+      id: `evidence_${++this.evidenceSequence}`,
+      tenantId: input.tenantId,
+      scanRequestId: input.scanRequestId,
+      byteSize: 1024,
+      expiresAt: "2026-04-19T00:00:00.000Z",
+      redacted: true
+    });
+
+    this.scannerRuns.push(...scannerRuns);
+    this.evidencePacks.push(evidence);
+
+    return {
+      scannerRuns,
+      evidencePacks: [evidence],
+      adapterInvocations
     };
   }
 
