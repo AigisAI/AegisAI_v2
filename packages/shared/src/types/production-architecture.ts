@@ -210,6 +210,20 @@ export interface AiAdvisoryRequest {
   modelVersion: string;
 }
 
+export interface AiAdvisoryResult {
+  id: string;
+  tenantId: string;
+  scanRequestId: string;
+  findingId: string;
+  modelVersion: string;
+  advisoryOnly: true;
+  redactedEvidenceOnly: true;
+  detectorSignals: string[];
+  plannerSteps: string[];
+  confidence: number;
+  createdAt: string;
+}
+
 export interface IsolationEscalationInput {
   tenantAgeDays: number;
   repositorySizeMb: number;

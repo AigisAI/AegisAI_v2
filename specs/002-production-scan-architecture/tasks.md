@@ -97,6 +97,13 @@
 - [x] T054 Keep AI advisory metadata visible but non-authoritative for enforcement decisions
 - [x] T055 Add e2e coverage for policy decision shape, coverage requirements, and leakage guardrails
 
+## Phase 15: AI Advisory Detector Planner Skeleton Slice
+
+- [x] T056 Add AI advisory result contract for advisory-only detector/planner output
+- [x] T057 Add mock AI Plane advisory service over normalized findings and redacted evidence
+- [x] T058 Add AI advisory create and tenant-scoped read endpoints
+- [x] T059 Add e2e coverage for reduced evidence input and policy/finding non-authority guardrails
+
 ## Deferred
 
-- [ ] Implement AI detector/planner inference
+- [ ] Implement production AI detector/planner model runtime
