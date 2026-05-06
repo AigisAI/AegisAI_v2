@@ -23,6 +23,8 @@ sandbox, or AI runtime implementation.
 - `POST /api/evidence/:evidencePackId/access-requests`
 - `POST /api/policy-decisions/evaluate`
 - `GET /api/policy-decisions/:policyDecisionId`
+- `POST /api/ai-advisories`
+- `GET /api/ai-advisories/:advisoryId`
 - `POST /api/waivers`
 - `PATCH /api/waivers/:waiverId`
 - `POST /api/suppressions`
@@ -93,6 +95,12 @@ AI advisory requests contain a normalized finding, reduced redacted evidence, an
 version. They must not contain SCM credentials, full repository input, or raw unbounded
 scanner payloads. AI output is advisory metadata only and cannot override deterministic
 scanner findings or policy decisions.
+
+AI detector/planner output in this milestone is a mock runtime boundary that returns
+advisory-only detector signals, planner steps, confidence, model version, and tenant/scan
+attribution. It must not emit authoritative finding status, enforcement action, block
+request, waiver state, suppression state, credential values, full repository content, or raw
+scanner payloads.
 
 ## EvidencePack
 

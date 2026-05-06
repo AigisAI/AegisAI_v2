@@ -5,6 +5,7 @@ import { ThrottlerModule, seconds } from '@nestjs/throttler';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AiPlaneModule } from './ai-plane/ai-plane.module';
 import { AuthModule } from './auth/auth.module';
 import { AnalysisApiModule } from './client/analysis/analysis-api.module';
 import { GitClientModule } from './client/git/git-client.module';
@@ -60,6 +61,7 @@ const runtimeFeatureModules = [ScanModule, HealthModule, ReportModule];
     TokenBrokerModule,
     ScanPlaneModule,
     PolicyModule,
+    AiPlaneModule,
     GitClientModule,
     LanguageModule,
     AnalysisApiModule,
