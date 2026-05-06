@@ -90,7 +90,13 @@
 - [x] T050 Add TTL deletion task for expired evidence objects
 - [x] T051 Add e2e coverage for evidence storage, TTL deletion, and credential/source leakage guardrails
 
+## Phase 14: Policy Engine Decision Skeleton Slice
+
+- [x] T052 Add deterministic policy engine evaluator for scanner-first findings
+- [x] T053 Add policy decision evaluate and tenant-scoped read endpoints
+- [x] T054 Keep AI advisory metadata visible but non-authoritative for enforcement decisions
+- [x] T055 Add e2e coverage for policy decision shape, coverage requirements, and leakage guardrails
+
 ## Deferred
 
-- [ ] Implement policy-as-code engine
 - [ ] Implement AI detector/planner inference

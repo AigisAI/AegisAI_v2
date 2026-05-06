@@ -21,6 +21,7 @@ sandbox, or AI runtime implementation.
 - `GET /api/findings/:findingId`
 - `GET /api/evidence/:evidencePackId`
 - `POST /api/evidence/:evidencePackId/access-requests`
+- `POST /api/policy-decisions/evaluate`
 - `GET /api/policy-decisions/:policyDecisionId`
 - `POST /api/waivers`
 - `PATCH /api/waivers/:waiverId`
@@ -111,3 +112,9 @@ storage and KMS integration remain deferred.
 PolicyDecision is structured. It includes enforcement action, comment allowance, dashboard
 visibility, ticket/block requests, reason codes, required coverage set, waiver application,
 stale suppression, and AI advisory visibility.
+
+Policy evaluation in this milestone is deterministic and scanner-first. It accepts normalized
+finding metadata, scan lane, scanner coverage metadata, and optional AI advisory visibility
+metadata. AI advisory input may be surfaced through `aiAdvisoryVisible`, but suggested AI
+actions must not select or override enforcement action, ticket request, block request, waiver
+state, or stale suppression.
