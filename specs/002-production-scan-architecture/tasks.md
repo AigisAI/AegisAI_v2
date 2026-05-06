@@ -104,6 +104,13 @@
 - [x] T058 Add AI advisory create and tenant-scoped read endpoints
 - [x] T059 Add e2e coverage for reduced evidence input and policy/finding non-authority guardrails
 
+## Phase 16: AI Advisory Runtime Adapter Boundary Slice
+
+- [x] T060 Add AI advisory runtime client for `AI_SERVER_URL` detector/planner calls
+- [x] T061 Route `USE_INTERNAL_AI=true` advisory requests through the runtime adapter
+- [x] T062 Validate runtime responses as advisory-only metadata
+- [x] T063 Add e2e coverage for reduced request forwarding, runtime response validation, and leakage guardrails
+
 ## Deferred
 
-- [ ] Implement production AI detector/planner model runtime
+- [ ] Implement production AI detector/planner model service

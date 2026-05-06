@@ -33,6 +33,7 @@ import { ConfigService } from './config.service';
         ANALYSIS_CLIENT_MODE: Joi.string().valid('mock', 'internal').default('mock'),
         AI_SERVER_URL: Joi.string().uri().default('http://localhost:8000'),
         USE_INTERNAL_AI: Joi.string().valid('true', 'false').default('false'),
+        AI_ADVISORY_TIMEOUT_MS: Joi.number().integer().positive().default(2500),
         INTERNAL_API_SECRET: Joi.string().allow('').optional(),
         GITHUB_APP_WEBHOOK_SECRET: Joi.string().allow('').optional(),
         GITLAB_WEBHOOK_SECRET: Joi.string().allow('').optional(),

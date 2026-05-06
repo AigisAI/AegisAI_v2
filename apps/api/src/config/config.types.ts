@@ -25,6 +25,7 @@ export interface EnvironmentVariables {
   ANALYSIS_CLIENT_MODE: AnalysisClientMode;
   AI_SERVER_URL: string;
   USE_INTERNAL_AI: BooleanString;
+  AI_ADVISORY_TIMEOUT_MS: number;
   INTERNAL_API_SECRET: string;
   GITHUB_APP_WEBHOOK_SECRET: string;
   GITLAB_WEBHOOK_SECRET: string;
