@@ -83,8 +83,14 @@
 - [x] T046 Attach read-only workspace, no-network, no-package-install, and no-build sandbox metadata
 - [x] T047 Add e2e coverage for scanner adapter execution and credential/source leakage guardrails
 
+## Phase 13: Evidence Object Storage and TTL Deletion Slice
+
+- [x] T048 Add local dev/demo evidence object storage adapter with tenant/scan scoped object keys
+- [x] T049 Add metadata-only evidence access request endpoint
+- [x] T050 Add TTL deletion task for expired evidence objects
+- [x] T051 Add e2e coverage for evidence storage, TTL deletion, and credential/source leakage guardrails
+
 ## Deferred
 
-- [ ] Implement evidence object storage and TTL deletion
 - [ ] Implement policy-as-code engine
 - [ ] Implement AI detector/planner inference
