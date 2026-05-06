@@ -31,5 +31,7 @@ export interface EnvironmentVariables {
   REPORT_STORAGE_PATH: string;
   REPORT_EXPIRY_HOURS: number;
   REPORT_EXPIRY_INTERVAL_MS: number;
+  EVIDENCE_STORAGE_PATH: string;
+  EVIDENCE_EXPIRY_INTERVAL_MS: number;
   TEAMS_WEBHOOK_URL: string;
 }

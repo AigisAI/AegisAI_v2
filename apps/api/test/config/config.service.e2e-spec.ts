@@ -22,6 +22,7 @@ describe('ConfigService', () => {
         const values: Record<string, unknown> = {
           PORT: 3000,
           REPORT_EXPIRY_HOURS: 24,
+          EVIDENCE_EXPIRY_INTERVAL_MS: 900000,
           TEAMS_WEBHOOK_URL: 'https://teams.example/webhook'
         };
 
@@ -32,6 +33,7 @@ describe('ConfigService', () => {
     expect(service.get('PORT')).toBe(3000);
     expect(typeof service.get('PORT')).toBe('number');
     expect(service.getOptional('REPORT_EXPIRY_HOURS')).toBe(24);
+    expect(service.getOptional('EVIDENCE_EXPIRY_INTERVAL_MS')).toBe(900000);
     expect(service.getOptional('TEAMS_WEBHOOK_URL')).toBe('https://teams.example/webhook');
   });
 

@@ -98,6 +98,14 @@ scanner findings or policy decisions.
 EvidencePack metadata includes tenant ID, scan request ID, data classification, tenant/scan
 scoped object key, expiration timestamp, byte size, and redaction state.
 
+Evidence object storage in this milestone is a local dev/demo adapter behind the
+Data/Security Plane boundary. Evidence access requests return metadata-only descriptors
+with `METADATA_ONLY` access mode and redacted evidence references. Access responses and
+stored payloads must not include SCM credential values, workspace references, raw source
+archives, full repository content, or unbounded scanner payloads. Expired evidence objects
+are deleted by TTL cleanup using the tenant/scan scoped object key, while production object
+storage and KMS integration remain deferred.
+
 ## PolicyDecision
 
 PolicyDecision is structured. It includes enforcement action, comment allowance, dashboard

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { createEvidencePackMetadata } from "../../../../packages/shared/src";
 
 import type {
@@ -8,7 +8,13 @@ import type {
   RunSandboxScannersInput,
   SandboxScannerExecutionResult
 } from "./scan-plane.types";
-import type { EvidencePack, NormalizedFinding, ScannerRun } from "../../../../packages/shared/src";
+import type {
+  EvidenceAccessRequest,
+  EvidencePack,
+  NormalizedFinding,
+  ScannerRun
+} from "../../../../packages/shared/src";
+import { EvidenceObjectStorageService } from "./evidence-object-storage.service";
 import { ScannerSandboxAdapterService } from "./scanner-sandbox-adapter.service";
 
 @Injectable()
@@ -21,7 +27,10 @@ export class ScanPlaneService {
   private findingSequence = 0;
   private evidenceSequence = 0;
 
-  constructor(private readonly scannerSandboxAdapter: ScannerSandboxAdapterService) {}
+  constructor(
+    private readonly scannerSandboxAdapter: ScannerSandboxAdapterService,
+    private readonly evidenceObjectStorage: EvidenceObjectStorageService
+  ) {}
 
   runMockPipeline(input: RunMockScanPlaneInput): MockScanPlaneRunResult {
     const scanners: DeterministicScannerKind[] = ["OPENGREP", "TRIVY", "SYFT"];
@@ -97,6 +106,60 @@ export class ScanPlaneService {
     return this.evidencePacks.filter(
       (evidence) => evidence.tenantId === tenantId && evidence.scanRequestId === scanRequestId
     );
+  }
+
+  async requestEvidenceAccess(input: {
+    evidencePackId: string;
+    tenantId: string;
+    scanRequestId: string;
+  }): Promise<EvidenceAccessRequest> {
+    const evidencePack = this.evidencePacks.find(
+      (evidence) =>
+        evidence.id === input.evidencePackId &&
+        evidence.tenantId === input.tenantId &&
+        evidence.scanRequestId === input.scanRequestId
+    );
+
+    if (!evidencePack) {
+      throw new NotFoundException("Evidence pack was not found for tenant and scan request.");
+    }
+
+    await this.evidenceObjectStorage.write({
+      objectKey: evidencePack.objectKey,
+      payload: {
+        evidencePackId: evidencePack.id,
+        tenantId: evidencePack.tenantId,
+        scanRequestId: evidencePack.scanRequestId,
+        classification: evidencePack.classification,
+        expiresAt: evidencePack.expiresAt,
+        byteSize: evidencePack.byteSize,
+        redacted: true,
+        accessMode: "METADATA_ONLY"
+      }
+    });
+
+    return {
+      evidencePackId: evidencePack.id,
+      tenantId: evidencePack.tenantId,
+      scanRequestId: evidencePack.scanRequestId,
+      objectKey: evidencePack.objectKey,
+      expiresAt: evidencePack.expiresAt,
+      accessMode: "METADATA_ONLY",
+      redacted: true,
+      requestedAt: new Date().toISOString()
+    };
+  }
+
+  listExpiredEvidencePacks(referenceTime: Date): EvidencePack[] {
+    return this.evidencePacks.filter((evidence) => new Date(evidence.expiresAt) <= referenceTime);
+  }
+
+  removeEvidencePack(evidencePackId: string): void {
+    const evidenceIndex = this.evidencePacks.findIndex((evidence) => evidence.id === evidencePackId);
+
+    if (evidenceIndex >= 0) {
+      this.evidencePacks.splice(evidenceIndex, 1);
+    }
   }
 
   private createScannerRun(input: RunMockScanPlaneInput, scanner: DeterministicScannerKind): ScannerRun {

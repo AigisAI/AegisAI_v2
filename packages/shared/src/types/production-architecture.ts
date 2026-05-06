@@ -122,6 +122,17 @@ export interface EvidencePack {
   redacted: boolean;
 }
 
+export interface EvidenceAccessRequest {
+  evidencePackId: string;
+  tenantId: string;
+  scanRequestId: string;
+  objectKey: string;
+  expiresAt: string;
+  accessMode: 'METADATA_ONLY';
+  redacted: true;
+  requestedAt: string;
+}
+
 export interface PolicyDecision {
   id: string;
   tenantId: string;

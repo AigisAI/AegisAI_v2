@@ -211,4 +211,47 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
       /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|npm install|pip install|mvn package|gradle build/i
     );
   });
+
+  it("creates metadata-only evidence access requests without leaking repository content or credentials", async () => {
+    const scanRun = await request(app.getHttpServer())
+      .post("/api/scan-plane/scanner-runs/execute")
+      .send({
+        tenantId: "tenant_evidence",
+        scanRequestId: "scan_request_4",
+        scannerSetVersion: "scanner-set-v2",
+        workspaceRef: "sandbox://tenant_evidence/scan_request_4/workspace",
+        isolationClass: "HARDENED",
+        timeoutSeconds: 120
+      })
+      .expect(201);
+
+    const scanRunData = dataOf<{
+      evidencePacks: Array<{ id: string; objectKey: string }>;
+    }>(scanRun.body);
+    const evidencePack = scanRunData.evidencePacks[0];
+
+    const access = await request(app.getHttpServer())
+      .post(`/api/evidence/${evidencePack.id}/access-requests`)
+      .send({
+        tenantId: "tenant_evidence",
+        scanRequestId: "scan_request_4"
+      })
+      .expect(201);
+
+    const accessData = dataOf<Record<string, unknown>>(access.body);
+
+    expect(accessData).toEqual(
+      expect.objectContaining({
+        evidencePackId: evidencePack.id,
+        objectKey: evidencePack.objectKey,
+        tenantId: "tenant_evidence",
+        scanRequestId: "scan_request_4",
+        accessMode: "METADATA_ONLY",
+        redacted: true
+      })
+    );
+    expect(JSON.stringify(accessData)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|workspaceRef|rawContent/i
+    );
+  });
 });
