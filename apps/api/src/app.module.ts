@@ -18,6 +18,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { LanguageModule } from './language/language.module';
 import { ObservabilityModule } from './observability/observability.module';
+import { PolicyModule } from './policy/policy.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReportModule } from './report/report.module';
 import { RepoModule } from './repo/repo.module';
@@ -58,6 +59,7 @@ const runtimeFeatureModules = [ScanModule, HealthModule, ReportModule];
     ControlPlaneModule,
     TokenBrokerModule,
     ScanPlaneModule,
+    PolicyModule,
     GitClientModule,
     LanguageModule,
     AnalysisApiModule,

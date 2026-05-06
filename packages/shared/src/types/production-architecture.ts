@@ -150,6 +150,19 @@ export interface PolicyDecision {
   aiAdvisoryVisible: boolean;
 }
 
+export interface PolicyEvaluationInput {
+  tenantId: string;
+  scanRequestId: string;
+  finding: NormalizedFinding;
+  scanLane: ScanLane;
+  scannerCoverage: ScannerKind[];
+  aiAdvisory?: {
+    visible: boolean;
+    suggestedAction?: PolicyAction;
+    summary?: string;
+  };
+}
+
 export interface Waiver {
   id: string;
   tenantId: string;
