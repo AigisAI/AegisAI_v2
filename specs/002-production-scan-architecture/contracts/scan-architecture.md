@@ -102,6 +102,12 @@ attribution. It must not emit authoritative finding status, enforcement action, 
 request, waiver state, suppression state, credential values, full repository content, or raw
 scanner payloads.
 
+When `USE_INTERNAL_AI=true`, the API server may forward the same reduced advisory request to
+`AI_SERVER_URL` at `/ai/advisories`. The runtime response is accepted only when it contains
+advisory-only detector signals, planner steps, confidence, and model version. Runtime
+responses that include policy authority, finding override fields, credentials, full
+repository content, source archives, or raw scanner payloads must be rejected.
+
 ## EvidencePack
 
 EvidencePack metadata includes tenant ID, scan request ID, data classification, tenant/scan

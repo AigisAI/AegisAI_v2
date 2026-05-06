@@ -1,6 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 
 import type { AiAdvisoryRequest, AiAdvisoryResult } from "../../../../packages/shared/src";
+import { ConfigService } from "../config/config.service";
+import { AiAdvisoryRuntimeClient } from "./ai-advisory-runtime.client";
+
+import type { AiAdvisoryRuntimeOutput } from "./ai-advisory-runtime.client";
 
 const FORBIDDEN_AI_INPUT_KEYS = [
   "accessToken",
@@ -19,20 +23,26 @@ export class AiAdvisoryService {
   private readonly advisories: AiAdvisoryResult[] = [];
   private advisorySequence = 0;
 
-  createAdvisory(input: AiAdvisoryRequest): AiAdvisoryResult {
+  constructor(
+    private readonly config?: ConfigService,
+    private readonly runtimeClient?: AiAdvisoryRuntimeClient
+  ) {}
+
+  async createAdvisory(input: AiAdvisoryRequest): Promise<AiAdvisoryResult> {
     this.assertReducedInput(input);
+    const runtimeOutput = await this.resolveRuntimeOutput(input);
 
     const advisory: AiAdvisoryResult = {
       id: `ai_advisory_${++this.advisorySequence}`,
       tenantId: input.tenantId,
       scanRequestId: input.scanRequestId,
       findingId: input.findingId,
-      modelVersion: input.modelVersion,
+      modelVersion: runtimeOutput.modelVersion,
       advisoryOnly: true,
       redactedEvidenceOnly: true,
-      detectorSignals: this.detectorSignalsFor(input),
-      plannerSteps: this.plannerStepsFor(input),
-      confidence: this.confidenceFor(input),
+      detectorSignals: runtimeOutput.detectorSignals,
+      plannerSteps: runtimeOutput.plannerSteps,
+      confidence: runtimeOutput.confidence,
       createdAt: new Date().toISOString()
     };
 
@@ -65,6 +75,23 @@ export class AiAdvisoryService {
         throw new BadRequestException("AI advisory input contains forbidden sensitive content.");
       }
     }
+  }
+
+  private async resolveRuntimeOutput(input: AiAdvisoryRequest): Promise<AiAdvisoryRuntimeOutput> {
+    if (this.config?.get("USE_INTERNAL_AI") === "true") {
+      if (!this.runtimeClient) {
+        throw new BadRequestException("AI advisory runtime client is not configured.");
+      }
+
+      return this.runtimeClient.createAdvisory(input);
+    }
+
+    return {
+      detectorSignals: this.detectorSignalsFor(input),
+      plannerSteps: this.plannerStepsFor(input),
+      confidence: this.confidenceFor(input),
+      modelVersion: input.modelVersion
+    };
   }
 
   private detectorSignalsFor(input: AiAdvisoryRequest): string[] {

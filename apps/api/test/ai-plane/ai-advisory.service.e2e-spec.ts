@@ -32,10 +32,12 @@ describe("AiAdvisoryService", () => {
     modelVersion: "detector-planner-mock-v1"
   };
 
-  it("creates advisory-only detector planner output from normalized findings and redacted evidence", () => {
-    const service = new AiAdvisoryService();
+  it("creates advisory-only detector planner output from normalized findings and redacted evidence", async () => {
+    const service = new AiAdvisoryService({
+      get: jest.fn().mockReturnValue("false")
+    } as never);
 
-    const advisory = service.createAdvisory(request);
+    const advisory = await service.createAdvisory(request);
 
     expect(advisory).toEqual(
       expect.objectContaining({
@@ -55,10 +57,12 @@ describe("AiAdvisoryService", () => {
     );
   });
 
-  it("rejects unredacted evidence and forbidden repository or credential payloads", () => {
-    const service = new AiAdvisoryService();
+  it("rejects unredacted evidence and forbidden repository or credential payloads", async () => {
+    const service = new AiAdvisoryService({
+      get: jest.fn().mockReturnValue("false")
+    } as never);
 
-    expect(() =>
+    await expect(
       service.createAdvisory({
         ...request,
         evidence: {
@@ -66,9 +70,9 @@ describe("AiAdvisoryService", () => {
           redacted: false
         }
       })
-    ).toThrow("AI advisory input must use redacted evidence.");
+    ).rejects.toThrow("AI advisory input must use redacted evidence.");
 
-    expect(() =>
+    await expect(
       service.createAdvisory({
         ...request,
         normalizedFinding: {
@@ -76,6 +80,48 @@ describe("AiAdvisoryService", () => {
           title: "fullRepository payload was supplied"
         }
       })
-    ).toThrow("AI advisory input contains forbidden sensitive content.");
+    ).rejects.toThrow("AI advisory input contains forbidden sensitive content.");
+  });
+
+  it("uses runtime detector planner output when internal AI runtime is enabled", async () => {
+    const runtime = {
+      createAdvisory: jest.fn().mockResolvedValue({
+        detectorSignals: ["SCANNER_CONFIRMED", "MODEL_TRIAGED"],
+        plannerSteps: ["Review scanner evidence before remediation."],
+        confidence: 0.83,
+        modelVersion: "detector-planner-runtime-v1"
+      })
+    };
+    const service = new AiAdvisoryService(
+      {
+        get: jest.fn((key: string) => (key === "USE_INTERNAL_AI" ? "true" : undefined))
+      } as never,
+      runtime as never
+    );
+
+    const advisory = await service.createAdvisory({
+      ...request,
+      modelVersion: "detector-planner-runtime-v1"
+    });
+
+    expect(runtime.createAdvisory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: "tenant_ai",
+        findingId: "finding_1",
+        evidence: expect.objectContaining({
+          redacted: true
+        })
+      })
+    );
+    expect(advisory).toEqual(
+      expect.objectContaining({
+        modelVersion: "detector-planner-runtime-v1",
+        detectorSignals: ["SCANNER_CONFIRMED", "MODEL_TRIAGED"],
+        confidence: 0.83,
+        advisoryOnly: true,
+        redactedEvidenceOnly: true
+      })
+    );
+    expect(JSON.stringify(advisory)).not.toMatch(/enforcementAction|policyOverride|findingOverride/i);
   });
 });

@@ -23,6 +23,7 @@ describe('ConfigService', () => {
           PORT: 3000,
           REPORT_EXPIRY_HOURS: 24,
           EVIDENCE_EXPIRY_INTERVAL_MS: 900000,
+          AI_ADVISORY_TIMEOUT_MS: 2500,
           TEAMS_WEBHOOK_URL: 'https://teams.example/webhook'
         };
 
@@ -34,6 +35,7 @@ describe('ConfigService', () => {
     expect(typeof service.get('PORT')).toBe('number');
     expect(service.getOptional('REPORT_EXPIRY_HOURS')).toBe(24);
     expect(service.getOptional('EVIDENCE_EXPIRY_INTERVAL_MS')).toBe(900000);
+    expect(service.getOptional('AI_ADVISORY_TIMEOUT_MS')).toBe(2500);
     expect(service.getOptional('TEAMS_WEBHOOK_URL')).toBe('https://teams.example/webhook');
   });
 
