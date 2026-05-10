@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import {
   buildCanonicalScanKey,
   shouldEscalateIsolation,
+  type CommentDispatchAuditEvent,
   type CommentDispatchPlan,
   type CommentDispatchPlanRequest,
   type IsolationClass
@@ -28,11 +29,13 @@ export class ControlPlaneService {
   private readonly integrations = new Map<string, ControlPlaneIntegration>();
   private readonly repositoryBindings = new Map<string, ControlPlaneRepositoryBinding>();
   private readonly scanRequests = new Map<string, ControlPlaneScanRequest>();
+  private readonly commentDispatchAuditEvents: CommentDispatchAuditEvent[] = [];
 
   private integrationSequence = 0;
   private repositorySequence = 0;
   private scanSequence = 0;
   private commentDispatchSequence = 0;
+  private commentDispatchAuditSequence = 0;
 
   constructor(
     private readonly githubAppInstallationClient: GithubAppInstallationClient,
@@ -250,7 +253,7 @@ export class ControlPlaneService {
       throw new BadRequestException("Comment dispatch input is not tenant or finding aligned.");
     }
 
-    return {
+    const plan: CommentDispatchPlan = {
       id: `comment_dispatch_plan_${++this.commentDispatchSequence}`,
       tenantId: input.tenantId,
       repositoryBindingId: repositoryBinding.id,
@@ -263,6 +266,32 @@ export class ControlPlaneService {
       commitSha: input.commitSha,
       dispatchAllowed: true
     };
+
+    this.commentDispatchAuditEvents.push({
+      id: `audit_event_${++this.commentDispatchAuditSequence}`,
+      tenantId: input.tenantId,
+      eventType: "comment_dispatch.planned",
+      actor: "comment-dispatcher",
+      targetType: "comment_dispatch_plan",
+      targetId: plan.id,
+      occurredAt: new Date(0).toISOString(),
+      metadata: {
+        repositoryBindingId: repositoryBinding.id,
+        provider: integration.provider,
+        providerRepoId: repositoryBinding.providerRepoId,
+        policyDecisionId: input.policyDecision.id,
+        findingId: input.finding.id,
+        targetRef: input.targetRef,
+        commitSha: input.commitSha,
+        commentWritePrincipalId: integration.commentWritePrincipalId
+      }
+    });
+
+    return plan;
+  }
+
+  listCommentDispatchAuditEvents(tenantId: string): CommentDispatchAuditEvent[] {
+    return this.commentDispatchAuditEvents.filter((event) => event.tenantId === tenantId);
   }
 
   private findGithubAppIntegration(

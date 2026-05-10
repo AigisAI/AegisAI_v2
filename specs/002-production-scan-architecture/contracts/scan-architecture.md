@@ -26,6 +26,7 @@ sandbox, or AI runtime implementation.
 - `POST /api/ai-advisories`
 - `GET /api/ai-advisories/:advisoryId`
 - `POST /api/comment-dispatches/plan`
+- `GET /api/comment-dispatches/audit-events`
 - `POST /api/waivers`
 - `PATCH /api/waivers/:waiverId`
 - `POST /api/suppressions`
@@ -169,3 +170,10 @@ Comment dispatch planning must not receive or return repo-read credentials, inte
 authority, SCM token values, full repository content, source archives, or raw scanner payloads.
 This milestone does not publish GitHub/GitLab comments; it only validates the comment-write
 principal boundary and produces deterministic dispatch metadata.
+
+Every successful dispatch planning operation records a tenant-scoped
+`comment_dispatch.planned` audit event. `GET /api/comment-dispatches/audit-events` returns
+metadata only: repository binding ID, provider, provider repository ID, policy decision ID,
+finding ID, target ref, commit SHA, and comment-write principal ID. Audit events must not
+include SCM token values, repo-read principals, integration-admin principals, full
+repository content, source archives, or raw scanner payloads.

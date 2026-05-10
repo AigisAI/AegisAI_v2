@@ -238,6 +238,22 @@ export interface AuditEvent {
   occurredAt: string;
 }
 
+export interface CommentDispatchAuditEvent extends AuditEvent {
+  eventType: 'comment_dispatch.planned';
+  actor: 'comment-dispatcher';
+  targetType: 'comment_dispatch_plan';
+  metadata: {
+    repositoryBindingId: string;
+    provider: ScmProvider;
+    providerRepoId: string;
+    policyDecisionId: string;
+    findingId: string;
+    targetRef: string;
+    commitSha: string;
+    commentWritePrincipalId: string;
+  };
+}
+
 export interface TokenBrokerIssueRequest {
   tenantId: string;
   repositoryBindingId: string;
