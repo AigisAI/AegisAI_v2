@@ -174,6 +174,7 @@ export interface CommentDispatchPlanRequest {
 
 export interface CommentDispatchPlan {
   id: string;
+  idempotencyKey: string;
   tenantId: string;
   repositoryBindingId: string;
   provider: ScmProvider;
@@ -315,6 +316,17 @@ export function buildCanonicalScanKey(input: CanonicalScanKeyInput): CanonicalSc
     input.commitSha,
     input.policyVersion,
     input.scannerSetVersion
+  ].join(':');
+}
+
+export function buildCommentDispatchIdempotencyKey(input: CommentDispatchPlanRequest): string {
+  return [
+    input.tenantId,
+    input.repositoryBindingId,
+    input.policyDecision.id,
+    input.finding.id,
+    input.targetRef,
+    input.commitSha
   ].join(':');
 }
 
