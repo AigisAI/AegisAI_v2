@@ -173,12 +173,36 @@ export interface Waiver {
   lastReviewedAt?: string;
 }
 
+export interface WaiverCreateInput {
+  tenantId: string;
+  owner: string;
+  reason: string;
+  scope: string;
+  expiresAt: string;
+}
+
+export interface WaiverUpdateInput {
+  tenantId: string;
+  owner?: string;
+  reason?: string;
+  scope?: string;
+  expiresAt?: string;
+  lastReviewedAt?: string;
+}
+
 export interface Suppression {
   id: string;
   tenantId: string;
   scanRequestId: string;
   findingId?: string;
   reason: 'STALE_RESULT' | 'DUPLICATE' | 'POLICY';
+}
+
+export interface SuppressionCreateInput {
+  tenantId: string;
+  scanRequestId: string;
+  findingId?: string;
+  reason: Suppression['reason'];
 }
 
 export interface AuditEvent {

@@ -118,6 +118,13 @@
 - [x] T066 Reject credentials, full repository content, source archives, raw scanner payloads, and policy/finding authority fields
 - [x] T067 Add dev/demo Docker image, Oracle Compose service, env examples, and runtime tests
 
+## Phase 18: Waiver and Suppression Lifecycle API Slice
+
+- [x] T068 Add shared create/update input contracts for waivers and suppressions
+- [x] T069 Add tenant-scoped waiver create and update endpoints
+- [x] T070 Add tenant-scoped suppression create endpoint
+- [x] T071 Add e2e coverage for lifecycle metadata, tenant scoping, and leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

@@ -136,3 +136,22 @@ finding metadata, scan lane, scanner coverage metadata, and optional AI advisory
 metadata. AI advisory input may be surfaced through `aiAdvisoryVisible`, but suggested AI
 actions must not select or override enforcement action, ticket request, block request, waiver
 state, or stale suppression.
+
+## Waiver and Suppression Lifecycle
+
+Waiver lifecycle endpoints accept tenant-scoped metadata only:
+
+- `POST /api/waivers` creates a waiver with owner, reason, scope, and expiration metadata.
+- `PATCH /api/waivers/:waiverId` updates an existing waiver for the same tenant and may
+  record `lastReviewedAt`.
+
+Suppression lifecycle endpoints accept tenant and scan scoped metadata only:
+
+- `POST /api/suppressions` creates a stale-result, duplicate, or policy suppression for a
+  scan request and optional finding.
+
+Waiver and suppression payloads must not include SCM credentials, full repository content,
+source archives, raw scanner payloads, AI override fields, finding override fields, or policy
+authority such as enforcement action or block requests. Lifecycle APIs record exception
+metadata; they do not execute scans, make deterministic policy decisions, or grant SCM
+principals.
