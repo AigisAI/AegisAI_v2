@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
   buildCanonicalScanKey,
+  buildCommentDispatchIdempotencyKey,
   shouldEscalateIsolation,
   type CommentDispatchAuditEvent,
   type CommentDispatchPlan,
@@ -29,6 +30,7 @@ export class ControlPlaneService {
   private readonly integrations = new Map<string, ControlPlaneIntegration>();
   private readonly repositoryBindings = new Map<string, ControlPlaneRepositoryBinding>();
   private readonly scanRequests = new Map<string, ControlPlaneScanRequest>();
+  private readonly commentDispatchPlans = new Map<string, CommentDispatchPlan>();
   private readonly commentDispatchAuditEvents: CommentDispatchAuditEvent[] = [];
 
   private integrationSequence = 0;
@@ -253,8 +255,15 @@ export class ControlPlaneService {
       throw new BadRequestException("Comment dispatch input is not tenant or finding aligned.");
     }
 
+    const idempotencyKey = buildCommentDispatchIdempotencyKey(input);
+    const existingPlan = this.commentDispatchPlans.get(idempotencyKey);
+    if (existingPlan) {
+      return existingPlan;
+    }
+
     const plan: CommentDispatchPlan = {
       id: `comment_dispatch_plan_${++this.commentDispatchSequence}`,
+      idempotencyKey,
       tenantId: input.tenantId,
       repositoryBindingId: repositoryBinding.id,
       provider: integration.provider,
@@ -286,6 +295,8 @@ export class ControlPlaneService {
         commentWritePrincipalId: integration.commentWritePrincipalId
       }
     });
+
+    this.commentDispatchPlans.set(idempotencyKey, plan);
 
     return plan;
   }

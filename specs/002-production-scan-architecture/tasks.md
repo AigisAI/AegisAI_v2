@@ -139,6 +139,13 @@
 - [x] T078 Add comment dispatch audit event read endpoint
 - [x] T079 Add e2e coverage for tenant scoping and credential/source leakage guardrails
 
+## Phase 21: Comment Dispatch Idempotency Boundary Slice
+
+- [x] T080 Add deterministic comment dispatch idempotency key contract
+- [x] T081 Return existing plans for identical dispatch planning retries
+- [x] T082 Avoid duplicate `comment_dispatch.planned` audit events for idempotent retries
+- [x] T083 Add e2e coverage for retry safety and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

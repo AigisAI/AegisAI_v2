@@ -173,6 +173,14 @@ describe("Comment dispatcher boundary API (e2e)", () => {
 
     expect(dataOf<Record<string, unknown>>(response.body)).toEqual({
       id: "comment_dispatch_plan_1",
+      idempotencyKey: [
+        "tenant_comment_dispatch",
+        repositoryBinding.id,
+        "policy_decision_comment_1",
+        "finding_comment_1",
+        "refs/pull/42/head",
+        "abc123comment"
+      ].join(":"),
       tenantId: "tenant_comment_dispatch",
       repositoryBindingId: repositoryBinding.id,
       provider: "GITHUB",
@@ -187,6 +195,49 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     expect(JSON.stringify(response.body)).not.toMatch(
       /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId/i
     );
+  });
+
+  it("returns the existing dispatch plan and avoids duplicate audit events for idempotent retries", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_idempotent",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-idempotent"
+    });
+    const body = dispatchRequest({
+      tenantId: "tenant_comment_idempotent",
+      repositoryBindingId: repositoryBinding.id,
+      policyCommentAllowed: true
+    });
+
+    const firstResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(body)
+      .expect(201);
+    const secondResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(body)
+      .expect(201);
+
+    expect(dataOf<Record<string, unknown>>(secondResponse.body)).toEqual(
+      dataOf<Record<string, unknown>>(firstResponse.body)
+    );
+    expect(dataOf<Record<string, unknown>>(firstResponse.body)).toMatchObject({
+      idempotencyKey: [
+        "tenant_comment_idempotent",
+        repositoryBinding.id,
+        "policy_decision_comment_1",
+        "finding_comment_1",
+        "refs/pull/42/head",
+        "abc123comment"
+      ].join(":")
+    });
+
+    const auditEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_idempotent" })
+      .expect(200);
+
+    expect(dataOf<Array<Record<string, unknown>>>(auditEventsResponse.body)).toHaveLength(1);
   });
 
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {

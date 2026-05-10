@@ -164,12 +164,18 @@ Comment dispatch planning is a Control Plane boundary. `POST /api/comment-dispat
 accepts tenant, repository binding, target ref, commit SHA, policy decision metadata, and a
 normalized finding. It returns metadata for a planned comment dispatch only when the policy
 decision allows comments and the repository binding's SCM integration has a comment-write
-principal.
+principal. The response includes a deterministic `idempotencyKey` built from tenant,
+repository binding, policy decision, finding, target ref, and commit SHA.
 
 Comment dispatch planning must not receive or return repo-read credentials, integration-admin
 authority, SCM token values, full repository content, source archives, or raw scanner payloads.
 This milestone does not publish GitHub/GitLab comments; it only validates the comment-write
 principal boundary and produces deterministic dispatch metadata.
+
+Repeated dispatch planning requests with the same `idempotencyKey` return the existing plan
+instead of creating a duplicate plan or duplicate `comment_dispatch.planned` audit event.
+Different finding, target, commit, policy decision, repository binding, or tenant inputs create
+separate plans.
 
 Every successful dispatch planning operation records a tenant-scoped
 `comment_dispatch.planned` audit event. `GET /api/comment-dispatches/audit-events` returns
