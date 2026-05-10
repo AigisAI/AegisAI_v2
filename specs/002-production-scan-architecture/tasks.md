@@ -125,6 +125,13 @@
 - [x] T070 Add tenant-scoped suppression create endpoint
 - [x] T071 Add e2e coverage for lifecycle metadata, tenant scoping, and leakage guardrails
 
+## Phase 19: Comment Dispatcher Boundary Slice
+
+- [x] T072 Add shared comment dispatch plan request/result contracts
+- [x] T073 Add Control Plane comment dispatch plan endpoint
+- [x] T074 Require policy `commentAllowed` and SCM comment-write principal metadata
+- [x] T075 Add e2e coverage for dispatch metadata and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

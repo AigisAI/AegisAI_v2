@@ -1,6 +1,7 @@
 import { HttpModule } from "@nestjs/axios";
 import { Module } from "@nestjs/common";
 
+import { CommentDispatchesController } from "./comment-dispatches.controller";
 import { ConfigModule } from "../config/config.module";
 import { ControlPlaneService } from "./control-plane.service";
 import { GithubAppInstallationClient } from "./github-app-installation.client";
@@ -17,7 +18,8 @@ import { ScanRequestsController } from "./scan-requests.controller";
     IntegrationsController,
     RepositoryBindingsController,
     ScanRequestsController,
-    GithubWebhooksController
+    GithubWebhooksController,
+    CommentDispatchesController
   ],
   providers: [
     ControlPlaneService,

@@ -163,6 +163,29 @@ export interface PolicyEvaluationInput {
   };
 }
 
+export interface CommentDispatchPlanRequest {
+  tenantId: string;
+  repositoryBindingId: string;
+  targetRef: string;
+  commitSha: string;
+  policyDecision: PolicyDecision;
+  finding: NormalizedFinding;
+}
+
+export interface CommentDispatchPlan {
+  id: string;
+  tenantId: string;
+  repositoryBindingId: string;
+  provider: ScmProvider;
+  providerRepoId: string;
+  commentWritePrincipalId: string;
+  policyDecisionId: string;
+  findingId: string;
+  targetRef: string;
+  commitSha: string;
+  dispatchAllowed: true;
+}
+
 export interface Waiver {
   id: string;
   tenantId: string;
