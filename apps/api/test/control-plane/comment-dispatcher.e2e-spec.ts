@@ -189,6 +189,63 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     );
   });
 
+  it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_audit",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-audit"
+    });
+
+    const response = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_audit",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(response.body);
+
+    const auditEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit" })
+      .expect(200);
+
+    expect(dataOf<Array<Record<string, unknown>>>(auditEventsResponse.body)).toEqual([
+      expect.objectContaining({
+        id: expect.stringMatching(/^audit_event_\d+$/),
+        tenantId: "tenant_comment_audit",
+        eventType: "comment_dispatch.planned",
+        actor: "comment-dispatcher",
+        targetType: "comment_dispatch_plan",
+        targetId: plan.id,
+        occurredAt: "1970-01-01T00:00:00.000Z",
+        metadata: {
+          repositoryBindingId: repositoryBinding.id,
+          provider: "GITHUB",
+          providerRepoId: "github-repo-1",
+          policyDecisionId: "policy_decision_comment_1",
+          findingId: "finding_comment_1",
+          targetRef: "refs/pull/42/head",
+          commitSha: "abc123comment",
+          commentWritePrincipalId: "github-app-installation:comment-write-audit"
+        }
+      })
+    ]);
+    expect(JSON.stringify(auditEventsResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId/i
+    );
+
+    const otherTenantResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit_other" })
+      .expect(200);
+
+    expect(dataOf<Array<Record<string, unknown>>>(otherTenantResponse.body)).toEqual([]);
+  });
+
   it("rejects dispatch when policy forbids comments or no comment-write principal exists", async () => {
     const allowedBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_policy_denied",

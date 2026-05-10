@@ -132,6 +132,13 @@
 - [x] T074 Require policy `commentAllowed` and SCM comment-write principal metadata
 - [x] T075 Add e2e coverage for dispatch metadata and credential/source leakage guardrails
 
+## Phase 20: Comment Dispatch Audit Event Boundary Slice
+
+- [x] T076 Add shared comment dispatch audit event contract
+- [x] T077 Record tenant-scoped `comment_dispatch.planned` audit events
+- [x] T078 Add comment dispatch audit event read endpoint
+- [x] T079 Add e2e coverage for tenant scoping and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference
