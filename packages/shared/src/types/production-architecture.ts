@@ -187,6 +187,28 @@ export interface CommentDispatchPlan {
   dispatchAllowed: true;
 }
 
+export interface CommentDispatchEnqueueRequest {
+  tenantId: string;
+  planId: string;
+}
+
+export interface CommentDispatchOutboxItem {
+  id: string;
+  tenantId: string;
+  planId: string;
+  idempotencyKey: string;
+  repositoryBindingId: string;
+  provider: ScmProvider;
+  providerRepoId: string;
+  commentWritePrincipalId: string;
+  policyDecisionId: string;
+  findingId: string;
+  targetRef: string;
+  commitSha: string;
+  status: 'PENDING' | 'PUBLISHED' | 'FAILED' | 'CANCELED';
+  enqueuedAt: string;
+}
+
 export interface Waiver {
   id: string;
   tenantId: string;
