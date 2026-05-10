@@ -96,17 +96,21 @@ version. They must not contain SCM credentials, full repository input, or raw un
 scanner payloads. AI output is advisory metadata only and cannot override deterministic
 scanner findings or policy decisions.
 
-AI detector/planner output in this milestone is a mock runtime boundary that returns
-advisory-only detector signals, planner steps, confidence, model version, and tenant/scan
-attribution. It must not emit authoritative finding status, enforcement action, block
-request, waiver state, suppression state, credential values, full repository content, or raw
-scanner payloads.
+AI detector/planner output in this milestone is a standalone runtime service boundary in
+`apps/ai` that returns advisory-only detector signals, planner steps, confidence, and model
+version. It must not emit authoritative finding status, enforcement action, block request,
+waiver state, suppression state, credential values, full repository content, or raw scanner
+payloads.
 
 When `USE_INTERNAL_AI=true`, the API server may forward the same reduced advisory request to
 `AI_SERVER_URL` at `/ai/advisories`. The runtime response is accepted only when it contains
 advisory-only detector signals, planner steps, confidence, and model version. Runtime
 responses that include policy authority, finding override fields, credentials, full
 repository content, source archives, or raw scanner payloads must be rejected.
+
+The dev/demo AI runtime also exposes `GET /health` for Compose health checks. This health
+endpoint is operational metadata only and does not accept tenant, scan, repository, evidence,
+or credential material.
 
 ## EvidencePack
 

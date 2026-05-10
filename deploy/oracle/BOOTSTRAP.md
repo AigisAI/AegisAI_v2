@@ -1,11 +1,11 @@
 # Oracle Cloud Bootstrap Runbook
 
-This runbook prepares a single Oracle Cloud VPS for the AegisAI production deploy while
+This runbook prepares a single Oracle Cloud VPS for the AegisAI dev/demo deploy while
 using Grafana Cloud for dashboards, logs, metrics, and runtime alerting.
 
 The deployment is intentionally split into two Compose projects:
 - `aegisai-infra` for `postgres` and `redis`
-- `aegisai-app` for `api` and `web`
+- `aegisai-app` for `api`, `ai`, and `web`
 
 Both projects share the external Docker network `aegisai-platform`.
 
@@ -88,6 +88,8 @@ Required runtime values include:
 - `CSRF_SECRET`
 - `TOKEN_ENCRYPTION_KEY`
 - OAuth client ids and secrets
+- `AI_PORT`
+- `AI_SERVER_URL`
 - `GRAFANA_CLOUD_LOGS_URL`
 - `GRAFANA_CLOUD_LOGS_USERNAME`
 - `GRAFANA_CLOUD_LOGS_PASSWORD`
@@ -167,7 +169,7 @@ After bootstrap, trigger one deployment and confirm:
 - `docker compose -f docker-compose.app.yml config | grep '^name:'`
 - `docker compose -f docker-compose.infra.yml config | grep '^name:'`
 - the web container is reachable on port `80`
-- Grafana Cloud Explore shows new Docker logs for `api` and `web`
+- Grafana Cloud Explore shows new Docker logs for `api`, `ai`, and `web`
 - the Docker integration dashboards begin to populate
 - Teams receives the deploy result if `TEAMS_WEBHOOK_URL` is configured
 

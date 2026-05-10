@@ -111,6 +111,13 @@
 - [x] T062 Validate runtime responses as advisory-only metadata
 - [x] T063 Add e2e coverage for reduced request forwarding, runtime response validation, and leakage guardrails
 
+## Phase 17: AI Model Service Runtime Skeleton Slice
+
+- [x] T064 Add standalone `apps/ai` runtime package for detector/planner advisory service
+- [x] T065 Add `/ai/advisories` HTTP handler over normalized finding and redacted evidence inputs
+- [x] T066 Reject credentials, full repository content, source archives, raw scanner payloads, and policy/finding authority fields
+- [x] T067 Add dev/demo Docker image, Oracle Compose service, env examples, and runtime tests
+
 ## Deferred
 
-- [ ] Implement production AI detector/planner model service
+- [ ] Implement trained production AI detector/planner model inference

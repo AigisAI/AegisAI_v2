@@ -60,8 +60,10 @@ Production is modeled as four separated trust boundaries:
    scanner runs, findings, evidence, policy decisions, waivers, suppressions, and audits.
 4. Add interface-level backend tests for Token Broker, Scan Plane, AI advisory, evidence,
    and policy boundaries.
-5. Keep real Opengrep/Trivy/Syft execution, microVM/Kubernetes provisioning, and model
-   inference for later implementation packages.
+5. Add the first standalone `apps/ai` detector/planner service skeleton for reduced
+   advisory-only model runtime calls.
+6. Keep real Opengrep/Trivy/Syft execution, microVM/Kubernetes provisioning, and trained
+   model inference for later implementation packages.
 
 ## Deployment Position
 

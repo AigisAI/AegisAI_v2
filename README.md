@@ -61,7 +61,7 @@ Control, Scan, AI, and Data/Security planes with stronger-than-pod scan isolatio
 - Trigger: `main` push or manual `workflow_dispatch`
 - Runtime: Docker Compose on the VPS
 - Deploy path files: `deploy/oracle/docker-compose.infra.yml`, `deploy/oracle/docker-compose.app.yml`, `deploy/oracle/deploy.sh`, `deploy/oracle/bootstrap-infra.sh`, `deploy/oracle/install-alloy.sh`, `deploy/oracle/alloy/config.alloy`, and a server-managed `.env`
-- Automated rollout scope: app stack only (`api`, `web`)
+- Automated rollout scope: app stack only (`api`, `ai`, `web`)
 - Manual bootstrap scope: infra stack (`postgres`, `redis`)
 - Observability collection: Grafana Alloy on the Oracle VPS
 - Observability surface: Grafana Cloud dashboards, Explore, and alerting
