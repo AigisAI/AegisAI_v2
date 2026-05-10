@@ -25,6 +25,7 @@ sandbox, or AI runtime implementation.
 - `GET /api/policy-decisions/:policyDecisionId`
 - `POST /api/ai-advisories`
 - `GET /api/ai-advisories/:advisoryId`
+- `POST /api/comment-dispatches/plan`
 - `POST /api/waivers`
 - `PATCH /api/waivers/:waiverId`
 - `POST /api/suppressions`
@@ -155,3 +156,16 @@ source archives, raw scanner payloads, AI override fields, finding override fiel
 authority such as enforcement action or block requests. Lifecycle APIs record exception
 metadata; they do not execute scans, make deterministic policy decisions, or grant SCM
 principals.
+
+## Comment Dispatcher Boundary
+
+Comment dispatch planning is a Control Plane boundary. `POST /api/comment-dispatches/plan`
+accepts tenant, repository binding, target ref, commit SHA, policy decision metadata, and a
+normalized finding. It returns metadata for a planned comment dispatch only when the policy
+decision allows comments and the repository binding's SCM integration has a comment-write
+principal.
+
+Comment dispatch planning must not receive or return repo-read credentials, integration-admin
+authority, SCM token values, full repository content, source archives, or raw scanner payloads.
+This milestone does not publish GitHub/GitLab comments; it only validates the comment-write
+principal boundary and produces deterministic dispatch metadata.

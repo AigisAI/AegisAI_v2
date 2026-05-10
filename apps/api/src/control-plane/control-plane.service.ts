@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import {
   buildCanonicalScanKey,
   shouldEscalateIsolation,
+  type CommentDispatchPlan,
+  type CommentDispatchPlanRequest,
   type IsolationClass
 } from "../../../../packages/shared/src";
 
@@ -30,6 +32,7 @@ export class ControlPlaneService {
   private integrationSequence = 0;
   private repositorySequence = 0;
   private scanSequence = 0;
+  private commentDispatchSequence = 0;
 
   constructor(
     private readonly githubAppInstallationClient: GithubAppInstallationClient,
@@ -218,6 +221,50 @@ export class ControlPlaneService {
     return scanRequest;
   }
 
+  planCommentDispatch(input: CommentDispatchPlanRequest): CommentDispatchPlan {
+    this.assertSafeCommentDispatchPayload(input);
+
+    const repositoryBinding = this.repositoryBindings.get(input.repositoryBindingId);
+    if (!repositoryBinding || repositoryBinding.tenantId !== input.tenantId) {
+      throw new NotFoundException("Repository binding not found for tenant");
+    }
+
+    const integration = this.integrations.get(repositoryBinding.scmIntegrationId);
+    if (!integration || integration.tenantId !== input.tenantId) {
+      throw new NotFoundException("SCM integration not found for tenant");
+    }
+
+    if (!integration.commentWritePrincipalId) {
+      throw new BadRequestException("Repository binding does not have a comment-write principal.");
+    }
+
+    if (!input.policyDecision.commentAllowed) {
+      throw new BadRequestException("Policy decision does not allow comment dispatch.");
+    }
+
+    if (
+      input.policyDecision.tenantId !== input.tenantId ||
+      input.finding.tenantId !== input.tenantId ||
+      input.policyDecision.findingId !== input.finding.id
+    ) {
+      throw new BadRequestException("Comment dispatch input is not tenant or finding aligned.");
+    }
+
+    return {
+      id: `comment_dispatch_plan_${++this.commentDispatchSequence}`,
+      tenantId: input.tenantId,
+      repositoryBindingId: repositoryBinding.id,
+      provider: integration.provider,
+      providerRepoId: repositoryBinding.providerRepoId,
+      commentWritePrincipalId: integration.commentWritePrincipalId,
+      policyDecisionId: input.policyDecision.id,
+      findingId: input.finding.id,
+      targetRef: input.targetRef,
+      commitSha: input.commitSha,
+      dispatchAllowed: true
+    };
+  }
+
   private findGithubAppIntegration(
     externalInstallationId: string,
     tenantId?: string
@@ -295,5 +342,28 @@ export class ControlPlaneService {
         isPrivate: repository.isPrivate ?? repository.private ?? true
       };
     });
+  }
+
+  private assertSafeCommentDispatchPayload(input: unknown): void {
+    const serialized = JSON.stringify(input);
+    const forbiddenKeys = [
+      "accessToken",
+      "refreshToken",
+      "tokenValue",
+      "secretValue",
+      "sourceArchive",
+      "fullRepository",
+      "rawScannerPayload",
+      "repoReadPrincipalId",
+      "integrationAdminPrincipalId",
+      "policyOverride",
+      "findingOverride"
+    ];
+
+    for (const forbiddenKey of forbiddenKeys) {
+      if (new RegExp(forbiddenKey, "i").test(serialized)) {
+        throw new BadRequestException("Comment dispatch payload contains forbidden sensitive or authority content.");
+      }
+    }
   }
 }
