@@ -26,6 +26,8 @@ sandbox, or AI runtime implementation.
 - `POST /api/ai-advisories`
 - `GET /api/ai-advisories/:advisoryId`
 - `POST /api/comment-dispatches/plan`
+- `POST /api/comment-dispatches/enqueue`
+- `GET /api/comment-dispatches/outbox`
 - `GET /api/comment-dispatches/audit-events`
 - `POST /api/waivers`
 - `PATCH /api/waivers/:waiverId`
@@ -176,6 +178,12 @@ Repeated dispatch planning requests with the same `idempotencyKey` return the ex
 instead of creating a duplicate plan or duplicate `comment_dispatch.planned` audit event.
 Different finding, target, commit, policy decision, repository binding, or tenant inputs create
 separate plans.
+
+`POST /api/comment-dispatches/enqueue` converts an existing tenant-scoped plan into a
+metadata-only `PENDING` outbox item. Repeated enqueue requests for the same plan return the
+existing outbox item. `GET /api/comment-dispatches/outbox` returns tenant-scoped outbox
+metadata for dispatcher runtime pickup. This milestone does not publish external GitHub or
+GitLab comments, does not persist external comment IDs, and does not call SCM write APIs.
 
 Every successful dispatch planning operation records a tenant-scoped
 `comment_dispatch.planned` audit event. `GET /api/comment-dispatches/audit-events` returns

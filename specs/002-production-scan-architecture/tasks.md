@@ -146,6 +146,13 @@
 - [x] T082 Avoid duplicate `comment_dispatch.planned` audit events for idempotent retries
 - [x] T083 Add e2e coverage for retry safety and credential/source leakage guardrails
 
+## Phase 22: Comment Dispatch Outbox Boundary Slice
+
+- [x] T084 Add comment dispatch enqueue request and outbox item contracts
+- [x] T085 Add metadata-only outbox enqueue endpoint
+- [x] T086 Add tenant-scoped outbox read endpoint
+- [x] T087 Add e2e coverage for enqueue idempotency, tenant scoping, and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

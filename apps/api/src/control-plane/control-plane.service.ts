@@ -4,6 +4,8 @@ import {
   buildCommentDispatchIdempotencyKey,
   shouldEscalateIsolation,
   type CommentDispatchAuditEvent,
+  type CommentDispatchEnqueueRequest,
+  type CommentDispatchOutboxItem,
   type CommentDispatchPlan,
   type CommentDispatchPlanRequest,
   type IsolationClass
@@ -31,12 +33,14 @@ export class ControlPlaneService {
   private readonly repositoryBindings = new Map<string, ControlPlaneRepositoryBinding>();
   private readonly scanRequests = new Map<string, ControlPlaneScanRequest>();
   private readonly commentDispatchPlans = new Map<string, CommentDispatchPlan>();
+  private readonly commentDispatchOutboxItems = new Map<string, CommentDispatchOutboxItem>();
   private readonly commentDispatchAuditEvents: CommentDispatchAuditEvent[] = [];
 
   private integrationSequence = 0;
   private repositorySequence = 0;
   private scanSequence = 0;
   private commentDispatchSequence = 0;
+  private commentDispatchOutboxSequence = 0;
   private commentDispatchAuditSequence = 0;
 
   constructor(
@@ -303,6 +307,47 @@ export class ControlPlaneService {
 
   listCommentDispatchAuditEvents(tenantId: string): CommentDispatchAuditEvent[] {
     return this.commentDispatchAuditEvents.filter((event) => event.tenantId === tenantId);
+  }
+
+  enqueueCommentDispatch(input: CommentDispatchEnqueueRequest): CommentDispatchOutboxItem {
+    this.assertSafeCommentDispatchPayload(input);
+
+    const plan = Array.from(this.commentDispatchPlans.values()).find(
+      (candidate) => candidate.id === input.planId && candidate.tenantId === input.tenantId
+    );
+    if (!plan) {
+      throw new NotFoundException("Comment dispatch plan not found for tenant");
+    }
+
+    const existingOutboxItem = this.commentDispatchOutboxItems.get(plan.id);
+    if (existingOutboxItem) {
+      return existingOutboxItem;
+    }
+
+    const outboxItem: CommentDispatchOutboxItem = {
+      id: `comment_dispatch_outbox_${++this.commentDispatchOutboxSequence}`,
+      tenantId: plan.tenantId,
+      planId: plan.id,
+      idempotencyKey: plan.idempotencyKey,
+      repositoryBindingId: plan.repositoryBindingId,
+      provider: plan.provider,
+      providerRepoId: plan.providerRepoId,
+      commentWritePrincipalId: plan.commentWritePrincipalId,
+      policyDecisionId: plan.policyDecisionId,
+      findingId: plan.findingId,
+      targetRef: plan.targetRef,
+      commitSha: plan.commitSha,
+      status: "PENDING",
+      enqueuedAt: new Date(0).toISOString()
+    };
+
+    this.commentDispatchOutboxItems.set(plan.id, outboxItem);
+
+    return outboxItem;
+  }
+
+  listCommentDispatchOutbox(tenantId: string): CommentDispatchOutboxItem[] {
+    return Array.from(this.commentDispatchOutboxItems.values()).filter((item) => item.tenantId === tenantId);
   }
 
   private findGithubAppIntegration(
