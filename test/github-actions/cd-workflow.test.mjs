@@ -6,6 +6,7 @@ const files = {
   workflow: new URL('../../.github/workflows/cd.yml', import.meta.url),
   dockerIgnore: new URL('../../.dockerignore', import.meta.url),
   apiDockerfile: new URL('../../apps/api/Dockerfile', import.meta.url),
+  aiDockerfile: new URL('../../apps/ai/Dockerfile', import.meta.url),
   webDockerfile: new URL('../../apps/web/Dockerfile', import.meta.url),
   webNginx: new URL('../../apps/web/nginx.conf', import.meta.url),
   infraCompose: new URL('../../deploy/oracle/docker-compose.infra.yml', import.meta.url),
@@ -27,6 +28,7 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
 
   const workflow = readNormalizedText(files.workflow);
   const apiDockerfile = readNormalizedText(files.apiDockerfile);
+  const aiDockerfile = readNormalizedText(files.aiDockerfile);
   const webDockerfile = readNormalizedText(files.webDockerfile);
   const webNginx = readNormalizedText(files.webNginx);
   const infraCompose = readNormalizedText(files.infraCompose);
@@ -47,7 +49,10 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   assert.match(workflow, /docker\/build-push-action@v6/);
   assert.match(workflow, /ghcr\.io/);
   assert.match(workflow, /platforms:\s*linux\/amd64,linux\/arm64/m);
+  assert.match(workflow, /file:\s*apps\/ai\/Dockerfile/);
+  assert.match(workflow, /aegisai-ai:\$\{\{ steps\.prep\.outputs\.image_tag \}\}/);
   assert.match(workflow, /Verify multi-arch image manifests/);
+  assert.match(workflow, /verify_manifest "ghcr\.io\/\$\{\{ steps\.prep\.outputs\.ghcr_owner \}\}\/aegisai-ai:\$\{\{ steps\.prep\.outputs\.image_tag \}\}"/);
   assert.match(workflow, /Validate deployment secrets/);
   assert.match(workflow, /Missing required GitHub Actions secrets for production deploy/);
   assert.match(workflow, /ORACLE_VPS_KNOWN_HOSTS/);
@@ -77,6 +82,12 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   assert.match(apiDockerfile, /corepack pnpm --filter @aegisai\/api build/);
   assert.match(apiDockerfile, /CMD \["node", "apps\/api\/dist\/apps\/api\/src\/main\.js"\]/);
 
+  assert.match(aiDockerfile, /FROM node:20-bookworm-slim AS builder/);
+  assert.match(aiDockerfile, /FROM node:20-bookworm-slim AS runner/);
+  assert.match(aiDockerfile, /corepack pnpm --filter @aegisai\/ai build/);
+  assert.match(aiDockerfile, /EXPOSE 8000/);
+  assert.match(aiDockerfile, /CMD \["node", "apps\/ai\/dist\/src\/server\.js"\]/);
+
   assert.match(webDockerfile, /FROM nginx:1\.27-alpine/);
   assert.match(webDockerfile, /COPY --from=builder \/app\/apps\/web\/dist/);
   assert.match(webNginx, /resolver 127\.0\.0\.11 ipv6=off valid=10s;/);
@@ -91,9 +102,12 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   assert.match(infraCompose, /name:\s*aegisai-platform/m);
 
   assert.match(appCompose, /ghcr\.io\/\$\{GHCR_OWNER\}\/aegisai-api:\$\{IMAGE_TAG\}/);
+  assert.match(appCompose, /ghcr\.io\/\$\{GHCR_OWNER\}\/aegisai-ai:\$\{IMAGE_TAG\}/);
   assert.match(appCompose, /ghcr\.io\/\$\{GHCR_OWNER\}\/aegisai-web:\$\{IMAGE_TAG\}/);
   assert.match(appCompose, /^name:\s*aegisai-app/m);
   assert.match(appCompose, /external:\s*true/);
+  assert.match(appCompose, /ai:\n[\s\S]*expose:\n[\s\S]*- "8000"/m);
+  assert.match(appCompose, /ai:\n[\s\S]*healthcheck:\n[\s\S]*127\.0\.0\.1:8000\/health/m);
   assert.match(appCompose, /api:\n[\s\S]*env_file:/m);
   assert.match(appCompose, /api:\n[\s\S]*dns_opt:\n[\s\S]*- ndots:0/m);
   assert.match(appCompose, /api:\n[\s\S]*healthcheck:\n[\s\S]*127\.0\.0\.1:3000\/api\/health/m);
@@ -110,6 +124,8 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
 
   assert.match(envExample, /DATABASE_URL=postgresql:\/\/postgres:/);
   assert.match(envExample, /REDIS_URL=redis:\/\/redis:6379/);
+  assert.match(envExample, /AI_PORT=8000/);
+  assert.match(envExample, /AI_SERVER_URL=http:\/\/ai:8000/);
   assert.match(envExample, /SESSION_SECRET=/);
   assert.match(envExample, /TOKEN_ENCRYPTION_KEY=/);
   assert.match(envExample, /GRAFANA_CLOUD_LOGS_URL=/);

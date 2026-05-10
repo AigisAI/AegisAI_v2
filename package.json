@@ -9,6 +9,7 @@
   "scripts": {
     "build": "corepack pnpm -r build",
     "dev": "corepack pnpm --parallel --filter @aegisai/api --filter @aegisai/web dev",
+    "dev:ai": "corepack pnpm --filter @aegisai/ai dev",
     "dev:api": "corepack pnpm --filter @aegisai/api dev",
     "dev:web": "corepack pnpm --filter @aegisai/web dev",
     "lint": "corepack pnpm -r lint",

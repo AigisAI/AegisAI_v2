@@ -55,6 +55,15 @@ jobs:
           push: true
           tags: ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-api:${{ steps.prep.outputs.image_tag }}
 
+      - name: Build and push AI image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/ai/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-ai:${{ steps.prep.outputs.image_tag }}
+
       - name: Build and push web image
         uses: docker/build-push-action@v6
         with:
@@ -86,6 +95,7 @@ jobs:
           }
 
           verify_manifest "ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-api:${{ steps.prep.outputs.image_tag }}"
+          verify_manifest "ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-ai:${{ steps.prep.outputs.image_tag }}"
           verify_manifest "ghcr.io/${{ steps.prep.outputs.ghcr_owner }}/aegisai-web:${{ steps.prep.outputs.image_tag }}"
 
   deploy:

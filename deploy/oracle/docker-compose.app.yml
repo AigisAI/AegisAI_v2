@@ -1,6 +1,30 @@
 name: aegisai-app
 
 services:
+  ai:
+    image: ghcr.io/${GHCR_OWNER}/aegisai-ai:${IMAGE_TAG}
+    restart: unless-stopped
+    env_file:
+      - .env
+    dns_opt:
+      - ndots:0
+    networks:
+      - platform
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8000/health').then((response)=>{if(!response.ok) process.exit(1);}).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
   api:
     image: ghcr.io/${GHCR_OWNER}/aegisai-api:${IMAGE_TAG}
     restart: unless-stopped
