@@ -383,6 +383,78 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     );
   });
 
+  it("updates outbox items to failure states without accepting publish or external comment authority", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_status",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-status"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_outbox_status",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    const enqueueResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_outbox_status", planId: plan.id })
+      .expect(201);
+    const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+
+    const failedResponse = await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_status",
+        status: "FAILED",
+        statusReason: "SCM_RATE_LIMIT"
+      })
+      .expect(200);
+
+    expect(dataOf<Record<string, unknown>>(failedResponse.body)).toEqual({
+      ...outboxItem,
+      status: "FAILED",
+      statusReason: "SCM_RATE_LIMIT",
+      statusUpdatedAt: "1970-01-01T00:00:00.000Z"
+    });
+    expect(JSON.stringify(failedResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+
+    const outboxResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_status" })
+      .expect(200);
+
+    expect(dataOf<Array<Record<string, unknown>>>(outboxResponse.body)).toEqual([
+      dataOf<Record<string, unknown>>(failedResponse.body)
+    ]);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_status",
+        status: "PUBLISHED",
+        externalCommentId: "github-comment-1"
+      })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_other",
+        status: "CANCELED",
+        statusReason: "TENANT_MISMATCH"
+      })
+      .expect(404);
+  });
+
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit",

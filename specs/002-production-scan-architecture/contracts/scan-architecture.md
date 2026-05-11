@@ -28,6 +28,7 @@ sandbox, or AI runtime implementation.
 - `POST /api/comment-dispatches/plan`
 - `POST /api/comment-dispatches/enqueue`
 - `GET /api/comment-dispatches/outbox`
+- `PATCH /api/comment-dispatches/outbox/:outboxItemId/status`
 - `GET /api/comment-dispatches/audit-events`
 - `POST /api/waivers`
 - `PATCH /api/waivers/:waiverId`
@@ -184,6 +185,11 @@ metadata-only `PENDING` outbox item. Repeated enqueue requests for the same plan
 existing outbox item. `GET /api/comment-dispatches/outbox` returns tenant-scoped outbox
 metadata for dispatcher runtime pickup. This milestone does not publish external GitHub or
 GitLab comments, does not persist external comment IDs, and does not call SCM write APIs.
+
+`PATCH /api/comment-dispatches/outbox/:outboxItemId/status` may update a tenant-scoped
+outbox item to `FAILED` or `CANCELED` with a reason and timestamp. `PUBLISHED` transitions,
+external comment IDs, and SCM write-result metadata remain deferred until a real dispatcher
+runtime exists.
 
 Every successful dispatch planning operation records a tenant-scoped
 `comment_dispatch.planned` audit event. `GET /api/comment-dispatches/audit-events` returns

@@ -1,6 +1,10 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 
-import type { CommentDispatchEnqueueRequest, CommentDispatchPlanRequest } from "../../../../packages/shared/src";
+import type {
+  CommentDispatchEnqueueRequest,
+  CommentDispatchOutboxStatusUpdateRequest,
+  CommentDispatchPlanRequest
+} from "../../../../packages/shared/src";
 import { ControlPlaneService } from "./control-plane.service";
 
 @Controller("comment-dispatches")
@@ -25,5 +29,13 @@ export class CommentDispatchesController {
   @Get("outbox")
   listOutbox(@Query("tenantId") tenantId: string) {
     return this.controlPlaneService.listCommentDispatchOutbox(tenantId);
+  }
+
+  @Patch("outbox/:outboxItemId/status")
+  updateOutboxStatus(
+    @Param("outboxItemId") outboxItemId: string,
+    @Body() body: CommentDispatchOutboxStatusUpdateRequest
+  ) {
+    return this.controlPlaneService.updateCommentDispatchOutboxStatus(outboxItemId, body);
   }
 }
