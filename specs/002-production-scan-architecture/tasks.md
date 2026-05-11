@@ -160,6 +160,13 @@
 - [x] T090 Avoid duplicate enqueue audit events for idempotent enqueue retries
 - [x] T091 Add e2e coverage for enqueue audit metadata and credential/source leakage guardrails
 
+## Phase 24: Comment Dispatch Outbox Failure Status Boundary Slice
+
+- [x] T092 Add comment dispatch outbox failure status update contract
+- [x] T093 Add tenant-scoped outbox status update endpoint
+- [x] T094 Allow `FAILED` and `CANCELED` metadata transitions while deferring `PUBLISHED`
+- [x] T095 Add e2e coverage for tenant scoping, publish deferral, and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

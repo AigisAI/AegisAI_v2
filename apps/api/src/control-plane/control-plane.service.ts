@@ -6,6 +6,7 @@ import {
   type CommentDispatchAuditEvent,
   type CommentDispatchEnqueueRequest,
   type CommentDispatchOutboxItem,
+  type CommentDispatchOutboxStatusUpdateRequest,
   type CommentDispatchPlan,
   type CommentDispatchPlanRequest,
   type IsolationClass
@@ -371,6 +372,36 @@ export class ControlPlaneService {
     return Array.from(this.commentDispatchOutboxItems.values()).filter((item) => item.tenantId === tenantId);
   }
 
+  updateCommentDispatchOutboxStatus(
+    outboxItemId: string,
+    input: CommentDispatchOutboxStatusUpdateRequest
+  ): CommentDispatchOutboxItem {
+    this.assertSafeCommentDispatchPayload(input);
+
+    if (input.status !== "FAILED" && input.status !== "CANCELED") {
+      throw new BadRequestException("Only FAILED or CANCELED outbox status updates are accepted in this milestone.");
+    }
+
+    const outboxEntry = Array.from(this.commentDispatchOutboxItems.entries()).find(
+      ([, item]) => item.id === outboxItemId && item.tenantId === input.tenantId
+    );
+    if (!outboxEntry) {
+      throw new NotFoundException("Comment dispatch outbox item not found for tenant");
+    }
+
+    const [planId, outboxItem] = outboxEntry;
+    const updatedOutboxItem: CommentDispatchOutboxItem = {
+      ...outboxItem,
+      status: input.status,
+      statusReason: input.statusReason,
+      statusUpdatedAt: new Date(0).toISOString()
+    };
+
+    this.commentDispatchOutboxItems.set(planId, updatedOutboxItem);
+
+    return updatedOutboxItem;
+  }
+
   private findGithubAppIntegration(
     externalInstallationId: string,
     tenantId?: string
@@ -462,6 +493,7 @@ export class ControlPlaneService {
       "rawScannerPayload",
       "repoReadPrincipalId",
       "integrationAdminPrincipalId",
+      "externalCommentId",
       "policyOverride",
       "findingOverride"
     ];

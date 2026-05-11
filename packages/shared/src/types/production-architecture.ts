@@ -207,6 +207,14 @@ export interface CommentDispatchOutboxItem {
   commitSha: string;
   status: 'PENDING' | 'PUBLISHED' | 'FAILED' | 'CANCELED';
   enqueuedAt: string;
+  statusReason?: string;
+  statusUpdatedAt?: string;
+}
+
+export interface CommentDispatchOutboxStatusUpdateRequest {
+  tenantId: string;
+  status: Extract<CommentDispatchOutboxItem['status'], 'FAILED' | 'CANCELED'>;
+  statusReason: string;
 }
 
 export interface Waiver {
