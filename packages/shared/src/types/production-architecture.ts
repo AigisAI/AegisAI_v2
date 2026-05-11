@@ -262,18 +262,21 @@ export interface AuditEvent {
 }
 
 export interface CommentDispatchAuditEvent extends AuditEvent {
-  eventType: 'comment_dispatch.planned';
+  eventType: 'comment_dispatch.planned' | 'comment_dispatch.enqueued';
   actor: 'comment-dispatcher';
-  targetType: 'comment_dispatch_plan';
+  targetType: 'comment_dispatch_plan' | 'comment_dispatch_outbox_item';
   metadata: {
     repositoryBindingId: string;
     provider: ScmProvider;
-    providerRepoId: string;
+    providerRepoId?: string;
     policyDecisionId: string;
     findingId: string;
     targetRef: string;
     commitSha: string;
     commentWritePrincipalId: string;
+    outboxItemId?: string;
+    planId?: string;
+    idempotencyKey?: string;
   };
 }
 

@@ -342,6 +342,27 @@ export class ControlPlaneService {
     };
 
     this.commentDispatchOutboxItems.set(plan.id, outboxItem);
+    this.commentDispatchAuditEvents.push({
+      id: `audit_event_${++this.commentDispatchAuditSequence}`,
+      tenantId: plan.tenantId,
+      eventType: "comment_dispatch.enqueued",
+      actor: "comment-dispatcher",
+      targetType: "comment_dispatch_outbox_item",
+      targetId: outboxItem.id,
+      occurredAt: new Date(0).toISOString(),
+      metadata: {
+        outboxItemId: outboxItem.id,
+        planId: plan.id,
+        idempotencyKey: plan.idempotencyKey,
+        repositoryBindingId: plan.repositoryBindingId,
+        provider: plan.provider,
+        policyDecisionId: plan.policyDecisionId,
+        findingId: plan.findingId,
+        targetRef: plan.targetRef,
+        commitSha: plan.commitSha,
+        commentWritePrincipalId: plan.commentWritePrincipalId
+      }
+    });
 
     return outboxItem;
   }
