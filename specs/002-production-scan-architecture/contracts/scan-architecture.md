@@ -191,3 +191,12 @@ metadata only: repository binding ID, provider, provider repository ID, policy d
 finding ID, target ref, commit SHA, and comment-write principal ID. Audit events must not
 include SCM token values, repo-read principals, integration-admin principals, full
 repository content, source archives, or raw scanner payloads.
+
+Every first successful outbox enqueue records one tenant-scoped
+`comment_dispatch.enqueued` audit event. Repeated enqueue requests for the same plan return
+the existing outbox item and do not create duplicate enqueue audit events. Enqueue audit
+metadata is limited to outbox item ID, plan ID, idempotency key, repository binding ID,
+provider, policy decision ID, finding ID, target ref, commit SHA, and comment-write
+principal ID. It must not include SCM token values, repo-read principals,
+integration-admin principals, external comment IDs, full repository content, source
+archives, or raw scanner payloads.

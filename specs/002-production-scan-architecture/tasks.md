@@ -153,6 +153,13 @@
 - [x] T086 Add tenant-scoped outbox read endpoint
 - [x] T087 Add e2e coverage for enqueue idempotency, tenant scoping, and credential/source leakage guardrails
 
+## Phase 23: Comment Dispatch Outbox Audit Event Boundary Slice
+
+- [x] T088 Extend comment dispatch audit event contract for outbox enqueue events
+- [x] T089 Record one tenant-scoped `comment_dispatch.enqueued` audit event per outbox item
+- [x] T090 Avoid duplicate enqueue audit events for idempotent enqueue retries
+- [x] T091 Add e2e coverage for enqueue audit metadata and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference
