@@ -390,14 +390,40 @@ export class ControlPlaneService {
     }
 
     const [planId, outboxItem] = outboxEntry;
+    if (outboxItem.status === input.status && outboxItem.statusReason === input.statusReason) {
+      return outboxItem;
+    }
+
+    const statusUpdatedAt = new Date(0).toISOString();
     const updatedOutboxItem: CommentDispatchOutboxItem = {
       ...outboxItem,
       status: input.status,
       statusReason: input.statusReason,
-      statusUpdatedAt: new Date(0).toISOString()
+      statusUpdatedAt
     };
 
     this.commentDispatchOutboxItems.set(planId, updatedOutboxItem);
+    this.commentDispatchAuditEvents.push({
+      id: `audit_event_${++this.commentDispatchAuditSequence}`,
+      tenantId: input.tenantId,
+      eventType: "comment_dispatch.outbox_status_updated",
+      actor: "comment-dispatcher",
+      targetType: "comment_dispatch_outbox_item",
+      targetId: outboxItem.id,
+      occurredAt: statusUpdatedAt,
+      metadata: {
+        outboxItemId: outboxItem.id,
+        planId: outboxItem.planId,
+        previousStatus: outboxItem.status,
+        nextStatus: updatedOutboxItem.status,
+        statusReason: updatedOutboxItem.statusReason,
+        statusUpdatedAt: updatedOutboxItem.statusUpdatedAt,
+        repositoryBindingId: outboxItem.repositoryBindingId,
+        provider: outboxItem.provider,
+        findingId: outboxItem.findingId,
+        commitSha: outboxItem.commitSha
+      }
+    });
 
     return updatedOutboxItem;
   }
