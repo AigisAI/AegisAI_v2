@@ -206,3 +206,12 @@ provider, policy decision ID, finding ID, target ref, commit SHA, and comment-wr
 principal ID. It must not include SCM token values, repo-read principals,
 integration-admin principals, external comment IDs, full repository content, source
 archives, or raw scanner payloads.
+
+Every first successful outbox failure/cancel status transition records one tenant-scoped
+`comment_dispatch.outbox_status_updated` audit event. Repeated requests with the same
+status and reason return the existing outbox item and do not create duplicate status audit
+events. Status audit metadata is limited to outbox item ID, plan ID, previous status, next
+status, status reason, status update timestamp, repository binding ID, provider, finding
+ID, and commit SHA. It must not include `PUBLISHED` write-result metadata, external comment
+IDs, SCM token values, repo-read principals, integration-admin principals, full repository
+content, source archives, or raw scanner payloads.

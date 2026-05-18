@@ -167,6 +167,13 @@
 - [x] T094 Allow `FAILED` and `CANCELED` metadata transitions while deferring `PUBLISHED`
 - [x] T095 Add e2e coverage for tenant scoping, publish deferral, and credential/source leakage guardrails
 
+## Phase 25: Comment Dispatch Outbox Status Audit Event Boundary Slice
+
+- [x] T096 Extend comment dispatch audit event contract for outbox status updates
+- [x] T097 Record one tenant-scoped `comment_dispatch.outbox_status_updated` audit event per status transition
+- [x] T098 Avoid duplicate status audit events for idempotent status update retries
+- [x] T099 Add e2e coverage for status audit metadata and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

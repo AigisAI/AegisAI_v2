@@ -455,6 +455,86 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(404);
   });
 
+  it("records one metadata-only audit event when an outbox item enters a failure state", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_status_audit",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-status-audit"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_outbox_status_audit",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    const enqueueResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_outbox_status_audit", planId: plan.id })
+      .expect(201);
+    const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+
+    const failedPayload = {
+      tenantId: "tenant_comment_outbox_status_audit",
+      status: "FAILED",
+      statusReason: "SCM_RATE_LIMIT"
+    };
+    const firstFailedResponse = await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send(failedPayload)
+      .expect(200);
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send(failedPayload)
+      .expect(200);
+    const failedOutboxItem = dataOf<Record<string, unknown>>(firstFailedResponse.body);
+
+    const auditEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_outbox_status_audit" })
+      .expect(200);
+    const auditEvents = dataOf<Array<Record<string, unknown>>>(auditEventsResponse.body);
+
+    expect(auditEvents).toHaveLength(3);
+    expect(auditEvents.map((event) => event.eventType)).toEqual([
+      "comment_dispatch.planned",
+      "comment_dispatch.enqueued",
+      "comment_dispatch.outbox_status_updated"
+    ]);
+    expect(auditEvents[2]).toEqual(
+      expect.objectContaining({
+        id: expect.stringMatching(/^audit_event_\d+$/),
+        tenantId: "tenant_comment_outbox_status_audit",
+        eventType: "comment_dispatch.outbox_status_updated",
+        actor: "comment-dispatcher",
+        targetType: "comment_dispatch_outbox_item",
+        targetId: outboxItem.id,
+        occurredAt: "1970-01-01T00:00:00.000Z",
+        metadata: {
+          outboxItemId: outboxItem.id,
+          planId: plan.id,
+          previousStatus: "PENDING",
+          nextStatus: "FAILED",
+          statusReason: "SCM_RATE_LIMIT",
+          statusUpdatedAt: failedOutboxItem.statusUpdatedAt,
+          repositoryBindingId: repositoryBinding.id,
+          provider: "GITHUB",
+          findingId: "finding_comment_1",
+          commitSha: "abc123comment"
+        }
+      })
+    );
+    expect(JSON.stringify(auditEventsResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+  });
+
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit",
