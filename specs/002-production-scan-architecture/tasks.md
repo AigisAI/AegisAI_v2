@@ -182,6 +182,13 @@
 - [x] T103 Record one tenant-scoped `comment_dispatch.outbox_claimed` audit event per first claim
 - [x] T104 Add e2e coverage for tenant scoping, lease metadata, audit idempotency, and credential/source leakage guardrails
 
+## Phase 27: Comment Dispatch Outbox Status Ownership Boundary Slice
+
+- [x] T105 Require worker ownership metadata for outbox status update requests
+- [x] T106 Reject unclaimed, cross-worker, cross-tenant, and inactive-lease status updates
+- [x] T107 Include only the claiming worker ID in status update audit metadata
+- [x] T108 Add e2e coverage for status ownership and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

@@ -222,6 +222,7 @@ export interface CommentDispatchOutboxClaimRequest {
 
 export interface CommentDispatchOutboxStatusUpdateRequest {
   tenantId: string;
+  workerId: string;
   status: Extract<CommentDispatchOutboxItem['status'], 'FAILED' | 'CANCELED'>;
   statusReason: string;
 }

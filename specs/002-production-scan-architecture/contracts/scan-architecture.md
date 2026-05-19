@@ -208,6 +208,12 @@ outbox item to `FAILED` or `CANCELED` with a reason and timestamp. `PUBLISHED` t
 external comment IDs, and SCM write-result metadata remain deferred until a real dispatcher
 runtime exists.
 
+Outbox status updates require the active claim owner's worker ID. Unclaimed items, requests
+from a different worker, tenant mismatches, and missing or expired lease metadata are
+rejected. Status update audit metadata may include the claiming worker ID, but must not
+include SCM token values, repo-read principals, integration-admin principals, external
+comment IDs, full repository content, source archives, or raw scanner payloads.
+
 Every successful dispatch planning operation records a tenant-scoped
 `comment_dispatch.planned` audit event. `GET /api/comment-dispatches/audit-events` returns
 metadata only: repository binding ID, provider, provider repository ID, policy decision ID,
