@@ -207,8 +207,17 @@ export interface CommentDispatchOutboxItem {
   commitSha: string;
   status: 'PENDING' | 'PUBLISHED' | 'FAILED' | 'CANCELED';
   enqueuedAt: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  leaseExpiresAt?: string;
   statusReason?: string;
   statusUpdatedAt?: string;
+}
+
+export interface CommentDispatchOutboxClaimRequest {
+  tenantId: string;
+  workerId: string;
+  leaseSeconds: number;
 }
 
 export interface CommentDispatchOutboxStatusUpdateRequest {
@@ -273,6 +282,7 @@ export interface CommentDispatchAuditEvent extends AuditEvent {
   eventType:
     | 'comment_dispatch.planned'
     | 'comment_dispatch.enqueued'
+    | 'comment_dispatch.outbox_claimed'
     | 'comment_dispatch.outbox_status_updated';
   actor: 'comment-dispatcher';
   targetType: 'comment_dispatch_plan' | 'comment_dispatch_outbox_item';
@@ -292,6 +302,9 @@ export interface CommentDispatchAuditEvent extends AuditEvent {
     nextStatus?: CommentDispatchOutboxItem['status'];
     statusReason?: string;
     statusUpdatedAt?: string;
+    workerId?: string;
+    claimedAt?: string;
+    leaseExpiresAt?: string;
   };
 }
 

@@ -174,6 +174,14 @@
 - [x] T098 Avoid duplicate status audit events for idempotent status update retries
 - [x] T099 Add e2e coverage for status audit metadata and credential/source leakage guardrails
 
+## Phase 26: Comment Dispatch Outbox Claim Boundary Slice
+
+- [x] T100 Add shared comment dispatch outbox claim request and lease metadata contract
+- [x] T101 Add tenant-scoped metadata-only outbox claim endpoint
+- [x] T102 Return the same claim for same-worker retries while withholding active leases from other workers
+- [x] T103 Record one tenant-scoped `comment_dispatch.outbox_claimed` audit event per first claim
+- [x] T104 Add e2e coverage for tenant scoping, lease metadata, audit idempotency, and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

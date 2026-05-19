@@ -535,6 +535,120 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     );
   });
 
+  it("claims one pending outbox item for a dispatcher worker without publishing external comments", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_claim",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-claim"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_outbox_claim",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    const enqueueResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_outbox_claim", planId: plan.id })
+      .expect(201);
+    const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+
+    const claimPayload = {
+      tenantId: "tenant_comment_outbox_claim",
+      workerId: "comment-dispatch-worker-1",
+      leaseSeconds: 300
+    };
+    const firstClaimResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send(claimPayload)
+      .expect(201);
+    const secondClaimResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send(claimPayload)
+      .expect(201);
+    const otherWorkerClaimResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_claim",
+        workerId: "comment-dispatch-worker-2",
+        leaseSeconds: 300
+      })
+      .expect(201);
+    const otherTenantClaimResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_claim_other",
+        workerId: "comment-dispatch-worker-1",
+        leaseSeconds: 300
+      })
+      .expect(201);
+
+    expect(dataOf<Record<string, unknown>>(firstClaimResponse.body)).toEqual({
+      ...outboxItem,
+      claimedBy: "comment-dispatch-worker-1",
+      claimedAt: "1970-01-01T00:00:00.000Z",
+      leaseExpiresAt: "1970-01-01T00:05:00.000Z"
+    });
+    expect(dataOf<Record<string, unknown>>(secondClaimResponse.body)).toEqual(
+      dataOf<Record<string, unknown>>(firstClaimResponse.body)
+    );
+    expect(dataOf<unknown>(otherWorkerClaimResponse.body)).toBeNull();
+    expect(dataOf<unknown>(otherTenantClaimResponse.body)).toBeNull();
+    expect(JSON.stringify(firstClaimResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+
+    const auditEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_outbox_claim" })
+      .expect(200);
+    const auditEvents = dataOf<Array<Record<string, unknown>>>(auditEventsResponse.body);
+
+    expect(auditEvents).toHaveLength(3);
+    expect(auditEvents.map((event) => event.eventType)).toEqual([
+      "comment_dispatch.planned",
+      "comment_dispatch.enqueued",
+      "comment_dispatch.outbox_claimed"
+    ]);
+    expect(auditEvents[2]).toEqual(
+      expect.objectContaining({
+        id: expect.stringMatching(/^audit_event_\d+$/),
+        tenantId: "tenant_comment_outbox_claim",
+        eventType: "comment_dispatch.outbox_claimed",
+        actor: "comment-dispatcher",
+        targetType: "comment_dispatch_outbox_item",
+        targetId: outboxItem.id,
+        occurredAt: "1970-01-01T00:00:00.000Z",
+        metadata: {
+          outboxItemId: outboxItem.id,
+          planId: plan.id,
+          workerId: "comment-dispatch-worker-1",
+          claimedAt: "1970-01-01T00:00:00.000Z",
+          leaseExpiresAt: "1970-01-01T00:05:00.000Z",
+          repositoryBindingId: repositoryBinding.id,
+          provider: "GITHUB",
+          findingId: "finding_comment_1",
+          commitSha: "abc123comment"
+        }
+      })
+    );
+    expect(JSON.stringify(auditEventsResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({ ...claimPayload, accessToken: "ghs_secret" })
+      .expect(400);
+  });
+
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit",

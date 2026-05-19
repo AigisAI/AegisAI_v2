@@ -5,6 +5,7 @@ import {
   shouldEscalateIsolation,
   type CommentDispatchAuditEvent,
   type CommentDispatchEnqueueRequest,
+  type CommentDispatchOutboxClaimRequest,
   type CommentDispatchOutboxItem,
   type CommentDispatchOutboxStatusUpdateRequest,
   type CommentDispatchPlan,
@@ -370,6 +371,69 @@ export class ControlPlaneService {
 
   listCommentDispatchOutbox(tenantId: string): CommentDispatchOutboxItem[] {
     return Array.from(this.commentDispatchOutboxItems.values()).filter((item) => item.tenantId === tenantId);
+  }
+
+  claimCommentDispatchOutbox(input: CommentDispatchOutboxClaimRequest): CommentDispatchOutboxItem | null {
+    this.assertSafeCommentDispatchPayload(input);
+
+    if (!input.workerId || !Number.isFinite(input.leaseSeconds) || input.leaseSeconds <= 0) {
+      throw new BadRequestException("Comment dispatch outbox claim requires a worker id and positive lease seconds.");
+    }
+
+    const claimedAt = new Date(0).toISOString();
+    const leaseExpiresAt = new Date(input.leaseSeconds * 1000).toISOString();
+    const existingWorkerClaim = Array.from(this.commentDispatchOutboxItems.values()).find(
+      (item) =>
+        item.tenantId === input.tenantId &&
+        item.status === "PENDING" &&
+        item.claimedBy === input.workerId &&
+        item.leaseExpiresAt !== undefined &&
+        item.leaseExpiresAt > claimedAt
+    );
+    if (existingWorkerClaim) {
+      return existingWorkerClaim;
+    }
+
+    const claimableOutboxItem = Array.from(this.commentDispatchOutboxItems.values()).find(
+      (item) =>
+        item.tenantId === input.tenantId &&
+        item.status === "PENDING" &&
+        (item.leaseExpiresAt === undefined || item.leaseExpiresAt <= claimedAt)
+    );
+    if (!claimableOutboxItem) {
+      return null;
+    }
+
+    const claimedOutboxItem: CommentDispatchOutboxItem = {
+      ...claimableOutboxItem,
+      claimedBy: input.workerId,
+      claimedAt,
+      leaseExpiresAt
+    };
+
+    this.commentDispatchOutboxItems.set(claimedOutboxItem.planId, claimedOutboxItem);
+    this.commentDispatchAuditEvents.push({
+      id: `audit_event_${++this.commentDispatchAuditSequence}`,
+      tenantId: input.tenantId,
+      eventType: "comment_dispatch.outbox_claimed",
+      actor: "comment-dispatcher",
+      targetType: "comment_dispatch_outbox_item",
+      targetId: claimedOutboxItem.id,
+      occurredAt: claimedAt,
+      metadata: {
+        outboxItemId: claimedOutboxItem.id,
+        planId: claimedOutboxItem.planId,
+        workerId: input.workerId,
+        claimedAt,
+        leaseExpiresAt,
+        repositoryBindingId: claimedOutboxItem.repositoryBindingId,
+        provider: claimedOutboxItem.provider,
+        findingId: claimedOutboxItem.findingId,
+        commitSha: claimedOutboxItem.commitSha
+      }
+    });
+
+    return claimedOutboxItem;
   }
 
   updateCommentDispatchOutboxStatus(
