@@ -446,6 +446,10 @@ export class ControlPlaneService {
       throw new BadRequestException("Only FAILED or CANCELED outbox status updates are accepted in this milestone.");
     }
 
+    if (!input.workerId) {
+      throw new BadRequestException("Comment dispatch outbox status updates require the claiming worker id.");
+    }
+
     const outboxEntry = Array.from(this.commentDispatchOutboxItems.entries()).find(
       ([, item]) => item.id === outboxItemId && item.tenantId === input.tenantId
     );
@@ -454,11 +458,19 @@ export class ControlPlaneService {
     }
 
     const [planId, outboxItem] = outboxEntry;
+    const statusUpdatedAt = new Date(0).toISOString();
+    if (
+      outboxItem.claimedBy !== input.workerId ||
+      outboxItem.leaseExpiresAt === undefined ||
+      outboxItem.leaseExpiresAt <= statusUpdatedAt
+    ) {
+      throw new BadRequestException("Comment dispatch outbox status updates require an active worker claim.");
+    }
+
     if (outboxItem.status === input.status && outboxItem.statusReason === input.statusReason) {
       return outboxItem;
     }
 
-    const statusUpdatedAt = new Date(0).toISOString();
     const updatedOutboxItem: CommentDispatchOutboxItem = {
       ...outboxItem,
       status: input.status,
@@ -482,6 +494,7 @@ export class ControlPlaneService {
         nextStatus: updatedOutboxItem.status,
         statusReason: updatedOutboxItem.statusReason,
         statusUpdatedAt: updatedOutboxItem.statusUpdatedAt,
+        workerId: input.workerId,
         repositoryBindingId: outboxItem.repositoryBindingId,
         provider: outboxItem.provider,
         findingId: outboxItem.findingId,

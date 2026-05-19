@@ -407,18 +407,28 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .send({ tenantId: "tenant_comment_outbox_status", planId: plan.id })
       .expect(201);
     const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+    const claimResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_status",
+        workerId: "comment-dispatch-worker-status",
+        leaseSeconds: 300
+      })
+      .expect(201);
+    const claimedOutboxItem = dataOf<Record<string, unknown>>(claimResponse.body);
 
     const failedResponse = await request(app.getHttpServer())
       .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
       .send({
         tenantId: "tenant_comment_outbox_status",
+        workerId: "comment-dispatch-worker-status",
         status: "FAILED",
         statusReason: "SCM_RATE_LIMIT"
       })
       .expect(200);
 
     expect(dataOf<Record<string, unknown>>(failedResponse.body)).toEqual({
-      ...outboxItem,
+      ...claimedOutboxItem,
       status: "FAILED",
       statusReason: "SCM_RATE_LIMIT",
       statusUpdatedAt: "1970-01-01T00:00:00.000Z"
@@ -440,6 +450,7 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
       .send({
         tenantId: "tenant_comment_outbox_status",
+        workerId: "comment-dispatch-worker-status",
         status: "PUBLISHED",
         externalCommentId: "github-comment-1"
       })
@@ -449,6 +460,7 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
       .send({
         tenantId: "tenant_comment_outbox_other",
+        workerId: "comment-dispatch-worker-status",
         status: "CANCELED",
         statusReason: "TENANT_MISMATCH"
       })
@@ -479,9 +491,18 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .send({ tenantId: "tenant_comment_outbox_status_audit", planId: plan.id })
       .expect(201);
     const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_status_audit",
+        workerId: "comment-dispatch-worker-status-audit",
+        leaseSeconds: 300
+      })
+      .expect(201);
 
     const failedPayload = {
       tenantId: "tenant_comment_outbox_status_audit",
+      workerId: "comment-dispatch-worker-status-audit",
       status: "FAILED",
       statusReason: "SCM_RATE_LIMIT"
     };
@@ -501,13 +522,14 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(200);
     const auditEvents = dataOf<Array<Record<string, unknown>>>(auditEventsResponse.body);
 
-    expect(auditEvents).toHaveLength(3);
+    expect(auditEvents).toHaveLength(4);
     expect(auditEvents.map((event) => event.eventType)).toEqual([
       "comment_dispatch.planned",
       "comment_dispatch.enqueued",
+      "comment_dispatch.outbox_claimed",
       "comment_dispatch.outbox_status_updated"
     ]);
-    expect(auditEvents[2]).toEqual(
+    expect(auditEvents[3]).toEqual(
       expect.objectContaining({
         id: expect.stringMatching(/^audit_event_\d+$/),
         tenantId: "tenant_comment_outbox_status_audit",
@@ -523,6 +545,7 @@ describe("Comment dispatcher boundary API (e2e)", () => {
           nextStatus: "FAILED",
           statusReason: "SCM_RATE_LIMIT",
           statusUpdatedAt: failedOutboxItem.statusUpdatedAt,
+          workerId: "comment-dispatch-worker-status-audit",
           repositoryBindingId: repositoryBinding.id,
           provider: "GITHUB",
           findingId: "finding_comment_1",
@@ -647,6 +670,113 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .post("/api/comment-dispatches/outbox/claim")
       .send({ ...claimPayload, accessToken: "ghs_secret" })
       .expect(400);
+  });
+
+  it("requires the active claim owner when a dispatcher worker updates outbox status", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_status_owner",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-status-owner"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_outbox_status_owner",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    const enqueueResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_outbox_status_owner", planId: plan.id })
+      .expect(201);
+    const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_status_owner",
+        workerId: "comment-dispatch-worker-1",
+        status: "FAILED",
+        statusReason: "UNCLAIMED_STATUS_UPDATE"
+      })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_status_owner",
+        workerId: "comment-dispatch-worker-1",
+        leaseSeconds: 300
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_status_owner",
+        workerId: "comment-dispatch-worker-2",
+        status: "FAILED",
+        statusReason: "WRONG_WORKER"
+      })
+      .expect(400);
+
+    const failedResponse = await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_status_owner",
+        workerId: "comment-dispatch-worker-1",
+        status: "FAILED",
+        statusReason: "SCM_RATE_LIMIT"
+      })
+      .expect(200);
+
+    expect(dataOf<Record<string, unknown>>(failedResponse.body)).toEqual(
+      expect.objectContaining({
+        id: outboxItem.id,
+        tenantId: "tenant_comment_outbox_status_owner",
+        claimedBy: "comment-dispatch-worker-1",
+        status: "FAILED",
+        statusReason: "SCM_RATE_LIMIT",
+        statusUpdatedAt: "1970-01-01T00:00:00.000Z"
+      })
+    );
+    expect(JSON.stringify(failedResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+
+    const auditEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_outbox_status_owner" })
+      .expect(200);
+    const auditEvents = dataOf<Array<Record<string, unknown>>>(auditEventsResponse.body);
+
+    expect(auditEvents.map((event) => event.eventType)).toEqual([
+      "comment_dispatch.planned",
+      "comment_dispatch.enqueued",
+      "comment_dispatch.outbox_claimed",
+      "comment_dispatch.outbox_status_updated"
+    ]);
+    expect(auditEvents[3]).toEqual(
+      expect.objectContaining({
+        eventType: "comment_dispatch.outbox_status_updated",
+        metadata: expect.objectContaining({
+          outboxItemId: outboxItem.id,
+          workerId: "comment-dispatch-worker-1",
+          previousStatus: "PENDING",
+          nextStatus: "FAILED",
+          statusReason: "SCM_RATE_LIMIT"
+        })
+      })
+    );
+    expect(JSON.stringify(auditEventsResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
   });
 
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
