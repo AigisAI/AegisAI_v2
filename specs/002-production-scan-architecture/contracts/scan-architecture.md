@@ -28,6 +28,7 @@ sandbox, or AI runtime implementation.
 - `POST /api/comment-dispatches/plan`
 - `POST /api/comment-dispatches/enqueue`
 - `GET /api/comment-dispatches/outbox`
+- `POST /api/comment-dispatches/outbox/claim`
 - `PATCH /api/comment-dispatches/outbox/:outboxItemId/status`
 - `GET /api/comment-dispatches/audit-events`
 - `POST /api/waivers`
@@ -185,6 +186,22 @@ metadata-only `PENDING` outbox item. Repeated enqueue requests for the same plan
 existing outbox item. `GET /api/comment-dispatches/outbox` returns tenant-scoped outbox
 metadata for dispatcher runtime pickup. This milestone does not publish external GitHub or
 GitLab comments, does not persist external comment IDs, and does not call SCM write APIs.
+
+`POST /api/comment-dispatches/outbox/claim` lets a dispatcher worker claim one tenant-scoped
+`PENDING` outbox item with metadata-only lease fields. A worker retry inside the lease window
+returns the same claimed item. Other workers and other tenants do not receive an item while
+the lease is active. Claim metadata is limited to worker ID, claim timestamp, and lease
+expiration timestamp; it does not publish comments, persist external comment IDs, or expose
+SCM token values, repo-read principals, integration-admin principals, full repository content,
+source archives, or raw scanner payloads.
+
+Every first successful outbox claim records one tenant-scoped
+`comment_dispatch.outbox_claimed` audit event. Same-worker retries inside the active lease
+return the existing claimed item and do not create duplicate claim audit events. Claim audit
+metadata is limited to outbox item ID, plan ID, worker ID, claim timestamp, lease expiration
+timestamp, repository binding ID, provider, finding ID, and commit SHA. It must not include
+external comment IDs, SCM token values, repo-read principals, integration-admin principals,
+full repository content, source archives, or raw scanner payloads.
 
 `PATCH /api/comment-dispatches/outbox/:outboxItemId/status` may update a tenant-scoped
 outbox item to `FAILED` or `CANCELED` with a reason and timestamp. `PUBLISHED` transitions,
