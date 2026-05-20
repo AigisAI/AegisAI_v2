@@ -217,12 +217,15 @@ export interface CommentDispatchOutboxItem {
 }
 
 export const COMMENT_DISPATCH_OUTBOX_MAX_PAGE_SIZE = 100;
+export const COMMENT_DISPATCH_READ_ORDERS = ['ASC', 'DESC'] as const;
+export type CommentDispatchReadOrder = (typeof COMMENT_DISPATCH_READ_ORDERS)[number];
 
 export interface CommentDispatchOutboxListQuery {
   tenantId: string;
   status?: CommentDispatchOutboxItem['status'];
   workerId?: string;
   limit?: number | string;
+  order?: CommentDispatchReadOrder;
 }
 
 export interface CommentDispatchOutboxClaimRequest {

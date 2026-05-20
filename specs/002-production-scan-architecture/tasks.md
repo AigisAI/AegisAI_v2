@@ -239,6 +239,13 @@
 - [x] T136 Reject zero, negative, fractional, and excessive outbox read limits
 - [x] T137 Add e2e coverage for outbox limit behavior and credential/source leakage guardrails
 
+## Phase 35: Comment Dispatch Outbox Read Order Boundary Slice
+
+- [x] T138 Add shared comment dispatch outbox read order contract
+- [x] T139 Apply tenant-scoped outbox read `order` after metadata filters and before limit
+- [x] T140 Reject invalid outbox read order values
+- [x] T141 Add e2e coverage for outbox order and limit composition guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

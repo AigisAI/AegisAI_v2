@@ -198,6 +198,10 @@ Outbox reads may also accept `limit` after tenant and metadata filters are appli
 must be an integer from 1 through 100. Invalid, zero, fractional, negative, or excessive
 limits are rejected before any response body is returned.
 
+Outbox reads may accept `order=ASC|DESC`. Ordering is applied after tenant, status, and
+worker filters and before `limit`. `ASC` returns dispatcher metadata in enqueue order, while
+`DESC` returns the newest enqueued metadata first. Invalid order values are rejected.
+
 `POST /api/comment-dispatches/outbox/claim` lets a dispatcher worker claim one tenant-scoped
 `PENDING` outbox item with metadata-only lease fields. A worker retry inside the lease window
 returns the same claimed item. Other workers and other tenants do not receive an item while
