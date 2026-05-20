@@ -253,6 +253,13 @@
 - [x] T144 Reject invalid audit event read order values
 - [x] T145 Add e2e coverage for audit event order and limit composition guardrails
 
+## Phase 37: Comment Dispatch Outbox Repository Binding Filter Boundary Slice
+
+- [x] T146 Add shared comment dispatch outbox `repositoryBindingId` list query contract
+- [x] T147 Apply tenant-scoped outbox repository binding filters with status, worker, order, and limit composition
+- [x] T148 Prevent repository binding filters from expanding cross-tenant outbox visibility
+- [x] T149 Add e2e coverage for repository binding filter behavior and tenant scoping guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

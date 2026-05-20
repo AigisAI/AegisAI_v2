@@ -1345,6 +1345,98 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(400);
   });
 
+  it("filters outbox reads by repository binding inside the tenant boundary", async () => {
+    const firstRepositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_repository_filter",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-repo-filter-1"
+    });
+    await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_repository_filter",
+      provider: "gitlab",
+      commentWritePrincipalId: "gitlab-project-integration:comment-write-outbox-repo-filter-2"
+    });
+    const repositoryBindingsResponse = await request(app.getHttpServer())
+      .get("/api/repository-bindings")
+      .query({ tenantId: "tenant_comment_outbox_repository_filter" })
+      .expect(200);
+    const secondRepositoryBinding = dataOf<Array<Record<string, unknown>>>(repositoryBindingsResponse.body).find(
+      (binding) => binding.id !== firstRepositoryBinding.id
+    );
+    if (!secondRepositoryBinding) {
+      throw new Error("Expected a second repository binding for outbox repository filter coverage.");
+    }
+
+    const createPlan = async (repositoryBindingId: unknown, commitSha: string) => {
+      const planResponse = await request(app.getHttpServer())
+        .post("/api/comment-dispatches/plan")
+        .send({
+          ...dispatchRequest({
+            tenantId: "tenant_comment_outbox_repository_filter",
+            repositoryBindingId,
+            policyCommentAllowed: true
+          }),
+          commitSha
+        })
+        .expect(201);
+      return dataOf<Record<string, unknown>>(planResponse.body);
+    };
+
+    const firstPlan = await createPlan(firstRepositoryBinding.id, "abc123repo-filter-1");
+    const secondPlan = await createPlan(secondRepositoryBinding.id, "abc123repo-filter-2");
+    const firstOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_repository_filter", planId: firstPlan.id })
+          .expect(201)
+      ).body
+    );
+    const secondOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_repository_filter", planId: secondPlan.id })
+          .expect(201)
+      ).body
+    );
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_repository_filter",
+        repositoryBindingId: secondRepositoryBinding.id
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([secondOutboxItem]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_repository_filter",
+        repositoryBindingId: firstRepositoryBinding.id,
+        order: "DESC",
+        limit: 1
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([firstOutboxItem]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_repository_filter_other",
+        repositoryBindingId: firstRepositoryBinding.id
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([]);
+      });
+  });
+
   it("filters audit event reads by event type and target without crossing tenant or sensitive boundaries", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit_filters",
