@@ -471,6 +471,10 @@ export class ControlPlaneService {
       return outboxItem;
     }
 
+    if (outboxItem.status === "FAILED" || outboxItem.status === "CANCELED") {
+      throw new BadRequestException("Terminal comment dispatch outbox statuses cannot be rewritten.");
+    }
+
     const updatedOutboxItem: CommentDispatchOutboxItem = {
       ...outboxItem,
       status: input.status,
