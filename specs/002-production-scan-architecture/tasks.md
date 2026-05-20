@@ -189,6 +189,13 @@
 - [x] T107 Include only the claiming worker ID in status update audit metadata
 - [x] T108 Add e2e coverage for status ownership and credential/source leakage guardrails
 
+## Phase 28: Comment Dispatch Outbox Terminal Status Finality Boundary Slice
+
+- [x] T109 Treat `FAILED` and `CANCELED` as terminal outbox metadata states
+- [x] T110 Allow exact idempotent retries for terminal status updates without duplicate audit events
+- [x] T111 Reject attempts to rewrite terminal status or status reason metadata
+- [x] T112 Add e2e coverage for terminal finality and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

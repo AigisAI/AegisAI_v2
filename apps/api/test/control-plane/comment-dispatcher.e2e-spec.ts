@@ -779,6 +779,105 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     );
   });
 
+  it("keeps terminal outbox failure states immutable except for exact idempotent retries", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_status_finality",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-status-finality"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_outbox_status_finality",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    const enqueueResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_outbox_status_finality", planId: plan.id })
+      .expect(201);
+    const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_status_finality",
+        workerId: "comment-dispatch-worker-finality",
+        leaseSeconds: 300
+      })
+      .expect(201);
+
+    const failedPayload = {
+      tenantId: "tenant_comment_outbox_status_finality",
+      workerId: "comment-dispatch-worker-finality",
+      status: "FAILED",
+      statusReason: "SCM_RATE_LIMIT"
+    };
+    const firstFailedResponse = await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send(failedPayload)
+      .expect(200);
+    const retryFailedResponse = await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send(failedPayload)
+      .expect(200);
+
+    expect(dataOf<Record<string, unknown>>(retryFailedResponse.body)).toEqual(
+      dataOf<Record<string, unknown>>(firstFailedResponse.body)
+    );
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_status_finality",
+        workerId: "comment-dispatch-worker-finality",
+        status: "FAILED",
+        statusReason: "DIFFERENT_FAILURE_REASON"
+      })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_status_finality",
+        workerId: "comment-dispatch-worker-finality",
+        status: "CANCELED",
+        statusReason: "MANUAL_CANCEL_AFTER_FAILURE"
+      })
+      .expect(400);
+
+    const outboxResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_status_finality" })
+      .expect(200);
+
+    expect(dataOf<Array<Record<string, unknown>>>(outboxResponse.body)).toEqual([
+      dataOf<Record<string, unknown>>(firstFailedResponse.body)
+    ]);
+
+    const auditEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_outbox_status_finality" })
+      .expect(200);
+    const auditEvents = dataOf<Array<Record<string, unknown>>>(auditEventsResponse.body);
+
+    expect(auditEvents.map((event) => event.eventType)).toEqual([
+      "comment_dispatch.planned",
+      "comment_dispatch.enqueued",
+      "comment_dispatch.outbox_claimed",
+      "comment_dispatch.outbox_status_updated"
+    ]);
+    expect(JSON.stringify(auditEventsResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+  });
+
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit",

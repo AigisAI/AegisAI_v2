@@ -214,6 +214,11 @@ rejected. Status update audit metadata may include the claiming worker ID, but m
 include SCM token values, repo-read principals, integration-admin principals, external
 comment IDs, full repository content, source archives, or raw scanner payloads.
 
+`FAILED` and `CANCELED` are terminal metadata states for this milestone. Exact retries with
+the same status and reason return the existing outbox item and do not create duplicate audit
+events, but attempts to rewrite a terminal item with a different status or reason are
+rejected.
+
 Every successful dispatch planning operation records a tenant-scoped
 `comment_dispatch.planned` audit event. `GET /api/comment-dispatches/audit-events` returns
 metadata only: repository binding ID, provider, provider repository ID, policy decision ID,
