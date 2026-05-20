@@ -420,7 +420,12 @@ export class ControlPlaneService {
       throw new BadRequestException("Comment dispatch outbox status filter is invalid.");
     }
 
+    if (query.order !== undefined && query.order !== "ASC" && query.order !== "DESC") {
+      throw new BadRequestException("Comment dispatch outbox order filter is invalid.");
+    }
+
     const limit = this.parseCommentDispatchOutboxLimit(query.limit);
+    const order = query.order ?? "ASC";
 
     const items = Array.from(this.commentDispatchOutboxItems.values()).filter(
       (item) =>
@@ -428,8 +433,9 @@ export class ControlPlaneService {
         (query.status === undefined || item.status === query.status) &&
         (query.workerId === undefined || item.claimedBy === query.workerId)
     );
+    const orderedItems = order === "ASC" ? items : [...items].reverse();
 
-    return limit === undefined ? items : items.slice(0, limit);
+    return limit === undefined ? orderedItems : orderedItems.slice(0, limit);
   }
 
   claimCommentDispatchOutbox(input: CommentDispatchOutboxClaimRequest): CommentDispatchOutboxItem | null {

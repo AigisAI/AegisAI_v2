@@ -1265,6 +1265,86 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     expect(thirdOutboxItem.id).toEqual(expect.stringMatching(/^comment_dispatch_outbox_\d+$/));
   });
 
+  it("orders outbox reads after metadata filters and before limit is applied", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_order",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-order"
+    });
+
+    const createPlan = async (commitSha: string) => {
+      const planResponse = await request(app.getHttpServer())
+        .post("/api/comment-dispatches/plan")
+        .send({
+          ...dispatchRequest({
+            tenantId: "tenant_comment_outbox_order",
+            repositoryBindingId: repositoryBinding.id,
+            policyCommentAllowed: true
+          }),
+          commitSha
+        })
+        .expect(201);
+      return dataOf<Record<string, unknown>>(planResponse.body);
+    };
+
+    const firstPlan = await createPlan("abc123order1");
+    const secondPlan = await createPlan("abc123order2");
+    const thirdPlan = await createPlan("abc123order3");
+
+    const firstOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_order", planId: firstPlan.id })
+          .expect(201)
+      ).body
+    );
+    const secondOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_order", planId: secondPlan.id })
+          .expect(201)
+      ).body
+    );
+    const thirdOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_order", planId: thirdPlan.id })
+          .expect(201)
+      ).body
+    );
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_order", order: "ASC" })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body).map((item) => item.id)).toEqual([
+          firstOutboxItem.id,
+          secondOutboxItem.id,
+          thirdOutboxItem.id
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_order", order: "DESC", limit: 2 })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body).map((item) => item.id)).toEqual([
+          thirdOutboxItem.id,
+          secondOutboxItem.id
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_order", order: "SIDEWAYS" })
+      .expect(400);
+  });
+
   it("filters audit event reads by event type and target without crossing tenant or sensitive boundaries", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit_filters",
