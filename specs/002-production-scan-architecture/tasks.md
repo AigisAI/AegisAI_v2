@@ -246,6 +246,13 @@
 - [x] T140 Reject invalid outbox read order values
 - [x] T141 Add e2e coverage for outbox order and limit composition guardrails
 
+## Phase 36: Comment Dispatch Audit Event Read Order Boundary Slice
+
+- [x] T142 Add shared comment dispatch audit event read order contract
+- [x] T143 Apply tenant-scoped audit event read `order` after metadata filters and before limit
+- [x] T144 Reject invalid audit event read order values
+- [x] T145 Add e2e coverage for audit event order and limit composition guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

@@ -264,6 +264,10 @@ Audit event reads may also accept `limit` after tenant and metadata filters are 
 `limit` must be an integer from 1 through 100. Invalid, zero, fractional, negative, or
 excessive limits are rejected before any response body is returned.
 
+Audit event reads may accept `order=ASC|DESC`. Ordering is applied after tenant, event, and
+target filters and before `limit`. `ASC` returns audit metadata in creation order, while
+`DESC` returns the newest audit metadata first. Invalid order values are rejected.
+
 Every first successful outbox enqueue records one tenant-scoped
 `comment_dispatch.enqueued` audit event. Repeated enqueue requests for the same plan return
 the existing outbox item and do not create duplicate enqueue audit events. Enqueue audit

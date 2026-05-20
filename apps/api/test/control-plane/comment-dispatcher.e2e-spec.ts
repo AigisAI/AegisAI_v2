@@ -1508,6 +1508,85 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(400);
   });
 
+  it("orders audit event reads after metadata filters and before limit is applied", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_audit_order",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-audit-order"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_audit_order",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    const enqueueResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_audit_order", planId: plan.id })
+      .expect(201);
+    const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_audit_order",
+        workerId: "comment-dispatch-worker-audit-order",
+        leaseSeconds: 300
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit_order", order: "ASC" })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body).map((event) => event.eventType)).toEqual([
+          "comment_dispatch.planned",
+          "comment_dispatch.enqueued",
+          "comment_dispatch.outbox_claimed"
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit_order", order: "DESC", limit: 2 })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body).map((event) => event.eventType)).toEqual([
+          "comment_dispatch.outbox_claimed",
+          "comment_dispatch.enqueued"
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_order",
+        targetType: "comment_dispatch_outbox_item",
+        targetId: outboxItem.id,
+        order: "DESC",
+        limit: 1
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body).map((event) => event.eventType)).toEqual([
+          "comment_dispatch.outbox_claimed"
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit_order", order: "SIDEWAYS" })
+      .expect(400);
+  });
+
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit",
