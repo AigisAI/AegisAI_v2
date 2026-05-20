@@ -216,6 +216,12 @@ export interface CommentDispatchOutboxItem {
   statusUpdatedAt?: string;
 }
 
+export interface CommentDispatchOutboxListQuery {
+  tenantId: string;
+  status?: CommentDispatchOutboxItem['status'];
+  workerId?: string;
+}
+
 export interface CommentDispatchOutboxClaimRequest {
   tenantId: string;
   workerId: string;

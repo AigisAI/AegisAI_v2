@@ -3,6 +3,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common
 import type {
   CommentDispatchEnqueueRequest,
   CommentDispatchOutboxClaimRequest,
+  CommentDispatchOutboxListQuery,
   CommentDispatchOutboxLeaseRenewalRequest,
   CommentDispatchOutboxStatusUpdateRequest,
   CommentDispatchPlanRequest
@@ -29,8 +30,8 @@ export class CommentDispatchesController {
   }
 
   @Get("outbox")
-  listOutbox(@Query("tenantId") tenantId: string) {
-    return this.controlPlaneService.listCommentDispatchOutbox(tenantId);
+  listOutbox(@Query() query: CommentDispatchOutboxListQuery) {
+    return this.controlPlaneService.listCommentDispatchOutbox(query);
   }
 
   @Post("outbox/claim")

@@ -211,6 +211,13 @@
 - [x] T120 Record tenant-scoped `comment_dispatch.outbox_lease_renewed` audit events
 - [x] T121 Add e2e coverage for renewal ownership, duration limits, and credential/source leakage guardrails
 
+## Phase 31: Comment Dispatch Outbox Read Filter Boundary Slice
+
+- [x] T122 Add shared comment dispatch outbox list query contract
+- [x] T123 Add tenant-scoped metadata-only `status` and `workerId` outbox read filters
+- [x] T124 Reject invalid status filters and sensitive outbox read query fields
+- [x] T125 Add e2e coverage for filter behavior, tenant scoping, and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference
