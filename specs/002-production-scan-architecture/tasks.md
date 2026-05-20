@@ -232,6 +232,13 @@
 - [x] T132 Reject zero, negative, fractional, and excessive audit read limits
 - [x] T133 Add e2e coverage for limit behavior and credential/source leakage guardrails
 
+## Phase 34: Comment Dispatch Outbox Read Limit Boundary Slice
+
+- [x] T134 Add shared comment dispatch outbox maximum page size contract
+- [x] T135 Apply tenant-scoped outbox read `limit` after status and worker filters
+- [x] T136 Reject zero, negative, fractional, and excessive outbox read limits
+- [x] T137 Add e2e coverage for outbox limit behavior and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

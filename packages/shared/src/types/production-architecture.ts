@@ -216,10 +216,13 @@ export interface CommentDispatchOutboxItem {
   statusUpdatedAt?: string;
 }
 
+export const COMMENT_DISPATCH_OUTBOX_MAX_PAGE_SIZE = 100;
+
 export interface CommentDispatchOutboxListQuery {
   tenantId: string;
   status?: CommentDispatchOutboxItem['status'];
   workerId?: string;
+  limit?: number | string;
 }
 
 export interface CommentDispatchOutboxClaimRequest {

@@ -4,6 +4,7 @@ import {
   buildCommentDispatchIdempotencyKey,
   COMMENT_DISPATCH_AUDIT_EVENT_MAX_PAGE_SIZE,
   COMMENT_DISPATCH_MAX_CLAIM_LEASE_SECONDS,
+  COMMENT_DISPATCH_OUTBOX_MAX_PAGE_SIZE,
   shouldEscalateIsolation,
   type CommentDispatchAuditEvent,
   type CommentDispatchAuditEventListQuery,
@@ -419,12 +420,16 @@ export class ControlPlaneService {
       throw new BadRequestException("Comment dispatch outbox status filter is invalid.");
     }
 
-    return Array.from(this.commentDispatchOutboxItems.values()).filter(
+    const limit = this.parseCommentDispatchOutboxLimit(query.limit);
+
+    const items = Array.from(this.commentDispatchOutboxItems.values()).filter(
       (item) =>
         item.tenantId === query.tenantId &&
         (query.status === undefined || item.status === query.status) &&
         (query.workerId === undefined || item.claimedBy === query.workerId)
     );
+
+    return limit === undefined ? items : items.slice(0, limit);
   }
 
   claimCommentDispatchOutbox(input: CommentDispatchOutboxClaimRequest): CommentDispatchOutboxItem | null {
@@ -743,6 +748,19 @@ export class ControlPlaneService {
       parsedLimit > COMMENT_DISPATCH_AUDIT_EVENT_MAX_PAGE_SIZE
     ) {
       throw new BadRequestException("Comment dispatch audit event limit must be an integer from 1 through 100.");
+    }
+
+    return parsedLimit;
+  }
+
+  private parseCommentDispatchOutboxLimit(limit: number | string | undefined): number | undefined {
+    if (limit === undefined) {
+      return undefined;
+    }
+
+    const parsedLimit = typeof limit === "number" ? limit : Number(limit);
+    if (!Number.isInteger(parsedLimit) || parsedLimit <= 0 || parsedLimit > COMMENT_DISPATCH_OUTBOX_MAX_PAGE_SIZE) {
+      throw new BadRequestException("Comment dispatch outbox limit must be an integer from 1 through 100.");
     }
 
     return parsedLimit;
