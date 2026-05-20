@@ -436,6 +436,7 @@ export class ControlPlaneService {
     const items = Array.from(this.commentDispatchOutboxItems.values()).filter(
       (item) =>
         item.tenantId === query.tenantId &&
+        (query.repositoryBindingId === undefined || item.repositoryBindingId === query.repositoryBindingId) &&
         (query.status === undefined || item.status === query.status) &&
         (query.workerId === undefined || item.claimedBy === query.workerId)
     );

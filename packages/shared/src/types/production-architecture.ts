@@ -222,6 +222,7 @@ export type CommentDispatchReadOrder = (typeof COMMENT_DISPATCH_READ_ORDERS)[num
 
 export interface CommentDispatchOutboxListQuery {
   tenantId: string;
+  repositoryBindingId?: string;
   status?: CommentDispatchOutboxItem['status'];
   workerId?: string;
   limit?: number | string;
