@@ -190,10 +190,11 @@ GitLab comments, does not persist external comment IDs, and does not call SCM wr
 `POST /api/comment-dispatches/outbox/claim` lets a dispatcher worker claim one tenant-scoped
 `PENDING` outbox item with metadata-only lease fields. A worker retry inside the lease window
 returns the same claimed item. Other workers and other tenants do not receive an item while
-the lease is active. Claim metadata is limited to worker ID, claim timestamp, and lease
-expiration timestamp; it does not publish comments, persist external comment IDs, or expose
-SCM token values, repo-read principals, integration-admin principals, full repository content,
-source archives, or raw scanner payloads.
+the lease is active. `leaseSeconds` must be an integer from 1 through 900 seconds. Claim
+metadata is limited to worker ID, claim timestamp, and lease expiration timestamp; it does
+not publish comments, persist external comment IDs, or expose SCM token values, repo-read
+principals, integration-admin principals, full repository content, source archives, or raw
+scanner payloads.
 
 Every first successful outbox claim records one tenant-scoped
 `comment_dispatch.outbox_claimed` audit event. Same-worker retries inside the active lease

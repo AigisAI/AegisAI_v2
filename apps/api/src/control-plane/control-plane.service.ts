@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import {
   buildCanonicalScanKey,
   buildCommentDispatchIdempotencyKey,
+  COMMENT_DISPATCH_MAX_CLAIM_LEASE_SECONDS,
   shouldEscalateIsolation,
   type CommentDispatchAuditEvent,
   type CommentDispatchEnqueueRequest,
@@ -376,8 +377,13 @@ export class ControlPlaneService {
   claimCommentDispatchOutbox(input: CommentDispatchOutboxClaimRequest): CommentDispatchOutboxItem | null {
     this.assertSafeCommentDispatchPayload(input);
 
-    if (!input.workerId || !Number.isFinite(input.leaseSeconds) || input.leaseSeconds <= 0) {
-      throw new BadRequestException("Comment dispatch outbox claim requires a worker id and positive lease seconds.");
+    if (
+      !input.workerId ||
+      !Number.isInteger(input.leaseSeconds) ||
+      input.leaseSeconds <= 0 ||
+      input.leaseSeconds > COMMENT_DISPATCH_MAX_CLAIM_LEASE_SECONDS
+    ) {
+      throw new BadRequestException("Comment dispatch outbox claim requires a worker id and 1-900 lease seconds.");
     }
 
     const claimedAt = new Date(0).toISOString();

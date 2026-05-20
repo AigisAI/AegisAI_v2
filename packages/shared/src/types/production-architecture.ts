@@ -192,6 +192,8 @@ export interface CommentDispatchEnqueueRequest {
   planId: string;
 }
 
+export const COMMENT_DISPATCH_MAX_CLAIM_LEASE_SECONDS = 900;
+
 export interface CommentDispatchOutboxItem {
   id: string;
   tenantId: string;
