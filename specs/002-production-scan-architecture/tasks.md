@@ -218,6 +218,13 @@
 - [x] T124 Reject invalid status filters and sensitive outbox read query fields
 - [x] T125 Add e2e coverage for filter behavior, tenant scoping, and credential/source leakage guardrails
 
+## Phase 32: Comment Dispatch Audit Event Read Filter Boundary Slice
+
+- [x] T126 Add shared comment dispatch audit event list query contract
+- [x] T127 Add tenant-scoped metadata-only `eventType`, `targetType`, and `targetId` audit filters
+- [x] T128 Reject invalid audit filters and sensitive audit read query fields
+- [x] T129 Add e2e coverage for audit filter behavior, tenant scoping, and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

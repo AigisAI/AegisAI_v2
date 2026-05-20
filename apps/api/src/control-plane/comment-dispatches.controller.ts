@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 
 import type {
+  CommentDispatchAuditEventListQuery,
   CommentDispatchEnqueueRequest,
   CommentDispatchOutboxClaimRequest,
   CommentDispatchOutboxListQuery,
@@ -25,8 +26,8 @@ export class CommentDispatchesController {
   }
 
   @Get("audit-events")
-  listAuditEvents(@Query("tenantId") tenantId: string) {
-    return this.controlPlaneService.listCommentDispatchAuditEvents(tenantId);
+  listAuditEvents(@Query() query: CommentDispatchAuditEventListQuery) {
+    return this.controlPlaneService.listCommentDispatchAuditEvents(query);
   }
 
   @Get("outbox")

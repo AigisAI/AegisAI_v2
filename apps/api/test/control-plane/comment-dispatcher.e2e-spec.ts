@@ -1154,6 +1154,99 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(400);
   });
 
+  it("filters audit event reads by event type and target without crossing tenant or sensitive boundaries", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_audit_filters",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-audit-filters"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_audit_filters",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    const enqueueResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_audit_filters", planId: plan.id })
+      .expect(201);
+    const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_audit_filters",
+        workerId: "comment-dispatch-worker-audit-filter",
+        leaseSeconds: 300
+      })
+      .expect(201);
+
+    const plannedEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_filters",
+        eventType: "comment_dispatch.planned"
+      })
+      .expect(200);
+    expect(dataOf<Array<Record<string, unknown>>>(plannedEventsResponse.body)).toEqual([
+      expect.objectContaining({
+        tenantId: "tenant_comment_audit_filters",
+        eventType: "comment_dispatch.planned",
+        targetType: "comment_dispatch_plan",
+        targetId: plan.id
+      })
+    ]);
+
+    const outboxTargetEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_filters",
+        targetType: "comment_dispatch_outbox_item",
+        targetId: outboxItem.id
+      })
+      .expect(200);
+    expect(dataOf<Array<Record<string, unknown>>>(outboxTargetEventsResponse.body).map((event) => event.eventType)).toEqual([
+      "comment_dispatch.enqueued",
+      "comment_dispatch.outbox_claimed"
+    ]);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_filters_other",
+        targetType: "comment_dispatch_outbox_item",
+        targetId: outboxItem.id
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_filters",
+        eventType: "comment_dispatch.unknown"
+      })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_filters",
+        targetType: "comment_dispatch_outbox_item",
+        accessToken: "ghs_secret"
+      })
+      .expect(400);
+  });
+
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit",
