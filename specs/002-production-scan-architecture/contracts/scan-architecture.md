@@ -194,6 +194,10 @@ expand visibility across tenants and must not accept SCM token values, repo-read
 integration-admin principals, external comment IDs, full repository content, source
 archives, raw scanner payloads, or SCM write-result metadata.
 
+Outbox reads may also accept `limit` after tenant and metadata filters are applied. `limit`
+must be an integer from 1 through 100. Invalid, zero, fractional, negative, or excessive
+limits are rejected before any response body is returned.
+
 `POST /api/comment-dispatches/outbox/claim` lets a dispatcher worker claim one tenant-scoped
 `PENDING` outbox item with metadata-only lease fields. A worker retry inside the lease window
 returns the same claimed item. Other workers and other tenants do not receive an item while

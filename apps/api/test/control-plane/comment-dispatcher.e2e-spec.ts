@@ -1154,6 +1154,117 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(400);
   });
 
+  it("limits outbox reads after tenant and metadata filters are applied", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_limit",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-limit"
+    });
+
+    const createPlan = async (commitSha: string) => {
+      const planResponse = await request(app.getHttpServer())
+        .post("/api/comment-dispatches/plan")
+        .send({
+          ...dispatchRequest({
+            tenantId: "tenant_comment_outbox_limit",
+            repositoryBindingId: repositoryBinding.id,
+            policyCommentAllowed: true
+          }),
+          commitSha
+        })
+        .expect(201);
+      return dataOf<Record<string, unknown>>(planResponse.body);
+    };
+
+    const firstPlan = await createPlan("abc123limit1");
+    const secondPlan = await createPlan("abc123limit2");
+    const thirdPlan = await createPlan("abc123limit3");
+
+    const firstOutboxResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_outbox_limit", planId: firstPlan.id })
+      .expect(201);
+    const firstOutboxItem = dataOf<Record<string, unknown>>(firstOutboxResponse.body);
+    const secondOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_limit", planId: secondPlan.id })
+          .expect(201)
+      ).body.data
+    );
+    const thirdOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_limit", planId: thirdPlan.id })
+          .expect(201)
+      ).body.data
+    );
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_limit", limit: 2 })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([firstOutboxItem, secondOutboxItem]);
+      });
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_limit",
+        workerId: "comment-dispatch-worker-outbox-limit",
+        leaseSeconds: 300
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${firstOutboxItem.id}/status`)
+      .send({
+        tenantId: "tenant_comment_outbox_limit",
+        workerId: "comment-dispatch-worker-outbox-limit",
+        status: "FAILED",
+        statusReason: "SCM_RATE_LIMIT"
+      })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_limit", status: "PENDING", limit: 1 })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([secondOutboxItem]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_limit", workerId: "comment-dispatch-worker-outbox-limit", limit: 1 })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)[0]).toEqual(
+          expect.objectContaining({ id: firstOutboxItem.id, status: "FAILED" })
+        );
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_limit", limit: 0 })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_limit", limit: 101 })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({ tenantId: "tenant_comment_outbox_limit", limit: 1.5 })
+      .expect(400);
+
+    expect(thirdOutboxItem.id).toEqual(expect.stringMatching(/^comment_dispatch_outbox_\d+$/));
+  });
+
   it("filters audit event reads by event type and target without crossing tenant or sensitive boundaries", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit_filters",
