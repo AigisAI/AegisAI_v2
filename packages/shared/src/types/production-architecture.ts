@@ -338,6 +338,7 @@ export interface CommentDispatchAuditEventListQuery {
   targetType?: CommentDispatchAuditEvent['targetType'];
   targetId?: string;
   limit?: number | string;
+  order?: CommentDispatchReadOrder;
 }
 
 export interface TokenBrokerIssueRequest {

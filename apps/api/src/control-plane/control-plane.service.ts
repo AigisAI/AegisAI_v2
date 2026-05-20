@@ -332,7 +332,12 @@ export class ControlPlaneService {
       throw new BadRequestException("Comment dispatch audit target type filter is invalid.");
     }
 
+    if (query.order !== undefined && query.order !== "ASC" && query.order !== "DESC") {
+      throw new BadRequestException("Comment dispatch audit event order filter is invalid.");
+    }
+
     const limit = this.parseCommentDispatchAuditEventLimit(query.limit);
+    const order = query.order ?? "ASC";
 
     const events = this.commentDispatchAuditEvents.filter(
       (event) =>
@@ -341,8 +346,9 @@ export class ControlPlaneService {
         (query.targetType === undefined || event.targetType === query.targetType) &&
         (query.targetId === undefined || event.targetId === query.targetId)
     );
+    const orderedEvents = order === "ASC" ? events : [...events].reverse();
 
-    return limit === undefined ? events : events.slice(0, limit);
+    return limit === undefined ? orderedEvents : orderedEvents.slice(0, limit);
   }
 
   enqueueCommentDispatch(input: CommentDispatchEnqueueRequest): CommentDispatchOutboxItem {
