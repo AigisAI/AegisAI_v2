@@ -188,6 +188,12 @@ existing outbox item. `GET /api/comment-dispatches/outbox` returns tenant-scoped
 metadata for dispatcher runtime pickup. This milestone does not publish external GitHub or
 GitLab comments, does not persist external comment IDs, and does not call SCM write APIs.
 
+Outbox reads accept metadata-only `status` and `workerId` filters after tenant scoping is
+applied. Invalid status values and sensitive query fields are rejected. Filters must not
+expand visibility across tenants and must not accept SCM token values, repo-read principals,
+integration-admin principals, external comment IDs, full repository content, source
+archives, raw scanner payloads, or SCM write-result metadata.
+
 `POST /api/comment-dispatches/outbox/claim` lets a dispatcher worker claim one tenant-scoped
 `PENDING` outbox item with metadata-only lease fields. A worker retry inside the lease window
 returns the same claimed item. Other workers and other tenants do not receive an item while

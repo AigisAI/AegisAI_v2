@@ -8,6 +8,7 @@ import {
   type CommentDispatchEnqueueRequest,
   type CommentDispatchOutboxClaimRequest,
   type CommentDispatchOutboxItem,
+  type CommentDispatchOutboxListQuery,
   type CommentDispatchOutboxLeaseRenewalRequest,
   type CommentDispatchOutboxStatusUpdateRequest,
   type CommentDispatchPlan,
@@ -371,8 +372,29 @@ export class ControlPlaneService {
     return outboxItem;
   }
 
-  listCommentDispatchOutbox(tenantId: string): CommentDispatchOutboxItem[] {
-    return Array.from(this.commentDispatchOutboxItems.values()).filter((item) => item.tenantId === tenantId);
+  listCommentDispatchOutbox(query: CommentDispatchOutboxListQuery): CommentDispatchOutboxItem[] {
+    this.assertSafeCommentDispatchPayload(query);
+
+    if (!query.tenantId) {
+      throw new BadRequestException("Comment dispatch outbox reads require a tenant id.");
+    }
+
+    if (
+      query.status !== undefined &&
+      query.status !== "PENDING" &&
+      query.status !== "PUBLISHED" &&
+      query.status !== "FAILED" &&
+      query.status !== "CANCELED"
+    ) {
+      throw new BadRequestException("Comment dispatch outbox status filter is invalid.");
+    }
+
+    return Array.from(this.commentDispatchOutboxItems.values()).filter(
+      (item) =>
+        item.tenantId === query.tenantId &&
+        (query.status === undefined || item.status === query.status) &&
+        (query.workerId === undefined || item.claimedBy === query.workerId)
+    );
   }
 
   claimCommentDispatchOutbox(input: CommentDispatchOutboxClaimRequest): CommentDispatchOutboxItem | null {
