@@ -203,6 +203,14 @@
 - [x] T115 Reject zero, negative, fractional, and excessive claim lease durations
 - [x] T116 Add e2e coverage for lease duration limits and credential/source leakage guardrails
 
+## Phase 30: Comment Dispatch Outbox Lease Renewal Boundary Slice
+
+- [x] T117 Add shared comment dispatch outbox lease renewal request contract
+- [x] T118 Add tenant-scoped metadata-only outbox lease renewal endpoint
+- [x] T119 Restrict renewal to active claim owners with valid 1-900 second lease duration
+- [x] T120 Record tenant-scoped `comment_dispatch.outbox_lease_renewed` audit events
+- [x] T121 Add e2e coverage for renewal ownership, duration limits, and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

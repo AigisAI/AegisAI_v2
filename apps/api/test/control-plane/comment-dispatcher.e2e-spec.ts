@@ -729,6 +729,121 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     );
   });
 
+  it("renews an active outbox claim lease only for the claiming dispatcher worker", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_lease_renewal",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-lease-renewal"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_outbox_lease_renewal",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    const enqueueResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_outbox_lease_renewal", planId: plan.id })
+      .expect(201);
+    const outboxItem = dataOf<Record<string, unknown>>(enqueueResponse.body);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/lease`)
+      .send({
+        tenantId: "tenant_comment_outbox_lease_renewal",
+        workerId: "comment-dispatch-worker-lease-renewal",
+        leaseSeconds: 300
+      })
+      .expect(400);
+
+    const claimResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_lease_renewal",
+        workerId: "comment-dispatch-worker-lease-renewal",
+        leaseSeconds: 300
+      })
+      .expect(201);
+    const claimedOutboxItem = dataOf<Record<string, unknown>>(claimResponse.body);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/lease`)
+      .send({
+        tenantId: "tenant_comment_outbox_lease_renewal",
+        workerId: "comment-dispatch-worker-other",
+        leaseSeconds: 600
+      })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/lease`)
+      .send({
+        tenantId: "tenant_comment_outbox_lease_renewal",
+        workerId: "comment-dispatch-worker-lease-renewal",
+        leaseSeconds: 901
+      })
+      .expect(400);
+
+    const renewalResponse = await request(app.getHttpServer())
+      .patch(`/api/comment-dispatches/outbox/${outboxItem.id}/lease`)
+      .send({
+        tenantId: "tenant_comment_outbox_lease_renewal",
+        workerId: "comment-dispatch-worker-lease-renewal",
+        leaseSeconds: 600
+      })
+      .expect(200);
+
+    expect(dataOf<Record<string, unknown>>(renewalResponse.body)).toEqual({
+      ...claimedOutboxItem,
+      leaseExpiresAt: "1970-01-01T00:10:00.000Z"
+    });
+    expect(JSON.stringify(renewalResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+
+    const auditEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_outbox_lease_renewal" })
+      .expect(200);
+    const auditEvents = dataOf<Array<Record<string, unknown>>>(auditEventsResponse.body);
+
+    expect(auditEvents.map((event) => event.eventType)).toEqual([
+      "comment_dispatch.planned",
+      "comment_dispatch.enqueued",
+      "comment_dispatch.outbox_claimed",
+      "comment_dispatch.outbox_lease_renewed"
+    ]);
+    expect(auditEvents[3]).toEqual(
+      expect.objectContaining({
+        eventType: "comment_dispatch.outbox_lease_renewed",
+        actor: "comment-dispatcher",
+        targetType: "comment_dispatch_outbox_item",
+        targetId: outboxItem.id,
+        metadata: {
+          outboxItemId: outboxItem.id,
+          planId: plan.id,
+          workerId: "comment-dispatch-worker-lease-renewal",
+          claimedAt: "1970-01-01T00:00:00.000Z",
+          leaseExpiresAt: "1970-01-01T00:10:00.000Z",
+          repositoryBindingId: repositoryBinding.id,
+          provider: "GITHUB",
+          findingId: "finding_comment_1",
+          commitSha: "abc123comment"
+        }
+      })
+    );
+    expect(JSON.stringify(auditEventsResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+  });
+
   it("requires the active claim owner when a dispatcher worker updates outbox status", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_outbox_status_owner",

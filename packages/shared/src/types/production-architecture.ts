@@ -222,6 +222,12 @@ export interface CommentDispatchOutboxClaimRequest {
   leaseSeconds: number;
 }
 
+export interface CommentDispatchOutboxLeaseRenewalRequest {
+  tenantId: string;
+  workerId: string;
+  leaseSeconds: number;
+}
+
 export interface CommentDispatchOutboxStatusUpdateRequest {
   tenantId: string;
   workerId: string;
@@ -286,6 +292,7 @@ export interface CommentDispatchAuditEvent extends AuditEvent {
     | 'comment_dispatch.planned'
     | 'comment_dispatch.enqueued'
     | 'comment_dispatch.outbox_claimed'
+    | 'comment_dispatch.outbox_lease_renewed'
     | 'comment_dispatch.outbox_status_updated';
   actor: 'comment-dispatcher';
   targetType: 'comment_dispatch_plan' | 'comment_dispatch_outbox_item';

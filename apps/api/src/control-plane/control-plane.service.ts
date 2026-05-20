@@ -8,6 +8,7 @@ import {
   type CommentDispatchEnqueueRequest,
   type CommentDispatchOutboxClaimRequest,
   type CommentDispatchOutboxItem,
+  type CommentDispatchOutboxLeaseRenewalRequest,
   type CommentDispatchOutboxStatusUpdateRequest,
   type CommentDispatchPlan,
   type CommentDispatchPlanRequest,
@@ -377,14 +378,7 @@ export class ControlPlaneService {
   claimCommentDispatchOutbox(input: CommentDispatchOutboxClaimRequest): CommentDispatchOutboxItem | null {
     this.assertSafeCommentDispatchPayload(input);
 
-    if (
-      !input.workerId ||
-      !Number.isInteger(input.leaseSeconds) ||
-      input.leaseSeconds <= 0 ||
-      input.leaseSeconds > COMMENT_DISPATCH_MAX_CLAIM_LEASE_SECONDS
-    ) {
-      throw new BadRequestException("Comment dispatch outbox claim requires a worker id and 1-900 lease seconds.");
-    }
+    this.assertValidCommentDispatchLease(input.workerId, input.leaseSeconds);
 
     const claimedAt = new Date(0).toISOString();
     const leaseExpiresAt = new Date(input.leaseSeconds * 1000).toISOString();
@@ -440,6 +434,63 @@ export class ControlPlaneService {
     });
 
     return claimedOutboxItem;
+  }
+
+  renewCommentDispatchOutboxLease(
+    outboxItemId: string,
+    input: CommentDispatchOutboxLeaseRenewalRequest
+  ): CommentDispatchOutboxItem {
+    this.assertSafeCommentDispatchPayload(input);
+    this.assertValidCommentDispatchLease(input.workerId, input.leaseSeconds);
+
+    const renewedAt = new Date(0).toISOString();
+    const outboxEntry = Array.from(this.commentDispatchOutboxItems.entries()).find(
+      ([, item]) => item.id === outboxItemId && item.tenantId === input.tenantId
+    );
+    if (!outboxEntry) {
+      throw new NotFoundException("Comment dispatch outbox item not found for tenant");
+    }
+
+    const [planId, outboxItem] = outboxEntry;
+    if (
+      outboxItem.status !== "PENDING" ||
+      outboxItem.claimedBy !== input.workerId ||
+      outboxItem.claimedAt === undefined ||
+      outboxItem.leaseExpiresAt === undefined ||
+      outboxItem.leaseExpiresAt <= renewedAt
+    ) {
+      throw new BadRequestException("Comment dispatch outbox lease renewal requires an active worker claim.");
+    }
+
+    const leaseExpiresAt = new Date(input.leaseSeconds * 1000).toISOString();
+    const renewedOutboxItem: CommentDispatchOutboxItem = {
+      ...outboxItem,
+      leaseExpiresAt
+    };
+
+    this.commentDispatchOutboxItems.set(planId, renewedOutboxItem);
+    this.commentDispatchAuditEvents.push({
+      id: `audit_event_${++this.commentDispatchAuditSequence}`,
+      tenantId: input.tenantId,
+      eventType: "comment_dispatch.outbox_lease_renewed",
+      actor: "comment-dispatcher",
+      targetType: "comment_dispatch_outbox_item",
+      targetId: outboxItem.id,
+      occurredAt: renewedAt,
+      metadata: {
+        outboxItemId: outboxItem.id,
+        planId: outboxItem.planId,
+        workerId: input.workerId,
+        claimedAt: outboxItem.claimedAt,
+        leaseExpiresAt,
+        repositoryBindingId: outboxItem.repositoryBindingId,
+        provider: outboxItem.provider,
+        findingId: outboxItem.findingId,
+        commitSha: outboxItem.commitSha
+      }
+    });
+
+    return renewedOutboxItem;
   }
 
   updateCommentDispatchOutboxStatus(
@@ -615,6 +666,17 @@ export class ControlPlaneService {
       if (new RegExp(forbiddenKey, "i").test(serialized)) {
         throw new BadRequestException("Comment dispatch payload contains forbidden sensitive or authority content.");
       }
+    }
+  }
+
+  private assertValidCommentDispatchLease(workerId: string, leaseSeconds: number): void {
+    if (
+      !workerId ||
+      !Number.isInteger(leaseSeconds) ||
+      leaseSeconds <= 0 ||
+      leaseSeconds > COMMENT_DISPATCH_MAX_CLAIM_LEASE_SECONDS
+    ) {
+      throw new BadRequestException("Comment dispatch outbox lease requires a worker id and 1-900 lease seconds.");
     }
   }
 }

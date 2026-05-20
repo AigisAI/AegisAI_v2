@@ -29,6 +29,7 @@ sandbox, or AI runtime implementation.
 - `POST /api/comment-dispatches/enqueue`
 - `GET /api/comment-dispatches/outbox`
 - `POST /api/comment-dispatches/outbox/claim`
+- `PATCH /api/comment-dispatches/outbox/:outboxItemId/lease`
 - `PATCH /api/comment-dispatches/outbox/:outboxItemId/status`
 - `GET /api/comment-dispatches/audit-events`
 - `POST /api/waivers`
@@ -203,6 +204,17 @@ metadata is limited to outbox item ID, plan ID, worker ID, claim timestamp, leas
 timestamp, repository binding ID, provider, finding ID, and commit SHA. It must not include
 external comment IDs, SCM token values, repo-read principals, integration-admin principals,
 full repository content, source archives, or raw scanner payloads.
+
+`PATCH /api/comment-dispatches/outbox/:outboxItemId/lease` lets the active claim owner renew
+the lease for a tenant-scoped `PENDING` outbox item. Renewal uses the same 1 through 900
+second integer duration limit as claim creation. Unclaimed items, terminal items, tenant
+mismatches, different workers, expired leases, and invalid durations are rejected. Every
+successful renewal records one tenant-scoped `comment_dispatch.outbox_lease_renewed` audit
+event with metadata limited to outbox item ID, plan ID, worker ID, claim timestamp, renewed
+lease expiration timestamp, repository binding ID, provider, finding ID, and commit SHA. It
+must not include external comment IDs, SCM token values, repo-read principals,
+integration-admin principals, full repository content, source archives, or raw scanner
+payloads.
 
 `PATCH /api/comment-dispatches/outbox/:outboxItemId/status` may update a tenant-scoped
 outbox item to `FAILED` or `CANCELED` with a reason and timestamp. `PUBLISHED` transitions,
