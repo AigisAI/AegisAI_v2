@@ -324,6 +324,13 @@ export interface CommentDispatchAuditEvent extends AuditEvent {
   };
 }
 
+export interface CommentDispatchAuditEventListQuery {
+  tenantId: string;
+  eventType?: CommentDispatchAuditEvent['eventType'];
+  targetType?: CommentDispatchAuditEvent['targetType'];
+  targetId?: string;
+}
+
 export interface TokenBrokerIssueRequest {
   tenantId: string;
   repositoryBindingId: string;

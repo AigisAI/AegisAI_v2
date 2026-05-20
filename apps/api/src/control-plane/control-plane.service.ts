@@ -5,6 +5,7 @@ import {
   COMMENT_DISPATCH_MAX_CLAIM_LEASE_SECONDS,
   shouldEscalateIsolation,
   type CommentDispatchAuditEvent,
+  type CommentDispatchAuditEventListQuery,
   type CommentDispatchEnqueueRequest,
   type CommentDispatchOutboxClaimRequest,
   type CommentDispatchOutboxItem,
@@ -310,8 +311,32 @@ export class ControlPlaneService {
     return plan;
   }
 
-  listCommentDispatchAuditEvents(tenantId: string): CommentDispatchAuditEvent[] {
-    return this.commentDispatchAuditEvents.filter((event) => event.tenantId === tenantId);
+  listCommentDispatchAuditEvents(query: CommentDispatchAuditEventListQuery): CommentDispatchAuditEvent[] {
+    this.assertSafeCommentDispatchPayload(query);
+
+    if (!query.tenantId) {
+      throw new BadRequestException("Comment dispatch audit event reads require a tenant id.");
+    }
+
+    if (query.eventType !== undefined && !this.isCommentDispatchAuditEventType(query.eventType)) {
+      throw new BadRequestException("Comment dispatch audit event type filter is invalid.");
+    }
+
+    if (
+      query.targetType !== undefined &&
+      query.targetType !== "comment_dispatch_plan" &&
+      query.targetType !== "comment_dispatch_outbox_item"
+    ) {
+      throw new BadRequestException("Comment dispatch audit target type filter is invalid.");
+    }
+
+    return this.commentDispatchAuditEvents.filter(
+      (event) =>
+        event.tenantId === query.tenantId &&
+        (query.eventType === undefined || event.eventType === query.eventType) &&
+        (query.targetType === undefined || event.targetType === query.targetType) &&
+        (query.targetId === undefined || event.targetId === query.targetId)
+    );
   }
 
   enqueueCommentDispatch(input: CommentDispatchEnqueueRequest): CommentDispatchOutboxItem {
@@ -689,6 +714,16 @@ export class ControlPlaneService {
         throw new BadRequestException("Comment dispatch payload contains forbidden sensitive or authority content.");
       }
     }
+  }
+
+  private isCommentDispatchAuditEventType(eventType: string): eventType is CommentDispatchAuditEvent["eventType"] {
+    return (
+      eventType === "comment_dispatch.planned" ||
+      eventType === "comment_dispatch.enqueued" ||
+      eventType === "comment_dispatch.outbox_claimed" ||
+      eventType === "comment_dispatch.outbox_lease_renewed" ||
+      eventType === "comment_dispatch.outbox_status_updated"
+    );
   }
 
   private assertValidCommentDispatchLease(workerId: string, leaseSeconds: number): void {

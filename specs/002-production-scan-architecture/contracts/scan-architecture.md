@@ -245,6 +245,13 @@ finding ID, target ref, commit SHA, and comment-write principal ID. Audit events
 include SCM token values, repo-read principals, integration-admin principals, full
 repository content, source archives, or raw scanner payloads.
 
+Audit event reads accept metadata-only `eventType`, `targetType`, and `targetId` filters
+after tenant scoping is applied. Invalid event or target type filters and sensitive query
+fields are rejected. Filters must not expand visibility across tenants and must not accept
+SCM token values, repo-read principals, integration-admin principals, external comment IDs,
+full repository content, source archives, raw scanner payloads, or SCM write-result
+metadata.
+
 Every first successful outbox enqueue records one tenant-scoped
 `comment_dispatch.enqueued` audit event. Repeated enqueue requests for the same plan return
 the existing outbox item and do not create duplicate enqueue audit events. Enqueue audit
