@@ -225,6 +225,13 @@
 - [x] T128 Reject invalid audit filters and sensitive audit read query fields
 - [x] T129 Add e2e coverage for audit filter behavior, tenant scoping, and credential/source leakage guardrails
 
+## Phase 33: Comment Dispatch Audit Event Read Limit Boundary Slice
+
+- [x] T130 Add shared comment dispatch audit event maximum page size contract
+- [x] T131 Apply tenant-scoped audit read `limit` after metadata filters
+- [x] T132 Reject zero, negative, fractional, and excessive audit read limits
+- [x] T133 Add e2e coverage for limit behavior and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

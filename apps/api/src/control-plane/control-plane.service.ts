@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import {
   buildCanonicalScanKey,
   buildCommentDispatchIdempotencyKey,
+  COMMENT_DISPATCH_AUDIT_EVENT_MAX_PAGE_SIZE,
   COMMENT_DISPATCH_MAX_CLAIM_LEASE_SECONDS,
   shouldEscalateIsolation,
   type CommentDispatchAuditEvent,
@@ -330,13 +331,17 @@ export class ControlPlaneService {
       throw new BadRequestException("Comment dispatch audit target type filter is invalid.");
     }
 
-    return this.commentDispatchAuditEvents.filter(
+    const limit = this.parseCommentDispatchAuditEventLimit(query.limit);
+
+    const events = this.commentDispatchAuditEvents.filter(
       (event) =>
         event.tenantId === query.tenantId &&
         (query.eventType === undefined || event.eventType === query.eventType) &&
         (query.targetType === undefined || event.targetType === query.targetType) &&
         (query.targetId === undefined || event.targetId === query.targetId)
     );
+
+    return limit === undefined ? events : events.slice(0, limit);
   }
 
   enqueueCommentDispatch(input: CommentDispatchEnqueueRequest): CommentDispatchOutboxItem {
@@ -724,6 +729,23 @@ export class ControlPlaneService {
       eventType === "comment_dispatch.outbox_lease_renewed" ||
       eventType === "comment_dispatch.outbox_status_updated"
     );
+  }
+
+  private parseCommentDispatchAuditEventLimit(limit: number | string | undefined): number | undefined {
+    if (limit === undefined) {
+      return undefined;
+    }
+
+    const parsedLimit = typeof limit === "number" ? limit : Number(limit);
+    if (
+      !Number.isInteger(parsedLimit) ||
+      parsedLimit <= 0 ||
+      parsedLimit > COMMENT_DISPATCH_AUDIT_EVENT_MAX_PAGE_SIZE
+    ) {
+      throw new BadRequestException("Comment dispatch audit event limit must be an integer from 1 through 100.");
+    }
+
+    return parsedLimit;
   }
 
   private assertValidCommentDispatchLease(workerId: string, leaseSeconds: number): void {

@@ -1247,6 +1247,76 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(400);
   });
 
+  it("limits audit event reads after tenant and metadata filters are applied", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_audit_limit",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-audit-limit"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_audit_limit",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_audit_limit", planId: plan.id })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_audit_limit",
+        workerId: "comment-dispatch-worker-audit-limit",
+        leaseSeconds: 300
+      })
+      .expect(201);
+
+    const limitedEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit_limit", limit: 2 })
+      .expect(200);
+    expect(dataOf<Array<Record<string, unknown>>>(limitedEventsResponse.body).map((event) => event.eventType)).toEqual([
+      "comment_dispatch.planned",
+      "comment_dispatch.enqueued"
+    ]);
+
+    const limitedOutboxEventsResponse = await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_limit",
+        targetType: "comment_dispatch_outbox_item",
+        limit: 1
+      })
+      .expect(200);
+    expect(dataOf<Array<Record<string, unknown>>>(limitedOutboxEventsResponse.body).map((event) => event.eventType)).toEqual([
+      "comment_dispatch.enqueued"
+    ]);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit_limit", limit: 0 })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit_limit", limit: 101 })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({ tenantId: "tenant_comment_audit_limit", limit: 1.5 })
+      .expect(400);
+  });
+
   it("records tenant-scoped audit events for dispatch planning without exposing source or credential fields", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit",
