@@ -252,6 +252,10 @@ SCM token values, repo-read principals, integration-admin principals, external c
 full repository content, source archives, raw scanner payloads, or SCM write-result
 metadata.
 
+Audit event reads may also accept `limit` after tenant and metadata filters are applied.
+`limit` must be an integer from 1 through 100. Invalid, zero, fractional, negative, or
+excessive limits are rejected before any response body is returned.
+
 Every first successful outbox enqueue records one tenant-scoped
 `comment_dispatch.enqueued` audit event. Repeated enqueue requests for the same plan return
 the existing outbox item and do not create duplicate enqueue audit events. Enqueue audit
