@@ -196,6 +196,13 @@
 - [x] T111 Reject attempts to rewrite terminal status or status reason metadata
 - [x] T112 Add e2e coverage for terminal finality and credential/source leakage guardrails
 
+## Phase 29: Comment Dispatch Outbox Claim Lease Duration Boundary Slice
+
+- [x] T113 Add shared maximum claim lease duration contract
+- [x] T114 Require outbox claim lease duration to be a positive integer no greater than 900 seconds
+- [x] T115 Reject zero, negative, fractional, and excessive claim lease durations
+- [x] T116 Add e2e coverage for lease duration limits and credential/source leakage guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

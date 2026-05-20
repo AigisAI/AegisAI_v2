@@ -672,6 +672,63 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(400);
   });
 
+  it("rejects invalid or excessive outbox claim lease durations", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_claim_lease",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-claim-lease"
+    });
+
+    const planResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/plan")
+      .send(
+        dispatchRequest({
+          tenantId: "tenant_comment_outbox_claim_lease",
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_outbox_claim_lease", planId: plan.id })
+      .expect(201);
+
+    for (const leaseSeconds of [0, -1, 0.5, 901]) {
+      await request(app.getHttpServer())
+        .post("/api/comment-dispatches/outbox/claim")
+        .send({
+          tenantId: "tenant_comment_outbox_claim_lease",
+          workerId: "comment-dispatch-worker-lease",
+          leaseSeconds
+        })
+        .expect(400);
+    }
+
+    const claimResponse = await request(app.getHttpServer())
+      .post("/api/comment-dispatches/outbox/claim")
+      .send({
+        tenantId: "tenant_comment_outbox_claim_lease",
+        workerId: "comment-dispatch-worker-lease",
+        leaseSeconds: 900
+      })
+      .expect(201);
+
+    expect(dataOf<Record<string, unknown>>(claimResponse.body)).toEqual(
+      expect.objectContaining({
+        tenantId: "tenant_comment_outbox_claim_lease",
+        claimedBy: "comment-dispatch-worker-lease",
+        claimedAt: "1970-01-01T00:00:00.000Z",
+        leaseExpiresAt: "1970-01-01T00:15:00.000Z"
+      })
+    );
+    expect(JSON.stringify(claimResponse.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId|externalCommentId/i
+    );
+  });
+
   it("requires the active claim owner when a dispatcher worker updates outbox status", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_outbox_status_owner",
