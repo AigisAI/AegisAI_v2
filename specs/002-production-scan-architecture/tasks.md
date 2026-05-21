@@ -267,6 +267,13 @@
 - [x] T152 Prevent repository binding filters from expanding cross-tenant audit visibility
 - [x] T153 Add e2e coverage for audit repository binding filter behavior and tenant scoping guardrails
 
+## Phase 39: Comment Dispatch Outbox Provider Filter Boundary Slice
+
+- [x] T154 Add shared comment dispatch outbox `provider` list query contract
+- [x] T155 Apply tenant-scoped outbox provider filters with repository, status, worker, order, and limit composition
+- [x] T156 Reject invalid outbox provider filter values
+- [x] T157 Add e2e coverage for provider filter behavior and tenant scoping guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

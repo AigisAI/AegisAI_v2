@@ -432,6 +432,10 @@ export class ControlPlaneService {
       throw new BadRequestException("Comment dispatch outbox order filter is invalid.");
     }
 
+    if (query.provider !== undefined && query.provider !== "GITHUB" && query.provider !== "GITLAB") {
+      throw new BadRequestException("Comment dispatch outbox provider filter is invalid.");
+    }
+
     const limit = this.parseCommentDispatchOutboxLimit(query.limit);
     const order = query.order ?? "ASC";
 
@@ -439,6 +443,7 @@ export class ControlPlaneService {
       (item) =>
         item.tenantId === query.tenantId &&
         (query.repositoryBindingId === undefined || item.repositoryBindingId === query.repositoryBindingId) &&
+        (query.provider === undefined || item.provider === query.provider) &&
         (query.status === undefined || item.status === query.status) &&
         (query.workerId === undefined || item.claimedBy === query.workerId)
     );
