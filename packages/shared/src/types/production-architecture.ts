@@ -339,6 +339,7 @@ export interface CommentDispatchAuditEventListQuery {
   tenantId: string;
   repositoryBindingId?: string;
   provider?: ScmProvider;
+  providerRepoId?: string;
   eventType?: CommentDispatchAuditEvent['eventType'];
   targetType?: CommentDispatchAuditEvent['targetType'];
   targetId?: string;

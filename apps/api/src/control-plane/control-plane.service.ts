@@ -349,6 +349,7 @@ export class ControlPlaneService {
         (query.repositoryBindingId === undefined ||
           event.metadata.repositoryBindingId === query.repositoryBindingId) &&
         (query.provider === undefined || event.metadata.provider === query.provider) &&
+        (query.providerRepoId === undefined || event.metadata.providerRepoId === query.providerRepoId) &&
         (query.eventType === undefined || event.eventType === query.eventType) &&
         (query.targetType === undefined || event.targetType === query.targetType) &&
         (query.targetId === undefined || event.targetId === query.targetId)
@@ -405,6 +406,7 @@ export class ControlPlaneService {
         idempotencyKey: plan.idempotencyKey,
         repositoryBindingId: plan.repositoryBindingId,
         provider: plan.provider,
+        providerRepoId: plan.providerRepoId,
         policyDecisionId: plan.policyDecisionId,
         findingId: plan.findingId,
         targetRef: plan.targetRef,
