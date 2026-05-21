@@ -336,6 +336,10 @@ export class ControlPlaneService {
       throw new BadRequestException("Comment dispatch audit event order filter is invalid.");
     }
 
+    if (query.provider !== undefined && query.provider !== "GITHUB" && query.provider !== "GITLAB") {
+      throw new BadRequestException("Comment dispatch audit provider filter is invalid.");
+    }
+
     const limit = this.parseCommentDispatchAuditEventLimit(query.limit);
     const order = query.order ?? "ASC";
 
@@ -344,6 +348,7 @@ export class ControlPlaneService {
         event.tenantId === query.tenantId &&
         (query.repositoryBindingId === undefined ||
           event.metadata.repositoryBindingId === query.repositoryBindingId) &&
+        (query.provider === undefined || event.metadata.provider === query.provider) &&
         (query.eventType === undefined || event.eventType === query.eventType) &&
         (query.targetType === undefined || event.targetType === query.targetType) &&
         (query.targetId === undefined || event.targetId === query.targetId)
