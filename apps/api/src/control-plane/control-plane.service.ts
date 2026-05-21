@@ -342,6 +342,8 @@ export class ControlPlaneService {
     const events = this.commentDispatchAuditEvents.filter(
       (event) =>
         event.tenantId === query.tenantId &&
+        (query.repositoryBindingId === undefined ||
+          event.metadata.repositoryBindingId === query.repositoryBindingId) &&
         (query.eventType === undefined || event.eventType === query.eventType) &&
         (query.targetType === undefined || event.targetType === query.targetType) &&
         (query.targetId === undefined || event.targetId === query.targetId)

@@ -260,6 +260,13 @@
 - [x] T148 Prevent repository binding filters from expanding cross-tenant outbox visibility
 - [x] T149 Add e2e coverage for repository binding filter behavior and tenant scoping guardrails
 
+## Phase 38: Comment Dispatch Audit Event Repository Binding Filter Boundary Slice
+
+- [x] T150 Add shared comment dispatch audit event `repositoryBindingId` list query contract
+- [x] T151 Apply tenant-scoped audit event repository binding filters with event, target, order, and limit composition
+- [x] T152 Prevent repository binding filters from expanding cross-tenant audit visibility
+- [x] T153 Add e2e coverage for audit repository binding filter behavior and tenant scoping guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference
