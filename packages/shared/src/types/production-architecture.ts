@@ -337,6 +337,7 @@ export const COMMENT_DISPATCH_AUDIT_EVENT_MAX_PAGE_SIZE = 100;
 export interface CommentDispatchAuditEventListQuery {
   tenantId: string;
   repositoryBindingId?: string;
+  provider?: ScmProvider;
   eventType?: CommentDispatchAuditEvent['eventType'];
   targetType?: CommentDispatchAuditEvent['targetType'];
   targetId?: string;
