@@ -1538,6 +1538,112 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .expect(400);
   });
 
+  it("filters outbox reads by provider repository id inside the tenant boundary", async () => {
+    const githubRepositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_provider_repo_filter",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-provider-repo-filter-1"
+    });
+    await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_provider_repo_filter",
+      provider: "gitlab",
+      commentWritePrincipalId: "gitlab-project-integration:comment-write-outbox-provider-repo-filter-2"
+    });
+    const repositoryBindingsResponse = await request(app.getHttpServer())
+      .get("/api/repository-bindings")
+      .query({ tenantId: "tenant_comment_outbox_provider_repo_filter" })
+      .expect(200);
+    const gitlabRepositoryBinding = dataOf<Array<Record<string, unknown>>>(repositoryBindingsResponse.body).find(
+      (binding) => binding.id !== githubRepositoryBinding.id
+    );
+    if (!gitlabRepositoryBinding) {
+      throw new Error("Expected a GitLab repository binding for outbox provider repository filter coverage.");
+    }
+
+    const createPlan = async (repositoryBindingId: unknown, commitSha: string) => {
+      const planResponse = await request(app.getHttpServer())
+        .post("/api/comment-dispatches/plan")
+        .send({
+          ...dispatchRequest({
+            tenantId: "tenant_comment_outbox_provider_repo_filter",
+            repositoryBindingId,
+            policyCommentAllowed: true
+          }),
+          commitSha
+        })
+        .expect(201);
+      return dataOf<Record<string, unknown>>(planResponse.body);
+    };
+
+    const githubPlan = await createPlan(githubRepositoryBinding.id, "abc123provider-repo-filter-1");
+    const gitlabPlan = await createPlan(gitlabRepositoryBinding.id, "abc123provider-repo-filter-2");
+    const githubOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_provider_repo_filter", planId: githubPlan.id })
+          .expect(201)
+      ).body
+    );
+    const gitlabOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_provider_repo_filter", planId: gitlabPlan.id })
+          .expect(201)
+      ).body
+    );
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_provider_repo_filter",
+        providerRepoId: "gitlab-repo-1"
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([gitlabOutboxItem]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_provider_repo_filter",
+        provider: "GITHUB",
+        providerRepoId: "github-repo-1",
+        repositoryBindingId: githubRepositoryBinding.id,
+        order: "DESC",
+        limit: 1
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([githubOutboxItem]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_provider_repo_filter",
+        provider: "GITHUB",
+        providerRepoId: "gitlab-repo-1"
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_provider_repo_filter_other",
+        providerRepoId: "github-repo-1"
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([]);
+      });
+  });
+
   it("filters audit event reads by repository binding inside the tenant boundary", async () => {
     const firstRepositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit_repository_filter",

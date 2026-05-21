@@ -224,6 +224,7 @@ export interface CommentDispatchOutboxListQuery {
   tenantId: string;
   repositoryBindingId?: string;
   provider?: ScmProvider;
+  providerRepoId?: string;
   status?: CommentDispatchOutboxItem['status'];
   workerId?: string;
   limit?: number | string;
