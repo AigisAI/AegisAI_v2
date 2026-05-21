@@ -255,10 +255,10 @@ finding ID, target ref, commit SHA, and comment-write principal ID. Audit events
 include SCM token values, repo-read principals, integration-admin principals, full
 repository content, source archives, or raw scanner payloads.
 
-Audit event reads accept metadata-only `repositoryBindingId`, `provider`, `eventType`,
-`targetType`, and `targetId` filters after tenant scoping is applied. Invalid provider,
-event, or target type filters and sensitive query fields are rejected. Filters must not
-expand visibility across tenants and must not accept SCM token values, repo-read
+Audit event reads accept metadata-only `repositoryBindingId`, `provider`, `providerRepoId`,
+`eventType`, `targetType`, and `targetId` filters after tenant scoping is applied. Invalid
+provider, event, or target type filters and sensitive query fields are rejected. Filters
+must not expand visibility across tenants and must not accept SCM token values, repo-read
 principals, integration-admin principals, external comment IDs, full repository content,
 source archives, raw scanner payloads, or SCM write-result metadata.
 
@@ -267,16 +267,16 @@ Audit event reads may also accept `limit` after tenant and metadata filters are 
 excessive limits are rejected before any response body is returned.
 
 Audit event reads may accept `order=ASC|DESC`. Ordering is applied after tenant, repository
-binding, provider, event, and target filters and before `limit`. `ASC` returns audit
-metadata in creation order, while `DESC` returns the newest audit metadata first. Invalid
-order values are rejected.
+binding, provider, provider repository ID, event, and target filters and before `limit`.
+`ASC` returns audit metadata in creation order, while `DESC` returns the newest audit
+metadata first. Invalid order values are rejected.
 
 Every first successful outbox enqueue records one tenant-scoped
 `comment_dispatch.enqueued` audit event. Repeated enqueue requests for the same plan return
 the existing outbox item and do not create duplicate enqueue audit events. Enqueue audit
 metadata is limited to outbox item ID, plan ID, idempotency key, repository binding ID,
-provider, policy decision ID, finding ID, target ref, commit SHA, and comment-write
-principal ID. It must not include SCM token values, repo-read principals,
+provider, provider repository ID, policy decision ID, finding ID, target ref, commit SHA,
+and comment-write principal ID. It must not include SCM token values, repo-read principals,
 integration-admin principals, external comment IDs, full repository content, source
 archives, or raw scanner payloads.
 

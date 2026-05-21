@@ -370,6 +370,7 @@ describe("Comment dispatcher boundary API (e2e)", () => {
           idempotencyKey: plan.idempotencyKey,
           repositoryBindingId: repositoryBinding.id,
           provider: "GITHUB",
+          providerRepoId: "github-repo-1",
           policyDecisionId: "policy_decision_comment_1",
           findingId: "finding_comment_1",
           targetRef: "refs/pull/42/head",
@@ -1875,6 +1876,130 @@ describe("Comment dispatcher boundary API (e2e)", () => {
         provider: "BITBUCKET"
       })
       .expect(400);
+  });
+
+  it("filters audit event reads by provider repository id inside the tenant boundary", async () => {
+    const githubRepositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_audit_provider_repo_filter",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-audit-provider-repo-filter-1"
+    });
+    await installRepositoryBinding({
+      tenantId: "tenant_comment_audit_provider_repo_filter",
+      provider: "gitlab",
+      commentWritePrincipalId: "gitlab-project-integration:comment-write-audit-provider-repo-filter-2"
+    });
+    const repositoryBindingsResponse = await request(app.getHttpServer())
+      .get("/api/repository-bindings")
+      .query({ tenantId: "tenant_comment_audit_provider_repo_filter" })
+      .expect(200);
+    const gitlabRepositoryBinding = dataOf<Array<Record<string, unknown>>>(repositoryBindingsResponse.body).find(
+      (binding) => binding.id !== githubRepositoryBinding.id
+    );
+    if (!gitlabRepositoryBinding) {
+      throw new Error("Expected a GitLab repository binding for audit provider repository filter coverage.");
+    }
+
+    const createPlan = async (repositoryBindingId: unknown, commitSha: string) => {
+      const planResponse = await request(app.getHttpServer())
+        .post("/api/comment-dispatches/plan")
+        .send({
+          ...dispatchRequest({
+            tenantId: "tenant_comment_audit_provider_repo_filter",
+            repositoryBindingId,
+            policyCommentAllowed: true
+          }),
+          commitSha
+        })
+        .expect(201);
+      return dataOf<Record<string, unknown>>(planResponse.body);
+    };
+
+    const githubPlan = await createPlan(githubRepositoryBinding.id, "abc123audit-provider-repo-filter-1");
+    const gitlabPlan = await createPlan(gitlabRepositoryBinding.id, "abc123audit-provider-repo-filter-2");
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_audit_provider_repo_filter", planId: githubPlan.id })
+      .expect(201);
+    const gitlabOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_audit_provider_repo_filter", planId: gitlabPlan.id })
+          .expect(201)
+      ).body
+    );
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_provider_repo_filter",
+        providerRepoId: "gitlab-repo-1"
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body).map((event) => event.eventType)).toEqual([
+          "comment_dispatch.planned",
+          "comment_dispatch.enqueued"
+        ]);
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([
+          expect.objectContaining({
+            metadata: expect.objectContaining({ providerRepoId: "gitlab-repo-1" })
+          }),
+          expect.objectContaining({
+            metadata: expect.objectContaining({ providerRepoId: "gitlab-repo-1" })
+          })
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_provider_repo_filter",
+        provider: "GITLAB",
+        providerRepoId: "gitlab-repo-1",
+        repositoryBindingId: gitlabRepositoryBinding.id,
+        targetType: "comment_dispatch_outbox_item",
+        order: "DESC",
+        limit: 1
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([
+          expect.objectContaining({
+            eventType: "comment_dispatch.enqueued",
+            targetId: gitlabOutboxItem.id,
+            metadata: expect.objectContaining({
+              provider: "GITLAB",
+              providerRepoId: "gitlab-repo-1",
+              repositoryBindingId: gitlabRepositoryBinding.id
+            })
+          })
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_provider_repo_filter",
+        provider: "GITHUB",
+        providerRepoId: "gitlab-repo-1"
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_provider_repo_filter_other",
+        providerRepoId: "github-repo-1"
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([]);
+      });
   });
 
   it("filters audit event reads by event type and target without crossing tenant or sensitive boundaries", async () => {

@@ -288,6 +288,13 @@
 - [x] T164 Prevent provider repository filters from expanding cross-tenant outbox visibility
 - [x] T165 Add e2e coverage for outbox provider repository filter behavior and tenant scoping guardrails
 
+## Phase 42: Comment Dispatch Audit Event Provider Repository Filter Boundary Slice
+
+- [x] T166 Add shared comment dispatch audit event `providerRepoId` list query contract
+- [x] T167 Apply tenant-scoped audit event provider repository filters with repository, provider, event, target, order, and limit composition
+- [x] T168 Prevent provider repository filters from expanding cross-tenant audit visibility
+- [x] T169 Add e2e coverage for audit provider repository filter behavior and tenant scoping guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference
