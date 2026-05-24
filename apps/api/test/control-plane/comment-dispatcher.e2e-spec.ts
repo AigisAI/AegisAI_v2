@@ -2083,6 +2083,111 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       });
   });
 
+  it("filters audit event reads by idempotency key inside the tenant boundary", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_audit_idempotency_filter",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-audit-idempotency-filter"
+    });
+
+    const createPlan = async (commitSha: string) => {
+      const planResponse = await request(app.getHttpServer())
+        .post("/api/comment-dispatches/plan")
+        .send({
+          ...dispatchRequest({
+            tenantId: "tenant_comment_audit_idempotency_filter",
+            repositoryBindingId: repositoryBinding.id,
+            policyCommentAllowed: true
+          }),
+          commitSha
+        })
+        .expect(201);
+      return dataOf<Record<string, unknown>>(planResponse.body);
+    };
+
+    const firstPlan = await createPlan("abc123audit-idempotency-filter-1");
+    const secondPlan = await createPlan("abc123audit-idempotency-filter-2");
+    const firstOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_audit_idempotency_filter", planId: firstPlan.id })
+          .expect(201)
+      ).body
+    );
+    await request(app.getHttpServer())
+      .post("/api/comment-dispatches/enqueue")
+      .send({ tenantId: "tenant_comment_audit_idempotency_filter", planId: secondPlan.id })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_idempotency_filter",
+        idempotencyKey: secondPlan.idempotencyKey
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body).map((event) => event.eventType)).toEqual([
+          "comment_dispatch.planned",
+          "comment_dispatch.enqueued"
+        ]);
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([
+          expect.objectContaining({
+            metadata: expect.objectContaining({ idempotencyKey: secondPlan.idempotencyKey })
+          }),
+          expect.objectContaining({
+            metadata: expect.objectContaining({ idempotencyKey: secondPlan.idempotencyKey })
+          })
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_idempotency_filter",
+        idempotencyKey: firstPlan.idempotencyKey,
+        repositoryBindingId: repositoryBinding.id,
+        provider: "GITHUB",
+        providerRepoId: "github-repo-1",
+        eventType: "comment_dispatch.enqueued",
+        targetType: "comment_dispatch_outbox_item",
+        targetId: firstOutboxItem.id,
+        order: "DESC",
+        limit: 1
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([
+          expect.objectContaining({
+            eventType: "comment_dispatch.enqueued",
+            targetId: firstOutboxItem.id,
+            metadata: expect.objectContaining({ idempotencyKey: firstPlan.idempotencyKey })
+          })
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_idempotency_filter_other",
+        idempotencyKey: firstPlan.idempotencyKey
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/audit-events")
+      .query({
+        tenantId: "tenant_comment_audit_idempotency_filter",
+        idempotencyKey: firstPlan.idempotencyKey,
+        accessToken: "ghs_secret"
+      })
+      .expect(400);
+  });
+
   it("filters audit event reads by event type and target without crossing tenant or sensitive boundaries", async () => {
     const repositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit_filters",
@@ -2359,6 +2464,7 @@ describe("Comment dispatcher boundary API (e2e)", () => {
         targetId: plan.id,
         occurredAt: "1970-01-01T00:00:00.000Z",
         metadata: {
+          idempotencyKey: plan.idempotencyKey,
           repositoryBindingId: repositoryBinding.id,
           provider: "GITHUB",
           providerRepoId: "github-repo-1",

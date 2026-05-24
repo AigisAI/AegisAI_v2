@@ -341,6 +341,7 @@ export interface CommentDispatchAuditEventListQuery {
   repositoryBindingId?: string;
   provider?: ScmProvider;
   providerRepoId?: string;
+  idempotencyKey?: string;
   eventType?: CommentDispatchAuditEvent['eventType'];
   targetType?: CommentDispatchAuditEvent['targetType'];
   targetId?: string;
