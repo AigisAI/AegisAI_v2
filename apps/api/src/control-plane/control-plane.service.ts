@@ -297,6 +297,7 @@ export class ControlPlaneService {
       targetId: plan.id,
       occurredAt: new Date(0).toISOString(),
       metadata: {
+        idempotencyKey,
         repositoryBindingId: repositoryBinding.id,
         provider: integration.provider,
         providerRepoId: repositoryBinding.providerRepoId,
@@ -350,6 +351,7 @@ export class ControlPlaneService {
           event.metadata.repositoryBindingId === query.repositoryBindingId) &&
         (query.provider === undefined || event.metadata.provider === query.provider) &&
         (query.providerRepoId === undefined || event.metadata.providerRepoId === query.providerRepoId) &&
+        (query.idempotencyKey === undefined || event.metadata.idempotencyKey === query.idempotencyKey) &&
         (query.eventType === undefined || event.eventType === query.eventType) &&
         (query.targetType === undefined || event.targetType === query.targetType) &&
         (query.targetId === undefined || event.targetId === query.targetId)

@@ -302,6 +302,13 @@
 - [x] T172 Prevent idempotency key filters from expanding cross-tenant outbox visibility
 - [x] T173 Add e2e coverage for outbox idempotency key filter behavior and tenant scoping guardrails
 
+## Phase 44: Comment Dispatch Audit Event Idempotency Key Filter Boundary Slice
+
+- [x] T174 Add shared comment dispatch audit event `idempotencyKey` list query contract
+- [x] T175 Apply tenant-scoped audit event idempotency key filters with repository, provider, provider repository, event, target, order, and limit composition
+- [x] T176 Prevent idempotency key filters from expanding cross-tenant audit visibility
+- [x] T177 Add e2e coverage for audit idempotency key filter behavior and tenant scoping guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference
