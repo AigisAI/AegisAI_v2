@@ -452,6 +452,7 @@ export class ControlPlaneService {
         (query.repositoryBindingId === undefined || item.repositoryBindingId === query.repositoryBindingId) &&
         (query.provider === undefined || item.provider === query.provider) &&
         (query.providerRepoId === undefined || item.providerRepoId === query.providerRepoId) &&
+        (query.idempotencyKey === undefined || item.idempotencyKey === query.idempotencyKey) &&
         (query.status === undefined || item.status === query.status) &&
         (query.workerId === undefined || item.claimedBy === query.workerId)
     );

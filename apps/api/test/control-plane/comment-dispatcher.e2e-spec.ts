@@ -1645,6 +1645,87 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       });
   });
 
+  it("filters outbox reads by idempotency key inside the tenant boundary", async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: "tenant_comment_outbox_idempotency_filter",
+      provider: "github",
+      commentWritePrincipalId: "github-app-installation:comment-write-outbox-idempotency-filter"
+    });
+
+    const createPlan = async (commitSha: string) => {
+      const planResponse = await request(app.getHttpServer())
+        .post("/api/comment-dispatches/plan")
+        .send({
+          ...dispatchRequest({
+            tenantId: "tenant_comment_outbox_idempotency_filter",
+            repositoryBindingId: repositoryBinding.id,
+            policyCommentAllowed: true
+          }),
+          commitSha
+        })
+        .expect(201);
+      return dataOf<Record<string, unknown>>(planResponse.body);
+    };
+
+    const firstPlan = await createPlan("abc123idempotency-filter-1");
+    const secondPlan = await createPlan("abc123idempotency-filter-2");
+    const firstOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_idempotency_filter", planId: firstPlan.id })
+          .expect(201)
+      ).body
+    );
+    const secondOutboxItem = dataOf<Record<string, unknown>>(
+      (
+        await request(app.getHttpServer())
+          .post("/api/comment-dispatches/enqueue")
+          .send({ tenantId: "tenant_comment_outbox_idempotency_filter", planId: secondPlan.id })
+          .expect(201)
+      ).body
+    );
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_idempotency_filter",
+        idempotencyKey: secondOutboxItem.idempotencyKey
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([secondOutboxItem]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_idempotency_filter",
+        idempotencyKey: firstOutboxItem.idempotencyKey,
+        repositoryBindingId: repositoryBinding.id,
+        provider: "GITHUB",
+        providerRepoId: "github-repo-1",
+        status: "PENDING",
+        order: "DESC",
+        limit: 1
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([firstOutboxItem]);
+      });
+
+    await request(app.getHttpServer())
+      .get("/api/comment-dispatches/outbox")
+      .query({
+        tenantId: "tenant_comment_outbox_idempotency_filter_other",
+        idempotencyKey: firstOutboxItem.idempotencyKey
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(dataOf<Array<Record<string, unknown>>>(response.body)).toEqual([]);
+      });
+  });
+
   it("filters audit event reads by repository binding inside the tenant boundary", async () => {
     const firstRepositoryBinding = await installRepositoryBinding({
       tenantId: "tenant_comment_audit_repository_filter",

@@ -189,20 +189,20 @@ metadata for dispatcher runtime pickup. This milestone does not publish external
 GitLab comments, does not persist external comment IDs, and does not call SCM write APIs.
 
 Outbox reads accept metadata-only `repositoryBindingId`, `provider`, `providerRepoId`,
-`status`, and `workerId` filters after tenant scoping is applied. Invalid provider/status
-values and sensitive query fields are rejected. Filters must not expand visibility across
-tenants and must not accept SCM token values, repo-read principals, integration-admin
-principals, external comment IDs, full repository content, source archives, raw scanner
-payloads, or SCM write-result metadata.
+`idempotencyKey`, `status`, and `workerId` filters after tenant scoping is applied. Invalid
+provider/status values and sensitive query fields are rejected. Filters must not expand
+visibility across tenants and must not accept SCM token values, repo-read principals,
+integration-admin principals, external comment IDs, full repository content, source archives,
+raw scanner payloads, or SCM write-result metadata.
 
 Outbox reads may also accept `limit` after tenant and metadata filters are applied. `limit`
 must be an integer from 1 through 100. Invalid, zero, fractional, negative, or excessive
 limits are rejected before any response body is returned.
 
 Outbox reads may accept `order=ASC|DESC`. Ordering is applied after tenant, repository,
-provider, provider repository ID, status, and worker filters and before `limit`. `ASC`
-returns dispatcher metadata in enqueue order, while `DESC` returns the newest enqueued
-metadata first. Invalid order values are rejected.
+provider, provider repository ID, idempotency key, status, and worker filters and before
+`limit`. `ASC` returns dispatcher metadata in enqueue order, while `DESC` returns the newest
+enqueued metadata first. Invalid order values are rejected.
 
 `POST /api/comment-dispatches/outbox/claim` lets a dispatcher worker claim one tenant-scoped
 `PENDING` outbox item with metadata-only lease fields. A worker retry inside the lease window
