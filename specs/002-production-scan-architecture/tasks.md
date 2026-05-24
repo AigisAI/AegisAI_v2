@@ -295,6 +295,13 @@
 - [x] T168 Prevent provider repository filters from expanding cross-tenant audit visibility
 - [x] T169 Add e2e coverage for audit provider repository filter behavior and tenant scoping guardrails
 
+## Phase 43: Comment Dispatch Outbox Idempotency Key Filter Boundary Slice
+
+- [x] T170 Add shared comment dispatch outbox `idempotencyKey` list query contract
+- [x] T171 Apply tenant-scoped outbox idempotency key filters with repository, provider, provider repository, status, order, and limit composition
+- [x] T172 Prevent idempotency key filters from expanding cross-tenant outbox visibility
+- [x] T173 Add e2e coverage for outbox idempotency key filter behavior and tenant scoping guardrails
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

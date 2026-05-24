@@ -225,6 +225,7 @@ export interface CommentDispatchOutboxListQuery {
   repositoryBindingId?: string;
   provider?: ScmProvider;
   providerRepoId?: string;
+  idempotencyKey?: string;
   status?: CommentDispatchOutboxItem['status'];
   workerId?: string;
   limit?: number | string;
