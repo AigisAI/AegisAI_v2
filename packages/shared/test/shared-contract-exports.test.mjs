@@ -10,6 +10,7 @@ const files = {
   vulnerability: new URL('../src/types/vulnerability.ts', import.meta.url),
   dashboard: new URL('../src/types/dashboard.ts', import.meta.url),
   report: new URL('../src/types/report.ts', import.meta.url),
+  aiInferenceRuntime: new URL('../src/types/ai-inference-runtime.ts', import.meta.url),
   index: new URL('../src/index.ts', import.meta.url)
 };
 
@@ -20,11 +21,55 @@ test('shared contract modules exist and are re-exported from the package root', 
 
   const indexContent = readFileSync(files.index, 'utf8');
 
-  for (const moduleName of ['common', 'auth', 'repo', 'scan', 'vulnerability', 'dashboard', 'report']) {
+  for (const moduleName of [
+    'common',
+    'auth',
+    'repo',
+    'scan',
+    'vulnerability',
+    'dashboard',
+    'report',
+    'ai-inference-runtime'
+  ]) {
     assert.match(
       indexContent,
       new RegExp(`export \\* from './types/${moduleName}'`),
       `Expected packages/shared/src/index.ts to re-export ./types/${moduleName}`
     );
   }
+});
+
+test('AI inference runtime contracts are advisory-only and exclude forbidden payload fields', () => {
+  assert.equal(existsSync(files.aiInferenceRuntime), true);
+
+  const contract = readFileSync(files.aiInferenceRuntime, 'utf8');
+
+  for (const exportName of [
+    'ReducedEvidence',
+    'AiInferenceRequest',
+    'AiInferenceResponse',
+    'AiDetectorAdvisory',
+    'AiPlannerAdvisory',
+    'AiInferenceAuditEvent',
+    'AI_INFERENCE_REJECTION_REASONS'
+  ]) {
+    assert.match(contract, new RegExp(`export (interface|const|type) ${exportName}\\b`));
+  }
+
+  for (const forbiddenField of [
+    'scmCredential',
+    'scmToken',
+    'repositoryArchive',
+    'sourceArchive',
+    'fullRepository',
+    'rawScannerPayload',
+    'authoritativeFinding',
+    'policyOverride'
+  ]) {
+    assert.doesNotMatch(contract, new RegExp(`\\b${forbiddenField}\\b`, 'i'));
+  }
+
+  assert.match(contract, /advisoryOnly:\s*true/);
+  assert.match(contract, /redactionState:\s*'redacted'\s*\|\s*'reduced'/);
+  assert.match(contract, /fallback:\s*AiInferenceFallback/);
 });
