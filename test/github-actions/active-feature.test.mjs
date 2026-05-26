@@ -6,6 +6,7 @@ const files = {
   agents: new URL('../../AGENTS.md', import.meta.url),
   readme: new URL('../../README.md', import.meta.url),
   conventions: new URL('../../docs/github-conventions.md', import.meta.url),
+  ci: new URL('../../.github/workflows/ci.yml', import.meta.url),
   quickstart: new URL('../../specs/002-production-scan-architecture/quickstart.md', import.meta.url),
   spec: new URL('../../specs/002-production-scan-architecture/spec.md', import.meta.url),
   plan: new URL('../../specs/002-production-scan-architecture/plan.md', import.meta.url),
@@ -55,4 +56,28 @@ test('production scan architecture is the active feature package', () => {
   assert.match(contract, /CanonicalScanKey/);
   assert.match(contract, /EvidencePack/);
   assert.match(contract, /PolicyDecision/);
+});
+
+test('production scan architecture completion gate stays synchronized between quickstart and CI', () => {
+  const readme = readNormalizedText(files.readme);
+  const ci = readNormalizedText(files.ci);
+  const quickstart = readNormalizedText(files.quickstart);
+
+  const requiredCommands = [
+    'corepack pnpm lint',
+    'corepack pnpm test',
+    'corepack pnpm typecheck',
+    'corepack pnpm build',
+    'corepack pnpm --filter @aegisai/api prisma:validate',
+    'git diff --check'
+  ];
+
+  for (const command of requiredCommands) {
+    assert.match(quickstart, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(ci, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+
+  assert.match(readme, /specs\/002-production-scan-architecture\/quickstart\.md/);
+  assert.match(readme, /\.github\/workflows\/ci\.yml/);
+  assert.match(ci, /DATABASE_URL:\s*postgresql:\/\/postgres:postgres@localhost:5432\/aegisai/);
 });

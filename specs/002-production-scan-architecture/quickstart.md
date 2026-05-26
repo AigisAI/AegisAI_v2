@@ -98,4 +98,5 @@ corepack pnpm test
 corepack pnpm typecheck
 corepack pnpm build
 corepack pnpm --filter @aegisai/api prisma:validate
+git diff --check
 ```

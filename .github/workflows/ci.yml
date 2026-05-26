@@ -57,3 +57,11 @@ jobs:
 
       - name: Build workspace
         run: corepack pnpm build
+
+      - name: Validate Prisma schema
+        run: corepack pnpm --filter @aegisai/api prisma:validate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aegisai
+
+      - name: Check whitespace
+        run: git diff --check
