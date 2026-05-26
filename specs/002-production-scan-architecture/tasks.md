@@ -316,6 +316,12 @@
 - [x] T180 Point README completion guidance at the 002 quickstart and CI workflow without duplicating command checklists
 - [x] T181 Run Prisma schema validation and whitespace diff checks in GitHub Actions CI
 
+## Phase 46: Production Architecture First Milestone Completion Guardrail Slice
+
+- [x] T182 Add active feature tests that fail when non-deferred 002 tasks are unchecked
+- [x] T183 Verify the 002 requirements checklist remains fully checked
+- [x] T184 Keep trained production AI inference as the only deferred milestone item
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference

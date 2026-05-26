@@ -85,3 +85,33 @@ test('production scan architecture completion gate stays synchronized between qu
   assert.match(tasks, /Point README completion guidance at the 002 quickstart and CI workflow without duplicating command checklists/);
   assert.match(ci, /DATABASE_URL:\s*postgresql:\/\/postgres:postgres@localhost:5432\/aegisai/);
 });
+
+test('production scan architecture first milestone has no open non-deferred tasks', () => {
+  const tasks = readNormalizedText(files.tasks);
+  const checklist = readNormalizedText(files.checklist);
+  const deferredSection = tasks.split('\n## Deferred\n')[1] ?? '';
+  const activeTaskSection = tasks.split('\n## Deferred\n')[0];
+
+  const openActiveTasks = activeTaskSection
+    .split('\n')
+    .filter((line) => /^- \[ \]/.test(line));
+  assert.deepEqual(openActiveTasks, []);
+
+  assert.match(tasks, /## Phase 46: Production Architecture First Milestone Completion Guardrail Slice/);
+  assert.match(tasks, /T182 Add active feature tests that fail when non-deferred 002 tasks are unchecked/);
+  assert.match(tasks, /T183 Verify the 002 requirements checklist remains fully checked/);
+  assert.match(tasks, /T184 Keep trained production AI inference as the only deferred milestone item/);
+
+  const openChecklistItems = checklist
+    .split('\n')
+    .filter((line) => /^- \[ \]/.test(line));
+  assert.deepEqual(openChecklistItems, []);
+
+  assert.match(deferredSection, /- \[ \] Implement trained production AI detector\/planner model inference/);
+  assert.equal(
+    deferredSection
+      .split('\n')
+      .filter((line) => /^- \[ \]/.test(line)).length,
+    1
+  );
+});
