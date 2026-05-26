@@ -26,6 +26,8 @@ The final validation path is:
 - `corepack pnpm test`
 - `corepack pnpm typecheck`
 - `corepack pnpm build`
+- `corepack pnpm --filter @aegisai/api prisma:validate`
+- `git diff --check`
 
 ## GitHub Conventions
 
@@ -50,6 +52,8 @@ GitHub Actions runs the same baseline verification path used locally:
 - `corepack pnpm test`
 - `corepack pnpm typecheck`
 - `corepack pnpm build`
+- `corepack pnpm --filter @aegisai/api prisma:validate`
+- `git diff --check`
 
 ## CD
 

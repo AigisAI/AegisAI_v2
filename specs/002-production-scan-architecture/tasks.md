@@ -309,6 +309,13 @@
 - [x] T176 Prevent idempotency key filters from expanding cross-tenant audit visibility
 - [x] T177 Add e2e coverage for audit idempotency key filter behavior and tenant scoping guardrails
 
+## Phase 45: Production Architecture Completion Gate Guardrail Slice
+
+- [x] T178 Add active feature tests that require quickstart, README, and CI completion gates to stay synchronized
+- [x] T179 Include Prisma schema validation and `git diff --check` in the 002 quickstart validation command list
+- [x] T180 Mirror the 002 completion gate in README completion and CI sections
+- [x] T181 Run Prisma schema validation and whitespace diff checks in GitHub Actions CI
+
 ## Deferred
 
 - [ ] Implement trained production AI detector/planner model inference
