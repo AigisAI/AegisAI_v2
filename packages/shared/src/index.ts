@@ -8,3 +8,4 @@ export * from './types/vulnerability';
 export * from './types/dashboard';
 export * from './types/report';
 export * from './types/production-architecture';
+export * from './types/ai-inference-runtime';

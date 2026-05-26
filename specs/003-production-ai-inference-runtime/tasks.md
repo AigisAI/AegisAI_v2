@@ -9,8 +9,8 @@
 
 ## Phase 2: Shared Contract Slice
 
-- [ ] T005 Add `AiInferenceRequest`, `AiInferenceResponse`, and `ReducedEvidence` contracts to `packages/shared`
-- [ ] T006 Add contract tests proving AI inference contracts exclude SCM credentials, source archives, and raw scanner payloads
+- [x] T005 Add `AiInferenceRequest`, `AiInferenceResponse`, and `ReducedEvidence` contracts to `packages/shared`
+- [x] T006 Add contract tests proving AI inference contracts exclude SCM credentials, source archives, and raw scanner payloads
 
 ## Phase 3: Model Gateway Slice
 
