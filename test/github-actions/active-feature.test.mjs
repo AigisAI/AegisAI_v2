@@ -27,7 +27,6 @@ test('production scan architecture is the active feature package', () => {
   const agents = readNormalizedText(files.agents);
   const readme = readNormalizedText(files.readme);
   const conventions = readNormalizedText(files.conventions);
-  const ci = readNormalizedText(files.ci);
   const quickstart = readNormalizedText(files.quickstart);
   const spec = readNormalizedText(files.spec);
   const plan = readNormalizedText(files.plan);
@@ -59,7 +58,7 @@ test('production scan architecture is the active feature package', () => {
   assert.match(contract, /PolicyDecision/);
 });
 
-test('production scan architecture completion gate stays synchronized', () => {
+test('production scan architecture completion gate stays synchronized between quickstart and CI', () => {
   const readme = readNormalizedText(files.readme);
   const ci = readNormalizedText(files.ci);
   const quickstart = readNormalizedText(files.quickstart);
@@ -75,9 +74,10 @@ test('production scan architecture completion gate stays synchronized', () => {
 
   for (const command of requiredCommands) {
     assert.match(quickstart, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-    assert.match(readme, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.match(ci, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 
+  assert.match(readme, /specs\/002-production-scan-architecture\/quickstart\.md/);
+  assert.match(readme, /\.github\/workflows\/ci\.yml/);
   assert.match(ci, /DATABASE_URL:\s*postgresql:\/\/postgres:postgres@localhost:5432\/aegisai/);
 });

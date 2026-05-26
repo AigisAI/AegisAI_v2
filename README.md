@@ -20,14 +20,8 @@ When validating the active production scan architecture milestone, use the compl
 The legacy MVP hardening review remains available for tasks that explicitly touch the shipped
 MVP baseline: [`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md).
 
-The final validation path is:
-
-- `corepack pnpm lint`
-- `corepack pnpm test`
-- `corepack pnpm typecheck`
-- `corepack pnpm build`
-- `corepack pnpm --filter @aegisai/api prisma:validate`
-- `git diff --check`
+The canonical CLI validation commands live in
+[`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md).
 
 ## GitHub Conventions
 
@@ -46,14 +40,8 @@ when running Spec Kit helpers.
 
 ## CI
 
-GitHub Actions runs the same baseline verification path used locally:
-
-- `corepack pnpm lint`
-- `corepack pnpm test`
-- `corepack pnpm typecheck`
-- `corepack pnpm build`
-- `corepack pnpm --filter @aegisai/api prisma:validate`
-- `git diff --check`
+GitHub Actions runs the same baseline verification path used locally. See
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) for the authoritative CI steps.
 
 ## CD
 
