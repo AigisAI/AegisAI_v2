@@ -14,9 +14,9 @@
 
 ## Phase 3: Model Gateway Slice
 
-- [ ] T007 Add model gateway interface in `apps/ai`
-- [ ] T008 Add deterministic fallback provider for local/dev execution
-- [ ] T009 Add runtime provider configuration guardrails
+- [x] T007 Add model gateway interface in `apps/ai`
+- [x] T008 Add deterministic fallback provider for local/dev execution
+- [x] T009 Add runtime provider configuration guardrails
 
 ## Phase 4: Reduced Evidence Validation Slice
 
