@@ -313,7 +313,7 @@
 
 - [x] T178 Add active feature tests that require quickstart, README, and CI completion gates to stay synchronized
 - [x] T179 Include Prisma schema validation and `git diff --check` in the 002 quickstart validation command list
-- [x] T180 Mirror the 002 completion gate in README completion and CI sections
+- [x] T180 Point README completion guidance at the 002 quickstart and CI workflow without duplicating command checklists
 - [x] T181 Run Prisma schema validation and whitespace diff checks in GitHub Actions CI
 
 ## Deferred

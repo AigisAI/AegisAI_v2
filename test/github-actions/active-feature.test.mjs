@@ -62,6 +62,7 @@ test('production scan architecture completion gate stays synchronized between qu
   const readme = readNormalizedText(files.readme);
   const ci = readNormalizedText(files.ci);
   const quickstart = readNormalizedText(files.quickstart);
+  const tasks = readNormalizedText(files.tasks);
 
   const requiredCommands = [
     'corepack pnpm lint',
@@ -79,5 +80,8 @@ test('production scan architecture completion gate stays synchronized between qu
 
   assert.match(readme, /specs\/002-production-scan-architecture\/quickstart\.md/);
   assert.match(readme, /\.github\/workflows\/ci\.yml/);
+  assert.doesNotMatch(readme, /`corepack pnpm/);
+  assert.doesNotMatch(tasks, /Mirror the 002 completion gate in README/);
+  assert.match(tasks, /Point README completion guidance at the 002 quickstart and CI workflow without duplicating command checklists/);
   assert.match(ci, /DATABASE_URL:\s*postgresql:\/\/postgres:postgres@localhost:5432\/aegisai/);
 });
