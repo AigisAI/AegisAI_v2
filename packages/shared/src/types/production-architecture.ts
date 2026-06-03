@@ -1,3 +1,5 @@
+import type { AiDetectorAdvisory, AiInferenceFallback, AiModelMetadata, AiPlannerAdvisory } from './ai-inference-runtime';
+
 export const PRODUCTION_SCAN_ARCHITECTURE_FEATURE_ID = '002-production-scan-architecture';
 
 export const SCAN_LANES = ['FAST', 'DEEP'] as const;
@@ -379,6 +381,10 @@ export interface AiAdvisoryResult {
   detectorSignals: string[];
   plannerSteps: string[];
   confidence: number;
+  detectorAdvisories?: AiDetectorAdvisory[];
+  plannerAdvisories?: AiPlannerAdvisory[];
+  modelMetadata?: AiModelMetadata;
+  fallback?: AiInferenceFallback;
   createdAt: string;
 }
 

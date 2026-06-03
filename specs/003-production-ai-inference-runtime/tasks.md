@@ -25,7 +25,7 @@
 
 ## Phase 5: API Integration Slice
 
-- [ ] T012 Wire API advisory client to the model gateway response shape
+- [x] T012 Wire API advisory client to the model gateway response shape
 - [ ] T013 Persist advisory metadata without granting finding or policy authority
 
 ## Deferred
