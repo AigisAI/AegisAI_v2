@@ -12,6 +12,10 @@ import { join } from 'node:path';
 
 describe('production scan architecture contracts', () => {
   const schema = readFileSync(join(__dirname, '../../prisma/schema.prisma'), 'utf8');
+  const aiAdvisoryMetadataMigration = readFileSync(
+    join(__dirname, '../../prisma/migrations/20260603072000_ai_advisory_metadata/migration.sql'),
+    'utf8'
+  );
   const modelBody = (model: string) => {
     const start = schema.indexOf(`model ${model} {`);
     if (start === -1) {
@@ -174,5 +178,15 @@ describe('production scan architecture contracts', () => {
     expect(body).toContain('@@index([tenantId])');
     expect(body).toContain('@@index([scanRequestId])');
     expect(body).not.toMatch(/enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/);
+  });
+
+  it('ships a deployable Prisma migration for AI advisory metadata', () => {
+    expect(aiAdvisoryMetadataMigration).toContain('CREATE TABLE "AiAdvisoryMetadata"');
+    expect(aiAdvisoryMetadataMigration).toContain('CONSTRAINT "AiAdvisoryMetadata_pkey" PRIMARY KEY ("id")');
+    expect(aiAdvisoryMetadataMigration).toContain('FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id")');
+    expect(aiAdvisoryMetadataMigration).toContain('FOREIGN KEY ("scanRequestId") REFERENCES "ScanRequest"("id")');
+    expect(aiAdvisoryMetadataMigration).not.toMatch(
+      /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/
+    );
   });
 });

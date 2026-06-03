@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from "@nestjs/common";
+import { randomUUID } from "node:crypto";
 
 import type {
   AiAdvisoryRequest,
@@ -73,9 +74,10 @@ export class AiAdvisoryService {
   async createAdvisory(input: AiAdvisoryRequest): Promise<AiAdvisoryResult> {
     this.assertReducedInput(input);
     const runtimeOutput = await this.resolveRuntimeOutput(input);
+    const persistentStore = this.persistentStore();
 
     const advisory: AiAdvisoryResult = {
-      id: `ai_advisory_${++this.advisorySequence}`,
+      id: persistentStore ? randomUUID() : `ai_advisory_${++this.advisorySequence}`,
       tenantId: input.tenantId,
       scanRequestId: input.scanRequestId,
       findingId: input.findingId,
@@ -92,7 +94,6 @@ export class AiAdvisoryService {
       createdAt: new Date().toISOString()
     };
 
-    const persistentStore = this.persistentStore();
     if (persistentStore) {
       return this.toAdvisoryResult(
         await persistentStore.create({
