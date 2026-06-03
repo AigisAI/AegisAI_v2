@@ -2,23 +2,24 @@
 
 ## Mandatory Start Path
 
-1. Open the canonical execution entry point: [`specs/003-production-ai-inference-runtime/quickstart.md`](./specs/003-production-ai-inference-runtime/quickstart.md)
+1. Open the canonical execution entry point: [`specs/004-production-runtime-infrastructure/quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md)
 2. Follow the read order and execution flow defined there before touching code.
-3. Use [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/) as the default implementation target unless a narrower active feature replaces it.
+3. Use [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/) as the default implementation target unless a narrower active feature replaces it.
 
 ## Core References
 
-- Canonical execution entry point: [`specs/003-production-ai-inference-runtime/quickstart.md`](./specs/003-production-ai-inference-runtime/quickstart.md)
+- Canonical execution entry point: [`specs/004-production-runtime-infrastructure/quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md)
 - Primary product baseline: `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`
 - Legacy product baseline: [`spec 2.2.md`](./spec%202.2.md)
 - Repository constitution: [`.specify/memory/constitution.md`](./.specify/memory/constitution.md)
-- Active implementation package: [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/)
+- Active implementation package: [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/)
+- Completed production AI inference baseline: [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/)
 - Completed production scan architecture baseline: [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/)
 - Legacy MVP package: [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/)
 
 ## Active Feature Baseline
 
-- Feature id: `003-production-ai-inference-runtime`
+- Feature id: `004-production-runtime-infrastructure`
 - Use this feature package as the default implementation target until a narrower feature spec replaces it.
 
 ## GitHub Workflow Convention
@@ -37,7 +38,7 @@ The repository-level GitHub workflow convention is documented in
 GitHub branch names do not need to match the spec directory name. In a PowerShell session, run:
 
 ```powershell
-$env:SPECIFY_FEATURE = "003-production-ai-inference-runtime"
+$env:SPECIFY_FEATURE = "004-production-runtime-infrastructure"
 ```
 
 This makes Spec Kit scripts resolve the active feature directory directly while you continue
@@ -49,9 +50,10 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 2. `quickstart.md` defines the canonical read order, execution flow, and completion flow.
 3. `Security Scan SaaS Final Specification.docx` is the highest-priority product, platform, security, and operations baseline.
 4. The active feature package defines implementation-ready scope and task detail.
-5. `002-production-scan-architecture` remains the completed production scan architecture baseline.
-6. `spec 2.2.md` and `001-aegisai-mvp-foundation` remain legacy MVP references.
-7. `.specify/memory/constitution.md` remains a repository guardrail reference.
+5. `003-production-ai-inference-runtime` remains the completed production AI inference baseline.
+6. `002-production-scan-architecture` remains the completed production scan architecture baseline.
+7. `spec 2.2.md` and `001-aegisai-mvp-foundation` remain legacy MVP references.
+8. `.specify/memory/constitution.md` remains a repository guardrail reference.
 
 ## Agent Execution Policy
 
@@ -63,13 +65,14 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 
 ## Non-Negotiable Rules
 
-- Stay inside the active production AI inference milestone unless the current spec explicitly reclassifies deferred work.
+- Stay inside the active production runtime infrastructure milestone unless the current spec explicitly reclassifies deferred work.
 - Keep user authentication separate from SCM integration credentials.
 - Model GitHub Cloud repository access through GitHub App installation and GitLab Cloud access through scoped integration plus webhook flows.
 - Keep Scan Plane, AI Plane, and Data/Security Plane boundaries explicit.
 - Do not add direct source upload.
 - Do not execute customer code, install packages, or build customer repositories.
 - AI is advisory-only and must not create authoritative findings, override policy, or receive SCM credentials/full repository inputs.
+- Kubernetes AI Plane deployment and scanner sandbox provisioning must preserve the separated Control, Scan, AI, and Data/Security plane boundaries.
 - Shared API contracts belong in `packages/shared`.
 - Sessions, CSRF protection, throttling, health checks, and critical integration tests are required.
 
@@ -82,7 +85,7 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 
 ## Completion Gate
 
-- Re-run the final validation path from [`quickstart.md`](./specs/003-production-ai-inference-runtime/quickstart.md) before claiming completion.
+- Re-run the final validation path from [`quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md) before claiming completion.
 - Re-check [`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md) only when legacy MVP hardening or release-readiness is explicitly part of the task.
 - Keep entrypoint docs synchronized whenever execution guidance changes.
 
