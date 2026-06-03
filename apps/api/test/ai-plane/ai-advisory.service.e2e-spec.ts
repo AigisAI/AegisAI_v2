@@ -159,4 +159,89 @@ describe("AiAdvisoryService", () => {
       /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/i
     );
   });
+
+  it("persists advisory metadata without granting finding or policy authority", async () => {
+    const createdAt = new Date("2026-05-26T00:00:00.000Z");
+    const prisma = {
+      aiAdvisoryMetadata: {
+        create: jest.fn(async ({ data }) => ({
+          ...data,
+          createdAt,
+          updatedAt: createdAt
+        })),
+        findFirst: jest.fn(async ({ where }) => ({
+          id: where.id,
+          tenantId: where.tenantId,
+          scanRequestId: "scan_request_1",
+          findingId: "finding_1",
+          modelVersion: "detector-planner-mock-v1",
+          advisoryOnly: true,
+          redactedEvidenceOnly: true,
+          detectorSignals: ["SCANNER_CONFIRMED", "SEVERITY_HIGH", "PROVENANCE_OPENGREP"],
+          plannerSteps: [
+            "Review scanner evidence before remediation.",
+            "Prioritize owner review before merging affected changes.",
+            "Apply remediation outside the AI advisory boundary."
+          ],
+          confidence: 0.74,
+          detectorAdvisories: null,
+          plannerAdvisories: null,
+          modelMetadata: null,
+          fallback: null,
+          createdAt,
+          updatedAt: createdAt
+        }))
+      }
+    };
+    const service = new AiAdvisoryService(
+      {
+        get: jest.fn().mockReturnValue("false")
+      } as never,
+      undefined,
+      prisma as never
+    );
+
+    const advisory = await service.createAdvisory(request);
+
+    expect(advisory.id).not.toBe("ai_advisory_1");
+    expect(advisory.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    expect(prisma.aiAdvisoryMetadata.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: advisory.id,
+        tenantId: "tenant_ai",
+        scanRequestId: "scan_request_1",
+        findingId: "finding_1",
+        modelVersion: "detector-planner-mock-v1",
+        advisoryOnly: true,
+        redactedEvidenceOnly: true,
+        confidence: 0.74
+      })
+    });
+    expect(JSON.stringify(prisma.aiAdvisoryMetadata.create.mock.calls)).not.toMatch(
+      /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/i
+    );
+
+    const stored = await service.getAdvisory("tenant_ai", advisory.id);
+
+    expect(prisma.aiAdvisoryMetadata.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: advisory.id,
+        tenantId: "tenant_ai"
+      }
+    });
+    expect(stored).toEqual(
+      expect.objectContaining({
+        id: advisory.id,
+        tenantId: "tenant_ai",
+        scanRequestId: "scan_request_1",
+        findingId: "finding_1",
+        advisoryOnly: true,
+        redactedEvidenceOnly: true,
+        detectorSignals: ["SCANNER_CONFIRMED", "SEVERITY_HIGH", "PROVENANCE_OPENGREP"]
+      })
+    );
+    expect(JSON.stringify(stored)).not.toMatch(
+      /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/i
+    );
+  });
 });

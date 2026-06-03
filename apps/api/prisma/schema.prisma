@@ -267,6 +267,7 @@ model Tenant {
   normalizedFindings NormalizedFinding[]
   evidencePacks      EvidencePack[]
   policyDecisions    PolicyDecision[]
+  aiAdvisoryMetadata  AiAdvisoryMetadata[]
   waivers            Waiver[]
   suppressions       Suppression[]
   auditEvents        AuditEvent[]
@@ -335,6 +336,7 @@ model ScanRequest {
   findings          NormalizedFinding[]
   evidencePacks     EvidencePack[]
   policyDecisions   PolicyDecision[]
+  aiAdvisoryMetadata AiAdvisoryMetadata[]
   suppressions      Suppression[]
   auditEvents       AuditEvent[]
 
@@ -443,6 +445,33 @@ model PolicyDecision {
   @@index([tenantId])
   @@index([scanRequestId])
   @@index([findingId])
+}
+
+model AiAdvisoryMetadata {
+  id                   String   @id
+  tenantId             String
+  scanRequestId        String
+  findingId            String
+  modelVersion         String
+  advisoryOnly         Boolean  @default(true)
+  redactedEvidenceOnly Boolean  @default(true)
+  detectorSignals      Json
+  plannerSteps         Json
+  confidence           Float
+  detectorAdvisories   Json?
+  plannerAdvisories    Json?
+  modelMetadata        Json?
+  fallback             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([scanRequestId])
+  @@index([findingId])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Waiver {
