@@ -20,8 +20,8 @@
 
 ## Phase 4: Reduced Evidence Validation Slice
 
-- [ ] T010 Reject unredacted, full repository, SCM credential, source archive, and raw scanner payload inputs
-- [ ] T011 Add audit events for accepted, rejected, fallback, completed, and failed inference requests
+- [x] T010 Reject unredacted, full repository, SCM credential, source archive, and raw scanner payload inputs
+- [x] T011 Add audit events for accepted, rejected, fallback, completed, and failed inference requests
 
 ## Phase 5: API Integration Slice
 
