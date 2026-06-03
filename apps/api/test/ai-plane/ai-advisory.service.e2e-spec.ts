@@ -1,6 +1,6 @@
 import { AiAdvisoryService } from "../../src/ai-plane/ai-advisory.service";
 
-import type { AiAdvisoryRequest } from "../../../../packages/shared/src";
+import type { AiAdvisoryRequest, AiInferenceResponse } from "../../../../packages/shared/src";
 
 describe("AiAdvisoryService", () => {
   const request: AiAdvisoryRequest = {
@@ -84,13 +84,41 @@ describe("AiAdvisoryService", () => {
   });
 
   it("uses runtime detector planner output when internal AI runtime is enabled", async () => {
+    const runtimeResponse: AiInferenceResponse = {
+      requestId: "ai_request_1",
+      tenantId: "tenant_ai",
+      scanRequestId: "scan_request_1",
+      advisoryOnly: true,
+      detectorAdvisories: [
+        {
+          findingId: "finding_1",
+          confidence: 0.83,
+          rationale: "Runtime detector advisory.",
+          signals: ["SCANNER_CONFIRMED", "MODEL_TRIAGED"]
+        }
+      ],
+      plannerAdvisories: [
+        {
+          findingId: "finding_1",
+          action: "Review scanner evidence before remediation.",
+          rationale: "Runtime planner advisory.",
+          priority: "high"
+        }
+      ],
+      modelMetadata: {
+        provider: "deterministic",
+        model: "detector-planner-runtime",
+        version: "2026-05-26"
+      },
+      fallback: {
+        used: true,
+        reason: "provider not configured"
+      },
+      latencyMs: 11,
+      createdAt: "2026-05-26T00:00:00.000Z"
+    };
     const runtime = {
-      createAdvisory: jest.fn().mockResolvedValue({
-        detectorSignals: ["SCANNER_CONFIRMED", "MODEL_TRIAGED"],
-        plannerSteps: ["Review scanner evidence before remediation."],
-        confidence: 0.83,
-        modelVersion: "detector-planner-runtime-v1"
-      })
+      createAdvisory: jest.fn().mockResolvedValue(runtimeResponse)
     };
     const service = new AiAdvisoryService(
       {
@@ -115,13 +143,20 @@ describe("AiAdvisoryService", () => {
     );
     expect(advisory).toEqual(
       expect.objectContaining({
-        modelVersion: "detector-planner-runtime-v1",
+        modelVersion: "2026-05-26",
         detectorSignals: ["SCANNER_CONFIRMED", "MODEL_TRIAGED"],
+        plannerSteps: ["Review scanner evidence before remediation."],
         confidence: 0.83,
         advisoryOnly: true,
-        redactedEvidenceOnly: true
+        redactedEvidenceOnly: true,
+        detectorAdvisories: runtimeResponse.detectorAdvisories,
+        plannerAdvisories: runtimeResponse.plannerAdvisories,
+        modelMetadata: runtimeResponse.modelMetadata,
+        fallback: runtimeResponse.fallback
       })
     );
-    expect(JSON.stringify(advisory)).not.toMatch(/enforcementAction|policyOverride|findingOverride/i);
+    expect(JSON.stringify(advisory)).not.toMatch(
+      /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/i
+    );
   });
 });

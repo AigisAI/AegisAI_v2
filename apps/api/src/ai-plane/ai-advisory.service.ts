@@ -1,10 +1,27 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 
-import type { AiAdvisoryRequest, AiAdvisoryResult } from "../../../../packages/shared/src";
+import type {
+  AiAdvisoryRequest,
+  AiAdvisoryResult,
+  AiDetectorAdvisory,
+  AiInferenceFallback,
+  AiInferenceResponse,
+  AiModelMetadata,
+  AiPlannerAdvisory
+} from "../../../../packages/shared/src";
 import { ConfigService } from "../config/config.service";
 import { AiAdvisoryRuntimeClient } from "./ai-advisory-runtime.client";
 
-import type { AiAdvisoryRuntimeOutput } from "./ai-advisory-runtime.client";
+interface AiAdvisoryRuntimeProjection {
+  detectorSignals: string[];
+  plannerSteps: string[];
+  confidence: number;
+  modelVersion: string;
+  detectorAdvisories?: AiDetectorAdvisory[];
+  plannerAdvisories?: AiPlannerAdvisory[];
+  modelMetadata?: AiModelMetadata;
+  fallback?: AiInferenceFallback;
+}
 
 const FORBIDDEN_AI_INPUT_KEYS = [
   "accessToken",
@@ -43,6 +60,10 @@ export class AiAdvisoryService {
       detectorSignals: runtimeOutput.detectorSignals,
       plannerSteps: runtimeOutput.plannerSteps,
       confidence: runtimeOutput.confidence,
+      detectorAdvisories: runtimeOutput.detectorAdvisories,
+      plannerAdvisories: runtimeOutput.plannerAdvisories,
+      modelMetadata: runtimeOutput.modelMetadata,
+      fallback: runtimeOutput.fallback,
       createdAt: new Date().toISOString()
     };
 
@@ -77,13 +98,13 @@ export class AiAdvisoryService {
     }
   }
 
-  private async resolveRuntimeOutput(input: AiAdvisoryRequest): Promise<AiAdvisoryRuntimeOutput> {
+  private async resolveRuntimeOutput(input: AiAdvisoryRequest): Promise<AiAdvisoryRuntimeProjection> {
     if (this.config?.get("USE_INTERNAL_AI") === "true") {
       if (!this.runtimeClient) {
         throw new BadRequestException("AI advisory runtime client is not configured.");
       }
 
-      return this.runtimeClient.createAdvisory(input);
+      return this.projectInferenceResponse(await this.runtimeClient.createAdvisory(input));
     }
 
     return {
@@ -91,6 +112,22 @@ export class AiAdvisoryService {
       plannerSteps: this.plannerStepsFor(input),
       confidence: this.confidenceFor(input),
       modelVersion: input.modelVersion
+    };
+  }
+
+  private projectInferenceResponse(response: AiInferenceResponse): AiAdvisoryRuntimeProjection {
+    return {
+      detectorSignals: Array.from(new Set(response.detectorAdvisories.flatMap((advisory) => advisory.signals))),
+      plannerSteps: response.plannerAdvisories.map((advisory) => advisory.action),
+      confidence: response.detectorAdvisories.reduce(
+        (highestConfidence, advisory) => Math.max(highestConfidence, advisory.confidence),
+        0
+      ),
+      modelVersion: response.modelMetadata.version,
+      detectorAdvisories: response.detectorAdvisories,
+      plannerAdvisories: response.plannerAdvisories,
+      modelMetadata: response.modelMetadata,
+      fallback: response.fallback
     };
   }
 
