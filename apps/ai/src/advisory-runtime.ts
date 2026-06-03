@@ -1,4 +1,6 @@
-import type { AiAdvisoryRequest } from "@aegisai/shared";
+import type { AiAdvisoryRequest, AiInferenceRequest, AiInferenceResponse } from "@aegisai/shared";
+
+import { createDeterministicFallbackProvider, createModelGateway } from "./model-gateway";
 
 export interface AiAdvisoryRuntimeResponse {
   detectorSignals: string[];
@@ -40,6 +42,21 @@ export async function handleAiAdvisoryRequest(request: Request): Promise<Respons
 
   try {
     const body = (await request.json()) as unknown;
+
+    if (isAiInferenceRequestLike(body)) {
+      const gateway = createModelGateway({
+        config: {
+          providerId: "deterministic",
+          model: "detector-planner-fallback",
+          version: "v1",
+          allowFallback: true
+        },
+        fallbackProvider: createDeterministicFallbackProvider()
+      });
+
+      return jsonResponse(await gateway.infer(body), 200);
+    }
+
     const advisoryRequest = parseReducedAdvisoryRequest(body);
 
     return jsonResponse(createDetectorPlannerAdvisory(advisoryRequest), 200);
@@ -112,6 +129,15 @@ function parseReducedAdvisoryRequest(input: unknown): AiAdvisoryRequest {
   return input as unknown as AiAdvisoryRequest;
 }
 
+function isAiInferenceRequestLike(input: unknown): input is AiInferenceRequest {
+  return (
+    isRecord(input) &&
+    isRecord(input.reducedEvidence) &&
+    Array.isArray(input.requestedCapabilities) &&
+    isRecord(input.runtimePolicy)
+  );
+}
+
 function plannerStepsFor(input: AiAdvisoryRequest): string[] {
   const steps = ["Review normalized scanner evidence before remediation planning."];
 
@@ -136,7 +162,7 @@ function confidenceFor(input: AiAdvisoryRequest): number {
   return 0.61;
 }
 
-function jsonResponse(body: Record<string, unknown> | AiAdvisoryRuntimeResponse, status: number): Response {
+function jsonResponse(body: Record<string, unknown> | AiAdvisoryRuntimeResponse | AiInferenceResponse, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
