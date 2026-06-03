@@ -193,7 +193,9 @@ test("model gateway rejects requests outside the reduced evidence boundary and a
       allowFallback: true
     },
     fallbackProvider: createDeterministicFallbackProvider(),
-    auditSink: (event) => auditEvents.push(event)
+    auditSink: (event) => {
+      auditEvents.push(event);
+    }
   });
 
   for (const forbiddenRequest of [
@@ -271,6 +273,34 @@ test("model gateway rejects requests outside the reduced evidence boundary and a
   );
 });
 
+test("request validation rejects forbidden keys without rejecting matching safe values", () => {
+  assert.equal(
+    validateAiInferenceRequest({
+      ...inferenceRequest,
+      reducedEvidence: {
+        ...inferenceRequest.reducedEvidence,
+        summary: "A safe summary may mention accessToken as a concept without carrying one."
+      }
+    }).requestId,
+    inferenceRequest.requestId
+  );
+
+  assert.throws(
+    () =>
+      validateAiInferenceRequest({
+        ...inferenceRequest,
+        reducedEvidence: {
+          ...inferenceRequest.reducedEvidence,
+          metadata: {
+            ...inferenceRequest.reducedEvidence.metadata,
+            accessToken: "secret"
+          }
+        }
+      }),
+    /reduced evidence/i
+  );
+});
+
 test("model gateway emits accepted, completed, fallback, and failed audit events", async () => {
   const successEvents: unknown[] = [];
   const successGateway = createModelGateway({
@@ -281,7 +311,9 @@ test("model gateway emits accepted, completed, fallback, and failed audit events
       allowFallback: true
     },
     fallbackProvider: createDeterministicFallbackProvider(),
-    auditSink: (event) => successEvents.push(event)
+    auditSink: (event) => {
+      successEvents.push(event);
+    }
   });
 
   await successGateway.infer(inferenceRequest);
@@ -320,7 +352,9 @@ test("model gateway emits accepted, completed, fallback, and failed audit events
       })
     },
     fallbackProvider: createDeterministicFallbackProvider(),
-    auditSink: (event) => providerEvents.push(event)
+    auditSink: (event) => {
+      providerEvents.push(event);
+    }
   });
 
   await providerGateway.infer({
@@ -350,7 +384,9 @@ test("model gateway emits accepted, completed, fallback, and failed audit events
       }
     },
     fallbackProvider: createDeterministicFallbackProvider(),
-    auditSink: (event) => failedEvents.push(event)
+    auditSink: (event) => {
+      failedEvents.push(event);
+    }
   });
 
   await assert.rejects(
@@ -369,6 +405,97 @@ test("model gateway emits accepted, completed, fallback, and failed audit events
     failedEvents.map((event) => (event as { eventType: string }).eventType),
     ["ai_inference.requested", "ai_inference.failed"]
   );
+});
+
+test("model gateway emits failed audit events when fallback provider fails", async () => {
+  const providerFailureEvents: unknown[] = [];
+  const providerFailureGateway = createModelGateway({
+    config: {
+      providerId: "configured-provider",
+      model: "prod-detector-planner",
+      version: "2026-05-26",
+      allowFallback: true
+    },
+    provider: {
+      infer: async () => {
+        throw new Error("provider unavailable");
+      }
+    },
+    fallbackProvider: {
+      infer: async () => {
+        throw new Error("fallback unavailable");
+      }
+    },
+    auditSink: (event) => {
+      providerFailureEvents.push(event);
+    }
+  });
+
+  await assert.rejects(() => providerFailureGateway.infer(inferenceRequest), /fallback unavailable/i);
+
+  assert.deepEqual(
+    providerFailureEvents.map((event) => (event as { eventType: string }).eventType),
+    ["ai_inference.requested", "ai_inference.failed"]
+  );
+
+  const missingProviderEvents: unknown[] = [];
+  const missingProviderGateway = createModelGateway({
+    config: {
+      providerId: "deterministic",
+      model: "detector-planner-fallback",
+      version: "v1",
+      allowFallback: true
+    },
+    fallbackProvider: {
+      infer: async () => {
+        throw new Error("fallback unavailable");
+      }
+    },
+    auditSink: (event) => {
+      missingProviderEvents.push(event);
+    }
+  });
+
+  await assert.rejects(() => missingProviderGateway.infer(inferenceRequest), /fallback unavailable/i);
+
+  assert.deepEqual(
+    missingProviderEvents.map((event) => (event as { eventType: string }).eventType),
+    ["ai_inference.requested", "ai_inference.failed"]
+  );
+});
+
+test("model gateway does not let audit sink failures abort inference", async () => {
+  const throwingAuditGateway = createModelGateway({
+    config: {
+      providerId: "deterministic",
+      model: "detector-planner-fallback",
+      version: "v1",
+      allowFallback: true
+    },
+    fallbackProvider: createDeterministicFallbackProvider(),
+    auditSink: () => {
+      throw new Error("audit sink failed");
+    }
+  });
+
+  const throwingAuditResponse = await throwingAuditGateway.infer(inferenceRequest);
+  assert.equal(throwingAuditResponse.fallback.used, true);
+
+  const rejectingAuditGateway = createModelGateway({
+    config: {
+      providerId: "deterministic",
+      model: "detector-planner-fallback",
+      version: "v1",
+      allowFallback: true
+    },
+    fallbackProvider: createDeterministicFallbackProvider(),
+    auditSink: async () => {
+      throw new Error("audit sink rejected");
+    }
+  });
+
+  const rejectingAuditResponse = await rejectingAuditGateway.infer(inferenceRequest);
+  assert.equal(rejectingAuditResponse.fallback.used, true);
 });
 
 test("request validation requires tenant and scan attribution", () => {

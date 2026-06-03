@@ -25,7 +25,7 @@ export interface ModelGatewayOptions {
   config: ModelGatewayConfig;
   provider?: AiModelProvider;
   fallbackProvider: AiModelProvider;
-  auditSink?: (event: AiInferenceAuditEvent) => void;
+  auditSink?: (event: AiInferenceAuditEvent) => void | Promise<void>;
 }
 
 export interface ModelGateway {
@@ -85,17 +85,13 @@ export function createModelGateway(options: ModelGatewayOptions): ModelGateway {
             throw error;
           }
 
-          const response = await options.fallbackProvider.infer(request, {
+          return runFallbackProvider(
+            options,
+            request,
             config,
-            fallbackReason: error instanceof Error ? error.message : "provider failed"
-          });
-          emitAuditEvent(options, request, "ai_inference.fallback_completed", {
-            latencyMs: elapsedMs(startedAt),
-            provider: response.modelMetadata.provider,
-            model: response.modelMetadata.model,
-            fallbackUsed: true
-          });
-          return response;
+            startedAt,
+            error instanceof Error ? error.message : "provider failed"
+          );
         }
       }
 
@@ -107,19 +103,37 @@ export function createModelGateway(options: ModelGatewayOptions): ModelGateway {
         throw new Error("Model gateway provider is not configured and fallback is disabled.");
       }
 
-      const response = await options.fallbackProvider.infer(request, {
-        config,
-        fallbackReason: "provider not configured"
-      });
-      emitAuditEvent(options, request, "ai_inference.fallback_completed", {
-        latencyMs: elapsedMs(startedAt),
-        provider: response.modelMetadata.provider,
-        model: response.modelMetadata.model,
-        fallbackUsed: true
-      });
-      return response;
+      return runFallbackProvider(options, request, config, startedAt, "provider not configured");
     }
   };
+}
+
+async function runFallbackProvider(
+  options: ModelGatewayOptions,
+  request: AiInferenceRequest,
+  config: ModelGatewayConfig,
+  startedAt: number,
+  fallbackReason: string
+): Promise<AiInferenceResponse> {
+  try {
+    const response = await options.fallbackProvider.infer(request, {
+      config,
+      fallbackReason
+    });
+    emitAuditEvent(options, request, "ai_inference.fallback_completed", {
+      latencyMs: elapsedMs(startedAt),
+      provider: response.modelMetadata.provider,
+      model: response.modelMetadata.model,
+      fallbackUsed: true
+    });
+    return response;
+  } catch (error) {
+    emitAuditEvent(options, request, "ai_inference.failed", {
+      latencyMs: elapsedMs(startedAt),
+      fallbackUsed: true
+    });
+    throw error;
+  }
 }
 
 export function validateAiInferenceRequest(request: AiInferenceRequest): AiInferenceRequest {
@@ -138,18 +152,32 @@ export function validateAiInferenceRequest(request: AiInferenceRequest): AiInfer
     );
   }
 
-  const serializedEvidence = JSON.stringify(request.reducedEvidence);
-
-  for (const forbiddenKey of FORBIDDEN_INPUT_KEYS) {
-    if (new RegExp(forbiddenKey, "i").test(serializedEvidence)) {
-      throw new AiInferenceValidationError(
-        "AI inference request must remain inside the reduced evidence boundary.",
-        "FORBIDDEN_INPUT_CLASS"
-      );
-    }
+  if (hasForbiddenEvidenceKey(request.reducedEvidence)) {
+    throw new AiInferenceValidationError(
+      "AI inference request must remain inside the reduced evidence boundary.",
+      "FORBIDDEN_INPUT_CLASS"
+    );
   }
 
   return request;
+}
+
+function hasForbiddenEvidenceKey(input: unknown): boolean {
+  if (input === null || typeof input !== "object") {
+    return false;
+  }
+
+  if (Array.isArray(input)) {
+    return input.some((item) => hasForbiddenEvidenceKey(item));
+  }
+
+  return Object.entries(input as Record<string, unknown>).some(
+    ([key, value]) => isForbiddenEvidenceKey(key) || hasForbiddenEvidenceKey(value)
+  );
+}
+
+function isForbiddenEvidenceKey(key: string): boolean {
+  return FORBIDDEN_INPUT_KEYS.some((forbiddenKey) => forbiddenKey.toLowerCase() === key.toLowerCase());
 }
 
 export function createDeterministicFallbackProvider(): AiModelProvider {
@@ -233,18 +261,37 @@ function emitAuditEvent(
   eventType: AiInferenceAuditEvent["eventType"],
   overrides: AuditEventOverrides = {}
 ): void {
-  options.auditSink?.({
-    tenantId: request.tenantId,
-    scanRequestId: request.scanRequestId,
-    requestId: request.requestId,
-    eventType,
-    provider: overrides.provider ?? options.config.providerId,
-    model: overrides.model ?? options.config.model,
-    fallbackUsed: overrides.fallbackUsed ?? false,
-    rejectionReason: overrides.rejectionReason,
-    latencyMs: overrides.latencyMs,
-    createdAt: new Date().toISOString()
-  });
+  try {
+    const result = options.auditSink?.({
+      tenantId: request.tenantId,
+      scanRequestId: request.scanRequestId,
+      requestId: request.requestId,
+      eventType,
+      provider: overrides.provider ?? options.config.providerId,
+      model: overrides.model ?? options.config.model,
+      fallbackUsed: overrides.fallbackUsed ?? false,
+      rejectionReason: overrides.rejectionReason,
+      latencyMs: overrides.latencyMs,
+      createdAt: new Date().toISOString()
+    });
+
+    if (isPromiseLike(result)) {
+      result.catch(() => undefined);
+    }
+  } catch {
+    return;
+  }
+}
+
+function isPromiseLike(input: unknown): input is PromiseLike<void> {
+  return (
+    input !== null &&
+    (typeof input === "object" || typeof input === "function") &&
+    "then" in input &&
+    typeof (input as { then?: unknown }).then === "function" &&
+    "catch" in input &&
+    typeof (input as { catch?: unknown }).catch === "function"
+  );
 }
 
 function rejectionReasonFor(error: unknown): AiInferenceRejectionReason {
