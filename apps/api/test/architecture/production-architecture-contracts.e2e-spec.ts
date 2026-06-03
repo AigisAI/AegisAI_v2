@@ -160,4 +160,19 @@ describe('production scan architecture contracts', () => {
       expect(body).toContain('@@index([tenantId])');
     }
   });
+
+  it('persists AI advisory metadata without policy or finding authority fields', () => {
+    const body = modelBody('AiAdvisoryMetadata');
+
+    expect(body).toContain('tenantId');
+    expect(body).toContain('scanRequestId');
+    expect(body).toContain('findingId');
+    expect(body).toContain('detectorAdvisories');
+    expect(body).toContain('plannerAdvisories');
+    expect(body).toContain('modelMetadata');
+    expect(body).toContain('fallback');
+    expect(body).toContain('@@index([tenantId])');
+    expect(body).toContain('@@index([scanRequestId])');
+    expect(body).not.toMatch(/enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/);
+  });
 });
