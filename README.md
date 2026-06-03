@@ -5,9 +5,10 @@
 This repository is organized around the production scan architecture baseline for AegisAI.
 
 - Agents should start with [`AGENTS.md`](./AGENTS.md).
-- The canonical execution path lives in [`specs/003-production-ai-inference-runtime/quickstart.md`](./specs/003-production-ai-inference-runtime/quickstart.md).
+- The canonical execution path lives in [`specs/004-production-runtime-infrastructure/quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md).
 - The production product baseline is `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`.
-- The active implementation package lives in [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/).
+- The active implementation package lives in [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/).
+- The completed production AI inference baseline remains available in [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/).
 - The completed production scan architecture baseline remains available in [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/).
 - The legacy MVP baseline remains available in [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) and [`spec 2.2.md`](./spec%202.2.md).
 
@@ -16,13 +17,13 @@ feature package` instead of jumping directly to `tasks.md`.
 
 ## Completion
 
-When validating the active production AI inference runtime milestone, use the completion flow in
-[`specs/003-production-ai-inference-runtime/quickstart.md`](./specs/003-production-ai-inference-runtime/quickstart.md).
+When validating the active production runtime infrastructure milestone, use the completion flow in
+[`specs/004-production-runtime-infrastructure/quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md).
 The legacy MVP hardening review remains available for tasks that explicitly touch the shipped
 MVP baseline: [`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md).
 
 The canonical CLI validation commands live in
-[`specs/003-production-ai-inference-runtime/quickstart.md`](./specs/003-production-ai-inference-runtime/quickstart.md).
+[`specs/004-production-runtime-infrastructure/quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md).
 
 ## GitHub Conventions
 
@@ -35,8 +36,8 @@ The repository follows the GitHub workflow convention documented in
 - Issue titles and PR titles must match
 - `dev` is the default integration branch and `main` remains the release-ready branch
 
-Spec Kit feature docs now live in [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/),
-so GitHub-style working branches may need `SPECIFY_FEATURE=003-production-ai-inference-runtime`
+Spec Kit feature docs now live in [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/),
+so GitHub-style working branches may need `SPECIFY_FEATURE=004-production-runtime-infrastructure`
 when running Spec Kit helpers.
 
 ## CI

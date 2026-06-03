@@ -13,7 +13,7 @@ observability.
 - `apps/ai`: model gateway, reduced evidence validation, provider adapters, and
   fallback runtime
 - `apps/api`: AI advisory client integration and audit attribution
-- `specs/003-production-ai-inference-runtime`: active feature package
+- `specs/003-production-ai-inference-runtime`: completed AI inference baseline
 
 ## Runtime Shape
 

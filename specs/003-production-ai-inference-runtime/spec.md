@@ -47,7 +47,7 @@ that consumes reduced evidence and returns advisory detector/planner output.
 
 - Shared contracts describe `AiInferenceRequest`, `AiInferenceResponse`, and
   `ReducedEvidence`.
-- Entry-point docs identify `003-production-ai-inference-runtime` as the active
-  feature package.
+- Entry-point docs preserve `003-production-ai-inference-runtime` as the
+  completed production AI inference baseline.
 - The completed 002 baseline remains linked and preserved.
 - The completion gate stays synchronized with CI.

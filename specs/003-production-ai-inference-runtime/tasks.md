@@ -28,7 +28,7 @@
 - [x] T012 Wire API advisory client to the model gateway response shape
 - [x] T013 Persist advisory metadata without granting finding or policy authority
 
-## Deferred
+## Deferred Follow-Up
 
-- [ ] Kubernetes production AI Plane deployment manifests and runtime autoscaling
-- [ ] microVM-backed scanner provisioning
+- [x] Kubernetes production AI Plane deployment manifests and runtime autoscaling moved to `004-production-runtime-infrastructure`
+- [x] microVM-backed scanner provisioning moved to `004-production-runtime-infrastructure`

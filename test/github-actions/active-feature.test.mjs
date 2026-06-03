@@ -7,14 +7,17 @@ const files = {
   readme: new URL('../../README.md', import.meta.url),
   conventions: new URL('../../docs/github-conventions.md', import.meta.url),
   ci: new URL('../../.github/workflows/ci.yml', import.meta.url),
-  quickstart: new URL('../../specs/003-production-ai-inference-runtime/quickstart.md', import.meta.url),
-  spec: new URL('../../specs/003-production-ai-inference-runtime/spec.md', import.meta.url),
-  plan: new URL('../../specs/003-production-ai-inference-runtime/plan.md', import.meta.url),
-  research: new URL('../../specs/003-production-ai-inference-runtime/research.md', import.meta.url),
-  dataModel: new URL('../../specs/003-production-ai-inference-runtime/data-model.md', import.meta.url),
-  tasks: new URL('../../specs/003-production-ai-inference-runtime/tasks.md', import.meta.url),
-  contract: new URL('../../specs/003-production-ai-inference-runtime/contracts/ai-inference-runtime.md', import.meta.url),
-  checklist: new URL('../../specs/003-production-ai-inference-runtime/checklists/requirements.md', import.meta.url),
+  quickstart: new URL('../../specs/004-production-runtime-infrastructure/quickstart.md', import.meta.url),
+  spec: new URL('../../specs/004-production-runtime-infrastructure/spec.md', import.meta.url),
+  plan: new URL('../../specs/004-production-runtime-infrastructure/plan.md', import.meta.url),
+  research: new URL('../../specs/004-production-runtime-infrastructure/research.md', import.meta.url),
+  dataModel: new URL('../../specs/004-production-runtime-infrastructure/data-model.md', import.meta.url),
+  tasks: new URL('../../specs/004-production-runtime-infrastructure/tasks.md', import.meta.url),
+  contract: new URL('../../specs/004-production-runtime-infrastructure/contracts/runtime-infrastructure.md', import.meta.url),
+  checklist: new URL('../../specs/004-production-runtime-infrastructure/checklists/requirements.md', import.meta.url),
+  completedAiQuickstart: new URL('../../specs/003-production-ai-inference-runtime/quickstart.md', import.meta.url),
+  completedAiTasks: new URL('../../specs/003-production-ai-inference-runtime/tasks.md', import.meta.url),
+  completedAiChecklist: new URL('../../specs/003-production-ai-inference-runtime/checklists/requirements.md', import.meta.url),
   completedArchitectureQuickstart: new URL('../../specs/002-production-scan-architecture/quickstart.md', import.meta.url),
   completedArchitectureTasks: new URL('../../specs/002-production-scan-architecture/tasks.md', import.meta.url),
   completedArchitectureChecklist: new URL('../../specs/002-production-scan-architecture/checklists/requirements.md', import.meta.url)
@@ -22,7 +25,7 @@ const files = {
 
 const readNormalizedText = (fileUrl) => readFileSync(fileUrl, 'utf8').replace(/\r\n/g, '\n');
 
-test('production AI inference runtime is the active feature package', () => {
+test('production runtime infrastructure is the active feature package', () => {
   for (const [name, fileUrl] of Object.entries(files)) {
     assert.equal(existsSync(fileUrl), true, `Expected ${name} file to exist at ${fileUrl.pathname}`);
   }
@@ -35,31 +38,33 @@ test('production AI inference runtime is the active feature package', () => {
   const plan = readNormalizedText(files.plan);
   const contract = readNormalizedText(files.contract);
 
-  assert.match(agents, /003-production-ai-inference-runtime/);
+  assert.match(agents, /004-production-runtime-infrastructure/);
   assert.match(agents, /Security Scan SaaS Final Specification\.docx/);
-  assert.match(readme, /003-production-ai-inference-runtime/);
-  assert.match(conventions, /SPECIFY_FEATURE = "003-production-ai-inference-runtime"/);
+  assert.match(readme, /004-production-runtime-infrastructure/);
+  assert.match(conventions, /SPECIFY_FEATURE = "004-production-runtime-infrastructure"/);
 
   assert.match(quickstart, /Security Scan SaaS Final Specification\.docx/);
+  assert.match(quickstart, /Kubernetes/i);
   assert.match(quickstart, /AI Plane/);
-  assert.match(quickstart, /reduced evidence/i);
+  assert.match(quickstart, /microVM/i);
   assert.match(quickstart, /advisory-only/i);
+  assert.match(quickstart, /003-production-ai-inference-runtime/);
   assert.match(quickstart, /002-production-scan-architecture/);
 
-  assert.match(spec, /trained production AI detector\/planner inference/i);
-  assert.match(spec, /MUST NOT create authoritative findings/i);
-  assert.match(spec, /MUST NOT receive SCM credentials/i);
+  assert.match(spec, /Kubernetes production AI Plane/i);
+  assert.match(spec, /microVM-backed scanner provisioning/i);
+  assert.match(spec, /MUST NOT execute customer code outside hardened scan isolation/i);
 
-  assert.match(plan, /model gateway/i);
-  assert.match(plan, /fallback/i);
-  assert.match(plan, /observability/i);
+  assert.match(plan, /deployment manifests/i);
+  assert.match(plan, /runtime autoscaling/i);
+  assert.match(plan, /scanner sandbox/i);
 
-  assert.match(contract, /AiInferenceRequest/);
-  assert.match(contract, /AiInferenceResponse/);
-  assert.match(contract, /ReducedEvidence/);
+  assert.match(contract, /AiPlaneDeployment/);
+  assert.match(contract, /RuntimeAutoscalingPolicy/);
+  assert.match(contract, /ScannerSandboxProvisioning/);
 });
 
-test('production AI inference runtime completion gate stays synchronized between quickstart and CI', () => {
+test('production runtime infrastructure completion gate stays synchronized between quickstart and CI', () => {
   const readme = readNormalizedText(files.readme);
   const ci = readNormalizedText(files.ci);
   const quickstart = readNormalizedText(files.quickstart);
@@ -79,12 +84,33 @@ test('production AI inference runtime completion gate stays synchronized between
     assert.match(ci, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 
-  assert.match(readme, /specs\/003-production-ai-inference-runtime\/quickstart\.md/);
+  assert.match(readme, /specs\/004-production-runtime-infrastructure\/quickstart\.md/);
   assert.match(readme, /\.github\/workflows\/ci\.yml/);
   assert.doesNotMatch(readme, /`corepack pnpm/);
-  assert.doesNotMatch(tasks, /Mirror the 003 completion gate in README/);
-  assert.match(tasks, /Point README completion guidance at the 003 quickstart and CI workflow without duplicating command checklists/);
+  assert.doesNotMatch(tasks, /Mirror the 004 completion gate in README/);
+  assert.match(tasks, /Point README completion guidance at the 004 quickstart and CI workflow without duplicating command checklists/);
   assert.match(ci, /DATABASE_URL:\s*postgresql:\/\/postgres:postgres@localhost:5432\/aegisai/);
+});
+
+test('completed production AI inference baseline hands infrastructure follow-up to 004', () => {
+  const tasks = readNormalizedText(files.completedAiTasks);
+  const checklist = readNormalizedText(files.completedAiChecklist);
+  const quickstart = readNormalizedText(files.completedAiQuickstart);
+  const activeTaskSection = tasks.split('\n## Deferred')[0];
+
+  const openActiveTasks = activeTaskSection
+    .split('\n')
+    .filter((line) => /^- \[ \]/.test(line));
+  assert.deepEqual(openActiveTasks, []);
+
+  const openChecklistItems = checklist
+    .split('\n')
+    .filter((line) => /^- \[ \]/.test(line));
+  assert.deepEqual(openChecklistItems, []);
+
+  assert.match(quickstart, /004-production-runtime-infrastructure/);
+  assert.match(tasks, /Kubernetes production AI Plane deployment manifests and runtime autoscaling moved to `004-production-runtime-infrastructure`/);
+  assert.match(tasks, /microVM-backed scanner provisioning moved to `004-production-runtime-infrastructure`/);
 });
 
 test('completed production scan architecture baseline keeps only the AI inference follow-up deferred', () => {
