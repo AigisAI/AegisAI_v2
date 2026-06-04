@@ -1,0 +1,25 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "aegisai-ai-plane-autoscaling-policy",
+    "namespace": "aegisai-ai-plane",
+    "labels": {
+      "app.kubernetes.io/name": "aegisai-ai",
+      "app.kubernetes.io/part-of": "aegisai",
+      "aegisai.io/plane": "ai"
+    }
+  },
+  "data": {
+    "RUNTIME_AUTOSCALING_POLICY": "advisory-infrastructure-only",
+    "LATENCY_P95_MS_TARGET": "750",
+    "QUEUE_DEPTH_TARGET": "25",
+    "PROVIDER_ERROR_RATE_TARGET": "5",
+    "FALLBACK_RATE_TARGET": "10",
+    "CPU_UTILIZATION_TARGET": "70",
+    "MEMORY_UTILIZATION_TARGET": "75",
+    "AI_POLICY_AUTHORITY": "none",
+    "AI_FINDING_AUTHORITY": "none",
+    "AI_WAIVER_SUPPRESSION_AUTHORITY": "none"
+  }
+}

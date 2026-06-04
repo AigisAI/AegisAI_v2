@@ -14,8 +14,8 @@
 
 ## Phase 3: Runtime Autoscaling Slice
 
-- [ ] T007 Add runtime autoscaling policy skeleton for latency, queue pressure, provider health, fallback, CPU, and memory signals
-- [ ] T008 Add autoscaling tests proving policy cannot grant finding or policy authority
+- [x] T007 Add runtime autoscaling policy skeleton for latency, queue pressure, provider health, fallback, CPU, and memory signals
+- [x] T008 Add autoscaling tests proving policy cannot grant finding or policy authority
 
 ## Phase 4: Scanner Sandbox Provisioning Slice
 
