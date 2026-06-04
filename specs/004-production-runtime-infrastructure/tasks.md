@@ -19,8 +19,8 @@
 
 ## Phase 4: Scanner Sandbox Provisioning Slice
 
-- [ ] T009 Add microVM scanner sandbox provisioning contract skeleton
-- [ ] T010 Add scanner sandbox tests proving package install/build, dynamic testing, direct source upload, and AI repository access remain forbidden
+- [x] T009 Add microVM scanner sandbox provisioning contract skeleton
+- [x] T010 Add scanner sandbox tests proving package install/build, dynamic testing, direct source upload, and AI repository access remain forbidden
 
 ## Deferred
 
