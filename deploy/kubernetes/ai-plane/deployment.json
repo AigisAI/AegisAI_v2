@@ -1,0 +1,97 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "aegisai-ai",
+    "namespace": "aegisai-ai-plane",
+    "labels": {
+      "app.kubernetes.io/name": "aegisai-ai",
+      "app.kubernetes.io/part-of": "aegisai",
+      "aegisai.io/plane": "ai"
+    }
+  },
+  "spec": {
+    "replicas": 2,
+    "selector": {
+      "matchLabels": {
+        "app.kubernetes.io/name": "aegisai-ai",
+        "aegisai.io/plane": "ai"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "aegisai-ai",
+          "app.kubernetes.io/part-of": "aegisai",
+          "aegisai.io/plane": "ai"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "containers": [
+          {
+            "name": "aegisai-ai",
+            "image": "ghcr.io/aigisai/aegisai-ai:latest",
+            "imagePullPolicy": "IfNotPresent",
+            "ports": [
+              {
+                "name": "http",
+                "containerPort": 8000
+              }
+            ],
+            "env": [
+              {
+                "name": "AI_PORT",
+                "value": "8000"
+              }
+            ],
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "aegisai-ai-plane-config"
+                }
+              }
+            ],
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": "http"
+              },
+              "initialDelaySeconds": 10,
+              "periodSeconds": 30
+            },
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": "http"
+              },
+              "initialDelaySeconds": 5,
+              "periodSeconds": 10
+            },
+            "resources": {
+              "requests": {
+                "cpu": "250m",
+                "memory": "512Mi"
+              },
+              "limits": {
+                "cpu": "1000m",
+                "memory": "1Gi"
+              }
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "runAsNonRoot": true,
+              "runAsUser": 10001,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

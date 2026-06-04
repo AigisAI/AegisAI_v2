@@ -1,0 +1,27 @@
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "aegisai-ai",
+    "namespace": "aegisai-ai-plane",
+    "labels": {
+      "app.kubernetes.io/name": "aegisai-ai",
+      "app.kubernetes.io/part-of": "aegisai",
+      "aegisai.io/plane": "ai"
+    }
+  },
+  "spec": {
+    "type": "ClusterIP",
+    "selector": {
+      "app.kubernetes.io/name": "aegisai-ai",
+      "aegisai.io/plane": "ai"
+    },
+    "ports": [
+      {
+        "name": "http",
+        "port": 8000,
+        "targetPort": "http"
+      }
+    ]
+  }
+}

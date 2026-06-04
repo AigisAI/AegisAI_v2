@@ -1,0 +1,21 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "aegisai-ai-plane-config",
+    "namespace": "aegisai-ai-plane",
+    "labels": {
+      "app.kubernetes.io/name": "aegisai-ai",
+      "app.kubernetes.io/part-of": "aegisai",
+      "aegisai.io/plane": "ai"
+    }
+  },
+  "data": {
+    "AI_ADVISORY_ONLY": "true",
+    "AI_REDUCED_EVIDENCE_ONLY": "true",
+    "AI_HEALTH_PATH": "/health",
+    "AI_INPUT_BOUNDARY": "normalized-findings-and-reduced-evidence-only",
+    "AI_POLICY_AUTHORITY": "none",
+    "AI_FINDING_AUTHORITY": "none"
+  }
+}

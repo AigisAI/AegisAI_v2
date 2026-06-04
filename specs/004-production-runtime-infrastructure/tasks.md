@@ -9,8 +9,8 @@
 
 ## Phase 2: Kubernetes AI Plane Manifest Slice
 
-- [ ] T005 Add Kubernetes AI Plane deployment and service manifest skeletons
-- [ ] T006 Add manifest tests proving AI containers do not receive SCM credentials, repository archives, full repositories, source archives, or raw scanner payloads
+- [x] T005 Add Kubernetes AI Plane deployment and service manifest skeletons
+- [x] T006 Add manifest tests proving AI containers do not receive SCM credentials, repository archives, full repositories, source archives, or raw scanner payloads
 
 ## Phase 3: Runtime Autoscaling Slice
 
