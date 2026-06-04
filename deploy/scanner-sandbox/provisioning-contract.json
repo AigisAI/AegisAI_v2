@@ -1,0 +1,59 @@
+{
+  "kind": "ScannerSandboxProvisioning",
+  "version": "004-production-runtime-infrastructure.v1",
+  "sandboxProvider": "MICROVM",
+  "supportedIsolationClasses": [
+    "HARDENED",
+    "RESTRICTED"
+  ],
+  "defaultIsolationClass": "HARDENED",
+  "ttlSeconds": 900,
+  "networkEgressPolicy": "SCM_AND_SCANNER_UPDATES_ONLY",
+  "repositoryAccess": {
+    "principal": "REPO_READ",
+    "tokenScope": "tenant-repository-scan",
+    "shortLived": true,
+    "persistTokenValue": false
+  },
+  "allowedOperations": [
+    "SCAN_SCOPED_REPOSITORY_FETCH",
+    "STATIC_SCANNER_RUN",
+    "NORMALIZED_FINDING_OUTPUT",
+    "REDACTED_EVIDENCE_PACK_BUILD"
+  ],
+  "forbiddenOperations": [
+    "PACKAGE_INSTALL",
+    "CUSTOMER_REPOSITORY_BUILD",
+    "DYNAMIC_TESTING",
+    "DIRECT_SOURCE_UPLOAD",
+    "AI_FULL_REPOSITORY_ACCESS",
+    "AUTO_FIX_PR_OR_MR"
+  ],
+  "evidenceHandoff": {
+    "targetPlane": "DATA_SECURITY_PLANE",
+    "output": "redacted-evidence-pack-metadata",
+    "objectStorageTtlRequired": true,
+    "tenantAndScanScopedObjectKeyRequired": true
+  },
+  "aiPlaneAccess": {
+    "fullRepository": false,
+    "sourceArchive": false,
+    "scmCredentials": false,
+    "rawScannerPayload": false,
+    "reducedEvidenceOnly": true
+  },
+  "audit": {
+    "tenantIdRequired": true,
+    "scanRequestIdRequired": true,
+    "repositoryBindingIdRequired": true,
+    "sandboxLifecycleEvents": [
+      "planned",
+      "provisioning",
+      "ready",
+      "running",
+      "draining",
+      "terminated",
+      "failed"
+    ]
+  }
+}
