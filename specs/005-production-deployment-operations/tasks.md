@@ -9,8 +9,8 @@
 
 ## Phase 2: Production Cluster Provisioning Contract Slice
 
-- [ ] T005 Add provider-neutral production cluster provisioning contract in shared package
-- [ ] T006 Add tests proving provider credentials are not local development defaults
+- [x] T005 Add provider-neutral production cluster provisioning contract in shared package
+- [x] T006 Add tests proving provider credentials are not local development defaults
 
 ## Phase 3: Provider microVM Rollout Contract Slice
 
