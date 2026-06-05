@@ -107,3 +107,33 @@ Preflight inputs must remain references only. They must not contain provider
 secret values, kubeconfigs, SCM tokens, full repositories, source archives, or
 raw scanner payloads. Passing preflight does not execute live Kubernetes
 provisioning or provider-specific microVM rollout.
+
+## DeploymentOperationHandoffManifest
+
+```ts
+interface DeploymentOperationHandoffManifest {
+  preflight: DeploymentOperationPreflight;
+  credentialHandoffMode:
+    | "EXTERNAL_SECRET_MANAGER_REFERENCE"
+    | "EPHEMERAL_OIDC_FEDERATION";
+  executionWindow: {
+    startsAt: string;
+    endsAt: string;
+  };
+  rollbackPlanRef: string;
+  incidentChannelRef: string;
+  dryRunEvidenceRef: string;
+  changeTicketRef: string;
+}
+```
+
+The handoff manifest is the operator-facing readiness envelope for live
+execution. It binds a passing preflight contract to an execution window,
+rollback reference, incident channel, dry-run evidence reference, change ticket,
+and credential handoff mode.
+
+Credential handoff must be reference-only. Supported modes are external secret
+manager reference and ephemeral OIDC federation. The manifest must not contain
+provider secret values, kubeconfigs, SCM tokens, full repositories, source
+archives, or raw scanner payloads. Passing handoff validation still does not
+execute live Kubernetes provisioning or provider-specific microVM rollout.
