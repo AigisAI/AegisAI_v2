@@ -11,6 +11,7 @@ const files = {
   dashboard: new URL('../src/types/dashboard.ts', import.meta.url),
   report: new URL('../src/types/report.ts', import.meta.url),
   aiInferenceRuntime: new URL('../src/types/ai-inference-runtime.ts', import.meta.url),
+  deploymentOperations: new URL('../src/types/deployment-operations.ts', import.meta.url),
   index: new URL('../src/index.ts', import.meta.url)
 };
 
@@ -29,7 +30,8 @@ test('shared contract modules exist and are re-exported from the package root', 
     'vulnerability',
     'dashboard',
     'report',
-    'ai-inference-runtime'
+    'ai-inference-runtime',
+    'deployment-operations'
   ]) {
     assert.match(
       indexContent,
