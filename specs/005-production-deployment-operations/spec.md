@@ -53,5 +53,6 @@ contracts and guardrails needed before provider-specific rollout work begins.
 - `002-production-scan-architecture` remains linked and preserved as the
   completed production scan architecture baseline.
 - Contracts describe `ProductionClusterProvisioning`,
-  `MicroVmPlatformRollout`, and `DeploymentCredentialBoundary`.
+  `MicroVmPlatformRollout`, `DeploymentCredentialBoundary`, and
+  `DeploymentOperationAuditSignal`.
 - The completion gate stays synchronized with CI.

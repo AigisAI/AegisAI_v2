@@ -163,7 +163,7 @@ Use the completion flow and command list in
 GitHub Actions runs the authoritative CI steps in
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
 
-Before claiming the 004 milestone complete, confirm:
+Before claiming the 005 milestone complete, confirm:
 
 | Check | Expected State |
 | --- | --- |

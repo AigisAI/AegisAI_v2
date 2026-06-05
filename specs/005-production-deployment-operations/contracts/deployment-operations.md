@@ -72,5 +72,8 @@ interface DeploymentOperationAuditSignal {
 }
 ```
 
+`occurredAt` must be an RFC 3339/ISO-8601 UTC timestamp, for example
+`2026-06-05T01:17:08Z`.
+
 Audit metadata must not contain provider secret values, SCM tokens, full
 repository content, source archives, or raw scanner payloads.

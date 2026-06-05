@@ -109,8 +109,9 @@ $env:SPECIFY_FEATURE = "004-production-runtime-infrastructure"
 Before claiming this milestone is complete:
 
 1. Re-run the validation commands below.
-2. Confirm this quickstart, `AGENTS.md`, `README.md`, and
-   `docs/github-conventions.md` all point to `004-production-runtime-infrastructure`.
+2. Confirm this quickstart preserves `004-production-runtime-infrastructure` as the
+   completed runtime baseline, and `AGENTS.md`, `README.md`, and
+   `docs/github-conventions.md` point to `005-production-deployment-operations`.
 3. Confirm `003-production-ai-inference-runtime` remains available as the
    completed production AI inference baseline.
 4. Confirm `002-production-scan-architecture` remains available as the completed

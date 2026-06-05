@@ -50,6 +50,7 @@ test('production deployment operations is the active feature package', () => {
   assert.match(quickstart, /live production Kubernetes cluster provisioning/i);
   assert.match(quickstart, /provider-specific microVM platform rollout/i);
   assert.match(quickstart, /no local development defaults/i);
+  assert.doesNotMatch(quickstart, /C:\\Users\\/);
   assert.match(quickstart, /004-production-runtime-infrastructure/);
   assert.match(quickstart, /003-production-ai-inference-runtime/);
   assert.match(quickstart, /002-production-scan-architecture/);
@@ -57,6 +58,7 @@ test('production deployment operations is the active feature package', () => {
   assert.match(spec, /production cluster provisioning/i);
   assert.match(spec, /provider-specific microVM platform rollout/i);
   assert.match(spec, /MUST NOT introduce provider credentials as local development defaults/i);
+  assert.match(spec, /DeploymentOperationAuditSignal/);
 
   assert.match(plan, /deployment operations/i);
   assert.match(plan, /provider credential boundary/i);
@@ -65,6 +67,8 @@ test('production deployment operations is the active feature package', () => {
   assert.match(contract, /ProductionClusterProvisioning/);
   assert.match(contract, /MicroVmPlatformRollout/);
   assert.match(contract, /DeploymentCredentialBoundary/);
+  assert.match(contract, /DeploymentOperationAuditSignal/);
+  assert.match(contract, /RFC 3339\/ISO-8601 UTC/);
 });
 
 test('production deployment operations completion gate stays synchronized between quickstart and CI', () => {
@@ -88,6 +92,7 @@ test('production deployment operations completion gate stays synchronized betwee
   }
 
   assert.match(readme, /specs\/005-production-deployment-operations\/quickstart\.md/);
+  assert.match(readme, /Before claiming the 005 milestone complete/);
   assert.match(readme, /\.github\/workflows\/ci\.yml/);
   assert.doesNotMatch(readme, /`corepack pnpm/);
   assert.doesNotMatch(tasks, /Mirror the 005 completion gate in README/);
@@ -112,6 +117,10 @@ test('completed production runtime infrastructure baseline hands live rollout fo
   assert.deepEqual(openChecklistItems, []);
 
   assert.match(quickstart, /005-production-deployment-operations/);
+  assert.match(
+    quickstart,
+    /completed runtime baseline[\s\S]+docs\/github-conventions\.md` point to `005-production-deployment-operations`/
+  );
   assert.match(tasks, /Live production Kubernetes cluster provisioning moved to `005-production-deployment-operations`/);
   assert.match(tasks, /Provider-specific microVM platform rollout moved to `005-production-deployment-operations`/);
 });

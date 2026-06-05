@@ -4,7 +4,7 @@
 
 Use this feature package as the canonical implementation entry point for
 production deployment operations. The source product and platform baseline
-remains `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`.
+remains `Security Scan SaaS Final Specification.docx`.
 
 This package follows the completed production runtime infrastructure baseline in
 [`specs/004-production-runtime-infrastructure/`](../004-production-runtime-infrastructure/).
@@ -46,7 +46,7 @@ operations package with no local development defaults for provider credentials.
 
 ## Required Read Order
 
-1. `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`
+1. `Security Scan SaaS Final Specification.docx`
 2. `.specify/memory/constitution.md`
 3. `specs/002-production-scan-architecture/quickstart.md`
 4. `specs/002-production-scan-architecture/contracts/scan-architecture.md`
