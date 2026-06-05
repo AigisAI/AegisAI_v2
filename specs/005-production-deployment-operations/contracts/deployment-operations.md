@@ -77,3 +77,33 @@ interface DeploymentOperationAuditSignal {
 
 Audit metadata must not contain provider secret values, SCM tokens, full
 repository content, source archives, or raw scanner payloads.
+
+## DeploymentOperationPreflight
+
+```ts
+interface DeploymentOperationPreflight {
+  clusterProvisioning: ProductionClusterProvisioning;
+  microVmRollout: MicroVmPlatformRollout;
+  credentialBoundary: DeploymentCredentialBoundary;
+  auditSignal: DeploymentOperationAuditSignal;
+  operatorApprovalRefs: Array<
+    | "PRODUCTION_CHANGE_APPROVAL"
+    | "SECURITY_BOUNDARY_APPROVAL"
+    | "CREDENTIAL_HANDOFF_APPROVAL"
+  >;
+  kmsKeyRef: string;
+  secretManagerRef: string;
+  objectStorageRef: string;
+  dnsZoneRef: string;
+}
+```
+
+Preflight readiness is the final repository-owned contract before live
+production execution. It confirms that cluster provisioning, microVM rollout,
+deployment credential boundary, audit sink, KMS, secret manager, object storage,
+DNS, and operator approval references are present.
+
+Preflight inputs must remain references only. They must not contain provider
+secret values, kubeconfigs, SCM tokens, full repositories, source archives, or
+raw scanner payloads. Passing preflight does not execute live Kubernetes
+provisioning or provider-specific microVM rollout.

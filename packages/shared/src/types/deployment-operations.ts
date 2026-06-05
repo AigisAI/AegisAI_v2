@@ -41,6 +41,14 @@ export const AI_PLANE_FORBIDDEN_DIRECT_INPUTS = [
 ] as const;
 export type AiPlaneForbiddenDirectInput = (typeof AI_PLANE_FORBIDDEN_DIRECT_INPUTS)[number];
 
+export const DEPLOYMENT_PREFLIGHT_REQUIRED_APPROVALS = [
+  'PRODUCTION_CHANGE_APPROVAL',
+  'SECURITY_BOUNDARY_APPROVAL',
+  'CREDENTIAL_HANDOFF_APPROVAL'
+] as const;
+export type DeploymentPreflightRequiredApproval =
+  (typeof DEPLOYMENT_PREFLIGHT_REQUIRED_APPROVALS)[number];
+
 export interface ProductionClusterProvisioning {
   environment: 'PRODUCTION';
   provider: string;
@@ -93,6 +101,18 @@ export interface AiPlaneRepositoryAccessBoundary {
   advisoryOnly: true;
   receivesReducedEvidenceOnly: true;
   requestedDirectInputs: string[];
+}
+
+export interface DeploymentOperationPreflight {
+  clusterProvisioning: ProductionClusterProvisioning;
+  microVmRollout: MicroVmPlatformRollout;
+  credentialBoundary: DeploymentCredentialBoundary;
+  auditSignal: DeploymentOperationAuditSignal;
+  operatorApprovalRefs: DeploymentPreflightRequiredApproval[];
+  kmsKeyRef: string;
+  secretManagerRef: string;
+  objectStorageRef: string;
+  dnsZoneRef: string;
 }
 
 export function isProductionClusterProvisioningBoundaryValid(
@@ -158,5 +178,30 @@ export function doesAiPlaneInputRespectRepositoryGuardrails(
           (forbiddenInput) => forbiddenInput === requestedInput
         )
     )
+  );
+}
+
+export function isDeploymentOperationPreflightReady(
+  input: DeploymentOperationPreflight
+): boolean {
+  const requiredRefs = [
+    input.kmsKeyRef,
+    input.secretManagerRef,
+    input.objectStorageRef,
+    input.dnsZoneRef
+  ];
+
+  const hasRequiredApprovals = DEPLOYMENT_PREFLIGHT_REQUIRED_APPROVALS.every((approval) =>
+    input.operatorApprovalRefs.includes(approval)
+  );
+
+  return (
+    isProductionClusterProvisioningBoundaryValid(input.clusterProvisioning) &&
+    isMicroVmPlatformRolloutBoundaryValid(input.microVmRollout) &&
+    isDeploymentCredentialBoundaryCompliant(input.credentialBoundary) &&
+    input.credentialBoundary.allowedUse === 'EXPLICIT_DEPLOYMENT_OPERATION' &&
+    input.auditSignal.environment === 'PRODUCTION' &&
+    requiredRefs.every((ref) => ref.length > 0) &&
+    hasRequiredApprovals
   );
 }
