@@ -22,6 +22,11 @@
 - [x] T009 Add deployment operation preflight contract in shared package
 - [x] T010 Add tests proving live execution inputs do not persist provider credentials or forbidden payloads
 
+## Phase 5: Live Operation Handoff Manifest Slice
+
+- [x] T011 Add deployment operation handoff manifest contract in shared package
+- [x] T012 Add tests proving credential handoff remains reference-only before live execution
+
 ## Deferred
 
 - [ ] Execute live production Kubernetes cluster provisioning

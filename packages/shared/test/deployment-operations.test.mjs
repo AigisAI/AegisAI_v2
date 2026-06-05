@@ -186,3 +186,62 @@ test('deployment operation preflight contracts reject persisted secrets and forb
   assert.match(contract, /isMicroVmPlatformRolloutBoundaryValid/);
   assert.match(contract, /allowedUse\s*===\s*'EXPLICIT_DEPLOYMENT_OPERATION'/);
 });
+
+test('deployment handoff manifests connect preflight evidence to live operation controls', () => {
+  assert.equal(existsSync(contractFile), true);
+
+  const contract = readContract();
+
+  for (const exportName of [
+    'DEPLOYMENT_CREDENTIAL_HANDOFF_MODES',
+    'DeploymentOperationHandoffManifest',
+    'isDeploymentOperationHandoffManifestReady'
+  ]) {
+    assert.match(contract, new RegExp(`export (interface|const|type|function) ${exportName}\\b`));
+  }
+
+  for (const requiredField of [
+    'preflight',
+    'credentialHandoffMode',
+    'executionWindow',
+    'startsAt',
+    'endsAt',
+    'rollbackPlanRef',
+    'incidentChannelRef',
+    'dryRunEvidenceRef',
+    'changeTicketRef'
+  ]) {
+    assert.match(contract, new RegExp(`\\b${requiredField}\\b`));
+  }
+
+  for (const handoffMode of [
+    'EXTERNAL_SECRET_MANAGER_REFERENCE',
+    'EPHEMERAL_OIDC_FEDERATION'
+  ]) {
+    assert.match(contract, new RegExp(`'${handoffMode}'`));
+  }
+});
+
+test('deployment handoff manifests remain reference-only and cannot carry secrets or repositories', () => {
+  assert.equal(existsSync(contractFile), true);
+
+  const contract = readContract();
+
+  for (const forbiddenField of [
+    'credentialValue',
+    'providerSecretValue',
+    'accessKey',
+    'secretAccessKey',
+    'privateKey',
+    'kubeconfig',
+    'scmToken',
+    'fullRepository',
+    'sourceArchive',
+    'rawScannerPayload'
+  ]) {
+    assert.doesNotMatch(contract, new RegExp(`\\b${forbiddenField}\\b`, 'i'));
+  }
+
+  assert.match(contract, /isDeploymentOperationPreflightReady/);
+  assert.match(contract, /DEPLOYMENT_CREDENTIAL_HANDOFF_MODES\.includes/);
+});

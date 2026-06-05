@@ -49,6 +49,13 @@ export const DEPLOYMENT_PREFLIGHT_REQUIRED_APPROVALS = [
 export type DeploymentPreflightRequiredApproval =
   (typeof DEPLOYMENT_PREFLIGHT_REQUIRED_APPROVALS)[number];
 
+export const DEPLOYMENT_CREDENTIAL_HANDOFF_MODES = [
+  'EXTERNAL_SECRET_MANAGER_REFERENCE',
+  'EPHEMERAL_OIDC_FEDERATION'
+] as const;
+export type DeploymentCredentialHandoffMode =
+  (typeof DEPLOYMENT_CREDENTIAL_HANDOFF_MODES)[number];
+
 export interface ProductionClusterProvisioning {
   environment: 'PRODUCTION';
   provider: string;
@@ -113,6 +120,21 @@ export interface DeploymentOperationPreflight {
   secretManagerRef: string;
   objectStorageRef: string;
   dnsZoneRef: string;
+}
+
+export interface DeploymentExecutionWindow {
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface DeploymentOperationHandoffManifest {
+  preflight: DeploymentOperationPreflight;
+  credentialHandoffMode: DeploymentCredentialHandoffMode;
+  executionWindow: DeploymentExecutionWindow;
+  rollbackPlanRef: string;
+  incidentChannelRef: string;
+  dryRunEvidenceRef: string;
+  changeTicketRef: string;
 }
 
 export function isProductionClusterProvisioningBoundaryValid(
@@ -203,5 +225,24 @@ export function isDeploymentOperationPreflightReady(
     input.auditSignal.environment === 'PRODUCTION' &&
     requiredRefs.every((ref) => ref.length > 0) &&
     hasRequiredApprovals
+  );
+}
+
+export function isDeploymentOperationHandoffManifestReady(
+  input: DeploymentOperationHandoffManifest
+): boolean {
+  const requiredRefs = [
+    input.rollbackPlanRef,
+    input.incidentChannelRef,
+    input.dryRunEvidenceRef,
+    input.changeTicketRef
+  ];
+
+  return (
+    isDeploymentOperationPreflightReady(input.preflight) &&
+    DEPLOYMENT_CREDENTIAL_HANDOFF_MODES.includes(input.credentialHandoffMode) &&
+    input.executionWindow.startsAt.length > 0 &&
+    input.executionWindow.endsAt.length > 0 &&
+    requiredRefs.every((ref) => ref.length > 0)
   );
 }
