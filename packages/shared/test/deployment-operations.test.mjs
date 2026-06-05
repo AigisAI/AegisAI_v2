@@ -124,3 +124,65 @@ test('microVM rollout contracts keep AI plane away from repository and raw scann
   assert.match(contract, /advisoryOnly:\s*true/);
   assert.match(contract, /receivesReducedEvidenceOnly:\s*true/);
 });
+
+test('deployment operation preflight contracts require explicit production execution inputs', () => {
+  assert.equal(existsSync(contractFile), true);
+
+  const contract = readContract();
+
+  for (const exportName of [
+    'DEPLOYMENT_PREFLIGHT_REQUIRED_APPROVALS',
+    'DeploymentOperationPreflight',
+    'isDeploymentOperationPreflightReady'
+  ]) {
+    assert.match(contract, new RegExp(`export (interface|const|type|function) ${exportName}\\b`));
+  }
+
+  for (const requiredField of [
+    'clusterProvisioning',
+    'microVmRollout',
+    'credentialBoundary',
+    'auditSignal',
+    'operatorApprovalRefs',
+    'kmsKeyRef',
+    'secretManagerRef',
+    'objectStorageRef',
+    'dnsZoneRef'
+  ]) {
+    assert.match(contract, new RegExp(`\\b${requiredField}\\b`));
+  }
+
+  for (const requiredApproval of [
+    'PRODUCTION_CHANGE_APPROVAL',
+    'SECURITY_BOUNDARY_APPROVAL',
+    'CREDENTIAL_HANDOFF_APPROVAL'
+  ]) {
+    assert.match(contract, new RegExp(`'${requiredApproval}'`));
+  }
+});
+
+test('deployment operation preflight contracts reject persisted secrets and forbidden payload inputs', () => {
+  assert.equal(existsSync(contractFile), true);
+
+  const contract = readContract();
+
+  for (const forbiddenField of [
+    'credentialValue',
+    'providerSecretValue',
+    'accessKey',
+    'secretAccessKey',
+    'privateKey',
+    'kubeconfig',
+    'scmToken',
+    'fullRepository',
+    'sourceArchive',
+    'rawScannerPayload'
+  ]) {
+    assert.doesNotMatch(contract, new RegExp(`\\b${forbiddenField}\\b`, 'i'));
+  }
+
+  assert.match(contract, /isDeploymentCredentialBoundaryCompliant/);
+  assert.match(contract, /isProductionClusterProvisioningBoundaryValid/);
+  assert.match(contract, /isMicroVmPlatformRolloutBoundaryValid/);
+  assert.match(contract, /allowedUse\s*===\s*'EXPLICIT_DEPLOYMENT_OPERATION'/);
+});

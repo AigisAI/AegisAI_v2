@@ -17,6 +17,11 @@
 - [x] T007 Add provider-neutral microVM platform rollout contract in shared package
 - [x] T008 Add tests proving scanner isolation and AI repository access guardrails remain enforced
 
+## Phase 4: Live Operation Preflight Slice
+
+- [x] T009 Add deployment operation preflight contract in shared package
+- [x] T010 Add tests proving live execution inputs do not persist provider credentials or forbidden payloads
+
 ## Deferred
 
 - [ ] Execute live production Kubernetes cluster provisioning
