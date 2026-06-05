@@ -20,6 +20,27 @@ export const DEPLOYMENT_OPERATION_ACTORS = [
 ] as const;
 export type DeploymentOperationActor = (typeof DEPLOYMENT_OPERATION_ACTORS)[number];
 
+export const MICROVM_ISOLATION_CLASSES = ['HARDENED', 'RESTRICTED'] as const;
+export type MicroVmIsolationClass = (typeof MICROVM_ISOLATION_CLASSES)[number];
+
+export const SCANNER_SANDBOX_FORBIDDEN_CAPABILITIES = [
+  'PACKAGE_INSTALL',
+  'CUSTOMER_REPOSITORY_BUILD',
+  'DYNAMIC_TEST_EXECUTION',
+  'DIRECT_SOURCE_UPLOAD',
+  'AUTO_FIX_PULL_REQUEST'
+] as const;
+export type ScannerSandboxForbiddenCapability =
+  (typeof SCANNER_SANDBOX_FORBIDDEN_CAPABILITIES)[number];
+
+export const AI_PLANE_FORBIDDEN_DIRECT_INPUTS = [
+  'SCM_CREDENTIAL',
+  'FULL_REPOSITORY',
+  'SOURCE_ARCHIVE',
+  'RAW_SCANNER_PAYLOAD'
+] as const;
+export type AiPlaneForbiddenDirectInput = (typeof AI_PLANE_FORBIDDEN_DIRECT_INPUTS)[number];
+
 export interface ProductionClusterProvisioning {
   environment: 'PRODUCTION';
   provider: string;
@@ -55,6 +76,25 @@ export interface DeploymentOperationAuditSignal {
   occurredAt: string;
 }
 
+export interface MicroVmPlatformRollout {
+  provider: string;
+  region: string;
+  platformName: string;
+  isolationClass: MicroVmIsolationClass;
+  scannerSandboxProfileRef: string;
+  tokenBrokerRef: string;
+  evidenceStorageRef: string;
+  egressPolicyRef: string;
+  ttlSeconds: number;
+  forbiddenScannerCapabilities: ScannerSandboxForbiddenCapability[];
+}
+
+export interface AiPlaneRepositoryAccessBoundary {
+  advisoryOnly: true;
+  receivesReducedEvidenceOnly: true;
+  requestedDirectInputs: string[];
+}
+
 export function isProductionClusterProvisioningBoundaryValid(
   input: ProductionClusterProvisioning
 ): boolean {
@@ -83,5 +123,40 @@ export function isDeploymentCredentialBoundaryCompliant(
     input.repositoryPersisted === false &&
     input.rotationRequired === true &&
     input.auditRequired === true
+  );
+}
+
+export function isMicroVmPlatformRolloutBoundaryValid(input: MicroVmPlatformRollout): boolean {
+  const requiredRefs = [
+    input.scannerSandboxProfileRef,
+    input.tokenBrokerRef,
+    input.evidenceStorageRef,
+    input.egressPolicyRef
+  ];
+
+  const includesForbiddenCapability = SCANNER_SANDBOX_FORBIDDEN_CAPABILITIES.every((capability) =>
+    input.forbiddenScannerCapabilities.includes(capability)
+  );
+
+  return (
+    MICROVM_ISOLATION_CLASSES.includes(input.isolationClass) &&
+    requiredRefs.every((ref) => ref.length > 0) &&
+    input.ttlSeconds > 0 &&
+    includesForbiddenCapability
+  );
+}
+
+export function doesAiPlaneInputRespectRepositoryGuardrails(
+  input: AiPlaneRepositoryAccessBoundary
+): boolean {
+  return (
+    input.advisoryOnly === true &&
+    input.receivesReducedEvidenceOnly === true &&
+    input.requestedDirectInputs.every(
+      (requestedInput) =>
+        !AI_PLANE_FORBIDDEN_DIRECT_INPUTS.some(
+          (forbiddenInput) => forbiddenInput === requestedInput
+        )
+    )
   );
 }
