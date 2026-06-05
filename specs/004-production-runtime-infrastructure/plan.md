@@ -9,7 +9,7 @@ guardrails.
 
 ## Target Boundaries
 
-- `specs/004-production-runtime-infrastructure`: active feature package
+- `specs/004-production-runtime-infrastructure`: completed runtime infrastructure baseline
 - `packages/shared`: public runtime infrastructure contracts when code contracts
   are introduced
 - `deploy/kubernetes`: Kubernetes deployment manifests for Control, Scan, AI,

@@ -7,14 +7,17 @@ const files = {
   readme: new URL('../../README.md', import.meta.url),
   conventions: new URL('../../docs/github-conventions.md', import.meta.url),
   ci: new URL('../../.github/workflows/ci.yml', import.meta.url),
-  quickstart: new URL('../../specs/004-production-runtime-infrastructure/quickstart.md', import.meta.url),
-  spec: new URL('../../specs/004-production-runtime-infrastructure/spec.md', import.meta.url),
-  plan: new URL('../../specs/004-production-runtime-infrastructure/plan.md', import.meta.url),
-  research: new URL('../../specs/004-production-runtime-infrastructure/research.md', import.meta.url),
-  dataModel: new URL('../../specs/004-production-runtime-infrastructure/data-model.md', import.meta.url),
-  tasks: new URL('../../specs/004-production-runtime-infrastructure/tasks.md', import.meta.url),
-  contract: new URL('../../specs/004-production-runtime-infrastructure/contracts/runtime-infrastructure.md', import.meta.url),
-  checklist: new URL('../../specs/004-production-runtime-infrastructure/checklists/requirements.md', import.meta.url),
+  quickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
+  spec: new URL('../../specs/005-production-deployment-operations/spec.md', import.meta.url),
+  plan: new URL('../../specs/005-production-deployment-operations/plan.md', import.meta.url),
+  research: new URL('../../specs/005-production-deployment-operations/research.md', import.meta.url),
+  dataModel: new URL('../../specs/005-production-deployment-operations/data-model.md', import.meta.url),
+  tasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
+  contract: new URL('../../specs/005-production-deployment-operations/contracts/deployment-operations.md', import.meta.url),
+  checklist: new URL('../../specs/005-production-deployment-operations/checklists/requirements.md', import.meta.url),
+  completedRuntimeQuickstart: new URL('../../specs/004-production-runtime-infrastructure/quickstart.md', import.meta.url),
+  completedRuntimeTasks: new URL('../../specs/004-production-runtime-infrastructure/tasks.md', import.meta.url),
+  completedRuntimeChecklist: new URL('../../specs/004-production-runtime-infrastructure/checklists/requirements.md', import.meta.url),
   completedAiQuickstart: new URL('../../specs/003-production-ai-inference-runtime/quickstart.md', import.meta.url),
   completedAiTasks: new URL('../../specs/003-production-ai-inference-runtime/tasks.md', import.meta.url),
   completedAiChecklist: new URL('../../specs/003-production-ai-inference-runtime/checklists/requirements.md', import.meta.url),
@@ -25,7 +28,7 @@ const files = {
 
 const readNormalizedText = (fileUrl) => readFileSync(fileUrl, 'utf8').replace(/\r\n/g, '\n');
 
-test('production runtime infrastructure is the active feature package', () => {
+test('production deployment operations is the active feature package', () => {
   for (const [name, fileUrl] of Object.entries(files)) {
     assert.equal(existsSync(fileUrl), true, `Expected ${name} file to exist at ${fileUrl.pathname}`);
   }
@@ -38,33 +41,37 @@ test('production runtime infrastructure is the active feature package', () => {
   const plan = readNormalizedText(files.plan);
   const contract = readNormalizedText(files.contract);
 
-  assert.match(agents, /004-production-runtime-infrastructure/);
+  assert.match(agents, /005-production-deployment-operations/);
   assert.match(agents, /Security Scan SaaS Final Specification\.docx/);
-  assert.match(readme, /004-production-runtime-infrastructure/);
-  assert.match(conventions, /SPECIFY_FEATURE = "004-production-runtime-infrastructure"/);
+  assert.match(readme, /005-production-deployment-operations/);
+  assert.match(conventions, /SPECIFY_FEATURE = "005-production-deployment-operations"/);
 
   assert.match(quickstart, /Security Scan SaaS Final Specification\.docx/);
-  assert.match(quickstart, /Kubernetes/i);
-  assert.match(quickstart, /AI Plane/);
-  assert.match(quickstart, /microVM/i);
-  assert.match(quickstart, /advisory-only/i);
+  assert.match(quickstart, /live production Kubernetes cluster provisioning/i);
+  assert.match(quickstart, /provider-specific microVM platform rollout/i);
+  assert.match(quickstart, /no local development defaults/i);
+  assert.doesNotMatch(quickstart, /C:\\Users\\/);
+  assert.match(quickstart, /004-production-runtime-infrastructure/);
   assert.match(quickstart, /003-production-ai-inference-runtime/);
   assert.match(quickstart, /002-production-scan-architecture/);
 
-  assert.match(spec, /Kubernetes production AI Plane/i);
-  assert.match(spec, /microVM-backed scanner provisioning/i);
-  assert.match(spec, /MUST NOT execute customer code outside hardened scan isolation/i);
+  assert.match(spec, /production cluster provisioning/i);
+  assert.match(spec, /provider-specific microVM platform rollout/i);
+  assert.match(spec, /MUST NOT introduce provider credentials as local development defaults/i);
+  assert.match(spec, /DeploymentOperationAuditSignal/);
 
-  assert.match(plan, /deployment manifests/i);
-  assert.match(plan, /runtime autoscaling/i);
-  assert.match(plan, /scanner sandbox/i);
+  assert.match(plan, /deployment operations/i);
+  assert.match(plan, /provider credential boundary/i);
+  assert.match(plan, /operational rollout/i);
 
-  assert.match(contract, /AiPlaneDeployment/);
-  assert.match(contract, /RuntimeAutoscalingPolicy/);
-  assert.match(contract, /ScannerSandboxProvisioning/);
+  assert.match(contract, /ProductionClusterProvisioning/);
+  assert.match(contract, /MicroVmPlatformRollout/);
+  assert.match(contract, /DeploymentCredentialBoundary/);
+  assert.match(contract, /DeploymentOperationAuditSignal/);
+  assert.match(contract, /RFC 3339\/ISO-8601 UTC/);
 });
 
-test('production runtime infrastructure completion gate stays synchronized between quickstart and CI', () => {
+test('production deployment operations completion gate stays synchronized between quickstart and CI', () => {
   const readme = readNormalizedText(files.readme);
   const ci = readNormalizedText(files.ci);
   const quickstart = readNormalizedText(files.quickstart);
@@ -84,12 +91,38 @@ test('production runtime infrastructure completion gate stays synchronized betwe
     assert.match(ci, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 
-  assert.match(readme, /specs\/004-production-runtime-infrastructure\/quickstart\.md/);
+  assert.match(readme, /specs\/005-production-deployment-operations\/quickstart\.md/);
+  assert.match(readme, /Before claiming the 005 milestone complete/);
   assert.match(readme, /\.github\/workflows\/ci\.yml/);
   assert.doesNotMatch(readme, /`corepack pnpm/);
-  assert.doesNotMatch(tasks, /Mirror the 004 completion gate in README/);
-  assert.match(tasks, /Point README completion guidance at the 004 quickstart and CI workflow without duplicating command checklists/);
+  assert.doesNotMatch(tasks, /Mirror the 005 completion gate in README/);
+  assert.match(tasks, /Point README completion guidance at the 005 quickstart and CI workflow without duplicating command checklists/);
   assert.match(ci, /DATABASE_URL:\s*postgresql:\/\/postgres:postgres@localhost:5432\/aegisai/);
+});
+
+test('completed production runtime infrastructure baseline hands live rollout follow-up to 005', () => {
+  const tasks = readNormalizedText(files.completedRuntimeTasks);
+  const checklist = readNormalizedText(files.completedRuntimeChecklist);
+  const quickstart = readNormalizedText(files.completedRuntimeQuickstart);
+  const activeTaskSection = tasks.split('\n## Deferred')[0];
+
+  const openActiveTasks = activeTaskSection
+    .split('\n')
+    .filter((line) => /^- \[ \]/.test(line));
+  assert.deepEqual(openActiveTasks, []);
+
+  const openChecklistItems = checklist
+    .split('\n')
+    .filter((line) => /^- \[ \]/.test(line));
+  assert.deepEqual(openChecklistItems, []);
+
+  assert.match(quickstart, /005-production-deployment-operations/);
+  assert.match(
+    quickstart,
+    /completed runtime baseline[\s\S]+docs\/github-conventions\.md` point to `005-production-deployment-operations`/
+  );
+  assert.match(tasks, /Live production Kubernetes cluster provisioning moved to `005-production-deployment-operations`/);
+  assert.match(tasks, /Provider-specific microVM platform rollout moved to `005-production-deployment-operations`/);
 });
 
 test('completed production AI inference baseline hands infrastructure follow-up to 004', () => {

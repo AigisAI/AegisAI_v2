@@ -15,11 +15,17 @@ implementation-ready package while preserving the scanner-first pipeline,
 advisory-only AI boundary, and separated Control, Scan, AI, and Data/Security
 planes.
 
+`005-production-deployment-operations` is the active follow-up package for live
+production Kubernetes cluster provisioning and provider-specific microVM platform
+rollout.
+
 ## Canonical Use
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
-- This package is the active implementation target for production runtime
-  infrastructure work.
+- This package is the completed implementation baseline for production runtime
+  infrastructure work before `005-production-deployment-operations`.
+- `005-production-deployment-operations` is the active follow-up package for
+  production deployment operations.
 - `003-production-ai-inference-runtime` remains the completed production AI
   inference baseline.
 - `002-production-scan-architecture` remains the completed production scan
@@ -103,8 +109,9 @@ $env:SPECIFY_FEATURE = "004-production-runtime-infrastructure"
 Before claiming this milestone is complete:
 
 1. Re-run the validation commands below.
-2. Confirm this quickstart, `AGENTS.md`, `README.md`, and
-   `docs/github-conventions.md` all point to `004-production-runtime-infrastructure`.
+2. Confirm this quickstart preserves `004-production-runtime-infrastructure` as the
+   completed runtime baseline, and `AGENTS.md`, `README.md`, and
+   `docs/github-conventions.md` point to `005-production-deployment-operations`.
 3. Confirm `003-production-ai-inference-runtime` remains available as the
    completed production AI inference baseline.
 4. Confirm `002-production-scan-architecture` remains available as the completed

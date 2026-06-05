@@ -24,5 +24,5 @@
 
 ## Deferred
 
-- [ ] Live production Kubernetes cluster provisioning
-- [ ] Provider-specific microVM platform rollout
+- [x] Live production Kubernetes cluster provisioning moved to `005-production-deployment-operations`
+- [x] Provider-specific microVM platform rollout moved to `005-production-deployment-operations`

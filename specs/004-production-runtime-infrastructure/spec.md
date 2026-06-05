@@ -45,8 +45,8 @@ planes safely.
 
 ## Acceptance
 
-- Entry-point docs identify `004-production-runtime-infrastructure` as the active
-  feature package.
+- Entry-point docs preserve `004-production-runtime-infrastructure` as the
+  completed runtime infrastructure baseline.
 - `003-production-ai-inference-runtime` remains linked and preserved as the
   completed AI inference baseline.
 - `002-production-scan-architecture` remains linked and preserved as the
