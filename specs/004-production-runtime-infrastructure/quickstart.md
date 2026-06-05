@@ -15,11 +15,17 @@ implementation-ready package while preserving the scanner-first pipeline,
 advisory-only AI boundary, and separated Control, Scan, AI, and Data/Security
 planes.
 
+`005-production-deployment-operations` is the active follow-up package for live
+production Kubernetes cluster provisioning and provider-specific microVM platform
+rollout.
+
 ## Canonical Use
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
-- This package is the active implementation target for production runtime
-  infrastructure work.
+- This package is the completed implementation baseline for production runtime
+  infrastructure work before `005-production-deployment-operations`.
+- `005-production-deployment-operations` is the active follow-up package for
+  production deployment operations.
 - `003-production-ai-inference-runtime` remains the completed production AI
   inference baseline.
 - `002-production-scan-architecture` remains the completed production scan

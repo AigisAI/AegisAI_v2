@@ -13,3 +13,4 @@
 - [x] Scanner sandbox provisioning forbids package install/build, dynamic testing, direct source upload, and auto-fix PR/MR flows.
 - [x] Runtime infrastructure work is split into issue-sized package, manifest, autoscaling, and sandbox slices.
 - [x] Completion validation points to quickstart and CI rather than duplicating command checklists in README.
+- [x] Live production Kubernetes and provider-specific microVM rollout follow-up is moved to `005-production-deployment-operations`.

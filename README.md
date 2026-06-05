@@ -8,11 +8,11 @@ and separates Control, Scan, AI, and Data/Security planes.
 
 | Signal | Current Position |
 | --- | --- |
-| Active milestone | [`004-production-runtime-infrastructure`](./specs/004-production-runtime-infrastructure/) |
-| Canonical start | [`AGENTS.md`](./AGENTS.md) -> [`quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md) |
+| Active milestone | [`005-production-deployment-operations`](./specs/005-production-deployment-operations/) |
+| Canonical start | [`AGENTS.md`](./AGENTS.md) -> [`quickstart.md`](./specs/005-production-deployment-operations/quickstart.md) |
 | Product baseline | `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx` |
-| Runtime posture | Kubernetes-compatible plane separation; Oracle VPS remains dev/demo only |
-| Validation source | [`quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md) and [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) |
+| Runtime posture | Production Kubernetes and microVM rollout guardrails; Oracle VPS remains dev/demo only |
+| Validation source | [`quickstart.md`](./specs/005-production-deployment-operations/quickstart.md) and [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) |
 
 ## Start Here
 
@@ -25,13 +25,13 @@ AGENTS.md -> quickstart.md -> active feature docs
 Expanded current path:
 
 ```text
-AGENTS.md -> specs/004-production-runtime-infrastructure/quickstart.md -> active feature docs
+AGENTS.md -> specs/005-production-deployment-operations/quickstart.md -> active feature docs
 ```
 
 When using Spec Kit helpers from a GitHub-style branch:
 
 ```powershell
-$env:SPECIFY_FEATURE = "004-production-runtime-infrastructure"
+$env:SPECIFY_FEATURE = "005-production-deployment-operations"
 ```
 
 ## Product Shape
@@ -51,25 +51,26 @@ decisions, and exposes results through dashboards and PR/MR comments.
 ## Current Baseline
 
 The active implementation target is
-[`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/).
+[`specs/005-production-deployment-operations/`](./specs/005-production-deployment-operations/).
 Start from its
-[`quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md), not from
+[`quickstart.md`](./specs/005-production-deployment-operations/quickstart.md), not from
 `tasks.md` directly.
 
 | Area | Status |
 | --- | --- |
-| Runtime infrastructure | Active 004 milestone |
-| Kubernetes AI Plane manifests | Skeletons and guardrail tests in scope |
-| Runtime autoscaling | Policy skeletons for latency, queue pressure, provider health, fallback, CPU, memory, and tenant-aware audit signals |
-| Scanner sandbox provisioning | microVM-backed contract skeletons in scope |
+| Deployment operations | Active 005 milestone |
+| Production cluster provisioning | Provider-neutral contract and credential-boundary guardrails in scope |
+| Provider microVM rollout | Provider-neutral rollout contract and scanner isolation guardrails in scope |
+| Runtime infrastructure | Completed baseline in [`004-production-runtime-infrastructure`](./specs/004-production-runtime-infrastructure/) |
 | Production AI inference | Completed baseline in [`003-production-ai-inference-runtime`](./specs/003-production-ai-inference-runtime/) |
 | Production scan architecture | Completed baseline in [`002-production-scan-architecture`](./specs/002-production-scan-architecture/) |
 | Legacy MVP | Historical baseline in [`001-aegisai-mvp-foundation`](./specs/001-aegisai-mvp-foundation/) and [`spec 2.2.md`](./spec%202.2.md) |
 
-Deferred work remains explicit: live production Kubernetes cluster provisioning,
-provider-specific microVM platform rollout, production cluster credentials as local
-development defaults, customer code execution, package installation, repository builds,
-dynamic testing, and direct source upload.
+The 005 package moves live production Kubernetes cluster provisioning and
+provider-specific microVM platform rollout into explicit operations planning.
+Actual provider execution and production credentials remain deferred until an
+operator-approved rollout task. Production cluster credentials must not become
+local development defaults.
 
 ## Architecture
 
@@ -105,7 +106,8 @@ Docker Compose are retained for dev/demo operation only.
 | [`apps/ai/`](./apps/ai/) | AI Plane service runtime and model gateway boundaries |
 | [`apps/web/`](./apps/web/) | React/Vite frontend |
 | [`packages/shared/`](./packages/shared/) | Shared TypeScript contracts and helpers |
-| [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/) | Active production runtime infrastructure package |
+| [`specs/005-production-deployment-operations/`](./specs/005-production-deployment-operations/) | Active production deployment operations package |
+| [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/) | Completed production runtime infrastructure baseline |
 | [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/) | Completed production AI inference baseline |
 | [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/) | Completed production scan architecture baseline |
 | [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) | Legacy MVP package retained for historical reference |
@@ -157,7 +159,7 @@ Environment examples:
 ## Validation
 
 Use the completion flow and command list in
-[`specs/004-production-runtime-infrastructure/quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md).
+[`specs/005-production-deployment-operations/quickstart.md`](./specs/005-production-deployment-operations/quickstart.md).
 GitHub Actions runs the authoritative CI steps in
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
 
@@ -165,12 +167,12 @@ Before claiming the 004 milestone complete, confirm:
 
 | Check | Expected State |
 | --- | --- |
-| Entrypoints | `AGENTS.md`, `README.md`, and [`docs/github-conventions.md`](./docs/github-conventions.md) point to `004-production-runtime-infrastructure` |
-| Completed baselines | `003-production-ai-inference-runtime` and `002-production-scan-architecture` remain available |
+| Entrypoints | `AGENTS.md`, `README.md`, and [`docs/github-conventions.md`](./docs/github-conventions.md) point to `005-production-deployment-operations` |
+| Completed baselines | `004-production-runtime-infrastructure`, `003-production-ai-inference-runtime`, and `002-production-scan-architecture` remain available |
 | Legacy baseline | `001-aegisai-mvp-foundation` and `spec 2.2.md` remain available as historical references |
 | Deployment wording | Oracle VPS stays dev/demo only |
-| AI runtime | Kubernetes AI Plane deployment preserves advisory-only AI boundaries |
-| Scanner runtime | Sandbox provisioning does not permit package install/build, dynamic testing, direct source upload, or AI access to full repositories |
+| Credential boundary | Provider credentials are not introduced as local development defaults |
+| Runtime boundary | Production Kubernetes and microVM rollout preserve separated plane boundaries |
 
 The legacy MVP hardening review remains available only for tasks that explicitly touch the
 shipped MVP baseline:
@@ -245,13 +247,14 @@ The repository follows [`docs/github-conventions.md`](./docs/github-conventions.
 When documents disagree, resolve intent in this order:
 
 1. [`AGENTS.md`](./AGENTS.md)
-2. [`specs/004-production-runtime-infrastructure/quickstart.md`](./specs/004-production-runtime-infrastructure/quickstart.md)
+2. [`specs/005-production-deployment-operations/quickstart.md`](./specs/005-production-deployment-operations/quickstart.md)
 3. `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`
-4. [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/)
-5. [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/)
-6. [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/)
-7. [`docs/github-conventions.md`](./docs/github-conventions.md)
-8. Legacy references:
+4. [`specs/005-production-deployment-operations/`](./specs/005-production-deployment-operations/)
+5. [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/)
+6. [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/)
+7. [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/)
+8. [`docs/github-conventions.md`](./docs/github-conventions.md)
+9. Legacy references:
    [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) and
    [`spec 2.2.md`](./spec%202.2.md)
 
