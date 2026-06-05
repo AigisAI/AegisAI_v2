@@ -59,3 +59,68 @@ test('deployment credential contracts cannot become local defaults or repository
     assert.doesNotMatch(contract, new RegExp(`\\b${forbiddenField}\\b`, 'i'));
   }
 });
+
+test('microVM rollout contracts preserve scanner sandbox isolation boundaries', () => {
+  assert.equal(existsSync(contractFile), true);
+
+  const contract = readContract();
+
+  for (const exportName of [
+    'MICROVM_ISOLATION_CLASSES',
+    'SCANNER_SANDBOX_FORBIDDEN_CAPABILITIES',
+    'MicroVmPlatformRollout',
+    'isMicroVmPlatformRolloutBoundaryValid'
+  ]) {
+    assert.match(contract, new RegExp(`export (interface|const|type|function) ${exportName}\\b`));
+  }
+
+  for (const requiredField of [
+    'scannerSandboxProfileRef',
+    'tokenBrokerRef',
+    'evidenceStorageRef',
+    'egressPolicyRef',
+    'ttlSeconds'
+  ]) {
+    assert.match(contract, new RegExp(`\\b${requiredField}\\b`));
+  }
+
+  assert.match(contract, /isolationClass:\s*MicroVmIsolationClass/);
+  assert.match(contract, /'HARDENED'/);
+  assert.match(contract, /'RESTRICTED'/);
+
+  for (const forbiddenCapability of [
+    'PACKAGE_INSTALL',
+    'CUSTOMER_REPOSITORY_BUILD',
+    'DYNAMIC_TEST_EXECUTION',
+    'DIRECT_SOURCE_UPLOAD',
+    'AUTO_FIX_PULL_REQUEST'
+  ]) {
+    assert.match(contract, new RegExp(`'${forbiddenCapability}'`));
+  }
+});
+
+test('microVM rollout contracts keep AI plane away from repository and raw scanner inputs', () => {
+  assert.equal(existsSync(contractFile), true);
+
+  const contract = readContract();
+
+  for (const exportName of [
+    'AI_PLANE_FORBIDDEN_DIRECT_INPUTS',
+    'AiPlaneRepositoryAccessBoundary',
+    'doesAiPlaneInputRespectRepositoryGuardrails'
+  ]) {
+    assert.match(contract, new RegExp(`export (interface|const|type|function) ${exportName}\\b`));
+  }
+
+  for (const forbiddenInput of [
+    'SCM_CREDENTIAL',
+    'FULL_REPOSITORY',
+    'SOURCE_ARCHIVE',
+    'RAW_SCANNER_PAYLOAD'
+  ]) {
+    assert.match(contract, new RegExp(`'${forbiddenInput}'`));
+  }
+
+  assert.match(contract, /advisoryOnly:\s*true/);
+  assert.match(contract, /receivesReducedEvidenceOnly:\s*true/);
+});

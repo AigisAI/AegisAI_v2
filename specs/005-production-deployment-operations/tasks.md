@@ -14,8 +14,8 @@
 
 ## Phase 3: Provider microVM Rollout Contract Slice
 
-- [ ] T007 Add provider-neutral microVM platform rollout contract in shared package
-- [ ] T008 Add tests proving scanner isolation and AI repository access guardrails remain enforced
+- [x] T007 Add provider-neutral microVM platform rollout contract in shared package
+- [x] T008 Add tests proving scanner isolation and AI repository access guardrails remain enforced
 
 ## Deferred
 
