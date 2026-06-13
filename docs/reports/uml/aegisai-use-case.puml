@@ -1,0 +1,112 @@
+@startuml
+title AegisAI Target System - Use Case Diagram
+
+left to right direction
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 12
+skinparam linetype ortho
+skinparam ArrowColor #334155
+skinparam ActorBorderColor #1F2937
+skinparam ActorFontColor #111827
+skinparam UsecaseBorderColor #334155
+skinparam UsecaseBackgroundColor #FFFFFF
+skinparam UsecaseFontColor #111827
+skinparam PackageBorderColor #475569
+
+actor "Tenant\nAdministrator" as TenantAdmin
+actor "Security\nEngineer" as SecurityEngineer
+actor "GitHub Cloud /\nGitLab Cloud" as SCM <<external system>>
+actor "Deployment\nOperator" as DeploymentOperator
+
+rectangle "AegisAI Security Scan SaaS" {
+  package "Repository Management" as RepositoryArea #E8F1FB {
+    usecase "Manage SCM\nIntegration" as UC_Integration
+    usecase "Bind Repository" as UC_Bind
+    usecase "Validate Repository,\nRef, and Commit" as UC_Validate
+    UC_Integration -[hidden]down- UC_Bind
+    UC_Bind -[hidden]down- UC_Validate
+  }
+
+  package "Scan and Review" as ScanArea #EAF7EE {
+    usecase "Request Security Scan" as UC_Request
+    usecase "Execute Deterministic\nSecurity Scanners" as UC_Scan
+    usecase "Monitor Scan Status" as UC_Monitor
+    usecase "Review Findings\nand Evidence" as UC_Review
+    usecase "Receive Advisory\nAI Analysis" as UC_AI
+    UC_Request -[hidden]down- UC_Scan
+    UC_Scan -[hidden]down- UC_Monitor
+    UC_Monitor -[hidden]down- UC_Review
+    UC_Review -[hidden]down- UC_AI
+  }
+
+  package "Governance" as GovernanceArea #FFF4E5 {
+    usecase "Evaluate Security Policy" as UC_Policy
+    usecase "Manage Waiver\nand Suppression" as UC_Exception
+    usecase "Publish Approved\nSecurity Feedback" as UC_Publish
+    usecase "Audit Security and\nDeployment Operations" as UC_Audit
+    UC_Policy -[hidden]down- UC_Exception
+    UC_Exception -[hidden]down- UC_Publish
+    UC_Publish -[hidden]down- UC_Audit
+  }
+
+  package "Production Deployment" as DeploymentArea #F3E8FF {
+    usecase "Prepare Deployment\nPreflight" as UC_Preflight
+    usecase "Approve Deployment\nHandoff" as UC_Handoff
+    usecase "Execute Production\nProvisioning" as UC_Provision
+    usecase "Roll Back Failed\nDeployment" as UC_Rollback
+    UC_Preflight -[hidden]down- UC_Handoff
+    UC_Handoff -[hidden]down- UC_Provision
+    UC_Provision -[hidden]down- UC_Rollback
+  }
+
+  RepositoryArea -[hidden]right- ScanArea
+  ScanArea -[hidden]right- GovernanceArea
+  GovernanceArea -[hidden]right- DeploymentArea
+}
+
+TenantAdmin --> UC_Integration
+TenantAdmin --> UC_Bind
+TenantAdmin --> UC_Exception
+TenantAdmin --> UC_Audit
+
+SecurityEngineer --> UC_Request
+SecurityEngineer --> UC_Monitor
+SecurityEngineer --> UC_Review
+
+SCM --> UC_Integration
+SCM --> UC_Validate
+SCM --> UC_Publish
+
+DeploymentOperator --> UC_Preflight
+DeploymentOperator --> UC_Handoff
+DeploymentOperator --> UC_Provision
+DeploymentOperator --> UC_Rollback
+DeploymentOperator --> UC_Audit
+
+UC_Bind .> UC_Integration : <<include>>
+UC_Bind .> UC_Validate : <<include>>
+UC_Request .> UC_Validate : <<include>>
+UC_Request .> UC_Scan : <<include>>
+UC_AI .> UC_Scan : <<extend>>\n[eligible reduced evidence]
+UC_Review .> UC_Monitor : <<include>>
+UC_Publish .> UC_Policy : <<include>>
+UC_Exception .> UC_Policy : <<extend>>\n[approved exception]
+UC_Provision .> UC_Preflight : <<include>>
+UC_Provision .> UC_Handoff : <<include>>
+UC_Rollback .> UC_Provision : <<extend>>\n[validation failure]
+
+note bottom of UC_AI
+  Advisory-only: no authoritative finding,
+  SCM credential, or policy override authority.
+end note
+
+note bottom of UC_Provision
+  Live execution requires explicit provider inputs,
+  reference-only credentials, approvals,
+  an execution window, and a rollback plan.
+end note
+
+@enduml

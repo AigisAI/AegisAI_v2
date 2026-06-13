@@ -1,0 +1,142 @@
+@startuml
+title AegisAI Target System - Security Scan Execution Sequence
+
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 12
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 70
+skinparam ParticipantBorderColor #334155
+skinparam ParticipantBackgroundColor #F8FAFC
+skinparam LifeLineBorderColor #64748B
+skinparam LifeLineBackgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam NoteBorderColor #64748B
+skinparam NoteBackgroundColor #FFFBEB
+
+autonumber
+
+actor "Security Engineer" as Engineer
+boundary "Web Dashboard" as Web
+
+box "Control Plane" #E8F1FB
+control "Control Plane API" as API
+control "Scan Planner" as Planner
+control "Token Broker" as Broker
+control "Policy Engine" as Policy
+end box
+
+box "Data & Security Plane" #FFF4E5
+queue "Queue / Event Bus" as Queue
+database "Findings Store" as Findings
+database "Audit Store" as Audit
+end box
+
+box "Scan Plane" #EAF7EE
+control "Sandbox Provisioner" as Sandbox
+participant "Scanner Adapters\n(Opengrep / Trivy / Syft)" as Scanners
+control "Finding Normalizer" as Normalizer
+control "Evidence Pack Builder" as Evidence
+end box
+
+box "AI Plane" #F3E8FF
+control "AI Inference Gateway" as AI
+end box
+
+Engineer -> Web : Request scan for repository, ref, and commit
+Web -> API : POST /scan-requests
+activate API
+API -> API : Authenticate tenant and validate repository binding
+API -> Planner : Build canonical scan key
+activate Planner
+
+alt Duplicate active canonical scan
+  Planner --> API : Existing scan request reference
+  API --> Web : 409 Conflict / existing scan status
+  Web --> Engineer : Display active scan
+else New canonical scan
+  Planner -> Audit : Record scan request metadata
+  Planner -> Queue : Enqueue fixed-target scan
+  Planner --> API : Accepted scan request
+  API --> Web : 202 Accepted with scanRequestId
+  deactivate Planner
+  deactivate API
+
+  Queue -> Sandbox : Provision hardened ephemeral microVM
+  activate Sandbox
+
+  alt Isolation requirements cannot be satisfied
+    Sandbox -> Audit : Record failed isolation validation
+    Sandbox -> Findings : Mark scan as failed safely
+  else Hardened sandbox ready
+    Sandbox -> Broker : Request short-lived read credential\n(tenant, repository, scan, commit, TTL)
+    activate Broker
+    Broker -> Audit : Record issuance metadata without secret value
+    Broker --> Sandbox : Runtime-only credential reference
+    deactivate Broker
+
+    Sandbox -> Sandbox : Fetch fixed commit and enforce\npath, size, symlink, and egress limits
+    Sandbox -> Scanners : Execute deterministic scanners\nin read-only workspace
+    activate Scanners
+    Scanners --> Sandbox : Scanner artifacts and run metadata
+    deactivate Scanners
+
+    Sandbox -> Normalizer : Submit scanner artifacts
+    activate Normalizer
+    Normalizer -> Normalizer : Validate, redact, normalize,\ncorrelate, and deduplicate
+    Normalizer -> Findings : Persist authoritative findings
+    Normalizer -> Evidence : Build reduced evidence metadata
+    deactivate Normalizer
+
+    Evidence -> Evidence : Remove credentials, full source,\nand raw unbounded payloads
+
+    opt Java detailed profile and AI-eligible finding
+      Evidence -> AI : AiInferenceRequest with reduced evidence only
+      activate AI
+      alt AI runtime available and response is valid
+        AI -> AI : Detector / planner advisory inference
+        AI --> Evidence : Advisory response with confidence
+      else AI unavailable, timeout, or forbidden response
+        AI --> Evidence : Deterministic-only fallback
+      end
+      AI -> Audit : Record inference metadata and fallback state
+      deactivate AI
+    end
+
+    Evidence -> Policy : Deterministic findings + optional advisory context
+    activate Policy
+    Policy -> Findings : Persist authoritative policy decision
+    Policy -> Audit : Record decision and reason codes
+
+    alt Policy, freshness, and coverage checks pass
+      Policy --> Sandbox : Publication allowed
+    else Publication blocked or suppressed
+      Policy --> Sandbox : Dashboard-only / suppressed result
+    end
+    deactivate Policy
+
+    Sandbox -> Audit : Record sandbox completion and cleanup
+    Sandbox -> Sandbox : Destroy microVM and expire credential
+  end
+  deactivate Sandbox
+
+  Engineer -> Web : Open scan result
+  Web -> API : GET /scan-requests/{id} and /findings
+  activate API
+  API -> Findings : Read tenant-scoped status, findings, and evidence metadata
+  Findings --> API : Report data
+  API --> Web : Security scan report
+  deactivate API
+  Web --> Engineer : Display findings and advisory context
+end
+
+note over Scanners,AI
+  Deterministic scanner findings remain authoritative.
+  The AI Plane receives reduced, redacted evidence only
+  and cannot access SCM or override policy.
+end note
+
+@enduml

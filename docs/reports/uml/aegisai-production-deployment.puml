@@ -1,0 +1,136 @@
+@startuml
+title AegisAI Target System - Production Deployment Diagram
+
+left to right direction
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 12
+skinparam linetype ortho
+skinparam ArrowColor #334155
+skinparam NodeBorderColor #334155
+skinparam NodeBackgroundColor #F8FAFC
+skinparam ComponentBorderColor #334155
+skinparam ComponentBackgroundColor #FFFFFF
+skinparam DatabaseBorderColor #334155
+skinparam NoteBorderColor #64748B
+skinparam NoteBackgroundColor #FFFBEB
+
+actor "Deployment Operator" as Operator
+node "User Device\n<<device>>" as UserDevice
+cloud "GitHub Cloud /\nGitLab Cloud" as SCM
+artifact "Validated Deployment\nHandoff Manifest" as Handoff
+
+node "Production Kubernetes Environment\n<<provider-neutral cluster>>" as K8s {
+  node "Control Plane Namespace\n<<trust boundary>>" as ControlNS #E8F1FB {
+    component "Ingress & Control API" as ControlAPI
+    component "Scan Planner &\nToken Broker" as PlannerBroker
+    component "Policy Engine &\nPublisher" as PolicyPublisher
+  }
+
+  node "Data & Security Namespace\n<<restricted trust boundary>>" as DataNS #FFF4E5 {
+    queue "Queue / Event Bus" as Queue
+    component "Audit Exporter" as AuditExporter
+  }
+
+  node "Scan Plane Namespace\n<<private trust boundary>>" as ScanNS #EAF7EE {
+    component "Scan Orchestrator" as ScanOrchestrator
+    component "Sandbox Provisioner" as SandboxProvisioner
+    component "Normalizer &\nEvidence Builder" as ScanResults
+  }
+
+  node "AI Plane Namespace\n<<private trust boundary>>" as AINS #F3E8FF {
+    component "Inference Gateway &\nPrompt Guard" as InferenceGateway
+    component "Advisory Detector /\nPlanner Runtime" as AIRuntime
+  }
+
+  ControlNS -[hidden]right- DataNS
+  ScanNS -[hidden]right- AINS
+  ControlNS -[hidden]down- ScanNS
+  DataNS -[hidden]down- AINS
+}
+
+node "Provider-Specific Hardened microVM Platform" as MicroVMPlatform #EAF7EE {
+  node "Ephemeral Scanner microVM\n<<HARDENED / RESTRICTED>>" as ScannerVM {
+    component "Repository Fetch Worker" as FetchWorker
+    artifact "Read-Only Fixed\nCommit Workspace" as Workspace
+    component "Opengrep / Trivy / Syft" as ScannerSet
+  }
+}
+
+cloud "Managed Data & Security Services" as ManagedServices {
+  database "Tenant-Aware\nFindings Database" as FindingsDB
+  artifact "Evidence Object Storage\n<<TTL enforced>>" as ObjectStore
+  component "KMS, External Secrets Manager\n& Ephemeral OIDC Federation" as SecurityServices
+  database "Immutable Audit Sink" as AuditSink
+  artifact "Signed Rule & Vulnerability\nDatabase Mirrors" as Mirrors
+}
+
+Operator --> Handoff : approve execution window
+Handoff --> K8s : approved cluster provisioning
+Handoff --> MicroVMPlatform : approved platform rollout
+
+UserDevice --> ControlAPI : HTTPS / TLS
+SCM --> ControlAPI : signed webhooks
+PolicyPublisher --> SCM : approved feedback
+
+ControlAPI --> PlannerBroker : scan request
+PlannerBroker --> Queue : canonical scan event
+Queue --> ScanOrchestrator : private event delivery
+ScanOrchestrator --> SandboxProvisioner : provision isolated runtime
+SandboxProvisioner --> MicroVMPlatform : create scan microVM
+
+SecurityServices --> PlannerBroker : reference-only credentials
+PlannerBroker --> FetchWorker : short-lived read credential
+FetchWorker --> SCM : fixed commit fetch only
+Workspace --> ScannerSet : read-only input
+Mirrors --> ScannerSet : signed scanner data
+ScannerSet --> ScanResults : scanner artifacts
+
+ScanResults --> FindingsDB : normalized findings
+ScanResults --> ObjectStore : reduced evidence pack
+ScanResults --> InferenceGateway : reduced evidence only
+InferenceGateway --> AIRuntime : bounded advisory request
+AIRuntime --> PolicyPublisher : advisory context only
+FindingsDB --> PolicyPublisher : authoritative findings
+
+AuditExporter --> AuditSink : append-only audit stream
+
+note bottom of K8s
+  Four namespaces preserve explicit trust boundaries.
+  East-west traffic is private and policy-controlled.
+end note
+
+note bottom of ScannerVM
+  Stronger-than-pod isolation.
+  No package installation, repository build, dynamic tests,
+  direct source upload, or persistent workspace.
+end note
+
+note bottom of AINS
+  No network path to SCM and no SCM credentials.
+  Reduced evidence only; no finding or policy authority.
+end note
+
+note right of AuditExporter
+  Control, scan, AI, and policy operations
+  emit metadata-only audit signals.
+  Secret values and repository payloads are forbidden.
+end note
+
+note top of Handoff
+  References only: approvals, KMS, secret manager, object storage,
+  DNS, execution window, rollback plan, incident channel,
+  dry-run evidence, and change ticket.
+end note
+
+legend bottom
+  |= Color |= Trust boundary |
+  |<#E8F1FB>| Control Plane |
+  |<#EAF7EE>| Scan Plane |
+  |<#F3E8FF>| AI Plane |
+  |<#FFF4E5>| Data & Security Plane |
+endlegend
+
+@enduml

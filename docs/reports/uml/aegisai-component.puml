@@ -1,0 +1,82 @@
+@startuml
+title AegisAI Target System - Component Diagram
+
+top to bottom direction
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 12
+skinparam componentStyle uml2
+skinparam ArrowColor #334155
+skinparam PackageBorderColor #475569
+skinparam ComponentBorderColor #334155
+skinparam ComponentBackgroundColor #FFFFFF
+skinparam DatabaseBorderColor #334155
+
+actor "Tenant User" as User
+component "Web Dashboard" as Web
+cloud "GitHub Cloud /\nGitLab Cloud" as SCM
+
+package "Control Plane" #E8F1FB {
+  component "Control Plane API" as API
+  component "Authentication &\nRepository Registry" as IdentityRegistry
+  component "Scan Planner &\nToken Broker" as PlanningBroker
+  component "Policy Engine &\nComment Publisher" as Governance
+
+  API -right-> IdentityRegistry : tenant and binding checks
+  API -down-> PlanningBroker : create canonical scan
+  API -left-> Governance : findings and decisions
+}
+
+package "Data & Security Plane" #FFF4E5 {
+  queue "Queue / Event Bus" as Queue
+  component "Security Services\n(KMS, Secrets Manager)" as SecurityServices
+  database "Persistent Stores\n(Findings DB, Evidence TTL,\nAudit Log)" as Stores
+  artifact "Rule & Vulnerability\nDatabase Mirrors" as Mirrors
+}
+
+package "Scan Plane" #EAF7EE {
+  component "Sandbox Provisioner &\nRepository Fetch Worker" as Sandbox
+  component "Scanner Adapter Set\n(Opengrep / Trivy / Syft)" as ScannerSet
+  component "Finding Normalizer,\nCorrelator & Evidence Builder" as ScanResults
+
+  Sandbox -right-> ScannerSet : read-only workspace
+  ScannerSet -right-> ScanResults : scanner artifacts
+}
+
+package "AI Plane" #F3E8FF {
+  component "Inference Gateway &\nPrompt Guard" as AIGateway
+  component "Advisory Detector /\nPlanner Runtime" as AdvisoryRuntime
+
+  AIGateway -right-> AdvisoryRuntime : bounded request
+  AdvisoryRuntime -left-> AIGateway : advisory response
+}
+
+User -down-> Web : HTTPS
+Web -down-> API : REST API
+SCM -left-> API : signed webhooks
+
+PlanningBroker -down-> Queue : enqueue scan
+PlanningBroker -down-> SecurityServices : credential reference
+Queue -down-> Sandbox : isolated scan work
+PlanningBroker -down-> Sandbox : short-lived read credential
+Sandbox -left-> SCM : fixed commit fetch
+Mirrors -down-> ScannerSet : signed scanner data
+
+ScanResults -up-> Stores : authoritative findings,\nredacted evidence, audit metadata
+ScanResults -down-> AIGateway : reduced evidence only
+AIGateway -up-> Governance : advisory context only
+Stores -up-> Governance : deterministic findings
+Governance -right-> SCM : policy-approved feedback
+SecurityServices -right-> Stores : encryption key references
+
+legend bottom
+  |= Boundary |= Responsibility and constraint |
+  |<#E8F1FB> Control Plane | Tenant, integration, planning, credentials, policy, and publication |
+  |<#EAF7EE> Scan Plane | Hardened ephemeral microVM; no install, build, dynamic test, or customer code execution |
+  |<#F3E8FF> AI Plane | Reduced evidence only; no SCM access, finding authority, or policy override |
+  |<#FFF4E5> Data & Security Plane | Tenant-aware persistence, TTL evidence, KMS, secrets, mirrors, and audit |
+endlegend
+
+@enduml
