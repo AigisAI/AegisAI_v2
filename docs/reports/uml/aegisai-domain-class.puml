@@ -1,0 +1,71 @@
+@startuml aegisai-domain-class
+' AegisAI 도메인 클래스 다이어그램 (정적 구조 모델)
+hide circle
+skinparam classAttributeIconSize 0
+skinparam linetype polyline
+
+class Tenant {
+  + id
+  + name
+  + plan
+}
+class Integration {
+  + id
+  + provider
+  + repoRef
+  + status
+}
+class ScanJob {
+  + id
+  + commitRef
+  + status
+  + createdAt
+}
+class Finding {
+  + id
+  + scanner
+  + severity
+  + cwe
+  + location
+}
+class EvidencePack {
+  + id
+  + abridged
+  + deidentified
+}
+class AdvisoryResult {
+  + id
+  + priority
+  + suggestion
+}
+class SecurityOntology <<Neo4j>> {
+  + concept (CWE, CAPEC)
+  + relation
+  + mitigation
+  + source
+}
+class PolicyDecision {
+  + id
+  + verdict
+  + reason
+}
+class AuditLog {
+  + id
+  + action
+  + actor
+  + timestamp
+}
+
+Tenant "1" *-- "0..*" Integration
+Tenant "1" *-- "0..*" ScanJob
+ScanJob "1" *-- "0..*" Finding
+ScanJob "1" *-- "1" EvidencePack
+ScanJob "1" *-- "1" PolicyDecision
+EvidencePack "1" *-- "0..*" AdvisoryResult
+AdvisoryResult ..> SecurityOntology : grounded via GraphRAG
+ScanJob ..> AuditLog : logs actions
+note top of AuditLog
+  주요 행위(통합, 스캔, 정책 판단)는
+  AuditLog에 기록된다
+end note
+@enduml

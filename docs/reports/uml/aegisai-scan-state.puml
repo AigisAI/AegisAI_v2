@@ -1,0 +1,20 @@
+@startuml aegisai-scan-state
+' 스캔 작업(ScanJob) 생애주기 상태 다이어그램
+[*] --> Requested
+Requested --> Authorized : authz ok
+Requested --> Failed : authz denied
+Authorized --> Scanning : sandbox up
+Scanning --> Analyzed : scanners done\n+ evidence reduced
+Scanning --> Failed : scan error /\nsandbox timeout
+Analyzed --> PolicyReview : advisory ready
+PolicyReview --> Published : approved
+PolicyReview --> Suppressed : blocked by policy
+Published --> [*]
+Suppressed --> [*]
+Failed --> [*]
+
+state Authorized : short-lived token
+state Scanning : isolated sandbox
+state Analyzed : evidence + AI advisory
+state PolicyReview : policy gate
+@enduml
