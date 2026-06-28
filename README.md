@@ -10,7 +10,7 @@ and separates Control, Scan, AI, and Data/Security planes.
 | --- | --- |
 | Active milestone | [`005-production-deployment-operations`](./specs/005-production-deployment-operations/) |
 | Canonical start | [`AGENTS.md`](./AGENTS.md) -> [`quickstart.md`](./specs/005-production-deployment-operations/quickstart.md) |
-| Product baseline | `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx` |
+| Product baseline | Security Scan SaaS final specification (private product baseline) |
 | Runtime posture | Production Kubernetes and microVM rollout guardrails; Oracle VPS remains dev/demo only |
 | Validation source | [`quickstart.md`](./specs/005-production-deployment-operations/quickstart.md) and [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) |
 
@@ -218,7 +218,7 @@ Required GitHub secrets:
 | `GHCR_USERNAME` | GHCR login username |
 | `GHCR_READ_TOKEN` | GHCR read token |
 
-Optional production secret:
+Optional notification secret:
 
 | Secret | Purpose |
 | --- | --- |
@@ -248,7 +248,7 @@ When documents disagree, resolve intent in this order:
 
 1. [`AGENTS.md`](./AGENTS.md)
 2. [`specs/005-production-deployment-operations/quickstart.md`](./specs/005-production-deployment-operations/quickstart.md)
-3. `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`
+3. Security Scan SaaS final specification (private product baseline)
 4. [`specs/005-production-deployment-operations/`](./specs/005-production-deployment-operations/)
 5. [`specs/004-production-runtime-infrastructure/`](./specs/004-production-runtime-infrastructure/)
 6. [`specs/003-production-ai-inference-runtime/`](./specs/003-production-ai-inference-runtime/)

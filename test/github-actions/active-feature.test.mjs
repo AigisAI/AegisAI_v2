@@ -44,6 +44,8 @@ test('production deployment operations is the active feature package', () => {
   assert.match(agents, /005-production-deployment-operations/);
   assert.match(agents, /Security Scan SaaS Final Specification\.docx/);
   assert.match(readme, /005-production-deployment-operations/);
+  assert.doesNotMatch(readme, /C:\\Users\\/);
+  assert.doesNotMatch(readme, /Optional production secret/);
   assert.match(conventions, /SPECIFY_FEATURE = "005-production-deployment-operations"/);
 
   assert.match(quickstart, /Security Scan SaaS Final Specification\.docx/);
