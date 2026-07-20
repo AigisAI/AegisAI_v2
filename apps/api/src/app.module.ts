@@ -1,17 +1,17 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { ThrottlerModule, seconds } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AiPlaneModule } from './ai-plane/ai-plane.module';
-import { AuthModule } from './auth/auth.module';
 import { AnalysisApiModule } from './client/analysis/analysis-api.module';
 import { GitClientModule } from './client/git/git-client.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { SessionAwareThrottlerGuard } from './common/guards/session-aware-throttler.guard';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
+import { SecurityModule } from './common/security/security.module';
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
 import { ControlPlaneModule } from './control-plane/control-plane.module';
@@ -45,15 +45,19 @@ const runtimeFeatureModules = [ScanModule, HealthModule, ReportModule];
         }
       })
     }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: seconds(60),
-        limit: 60
-      }
-    ]),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          name: 'default',
+          ttl: config.get('THROTTLE_TTL_MS'),
+          limit: config.get('THROTTLE_LIMIT')
+        }
+      ]
+    }),
     PrismaModule,
-    AuthModule,
+    SecurityModule,
     RepoModule,
     DashboardModule,
     VulnerabilityModule,

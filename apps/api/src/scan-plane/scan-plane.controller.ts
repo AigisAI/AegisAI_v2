@@ -1,24 +1,30 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 
+import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
+import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
+import { InternalServiceGuard } from '../common/security/internal-service.guard';
+import { RunMockScanPlaneDto, RunSandboxScannersDto, ScanArtifactsQueryDto } from './scan-plane.dto';
 import { ScanPlaneService } from "./scan-plane.service";
-import type { RunMockScanPlaneInput, RunSandboxScannersInput } from "./scan-plane.types";
 
 @Controller("scan-plane")
 export class ScanPlaneController {
   constructor(private readonly scanPlaneService: ScanPlaneService) {}
 
   @Post("mock-runs")
-  runMockPipeline(@Body() body: RunMockScanPlaneInput) {
+  @UseGuards(InternalServiceGuard)
+  runMockPipeline(@Body() body: RunMockScanPlaneDto) {
     return this.scanPlaneService.runMockPipeline(body);
   }
 
   @Post("scanner-runs/execute")
-  runSandboxScanners(@Body() body: RunSandboxScannersInput) {
+  @UseGuards(InternalServiceGuard)
+  runSandboxScanners(@Body() body: RunSandboxScannersDto) {
     return this.scanPlaneService.runSandboxScanners(body);
   }
 
   @Get("scanner-runs")
-  listScannerRuns(@Query("tenantId") tenantId: string, @Query("scanRequestId") scanRequestId: string) {
-    return this.scanPlaneService.listScannerRuns(tenantId, scanRequestId);
+  @UseGuards(SessionAuthGuard)
+  listScannerRuns(@CurrentTenant() tenantId: string, @Query() query: ScanArtifactsQueryDto) {
+    return this.scanPlaneService.listScannerRuns(tenantId, query.scanRequestId);
   }
 }

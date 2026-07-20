@@ -361,6 +361,9 @@ export interface TokenBrokerIssueRequest {
   auditReason: string;
 }
 
+export const MAX_SCAN_CREDENTIAL_TTL_SECONDS = 10 * 60;
+export const MAX_EVIDENCE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 export interface AiAdvisoryRequest {
   tenantId: string;
   scanRequestId: string;
@@ -408,7 +411,7 @@ export interface EvidencePackMetadataInput {
 }
 
 export function buildCanonicalScanKey(input: CanonicalScanKeyInput): CanonicalScanKey {
-  return [
+  return ['v1',
     input.tenantId,
     input.repositoryBindingId,
     input.lane,
@@ -416,7 +419,7 @@ export function buildCanonicalScanKey(input: CanonicalScanKeyInput): CanonicalSc
     input.commitSha,
     input.policyVersion,
     input.scannerSetVersion
-  ].join(':');
+  ].map(encodeURIComponent).join(':');
 }
 
 export function buildCommentDispatchIdempotencyKey(input: CommentDispatchPlanRequest): string {
@@ -443,12 +446,24 @@ export function shouldEscalateIsolation(input: IsolationEscalationInput): boolea
 }
 
 export function createEvidencePackMetadata(input: EvidencePackMetadataInput): EvidencePack {
+  const expiresAt = new Date(input.expiresAt);
+  const ttlMs = expiresAt.getTime() - Date.now();
+
+  if (!Number.isFinite(expiresAt.getTime()) || ttlMs <= 0 || ttlMs > MAX_EVIDENCE_TTL_MS) {
+    throw new RangeError('Evidence expiry must be in the future and no more than seven days away.');
+  }
+
   return {
     id: input.id,
     tenantId: input.tenantId,
     scanRequestId: input.scanRequestId,
     classification: 'SHORT_LIVED_EVIDENCE',
-    objectKey: `${input.tenantId}/${input.scanRequestId}/evidence/${input.id}.json`,
+    objectKey: [
+      encodeURIComponent(input.tenantId),
+      encodeURIComponent(input.scanRequestId),
+      'evidence',
+      `${encodeURIComponent(input.id)}.json`
+    ].join('/'),
     expiresAt: input.expiresAt,
     byteSize: input.byteSize,
     redacted: input.redacted

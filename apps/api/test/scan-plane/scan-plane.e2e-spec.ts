@@ -1,6 +1,10 @@
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
+import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
+import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
+import { ControlPlaneService } from '../../src/control-plane/control-plane.service';
+import { TestInternalServiceGuard, TestSessionAuthGuard } from '../support/security-guards';
 
 describe("Scan Plane mock pipeline skeleton (e2e)", () => {
   let app: INestApplication;
@@ -10,8 +14,8 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
     process.env.PORT = "3000";
     process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/aegisai";
     process.env.REDIS_URL = "redis://localhost:6379";
-    process.env.SESSION_SECRET = "test-session-secret-value";
-    process.env.CSRF_SECRET = "test-csrf-secret-value";
+    process.env.SESSION_SECRET = "test-session-secret-value-at-least-32";
+    process.env.CSRF_SECRET = "test-csrf-secret-value-at-least-32";
     process.env.GITHUB_CLIENT_ID = "github-client-id";
     process.env.GITHUB_CLIENT_SECRET = "github-client-secret";
     process.env.GITLAB_CLIENT_ID = "gitlab-client-id";
@@ -37,6 +41,20 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
         onModuleDestroy: jest.fn().mockResolvedValue(undefined),
         $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }])
       })
+      .overrideProvider(ControlPlaneService)
+      .useValue({
+        getScanRequest: jest.fn((tenantId: string, scanRequestId: string) => ({
+          id: scanRequestId,
+          tenantId,
+          scannerSetVersion: ['scan_request_3', 'scan_request_4'].includes(scanRequestId)
+            ? 'scanner-set-v2'
+            : 'scanner-set-v1'
+        }))
+      })
+      .overrideGuard(SessionAuthGuard)
+      .useClass(TestSessionAuthGuard)
+      .overrideGuard(InternalServiceGuard)
+      .useClass(TestInternalServiceGuard)
       .compile();
 
     app = moduleRef.createNestApplication();

@@ -4,7 +4,7 @@ import type {
   PolicyDecision,
   PolicyEvaluationInput,
   ScannerKind
-} from "../../../../packages/shared/src";
+} from '@aegisai/shared';
 
 const REQUIRED_SCANNER_COVERAGE: ScannerKind[] = ["OPENGREP", "TRIVY", "SYFT"];
 

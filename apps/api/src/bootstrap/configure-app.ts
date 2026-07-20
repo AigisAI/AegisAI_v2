@@ -1,11 +1,35 @@
-import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { RedisStore } from 'connect-redis';
+import type { NextFunction, Request, Response } from 'express';
 import session from 'express-session';
+import helmet from 'helmet';
 import passport from 'passport';
 import { createClient, type RedisClientType } from 'redis';
 
 import { ConfigService } from '../config/config.service';
+import { csrfProtectionMiddleware } from '../common/security/csrf';
+
+const INTERNAL_CSRF_EXEMPT_PATHS = [
+  '/api/token-broker',
+  '/api/scan-plane',
+  '/api/policy-decisions/evaluate',
+  '/api/ai-advisories',
+  '/api/comment-dispatches',
+  '/api/webhooks'
+];
+const SENSITIVE_RESPONSE_PATHS = [
+  '/api/auth',
+  '/api/integrations',
+  '/api/repository-bindings',
+  '/api/scan-requests',
+  '/api/token-broker',
+  '/api/audit-events',
+  '/api/findings',
+  '/api/evidence',
+  '/api/policy-decisions',
+  '/api/ai-advisories'
+];
 
 export async function configureApp(app: INestApplication): Promise<void> {
   const config = app.get(ConfigService);
@@ -16,10 +40,10 @@ export async function configureApp(app: INestApplication): Promise<void> {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 86400000,
+      maxAge: config.get('SESSION_TTL_SECONDS') * 1000,
       httpOnly: true,
       sameSite: 'lax',
-      secure: 'auto',
+      secure: config.get('COOKIE_SECURE') === 'true',
       domain: config.getOptional('COOKIE_DOMAIN') || undefined
     }
   };
@@ -29,7 +53,12 @@ export async function configureApp(app: INestApplication): Promise<void> {
   } else {
     const redisClient = createClient({ url: config.get('REDIS_URL') });
     await redisClient.connect();
-    sessionOptions.store = new RedisStore({ client: redisClient });
+    sessionOptions.store = new RedisStore({
+      client: redisClient,
+      prefix: 'aegisai:session:',
+      ttl: config.get('SESSION_TTL_SECONDS'),
+      disableTouch: true
+    });
     wrapAppCloseWithRedisCleanup(app, redisClient);
   }
 
@@ -38,10 +67,54 @@ export async function configureApp(app: INestApplication): Promise<void> {
     httpAdapter.set?.('trust proxy', 1);
   }
 
+  app.use(helmet());
+  app.use((request: Request, response: Response, next: NextFunction) => {
+    if (SENSITIVE_RESPONSE_PATHS.some((path) => matchesPathBoundary(request.path, path))) {
+      response.setHeader('Cache-Control', 'no-store');
+    }
+    next();
+  });
+  app.enableCors({
+    origin: new URL(config.get('FRONTEND_URL')).origin,
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization']
+  });
   app.use(cookieParser());
   app.use(session(sessionOptions));
   app.use(passport.initialize());
   app.use(passport.session());
+  app.use((request: Request, response: Response, next: NextFunction) => {
+    if (shouldSkipCsrf(request, config)) {
+      next();
+      return;
+    }
+
+    csrfProtectionMiddleware(request, response, next);
+  });
+  app.useGlobalPipes(
+    new ValidationPipe({
+      forbidNonWhitelisted: true,
+      transform: true,
+      whitelist: true
+    })
+  );
+  app.enableShutdownHooks();
+}
+
+function matchesPathBoundary(requestPath: string, routePrefix: string): boolean {
+  return requestPath === routePrefix || requestPath.startsWith(`${routePrefix}/`);
+}
+
+function shouldSkipCsrf(request: Request, config: ConfigService): boolean {
+  if (config.isTest() && !matchesPathBoundary(request.path, '/api/auth')) {
+    return true;
+  }
+
+  return (
+    INTERNAL_CSRF_EXEMPT_PATHS.some((path) => matchesPathBoundary(request.path, path)) ||
+    (config.isTest() && request.path.startsWith('/api/_test/'))
+  );
 }
 
 function wrapAppCloseWithRedisCleanup(

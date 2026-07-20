@@ -19,7 +19,7 @@ export class GitlabStrategy extends PassportStrategy(GitLabPassportStrategy, 'gi
       clientID: config.get('GITLAB_CLIENT_ID'),
       clientSecret: config.get('GITLAB_CLIENT_SECRET'),
       callbackURL: new URL('/api/auth/gitlab/callback', config.get('APP_URL')).toString(),
-      scope: ['read_user', 'read_api'],
+      scope: ['read_user'],
       state: true
     });
   }

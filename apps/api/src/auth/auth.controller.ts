@@ -11,9 +11,9 @@ import {
 import type { Request, Response } from 'express';
 import type session from 'express-session';
 
+import { generateCsrfToken, revokeCsrfToken } from '../common/security/csrf';
 import { ConfigService } from '../config/config.service';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { AuthService } from './auth.service';
 import { buildFrontendRedirectUrl, shouldUseSecureCookies } from './auth-runtime.util';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 import { GitlabAuthGuard } from './guards/gitlab-auth.guard';
@@ -27,7 +27,6 @@ type RequestWithSession = Request & {
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly authService: AuthService,
     private readonly config: ConfigService
   ) {}
 
@@ -71,6 +70,7 @@ export class AuthController {
     @Req() request: RequestWithSession,
     @Res() response: Response
   ): Promise<void> {
+    revokeCsrfToken(request);
     await this.logoutRequest(request);
 
     response.clearCookie(this.config.get('SESSION_COOKIE_NAME'), {
@@ -90,7 +90,7 @@ export class AuthController {
   }
 
   private issueCsrfCookie(request: Request, response: Response): void {
-    response.cookie(this.config.get('CSRF_COOKIE_NAME'), this.authService.createCsrfToken(), {
+    response.cookie(this.config.get('CSRF_COOKIE_NAME'), generateCsrfToken(request), {
       httpOnly: false,
       sameSite: 'lax',
       secure: shouldUseSecureCookies(request, this.config.get('APP_URL')),

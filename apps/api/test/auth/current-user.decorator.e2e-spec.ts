@@ -6,6 +6,7 @@ describe('CurrentUser helper', () => {
   it('returns the authenticated user from the request object', () => {
     const user: AuthUser = {
       id: 'user-1',
+      tenantId: 'tenant-1',
       email: 'user@example.com',
       name: 'Aegis User',
       avatarUrl: null,

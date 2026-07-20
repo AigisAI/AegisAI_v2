@@ -9,6 +9,7 @@ describe('AuthService', () => {
           .mockResolvedValueOnce(null)
           .mockResolvedValueOnce({
             id: 'user-1',
+            tenantId: 'tenant-1',
             email: 'octo@example.com',
             name: 'Octo Cat',
             avatarUrl: 'https://example.com/octo.png',
@@ -42,6 +43,7 @@ describe('AuthService', () => {
       )
     ).resolves.toEqual({
       id: 'user-1',
+      tenantId: 'tenant-1',
       email: 'octo@example.com',
       name: 'Octo Cat',
       avatarUrl: 'https://example.com/octo.png',
@@ -58,6 +60,13 @@ describe('AuthService', () => {
     });
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: {
+        tenant: {
+          create: {
+            id: expect.any(String),
+            slug: expect.stringMatching(/^personal-/),
+            name: "Octo Cat's workspace"
+          }
+        },
         email: 'octo@example.com',
         name: 'Octo Cat',
         avatarUrl: 'https://example.com/octo.png'
@@ -93,6 +102,7 @@ describe('AuthService', () => {
       user: {
         findUnique: jest.fn().mockResolvedValue({
           id: 'user-1',
+          tenantId: 'tenant-1',
           email: 'stored@example.com',
           name: 'Stored User',
           avatarUrl: 'https://example.com/stored.png',
@@ -128,6 +138,7 @@ describe('AuthService', () => {
       )
     ).resolves.toEqual({
       id: 'user-1',
+      tenantId: 'tenant-1',
       email: 'stored@example.com',
       name: 'Stored User',
       avatarUrl: 'https://example.com/stored.png',
@@ -150,6 +161,7 @@ describe('AuthService', () => {
           .fn()
           .mockResolvedValueOnce({
             id: 'user-1',
+            tenantId: 'tenant-1',
             email: 'gitlab@example.com',
             name: 'Existing User',
             avatarUrl: null,
@@ -157,6 +169,7 @@ describe('AuthService', () => {
           })
           .mockResolvedValueOnce({
             id: 'user-1',
+            tenantId: 'tenant-1',
             email: 'gitlab@example.com',
             name: 'GitLab User',
             avatarUrl: 'https://example.com/gitlab.png',
@@ -190,6 +203,7 @@ describe('AuthService', () => {
       )
     ).resolves.toEqual({
       id: 'user-1',
+      tenantId: 'tenant-1',
       email: 'gitlab@example.com',
       name: 'GitLab User',
       avatarUrl: 'https://example.com/gitlab.png',
@@ -235,6 +249,7 @@ describe('AuthService', () => {
       user: {
         findUnique: jest.fn().mockResolvedValue({
           id: 'user-1',
+          tenantId: 'tenant-1',
           email: 'user@example.com',
           name: 'Aegis User',
           avatarUrl: 'https://example.com/avatar.png',
@@ -247,6 +262,7 @@ describe('AuthService', () => {
 
     await expect(service.getSessionUserById('user-1')).resolves.toEqual({
       id: 'user-1',
+      tenantId: 'tenant-1',
       email: 'user@example.com',
       name: 'Aegis User',
       avatarUrl: 'https://example.com/avatar.png',
@@ -269,14 +285,4 @@ describe('AuthService', () => {
     await expect(service.getSessionUserById('missing-user')).resolves.toBeNull();
   });
 
-  it('creates distinct csrf token values', () => {
-    const service = new AuthService({} as never, {} as never);
-
-    const first = service.createCsrfToken();
-    const second = service.createCsrfToken();
-
-    expect(first).toMatch(/^[a-f0-9]{64}$/);
-    expect(second).toMatch(/^[a-f0-9]{64}$/);
-    expect(first).not.toBe(second);
-  });
 });

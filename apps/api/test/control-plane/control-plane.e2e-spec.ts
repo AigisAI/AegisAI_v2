@@ -1,6 +1,12 @@
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
+import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
+import { GithubWebhookSignatureGuard } from '../../src/common/security/github-webhook-signature.guard';
+import {
+  TestGithubWebhookSignatureGuard,
+  TestSessionAuthGuard
+} from '../support/security-guards';
 
 describe("Control Plane skeleton (e2e)", () => {
   let app: INestApplication;
@@ -24,8 +30,8 @@ describe("Control Plane skeleton (e2e)", () => {
     process.env.PORT = "3000";
     process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/aegisai";
     process.env.REDIS_URL = "redis://localhost:6379";
-    process.env.SESSION_SECRET = "test-session-secret-value";
-    process.env.CSRF_SECRET = "test-csrf-secret-value";
+    process.env.SESSION_SECRET = "test-session-secret-value-at-least-32";
+    process.env.CSRF_SECRET = "test-csrf-secret-value-at-least-32";
     process.env.GITHUB_CLIENT_ID = "github-client-id";
     process.env.GITHUB_CLIENT_SECRET = "github-client-secret";
     process.env.GITLAB_CLIENT_ID = "gitlab-client-id";
@@ -90,6 +96,10 @@ describe("Control Plane skeleton (e2e)", () => {
       })
       .overrideProvider(GitlabCloudIntegrationClient)
       .useValue(gitlabCloudIntegrationClientMock)
+      .overrideGuard(SessionAuthGuard)
+      .useClass(TestSessionAuthGuard)
+      .overrideGuard(GithubWebhookSignatureGuard)
+      .useClass(TestGithubWebhookSignatureGuard)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -459,13 +469,14 @@ describe("Control Plane skeleton (e2e)", () => {
       commitSha: "abcdef123",
       policyVersion: "policy-2026-04-12",
       scannerSetVersion: "scanner-set-v1",
-      canonicalKey: `tenant_beta:${repositoryBindingId}:FAST:refs/merge-requests/7/head:abcdef123:policy-2026-04-12:scanner-set-v1`,
+      canonicalKey: `v1:tenant_beta:${repositoryBindingId}:FAST:refs%2Fmerge-requests%2F7%2Fhead:abcdef123:policy-2026-04-12:scanner-set-v1`,
       isolationClass: "HARDENED",
       status: "QUEUED"
     });
 
     const status = await request(app.getHttpServer())
       .get(`/api/scan-requests/${scanData.id}`)
+      .set('x-test-tenant-id', 'tenant_beta')
       .expect(200);
 
     const statusData = dataOf<Record<string, unknown>>(status.body);

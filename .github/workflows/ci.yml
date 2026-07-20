@@ -23,6 +23,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: aegisai_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aegisai_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aegisai_ci
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -58,10 +76,14 @@ jobs:
       - name: Build workspace
         run: corepack pnpm build
 
+      - name: Verify API runtime build layout
+        run: node --test test/runtime/*.test.mjs
+
       - name: Validate Prisma schema
         run: corepack pnpm --filter @aegisai/api prisma:validate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aegisai
+
+      - name: Apply Prisma migrations to a clean database
+        run: corepack pnpm --filter @aegisai/api prisma:migrate:deploy
 
       - name: Check whitespace
         run: git diff --check

@@ -44,7 +44,7 @@ describe('GithubStrategy', () => {
         clientID: 'github-client-id',
         clientSecret: 'github-client-secret',
         callbackURL: 'http://localhost:3000/api/auth/github/callback',
-        scope: ['read:user', 'user:email', 'repo'],
+        scope: ['read:user', 'user:email'],
         state: true
       })
     );
@@ -53,6 +53,7 @@ describe('GithubStrategy', () => {
   it('delegates validated github logins to AuthService', async () => {
     const expectedUser: AuthUser = {
       id: 'user-1',
+      tenantId: 'tenant-1',
       email: 'octo@example.com',
       name: 'Octo Cat',
       avatarUrl: 'https://example.com/octo.png',

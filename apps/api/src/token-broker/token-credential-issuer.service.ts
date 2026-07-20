@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { randomBytes } from "node:crypto";
-import type { TokenBrokerIssueRequest } from "../../../../packages/shared/src";
+import type { TokenBrokerIssueRequest } from '@aegisai/shared';
 
 export interface IssuedTokenCredential {
   credentialType: "SCM_REPOSITORY_ACCESS";

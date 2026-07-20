@@ -6,7 +6,7 @@ import type {
   Waiver,
   WaiverCreateInput,
   WaiverUpdateInput
-} from "../../../../packages/shared/src";
+} from '@aegisai/shared';
 
 const FORBIDDEN_LIFECYCLE_KEYS = [
   "accessToken",
