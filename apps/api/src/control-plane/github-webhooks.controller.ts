@@ -1,5 +1,6 @@
-import { Body, Controller, Headers, HttpCode, Post } from "@nestjs/common";
+import { Body, Controller, Headers, HttpCode, Post, UseGuards } from '@nestjs/common';
 
+import { GithubWebhookSignatureGuard } from '../common/security/github-webhook-signature.guard';
 import { ControlPlaneService } from "./control-plane.service";
 import type { GithubInstallationWebhookInput } from "./control-plane.types";
 
@@ -9,6 +10,7 @@ export class GithubWebhooksController {
 
   @Post()
   @HttpCode(202)
+  @UseGuards(GithubWebhookSignatureGuard)
   reconcileInstallationRepositories(
     @Headers("x-github-event") githubEvent: string | undefined,
     @Body() body: GithubInstallationWebhookInput

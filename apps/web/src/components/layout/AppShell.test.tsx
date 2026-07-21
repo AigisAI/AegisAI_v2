@@ -15,6 +15,7 @@ describe("AppShell", () => {
     vi.mocked(useAuth).mockReturnValue({
       user: {
         id: "user-1",
+        tenantId: "tenant-1",
         email: "user@example.com",
         name: "Aegis User",
         avatarUrl: null,

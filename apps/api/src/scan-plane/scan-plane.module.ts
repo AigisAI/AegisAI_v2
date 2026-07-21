@@ -8,9 +8,10 @@ import { ScanPlaneController } from "./scan-plane.controller";
 import { ScanPlaneService } from "./scan-plane.service";
 import { ScannerSandboxAdapterService } from "./scanner-sandbox-adapter.service";
 import { ConfigModule } from "../config/config.module";
+import { ControlPlaneModule } from '../control-plane/control-plane.module';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, ControlPlaneModule],
   controllers: [ScanPlaneController, FindingsController, EvidenceController],
   providers: [
     ScanPlaneService,

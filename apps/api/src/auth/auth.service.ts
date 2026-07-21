@@ -1,7 +1,7 @@
 import type { AuthUser, Provider } from '@aegisai/shared';
 import { Injectable } from '@nestjs/common';
 import { RepoProvider } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenCryptoUtil } from './utils/token-crypto.util';
@@ -71,8 +71,16 @@ export class AuthService {
 
         userId = user.id;
       } else {
+        const tenantId = randomUUID();
         const user = await this.prisma.user.create({
           data: {
+            tenant: {
+              create: {
+                id: tenantId,
+                slug: `personal-${tenantId}`,
+                name: `${normalizedProfile.name}'s workspace`
+              }
+            },
             email: normalizedProfile.email,
             name: normalizedProfile.name,
             avatarUrl: normalizedProfile.avatarUrl
@@ -129,15 +137,12 @@ export class AuthService {
 
     return {
       id: user.id,
+      tenantId: user.tenantId,
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
       connectedProviders: user.oauthTokens.map((token) => token.provider.toLowerCase() as Provider)
     };
-  }
-
-  createCsrfToken(): string {
-    return randomBytes(32).toString('hex');
   }
 
   private normalizeProviderProfile(

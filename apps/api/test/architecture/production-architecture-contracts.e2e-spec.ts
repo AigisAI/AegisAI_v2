@@ -41,7 +41,7 @@ describe('production scan architecture contracts', () => {
         policyVersion: 'policy-2026-04-12',
         scannerSetVersion: 'scanner-set-v1'
       })
-    ).toBe('tenant_a:repo_1:FAST:refs/pull/12/head:abc123:policy-2026-04-12:scanner-set-v1');
+    ).toBe('v1:tenant_a:repo_1:FAST:refs%2Fpull%2F12%2Fhead:abc123:policy-2026-04-12:scanner-set-v1');
   });
 
   it('keeps AI advisory input reduced and separate from SCM credentials', () => {
@@ -120,13 +120,15 @@ describe('production scan architecture contracts', () => {
   });
 
   it('creates short-lived evidence metadata under tenant and scan scoped object keys', () => {
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
     expect(
       createEvidencePackMetadata({
         id: 'evidence_1',
         tenantId: 'tenant_a',
         scanRequestId: 'scan_1',
         byteSize: 512,
-        expiresAt: '2026-04-19T00:00:00.000Z',
+        expiresAt,
         redacted: true
       })
     ).toEqual({
@@ -135,7 +137,7 @@ describe('production scan architecture contracts', () => {
       scanRequestId: 'scan_1',
       classification: 'SHORT_LIVED_EVIDENCE',
       objectKey: 'tenant_a/scan_1/evidence/evidence_1.json',
-      expiresAt: '2026-04-19T00:00:00.000Z',
+      expiresAt,
       byteSize: 512,
       redacted: true
     });

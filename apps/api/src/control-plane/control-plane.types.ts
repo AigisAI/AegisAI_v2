@@ -6,7 +6,7 @@ import type {
   ScanRequest,
   ScmIntegration,
   ScmProvider
-} from "../../../../packages/shared/src";
+} from '@aegisai/shared';
 
 export interface InstallRepositoryInput {
   providerRepoId: string;

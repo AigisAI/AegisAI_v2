@@ -1,35 +1,42 @@
-import { Injectable } from "@nestjs/common";
-import type { TokenBrokerIssueRequest } from "../../../../packages/shared/src";
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import {
+  MAX_SCAN_CREDENTIAL_TTL_SECONDS,
+  type TokenBrokerIssueRequest
+} from '@aegisai/shared';
 
+import { ControlPlaneService } from '../control-plane/control-plane.service';
 import { TokenCredentialIssuerService } from "./token-credential-issuer.service";
 import type { TokenBrokerAuditEvent, TokenBrokerIssueResponse } from "./token-broker.types";
 
 @Injectable()
 export class TokenBrokerService {
   private readonly auditEvents: TokenBrokerAuditEvent[] = [];
-  private credentialSequence = 0;
-  private auditSequence = 0;
 
-  constructor(private readonly tokenCredentialIssuer: TokenCredentialIssuerService) {}
+  constructor(
+    private readonly tokenCredentialIssuer: TokenCredentialIssuerService,
+    private readonly controlPlaneService: ControlPlaneService
+  ) {}
 
   issue(input: TokenBrokerIssueRequest): TokenBrokerIssueResponse {
+    this.assertBoundToScan(input);
     const issuedCredential = this.tokenCredentialIssuer.issue(input);
     const response: TokenBrokerIssueResponse = {
       ...input,
-      credentialId: `credential_${++this.credentialSequence}`,
+      credentialId: `credential_${randomUUID()}`,
       ...issuedCredential,
       expiresInSeconds: input.ttlSeconds,
       auditEventType: "token.issued"
     };
 
     this.auditEvents.push({
-      id: `audit_event_${++this.auditSequence}`,
+      id: `audit_event_${randomUUID()}`,
       tenantId: input.tenantId,
       eventType: "token.issued",
       actor: "token-broker",
       targetType: "scan_request",
       targetId: input.scanRequestId,
-      occurredAt: new Date(0).toISOString(),
+      occurredAt: issuedCredential.issuedAt,
       metadata: {
         repositoryBindingId: input.repositoryBindingId,
         principal: input.principal,
@@ -44,5 +51,24 @@ export class TokenBrokerService {
 
   listAuditEvents(tenantId: string): TokenBrokerAuditEvent[] {
     return this.auditEvents.filter((event) => event.tenantId === tenantId);
+  }
+
+  private assertBoundToScan(input: TokenBrokerIssueRequest): void {
+    if (
+      input.principal !== 'REPO_READ' ||
+      !Number.isInteger(input.ttlSeconds) ||
+      input.ttlSeconds < 1 ||
+      input.ttlSeconds > MAX_SCAN_CREDENTIAL_TTL_SECONDS
+    ) {
+      throw new BadRequestException('Token scope or TTL is outside the scan credential policy.');
+    }
+
+    const scanRequest = this.controlPlaneService.getScanRequest(input.tenantId, input.scanRequestId);
+    if (
+      scanRequest.repositoryBindingId !== input.repositoryBindingId ||
+      scanRequest.commitSha !== input.commitSha
+    ) {
+      throw new BadRequestException('Token request does not match the immutable scan scope.');
+    }
   }
 }

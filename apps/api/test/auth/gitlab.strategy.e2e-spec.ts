@@ -42,7 +42,7 @@ describe('GitlabStrategy', () => {
         clientID: 'gitlab-client-id',
         clientSecret: 'gitlab-client-secret',
         callbackURL: 'http://localhost:3000/api/auth/gitlab/callback',
-        scope: ['read_user', 'read_api'],
+        scope: ['read_user'],
         state: true
       })
     );
@@ -51,6 +51,7 @@ describe('GitlabStrategy', () => {
   it('delegates validated gitlab logins to AuthService', async () => {
     const expectedUser: AuthUser = {
       id: 'user-1',
+      tenantId: 'tenant-1',
       email: 'gitlab@example.com',
       name: 'GitLab User',
       avatarUrl: 'https://example.com/gitlab.png',

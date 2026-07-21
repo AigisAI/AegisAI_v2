@@ -30,4 +30,8 @@ export class ConfigService {
   isDevelopment(): boolean {
     return this.get('NODE_ENV') === 'development';
   }
+
+  isTest(): boolean {
+    return this.get('NODE_ENV') === 'test';
+  }
 }

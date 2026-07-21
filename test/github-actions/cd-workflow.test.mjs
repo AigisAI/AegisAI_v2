@@ -80,7 +80,8 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   assert.match(apiDockerfile, /FROM node:20-bookworm-slim AS runner/);
   assert.match(apiDockerfile, /apt-get install -y --no-install-recommends openssl ca-certificates/);
   assert.match(apiDockerfile, /corepack pnpm --filter @aegisai\/api build/);
-  assert.match(apiDockerfile, /CMD \["node", "apps\/api\/dist\/apps\/api\/src\/main\.js"\]/);
+  assert.match(apiDockerfile, /HEALTHCHECK/);
+  assert.match(apiDockerfile, /CMD \["node", "apps\/api\/dist\/main\.js"\]/);
 
   assert.match(aiDockerfile, /FROM node:20-bookworm-slim AS builder/);
   assert.match(aiDockerfile, /FROM node:20-bookworm-slim AS runner/);

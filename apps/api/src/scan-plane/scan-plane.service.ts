@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { createEvidencePackMetadata } from "../../../../packages/shared/src";
+import { BadRequestException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { createEvidencePackMetadata, MAX_EVIDENCE_TTL_MS } from '@aegisai/shared';
 
+import { ControlPlaneService } from '../control-plane/control-plane.service';
 import type {
   DeterministicScannerKind,
   MockScanPlaneRunResult,
@@ -13,7 +15,7 @@ import type {
   EvidencePack,
   NormalizedFinding,
   ScannerRun
-} from "../../../../packages/shared/src";
+} from '@aegisai/shared';
 import { EvidenceObjectStorageService } from "./evidence-object-storage.service";
 import { ScannerSandboxAdapterService } from "./scanner-sandbox-adapter.service";
 
@@ -22,27 +24,33 @@ export class ScanPlaneService {
   private readonly scannerRuns: ScannerRun[] = [];
   private readonly findings: NormalizedFinding[] = [];
   private readonly evidencePacks: EvidencePack[] = [];
-
-  private scannerRunSequence = 0;
-  private findingSequence = 0;
-  private evidenceSequence = 0;
+  private readonly completedPipelines = new Map<string, MockScanPlaneRunResult>();
+  private readonly completedSandboxRuns = new Map<string, SandboxScannerExecutionResult>();
 
   constructor(
     private readonly scannerSandboxAdapter: ScannerSandboxAdapterService,
-    private readonly evidenceObjectStorage: EvidenceObjectStorageService
+    private readonly evidenceObjectStorage: EvidenceObjectStorageService,
+    private readonly controlPlaneService: ControlPlaneService
   ) {}
 
   runMockPipeline(input: RunMockScanPlaneInput): MockScanPlaneRunResult {
+    this.assertScanScope(input);
+    const pipelineKey = `mock:${input.tenantId}:${input.scanRequestId}:${input.scannerSetVersion}`;
+    const completedPipeline = this.completedPipelines.get(pipelineKey);
+    if (completedPipeline) {
+      return completedPipeline;
+    }
+
     const scanners: DeterministicScannerKind[] = ["OPENGREP", "TRIVY", "SYFT"];
     const scannerRuns = scanners.map((scanner) => this.createScannerRun(input, scanner));
     const opengrepRun = scannerRuns[0];
     const finding = this.createFinding(input, opengrepRun.id);
     const evidence = createEvidencePackMetadata({
-      id: `evidence_${++this.evidenceSequence}`,
+      id: `evidence_${randomUUID()}`,
       tenantId: input.tenantId,
       scanRequestId: input.scanRequestId,
       byteSize: 512,
-      expiresAt: "2026-04-19T00:00:00.000Z",
+      expiresAt: new Date(Date.now() + MAX_EVIDENCE_TTL_MS).toISOString(),
       redacted: true
     });
 
@@ -50,17 +58,27 @@ export class ScanPlaneService {
     this.findings.push(finding);
     this.evidencePacks.push(evidence);
 
-    return {
+    const result = {
       scannerRuns,
       findings: [finding],
       evidencePacks: [evidence]
     };
+    this.completedPipelines.set(pipelineKey, result);
+
+    return result;
   }
 
   runSandboxScanners(input: RunSandboxScannersInput): SandboxScannerExecutionResult {
+    this.assertScanScope(input);
+    const pipelineKey = `sandbox:${input.tenantId}:${input.scanRequestId}:${input.scannerSetVersion}`;
+    const completedPipeline = this.completedSandboxRuns.get(pipelineKey);
+    if (completedPipeline) {
+      return completedPipeline;
+    }
+
     const adapterInvocations = this.scannerSandboxAdapter.buildInvocations(input);
     const scannerRuns = adapterInvocations.map((invocation) => ({
-      id: `scanner_run_${++this.scannerRunSequence}`,
+      id: `scanner_run_${randomUUID()}`,
       tenantId: input.tenantId,
       scanRequestId: input.scanRequestId,
       scanner: invocation.scanner,
@@ -69,25 +87,32 @@ export class ScanPlaneService {
         input.scannerSetVersion
       ),
       status: "COMPLETED" as const,
-      rawArtifactObjectKey: `${input.tenantId}/${input.scanRequestId}/raw/${invocation.scanner.toLowerCase()}.json`
+      rawArtifactObjectKey: this.buildRawArtifactObjectKey(
+        input.tenantId,
+        input.scanRequestId,
+        invocation.scanner
+      )
     }));
     const evidence = createEvidencePackMetadata({
-      id: `evidence_${++this.evidenceSequence}`,
+      id: `evidence_${randomUUID()}`,
       tenantId: input.tenantId,
       scanRequestId: input.scanRequestId,
       byteSize: 1024,
-      expiresAt: "2026-04-19T00:00:00.000Z",
+      expiresAt: new Date(Date.now() + MAX_EVIDENCE_TTL_MS).toISOString(),
       redacted: true
     });
 
     this.scannerRuns.push(...scannerRuns);
     this.evidencePacks.push(evidence);
 
-    return {
+    const result = {
       scannerRuns,
       evidencePacks: [evidence],
       adapterInvocations
     };
+    this.completedSandboxRuns.set(pipelineKey, result);
+
+    return result;
   }
 
   listScannerRuns(tenantId: string, scanRequestId: string): ScannerRun[] {
@@ -122,6 +147,10 @@ export class ScanPlaneService {
 
     if (!evidencePack) {
       throw new NotFoundException("Evidence pack was not found for tenant and scan request.");
+    }
+
+    if (new Date(evidencePack.expiresAt).getTime() <= Date.now()) {
+      throw new GoneException('Evidence pack has expired.');
     }
 
     await this.evidenceObjectStorage.write({
@@ -164,19 +193,23 @@ export class ScanPlaneService {
 
   private createScannerRun(input: RunMockScanPlaneInput, scanner: DeterministicScannerKind): ScannerRun {
     return {
-      id: `scanner_run_${++this.scannerRunSequence}`,
+      id: `scanner_run_${randomUUID()}`,
       tenantId: input.tenantId,
       scanRequestId: input.scanRequestId,
       scanner,
       scannerVersion: `${scanner.toLowerCase()}-${input.scannerSetVersion}`,
       status: "COMPLETED",
-      rawArtifactObjectKey: `${input.tenantId}/${input.scanRequestId}/raw/${scanner.toLowerCase()}.json`
+      rawArtifactObjectKey: this.buildRawArtifactObjectKey(
+        input.tenantId,
+        input.scanRequestId,
+        scanner
+      )
     };
   }
 
   private createFinding(input: RunMockScanPlaneInput, scannerRunId: string): NormalizedFinding {
     return {
-      id: `finding_${++this.findingSequence}`,
+      id: `finding_${randomUUID()}`,
       tenantId: input.tenantId,
       scanRequestId: input.scanRequestId,
       scannerRunId,
@@ -188,5 +221,25 @@ export class ScanPlaneService {
       lineEnd: 42,
       status: "OPEN"
     };
+  }
+
+  private assertScanScope(input: RunMockScanPlaneInput): void {
+    const scanRequest = this.controlPlaneService.getScanRequest(input.tenantId, input.scanRequestId);
+    if (scanRequest.scannerSetVersion !== input.scannerSetVersion) {
+      throw new BadRequestException('Scanner set version does not match the immutable scan request.');
+    }
+  }
+
+  private buildRawArtifactObjectKey(
+    tenantId: string,
+    scanRequestId: string,
+    scanner: DeterministicScannerKind
+  ): string {
+    return [
+      encodeURIComponent(tenantId),
+      encodeURIComponent(scanRequestId),
+      'raw',
+      `${scanner.toLowerCase()}.json`
+    ].join('/');
   }
 }

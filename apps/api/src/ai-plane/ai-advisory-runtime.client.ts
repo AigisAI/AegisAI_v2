@@ -3,7 +3,7 @@ import axios from "axios";
 
 import { ConfigService } from "../config/config.service";
 
-import type { AiAdvisoryRequest, AiInferenceRequest, AiInferenceResponse } from "../../../../packages/shared/src";
+import type { AiAdvisoryRequest, AiInferenceRequest, AiInferenceResponse } from '@aegisai/shared';
 
 const FORBIDDEN_RUNTIME_RESPONSE_KEYS = [
   "accessToken",

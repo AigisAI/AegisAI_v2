@@ -4,7 +4,7 @@ import type {
   NormalizedFinding,
   ScannerRun,
   ScannerKind
-} from "../../../../packages/shared/src";
+} from '@aegisai/shared';
 
 export interface RunMockScanPlaneInput {
   tenantId: string;

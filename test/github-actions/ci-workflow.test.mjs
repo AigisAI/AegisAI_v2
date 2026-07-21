@@ -21,4 +21,7 @@ test('ci workflow exists and runs the expected workspace verification commands',
   assert.match(workflow, /corepack pnpm test/);
   assert.match(workflow, /corepack pnpm typecheck/);
   assert.match(workflow, /corepack pnpm build/);
+  assert.match(workflow, /postgres:16-alpine/);
+  assert.match(workflow, /prisma:migrate:deploy/);
+  assert.match(workflow, /node --test test\/runtime\/\*\.test\.mjs/);
 });

@@ -51,6 +51,7 @@ describe("useAuth", () => {
   it("hydrates the auth store from GET /api/auth/me", async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue({
       id: "user-1",
+      tenantId: "tenant-1",
       email: "user@example.com",
       name: "Aegis User",
       avatarUrl: null,
@@ -72,6 +73,7 @@ describe("useAuth", () => {
   it("clears local auth state when logout succeeds", async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue({
       id: "user-1",
+      tenantId: "tenant-1",
       email: "user@example.com",
       name: "Aegis User",
       avatarUrl: null,
@@ -108,6 +110,7 @@ describe("useAuth", () => {
   it("clears local auth state when logout returns unauthorized", async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue({
       id: "user-1",
+      tenantId: "tenant-1",
       email: "user@example.com",
       name: "Aegis User",
       avatarUrl: null,

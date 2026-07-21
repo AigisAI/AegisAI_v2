@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { randomUUID } from 'node:crypto';
 import {
   buildCanonicalScanKey,
   buildCommentDispatchIdempotencyKey,
@@ -17,7 +18,7 @@ import {
   type CommentDispatchPlan,
   type CommentDispatchPlanRequest,
   type IsolationClass
-} from "../../../../packages/shared/src";
+} from '@aegisai/shared';
 
 import type {
   ControlPlaneIntegration,
@@ -44,9 +45,6 @@ export class ControlPlaneService {
   private readonly commentDispatchOutboxItems = new Map<string, CommentDispatchOutboxItem>();
   private readonly commentDispatchAuditEvents: CommentDispatchAuditEvent[] = [];
 
-  private integrationSequence = 0;
-  private repositorySequence = 0;
-  private scanSequence = 0;
   private commentDispatchSequence = 0;
   private commentDispatchOutboxSequence = 0;
   private commentDispatchAuditSequence = 0;
@@ -103,8 +101,18 @@ export class ControlPlaneService {
     input: InstallIntegrationInput,
     options: InstallIntegrationOptions
   ): ControlPlaneIntegration {
+    const existingIntegration = Array.from(this.integrations.values()).find(
+      (candidate) =>
+        candidate.tenantId === input.tenantId &&
+        candidate.provider === options.provider &&
+        candidate.externalInstallationId === input.externalInstallationId
+    );
+    if (existingIntegration) {
+      return existingIntegration;
+    }
+
     const integration: ControlPlaneIntegration = {
-      id: `integration_${++this.integrationSequence}`,
+      id: `integration_${randomUUID()}`,
       tenantId: input.tenantId,
       provider: options.provider,
       integrationType: options.integrationType,
@@ -119,7 +127,7 @@ export class ControlPlaneService {
 
     for (const repository of input.repositories ?? []) {
       const binding: ControlPlaneRepositoryBinding = {
-        id: `repository_binding_${++this.repositorySequence}`,
+        id: `repository_binding_${randomUUID()}`,
         tenantId: input.tenantId,
         scmIntegrationId: integration.id,
         providerRepoId: repository.providerRepoId,
@@ -137,8 +145,9 @@ export class ControlPlaneService {
     return Array.from(this.integrations.values()).filter((integration) => integration.tenantId === tenantId);
   }
 
-  removeIntegration(integrationId: string): { deleted: true; id: string } {
-    if (!this.integrations.has(integrationId)) {
+  removeIntegration(tenantId: string, integrationId: string): { deleted: true; id: string } {
+    const integration = this.integrations.get(integrationId);
+    if (!integration || integration.tenantId !== tenantId) {
       throw new NotFoundException("Integration not found");
     }
 
@@ -166,7 +175,7 @@ export class ControlPlaneService {
       throw new BadRequestException("GitHub installation webhook is missing installation id");
     }
 
-    const integration = this.findGithubAppIntegration(externalInstallationId, input.tenantId);
+    const integration = this.findGithubAppIntegration(externalInstallationId);
 
     const addedRepositories = this.normalizeGithubRepositories(
       input.repositories_added ?? (input.action === "created" ? input.repositories : undefined)
@@ -210,8 +219,16 @@ export class ControlPlaneService {
     const isolationClass: IsolationClass =
       input.isolationSignals && shouldEscalateIsolation(input.isolationSignals) ? "HARDENED" : "STANDARD";
 
+    const canonicalKey = buildCanonicalScanKey(input);
+    const existingScanRequest = Array.from(this.scanRequests.values()).find(
+      (candidate) => candidate.canonicalKey === canonicalKey
+    );
+    if (existingScanRequest) {
+      return existingScanRequest;
+    }
+
     const scanRequest: ControlPlaneScanRequest = {
-      id: `scan_request_${++this.scanSequence}`,
+      id: `scan_request_${randomUUID()}`,
       tenantId: input.tenantId,
       repositoryBindingId: input.repositoryBindingId,
       lane: input.lane,
@@ -219,7 +236,7 @@ export class ControlPlaneService {
       commitSha: input.commitSha,
       policyVersion: input.policyVersion,
       scannerSetVersion: input.scannerSetVersion,
-      canonicalKey: buildCanonicalScanKey(input),
+      canonicalKey,
       isolationClass,
       status: "QUEUED"
     };
@@ -229,9 +246,9 @@ export class ControlPlaneService {
     return scanRequest;
   }
 
-  getScanRequest(scanRequestId: string): ControlPlaneScanRequest {
+  getScanRequest(tenantId: string, scanRequestId: string): ControlPlaneScanRequest {
     const scanRequest = this.scanRequests.get(scanRequestId);
-    if (!scanRequest) {
+    if (!scanRequest || scanRequest.tenantId !== tenantId) {
       throw new NotFoundException("Scan request not found");
     }
 
@@ -655,15 +672,13 @@ export class ControlPlaneService {
   }
 
   private findGithubAppIntegration(
-    externalInstallationId: string,
-    tenantId?: string
+    externalInstallationId: string
   ): ControlPlaneIntegration {
     const integration = Array.from(this.integrations.values()).find(
       (candidate) =>
         candidate.provider === "GITHUB" &&
         candidate.integrationType === "GITHUB_APP" &&
-        candidate.externalInstallationId === externalInstallationId &&
-        (!tenantId || candidate.tenantId === tenantId)
+        candidate.externalInstallationId === externalInstallationId
     );
 
     if (!integration) {
@@ -685,7 +700,7 @@ export class ControlPlaneService {
     );
 
     const binding: ControlPlaneRepositoryBinding = {
-      id: existing?.id ?? `repository_binding_${++this.repositorySequence}`,
+      id: existing?.id ?? `repository_binding_${randomUUID()}`,
       tenantId: integration.tenantId,
       scmIntegrationId: integration.id,
       providerRepoId: repository.providerRepoId,

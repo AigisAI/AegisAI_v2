@@ -128,15 +128,19 @@ enum SuppressionReason {
 
 model User {
   id        String   @id @default(uuid())
+  tenantId  String
   email     String?  @unique
   name      String
   avatarUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   oauthTokens    OAuthToken[]
   connectedRepos ConnectedRepo[]
   reports        Report[]
+
+  @@index([tenantId])
 }
 
 model OAuthToken {
@@ -271,6 +275,7 @@ model Tenant {
   waivers            Waiver[]
   suppressions       Suppression[]
   auditEvents        AuditEvent[]
+  users              User[]
 }
 
 model ScmIntegration {

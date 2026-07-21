@@ -73,6 +73,9 @@ function createAppMock(overrides: Partial<INestApplication> = {}): INestApplicat
     getHttpAdapter: jest.fn(() => httpAdapter),
     setGlobalPrefix: jest.fn(),
     use: jest.fn(),
+    enableCors: jest.fn(),
+    useGlobalPipes: jest.fn(),
+    enableShutdownHooks: jest.fn(),
     close: jest.fn().mockResolvedValue(undefined),
     ...overrides
   } as unknown as INestApplication;
@@ -88,14 +91,18 @@ function createConfigServiceMock({
       const values: Record<string, string> = {
         SESSION_COOKIE_NAME: 'connect.sid',
         SESSION_SECRET: 'session-secret',
-        REDIS_URL: 'redis://localhost:6379'
+        REDIS_URL: 'redis://localhost:6379',
+        FRONTEND_URL: 'http://localhost:5173',
+        COOKIE_SECURE: 'false',
+        SESSION_TTL_SECONDS: '28800'
       };
 
       return values[key];
     }),
     getOptional: jest.fn().mockReturnValue(null),
     isDevelopment: jest.fn().mockReturnValue(nodeEnv === 'development'),
-    isProduction: jest.fn().mockReturnValue(nodeEnv === 'production')
+    isProduction: jest.fn().mockReturnValue(nodeEnv === 'production'),
+    isTest: jest.fn().mockReturnValue(nodeEnv === 'test')
   };
 }
 

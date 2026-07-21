@@ -9,7 +9,7 @@ import type {
   AiInferenceResponse,
   AiModelMetadata,
   AiPlannerAdvisory
-} from "../../../../packages/shared/src";
+} from '@aegisai/shared';
 import { ConfigService } from "../config/config.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AiAdvisoryRuntimeClient } from "./ai-advisory-runtime.client";

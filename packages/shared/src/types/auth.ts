@@ -2,6 +2,7 @@ import type { Provider } from './common';
 
 export interface AuthUser {
   id: string;
+  tenantId: string;
   email: string | null;
   name: string;
   avatarUrl: string | null;

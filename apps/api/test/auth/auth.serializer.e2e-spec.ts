@@ -4,6 +4,7 @@ import { AuthSerializer } from '../../src/auth/auth.serializer';
 describe('AuthSerializer', () => {
   const authUser: AuthUser = {
     id: 'user-1',
+    tenantId: 'tenant-1',
     email: 'user@example.com',
     name: 'Aegis User',
     avatarUrl: null,

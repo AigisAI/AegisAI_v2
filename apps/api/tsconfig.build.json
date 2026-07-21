@@ -1,4 +1,11 @@
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "rootDir": "./src",
+    "paths": {
+      "@aegisai/shared": ["../../packages/shared/dist/index.d.ts"]
+    }
+  },
   "exclude": ["node_modules", "test", "dist", "**/*.spec.ts"]
 }

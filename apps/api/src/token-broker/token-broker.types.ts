@@ -1,4 +1,4 @@
-import type { AuditEvent, ScmPrincipal, TokenBrokerIssueRequest } from "../../../../packages/shared/src";
+import type { AuditEvent, ScmPrincipal, TokenBrokerIssueRequest } from '@aegisai/shared';
 
 export interface TokenBrokerIssueResponse extends TokenBrokerIssueRequest {
   credentialId: string;

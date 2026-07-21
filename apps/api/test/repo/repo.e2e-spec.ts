@@ -13,6 +13,7 @@ class MockSessionAuthGuard implements CanActivate {
 
     request.user = {
       id: 'user-1',
+      tenantId: 'tenant-1',
       email: 'user@example.com',
       name: 'Aegis User',
       avatarUrl: null,
@@ -38,8 +39,8 @@ describe('RepoController (e2e)', () => {
     process.env.PORT = '3000';
     process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/aegisai';
     process.env.REDIS_URL = 'redis://localhost:6379';
-    process.env.SESSION_SECRET = 'test-session-secret-value';
-    process.env.CSRF_SECRET = 'test-csrf-secret-value';
+    process.env.SESSION_SECRET = 'test-session-secret-value-at-least-32';
+    process.env.CSRF_SECRET = 'test-csrf-secret-value-at-least-32';
     process.env.GITHUB_CLIENT_ID = 'github-client-id';
     process.env.GITHUB_CLIENT_SECRET = 'github-client-secret';
     process.env.GITLAB_CLIENT_ID = 'gitlab-client-id';
