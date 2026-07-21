@@ -57,4 +57,4 @@
 - [x] AGENTS, README, and GitHub conventions point to 006 as active.
 - [x] Active-feature tests cover every required 006 design artifact and completed baseline.
 - [x] The complete quickstart validation path passes.
-- [ ] Issue, branch, commit, and Draft PR follow repository naming and template conventions.
+- [x] Issue, branch, commit, and Draft PR follow repository naming and template conventions.

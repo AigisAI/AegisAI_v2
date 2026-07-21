@@ -24,7 +24,7 @@
 - [x] T014 Point AGENTS, README, and GitHub conventions at the 006 quickstart
 - [x] T015 Add active-feature tests for all 006 documents and completed baselines
 - [x] T016 Run the 006 quickstart validation path and resolve every failure
-- [ ] T017 Publish the issue-linked branch and Draft PR using repository templates
+- [x] T017 Publish the issue-linked branch and Draft PR using repository templates
 
 ## Phase 4: Planner and Profile Runtime
 

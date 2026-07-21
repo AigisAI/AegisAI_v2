@@ -148,6 +148,7 @@ test('SAST design completion gate stays synchronized between quickstart and CI',
   const ci = readNormalizedText(files.ci);
   const quickstart = readNormalizedText(files.quickstart);
   const tasks = readNormalizedText(files.tasks);
+  const checklist = readNormalizedText(files.checklist);
 
   const requiredCommands = [
     'corepack pnpm lint',
@@ -170,6 +171,16 @@ test('SAST design completion gate stays synchronized between quickstart and CI',
   assert.match(readme, /\.github\/workflows\/ci\.yml/);
   assert.match(tasks, /Point AGENTS, README, and GitHub conventions at the 006 quickstart/);
   assert.match(ci, /DATABASE_URL:\s*postgresql:\/\/postgres:postgres@localhost:5432\/aegisai_ci/);
+
+  const completedDesignScope = tasks.split('\n## Phase 4:')[0];
+  const openDesignTasks = completedDesignScope
+    .split('\n')
+    .filter((line) => /^- \[ \]/.test(line));
+  const openChecklistItems = checklist
+    .split('\n')
+    .filter((line) => /^- \[ \]/.test(line));
+  assert.deepEqual(openDesignTasks, []);
+  assert.deepEqual(openChecklistItems, []);
 });
 
 test('completed deployment operations baseline hands SAST detail to 006', () => {
