@@ -1,0 +1,292 @@
+# Contract: Production SAST Runtime
+
+The executable TypeScript contract is exported from
+`packages/shared/src/types/sast-runtime.ts`. This document defines component ownership,
+transport behavior, state transitions, validation order, and policy semantics.
+
+## Component Boundary
+
+```text
+Control Plane Scan Planner
+  -> signed lane queue
+  -> Scan Orchestrator
+  -> microVM Provisioner
+  -> one ephemeral Scanner Sandbox
+  -> write-only Result Ingress
+  -> Artifact Validator
+  -> Normalizer
+  -> Correlator
+  -> Evidence Builder
+  -> Data/Security Plane + Policy
+  -> reduced evidence reference to AI when eligible
+```
+
+The Control Plane does not receive repository content. The sandbox does not receive
+Control Plane database, policy-write, comment-write, integration-admin, or AI credentials.
+
+## Queue Contract
+
+Fast and Deep lanes use separate queues:
+
+- `scan.fast.v1`
+- `scan.deep.v1`
+- `scan.dead-letter.v1`
+
+Each message contains only:
+
+- message schema version
+- tenant, repository binding, scan request, and canonical scan identifiers
+- fixed commit SHA and contextual target ref
+- lane, profile ID/digest, policy version, scanner-set version/digest
+- isolation class
+- result-ingress, evidence-output, and audit references
+- issued and expiry timestamps
+- issuer workload identity and detached signature reference
+
+Messages must not contain repository content, credential values, arbitrary commands, CLI
+flags, environment-variable maps, or executable rule/config bodies.
+
+Consumers validate signature, expiry, tenant/repository/scan binding, canonical key,
+profile/scanner-set availability, kill switches, and quota before acknowledging. Queue
+leases are shorter than the sandbox hard timeout and are renewed by the orchestrator. The
+DLQ preserves tenant and scan attribution but not payload secrets.
+
+## Profile Contract
+
+### `JAVA_FAST_V1`
+
+- Scope: changed `.java` files plus bounded symbol/import context, relevant Java manifests,
+  changed IaC, and secret scanning within the selected file set.
+- Required: OpenGrep SAST and Trivy dependency/secret coverage.
+- Optional: Syft incremental inventory; it does not satisfy Deep SBOM coverage.
+- Limits: 1 GiB repository metadata, 256 MiB selected bytes, 25,000 files, 2 MiB per file,
+  5,000 findings, 64 MiB/25,000-record scanner artifact, 1 MiB bounded stdout/stderr,
+  1,024 file descriptors, and a 15-minute hard timeout.
+- Performance target: p95 <= 10 minutes.
+- External publication: only with complete required coverage and non-stale commit context.
+
+### `JAVA_DEEP_V1`
+
+- Scope: full bounded repository excluding approved generated/vendor behavior.
+- Required: OpenGrep SAST; Trivy dependency, secret, and IaC; Syft SBOM.
+- Limits: 2 GiB, 250,000 files, 5 MiB per file, 25,000 findings,
+  256 MiB/250,000-record scanner artifact, 1 MiB bounded stdout/stderr,
+  2,048 file descriptors, and a 60-minute hard timeout.
+- Performance target: p95 <= 45 minutes.
+
+### `COMMON_DEEP_V1`
+
+- Scope: dependency manifests, secrets, IaC, and source-workspace package inventory.
+- Required: Trivy and Syft.
+- Optional OpenGrep results are non-authoritative until an approved language profile exists.
+- AI advisory eligibility: false.
+- The UI and policy must not label this profile as language-complete SAST coverage.
+- Its resource/artifact/log/timeout ceiling equals `JAVA_DEEP_V1`.
+
+Languages after Java must pass `language-profile-extension.md`. Merely enabling generic rules
+or recognizing an extension cannot create a language-complete profile.
+
+## Repository Fetch Contract
+
+1. Orchestrator creates an attempt and requests a microVM.
+2. Provisioner establishes a unique workload identity and empty encrypted scratch volume.
+3. Sandbox exchanges its attested identity for one fixed-scan repo-read credential through
+   Token Broker.
+4. Sandbox fetches the fixed commit SHA. It never resolves a mutable ref itself.
+5. Credential is held in memory or tmpfs, excluded from process arguments, and wiped before
+   artifact handoff completes.
+6. Fetch metadata records the remote host, fixed commit, object count, and byte count, but
+   never records URL userinfo or credential material.
+
+Submodules and LFS object content are disabled by default. A future policy must enumerate
+each allowed secondary repository and issue separate scope-bound access.
+
+## Hostile Repository Preflight
+
+Preflight runs before any scanner and in the same microVM boundary. Validation order is:
+
+1. Normalize path separators and Unicode to NFC.
+2. Reject NUL, control characters, absolute paths, drive/UNC roots, and parent traversal.
+3. Detect case-fold and Unicode-normalization collisions.
+4. Resolve symlinks without following outside the workspace root.
+5. Enforce path depth, repository bytes, selected bytes, file count, and single-file size.
+6. Classify generated, vendor, fixture, hidden/system, LFS pointer, submodule, and archive
+   entries.
+7. Refuse archive expansion.
+8. Produce an inventory digest and `ACCEPT`, `REJECT`, or `RESTRICTED_ESCALATION` decision.
+
+Any mismatch between preflight inventory and the scanner-visible workspace is a security
+violation.
+
+## Scanner Wrapper Contract
+
+A wrapper is an immutable image entrypoint with no shell interpolation. It accepts a typed
+profile file generated by the platform and owns exact tool arguments.
+
+Required wrapper controls:
+
+- scanner binary/image and wrapper digest verification before start
+- non-root identity, read-only root, read-only repository mount, private writable output
+- default-deny network with no runtime database or rule download
+- CPU, memory, disk, process, file descriptor, output, finding, and wall-clock enforcement
+- bounded stdout/stderr capture with secret redaction
+- deterministic locale, timezone, and clock metadata
+- machine-readable output to a private path
+- explicit exit-code map to `SUCCEEDED`, `FAILED`, `TIMED_OUT`, or `QUARANTINED`
+- final artifact digest and envelope production
+
+The wrapper cannot accept tenant-provided command fragments, plugins, environment maps, or
+executable rules.
+
+## Scanner Responsibility Matrix
+
+| Capability | Authoritative scanner | Required profile | Durable output |
+| --- | --- | --- | --- |
+| Java source SAST | OpenGrep | Java Fast/Deep | Normalized finding |
+| Dependency vulnerability | Trivy | All profiles | Normalized finding |
+| Secret detection | Trivy | All profiles | Redacted normalized finding |
+| IaC misconfiguration | Trivy | Deep; changed IaC in Fast | Normalized finding |
+| Source SBOM | Syft | Deep profiles | CycloneDX JSON reference |
+
+Rules that duplicate another scanner's authoritative capability are disabled by default.
+If retained as supporting evidence, they cannot independently create or block a finding.
+
+## Result Ingress Contract
+
+The sandbox writes only `ScannerArtifactEnvelope` plus artifact bytes to a per-scan,
+write-only endpoint. Result ingress checks in this order:
+
+1. mTLS/workload identity and sandbox/attempt binding
+2. tenant, repository, scan, scanner, fixed commit, and profile binding
+3. scanner-set, profile, scanner image, wrapper, rule, database, schema, and normalizer digests,
+   signatures, provenance, and compatibility allowlists
+4. content digest and byte/record count
+5. maximum size, nesting, string length, and finding count
+6. UTF-8 and schema validation with unknown-field policy
+7. path canonicalization and coordinate bounds
+8. secret-field and unsafe markup checks
+9. produced timestamp and replay/idempotency key
+
+Accepted artifacts become short-lived Data/Security objects. Rejected artifacts record
+metadata only. Security-significant mismatches are encrypted into an access-restricted
+quarantine prefix with the same maximum seven-day retention and no user access.
+
+The sandbox never has direct Prisma, findings, policy, comment, or AI access.
+
+## Normalization Contract
+
+Each supported artifact schema has one explicit adapter version. Adapters emit
+`NormalizedSastFinding` and cannot change policy state.
+
+Normalized limits:
+
+- title <= 512 UTF-8 bytes
+- description <= 4,096 UTF-8 bytes
+- normalized path <= 1,024 UTF-8 bytes
+- symbol <= 512 UTF-8 bytes
+- rule ID/revision <= 256 UTF-8 bytes each
+- maximum 25 CWE and 25 CVE identifiers per finding
+- line and column values must be positive and within known file metadata when available
+- HTML is encoded as text; Markdown is sanitized only at presentation
+- unknown severity maps to `INFO` plus `UNKNOWN_SEVERITY`, never silently to `HIGH`
+
+Secret findings store a fingerprint and redacted preview. The detected value must not enter
+normalized finding, logs, audit metadata, or evidence.
+
+## Stable Fingerprint Contract
+
+The canonical preimage is:
+
+```text
+sast-fingerprint-v1
+| repositoryBindingId
+| capability
+| ruleSemanticId
+| normalizedPath
+| symbolAnchor
+| sinkKind
+| structuralHash
+```
+
+Every field is Unicode NFC normalized and delimiter escaped. The durable fingerprint is the
+SHA-256 digest of the UTF-8 preimage. Branch, target ref, commit SHA, line, column, scanner
+patch version, message text, and severity are excluded.
+
+If a rule changes semantic meaning, it receives a new `ruleSemanticId` even when its
+scanner-local rule ID stays unchanged.
+
+## Correlation Contract
+
+Correlation is deterministic and versioned:
+
+- `EXACT_FINGERPRINT`: one durable finding, new occurrence.
+- `SAME_DEPENDENCY_CVE`: dependency findings may group by ecosystem, normalized package,
+  resolved version, and CVE while preserving every manifest location.
+- `SUPPORTING_EVIDENCE`: a non-authoritative overlap can support but not replace a finding.
+- `POSSIBLE_OVERLAP`: display grouping only; no automatic merge or policy inheritance.
+
+Source SAST, secret, dependency, and IaC findings remain distinct capability families even
+when they refer to the same file.
+
+## Coverage Contract
+
+Coverage is evaluated after all required scanner runs reach terminal states.
+
+| Condition | Coverage | Comment/block | AI |
+| --- | --- | --- | --- |
+| Every required scanner accepted | `COMPLETE` | Policy may allow | Profile/policy may allow |
+| Required scanner absent/failed/timed out | `PARTIAL` | Deny | Deny |
+| Required scanner still pending/running | `PENDING` | Deny | Deny |
+| Quarantine, identity/digest mismatch, sandbox kill | `FAILED` | Deny | Deny |
+| Complete but stale commit | `COMPLETE + stale` | Deny | Deny |
+
+Optional scanner failure does not reduce required coverage but is visible. A scanner marked
+required by tenant policy becomes required before execution and affects the canonical key.
+
+## Failure Contract
+
+| Failure class | Examples | Automatic retry | Isolation/action |
+| --- | --- | --- | --- |
+| `RETRYABLE_INFRASTRUCTURE` | node loss, queue lease loss, transient storage failure | One retry; two attempts total | New sandbox |
+| `NON_RETRYABLE_INPUT` | size/path policy reject, unsupported encoding | No | Explain in dashboard |
+| `SCANNER_DEFECT` | crash on valid bounded input, schema-invalid output | No identical retry | Quarantine; scanner kill switch candidate |
+| `SECURITY_VIOLATION` | scope/digest mismatch, root escape, tamper signal | No | Kill sandbox, quarantine, `RESTRICTED` escalation |
+| `CAPACITY_REJECTED` | tenant budget or concurrency exceeded | No immediate retry | Defer/reject with retry condition |
+
+Every retry revalidates current kill switches and scanner-set availability but preserves the
+original immutable scan intent.
+
+## Evidence Contract
+
+Default maximums:
+
+- total bytes: 32 KiB
+- fragments: 5
+- bytes per fragment: 8 KiB
+- context: five lines before and after
+- retention: seven days
+
+Evidence construction applies scanner-provided redaction, platform secret detection, entropy
+and known-format redaction, path/identifier classification, and reconstruction-risk checks.
+Each fragment records the source-file line count, redaction decision reference, and digest;
+the pack records policy version, classification and reconstruction-risk decision references,
+and its deletion schedule. It records truncation and suppressed fragment counts. A full file,
+archive, broad debug log, raw SARIF/JSON, or sequential fragments that reconstruct substantial
+source is rejected.
+
+AI receives finding metadata and reduced evidence references only after a second redaction
+pass. AI never receives the result-ingress artifact reference.
+
+## Cleanup Contract
+
+A scan attempt is not operationally complete until:
+
+- repository credential is revoked/expired and wiped
+- scanner processes and child processes are dead
+- writable output and scratch volumes are destroyed
+- microVM is terminated
+- result ingress is closed to new writes
+- cleanup evidence and final audit signal are recorded
+
+Missing destruction evidence beyond the cleanup SLO is a security alert and blocks the
+sandbox provider from accepting new work when the failure rate exceeds its threshold.

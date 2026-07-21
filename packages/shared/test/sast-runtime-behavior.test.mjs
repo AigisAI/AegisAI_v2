@@ -1,0 +1,411 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import ts from 'typescript';
+
+const source = readFileSync(new URL('../src/types/sast-runtime.ts', import.meta.url), 'utf8');
+const transpiled = ts.transpileModule(source, {
+  compilerOptions: {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022
+  }
+});
+const localModule = { exports: {} };
+const evaluateModule = new Function('module', 'exports', transpiled.outputText);
+evaluateModule(localModule, localModule.exports);
+const runtime = localModule.exports;
+
+const digest = (character) => `sha256:${character.repeat(64)}`;
+
+const signedArtifact = (character) => ({
+  digest: digest(character),
+  signatureRef: `signature://${character}`,
+  provenanceRef: `provenance://${character}`
+});
+
+const ruleBundle = (scanner, character, state = 'ACTIVE') => ({
+  bundleId: `${scanner.toLowerCase()}-rules`,
+  version: '1.0.0',
+  state,
+  digest: digest(character),
+  signatureRef: `signature://rules/${scanner}`,
+  provenanceRef: `provenance://rules/${scanner}`,
+  compatibilityRef: `compatibility://rules/${scanner}`,
+  rolloutPolicyRef: `rollout://rules/${scanner}`,
+  killSwitchRef: `kill-switch://rules/${scanner}`,
+  scanner,
+  source: 'PLATFORM_MANAGED',
+  immutable: true,
+  customerExecutableConfigAllowed: false
+});
+
+const scannerRuntime = (scanner, character, wrapperCharacter) => ({
+  ...signedArtifact(character),
+  scanner,
+  version: '1.0.0',
+  sbomRef: `sbom://${scanner}`,
+  wrapper: signedArtifact(wrapperCharacter)
+});
+
+const buildScannerSet = () => ({
+  scannerSetVersion: 'scanner-set-1',
+  scannerSetDigest: digest('1'),
+  signatureRef: 'signature://scanner-set-1',
+  provenanceRef: 'provenance://scanner-set-1',
+  scanners: {
+    OPENGREP: scannerRuntime('OPENGREP', 'a', 'd'),
+    TRIVY: scannerRuntime('TRIVY', 'b', 'e'),
+    SYFT: scannerRuntime('SYFT', 'c', 'f')
+  },
+  ruleBundles: [ruleBundle('OPENGREP', '7'), ruleBundle('TRIVY', '8')],
+  vulnerabilityDatabase: {
+    ...signedArtifact('9'),
+    databaseVersion: '2026-07-21',
+    publishedAt: '2026-07-21T00:00:00Z'
+  },
+  schemaBundle: signedArtifact('0'),
+  normalizerBundle: signedArtifact('6'),
+  sbomSchema: 'CYCLONEDX_JSON',
+  rollbackRef: 'rollback://scanner-set-0'
+});
+
+const buildPlan = () => ({
+  tenantId: 'tenant-1',
+  scanRequestId: 'scan-1',
+  canonicalScanKey: digest('2'),
+  profile: runtime.SAST_SCAN_PROFILES.JAVA_FAST_V1,
+  profileDigest: digest('3'),
+  policyVersion: 'policy-1',
+  repositoryState: {
+    repositoryBindingId: 'repository-1',
+    fixedCommitSha: 'a'.repeat(40),
+    targetRef: 'refs/heads/dev',
+    shallowFetchPreferred: true,
+    submodulesEnabled: false,
+    lfsObjectsFetched: false
+  },
+  scannerSet: buildScannerSet(),
+  isolationClass: 'HARDENED',
+  resultIngressRef: 'ingress://scan-1',
+  evidenceOutputRef: 'evidence://scan-1',
+  auditSinkRef: 'audit://scan-1',
+  forbiddenCapabilities: [...runtime.SAST_FORBIDDEN_CAPABILITIES]
+});
+
+const buildArtifactEnvelope = (plan) => ({
+  tenantId: plan.tenantId,
+  scanRequestId: plan.scanRequestId,
+  attemptId: 'attempt-1',
+  scannerRunId: 'scanner-run-1',
+  workloadIdentityRef: 'workload://attempt-1',
+  scanner: 'OPENGREP',
+  scannerVersion: plan.scannerSet.scanners.OPENGREP.version,
+  scannerImageDigest: plan.scannerSet.scanners.OPENGREP.digest,
+  wrapperDigest: plan.scannerSet.scanners.OPENGREP.wrapper.digest,
+  ruleBundleDigest: plan.scannerSet.ruleBundles.find((bundle) => bundle.scanner === 'OPENGREP')
+    .digest,
+  scannerSetDigest: plan.scannerSet.scannerSetDigest,
+  profileId: plan.profile.id,
+  profileDigest: plan.profileDigest,
+  inputCommitSha: plan.repositoryState.fixedCommitSha,
+  artifactSchema: 'OPENGREP_SARIF',
+  artifactSchemaVersion: '2.1.0',
+  artifactRef: 'artifact://scanner-run-1',
+  contentDigest: digest('4'),
+  byteSize: 1024,
+  recordCount: 10,
+  truncated: false,
+  exitCode: 0,
+  executionStatus: 'SUCCEEDED',
+  producedAt: '2026-07-21T00:01:00Z'
+});
+
+const coverageRecord = (scanner, capabilities) => ({
+  scanner,
+  required: true,
+  capabilities,
+  status: 'SUCCEEDED',
+  artifactAccepted: true,
+  scannerVersion: '1.0.0',
+  outputDigest: digest(scanner === 'OPENGREP' ? 'a' : 'b')
+});
+
+const buildPromotionEvidence = () => ({
+  bundle: ruleBundle('OPENGREP', '7', 'VALIDATED'),
+  signedArtifactVerified: true,
+  provenanceVerified: true,
+  goldenCorpusPassRate: 1,
+  mustDetectRecall: 0.95,
+  criticalHighPrecision: 0.9,
+  priorMustDetectRegressionRecall: 1,
+  maliciousCorpusPassRate: 1,
+  parserRejectRate: 1,
+  falsePositiveIncrease: 0.02,
+  scannerFailureRate: 0.02,
+  p95LatencyIncrease: 0.2,
+  affectedProfilePositiveCaseCount: 200,
+  affectedProfileNegativeCaseCount: 200,
+  minimumChangedRulePositiveCaseCount: 10,
+  minimumChangedRuleNegativeCaseCount: 10,
+  criticalHighRuleChanged: true,
+  minimumChangedCriticalHighRulePositiveCaseCount: 20,
+  minimumChangedCriticalHighRuleNegativeCaseCount: 20,
+  performanceRunsPerProfileSizeBucket: 30,
+  normalizationDeterminismPassRate: 1,
+  artifactBindingPassRate: 1,
+  fingerprintFixturePassRate: 1,
+  coverageDecisionFixturePassRate: 1,
+  retentionExpiryPassRate: 1,
+  crossTenantLeakCount: 0,
+  secretLeakCount: 0,
+  sandboxEscapeCount: 0,
+  staleExternalPublicationCount: 0,
+  unauthorizedEgressCount: 0,
+  missingDestructionEvidenceCount: 0,
+  evidencePolicyViolationCount: 0,
+  unsignedArtifactExecutionCount: 0,
+  securityApprovalRef: 'approval://security',
+  platformApprovalRef: 'approval://platform',
+  rollbackRef: 'rollback://rules-0'
+});
+
+test('built-in SAST profiles are immutable and satisfy the complete profile validator', () => {
+  for (const profile of Object.values(runtime.SAST_SCAN_PROFILES)) {
+    assert.equal(runtime.isSastScanProfileValid(profile), true);
+    assert.equal(Object.isFrozen(profile), true);
+    assert.equal(Object.isFrozen(profile.requiredScanners), true);
+    assert.equal(Object.isFrozen(profile.limits), true);
+    assert.equal(Object.isFrozen(profile.pathPolicy), true);
+  }
+
+  const invalidProfile = {
+    ...runtime.SAST_SCAN_PROFILES.JAVA_FAST_V1,
+    requiredScanners: ['OPENGREP'],
+    requiredCapabilities: ['SAST', 'SECRET_DETECTION']
+  };
+  assert.equal(runtime.isSastScanProfileValid(invalidProfile), false);
+});
+
+test('scan plans and artifact envelopes bind fixed intent and reject normalization ambiguity', () => {
+  const plan = buildPlan();
+  const envelope = buildArtifactEnvelope(plan);
+
+  assert.equal(runtime.isScannerSetDescriptorValid(plan.scannerSet), true);
+  assert.equal(runtime.isSastScanPlanValid(plan), true);
+  assert.equal(runtime.isScannerArtifactEnvelopeBoundToPlan(envelope, plan), true);
+  assert.equal(runtime.isScannerArtifactEligibleForNormalization(envelope, plan), true);
+
+  assert.equal(
+    runtime.isScannerArtifactEnvelopeBoundToPlan(
+      { ...envelope, inputCommitSha: 'b'.repeat(40) },
+      plan
+    ),
+    false
+  );
+  assert.equal(
+    runtime.isScannerArtifactEligibleForNormalization({ ...envelope, truncated: true }, plan),
+    false
+  );
+});
+
+test('coverage is complete only for accepted authoritative required capabilities', () => {
+  const profile = runtime.SAST_SCAN_PROFILES.JAVA_FAST_V1;
+  const opengrep = coverageRecord('OPENGREP', ['SAST']);
+  const trivy = coverageRecord('TRIVY', ['DEPENDENCY_VULNERABILITY', 'SECRET_DETECTION']);
+
+  const complete = runtime.evaluateSastCoverage({
+    profile,
+    records: [opengrep, trivy],
+    stale: false,
+    securityBlocked: false
+  });
+  assert.equal(complete.state, 'COMPLETE');
+  assert.equal(complete.externalPublicationAllowed, true);
+  assert.equal(complete.aiAdvisoryAllowed, true);
+
+  const duplicate = runtime.evaluateSastCoverage({
+    profile,
+    records: [opengrep, opengrep, trivy],
+    stale: false,
+    securityBlocked: false
+  });
+  assert.equal(duplicate.state, 'FAILED');
+  assert.equal(duplicate.externalPublicationAllowed, false);
+  assert.ok(duplicate.reasonCodes.includes('DUPLICATE_SCANNER_RECORD'));
+
+  const missingCapability = runtime.evaluateSastCoverage({
+    profile,
+    records: [opengrep, coverageRecord('TRIVY', ['DEPENDENCY_VULNERABILITY'])],
+    stale: false,
+    securityBlocked: false
+  });
+  assert.equal(missingCapability.state, 'PARTIAL');
+  assert.deepEqual(missingCapability.missingRequiredCapabilities, ['SECRET_DETECTION']);
+
+  const stale = runtime.evaluateSastCoverage({
+    profile,
+    records: [opengrep, trivy],
+    stale: true,
+    securityBlocked: false
+  });
+  assert.equal(stale.state, 'COMPLETE');
+  assert.equal(stale.externalPublicationAllowed, false);
+});
+
+test('evidence validation enforces byte, full-file, decision, and retention boundaries', () => {
+  const policy = runtime.DEFAULT_SAST_EVIDENCE_POLICY;
+  const fragment = {
+    normalizedPath: 'src/main/java/App.java',
+    startLine: 10,
+    endLine: 20,
+    sourceFileLineCount: 100,
+    redactedContent: 'redacted',
+    byteSize: 8,
+    contentDigest: digest('5'),
+    secretRedactionApplied: true,
+    redactionDecisionRef: 'redaction://fragment-1',
+    isFullFile: false
+  };
+  const pack = {
+    evidencePackId: 'evidence-1',
+    tenantId: 'tenant-1',
+    repositoryBindingId: 'repository-1',
+    scanRequestId: 'scan-1',
+    findingFingerprint: digest('6'),
+    policyVersion: 'evidence-policy-1',
+    fragments: [fragment],
+    totalBytes: 8,
+    truncated: false,
+    suppressedFragmentCount: 0,
+    reconstructionRiskChecked: true,
+    reconstructionRiskDecisionRef: 'reconstruction://evidence-1',
+    classificationDecisionRef: 'classification://evidence-1',
+    deletionScheduleRef: 'deletion://evidence-1',
+    dashboardSafe: true,
+    aiSafe: true,
+    createdAt: '2026-07-21T00:00:00Z',
+    expiresAt: '2026-07-22T00:00:00Z'
+  };
+
+  assert.equal(runtime.isSastEvidencePackSafe(pack, policy), true);
+  assert.equal(
+    runtime.isSastEvidencePackSafe(
+      {
+        ...pack,
+        fragments: [{ ...fragment, startLine: 1, endLine: 100 }]
+      },
+      policy
+    ),
+    false
+  );
+  assert.equal(
+    runtime.isSastEvidencePackSafe(
+      { ...pack, expiresAt: '2026-07-29T00:00:01Z' },
+      policy
+    ),
+    false
+  );
+});
+
+test('promotion, canary, and production gates enforce samples, approvals, and zero tolerance', () => {
+  const promotion = buildPromotionEvidence();
+  assert.equal(runtime.isRuleBundlePromotionReady(promotion), true);
+  assert.equal(
+    runtime.isRuleBundlePromotionReady({ ...promotion, affectedProfilePositiveCaseCount: 199 }),
+    false
+  );
+  assert.equal(
+    runtime.isRuleBundlePromotionReady({
+      ...promotion,
+      platformApprovalRef: promotion.securityApprovalRef
+    }),
+    false
+  );
+
+  const canary = {
+    bundle: ruleBundle('OPENGREP', '7', 'CANARY'),
+    completedEligibleScans: 1000,
+    observationHours: 48,
+    finalStep: true,
+    falsePositiveIncrease: 0.02,
+    scannerFailureRate: 0.02,
+    p95LatencyIncrease: 0.2,
+    unexplainedCriticalHighVolumeChange: 0.2,
+    telemetryComplete: true,
+    crossTenantLeakCount: 0,
+    secretLeakCount: 0,
+    sandboxEscapeCount: 0,
+    staleExternalPublicationCount: 0,
+    securityApprovalRef: 'approval://security',
+    platformApprovalRef: 'approval://platform',
+    rollbackRef: 'rollback://rules-0'
+  };
+  assert.equal(runtime.isRuleBundleActivationReady(canary), true);
+  assert.equal(
+    runtime.isRuleBundleActivationReady({ ...canary, completedEligibleScans: 999 }),
+    false
+  );
+
+  const quality = {
+    eligibleCompletedScans: 1000,
+    observationHours: 48,
+    performanceRunsPerProfileSizeBucket: 30,
+    goldenCorpusPassRate: 1,
+    criticalHighPrecision: 0.9,
+    mustDetectRecall: 0.95,
+    priorMustDetectRegressionRecall: 1,
+    maliciousCorpusPassRate: 1,
+    parserRejectRate: 1,
+    fastLaneP95Milliseconds: 600000,
+    deepLaneP95Milliseconds: 2700000,
+    falsePositiveIncrease: 0.02,
+    scannerFailureRate: 0.02,
+    normalizationDeterminismPassRate: 1,
+    artifactBindingPassRate: 1,
+    fingerprintFixturePassRate: 1,
+    coverageDecisionFixturePassRate: 1,
+    retentionExpiryPassRate: 1,
+    crossTenantLeakCount: 0,
+    secretLeakCount: 0,
+    sandboxEscapeCount: 0,
+    staleExternalPublicationCount: 0,
+    unauthorizedEgressCount: 0,
+    missingDestructionEvidenceCount: 0,
+    evidencePolicyViolationCount: 0,
+    unsignedArtifactExecutionCount: 0
+  };
+  assert.equal(runtime.areSastProductionQualityGatesSatisfied(quality), true);
+  assert.equal(
+    runtime.areSastProductionQualityGatesSatisfied({ ...quality, unauthorizedEgressCount: 1 }),
+    false
+  );
+  assert.equal(
+    runtime.areSastProductionQualityGatesSatisfied({ ...quality, scannerFailureRate: -0.01 }),
+    false
+  );
+});
+
+test('failure policy retries only the first infrastructure attempt', () => {
+  const first = runtime.decideSastFailure({
+    failureClass: 'RETRYABLE_INFRASTRUCTURE',
+    attempt: 1,
+    reasonCode: 'NODE_LOST'
+  });
+  const second = runtime.decideSastFailure({
+    failureClass: 'RETRYABLE_INFRASTRUCTURE',
+    attempt: 2,
+    reasonCode: 'NODE_LOST'
+  });
+  const security = runtime.decideSastFailure({
+    failureClass: 'SECURITY_VIOLATION',
+    attempt: 1,
+    reasonCode: 'DIGEST_MISMATCH'
+  });
+
+  assert.equal(first.retryAllowed, true);
+  assert.equal(second.retryAllowed, false);
+  assert.equal(security.retryAllowed, false);
+  assert.equal(security.quarantineRequired, true);
+  assert.equal(security.hardenedIsolationRequired, true);
+  assert.equal(security.externalPublicationAllowed, false);
+});

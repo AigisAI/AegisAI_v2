@@ -1,0 +1,60 @@
+# Requirements Checklist: Production SAST Runtime and Rule Governance
+
+## Architecture and Scope
+
+- [x] 006 has a canonical quickstart and explicit read/validation order.
+- [x] Scan Plane, AI Plane, and Data/Security Plane boundaries remain explicit.
+- [x] OpenGrep owns SAST, Trivy owns dependency/secret/IaC findings, and Syft owns SBOM inventory.
+- [x] Java Fast/Deep and Common Deep profiles state claimed and unclaimed coverage.
+- [x] Languages after Java require a versioned profile, corpus, normalization, rollout, and coverage-admission contract.
+- [x] Customer code execution, package installation, build, dynamic test, and direct upload are prohibited.
+- [x] Live Kubernetes and provider microVM execution remain in the 005 operations boundary.
+
+## Isolation and Input Safety
+
+- [x] Every attempt uses one non-reused hardened/restricted microVM.
+- [x] Fixed-commit shallow fetch and short-lived repo-read credentials are required.
+- [x] Submodule, LFS, archive, path, symlink, collision, depth, size, file, process, and time behavior is explicit.
+- [x] Scanner assets are pre-mirrored and runtime updates/unrestricted egress are prohibited.
+- [x] Destruction evidence and cleanup alert behavior are defined.
+
+## Artifact and Finding Integrity
+
+- [x] Artifact ingress independently verifies attribution, identity, digest, schema, limits, and status.
+- [x] Raw output is treated as untrusted and never exposed by user-facing APIs.
+- [x] Versioned normalization, quarantine, secret redaction, and provenance are defined.
+- [x] Stable fingerprint inputs exclude line, branch, and commit while preserving repository scope.
+- [x] Correlation preserves every provenance record and authoritative severity.
+- [x] Fixed/reopen transitions require later complete comparable coverage.
+
+## Coverage, Evidence, and AI
+
+- [x] Required scanner failure, timeout, absence, quarantine, and stale state fail closed.
+- [x] Retry is limited to infrastructure failure and at most two attempts.
+- [x] External publication and AI advisory require complete non-stale coverage.
+- [x] Evidence is bounded, redacted, reconstruction-checked, and retained no longer than seven days.
+- [x] AI receives no full repository or SCM credential and remains advisory-only.
+
+## Rule and Supply-Chain Governance
+
+- [x] Scanner, rule, database, schema, and normalizer artifacts are immutable and digest pinned.
+- [x] Signature, provenance, compatibility, semantic rule identity, and rollback are required.
+- [x] Rule promotion, separation of duties, deterministic canary, kill switches, and rollback are explicit.
+- [x] Tenant policy and waiver metadata cannot mutate or inject executable rule content.
+- [x] Disabled required coverage cannot be silently reported complete.
+
+## Quantitative Readiness
+
+- [x] Correctness, precision, recall, regression, parser, malicious, privacy, and supply-chain gates are measurable.
+- [x] Corpus sample sufficiency and exact metric denominators are defined.
+- [x] Fast/Deep absolute SLOs and relative candidate regression limits are defined.
+- [x] Cross-tenant leak, secret leak, sandbox escape, and stale publication tolerance is zero.
+- [x] Canary observation windows, minimum scans, automatic pause, and production rolling windows are defined.
+- [x] A machine-readable immutable go/no-go record is required.
+
+## Repository Workflow
+
+- [x] AGENTS, README, and GitHub conventions point to 006 as active.
+- [x] Active-feature tests cover every required 006 design artifact and completed baseline.
+- [x] The complete quickstart validation path passes.
+- [ ] Issue, branch, commit, and Draft PR follow repository naming and template conventions.

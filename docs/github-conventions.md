@@ -59,8 +59,10 @@ Issue references may be added in the footer when needed.
 
 ## Spec Kit Compatibility
 
-The active implementation package lives under `specs/005-production-deployment-operations/`.
-The completed `specs/004-production-runtime-infrastructure/` package remains the runtime
+The active implementation package lives under `specs/006-production-sast-runtime-design/`.
+The completed `specs/005-production-deployment-operations/` package remains the
+provider-neutral deployment operations contract baseline. The completed
+`specs/004-production-runtime-infrastructure/` package remains the runtime
 infrastructure baseline. The completed `specs/003-production-ai-inference-runtime/` package
 remains the production AI inference baseline. The completed
 `specs/002-production-scan-architecture/` package remains the production scan architecture
@@ -70,5 +72,5 @@ When you are working on a GitHub-style branch such as `feat/4-github-setup`, use
 `SPECIFY_FEATURE` to point Spec Kit scripts at the active feature directory when needed:
 
 ```powershell
-$env:SPECIFY_FEATURE = "005-production-deployment-operations"
+$env:SPECIFY_FEATURE = "006-production-sast-runtime-design"
 ```
