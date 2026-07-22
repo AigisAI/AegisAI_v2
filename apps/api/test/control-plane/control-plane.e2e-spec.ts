@@ -117,7 +117,7 @@ describe("Control Plane skeleton (e2e)", () => {
     $queryRawUnsafe: jest.Mock;
     tenant: { upsert: jest.Mock };
     scmIntegration: { upsert: jest.Mock };
-    repositoryBinding: { upsert: jest.Mock; deleteMany: jest.Mock };
+    repositoryBinding: { upsert: jest.Mock; updateMany: jest.Mock };
     auditEvent: { create: jest.Mock };
   };
   let gitlabCloudIntegrationClientMock: {
@@ -162,7 +162,7 @@ describe("Control Plane skeleton (e2e)", () => {
       scmIntegration: { upsert: jest.fn().mockResolvedValue({}) },
       repositoryBinding: {
         upsert: jest.fn().mockResolvedValue({}),
-        deleteMany: jest.fn().mockResolvedValue({ count: 1 })
+        updateMany: jest.fn().mockResolvedValue({ count: 1 })
       },
       auditEvent: { create: jest.fn().mockResolvedValue({}) }
     };
@@ -230,7 +230,7 @@ describe("Control Plane skeleton (e2e)", () => {
     prismaMock.tenant.upsert.mockClear();
     prismaMock.scmIntegration.upsert.mockClear();
     prismaMock.repositoryBinding.upsert.mockClear();
-    prismaMock.repositoryBinding.deleteMany.mockClear();
+    prismaMock.repositoryBinding.updateMany.mockClear();
     prismaMock.auditEvent.create.mockClear();
     gitlabCloudIntegrationClientMock.listIntegrationRepositories.mockClear();
   });
@@ -459,12 +459,16 @@ describe("Control Plane skeleton (e2e)", () => {
         }
       })
     );
-    expect(prismaMock.repositoryBinding.deleteMany).toHaveBeenCalledWith(
+    expect(prismaMock.repositoryBinding.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           tenantId: "tenant_webhook_github_app",
           scmIntegrationId: installData.id,
           providerRepoId: { in: ["3003"] }
+        },
+        data: {
+          status: 'REVOKED',
+          revokedAt: expect.any(Date)
         }
       })
     );

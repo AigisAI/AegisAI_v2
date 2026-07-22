@@ -50,7 +50,7 @@ describe("Comment dispatcher boundary API (e2e)", () => {
         scmIntegration: { upsert: jest.fn().mockResolvedValue({}) },
         repositoryBinding: {
           upsert: jest.fn().mockResolvedValue({}),
-          deleteMany: jest.fn().mockResolvedValue({ count: 1 })
+          updateMany: jest.fn().mockResolvedValue({ count: 1 })
         },
         auditEvent: { create: jest.fn().mockResolvedValue({}) }
       })

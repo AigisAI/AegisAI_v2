@@ -1,9 +1,8 @@
--- Shared SAST queue admission ledger. All replicas use these rows through
--- SERIALIZABLE transactions; process-local counters are never authoritative.
+-- Shared SAST queue admission ledger. Live counters are lane-global across
+-- UTC rollover; only the daily admission budget is day-scoped.
 CREATE TABLE "SastQueueLedger" (
     "id" TEXT NOT NULL,
     "lane" "ScanLane" NOT NULL,
-    "dailyWindowStartedAt" TIMESTAMP(3) NOT NULL,
     "snapshotVersion" BIGINT NOT NULL,
     "queuedInLane" INTEGER NOT NULL,
     "lastServedTenantId" TEXT,
@@ -20,16 +19,24 @@ CREATE TABLE "SastQueueTenantUsage" (
     "tenantId" TEXT NOT NULL,
     "activeForTenant" INTEGER NOT NULL,
     "queuedForTenant" INTEGER NOT NULL,
-    "admittedTodayForTenant" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "SastQueueTenantUsage_pkey" PRIMARY KEY ("ledgerId", "tenantId"),
     CONSTRAINT "SastQueueTenantUsage_counters_check"
-      CHECK (
-        "activeForTenant" >= 0 AND
-        "queuedForTenant" >= 0 AND
-        "admittedTodayForTenant" >= 0
-      )
+      CHECK ("activeForTenant" >= 0 AND "queuedForTenant" >= 0)
+);
+
+CREATE TABLE "SastQueueDailyTenantUsage" (
+    "ledgerId" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "dailyWindowStartedAt" TIMESTAMP(3) NOT NULL,
+    "admittedTodayForTenant" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "SastQueueDailyTenantUsage_pkey"
+      PRIMARY KEY ("ledgerId", "tenantId", "dailyWindowStartedAt"),
+    CONSTRAINT "SastQueueDailyTenantUsage_admitted_check"
+      CHECK ("admittedTodayForTenant" >= 0)
 );
 
 CREATE TABLE "SastQueueRepositoryUsage" (
@@ -54,6 +61,7 @@ CREATE TABLE "SastQueueReservation" (
     "repositoryBindingId" TEXT NOT NULL,
     "queuePolicyVersion" TEXT NOT NULL,
     "queuePolicyDigest" TEXT NOT NULL,
+    "dailyWindowStartedAt" TIMESTAMP(3) NOT NULL,
     "decision" JSONB NOT NULL,
     "enqueuedAt" TIMESTAMP(3) NOT NULL,
     "dispatchLeaseOwner" TEXT,
@@ -77,12 +85,10 @@ CREATE TABLE "SastQueueReservation" (
       )
 );
 
-CREATE UNIQUE INDEX "SastQueueLedger_lane_dailyWindowStartedAt_key"
-  ON "SastQueueLedger"("lane", "dailyWindowStartedAt");
-CREATE INDEX "SastQueueLedger_dailyWindowStartedAt_idx"
-  ON "SastQueueLedger"("dailyWindowStartedAt");
-CREATE INDEX "SastQueueTenantUsage_tenantId_idx"
-  ON "SastQueueTenantUsage"("tenantId");
+CREATE UNIQUE INDEX "SastQueueLedger_lane_key" ON "SastQueueLedger"("lane");
+CREATE INDEX "SastQueueTenantUsage_tenantId_idx" ON "SastQueueTenantUsage"("tenantId");
+CREATE INDEX "SastQueueDailyTenantUsage_tenantId_dailyWindowStartedAt_idx"
+  ON "SastQueueDailyTenantUsage"("tenantId", "dailyWindowStartedAt");
 CREATE INDEX "SastQueueRepositoryUsage_tenantId_repositoryBindingId_idx"
   ON "SastQueueRepositoryUsage"("tenantId", "repositoryBindingId");
 CREATE INDEX "SastQueueReservation_ledgerId_publishedAt_enqueuedAt_idx"
@@ -91,9 +97,15 @@ CREATE INDEX "SastQueueReservation_tenantId_lane_enqueuedAt_idx"
   ON "SastQueueReservation"("tenantId", "lane", "enqueuedAt");
 CREATE INDEX "SastQueueReservation_dispatchLeaseExpiresAt_idx"
   ON "SastQueueReservation"("dispatchLeaseExpiresAt");
+CREATE INDEX "SastQueueReservation_dailyWindowStartedAt_idx"
+  ON "SastQueueReservation"("dailyWindowStartedAt");
 
 ALTER TABLE "SastQueueTenantUsage"
   ADD CONSTRAINT "SastQueueTenantUsage_ledgerId_fkey"
+  FOREIGN KEY ("ledgerId") REFERENCES "SastQueueLedger"("id")
+  ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "SastQueueDailyTenantUsage"
+  ADD CONSTRAINT "SastQueueDailyTenantUsage_ledgerId_fkey"
   FOREIGN KEY ("ledgerId") REFERENCES "SastQueueLedger"("id")
   ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "SastQueueRepositoryUsage"

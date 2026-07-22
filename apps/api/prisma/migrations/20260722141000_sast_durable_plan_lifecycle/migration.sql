@@ -24,5 +24,5 @@ ADD CONSTRAINT "SastQueueReservation_scanRequestId_fkey"
 FOREIGN KEY ("scanRequestId") REFERENCES "ScanRequest"("id")
 ON DELETE RESTRICT ON UPDATE CASCADE;
 
-CREATE INDEX "SastQueueReservation_completedAt_idx"
-ON "SastQueueReservation"("completedAt");
+CREATE INDEX "SastQueueReservation_lane_publishedAt_completedAt_enqueuedAt_idx"
+ON "SastQueueReservation"("lane", "publishedAt", "completedAt", "enqueuedAt");

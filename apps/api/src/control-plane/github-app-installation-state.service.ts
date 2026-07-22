@@ -72,11 +72,15 @@ export class GithubAppInstallationStateService {
     }
 
     if (removedProviderRepoIds.length > 0) {
-      await this.prisma.repositoryBinding.deleteMany({
+      await this.prisma.repositoryBinding.updateMany({
         where: {
           tenantId: integration.tenantId,
           scmIntegrationId: integration.id,
           providerRepoId: { in: removedProviderRepoIds }
+        },
+        data: {
+          status: 'REVOKED',
+          revokedAt: new Date()
         }
       });
     }
@@ -121,7 +125,9 @@ export class GithubAppInstallationStateService {
       update: {
         fullName: repository.fullName,
         defaultBranch: repository.defaultBranch,
-        isPrivate: repository.isPrivate
+        isPrivate: repository.isPrivate,
+        status: 'ACTIVE',
+        revokedAt: null
       },
       create: {
         id: repository.id,
@@ -130,7 +136,8 @@ export class GithubAppInstallationStateService {
         providerRepoId: repository.providerRepoId,
         fullName: repository.fullName,
         defaultBranch: repository.defaultBranch,
-        isPrivate: repository.isPrivate
+        isPrivate: repository.isPrivate,
+        status: 'ACTIVE'
       }
     });
   }

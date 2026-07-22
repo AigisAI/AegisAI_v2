@@ -106,12 +106,16 @@ export class PrismaControlPlaneScanRequestStore extends ControlPlaneScanRequestS
           providerRepoId: input.repositoryBinding.providerRepoId,
           fullName: input.repositoryBinding.fullName,
           defaultBranch: input.repositoryBinding.defaultBranch,
-          isPrivate: input.repositoryBinding.isPrivate
+          isPrivate: input.repositoryBinding.isPrivate,
+          status: 'ACTIVE'
         }
       });
-      if (repositoryBinding.id !== input.repositoryBinding.id) {
+      if (
+        repositoryBinding.id !== input.repositoryBinding.id ||
+        repositoryBinding.status !== 'ACTIVE'
+      ) {
         throw new ConflictException(
-          'Durable repository binding identity does not match runtime state.'
+          'Durable repository binding is revoked or does not match runtime state.'
         );
       }
 

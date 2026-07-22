@@ -107,15 +107,17 @@ and Deep must resolve to `scan.fast.v1` and `scan.deep.v1` respectively. Admissi
 tenant active/queued/daily limits, repository concurrency/frequency, and lane queue capacity.
 
 The pure policy evaluator is not an admission authority. `SastQueueAdmissionService` must compare
-the complete observed counters and `snapshotVersion` with the authoritative lane/day ledger and,
-in one critical section, create an idempotent reservation, increment tenant/lane/daily counters,
-record the repository admission time, and advance the version. A replayed or concurrently consumed
+the complete observed live counters and `snapshotVersion` with the authoritative lane-global
+ledger, compare the daily budget in a separate normalized UTC-day row, and in one critical section
+create an idempotent reservation, increment tenant/lane/daily counters, record the repository
+admission time, and advance the version. A replayed or concurrently consumed
 snapshot is `DEFERRED` as `QUEUE_USAGE_STALE`; it cannot consume capacity. The production adapter
 for this boundary must use one shared transactional/CAS store across API replicas before queue
 publication; a per-replica cache is not authoritative. `PrismaSastQueueAdmissionStore` implements
 that boundary with PostgreSQL `SERIALIZABLE` transactions, bounded serialization/unique-conflict
-retries, durable reservation records, and a canonical millisecond UTC lane/day key. Equivalent UTC
-representations therefore cannot create parallel ledgers, and process restarts retain idempotency.
+retries, durable reservation records, one live ledger per lane, and canonical millisecond UTC
+daily-budget keys. Equivalent UTC representations therefore cannot create parallel daily budgets,
+active/queued work cannot disappear or become ghost usage at midnight, and process restarts retain idempotency.
 The immutable `ScanRequest` exists in PostgreSQL before reservation. The admitted planning state
 and complete immutable `SastScanPlan` are written with the reservation in the same transaction,
 and the reservation has a restrictive foreign key to that request. A dispatcher therefore receives
@@ -128,8 +130,8 @@ deterministic tenant round-robin ordering, with the last-served tenant rotated t
 capacity and dispatch order are separate concerns: durable admitted reservations form the pending
 dispatch set, while `claimNextForDispatch` advances the shared ledger cursor in the same serializable
 transaction that acquires a bounded dispatch lease. Claiming searches all pending UTC windows for
-the lane and drains the oldest ledger first, so a day rollover or dispatcher restart cannot hide
-older work. An acknowledgement is accepted only from the lease owner before lease expiry;
+the lane through the lane-global ledger and selects the oldest eligible backlog, so a day rollover
+or dispatcher restart cannot hide older work. An acknowledgement is accepted only from the lease owner before lease expiry;
 unacknowledged work becomes eligible for one retry after the first expiry. After two total expired
 leases, the next claim atomically marks the reservation and scan request `FAILED`, decrements queued
 lane/tenant counters, and advances the ledger version instead of redispatching forever. A valid
@@ -144,6 +146,10 @@ It never exposes trusted inventory internals, source, credentials, or scanner co
 Once a canonical planning identity is recorded it cannot be replaced by a different identity.
 An admitted decision is idempotent across delivery timestamps and immutable, and planning cannot rewrite a running,
 completed, failed, or canceled scan.
+
+SCM repository removal soft-revokes the durable repository binding instead of deleting immutable
+scan history. Revoked bindings cannot create new work; historical requests and reservations retain
+their tenant/repository attribution, and an authorized re-add explicitly restores `ACTIVE` state.
 
 Risk escalation signals on the immutable request select `RESTRICTED`; ordinary SAST requests are
 raised from `STANDARD` intent to the mandatory `HARDENED` execution floor by the planner.

@@ -190,8 +190,10 @@ const buildDispatchReservationInput = (input: {
   requestedAt: string;
   dailyWindowStartedAt: string;
   snapshotVersion?: number;
+  activeForTenant?: number;
   queuedForTenant?: number;
   admittedTodayForTenant?: number;
+  activeForRepository?: number;
   queuedInLane?: number;
   lastRepositoryAdmissionAt?: string;
 }): SastQueueReservationInput => {
@@ -225,10 +227,10 @@ const buildDispatchReservationInput = (input: {
       repositoryBindingId,
       lane: 'FAST',
       dailyWindowStartedAt: input.dailyWindowStartedAt,
-      activeForTenant: 0,
+      activeForTenant: input.activeForTenant ?? 0,
       queuedForTenant: input.queuedForTenant ?? 0,
       admittedTodayForTenant: input.admittedTodayForTenant ?? 0,
-      activeForRepository: 0,
+      activeForRepository: input.activeForRepository ?? 0,
       queuedInLane: input.queuedInLane ?? 0,
       lastRepositoryAdmissionAt: input.lastRepositoryAdmissionAt
     }
@@ -940,6 +942,79 @@ describe('SastScanPlannerService', () => {
 
     expect(claim?.scanRequestId).toBe(reservation.scanRequestId);
     expect(claim?.plan).toEqual(reservation.plan);
+  });
+
+  it('keeps live queue counters global while resetting only the UTC daily budget', async () => {
+    const service = new SastQueueAdmissionService(new InMemorySastQueueAdmissionStore());
+    const first = buildDispatchReservationInput({
+      scanRequestId: 'cross-day-live-1',
+      digestCharacter: 'd',
+      requestedAt: '2026-07-22T23:58:00Z',
+      dailyWindowStartedAt: '2026-07-22T00:00:00Z'
+    });
+    expect((await service.reserve(first)).state).toBe('ADMITTED');
+
+    const falseQueuedSnapshot = buildDispatchReservationInput({
+      scanRequestId: 'cross-day-live-2',
+      digestCharacter: 'e',
+      requestedAt: '2026-07-23T00:01:00Z',
+      dailyWindowStartedAt: '2026-07-23T00:00:00Z',
+      snapshotVersion: 1,
+      queuedInLane: 1,
+      lastRepositoryAdmissionAt: '2026-07-22T23:58:00Z'
+    });
+    expect(await service.reserve(falseQueuedSnapshot)).toMatchObject({
+      state: 'DEFERRED',
+      reasonCodes: ['QUEUE_USAGE_STALE']
+    });
+
+    const claim = await service.claimNextForDispatch({
+      lane: 'FAST',
+      dailyWindowStartedAt: '2026-07-23T00:00:00Z',
+      workerId: 'cross-day-worker',
+      claimedAt: '2026-07-23T00:01:10Z',
+      leaseSeconds: 30
+    });
+    expect(claim?.scanRequestId).toBe(first.scanRequestId);
+    expect(
+      await service.acknowledgeDispatch({
+        scanRequestId: first.scanRequestId,
+        workerId: 'cross-day-worker',
+        acknowledgedAt: '2026-07-23T00:01:11Z'
+      })
+    ).toBe(true);
+
+    const falseActiveSnapshot = buildDispatchReservationInput({
+      scanRequestId: 'cross-day-live-2',
+      digestCharacter: 'e',
+      requestedAt: '2026-07-23T00:02:00Z',
+      dailyWindowStartedAt: '2026-07-23T00:00:00Z',
+      snapshotVersion: 2,
+      lastRepositoryAdmissionAt: '2026-07-22T23:58:00Z'
+    });
+    expect(await service.reserve(falseActiveSnapshot)).toMatchObject({
+      state: 'DEFERRED',
+      reasonCodes: ['QUEUE_USAGE_STALE']
+    });
+
+    expect(
+      await service.completeDispatch({
+        scanRequestId: first.scanRequestId,
+        workerId: 'cross-day-worker',
+        completedAt: '2026-07-23T00:02:10Z',
+        terminalStatus: 'COMPLETED'
+      })
+    ).toBe(true);
+
+    const releasedSnapshot = buildDispatchReservationInput({
+      scanRequestId: 'cross-day-live-2',
+      digestCharacter: 'e',
+      requestedAt: '2026-07-23T00:03:00Z',
+      dailyWindowStartedAt: '2026-07-23T00:00:00Z',
+      snapshotVersion: 3,
+      lastRepositoryAdmissionAt: '2026-07-22T23:58:00Z'
+    });
+    expect((await service.reserve(releasedSnapshot)).state).toBe('ADMITTED');
   });
 
   it('fails an unacknowledged reservation after two expired dispatch leases', async () => {

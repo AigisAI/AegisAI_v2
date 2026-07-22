@@ -20,7 +20,6 @@ import {
 interface TenantUsage {
   activeForTenant: number;
   queuedForTenant: number;
-  admittedTodayForTenant: number;
 }
 
 interface RepositoryUsage {
@@ -33,6 +32,7 @@ interface Ledger {
   queuedInLane: number;
   lastServedTenantId?: string;
   tenants: Map<string, TenantUsage>;
+  dailyAdmissions: Map<string, number>;
   repositories: Map<string, RepositoryUsage>;
 }
 
@@ -67,9 +67,14 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       }
 
       const dailyWindowStartedAt = this.normalizeTimestamp(input.usage.dailyWindowStartedAt);
-      const ledgerKey = this.ledgerKey(input.lane, dailyWindowStartedAt);
+      const ledgerKey = this.ledgerKey(input.lane);
       const existingLedger = this.ledgers.get(ledgerKey);
       const tenantUsage = existingLedger?.tenants.get(input.tenantId);
+      const dailyAdmissionKey = this.dailyAdmissionKey(
+        input.tenantId,
+        dailyWindowStartedAt
+      );
+      const dailyAdmissions = existingLedger?.dailyAdmissions.get(dailyAdmissionKey);
       const repositoryKey = this.repositoryKey(input.tenantId, input.repositoryBindingId);
       const repositoryUsage = existingLedger?.repositories.get(repositoryKey);
 
@@ -78,6 +83,8 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
         (input.usage.snapshotVersion !== existingLedger.snapshotVersion ||
           input.usage.queuedInLane !== existingLedger.queuedInLane ||
           (tenantUsage !== undefined && !this.matchesTenantUsage(tenantUsage, input)) ||
+          (dailyAdmissions !== undefined &&
+            dailyAdmissions !== input.usage.admittedTodayForTenant) ||
           (repositoryUsage !== undefined &&
             !this.matchesRepositoryUsage(repositoryUsage, input)))
       ) {
@@ -90,12 +97,12 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
           snapshotVersion: input.usage.snapshotVersion,
           queuedInLane: input.usage.queuedInLane,
           tenants: new Map<string, TenantUsage>(),
+          dailyAdmissions: new Map<string, number>(),
           repositories: new Map<string, RepositoryUsage>()
         };
       const authoritativeTenantUsage = tenantUsage ?? {
         activeForTenant: input.usage.activeForTenant,
-        queuedForTenant: input.usage.queuedForTenant,
-        admittedTodayForTenant: input.usage.admittedTodayForTenant
+        queuedForTenant: input.usage.queuedForTenant
       };
       const authoritativeRepositoryUsage = repositoryUsage ?? {
         activeForRepository: input.usage.activeForRepository,
@@ -103,13 +110,16 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       };
 
       authoritativeTenantUsage.queuedForTenant += 1;
-      authoritativeTenantUsage.admittedTodayForTenant += 1;
       authoritativeRepositoryUsage.lastRepositoryAdmissionAt = this.normalizeTimestamp(
         input.requestedAt
       );
       ledger.queuedInLane += 1;
       ledger.snapshotVersion += 1;
       ledger.tenants.set(input.tenantId, authoritativeTenantUsage);
+      ledger.dailyAdmissions.set(
+        dailyAdmissionKey,
+        (dailyAdmissions ?? input.usage.admittedTodayForTenant) + 1
+      );
       ledger.repositories.set(repositoryKey, authoritativeRepositoryUsage);
       this.ledgers.set(ledgerKey, ledger);
 
@@ -171,18 +181,14 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
         return null;
       }
       const ledger = this.ledgers.get(
-        this.ledgerKey(input.lane, oldestPending.dailyWindowStartedAt)
+        this.ledgerKey(input.lane)
       );
       if (!ledger) {
         throw new Error('Test SAST queue ledger is unavailable for dispatch.');
       }
-      const pendingInOldestLedger = available.filter(
-        (reservation) =>
-          reservation.dailyWindowStartedAt === oldestPending.dailyWindowStartedAt
-      );
       const ordered = orderSastQueueCandidatesFairly(
         input.lane,
-        pendingInOldestLedger.map((reservation) => ({
+        available.map((reservation) => ({
           lane: reservation.lane,
           tenantId: reservation.tenantId,
           scanRequestId: reservation.scanRequestId,
@@ -229,7 +235,7 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       }
 
       const ledger = this.ledgers.get(
-        this.ledgerKey(reservation.lane, reservation.dailyWindowStartedAt)
+        this.ledgerKey(reservation.lane)
       );
       const tenantUsage = ledger?.tenants.get(reservation.tenantId);
       const repositoryUsage = ledger?.repositories.get(
@@ -262,7 +268,7 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       }
 
       const ledger = this.ledgers.get(
-        this.ledgerKey(reservation.lane, reservation.dailyWindowStartedAt)
+        this.ledgerKey(reservation.lane)
       );
       const tenantUsage = ledger?.tenants.get(reservation.tenantId);
       const repositoryUsage = ledger?.repositories.get(
@@ -316,7 +322,7 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
 
     for (const reservation of exhausted) {
       const ledger = this.ledgers.get(
-        this.ledgerKey(reservation.lane, reservation.dailyWindowStartedAt)
+        this.ledgerKey(reservation.lane)
       );
       const tenantUsage = ledger?.tenants.get(reservation.tenantId);
       if (!ledger || ledger.queuedInLane < 1 || !tenantUsage || tenantUsage.queuedForTenant < 1) {
@@ -337,8 +343,7 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
   ): boolean {
     return (
       authoritative.activeForTenant === input.usage.activeForTenant &&
-      authoritative.queuedForTenant === input.usage.queuedForTenant &&
-      authoritative.admittedTodayForTenant === input.usage.admittedTodayForTenant
+      authoritative.queuedForTenant === input.usage.queuedForTenant
     );
   }
 
@@ -430,8 +435,12 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
     return new Date(value).toISOString();
   }
 
-  private ledgerKey(lane: 'FAST' | 'DEEP', dailyWindowStartedAt: string): string {
-    return JSON.stringify([lane, dailyWindowStartedAt]);
+  private ledgerKey(lane: 'FAST' | 'DEEP'): string {
+    return lane;
+  }
+
+  private dailyAdmissionKey(tenantId: string, dailyWindowStartedAt: string): string {
+    return JSON.stringify([tenantId, dailyWindowStartedAt]);
   }
 
   private repositoryKey(tenantId: string, repositoryBindingId: string): string {

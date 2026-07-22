@@ -16,10 +16,6 @@ describe('production scan architecture contracts', () => {
     join(__dirname, '../../prisma/migrations/20260603072000_ai_advisory_metadata/migration.sql'),
     'utf8'
   );
-  const sastQueueMigration = readFileSync(
-    join(__dirname, '../../prisma/migrations/20260722124500_sast_queue_atomic_ledger/migration.sql'),
-    'utf8'
-  );
   const sastQueueStore = readFileSync(
     join(__dirname, '../../src/control-plane/prisma-sast-queue-admission.store.ts'),
     'utf8'
@@ -28,6 +24,20 @@ describe('production scan architecture contracts', () => {
     join(
       __dirname,
       '../../prisma/migrations/20260722141000_sast_durable_plan_lifecycle/migration.sql'
+    ),
+    'utf8'
+  );
+  const sastQueueMigration = readFileSync(
+    join(
+      __dirname,
+      '../../prisma/migrations/20260722124500_sast_queue_atomic_ledger/migration.sql'
+    ),
+    'utf8'
+  );
+  const repositoryRevocationMigration = readFileSync(
+    join(
+      __dirname,
+      '../../prisma/migrations/20260722152000_repository_binding_revocation/migration.sql'
     ),
     'utf8'
   );
@@ -205,6 +215,7 @@ describe('production scan architecture contracts', () => {
     for (const model of [
       'SastQueueLedger',
       'SastQueueTenantUsage',
+      'SastQueueDailyTenantUsage',
       'SastQueueRepositoryUsage',
       'SastQueueReservation'
     ]) {
@@ -233,6 +244,14 @@ describe('production scan architecture contracts', () => {
     expect(sastDurabilityMigration).toContain(
       'FOREIGN KEY ("scanRequestId") REFERENCES "ScanRequest"("id")'
     );
+    expect(modelBody('SastQueueLedger')).not.toContain('dailyWindowStartedAt');
+    expect(modelBody('SastQueueTenantUsage')).not.toContain('admittedTodayForTenant');
+    expect(modelBody('SastQueueDailyTenantUsage')).toContain('admittedTodayForTenant');
+    expect(modelBody('RepositoryBinding')).toContain('status');
+    expect(modelBody('RepositoryBinding')).toContain('revokedAt');
+    expect(repositoryRevocationMigration).toContain('"RepositoryBindingStatus"');
+    expect(repositoryRevocationMigration).toContain('"status"');
+    expect(repositoryRevocationMigration).toContain('"revokedAt"');
   });
 
   it('ships a deployable Prisma migration for AI advisory metadata', () => {

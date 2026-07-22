@@ -35,6 +35,7 @@ interface PersistedReservationRow {
   repositoryBindingId: string;
   queuePolicyVersion: string;
   queuePolicyDigest: string;
+  dailyWindowStartedAt: Date;
   enqueuedAt: Date;
   decision: Prisma.JsonValue;
   planning: Prisma.JsonValue;
@@ -113,7 +114,7 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
 
       const dailyWindowStartedAt = this.normalizeDate(input.usage.dailyWindowStartedAt);
       const requestedAt = this.normalizeDate(input.requestedAt);
-      const ledgerId = this.ledgerId(input.lane, dailyWindowStartedAt);
+      const ledgerId = this.ledgerId(input.lane);
       let ledger = await transaction.sastQueueLedger.findUnique({ where: { id: ledgerId } });
 
       if (!ledger) {
@@ -121,19 +122,27 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
           data: {
             id: ledgerId,
             lane: input.lane,
-            dailyWindowStartedAt,
             snapshotVersion: BigInt(input.usage.snapshotVersion),
             queuedInLane: input.usage.queuedInLane
           }
         });
       }
 
-      const [tenantUsage, repositoryUsage] = await Promise.all([
+      const [tenantUsage, dailyTenantUsage, repositoryUsage] = await Promise.all([
         transaction.sastQueueTenantUsage.findUnique({
           where: {
             ledgerId_tenantId: {
               ledgerId,
               tenantId: input.tenantId
+            }
+          }
+        }),
+        transaction.sastQueueDailyTenantUsage.findUnique({
+          where: {
+            ledgerId_tenantId_dailyWindowStartedAt: {
+              ledgerId,
+              tenantId: input.tenantId,
+              dailyWindowStartedAt
             }
           }
         }),
@@ -152,6 +161,9 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
         ledger.snapshotVersion !== BigInt(input.usage.snapshotVersion) ||
         ledger.queuedInLane !== input.usage.queuedInLane ||
         (tenantUsage !== null && !this.matchesTenantUsage(tenantUsage, input)) ||
+        (dailyTenantUsage !== null &&
+          dailyTenantUsage.admittedTodayForTenant !==
+            input.usage.admittedTodayForTenant) ||
         (repositoryUsage !== null && !this.matchesRepositoryUsage(repositoryUsage, input))
       ) {
         return { state: 'STALE' };
@@ -168,13 +180,27 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
           ledgerId,
           tenantId: input.tenantId,
           activeForTenant: input.usage.activeForTenant,
-          queuedForTenant: input.usage.queuedForTenant + 1,
-          admittedTodayForTenant: input.usage.admittedTodayForTenant + 1
+          queuedForTenant: input.usage.queuedForTenant + 1
         },
         update: {
-          queuedForTenant: { increment: 1 },
-          admittedTodayForTenant: { increment: 1 }
+          queuedForTenant: { increment: 1 }
         }
+      });
+      await transaction.sastQueueDailyTenantUsage.upsert({
+        where: {
+          ledgerId_tenantId_dailyWindowStartedAt: {
+            ledgerId,
+            tenantId: input.tenantId,
+            dailyWindowStartedAt
+          }
+        },
+        create: {
+          ledgerId,
+          tenantId: input.tenantId,
+          dailyWindowStartedAt,
+          admittedTodayForTenant: input.usage.admittedTodayForTenant + 1
+        },
+        update: { admittedTodayForTenant: { increment: 1 } }
       });
       await transaction.sastQueueRepositoryUsage.upsert({
         where: {
@@ -210,6 +236,7 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
           repositoryBindingId: input.repositoryBindingId,
           queuePolicyVersion: input.policySet.policyVersion,
           queuePolicyDigest: input.policySet.digest,
+          dailyWindowStartedAt,
           enqueuedAt: requestedAt,
           decision: this.toJson(decision),
           planning: this.toJson(planning),
@@ -672,14 +699,12 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
     authoritative: {
       activeForTenant: number;
       queuedForTenant: number;
-      admittedTodayForTenant: number;
     },
     input: SastQueueReservationInput
   ): boolean {
     return (
       authoritative.activeForTenant === input.usage.activeForTenant &&
-      authoritative.queuedForTenant === input.usage.queuedForTenant &&
-      authoritative.admittedTodayForTenant === input.usage.admittedTodayForTenant
+      authoritative.queuedForTenant === input.usage.queuedForTenant
     );
   }
 
@@ -709,7 +734,7 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
 
   private toReservationRecord(
     reservation: PersistedReservationRow & {
-      ledger: { dailyWindowStartedAt: Date; lane: 'FAST' | 'DEEP' };
+      ledger: { lane: 'FAST' | 'DEEP' };
     }
   ): SastQueueReservationRecord {
     const decision = this.parseDecision(reservation.decision);
@@ -728,7 +753,7 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       repositoryBindingId: reservation.repositoryBindingId,
       queuePolicyVersion: reservation.queuePolicyVersion,
       queuePolicyDigest: this.asDigest(reservation.queuePolicyDigest),
-      dailyWindowStartedAt: reservation.ledger.dailyWindowStartedAt.toISOString(),
+      dailyWindowStartedAt: reservation.dailyWindowStartedAt.toISOString(),
       enqueuedAt: reservation.enqueuedAt.toISOString(),
       decision,
       planning,
@@ -1001,7 +1026,7 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
     return new Date(new Date(value).toISOString());
   }
 
-  private ledgerId(lane: 'FAST' | 'DEEP', dailyWindowStartedAt: Date): string {
-    return `${lane}:${dailyWindowStartedAt.toISOString()}`;
+  private ledgerId(lane: 'FAST' | 'DEEP'): string {
+    return `lane:${lane}`;
   }
 }

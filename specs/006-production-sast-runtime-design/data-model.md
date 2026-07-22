@@ -142,27 +142,33 @@ inside a public API.
 Usage snapshots are attributed to exactly one tenant, repository binding, lane, and UTC
 daily window. Beyond those identifiers they contain counters and timestamps only; they
 contain no repository content or credential material.
-Every snapshot carries a monotonic authoritative lane/day `snapshotVersion`. Admission compares
-that version and all applicable lane, tenant, and repository counters, then creates one
-scan/canonical-key reservation and advances the counters/version atomically. Stale versions are
-retryable and cannot be admitted. The production ledger is shared across replicas and cannot be
-implemented as an independent per-pod cache. PostgreSQL persists this boundary as
-`SastQueueLedger`, `SastQueueTenantUsage`, `SastQueueRepositoryUsage`, and
+Every snapshot carries a monotonic authoritative lane-global `snapshotVersion`. Active/queued
+lane, tenant, and repository counters remain in that lane-global ledger across UTC rollover;
+only `admittedTodayForTenant` is keyed by the normalized UTC day. Admission compares the global
+version, every live counter, and the current daily-admission row, then creates one
+scan/canonical-key reservation and advances them atomically. Stale versions are retryable and
+cannot be admitted. The production ledger is shared across replicas and cannot be implemented as
+an independent per-pod cache. PostgreSQL persists this boundary as `SastQueueLedger`,
+`SastQueueTenantUsage`, `SastQueueDailyTenantUsage`, `SastQueueRepositoryUsage`, and
 `SastQueueReservation`. The immutable `ScanRequest` and reduced planning state are durable rather
-than process-local. The lane/day timestamp is normalized before identity selection, and
-serializable transactions make ledger initialization, counter comparison, reservation creation,
-and version advancement one atomic operation.
+than process-local. Serializable transactions make ledger initialization, global live-counter
+comparison, daily-budget comparison, reservation creation, and version advancement one atomic
+operation.
 
 The reservation row is also the durable pending-dispatch record. It stores the admitted planning
 state and complete immutable `SastScanPlan`, but no source or credential material, and has a
-restrictive foreign key to the durable scan request. A shared `lastServedTenantId` cursor selects the
-oldest eligible reservation by tenant round robin; bounded owner/expiry fields make dispatch claims
-recoverable. Dispatch drains the oldest pending lane/day ledger even after UTC rollover, so a
-dispatcher restart cannot strand yesterday's backlog. An unacknowledged lease is attempted at most
+restrictive foreign key to the durable scan request. A shared lane-global `lastServedTenantId`
+cursor selects the oldest eligible reservation by tenant round robin; bounded owner/expiry fields
+make dispatch claims recoverable. Dispatch searches pending reservations across every admission
+day, so a dispatcher restart cannot strand yesterday's backlog. An unacknowledged lease is attempted at most
 twice; the next post-expiry claim atomically marks the reservation and scan request `FAILED` and
 returns its queued capacity. `publishedAt`/`startedAt`, `completedAt`, and terminal status make
 queued-to-active-to-terminal counter transitions transactional and idempotent without deleting the
 admission identity.
+
+Repository removal is durable revocation rather than row deletion. `RepositoryBinding.status` and
+`revokedAt` hide the binding from new work while preserving historical `ScanRequest` and queue
+reservation foreign keys. A later authorized re-add reactivates the same binding identity.
 
 ### SastPlanningState
 
