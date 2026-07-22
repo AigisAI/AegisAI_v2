@@ -1,61 +1,49 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import {
   evaluateSastQueueAdmission,
   type SastQueueAdmissionDecision,
   type SastQueuePolicySet,
-  type SastQueueUsageSnapshot,
   type SastScanLane
 } from '@aegisai/shared';
 
-interface SastQueueReservationInput {
-  scanRequestId: string;
-  canonicalScanKey: `sha256:${string}`;
-  lane: SastScanLane;
-  tenantId: string;
-  repositoryBindingId: string;
-  requestedAt: string;
-  policySet: SastQueuePolicySet;
-  usage: SastQueueUsageSnapshot;
-}
+import {
+  SastQueueAdmissionStore,
+  type SastQueueDispatchAcknowledgementInput,
+  type SastQueueDispatchClaim,
+  type SastQueueDispatchClaimInput,
+  type SastQueueReservationInput,
+  type SastQueueReservationRecord
+} from './sast-queue-admission.store';
 
-interface SastQueueReservation {
-  canonicalScanKey: `sha256:${string}`;
-  lane: SastScanLane;
-  tenantId: string;
-  repositoryBindingId: string;
-  queuePolicyVersion: string;
-  queuePolicyDigest: `sha256:${string}`;
+const MAX_DISPATCH_LEASE_SECONDS = 300;
+
+export interface SastQueueAdmissionResult {
   decision: SastQueueAdmissionDecision;
-}
-
-interface TenantQueueUsage {
-  activeForTenant: number;
-  queuedForTenant: number;
-  admittedTodayForTenant: number;
-}
-
-interface RepositoryQueueUsage {
-  activeForRepository: number;
-  lastRepositoryAdmissionAt?: string;
-}
-
-interface LaneWindowLedger {
-  snapshotVersion: number;
-  queuedInLane: number;
-  tenants: Map<string, TenantQueueUsage>;
-  repositories: Map<string, RepositoryQueueUsage>;
+  admittedAt?: string;
 }
 
 @Injectable()
 export class SastQueueAdmissionService {
-  private readonly ledgers = new Map<string, LaneWindowLedger>();
-  private readonly reservations = new Map<string, SastQueueReservation>();
+  constructor(private readonly store: SastQueueAdmissionStore) {}
 
-  reserve(input: SastQueueReservationInput): SastQueueAdmissionDecision {
-    const existingReservation = this.reservations.get(input.scanRequestId);
+  async reserve(input: SastQueueReservationInput): Promise<SastQueueAdmissionDecision> {
+    return (await this.reserveWithContext(input)).decision;
+  }
+
+  async reserveWithContext(
+    input: SastQueueReservationInput
+  ): Promise<SastQueueAdmissionResult> {
+    const existingReservation = await this.store.findReservation(input.scanRequestId);
     if (existingReservation) {
       this.assertReservationIdentity(existingReservation, input);
-      return this.cloneDecision(existingReservation.decision);
+      return {
+        decision: this.cloneDecision(existingReservation.decision),
+        admittedAt: existingReservation.enqueuedAt
+      };
+    }
+
+    if (input.usage.snapshotVersion === Number.MAX_SAFE_INTEGER) {
+      return { decision: this.invalidUsageDecision(input.policySet) };
     }
 
     const evaluated = evaluateSastQueueAdmission({
@@ -67,73 +55,60 @@ export class SastQueueAdmissionService {
       usage: input.usage
     });
     if (evaluated.state !== 'ADMITTED') {
-      return evaluated;
+      return { decision: evaluated };
     }
 
-    if (input.usage.snapshotVersion === Number.MAX_SAFE_INTEGER) {
-      return this.invalidUsageDecision(input.policySet);
+    const result = await this.store.reserveAdmitted(input, evaluated);
+    if (result.state === 'STALE') {
+      return { decision: this.staleUsageDecision(input.policySet, input.lane) };
     }
 
-    const ledgerKey = this.scopeKey(input.lane, input.usage.dailyWindowStartedAt);
-    const existingLedger = this.ledgers.get(ledgerKey);
-    const tenantUsage = existingLedger?.tenants.get(input.tenantId);
-    const repositoryKey = this.scopeKey(input.tenantId, input.repositoryBindingId);
-    const repositoryUsage = existingLedger?.repositories.get(repositoryKey);
+    this.assertReservationIdentity(result.reservation, input);
+    return {
+      decision: this.cloneDecision(result.reservation.decision),
+      admittedAt: result.reservation.enqueuedAt
+    };
+  }
 
+  async claimNextForDispatch(
+    input: SastQueueDispatchClaimInput
+  ): Promise<SastQueueDispatchClaim | null> {
     if (
-      existingLedger &&
-      (input.usage.snapshotVersion !== existingLedger.snapshotVersion ||
-        input.usage.queuedInLane !== existingLedger.queuedInLane ||
-        (tenantUsage !== undefined && !this.matchesTenantUsage(tenantUsage, input.usage)) ||
-        (repositoryUsage !== undefined &&
-          !this.matchesRepositoryUsage(repositoryUsage, input.usage)))
+      (input.lane !== 'FAST' && input.lane !== 'DEEP') ||
+      !this.isUtcDayStart(input.dailyWindowStartedAt) ||
+      !this.isNonBlankBounded(input.workerId, 200) ||
+      !this.isIsoTimestamp(input.claimedAt) ||
+      !Number.isSafeInteger(input.leaseSeconds) ||
+      input.leaseSeconds < 1 ||
+      input.leaseSeconds > MAX_DISPATCH_LEASE_SECONDS
     ) {
-      return this.staleUsageDecision(input.policySet, input.lane);
+      throw new BadRequestException('SAST dispatch claim input is invalid.');
     }
 
-    const ledger =
-      existingLedger ??
-      {
-        snapshotVersion: input.usage.snapshotVersion,
-        queuedInLane: input.usage.queuedInLane,
-        tenants: new Map<string, TenantQueueUsage>(),
-        repositories: new Map<string, RepositoryQueueUsage>()
-      };
-    const authoritativeTenantUsage = tenantUsage ?? {
-      activeForTenant: input.usage.activeForTenant,
-      queuedForTenant: input.usage.queuedForTenant,
-      admittedTodayForTenant: input.usage.admittedTodayForTenant
-    };
-    const authoritativeRepositoryUsage = repositoryUsage ?? {
-      activeForRepository: input.usage.activeForRepository,
-      lastRepositoryAdmissionAt: input.usage.lastRepositoryAdmissionAt
-    };
-
-    authoritativeTenantUsage.queuedForTenant += 1;
-    authoritativeTenantUsage.admittedTodayForTenant += 1;
-    authoritativeRepositoryUsage.lastRepositoryAdmissionAt = input.requestedAt;
-    ledger.queuedInLane += 1;
-    ledger.snapshotVersion += 1;
-    ledger.tenants.set(input.tenantId, authoritativeTenantUsage);
-    ledger.repositories.set(repositoryKey, authoritativeRepositoryUsage);
-    this.ledgers.set(ledgerKey, ledger);
-
-    const decision = this.cloneDecision(evaluated);
-    this.reservations.set(input.scanRequestId, {
-      canonicalScanKey: input.canonicalScanKey,
-      lane: input.lane,
-      tenantId: input.tenantId,
-      repositoryBindingId: input.repositoryBindingId,
-      queuePolicyVersion: input.policySet.policyVersion,
-      queuePolicyDigest: input.policySet.digest,
-      decision
+    return this.store.claimNextForDispatch({
+      ...input,
+      dailyWindowStartedAt: this.normalizeTimestamp(input.dailyWindowStartedAt),
+      claimedAt: this.normalizeTimestamp(input.claimedAt)
     });
+  }
 
-    return this.cloneDecision(decision);
+  async acknowledgeDispatch(input: SastQueueDispatchAcknowledgementInput): Promise<boolean> {
+    if (
+      !this.isNonBlankBounded(input.scanRequestId, 200) ||
+      !this.isNonBlankBounded(input.workerId, 200) ||
+      !this.isIsoTimestamp(input.acknowledgedAt)
+    ) {
+      throw new BadRequestException('SAST dispatch acknowledgement input is invalid.');
+    }
+
+    return this.store.acknowledgeDispatch({
+      ...input,
+      acknowledgedAt: this.normalizeTimestamp(input.acknowledgedAt)
+    });
   }
 
   private assertReservationIdentity(
-    reservation: SastQueueReservation,
+    reservation: SastQueueReservationRecord,
     input: SastQueueReservationInput
   ): void {
     if (
@@ -146,38 +121,6 @@ export class SastQueueAdmissionService {
     ) {
       throw new ConflictException('An admitted SAST queue reservation is immutable.');
     }
-  }
-
-  private matchesTenantUsage(
-    authoritative: TenantQueueUsage,
-    observed: SastQueueUsageSnapshot
-  ): boolean {
-    return (
-      authoritative.activeForTenant === observed.activeForTenant &&
-      authoritative.queuedForTenant === observed.queuedForTenant &&
-      authoritative.admittedTodayForTenant === observed.admittedTodayForTenant
-    );
-  }
-
-  private matchesRepositoryUsage(
-    authoritative: RepositoryQueueUsage,
-    observed: SastQueueUsageSnapshot
-  ): boolean {
-    return (
-      authoritative.activeForRepository === observed.activeForRepository &&
-      this.timestampsEqual(
-        authoritative.lastRepositoryAdmissionAt,
-        observed.lastRepositoryAdmissionAt
-      )
-    );
-  }
-
-  private timestampsEqual(left?: string, right?: string): boolean {
-    if (left === undefined || right === undefined) {
-      return left === right;
-    }
-
-    return Date.parse(left) === Date.parse(right);
   }
 
   private staleUsageDecision(
@@ -208,7 +151,36 @@ export class SastQueueAdmissionService {
     return { ...decision, reasonCodes: [...decision.reasonCodes] };
   }
 
-  private scopeKey(...parts: string[]): string {
-    return JSON.stringify(parts);
+  private isUtcDayStart(value: string): boolean {
+    if (!this.isIsoTimestamp(value)) {
+      return false;
+    }
+
+    const timestamp = new Date(value);
+    return (
+      timestamp.getTime() ===
+      Date.UTC(timestamp.getUTCFullYear(), timestamp.getUTCMonth(), timestamp.getUTCDate())
+    );
+  }
+
+  private isIsoTimestamp(value: string): boolean {
+    return (
+      typeof value === 'string' &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u.test(value) &&
+      Number.isFinite(Date.parse(value))
+    );
+  }
+
+  private isNonBlankBounded(value: string, maxLength: number): boolean {
+    return (
+      typeof value === 'string' &&
+      value === value.trim() &&
+      value.length > 0 &&
+      value.length <= maxLength
+    );
+  }
+
+  private normalizeTimestamp(value: string): string {
+    return new Date(value).toISOString();
   }
 }

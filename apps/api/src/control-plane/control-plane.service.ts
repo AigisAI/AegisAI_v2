@@ -272,22 +272,24 @@ export class ControlPlaneService {
     );
 
     const existingPlanning = scanRequest.sastPlanning;
+    const nextPlanning: SastUserVisiblePlanningState = {
+      ...planning,
+      canonicalScanKey: planning.canonicalScanKey ?? existingPlanning?.canonicalScanKey,
+      reasonCodes: [...planning.reasonCodes]
+    };
     if (existingPlanning?.state === 'ADMITTED') {
-      if (!this.isEquivalentSastPlanningState(existingPlanning, planning)) {
+      if (!this.isEquivalentSastPlanningState(existingPlanning, nextPlanning)) {
         throw new ConflictException('An admitted SAST planning decision is immutable.');
       }
 
       return scanRequest;
     }
 
-    scanRequest.sastPlanning = {
-      ...planning,
-      reasonCodes: [...planning.reasonCodes]
-    };
+    scanRequest.sastPlanning = nextPlanning;
     scanRequest.status =
-      planning.state === 'ADMITTED'
+      nextPlanning.state === 'ADMITTED'
         ? 'QUEUED'
-        : planning.state === 'DEFERRED'
+        : nextPlanning.state === 'DEFERRED'
           ? 'PLANNING'
           : 'FAILED';
 
@@ -307,6 +309,7 @@ export class ControlPlaneService {
 
     const existingPlanning = scanRequest.sastPlanning;
     if (
+      canonicalScanKey !== undefined &&
       existingPlanning?.canonicalScanKey &&
       canonicalScanKey !== existingPlanning.canonicalScanKey
     ) {

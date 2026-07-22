@@ -33,45 +33,46 @@ export class SastScanPlannerService {
     private readonly queueAdmissionService: SastQueueAdmissionService
   ) {}
 
-  plan(input: SastScanPlanningInput): SastScanPlanningResult {
+  async plan(input: SastScanPlanningInput): Promise<SastScanPlanningResult> {
     const scanRequest = this.controlPlaneService.getScanRequest(input.tenantId, input.scanRequestId);
 
     if (!this.isIsoTimestamp(input.requestedAt)) {
       throw new BadRequestException('SAST planning requestedAt must be a valid UTC timestamp.');
     }
+    const requestedAt = new Date(input.requestedAt).toISOString();
 
     if (!this.isFullCommitSha(scanRequest.commitSha)) {
-      return this.reject(scanRequest, input.requestedAt, 'FIXED_COMMIT_REQUIRED');
+      return this.reject(scanRequest, requestedAt, 'FIXED_COMMIT_REQUIRED');
     }
 
     if (
       !isTrustedSastRepositoryMetadataValid(input.repositoryMetadata) ||
-      Date.parse(input.repositoryMetadata.collectedAt) > Date.parse(input.requestedAt)
+      Date.parse(input.repositoryMetadata.collectedAt) > Date.parse(requestedAt)
     ) {
-      return this.reject(scanRequest, input.requestedAt, 'TRUSTED_METADATA_INVALID');
+      return this.reject(scanRequest, requestedAt, 'TRUSTED_METADATA_INVALID');
     }
 
     if (
       input.repositoryMetadata.repositoryBindingId !== scanRequest.repositoryBindingId ||
       input.repositoryMetadata.fixedCommitSha.toLowerCase() !== scanRequest.commitSha.toLowerCase()
     ) {
-      return this.reject(scanRequest, input.requestedAt, 'TRUSTED_METADATA_SCOPE_MISMATCH');
+      return this.reject(scanRequest, requestedAt, 'TRUSTED_METADATA_SCOPE_MISMATCH');
     }
 
     if (!isSastProfileSelectionPolicyValid(input.profilePolicy)) {
-      return this.reject(scanRequest, input.requestedAt, 'PROFILE_POLICY_INVALID');
+      return this.reject(scanRequest, requestedAt, 'PROFILE_POLICY_INVALID');
     }
 
     if (input.profilePolicy.policyVersion !== scanRequest.policyVersion) {
-      return this.reject(scanRequest, input.requestedAt, 'PROFILE_POLICY_VERSION_MISMATCH');
+      return this.reject(scanRequest, requestedAt, 'PROFILE_POLICY_VERSION_MISMATCH');
     }
 
     if (!input.scannerSet) {
-      return this.reject(scanRequest, input.requestedAt, 'SCANNER_SET_INVALID');
+      return this.reject(scanRequest, requestedAt, 'SCANNER_SET_INVALID');
     }
 
     if (input.scannerSet.scannerSetVersion !== scanRequest.scannerSetVersion) {
-      return this.reject(scanRequest, input.requestedAt, 'SCANNER_SET_VERSION_MISMATCH');
+      return this.reject(scanRequest, requestedAt, 'SCANNER_SET_VERSION_MISMATCH');
     }
 
     const profileSelection = selectSastScanProfile({
@@ -82,7 +83,7 @@ export class SastScanPlannerService {
     if (profileSelection.state === 'REJECTED' || !profileSelection.profile) {
       return this.reject(
         scanRequest,
-        input.requestedAt,
+        requestedAt,
         profileSelection.reasonCodes,
         profileSelection.coverageClaim
       );
@@ -95,7 +96,7 @@ export class SastScanPlannerService {
     if (limitReasonCodes.length > 0) {
       return this.reject(
         scanRequest,
-        input.requestedAt,
+        requestedAt,
         limitReasonCodes,
         profileSelection.coverageClaim,
         profileSelection.profile
@@ -109,7 +110,7 @@ export class SastScanPlannerService {
     if (scannerSetReasonCodes.length > 0) {
       return this.reject(
         scanRequest,
-        input.requestedAt,
+        requestedAt,
         scannerSetReasonCodes,
         profileSelection.coverageClaim,
         profileSelection.profile
@@ -143,7 +144,7 @@ export class SastScanPlannerService {
     const planCreatedAt =
       scanRequest.sastPlanning?.state === 'ADMITTED'
         ? scanRequest.sastPlanning.updatedAt
-        : input.requestedAt;
+        : requestedAt;
     const plan = this.buildPlan(
       scanRequest,
       profileSelection.profile,
@@ -158,23 +159,28 @@ export class SastScanPlannerService {
     if (!isSastScanPlanValid(plan)) {
       return this.reject(
         scanRequest,
-        input.requestedAt,
+        requestedAt,
         'PLAN_CONTRACT_INVALID',
         profileSelection.coverageClaim,
         profileSelection.profile
       );
     }
 
-    const queueAdmission = this.queueAdmissionService.reserve({
+    const queueAdmissionResult = await this.queueAdmissionService.reserveWithContext({
       scanRequestId: scanRequest.id,
       canonicalScanKey,
       lane: scanRequest.lane,
       tenantId: scanRequest.tenantId,
       repositoryBindingId: scanRequest.repositoryBindingId,
-      requestedAt: input.requestedAt,
+      requestedAt,
       policySet: input.queuePolicySet,
       usage: input.queueUsage
     });
+    const queueAdmission = queueAdmissionResult.decision;
+    const planningUpdatedAt =
+      queueAdmission.state === 'ADMITTED'
+        ? (queueAdmissionResult.admittedAt ?? requestedAt)
+        : requestedAt;
 
     const planning: SastUserVisiblePlanningState = {
       state: queueAdmission.state,
@@ -186,7 +192,7 @@ export class SastScanPlannerService {
       canonicalScanKey,
       reasonCodes: [...profileSelection.reasonCodes, ...queueAdmission.reasonCodes],
       retryAfterSeconds: queueAdmission.retryAfterSeconds,
-      updatedAt: input.requestedAt
+      updatedAt: planningUpdatedAt
     };
     const recordedRequest = this.controlPlaneService.recordSastPlanningState(
       scanRequest.tenantId,
@@ -194,13 +200,28 @@ export class SastScanPlannerService {
       planning
     );
     const recordedPlanning = recordedRequest.sastPlanning ?? planning;
+    const recordedPlan =
+      recordedPlanning.state === 'REJECTED'
+        ? undefined
+        : recordedPlanning.updatedAt === plan.createdAt
+          ? plan
+          : this.buildPlan(
+              scanRequest,
+              profileSelection.profile,
+              profileDigest,
+              canonicalScanKey,
+              input.scannerSet,
+              isolationClass,
+              input.repositoryMetadata.inventoryDigest,
+              recordedPlanning.updatedAt
+            );
 
     return {
       planning: {
         ...recordedPlanning,
         reasonCodes: [...recordedPlanning.reasonCodes]
       },
-      plan: recordedPlanning.state === 'REJECTED' ? undefined : plan
+      plan: recordedPlan
     };
   }
 
@@ -310,13 +331,19 @@ export class SastScanPlannerService {
       reasonCodes: Array.isArray(reasonCodes) ? [...reasonCodes] : [reasonCodes],
       updatedAt
     };
-    this.controlPlaneService.recordSastPlanningState(
+    const recordedRequest = this.controlPlaneService.recordSastPlanningState(
       scanRequest.tenantId,
       scanRequest.id,
       planning
     );
+    const recordedPlanning = recordedRequest.sastPlanning ?? planning;
 
-    return { planning };
+    return {
+      planning: {
+        ...recordedPlanning,
+        reasonCodes: [...recordedPlanning.reasonCodes]
+      }
+    };
   }
 
   private digest(preimage: string): `sha256:${string}` {

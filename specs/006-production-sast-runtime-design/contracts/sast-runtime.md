@@ -109,11 +109,18 @@ in one critical section, create an idempotent reservation, increment tenant/lane
 record the repository admission time, and advance the version. A replayed or concurrently consumed
 snapshot is `DEFERRED` as `QUEUE_USAGE_STALE`; it cannot consume capacity. The production adapter
 for this boundary must use one shared transactional/CAS store across API replicas before queue
-publication; a per-replica cache is not authoritative.
+publication; a per-replica cache is not authoritative. `PrismaSastQueueAdmissionStore` implements
+that boundary with PostgreSQL `SERIALIZABLE` transactions, bounded serialization/unique-conflict
+retries, durable reservation records, and a canonical millisecond UTC lane/day key. Equivalent UTC
+representations therefore cannot create parallel ledgers, and process restarts retain idempotency.
 
 Capacity outcomes are `DEFERRED` with a bounded retry condition; malformed policy or usage is
 `REJECTED`. Within one lane, dispatch interleaves the oldest item from each tenant using
-deterministic tenant round-robin ordering, with the last-served tenant rotated to the end.
+deterministic tenant round-robin ordering, with the last-served tenant rotated to the end. Admission
+capacity and dispatch order are separate concerns: durable admitted reservations form the pending
+dispatch set, while `claimNextForDispatch` advances the shared ledger cursor in the same serializable
+transaction that acquires a bounded dispatch lease. An acknowledgement is accepted only from the
+lease owner before lease expiry; unacknowledged work becomes eligible again after expiry.
 
 The public scan status exposes only `ADMITTED | DEFERRED | REJECTED`, selected profile,
 coverage claim, queue name, queue-policy version/digest, canonical key, reason codes,

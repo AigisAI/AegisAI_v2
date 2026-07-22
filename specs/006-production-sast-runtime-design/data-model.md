@@ -146,7 +146,16 @@ Every snapshot carries a monotonic authoritative lane/day `snapshotVersion`. Adm
 that version and all applicable lane, tenant, and repository counters, then creates one
 scan/canonical-key reservation and advances the counters/version atomically. Stale versions are
 retryable and cannot be admitted. The production ledger is shared across replicas and cannot be
-implemented as an independent per-pod cache.
+implemented as an independent per-pod cache. PostgreSQL persists this boundary as
+`SastQueueLedger`, `SastQueueTenantUsage`, `SastQueueRepositoryUsage`, and
+`SastQueueReservation`. The lane/day timestamp is normalized before identity selection, and
+serializable transactions make ledger initialization, counter comparison, reservation creation,
+and version advancement one atomic operation.
+
+The reservation row is also the durable pending-dispatch record. It stores no source or credential
+material. A shared `lastServedTenantId` cursor selects the oldest eligible reservation by tenant
+round robin; bounded owner/expiry fields make dispatch claims recoverable, and `publishedAt` records
+successful acknowledgement without deleting the immutable admission identity.
 
 ### SastPlanningState
 

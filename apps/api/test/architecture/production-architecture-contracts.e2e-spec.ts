@@ -16,6 +16,14 @@ describe('production scan architecture contracts', () => {
     join(__dirname, '../../prisma/migrations/20260603072000_ai_advisory_metadata/migration.sql'),
     'utf8'
   );
+  const sastQueueMigration = readFileSync(
+    join(__dirname, '../../prisma/migrations/20260722124500_sast_queue_atomic_ledger/migration.sql'),
+    'utf8'
+  );
+  const sastQueueStore = readFileSync(
+    join(__dirname, '../../src/control-plane/prisma-sast-queue-admission.store.ts'),
+    'utf8'
+  );
   const modelBody = (model: string) => {
     const start = schema.indexOf(`model ${model} {`);
     if (start === -1) {
@@ -180,6 +188,24 @@ describe('production scan architecture contracts', () => {
     expect(body).toContain('@@index([tenantId])');
     expect(body).toContain('@@index([scanRequestId])');
     expect(body).not.toMatch(/enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/);
+  });
+
+  it('persists SAST admission and fair dispatch state in a shared serializable ledger', () => {
+    for (const model of [
+      'SastQueueLedger',
+      'SastQueueTenantUsage',
+      'SastQueueRepositoryUsage',
+      'SastQueueReservation'
+    ]) {
+      expect(schema).toContain(`model ${model} {`);
+      expect(sastQueueMigration).toContain(`CREATE TABLE "${model}"`);
+    }
+
+    expect(sastQueueMigration).toContain('"snapshotVersion" BIGINT NOT NULL');
+    expect(sastQueueMigration).toContain('"dispatchLeaseExpiresAt" TIMESTAMP(3)');
+    expect(sastQueueStore).toContain('Prisma.TransactionIsolationLevel.Serializable');
+    expect(sastQueueStore).toContain('orderSastQueueCandidatesFairly');
+    expect(sastQueueStore).not.toMatch(/new Map/);
   });
 
   it('ships a deployable Prisma migration for AI advisory metadata', () => {

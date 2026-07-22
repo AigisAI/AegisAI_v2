@@ -13,8 +13,10 @@ import {
 } from '@aegisai/shared';
 
 import { ControlPlaneService } from '../../src/control-plane/control-plane.service';
+import type { SastQueueReservationInput } from '../../src/control-plane/sast-queue-admission.store';
 import { SastQueueAdmissionService } from '../../src/control-plane/sast-queue-admission.service';
 import { SastScanPlannerService } from '../../src/control-plane/sast-scan-planner.service';
+import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
 
 const digest = (character: string): `sha256:${string}` =>
   `sha256:${character.repeat(64)}`;
@@ -147,7 +149,9 @@ const buildMetadata = (
 
 function createHarness(lane: 'FAST' | 'DEEP' = 'FAST') {
   const controlPlane = new ControlPlaneService(null as never, null as never, null as never);
-  const queueAdmission = new SastQueueAdmissionService();
+  const queueAdmission = new SastQueueAdmissionService(
+    new InMemorySastQueueAdmissionStore()
+  );
   controlPlane.installIntegration(
     {
       tenantId: 'tenant-1',
@@ -207,13 +211,13 @@ function buildPlanningInput(
 }
 
 describe('SastScanPlannerService', () => {
-  it('selects the Java Fast profile and records an immutable admitted plan', () => {
+  it('selects the Java Fast profile and records an immutable admitted plan', async () => {
     const harness = createHarness('FAST');
     const input = buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id);
 
-    const first = harness.planner.plan(input);
-    const second = harness.planner.plan(input);
-    const laterRetry = harness.planner.plan({
+    const first = await harness.planner.plan(input);
+    const second = await harness.planner.plan(input);
+    const laterRetry = await harness.planner.plan({
       ...input,
       requestedAt: '2026-07-22T01:05:00Z'
     });
@@ -248,19 +252,19 @@ describe('SastScanPlannerService', () => {
         submodulesEnabled: false,
         lfsObjectsFetched: false
       },
-      createdAt: '2026-07-22T01:00:00Z'
+      createdAt: '2026-07-22T01:00:00.000Z'
     });
     expect(first.plan?.scannerSet).not.toBe(input.scannerSet);
     const plannedScannerDigest = first.plan?.scannerSet.scanners.OPENGREP.digest;
     input.scannerSet.scanners.OPENGREP.digest = digest('4');
     expect(first.plan?.scannerSet.scanners.OPENGREP.digest).toBe(plannedScannerDigest);
 
-    expect(() =>
+    await expect(
       harness.planner.plan({
         ...input,
         repositoryMetadata: { ...input.repositoryMetadata, inventoryDigest: digest('3') }
       })
-    ).toThrow('immutable');
+    ).rejects.toThrow('immutable');
 
     expect(
       harness.controlPlane.getScanRequest('tenant-1', harness.scanRequest.id)
@@ -270,9 +274,9 @@ describe('SastScanPlannerService', () => {
     });
   });
 
-  it('selects Java Deep or limited Common Deep without overstating language coverage', () => {
+  it('selects Java Deep or limited Common Deep without overstating language coverage', async () => {
     const javaHarness = createHarness('DEEP');
-    const java = javaHarness.planner.plan(
+    const java = await javaHarness.planner.plan(
       buildPlanningInput(javaHarness.repositoryBindingId, javaHarness.scanRequest.id, {
         queueUsage: buildQueueUsage(javaHarness.repositoryBindingId, 'DEEP')
       })
@@ -285,7 +289,7 @@ describe('SastScanPlannerService', () => {
     });
 
     const commonHarness = createHarness('DEEP');
-    const common = commonHarness.planner.plan(
+    const common = await commonHarness.planner.plan(
       buildPlanningInput(commonHarness.repositoryBindingId, commonHarness.scanRequest.id, {
         repositoryMetadata: buildMetadata(commonHarness.repositoryBindingId, ['PYTHON']),
         queueUsage: buildQueueUsage(commonHarness.repositoryBindingId, 'DEEP')
@@ -300,9 +304,9 @@ describe('SastScanPlannerService', () => {
     expect(common.plan?.profile.aiAdvisoryEligible).toBe(false);
   });
 
-  it('fails closed for unsupported Fast languages, polyglot scope, and policy mismatch', () => {
+  it('fails closed for unsupported Fast languages, polyglot scope, and policy mismatch', async () => {
     const fastHarness = createHarness('FAST');
-    const unsupported = fastHarness.planner.plan(
+    const unsupported = await fastHarness.planner.plan(
       buildPlanningInput(fastHarness.repositoryBindingId, fastHarness.scanRequest.id, {
         repositoryMetadata: buildMetadata(fastHarness.repositoryBindingId, ['PYTHON'])
       })
@@ -311,7 +315,7 @@ describe('SastScanPlannerService', () => {
     expect(unsupported.plan).toBeUndefined();
 
     const polyglotHarness = createHarness('DEEP');
-    const polyglot = polyglotHarness.planner.plan(
+    const polyglot = await polyglotHarness.planner.plan(
       buildPlanningInput(polyglotHarness.repositoryBindingId, polyglotHarness.scanRequest.id, {
         repositoryMetadata: buildMetadata(polyglotHarness.repositoryBindingId, ['JAVA', 'KOTLIN']),
         queueUsage: buildQueueUsage(polyglotHarness.repositoryBindingId, 'DEEP')
@@ -320,7 +324,7 @@ describe('SastScanPlannerService', () => {
     expect(polyglot.planning.reasonCodes).toEqual(['UNSUPPORTED_POLYGLOT_PROFILE']);
 
     const policyHarness = createHarness('DEEP');
-    const policyMismatch = policyHarness.planner.plan(
+    const policyMismatch = await policyHarness.planner.plan(
       buildPlanningInput(policyHarness.repositoryBindingId, policyHarness.scanRequest.id, {
         profilePolicy: {
           policyVersion: 'policy-other',
@@ -335,7 +339,7 @@ describe('SastScanPlannerService', () => {
     ]);
 
     const futureMetadataHarness = createHarness('FAST');
-    const futureMetadata = futureMetadataHarness.planner.plan(
+    const futureMetadata = await futureMetadataHarness.planner.plan(
       buildPlanningInput(
         futureMetadataHarness.repositoryBindingId,
         futureMetadataHarness.scanRequest.id,
@@ -350,7 +354,7 @@ describe('SastScanPlannerService', () => {
     expect(futureMetadata.planning.reasonCodes).toEqual(['TRUSTED_METADATA_INVALID']);
 
     const invalidTimestampHarness = createHarness('FAST');
-    expect(() =>
+    await expect(
       invalidTimestampHarness.planner.plan(
         buildPlanningInput(
           invalidTimestampHarness.repositoryBindingId,
@@ -358,13 +362,13 @@ describe('SastScanPlannerService', () => {
           { requestedAt: 'not-a-timestamp' }
         )
       )
-    ).toThrow('requestedAt must be a valid UTC timestamp');
+    ).rejects.toThrow('requestedAt must be a valid UTC timestamp');
   });
 
-  it('exposes every exceeded profile limit as a user-visible rejected state', () => {
+  it('exposes every exceeded profile limit as a user-visible rejected state', async () => {
     const harness = createHarness('FAST');
     const metadata = buildMetadata(harness.repositoryBindingId);
-    const result = harness.planner.plan(
+    const result = await harness.planner.plan(
       buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id, {
         repositoryMetadata: {
           ...metadata,
@@ -393,10 +397,52 @@ describe('SastScanPlannerService', () => {
     ).toMatchObject({ status: 'FAILED', sastPlanning: result.planning });
   });
 
-  it('binds every execution artifact digest into the canonical scan key', () => {
+  it('fails closed for malformed language signals and invalid snapshot sentinels', async () => {
+    const malformedMetadataHarness = createHarness('FAST');
+    const malformedMetadata = buildMetadata(malformedMetadataHarness.repositoryBindingId);
+    const malformedResult = await malformedMetadataHarness.planner.plan(
+      buildPlanningInput(
+        malformedMetadataHarness.repositoryBindingId,
+        malformedMetadataHarness.scanRequest.id,
+        {
+          repositoryMetadata: {
+            ...malformedMetadata,
+            sourceLanguages: [null] as never
+          }
+        }
+      )
+    );
+    expect(malformedResult.planning).toMatchObject({
+      state: 'REJECTED',
+      reasonCodes: ['TRUSTED_METADATA_INVALID']
+    });
+
+    const invalidUsageHarness = createHarness('FAST');
+    const invalidUsage = buildQueueUsage(invalidUsageHarness.repositoryBindingId, 'FAST');
+    const invalidUsageResult = await invalidUsageHarness.planner.plan(
+      buildPlanningInput(
+        invalidUsageHarness.repositoryBindingId,
+        invalidUsageHarness.scanRequest.id,
+        {
+          queueUsage: {
+            ...invalidUsage,
+            snapshotVersion: Number.MAX_SAFE_INTEGER,
+            queuedForTenant: queuePolicy.lanes.FAST.maxQueuedPerTenant,
+            queuedInLane: queuePolicy.lanes.FAST.maxQueuedPerTenant
+          }
+        }
+      )
+    );
+    expect(invalidUsageResult.planning).toMatchObject({
+      state: 'REJECTED',
+      reasonCodes: ['QUEUE_USAGE_INVALID']
+    });
+  });
+
+  it('binds every execution artifact digest into the canonical scan key', async () => {
     const harness = createHarness('FAST');
     const baseInput = buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id);
-    const baselineResult = harness.planner.plan(baseInput);
+    const baselineResult = await harness.planner.plan(baseInput);
     const baseline = baselineResult.planning.canonicalScanKey;
     const baseCanonicalInput = {
       tenantId: 'tenant-1',
@@ -461,9 +507,9 @@ describe('SastScanPlannerService', () => {
     expect(inventoryKey).not.toBe(baseline);
   });
 
-  it('defers capacity-limited work with the lane queue and retry condition', () => {
+  it('defers capacity-limited work with the lane queue and retry condition', async () => {
     const harness = createHarness('DEEP');
-    const result = harness.planner.plan(
+    const result = await harness.planner.plan(
       buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id, {
         queueUsage: {
           ...buildQueueUsage(harness.repositoryBindingId, 'DEEP'),
@@ -485,10 +531,39 @@ describe('SastScanPlannerService', () => {
     ).toBe('PLANNING');
   });
 
-  it('rejects missing required scanner assets before queue admission', () => {
+  it('records a fail-closed retry reason without discarding a deferred canonical identity', async () => {
+    const harness = createHarness('DEEP');
+    const deferred = await harness.planner.plan(
+      buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id, {
+        queueUsage: {
+          ...buildQueueUsage(harness.repositoryBindingId, 'DEEP'),
+          activeForTenant: queuePolicy.lanes.DEEP.maxActivePerTenant
+        }
+      })
+    );
+    expect(deferred.planning.canonicalScanKey).toBeDefined();
+
+    const rejected = await harness.planner.plan(
+      buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id, {
+        profilePolicy: {
+          policyVersion: 'policy-rotated',
+          allowedProfileIds: ['JAVA_DEEP_V1'],
+          requireLanguageSpecificSast: true
+        },
+        queueUsage: buildQueueUsage(harness.repositoryBindingId, 'DEEP')
+      })
+    );
+    expect(rejected.planning).toMatchObject({
+      state: 'REJECTED',
+      canonicalScanKey: deferred.planning.canonicalScanKey,
+      reasonCodes: ['PROFILE_POLICY_VERSION_MISMATCH']
+    });
+  });
+
+  it('rejects missing required scanner assets before queue admission', async () => {
     const harness = createHarness('FAST');
     const scannerSet = buildScannerSet();
-    const result = harness.planner.plan(
+    const result = await harness.planner.plan(
       buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id, {
         scannerSet: {
           ...scannerSet,
@@ -527,6 +602,145 @@ describe('SastScanPlannerService', () => {
       'a-2',
       'a-3'
     ]);
+  });
+
+  it('shares atomic reservations across service replicas and canonical UTC encodings', async () => {
+    const store = new InMemorySastQueueAdmissionStore();
+    const firstReplica = new SastQueueAdmissionService(store);
+    const secondReplica = new SastQueueAdmissionService(store);
+    const baseInput: SastQueueReservationInput = {
+      scanRequestId: 'scan-a',
+      canonicalScanKey: digest('a'),
+      lane: 'FAST',
+      tenantId: 'tenant-a',
+      repositoryBindingId: 'repository-a',
+      requestedAt: '2026-07-22T01:00:00Z',
+      policySet: queuePolicy,
+      usage: {
+        snapshotVersion: 0,
+        tenantId: 'tenant-a',
+        repositoryBindingId: 'repository-a',
+        lane: 'FAST',
+        dailyWindowStartedAt: '2026-07-22T00:00:00Z',
+        activeForTenant: 0,
+        queuedForTenant: 0,
+        admittedTodayForTenant: 0,
+        activeForRepository: 0,
+        queuedInLane: 0
+      }
+    };
+
+    const [first, concurrent] = await Promise.all([
+      firstReplica.reserve(baseInput),
+      secondReplica.reserve({
+        ...baseInput,
+        scanRequestId: 'scan-b',
+        canonicalScanKey: digest('b'),
+        repositoryBindingId: 'repository-b',
+        usage: {
+          ...baseInput.usage,
+          repositoryBindingId: 'repository-b',
+          dailyWindowStartedAt: '2026-07-22T00:00:00.000Z'
+        }
+      })
+    ]);
+
+    expect([first.state, concurrent.state].sort()).toEqual(['ADMITTED', 'DEFERRED']);
+    expect([first, concurrent].find((decision) => decision.state === 'DEFERRED')).toMatchObject({
+      reasonCodes: ['QUEUE_USAGE_STALE']
+    });
+
+    const restartedReplica = new SastQueueAdmissionService(store);
+    const replay = await restartedReplica.reserve(baseInput);
+    expect(replay).toEqual(first);
+    const replayContext = await restartedReplica.reserveWithContext({
+      ...baseInput,
+      requestedAt: '2026-07-22T01:05:00Z'
+    });
+    expect(replayContext).toMatchObject({
+      decision: first,
+      admittedAt: '2026-07-22T01:00:00.000Z'
+    });
+  });
+
+  it('claims admitted work with a transactional tenant round-robin cursor', async () => {
+    const service = new SastQueueAdmissionService(new InMemorySastQueueAdmissionStore());
+    const reservationInput = (
+      scanRequestId: string,
+      tenantId: string,
+      repositoryBindingId: string,
+      requestedAt: string,
+      snapshotVersion: number,
+      queuedForTenant: number,
+      admittedTodayForTenant: number,
+      queuedInLane: number,
+      digestCharacter: string
+    ): SastQueueReservationInput => ({
+      scanRequestId,
+      canonicalScanKey: digest(digestCharacter),
+      lane: 'FAST',
+      tenantId,
+      repositoryBindingId,
+      requestedAt,
+      policySet: queuePolicy,
+      usage: {
+        snapshotVersion,
+        tenantId,
+        repositoryBindingId,
+        lane: 'FAST',
+        dailyWindowStartedAt: '2026-07-22T00:00:00Z',
+        activeForTenant: 0,
+        queuedForTenant,
+        admittedTodayForTenant,
+        activeForRepository: 0,
+        queuedInLane
+      }
+    });
+
+    expect(
+      (
+        await service.reserve(
+          reservationInput('a-1', 'tenant-a', 'repository-a-1', '2026-07-22T01:00:00Z', 0, 0, 0, 0, '1')
+        )
+      ).state
+    ).toBe('ADMITTED');
+    expect(
+      (
+        await service.reserve(
+          reservationInput('a-2', 'tenant-a', 'repository-a-2', '2026-07-22T01:00:01Z', 1, 1, 1, 1, '2')
+        )
+      ).state
+    ).toBe('ADMITTED');
+    expect(
+      (
+        await service.reserve(
+          reservationInput('b-1', 'tenant-b', 'repository-b-1', '2026-07-22T01:00:02Z', 2, 0, 0, 2, '3')
+        )
+      ).state
+    ).toBe('ADMITTED');
+
+    const claimInput = {
+      lane: 'FAST' as const,
+      dailyWindowStartedAt: '2026-07-22T00:00:00.000Z',
+      workerId: 'dispatcher-1',
+      claimedAt: '2026-07-22T01:01:00Z',
+      leaseSeconds: 30
+    };
+    const first = await service.claimNextForDispatch(claimInput);
+    expect(first?.scanRequestId).toBe('a-1');
+    expect(
+      await service.acknowledgeDispatch({
+        scanRequestId: first!.scanRequestId,
+        workerId: claimInput.workerId,
+        acknowledgedAt: '2026-07-22T01:01:01Z'
+      })
+    ).toBe(true);
+
+    const second = await service.claimNextForDispatch({
+      ...claimInput,
+      claimedAt: '2026-07-22T01:01:02Z'
+    });
+    expect(second?.scanRequestId).toBe('b-1');
   });
 
   it('returns explicit retryable outcomes for every queue quota boundary', () => {
@@ -617,13 +831,13 @@ describe('SastScanPlannerService', () => {
     ).toMatchObject({ state: 'REJECTED', reasonCodes: ['QUEUE_USAGE_INVALID'] });
   });
 
-  it('atomically reserves queue capacity and defers a replayed usage snapshot', () => {
+  it('atomically reserves queue capacity and defers a replayed usage snapshot', async () => {
     const harness = createHarness('FAST');
     const firstInput = buildPlanningInput(
       harness.repositoryBindingId,
       harness.scanRequest.id
     );
-    expect(harness.planner.plan(firstInput).planning.state).toBe('ADMITTED');
+    expect((await harness.planner.plan(firstInput)).planning.state).toBe('ADMITTED');
 
     const secondScanRequest = harness.controlPlane.createScanRequest({
       tenantId: 'tenant-1',
@@ -637,16 +851,22 @@ describe('SastScanPlannerService', () => {
     const staleInput = buildPlanningInput(
       harness.repositoryBindingId,
       secondScanRequest.id,
-      { requestedAt: '2026-07-22T01:00:01Z' }
+      {
+        requestedAt: '2026-07-22T01:00:01Z',
+        queueUsage: {
+          ...buildQueueUsage(harness.repositoryBindingId, 'FAST'),
+          dailyWindowStartedAt: '2026-07-22T00:00:00.000Z'
+        }
+      }
     );
-    const staleResult = harness.planner.plan(staleInput);
+    const staleResult = await harness.planner.plan(staleInput);
     expect(staleResult.planning).toMatchObject({
       state: 'DEFERRED',
       reasonCodes: ['QUEUE_USAGE_STALE'],
       retryAfterSeconds: 30
     });
 
-    const refreshedResult = harness.planner.plan({
+    const refreshedResult = await harness.planner.plan({
       ...staleInput,
       requestedAt: '2026-07-22T01:01:00Z',
       queueUsage: {
@@ -664,15 +884,15 @@ describe('SastScanPlannerService', () => {
     });
   });
 
-  it('does not let late planning rewrite a running scan', () => {
+  it('does not let late planning rewrite a running scan', async () => {
     const harness = createHarness('FAST');
     harness.scanRequest.status = 'RUNNING';
 
-    expect(() =>
+    await expect(
       harness.planner.plan(
         buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id)
       )
-    ).toThrow('cannot rewrite a terminal or running scan');
+    ).rejects.toThrow('cannot rewrite a terminal or running scan');
     expect(harness.scanRequest.status).toBe('RUNNING');
     expect(harness.scanRequest.sastPlanning).toBeUndefined();
 
@@ -686,8 +906,10 @@ describe('SastScanPlannerService', () => {
       scannerSetVersion: 'scanner-set-1'
     });
     expect(
-      harness.planner.plan(
-        buildPlanningInput(harness.repositoryBindingId, nextScanRequest.id)
+      (
+        await harness.planner.plan(
+          buildPlanningInput(harness.repositoryBindingId, nextScanRequest.id)
+        )
       ).planning.state
     ).toBe('ADMITTED');
   });

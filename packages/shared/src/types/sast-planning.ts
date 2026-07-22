@@ -191,6 +191,14 @@ export function isTrustedSastRepositoryMetadataValid(
     return false;
   }
 
+  if (
+    metadata.sourceLanguages.some(
+      (signal) => signal === null || typeof signal !== 'object'
+    )
+  ) {
+    return false;
+  }
+
   const languages = metadata.sourceLanguages.map((signal) => signal.language);
   const sourceFileCount = metadata.sourceLanguages.reduce(
     (total, signal) => total + signal.sourceFileCount,

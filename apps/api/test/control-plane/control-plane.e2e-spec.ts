@@ -5,6 +5,8 @@ import request from "supertest";
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
 import { GithubWebhookSignatureGuard } from '../../src/common/security/github-webhook-signature.guard';
 import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
+import { SastQueueAdmissionStore } from '../../src/control-plane/sast-queue-admission.store';
+import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
 import {
   TestGithubWebhookSignatureGuard,
   TestInternalServiceGuard,
@@ -190,6 +192,8 @@ describe("Control Plane skeleton (e2e)", () => {
       })
       .overrideProvider(GitlabCloudIntegrationClient)
       .useValue(gitlabCloudIntegrationClientMock)
+      .overrideProvider(SastQueueAdmissionStore)
+      .useValue(new InMemorySastQueueAdmissionStore())
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .overrideGuard(InternalServiceGuard)

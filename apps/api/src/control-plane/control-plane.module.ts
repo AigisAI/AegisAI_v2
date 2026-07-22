@@ -11,7 +11,9 @@ import { GitlabCloudIntegrationClient } from "./gitlab-cloud-integration.client"
 import { IntegrationsController } from "./integrations.controller";
 import { RepositoryBindingsController } from "./repository-bindings.controller";
 import { ScanRequestsController } from "./scan-requests.controller";
+import { PrismaSastQueueAdmissionStore } from './prisma-sast-queue-admission.store';
 import { SastPlanningController } from './sast-planning.controller';
+import { SastQueueAdmissionStore } from './sast-queue-admission.store';
 import { SastQueueAdmissionService } from './sast-queue-admission.service';
 import { SastScanPlannerService } from './sast-scan-planner.service';
 
@@ -27,6 +29,11 @@ import { SastScanPlannerService } from './sast-scan-planner.service';
   ],
   providers: [
     ControlPlaneService,
+    PrismaSastQueueAdmissionStore,
+    {
+      provide: SastQueueAdmissionStore,
+      useExisting: PrismaSastQueueAdmissionStore
+    },
     SastQueueAdmissionService,
     SastScanPlannerService,
     GithubAppInstallationClient,

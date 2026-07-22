@@ -351,6 +351,79 @@ model ScanRequest {
   @@index([createdAt(sort: Desc)])
 }
 
+model SastQueueLedger {
+  id                   String   @id
+  lane                 ScanLane
+  dailyWindowStartedAt DateTime
+  snapshotVersion      BigInt
+  queuedInLane         Int
+  lastServedTenantId   String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenantUsages     SastQueueTenantUsage[]
+  repositoryUsages SastQueueRepositoryUsage[]
+  reservations     SastQueueReservation[]
+
+  @@unique([lane, dailyWindowStartedAt])
+  @@index([dailyWindowStartedAt])
+}
+
+model SastQueueTenantUsage {
+  ledgerId               String
+  tenantId               String
+  activeForTenant        Int
+  queuedForTenant        Int
+  admittedTodayForTenant Int
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  ledger SastQueueLedger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+
+  @@id([ledgerId, tenantId])
+  @@index([tenantId])
+}
+
+model SastQueueRepositoryUsage {
+  ledgerId                  String
+  tenantId                  String
+  repositoryBindingId       String
+  activeForRepository       Int
+  lastRepositoryAdmissionAt DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  ledger SastQueueLedger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+
+  @@id([ledgerId, tenantId, repositoryBindingId])
+  @@index([tenantId, repositoryBindingId])
+}
+
+model SastQueueReservation {
+  scanRequestId          String    @id
+  ledgerId               String
+  canonicalScanKey       String
+  lane                   ScanLane
+  tenantId               String
+  repositoryBindingId    String
+  queuePolicyVersion     String
+  queuePolicyDigest      String
+  decision               Json
+  enqueuedAt             DateTime
+  dispatchLeaseOwner     String?
+  dispatchLeaseExpiresAt DateTime?
+  dispatchAttempt        Int       @default(0)
+  publishedAt            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  ledger SastQueueLedger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+
+  @@index([ledgerId, publishedAt, enqueuedAt])
+  @@index([tenantId, lane, enqueuedAt])
+  @@index([dispatchLeaseExpiresAt])
+}
+
 model ScannerRun {
   id                   String           @id @default(uuid())
   tenantId             String
