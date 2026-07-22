@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Length,
@@ -13,7 +14,14 @@ import {
   Min,
   ValidateNested
 } from 'class-validator';
-import { SCAN_LANES } from '@aegisai/shared';
+import {
+  SCAN_LANES,
+  type SastProfileSelectionPolicy,
+  type SastQueuePolicySet,
+  type SastQueueUsageSnapshot,
+  type ScannerSetDescriptor,
+  type TrustedSastRepositoryMetadata
+} from '@aegisai/shared';
 
 const RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
 const VERSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
@@ -136,4 +144,29 @@ export class CreateScanRequestDto {
   @ValidateNested()
   @Type(() => IsolationSignalsDto)
   isolationSignals?: IsolationSignalsDto;
+}
+
+export class PlanSastScanRequestDto {
+  @IsString()
+  @Matches(RESOURCE_ID)
+  tenantId!: string;
+
+  @IsObject()
+  repositoryMetadata!: TrustedSastRepositoryMetadata;
+
+  @IsObject()
+  profilePolicy!: SastProfileSelectionPolicy;
+
+  @IsObject()
+  scannerSet!: ScannerSetDescriptor;
+
+  @IsObject()
+  queuePolicySet!: SastQueuePolicySet;
+
+  @IsObject()
+  queueUsage!: SastQueueUsageSnapshot;
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u)
+  requestedAt!: string;
 }

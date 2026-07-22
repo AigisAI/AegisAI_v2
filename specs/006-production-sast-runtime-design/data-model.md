@@ -163,7 +163,9 @@ Safe status attached to the tenant-scoped scan request and returned by status re
 `LANGUAGE_SPECIFIC_SAST_UNAVAILABLE`; it never claims language-complete SAST coverage.
 The first recorded canonical planning identity is immutable. A deferred decision may become
 admitted only for that same identity; an admitted decision is idempotent and cannot be downgraded
-or replaced, and no planning write may change a running or terminal scan.
+or replaced. Redelivery with a later request timestamp returns the original decision timestamp
+and plan, and no planning write may change a running or terminal scan. Risk-escalated requests
+retain `RESTRICTED` isolation in their immutable plan.
 
 ### SastScanAttempt
 

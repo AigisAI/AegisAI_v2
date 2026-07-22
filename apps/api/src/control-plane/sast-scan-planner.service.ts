@@ -134,6 +134,16 @@ export class SastScanPlannerService {
         isolationClass
       })
     );
+
+    this.controlPlaneService.assertSastQueueReservationAllowed(
+      scanRequest.tenantId,
+      scanRequest.id,
+      canonicalScanKey
+    );
+    const planCreatedAt =
+      scanRequest.sastPlanning?.state === 'ADMITTED'
+        ? scanRequest.sastPlanning.updatedAt
+        : input.requestedAt;
     const plan = this.buildPlan(
       scanRequest,
       profileSelection.profile,
@@ -142,7 +152,7 @@ export class SastScanPlannerService {
       input.scannerSet,
       isolationClass,
       input.repositoryMetadata.inventoryDigest,
-      input.requestedAt
+      planCreatedAt
     );
 
     if (!isSastScanPlanValid(plan)) {
@@ -154,12 +164,6 @@ export class SastScanPlannerService {
         profileSelection.profile
       );
     }
-
-    this.controlPlaneService.assertSastQueueReservationAllowed(
-      scanRequest.tenantId,
-      scanRequest.id,
-      canonicalScanKey
-    );
 
     const queueAdmission = this.queueAdmissionService.reserve({
       scanRequestId: scanRequest.id,
@@ -184,15 +188,19 @@ export class SastScanPlannerService {
       retryAfterSeconds: queueAdmission.retryAfterSeconds,
       updatedAt: input.requestedAt
     };
-    this.controlPlaneService.recordSastPlanningState(
+    const recordedRequest = this.controlPlaneService.recordSastPlanningState(
       scanRequest.tenantId,
       scanRequest.id,
       planning
     );
+    const recordedPlanning = recordedRequest.sastPlanning ?? planning;
 
     return {
-      planning,
-      plan: queueAdmission.state === 'REJECTED' ? undefined : plan
+      planning: {
+        ...recordedPlanning,
+        reasonCodes: [...recordedPlanning.reasonCodes]
+      },
+      plan: recordedPlanning.state === 'REJECTED' ? undefined : plan
     };
   }
 

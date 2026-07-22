@@ -218,7 +218,9 @@ export class ControlPlaneService {
     }
 
     const isolationClass: IsolationClass =
-      input.isolationSignals && shouldEscalateIsolation(input.isolationSignals) ? "HARDENED" : "STANDARD";
+      input.isolationSignals && shouldEscalateIsolation(input.isolationSignals)
+        ? "RESTRICTED"
+        : "STANDARD";
 
     const canonicalKey = buildCanonicalScanKey(input);
     const existingScanRequest = Array.from(this.scanRequests.values()).find(
@@ -325,7 +327,6 @@ export class ControlPlaneService {
       left.queuePolicyDigest === right.queuePolicyDigest &&
       left.canonicalScanKey === right.canonicalScanKey &&
       left.retryAfterSeconds === right.retryAfterSeconds &&
-      left.updatedAt === right.updatedAt &&
       left.reasonCodes.length === right.reasonCodes.length &&
       left.reasonCodes.every((reasonCode, index) => reasonCode === right.reasonCodes[index])
     );

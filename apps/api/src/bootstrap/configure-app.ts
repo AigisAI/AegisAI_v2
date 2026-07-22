@@ -16,6 +16,7 @@ const INTERNAL_CSRF_EXEMPT_PATHS = [
   '/api/policy-decisions/evaluate',
   '/api/ai-advisories',
   '/api/comment-dispatches',
+  '/api/sast-planning',
   '/api/webhooks'
 ];
 const SENSITIVE_RESPONSE_PATHS = [
@@ -23,6 +24,7 @@ const SENSITIVE_RESPONSE_PATHS = [
   '/api/integrations',
   '/api/repository-bindings',
   '/api/scan-requests',
+  '/api/sast-planning',
   '/api/token-broker',
   '/api/audit-events',
   '/api/findings',

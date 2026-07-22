@@ -59,6 +59,14 @@ queue-policy set, and a versioned counter-only queue-usage snapshot. These are i
 the public scan-request DTO cannot provide source content, language overrides, scanner
 commands, executable configuration, queue limits, credential values, or artifact bodies.
 
+The session-authenticated `POST /api/scan-requests` creates only immutable user intent. An
+approved metadata/preflight workload continues that request through the
+internal-service-authenticated `POST /api/sast-planning/:scanRequestId` boundary. That boundary
+is the only HTTP entry point for trusted metadata, signed profile/scanner/queue policy, and
+authoritative usage counters. The session-authenticated scan status returns only the reduced
+planning state. This two-step flow prevents a user from supplying trusted planning inputs while
+ensuring the planner is part of the production request lifecycle rather than a test-only helper.
+
 Trusted repository metadata is accepted only when it contains a full 40- or 64-character
 commit SHA, inventory digest, attestation reference, collection timestamp, normalized
 language byte/file signals, manifest names, and bounded resource counters. Its repository
@@ -112,8 +120,11 @@ coverage claim, queue name, queue-policy version/digest, canonical key, reason c
 retry-after seconds, and timestamp.
 It never exposes trusted inventory internals, source, credentials, or scanner configuration.
 Once a canonical planning identity is recorded it cannot be replaced by a different identity.
-An admitted decision is idempotent and immutable, and planning cannot rewrite a running,
+An admitted decision is idempotent across delivery timestamps and immutable, and planning cannot rewrite a running,
 completed, failed, or canceled scan.
+
+Risk escalation signals on the immutable request select `RESTRICTED`; ordinary SAST requests are
+raised from `STANDARD` intent to the mandatory `HARDENED` execution floor by the planner.
 
 ## Profile Contract
 

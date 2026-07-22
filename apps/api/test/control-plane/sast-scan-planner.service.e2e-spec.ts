@@ -213,8 +213,13 @@ describe('SastScanPlannerService', () => {
 
     const first = harness.planner.plan(input);
     const second = harness.planner.plan(input);
+    const laterRetry = harness.planner.plan({
+      ...input,
+      requestedAt: '2026-07-22T01:05:00Z'
+    });
 
     expect(first).toEqual(second);
+    expect(first).toEqual(laterRetry);
     expect(first.planning).toMatchObject({
       state: 'ADMITTED',
       profileId: 'JAVA_FAST_V1',

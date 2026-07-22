@@ -11,6 +11,7 @@ import { GitlabCloudIntegrationClient } from "./gitlab-cloud-integration.client"
 import { IntegrationsController } from "./integrations.controller";
 import { RepositoryBindingsController } from "./repository-bindings.controller";
 import { ScanRequestsController } from "./scan-requests.controller";
+import { SastPlanningController } from './sast-planning.controller';
 import { SastQueueAdmissionService } from './sast-queue-admission.service';
 import { SastScanPlannerService } from './sast-scan-planner.service';
 
@@ -21,7 +22,8 @@ import { SastScanPlannerService } from './sast-scan-planner.service';
     RepositoryBindingsController,
     ScanRequestsController,
     GithubWebhooksController,
-    CommentDispatchesController
+    CommentDispatchesController,
+    SastPlanningController
   ],
   providers: [
     ControlPlaneService,
