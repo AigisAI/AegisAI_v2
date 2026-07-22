@@ -7,6 +7,8 @@ import type {
   SastUserVisiblePlanningState
 } from '@aegisai/shared';
 
+export const SAST_QUEUE_MAX_DISPATCH_ATTEMPTS = 2;
+
 export interface SastQueueReservationInput {
   scanRequestId: string;
   canonicalScanKey: `sha256:${string}`;

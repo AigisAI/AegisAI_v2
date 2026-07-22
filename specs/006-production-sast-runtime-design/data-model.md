@@ -157,8 +157,12 @@ The reservation row is also the durable pending-dispatch record. It stores the a
 state and complete immutable `SastScanPlan`, but no source or credential material, and has a
 restrictive foreign key to the durable scan request. A shared `lastServedTenantId` cursor selects the
 oldest eligible reservation by tenant round robin; bounded owner/expiry fields make dispatch claims
-recoverable. `publishedAt`/`startedAt`, `completedAt`, and terminal status make queued-to-active-to-
-terminal counter transitions transactional and idempotent without deleting the admission identity.
+recoverable. Dispatch drains the oldest pending lane/day ledger even after UTC rollover, so a
+dispatcher restart cannot strand yesterday's backlog. An unacknowledged lease is attempted at most
+twice; the next post-expiry claim atomically marks the reservation and scan request `FAILED` and
+returns its queued capacity. `publishedAt`/`startedAt`, `completedAt`, and terminal status make
+queued-to-active-to-terminal counter transitions transactional and idempotent without deleting the
+admission identity.
 
 ### SastPlanningState
 

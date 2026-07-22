@@ -127,8 +127,12 @@ Capacity outcomes are `DEFERRED` with a bounded retry condition; malformed polic
 deterministic tenant round-robin ordering, with the last-served tenant rotated to the end. Admission
 capacity and dispatch order are separate concerns: durable admitted reservations form the pending
 dispatch set, while `claimNextForDispatch` advances the shared ledger cursor in the same serializable
-transaction that acquires a bounded dispatch lease. An acknowledgement is accepted only from the
-lease owner before lease expiry; unacknowledged work becomes eligible again after expiry. A valid
+transaction that acquires a bounded dispatch lease. Claiming searches all pending UTC windows for
+the lane and drains the oldest ledger first, so a day rollover or dispatcher restart cannot hide
+older work. An acknowledgement is accepted only from the lease owner before lease expiry;
+unacknowledged work becomes eligible for one retry after the first expiry. After two total expired
+leases, the next claim atomically marks the reservation and scan request `FAILED`, decrements queued
+lane/tenant counters, and advances the ledger version instead of redispatching forever. A valid
 acknowledgement atomically moves lane/tenant counters from queued to active and marks the durable
 scan request `RUNNING`. Completion atomically decrements tenant/repository active counters, advances
 the ledger version, records the terminal state, and is idempotent for the same worker and outcome.

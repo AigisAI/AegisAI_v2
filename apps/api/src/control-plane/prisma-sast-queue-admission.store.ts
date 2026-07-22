@@ -15,6 +15,7 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  SAST_QUEUE_MAX_DISPATCH_ATTEMPTS,
   SastQueueAdmissionStore,
   type SastQueueDispatchAcknowledgementInput,
   type SastQueueDispatchClaim,
@@ -40,6 +41,7 @@ interface PersistedReservationRow {
   immutablePlan: Prisma.JsonValue;
   dispatchLeaseOwner: string | null;
   dispatchLeaseExpiresAt: Date | null;
+  dispatchAttempt: number;
   publishedAt: Date | null;
   startedAt: Date | null;
   completedAt: Date | null;
@@ -247,16 +249,12 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
   ): Promise<SastQueueDispatchClaim | null> {
     return this.runSerializable(async (transaction) => {
       const claimedAt = this.normalizeDate(input.claimedAt);
-      const ledgerId = this.ledgerId(input.lane, this.normalizeDate(input.dailyWindowStartedAt));
-      const ledger = await transaction.sastQueueLedger.findUnique({ where: { id: ledgerId } });
-      if (!ledger) {
-        return null;
-      }
 
       const existingClaim = await transaction.sastQueueReservation.findFirst({
         where: {
-          ledgerId,
+          lane: input.lane,
           publishedAt: null,
+          completedAt: null,
           dispatchLeaseOwner: input.workerId,
           dispatchLeaseExpiresAt: { gt: claimedAt }
         },
@@ -266,10 +264,37 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
         return this.toDispatchClaim(existingClaim);
       }
 
+      await this.expireExhaustedDispatches(transaction, input.lane, claimedAt);
+
+      const oldestPending = await transaction.sastQueueReservation.findFirst({
+        where: {
+          lane: input.lane,
+          publishedAt: null,
+          completedAt: null,
+          dispatchAttempt: { lt: SAST_QUEUE_MAX_DISPATCH_ATTEMPTS },
+          OR: [
+            { dispatchLeaseExpiresAt: null },
+            { dispatchLeaseExpiresAt: { lte: claimedAt } }
+          ]
+        },
+        orderBy: [{ enqueuedAt: 'asc' }, { scanRequestId: 'asc' }]
+      });
+      if (!oldestPending) {
+        return null;
+      }
+
+      const ledgerId = oldestPending.ledgerId;
+      const ledger = await transaction.sastQueueLedger.findUnique({ where: { id: ledgerId } });
+      if (!ledger || ledger.lane !== input.lane) {
+        throw new Error('Persisted SAST queue ledger is unavailable for dispatch.');
+      }
+
       const candidates = await transaction.sastQueueReservation.findMany({
         where: {
           ledgerId,
           publishedAt: null,
+          completedAt: null,
+          dispatchAttempt: { lt: SAST_QUEUE_MAX_DISPATCH_ATTEMPTS },
           OR: [
             { dispatchLeaseExpiresAt: null },
             { dispatchLeaseExpiresAt: { lte: claimedAt } }
@@ -297,6 +322,8 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
         where: {
           scanRequestId: next.scanRequestId,
           publishedAt: null,
+          completedAt: null,
+          dispatchAttempt: { lt: SAST_QUEUE_MAX_DISPATCH_ATTEMPTS },
           OR: [
             { dispatchLeaseExpiresAt: null },
             { dispatchLeaseExpiresAt: { lte: claimedAt } }
@@ -335,12 +362,15 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       if (!reservation || reservation.dispatchLeaseOwner !== input.workerId) {
         return false;
       }
+      if (reservation.completedAt) {
+        return false;
+      }
       if (reservation.publishedAt) {
         return true;
       }
       if (
         !reservation.dispatchLeaseExpiresAt ||
-        reservation.dispatchLeaseExpiresAt.getTime() < acknowledgedAt.getTime()
+        reservation.dispatchLeaseExpiresAt.getTime() <= acknowledgedAt.getTime()
       ) {
         return false;
       }
@@ -382,7 +412,8 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
           scanRequestId: input.scanRequestId,
           dispatchLeaseOwner: input.workerId,
           publishedAt: null,
-          dispatchLeaseExpiresAt: { gte: acknowledgedAt }
+          completedAt: null,
+          dispatchLeaseExpiresAt: { gt: acknowledgedAt }
         },
         data: { publishedAt: acknowledgedAt, startedAt: acknowledgedAt }
       });
@@ -429,6 +460,87 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
 
       return true;
     });
+  }
+
+  private async expireExhaustedDispatches(
+    transaction: Prisma.TransactionClient,
+    lane: 'FAST' | 'DEEP',
+    claimedAt: Date
+  ): Promise<void> {
+    const exhausted = await transaction.sastQueueReservation.findMany({
+      where: {
+        lane,
+        publishedAt: null,
+        completedAt: null,
+        dispatchAttempt: { gte: SAST_QUEUE_MAX_DISPATCH_ATTEMPTS },
+        dispatchLeaseExpiresAt: { lte: claimedAt }
+      },
+      orderBy: [{ enqueuedAt: 'asc' }, { scanRequestId: 'asc' }]
+    });
+
+    for (const reservation of exhausted) {
+      const [ledger, tenantUsage] = await Promise.all([
+        transaction.sastQueueLedger.findUnique({
+          where: { id: reservation.ledgerId }
+        }),
+        transaction.sastQueueTenantUsage.findUnique({
+          where: {
+            ledgerId_tenantId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId
+            }
+          }
+        })
+      ]);
+      if (
+        !ledger ||
+        ledger.queuedInLane < 1 ||
+        !tenantUsage ||
+        tenantUsage.queuedForTenant < 1
+      ) {
+        throw new Error('Persisted exhausted dispatch cannot release queued capacity.');
+      }
+
+      const expired = await transaction.sastQueueReservation.updateMany({
+        where: {
+          scanRequestId: reservation.scanRequestId,
+          publishedAt: null,
+          completedAt: null,
+          dispatchAttempt: { gte: SAST_QUEUE_MAX_DISPATCH_ATTEMPTS },
+          dispatchLeaseExpiresAt: { lte: claimedAt }
+        },
+        data: {
+          completedAt: claimedAt,
+          terminalStatus: 'FAILED'
+        }
+      });
+      if (expired.count !== 1) {
+        throw new RetryableDispatchClaimConflict();
+      }
+
+      await Promise.all([
+        transaction.sastQueueLedger.update({
+          where: { id: reservation.ledgerId },
+          data: {
+            queuedInLane: { decrement: 1 },
+            snapshotVersion: { increment: 1 }
+          }
+        }),
+        transaction.sastQueueTenantUsage.update({
+          where: {
+            ledgerId_tenantId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId
+            }
+          },
+          data: { queuedForTenant: { decrement: 1 } }
+        }),
+        transaction.scanRequest.update({
+          where: { id: reservation.scanRequestId },
+          data: { status: 'FAILED', completedAt: claimedAt }
+        })
+      ]);
+    }
   }
 
   async completeDispatch(input: SastQueueDispatchCompletionInput): Promise<boolean> {

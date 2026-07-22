@@ -184,6 +184,57 @@ const buildReservationPlan = (input: {
   createdAt: new Date(input.createdAt).toISOString()
 });
 
+const buildDispatchReservationInput = (input: {
+  scanRequestId: string;
+  digestCharacter: string;
+  requestedAt: string;
+  dailyWindowStartedAt: string;
+  snapshotVersion?: number;
+  queuedForTenant?: number;
+  admittedTodayForTenant?: number;
+  queuedInLane?: number;
+  lastRepositoryAdmissionAt?: string;
+}): SastQueueReservationInput => {
+  const tenantId = 'tenant-dispatch';
+  const repositoryBindingId = 'repository-dispatch';
+  const canonicalScanKey = digest(input.digestCharacter);
+
+  return {
+    scanRequestId: input.scanRequestId,
+    canonicalScanKey,
+    lane: 'FAST',
+    tenantId,
+    repositoryBindingId,
+    requestedAt: input.requestedAt,
+    policySet: queuePolicy,
+    plan: buildReservationPlan({
+      scanRequestId: input.scanRequestId,
+      canonicalScanKey,
+      tenantId,
+      repositoryBindingId,
+      createdAt: input.requestedAt
+    }),
+    planningContext: {
+      profileId: 'JAVA_FAST_V1',
+      coverageClaim: 'LANGUAGE_SAST_COMPLETE',
+      reasonCodes: []
+    },
+    usage: {
+      snapshotVersion: input.snapshotVersion ?? 0,
+      tenantId,
+      repositoryBindingId,
+      lane: 'FAST',
+      dailyWindowStartedAt: input.dailyWindowStartedAt,
+      activeForTenant: 0,
+      queuedForTenant: input.queuedForTenant ?? 0,
+      admittedTodayForTenant: input.admittedTodayForTenant ?? 0,
+      activeForRepository: 0,
+      queuedInLane: input.queuedInLane ?? 0,
+      lastRepositoryAdmissionAt: input.lastRepositoryAdmissionAt
+    }
+  };
+};
+
 async function createHarness(lane: 'FAST' | 'DEEP' = 'FAST') {
   const scanRequestStore = new InMemoryControlPlaneScanRequestStore();
   const queueStore = new InMemorySastQueueAdmissionStore();
@@ -867,6 +918,90 @@ describe('SastScanPlannerService', () => {
       claimedAt: '2026-07-22T01:01:02Z'
     });
     expect(second?.scanRequestId).toBe('b-1');
+  });
+
+  it('drains the oldest pending lane ledger after a UTC-day rollover', async () => {
+    const service = new SastQueueAdmissionService(new InMemorySastQueueAdmissionStore());
+    const reservation = buildDispatchReservationInput({
+      scanRequestId: 'rollover-1',
+      digestCharacter: 'a',
+      requestedAt: '2026-07-22T23:59:00Z',
+      dailyWindowStartedAt: '2026-07-22T00:00:00Z'
+    });
+
+    expect((await service.reserve(reservation)).state).toBe('ADMITTED');
+    const claim = await service.claimNextForDispatch({
+      lane: 'FAST',
+      dailyWindowStartedAt: '2026-07-23T00:00:00Z',
+      workerId: 'rollover-worker',
+      claimedAt: '2026-07-23T00:01:00Z',
+      leaseSeconds: 30
+    });
+
+    expect(claim?.scanRequestId).toBe(reservation.scanRequestId);
+    expect(claim?.plan).toEqual(reservation.plan);
+  });
+
+  it('fails an unacknowledged reservation after two expired dispatch leases', async () => {
+    const service = new SastQueueAdmissionService(new InMemorySastQueueAdmissionStore());
+    const first = buildDispatchReservationInput({
+      scanRequestId: 'exhausted-1',
+      digestCharacter: 'b',
+      requestedAt: '2026-07-22T01:00:00Z',
+      dailyWindowStartedAt: '2026-07-22T00:00:00Z'
+    });
+    expect((await service.reserve(first)).state).toBe('ADMITTED');
+
+    expect(
+      (
+        await service.claimNextForDispatch({
+          lane: 'FAST',
+          dailyWindowStartedAt: '2026-07-22T00:00:00Z',
+          workerId: 'retry-worker-1',
+          claimedAt: '2026-07-22T01:01:00Z',
+          leaseSeconds: 10
+        })
+      )?.scanRequestId
+    ).toBe(first.scanRequestId);
+    expect(
+      (
+        await service.claimNextForDispatch({
+          lane: 'FAST',
+          dailyWindowStartedAt: '2026-07-22T00:00:00Z',
+          workerId: 'retry-worker-2',
+          claimedAt: '2026-07-22T01:01:11Z',
+          leaseSeconds: 10
+        })
+      )?.scanRequestId
+    ).toBe(first.scanRequestId);
+
+    await expect(
+      service.claimNextForDispatch({
+        lane: 'FAST',
+        dailyWindowStartedAt: '2026-07-22T00:00:00Z',
+        workerId: 'retry-worker-3',
+        claimedAt: '2026-07-22T01:01:22Z',
+        leaseSeconds: 10
+      })
+    ).resolves.toBeNull();
+    await expect(
+      service.acknowledgeDispatch({
+        scanRequestId: first.scanRequestId,
+        workerId: 'retry-worker-2',
+        acknowledgedAt: '2026-07-22T01:01:22Z'
+      })
+    ).resolves.toBe(false);
+
+    const replacement = buildDispatchReservationInput({
+      scanRequestId: 'exhausted-2',
+      digestCharacter: 'c',
+      requestedAt: '2026-07-22T01:02:00Z',
+      dailyWindowStartedAt: '2026-07-22T00:00:00Z',
+      snapshotVersion: 2,
+      admittedTodayForTenant: 1,
+      lastRepositoryAdmissionAt: '2026-07-22T01:00:00Z'
+    });
+    expect((await service.reserve(replacement)).state).toBe('ADMITTED');
   });
 
   it('reconciles queued and active counters across dispatch and completion', async () => {

@@ -216,6 +216,10 @@ describe('production scan architecture contracts', () => {
     expect(sastQueueMigration).toContain('"dispatchLeaseExpiresAt" TIMESTAMP(3)');
     expect(sastQueueStore).toContain('Prisma.TransactionIsolationLevel.Serializable');
     expect(sastQueueStore).toContain('orderSastQueueCandidatesFairly');
+    expect(sastQueueStore).toContain('oldestPending');
+    expect(sastQueueStore).toContain('SAST_QUEUE_MAX_DISPATCH_ATTEMPTS');
+    expect(sastQueueStore).toContain('expireExhaustedDispatches');
+    expect(sastQueueStore).toContain('queuedInLane: { decrement: 1 }');
     expect(sastQueueStore).toContain('transaction.scanRequest.update');
     expect(sastQueueStore).toContain('completeDispatch');
     expect(sastQueueStore).not.toMatch(/new Map/);

@@ -6,6 +6,7 @@ import {
 } from '@aegisai/shared';
 
 import {
+  SAST_QUEUE_MAX_DISPATCH_ATTEMPTS,
   SastQueueAdmissionStore,
   type SastQueueDispatchAcknowledgementInput,
   type SastQueueDispatchClaim,
@@ -38,6 +39,7 @@ interface Ledger {
 interface ReservationState extends SastQueueReservationRecord {
   dispatchLeaseOwner?: string;
   dispatchLeaseExpiresAt?: string;
+  dispatchAttempt: number;
   publishedAt?: string;
   completedAt?: string;
   terminalStatus?: 'COMPLETED' | 'FAILED' | 'CANCELED';
@@ -124,7 +126,8 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
         enqueuedAt: this.normalizeTimestamp(input.requestedAt),
         decision: storedDecision,
         planning: this.clonePlanning(planning),
-        plan: this.clonePlan(input.plan)
+        plan: this.clonePlan(input.plan),
+        dispatchAttempt: 0
       };
       this.reservations.set(input.scanRequestId, reservation);
 
@@ -137,18 +140,13 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
   ): Promise<SastQueueDispatchClaim | null> {
     return this.exclusive(() => {
       const claimedAt = this.normalizeTimestamp(input.claimedAt);
-      const dailyWindowStartedAt = this.normalizeTimestamp(input.dailyWindowStartedAt);
-      const ledger = this.ledgers.get(this.ledgerKey(input.lane, dailyWindowStartedAt));
-      if (!ledger) {
-        return null;
-      }
 
       const existingClaim = Array.from(this.reservations.values())
         .filter(
           (reservation) =>
             reservation.lane === input.lane &&
-            reservation.dailyWindowStartedAt === dailyWindowStartedAt &&
             reservation.publishedAt === undefined &&
+            reservation.completedAt === undefined &&
             reservation.dispatchLeaseOwner === input.workerId &&
             Date.parse(reservation.dispatchLeaseExpiresAt ?? '') > Date.parse(claimedAt)
         )
@@ -157,17 +155,34 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
         return this.toDispatchClaim(existingClaim);
       }
 
+      this.expireExhaustedDispatches(input.lane, claimedAt);
+
       const available = Array.from(this.reservations.values()).filter(
         (reservation) =>
           reservation.lane === input.lane &&
-          reservation.dailyWindowStartedAt === dailyWindowStartedAt &&
           reservation.publishedAt === undefined &&
+          reservation.completedAt === undefined &&
+          reservation.dispatchAttempt < SAST_QUEUE_MAX_DISPATCH_ATTEMPTS &&
           (reservation.dispatchLeaseExpiresAt === undefined ||
             Date.parse(reservation.dispatchLeaseExpiresAt) <= Date.parse(claimedAt))
       );
+      const oldestPending = [...available].sort(this.compareReservations)[0];
+      if (!oldestPending) {
+        return null;
+      }
+      const ledger = this.ledgers.get(
+        this.ledgerKey(input.lane, oldestPending.dailyWindowStartedAt)
+      );
+      if (!ledger) {
+        throw new Error('Test SAST queue ledger is unavailable for dispatch.');
+      }
+      const pendingInOldestLedger = available.filter(
+        (reservation) =>
+          reservation.dailyWindowStartedAt === oldestPending.dailyWindowStartedAt
+      );
       const ordered = orderSastQueueCandidatesFairly(
         input.lane,
-        available.map((reservation) => ({
+        pendingInOldestLedger.map((reservation) => ({
           lane: reservation.lane,
           tenantId: reservation.tenantId,
           scanRequestId: reservation.scanRequestId,
@@ -185,6 +200,7 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       reservation.dispatchLeaseExpiresAt = new Date(
         Date.parse(claimedAt) + input.leaseSeconds * 1000
       ).toISOString();
+      reservation.dispatchAttempt += 1;
       ledger.lastServedTenantId = reservation.tenantId;
 
       return this.toDispatchClaim(reservation);
@@ -199,12 +215,15 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       if (!reservation || reservation.dispatchLeaseOwner !== input.workerId) {
         return false;
       }
+      if (reservation.completedAt !== undefined) {
+        return false;
+      }
       if (reservation.publishedAt !== undefined) {
         return true;
       }
       if (
         reservation.dispatchLeaseExpiresAt === undefined ||
-        Date.parse(reservation.dispatchLeaseExpiresAt) < Date.parse(input.acknowledgedAt)
+        Date.parse(reservation.dispatchLeaseExpiresAt) <= Date.parse(input.acknowledgedAt)
       ) {
         return false;
       }
@@ -280,6 +299,35 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       return operation();
     } finally {
       release();
+    }
+  }
+
+  private expireExhaustedDispatches(lane: 'FAST' | 'DEEP', claimedAt: string): void {
+    const exhausted = Array.from(this.reservations.values())
+      .filter(
+        (reservation) =>
+          reservation.lane === lane &&
+          reservation.publishedAt === undefined &&
+          reservation.completedAt === undefined &&
+          reservation.dispatchAttempt >= SAST_QUEUE_MAX_DISPATCH_ATTEMPTS &&
+          Date.parse(reservation.dispatchLeaseExpiresAt ?? '') <= Date.parse(claimedAt)
+      )
+      .sort(this.compareReservations);
+
+    for (const reservation of exhausted) {
+      const ledger = this.ledgers.get(
+        this.ledgerKey(reservation.lane, reservation.dailyWindowStartedAt)
+      );
+      const tenantUsage = ledger?.tenants.get(reservation.tenantId);
+      if (!ledger || ledger.queuedInLane < 1 || !tenantUsage || tenantUsage.queuedForTenant < 1) {
+        throw new Error('Test exhausted dispatch cannot release queued capacity.');
+      }
+
+      reservation.completedAt = claimedAt;
+      reservation.terminalStatus = 'FAILED';
+      ledger.queuedInLane -= 1;
+      ledger.snapshotVersion += 1;
+      tenantUsage.queuedForTenant -= 1;
     }
   }
 
