@@ -105,12 +105,57 @@ Immutable execution plan produced from `ScanRequest`.
 - `canonicalScanKey`
 - `repositoryBindingId`
 - fixed commit SHA and contextual target ref
+- trusted inventory digest used for deterministic selection
 - profile snapshot and digest
 - scanner-set snapshot and digest
 - tenant rule-policy version
 - isolation class
 - per-scan result ingress, evidence output, and audit references
 - creation timestamp
+
+### TrustedSastRepositoryMetadata
+
+Attested, content-free inventory consumed by the planner. It is produced by an approved
+internal metadata/preflight path, never supplied by a public scan request.
+
+- repository binding and full fixed commit SHA
+- inventory digest, attestation reference, and collection timestamp
+- normalized source-language file/byte signals and manifest names
+- repository/selected bytes, file count, largest file, and maximum path depth
+
+The entity contains no source text, archive, credential, command, environment map, or
+tenant-provided scanner configuration. Metadata and the immutable scan request must bind to
+the same repository and fixed commit before profile selection.
+
+### SastQueuePolicySet
+
+Signed platform policy controlling lane admission without hard-coding environment capacity
+inside a public API.
+
+- policy version, digest, signature, and provenance
+- distinct `scan.fast.v1` and `scan.deep.v1` lane policies
+- tenant active/queued/daily limits
+- repository concurrency and minimum-frequency limits
+- lane queue capacity and bounded retry condition
+- mandatory `TENANT_ROUND_ROBIN` fairness strategy
+
+Usage snapshots are attributed to exactly one tenant, repository binding, lane, and UTC
+daily window. Beyond those identifiers they contain counters and timestamps only; they
+contain no repository content or credential material.
+
+### SastPlanningState
+
+Safe status attached to the tenant-scoped scan request and returned by status reads.
+
+- `ADMITTED | DEFERRED | REJECTED`
+- selected profile and coverage claim when available
+- lane queue and SHA-256 canonical scan key when available
+- queue-policy version and digest when admission reached a valid policy
+- bounded reason codes and retry-after condition
+- decision timestamp
+
+`COMMON_DEEP_V1` reports `COMMON_STATIC_COVERAGE_ONLY` and
+`LANGUAGE_SPECIFIC_SAST_UNAVAILABLE`; it never claims language-complete SAST coverage.
 
 ### SastScanAttempt
 
@@ -370,3 +415,5 @@ FIXED -> OPEN only when a later complete scan observes the same stable fingerpri
 - Expiry indexes on raw artifacts, evidence, quarantine, and AI payload metadata.
 - Check constraints for positive sizes/counts, valid coordinate ranges, and retention limits.
 - Foreign keys must prevent cross-tenant association even when application checks fail.
+- Planning-state reason codes are constrained to the shared contract enum and never carry
+  free-form repository, scanner output, or credential material.

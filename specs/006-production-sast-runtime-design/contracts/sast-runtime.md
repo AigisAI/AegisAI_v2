@@ -51,6 +51,55 @@ profile/scanner-set availability, kill switches, and quota before acknowledging.
 leases are shorter than the sandbox hard timeout and are renewed by the orchestrator. The
 DLQ preserves tenant and scan attribution but not payload secrets.
 
+## Planner Runtime Contract
+
+`SastScanPlannerService` composes the immutable scan request with
+`TrustedSastRepositoryMetadata`, an approved profile policy, a signed scanner set, a signed
+queue-policy set, and a counter-only queue-usage snapshot. These are internal runtime inputs;
+the public scan-request DTO cannot provide source content, language overrides, scanner
+commands, executable configuration, queue limits, credential values, or artifact bodies.
+
+Trusted repository metadata is accepted only when it contains a full 40- or 64-character
+commit SHA, inventory digest, attestation reference, collection timestamp, normalized
+language byte/file signals, manifest names, and bounded resource counters. Its repository
+binding and commit must equal the immutable scan request. Profile-policy and scanner-set
+versions must also equal the versions already bound to that request.
+
+Selection is deterministic for v1:
+
+| Lane and trusted inventory | Decision | User-visible coverage |
+| --- | --- | --- |
+| Fast with Java only | `JAVA_FAST_V1` | language SAST complete for the approved profile |
+| Deep with Java only | `JAVA_DEEP_V1` | language SAST complete for the approved profile |
+| Deep without Java | `COMMON_DEEP_V1` | common static coverage only; language SAST unavailable |
+| Fast without Java | reject | `UNSUPPORTED_LANGUAGE_FOR_FAST` |
+| Java plus another source language | reject | `UNSUPPORTED_POLYGLOT_PROFILE` |
+| Selected profile disallowed by policy | reject | `PROFILE_NOT_ALLOWED_BY_POLICY` |
+
+The profile limit check returns explicit repository bytes, selected bytes, file count,
+single-file bytes, and path-depth reason codes. Missing or invalid required scanner, rule,
+vulnerability database, schema, or normalizer assets reject planning before queue admission.
+
+The SHA-256 canonical key binds tenant, repository, lane, target context, full fixed commit,
+trusted inventory digest, policy, isolation class, immutable profile digest, scanner-set
+version/digest, every scanner image and wrapper digest, every sorted rule-bundle digest,
+vulnerability database
+version/digest, schema digest, normalizer digest, and SBOM schema. Result/evidence/audit
+references are scoped to tenant and scan but are not mutable customer inputs.
+
+Queue policy is itself versioned, digest-pinned, signed, and provenance-attributed. Its usage
+snapshot must match the tenant, repository binding, lane, and current UTC daily window of the
+decision. Fast and Deep must resolve to `scan.fast.v1` and `scan.deep.v1` respectively. Admission evaluates
+tenant active/queued/daily limits, repository concurrency/frequency, and lane queue capacity.
+Capacity outcomes are `DEFERRED` with a bounded retry condition; malformed policy or usage is
+`REJECTED`. Within one lane, dispatch interleaves the oldest item from each tenant using
+deterministic tenant round-robin ordering, with the last-served tenant rotated to the end.
+
+The public scan status exposes only `ADMITTED | DEFERRED | REJECTED`, selected profile,
+coverage claim, queue name, queue-policy version/digest, canonical key, reason codes,
+retry-after seconds, and timestamp.
+It never exposes trusted inventory internals, source, credentials, or scanner configuration.
+
 ## Profile Contract
 
 ### `JAVA_FAST_V1`

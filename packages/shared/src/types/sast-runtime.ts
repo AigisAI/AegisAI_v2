@@ -370,6 +370,7 @@ export interface SastRepositoryState {
   repositoryBindingId: string;
   fixedCommitSha: string;
   targetRef: string;
+  inventoryDigest: `sha256:${string}`;
   shallowFetchPreferred: true;
   submodulesEnabled: false;
   lfsObjectsFetched: false;
@@ -389,6 +390,7 @@ export interface SastScanPlan {
   evidenceOutputRef: string;
   auditSinkRef: string;
   forbiddenCapabilities: SastForbiddenCapability[];
+  createdAt: string;
 }
 
 export interface ScannerArtifactEnvelope {
@@ -836,6 +838,7 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
     isNonBlank(plan.repositoryState.repositoryBindingId) &&
     isGitCommitSha(plan.repositoryState.fixedCommitSha) &&
     isNonBlank(plan.repositoryState.targetRef) &&
+    isSha256Digest(plan.repositoryState.inventoryDigest) &&
     plan.repositoryState.shallowFetchPreferred === true &&
     plan.repositoryState.submodulesEnabled === false &&
     plan.repositoryState.lfsObjectsFetched === false &&
@@ -844,6 +847,7 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
     isNonBlank(plan.resultIngressRef) &&
     isNonBlank(plan.evidenceOutputRef) &&
     isNonBlank(plan.auditSinkRef) &&
+    isIsoTimestamp(plan.createdAt) &&
     doesSastPlanRespectForbiddenCapabilities(plan)
   );
 }

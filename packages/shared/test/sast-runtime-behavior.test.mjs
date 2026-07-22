@@ -80,6 +80,7 @@ const buildPlan = () => ({
     repositoryBindingId: 'repository-1',
     fixedCommitSha: 'a'.repeat(40),
     targetRef: 'refs/heads/dev',
+    inventoryDigest: digest('4'),
     shallowFetchPreferred: true,
     submodulesEnabled: false,
     lfsObjectsFetched: false
@@ -89,7 +90,8 @@ const buildPlan = () => ({
   resultIngressRef: 'ingress://scan-1',
   evidenceOutputRef: 'evidence://scan-1',
   auditSinkRef: 'audit://scan-1',
-  forbiddenCapabilities: [...runtime.SAST_FORBIDDEN_CAPABILITIES]
+  forbiddenCapabilities: [...runtime.SAST_FORBIDDEN_CAPABILITIES],
+  createdAt: '2026-07-21T00:00:00Z'
 });
 
 const buildArtifactEnvelope = (plan) => ({

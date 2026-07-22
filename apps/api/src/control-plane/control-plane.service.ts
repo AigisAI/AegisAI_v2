@@ -17,7 +17,8 @@ import {
   type CommentDispatchOutboxStatusUpdateRequest,
   type CommentDispatchPlan,
   type CommentDispatchPlanRequest,
-  type IsolationClass
+  type IsolationClass,
+  type SastUserVisiblePlanningState
 } from '@aegisai/shared';
 
 import type {
@@ -251,6 +252,27 @@ export class ControlPlaneService {
     if (!scanRequest || scanRequest.tenantId !== tenantId) {
       throw new NotFoundException("Scan request not found");
     }
+
+    return scanRequest;
+  }
+
+  recordSastPlanningState(
+    tenantId: string,
+    scanRequestId: string,
+    planning: SastUserVisiblePlanningState
+  ): ControlPlaneScanRequest {
+    const scanRequest = this.getScanRequest(tenantId, scanRequestId);
+
+    scanRequest.sastPlanning = {
+      ...planning,
+      reasonCodes: [...planning.reasonCodes]
+    };
+    scanRequest.status =
+      planning.state === 'ADMITTED'
+        ? 'QUEUED'
+        : planning.state === 'DEFERRED'
+          ? 'PLANNING'
+          : 'FAILED';
 
     return scanRequest;
   }
