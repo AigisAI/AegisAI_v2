@@ -83,11 +83,15 @@ test('scanner sets and scan plans bind every executable supply-chain artifact', 
     'ScannerRuntimeDescriptor',
     'VulnerabilityDatabaseDescriptor',
     'ScannerSetDescriptor',
+    'ExpectedScannerArtifactBinding',
+    'SastFileCoordinateMetadata',
+    'SAST_APPROVED_PROFILE_DIGESTS',
     'isSignedSastArtifactDescriptorValid',
     'isScannerSetDescriptorValid',
     'isSastScanPlanValid',
     'isScannerArtifactEnvelopeBoundToPlan',
-    'isScannerArtifactEligibleForNormalization'
+    'isScannerArtifactEligibleForNormalization',
+    'isSastFindingLocationValid'
   ]) {
     assert.match(contract, new RegExp(`export (interface|const|type|function) ${contractName}\\b`));
   }
@@ -97,7 +101,21 @@ test('scanner sets and scan plans bind every executable supply-chain artifact', 
   assert.match(contract, /schemaBundle:\s*SignedSastArtifactDescriptor/);
   assert.match(contract, /normalizerBundle:\s*SignedSastArtifactDescriptor/);
   assert.match(contract, /profileDigest:\s*`sha256:\$\{string\}`/);
+  assert.match(
+    contract,
+    /plan\.profileDigest\s*===\s*SAST_APPROVED_PROFILE_DIGESTS\[plan\.profile\.id\]/
+  );
   assert.match(contract, /workloadIdentityRef:\s*string/);
+  assert.match(contract, /envelope\.attemptId\s*===\s*expectedBinding\.attemptId/);
+  assert.match(contract, /envelope\.scannerRunId\s*===\s*expectedBinding\.scannerRunId/);
+  assert.match(
+    contract,
+    /envelope\.workloadIdentityRef\s*===\s*expectedBinding\.workloadIdentityRef/
+  );
+  assert.match(
+    contract,
+    /envelope\.scannerWorkspaceInventoryDigest\s*===\s*expectedBinding\.preflightInventoryDigest/
+  );
 });
 
 test('rule bundles require immutable signed provenance and reversible rollout', () => {
@@ -171,6 +189,9 @@ test('finding fingerprints exclude unstable line, branch, and commit coordinates
   for (const unstableField of ['lineStart', 'lineEnd', 'commitSha', 'targetRef', 'branch']) {
     assert.doesNotMatch(fingerprintFunction, new RegExp(`input\\.${unstableField}\\b`));
   }
+  assert.match(fingerprintFunction, /sast-fingerprint-v1\\0/);
+  assert.match(contract, /function encodeFingerprintField/);
+  assert.match(contract, /new TextEncoder\(\)\.encode\(normalized\)\.byteLength/);
 });
 
 test('coverage decisions suppress publication for partial, stale, or security-blocked scans', () => {
@@ -217,14 +238,38 @@ test('rule policy, kill switches, and canary activation remain governed and reve
   const contract = readContract();
 
   assert.match(contract, /SAST_KILL_SWITCH_SCOPES/);
+  for (const scope of [
+    'SCANNER_VERSION',
+    'RULE_BUNDLE',
+    'SEMANTIC_RULE',
+    'TENANT',
+    'REPOSITORY_BINDING',
+    'CAPABILITY',
+    'PROFILE',
+    'EXTERNAL_PUBLICATION',
+    'GLOBAL'
+  ]) {
+    assert.match(contract, new RegExp(`'${scope}'`));
+  }
   assert.match(contract, /isSastKillSwitchDecisionValid/);
   assert.match(contract, /pathPatternDialect:\s*'GITIGNORE_SUBSET_V1'/);
   assert.match(contract, /customerExecutableConfigAllowed:\s*false/);
   assert.match(contract, /isTenantSastRulePolicyValid/);
   assert.match(contract, /isRuleBundleCanaryHealthy/);
   assert.match(contract, /isRuleBundleActivationReady/);
-  assert.match(contract, /isSafeIntegerAtLeast\(evidence\.completedEligibleScans, minimumScans\)/);
+  assert.match(contract, /isSafeIntegerAtLeast\(evidence\.eligibleCompletedScans, minimumScans\)/);
   assert.match(contract, /observationHours\s*>=\s*minimumHours/);
+  const canaryFunction = contract
+    .split('export function isRuleBundleCanaryHealthy')[1]
+    .split('export function isRuleBundleActivationReady')[0];
+  for (const zeroToleranceSignal of [
+    'unauthorizedEgressCount',
+    'missingDestructionEvidenceCount',
+    'evidencePolicyViolationCount',
+    'unsignedArtifactExecutionCount'
+  ]) {
+    assert.match(canaryFunction, new RegExp(`evidence\\.${zeroToleranceSignal}\\s*===\\s*0`));
+  }
 });
 
 test('production quality gates are quantitative and fail closed', () => {
@@ -254,6 +299,27 @@ test('production quality gates are quantitative and fail closed', () => {
   assert.match(contract, /missingDestructionEvidenceCount\s*===\s*0/);
   assert.match(contract, /evidencePolicyViolationCount\s*===\s*0/);
   assert.match(contract, /unsignedArtifactExecutionCount\s*===\s*0/);
+});
+
+test('runtime completion is gated by cleanup evidence and explicit cleanup stages', () => {
+  const contract = readContract();
+
+  assert.match(contract, /'CLEANUP_PENDING'/);
+  assert.match(contract, /'CLEANUP_FAILED'/);
+  assert.match(contract, /canSastRuntimeTransitionToCompleted/);
+  assert.match(contract, /currentStage\s*===\s*'CLEANUP_PENDING'/);
+  assert.match(contract, /evidence\.attemptId\s*===\s*expectedAttemptId/);
+  for (const requiredSignal of [
+    'credentialRevokedAndWiped',
+    'scannerProcessesTerminated',
+    'writableVolumesDestroyed',
+    'microVmTerminated',
+    'resultIngressClosed',
+    'cleanupEvidenceRef',
+    'finalAuditEventRef'
+  ]) {
+    assert.match(contract, new RegExp(`\\b${requiredSignal}\\b`));
+  }
 });
 
 test('failure decisions retry only bounded infrastructure failures and never publish', () => {

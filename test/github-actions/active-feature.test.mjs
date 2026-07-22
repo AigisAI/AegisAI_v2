@@ -69,6 +69,7 @@ test('production SAST runtime design is the active feature package', () => {
 
   assert.match(agents, /Feature id: `006-production-sast-runtime-design`/);
   assert.match(agents, /Security Scan SaaS Final Specification\.docx/);
+  assert.doesNotMatch(agents, /C:\\Users\\/);
   assert.match(readme, /Active milestone \| \[`006-production-sast-runtime-design`/);
   assert.doesNotMatch(readme, /C:\\Users\\/);
   assert.match(conventions, /SPECIFY_FEATURE = "006-production-sast-runtime-design"/);
@@ -111,7 +112,19 @@ test('SAST threat, rule, and quantitative quality decisions are explicit', () =>
   assert.match(threatModel, /prompt-injection strings/i);
   assert.match(ruleGovernance, /DRAFT -> VALIDATED -> CANARY -> ACTIVE/);
   assert.match(ruleGovernance, /platform-secret keyed hash/);
-  assert.match(ruleGovernance, /Kill switches exist at scanner version, bundle digest, semantic rule ID, tenant, profile/);
+  for (const requiredScope of [
+    'scanner version',
+    'bundle digest',
+    'semantic rule ID',
+    'tenant',
+    'repository binding',
+    'capability',
+    'profile',
+    'external publication',
+    'global SAST runtime'
+  ]) {
+    assert.match(ruleGovernance, new RegExp(requiredScope, 'i'));
+  }
   assert.match(ruleGovernance, /last-known-good digest/);
   assert.match(qualityGates, /Must-detect recall \| >= 95%/);
   assert.match(qualityGates, /Critical\/High precision \| >= 90%/);

@@ -59,12 +59,8 @@ command-line flags, rule code, templates, post-processors, or executable configu
 
 ```text
 DRAFT -> VALIDATED -> CANARY -> ACTIVE -> RETIRED
-                    |          |
-                    v          v
-                SUSPENDED <- SUSPENDED
-                    |
-                    v
-                ROLLED_BACK
+CANARY --suspend--> SUSPENDED <--suspend-- ACTIVE
+SUSPENDED --rollback--> ROLLED_BACK
 ```
 
 - `DRAFT`: isolated authoring only; never selectable by a production plan.
@@ -128,6 +124,9 @@ finding counts, severity, or customer identity attributes.
   an experimental cohort.
 - Canary findings are authoritative only when the bundle is `CANARY`, its gates remain
   healthy, and selected profile coverage is complete.
+- Every security zero-tolerance counter in `quality-gates.md`, including unauthorized egress,
+  missing destruction evidence, evidence-policy violations, and unsigned artifact execution,
+  must remain exactly zero at every step or the canary pauses immediately.
 
 ## Tenant Policy, Suppression, and Waiver
 
@@ -150,12 +149,19 @@ authorization than a single-finding waiver.
 
 ## Kill Switches
 
-Kill switches exist at scanner version, bundle digest, semantic rule ID, tenant, profile,
-and global SAST runtime scope. A switch is a versioned, signed control-plane decision with
-actor, reason, incident reference, activation time, expiry/review time, and rollback target.
+Kill switches exist at scanner version, bundle digest, semantic rule ID, tenant, repository
+binding, capability, profile, external publication, and global SAST runtime scope. A switch is a
+versioned, signed control-plane decision with actor, reason, incident reference, activation time,
+expiry/review time, and rollback target.
 
 - A disabled required scanner or required rule capability makes coverage partial/failed;
   it never silently reports complete coverage.
+- A repository-binding switch stops new attempts for that binding and denies reuse, publication,
+  and AI advisory for its existing affected scans without affecting unrelated repositories.
+- A capability switch removes that capability from authoritative coverage; a profile that
+  requires it becomes partial/failed even when its scanner process succeeds.
+- An external-publication switch denies comments and blocking decisions at the selected target
+  scope while allowing safe internal normalization and dashboard processing to continue.
 - A global or scanner kill switch stops new plans and cancels only attempts that have not
   crossed the safe cancellation boundary.
 - Accepted artifacts from a killed version are quarantined until reviewed.
