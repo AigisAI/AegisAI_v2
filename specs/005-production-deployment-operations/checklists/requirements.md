@@ -10,3 +10,4 @@
 - [x] provider credentials are not introduced as local development defaults.
 - [x] Oracle VPS and Docker Compose remain dev/demo paths only.
 - [x] Completion validation points to quickstart and CI rather than duplicating command checklists in README.
+- [x] The detailed SAST runtime and rule-governance follow-up is handed to `006-production-sast-runtime-design` before live scanner rollout.

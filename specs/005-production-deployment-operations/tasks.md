@@ -27,6 +27,10 @@
 - [x] T011 Add deployment operation handoff manifest contract in shared package
 - [x] T012 Add tests proving credential handoff remains reference-only before live execution
 
+## Phase 6: Detailed SAST Runtime Handoff
+
+- [x] T013 Hand the SAST runtime and rule-governance follow-up to `006-production-sast-runtime-design` before live scanner rollout
+
 ## Deferred
 
 - [ ] Execute live production Kubernetes cluster provisioning

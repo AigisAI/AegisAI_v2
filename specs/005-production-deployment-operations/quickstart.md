@@ -2,9 +2,10 @@
 
 ## Goal
 
-Use this feature package as the canonical implementation entry point for
-production deployment operations. The source product and platform baseline
-remains `Security Scan SaaS Final Specification.docx`.
+Use this completed feature package as the canonical baseline whenever live
+production deployment operations resume. The repository-wide active implementation
+entry point is now `specs/006-production-sast-runtime-design/quickstart.md`. The source
+product and platform baseline remains `Security Scan SaaS Final Specification.docx`.
 
 This package follows the completed production runtime infrastructure baseline in
 [`specs/004-production-runtime-infrastructure/`](../004-production-runtime-infrastructure/).
@@ -14,9 +15,11 @@ operations package with no local development defaults for provider credentials.
 
 ## Canonical Use
 
-- Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
-- This package is the active implementation target for production deployment
-  operations work.
+- Agents should arrive at the active 006 package from [`AGENTS.md`](../../AGENTS.md).
+- This package is the completed provider-neutral contract baseline for production
+  deployment operations; live provider execution remains deferred.
+- `006-production-sast-runtime-design` is the active detailed SAST follow-up that must
+  complete before live scanner rollout.
 - `004-production-runtime-infrastructure` remains the completed runtime
   infrastructure baseline.
 - `003-production-ai-inference-runtime` remains the completed production AI
@@ -104,11 +107,11 @@ $env:SPECIFY_FEATURE = "005-production-deployment-operations"
 
 ## Completion Gate
 
-Before claiming this milestone is complete:
+The non-deferred 005 contract milestone is complete. When revalidating it:
 
 1. Re-run the validation commands below.
-2. Confirm this quickstart, `AGENTS.md`, `README.md`, and
-   `docs/github-conventions.md` all point to `005-production-deployment-operations`.
+2. Confirm this quickstart records the handoff and `AGENTS.md`, `README.md`, and
+   `docs/github-conventions.md` point to `006-production-sast-runtime-design`.
 3. Confirm `004-production-runtime-infrastructure` remains available as the
    completed runtime infrastructure baseline.
 4. Confirm `003-production-ai-inference-runtime` remains available as the
