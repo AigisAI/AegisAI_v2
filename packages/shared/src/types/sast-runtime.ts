@@ -30,6 +30,8 @@ export const SAST_RUNTIME_STAGES = [
   'CORRELATING',
   'EVIDENCE_BUILDING',
   'POLICY_PENDING',
+  'CLEANUP_PENDING',
+  'CLEANUP_FAILED',
   'COMPLETED',
   'FAILED',
   'CANCELED'
@@ -413,6 +415,9 @@ export interface ScannerArtifactEnvelope {
   scannerSetDigest: `sha256:${string}`;
   profileId: SastProfileId;
   profileDigest: `sha256:${string}`;
+  preflightAttestationRef: string;
+  preflightInventoryDigest: `sha256:${string}`;
+  scannerWorkspaceInventoryDigest: `sha256:${string}`;
   inputCommitSha: string;
   artifactSchema: 'OPENGREP_SARIF' | 'TRIVY_JSON' | 'CYCLONEDX_JSON';
   artifactSchemaVersion: string;
@@ -430,6 +435,8 @@ export interface ExpectedScannerArtifactBinding {
   attemptId: string;
   scannerRunId: string;
   workloadIdentityRef: string;
+  preflightAttestationRef: string;
+  preflightInventoryDigest: `sha256:${string}`;
 }
 
 export interface FindingFingerprintInput {
@@ -442,7 +449,22 @@ export interface FindingFingerprintInput {
   structuralHash: string;
 }
 
-export interface SastFindingLocation {
+export const SAST_MAX_COORDINATE_VALUE = 2147483647;
+
+export const SAST_UNKNOWN_LOCATION_REASONS = [
+  'SCANNER_LOCATION_OMITTED',
+  'LOCATION_NOT_MAPPABLE'
+] as const;
+export type SastUnknownLocationReason = (typeof SAST_UNKNOWN_LOCATION_REASONS)[number];
+
+export interface SastFileCoordinateMetadata {
+  normalizedPath: string;
+  lineCount: number;
+  maxColumnByLine: readonly number[];
+}
+
+export interface SastFileFindingLocation {
+  kind: 'FILE';
   normalizedPath: string;
   lineStart: number;
   lineEnd?: number;
@@ -450,6 +472,14 @@ export interface SastFindingLocation {
   columnEnd?: number;
   symbol?: string;
 }
+
+export interface SastUnknownFindingLocation {
+  kind: 'UNKNOWN';
+  reasonCode: SastUnknownLocationReason;
+  symbol?: string;
+}
+
+export type SastFindingLocation = SastFileFindingLocation | SastUnknownFindingLocation;
 
 export interface SastFindingProvenance {
   scanner: Exclude<SastScannerKind, 'SYFT'>;
@@ -465,6 +495,7 @@ export interface NormalizedSastFinding {
   tenantId: string;
   repositoryBindingId: string;
   scanRequestId: string;
+  attemptId: string;
   commitSha: string;
   lane: SastScanLane;
   capability: Exclude<SastCapability, 'SBOM'>;
@@ -567,7 +598,34 @@ export const DEFAULT_SAST_EVIDENCE_POLICY: SastEvidencePolicy = {
   dashboardSafeClassificationRequired: true
 };
 
-export interface RuleBundlePromotionEvidence {
+export interface SastZeroToleranceCounts {
+  crossTenantLeakCount: number;
+  secretLeakCount: number;
+  sandboxEscapeCount: number;
+  staleExternalPublicationCount: number;
+  unauthorizedEgressCount: number;
+  missingDestructionEvidenceCount: number;
+  evidencePolicyViolationCount: number;
+  unsignedArtifactExecutionCount: number;
+}
+
+export interface SastCommonQualityRates {
+  falsePositiveIncrease: number;
+  scannerFailureRate: number;
+}
+
+export interface SastVerificationPassRates {
+  normalizationDeterminismPassRate: number;
+  artifactBindingPassRate: number;
+  fingerprintFixturePassRate: number;
+  coverageDecisionFixturePassRate: number;
+  retentionExpiryPassRate: number;
+}
+
+export interface RuleBundlePromotionEvidence
+  extends SastZeroToleranceCounts,
+    SastCommonQualityRates,
+    SastVerificationPassRates {
   bundle: RuleBundleDescriptor;
   signedArtifactVerified: boolean;
   provenanceVerified: boolean;
@@ -577,53 +635,30 @@ export interface RuleBundlePromotionEvidence {
   priorMustDetectRegressionRecall: number;
   maliciousCorpusPassRate: number;
   parserRejectRate: number;
-  falsePositiveIncrease: number;
-  scannerFailureRate: number;
   p95LatencyIncrease: number;
   affectedProfilePositiveCaseCount: number;
   affectedProfileNegativeCaseCount: number;
-  minimumChangedRulePositiveCaseCount: number;
-  minimumChangedRuleNegativeCaseCount: number;
+  observedChangedRulePositiveCaseCount: number;
+  observedChangedRuleNegativeCaseCount: number;
   criticalHighRuleChanged: boolean;
-  minimumChangedCriticalHighRulePositiveCaseCount: number;
-  minimumChangedCriticalHighRuleNegativeCaseCount: number;
+  observedChangedCriticalHighRulePositiveCaseCount: number;
+  observedChangedCriticalHighRuleNegativeCaseCount: number;
   performanceRunsPerProfileSizeBucket: number;
-  normalizationDeterminismPassRate: number;
-  artifactBindingPassRate: number;
-  fingerprintFixturePassRate: number;
-  coverageDecisionFixturePassRate: number;
-  retentionExpiryPassRate: number;
-  crossTenantLeakCount: number;
-  secretLeakCount: number;
-  sandboxEscapeCount: number;
-  staleExternalPublicationCount: number;
-  unauthorizedEgressCount: number;
-  missingDestructionEvidenceCount: number;
-  evidencePolicyViolationCount: number;
-  unsignedArtifactExecutionCount: number;
   securityApprovalRef: string;
   platformApprovalRef: string;
   rollbackRef: string;
 }
 
-export interface RuleBundleCanaryEvidence {
+export interface RuleBundleCanaryEvidence
+  extends SastZeroToleranceCounts,
+    SastCommonQualityRates {
   bundle: RuleBundleDescriptor;
-  completedEligibleScans: number;
+  eligibleCompletedScans: number;
   observationHours: number;
   finalStep: boolean;
-  falsePositiveIncrease: number;
-  scannerFailureRate: number;
   p95LatencyIncrease: number;
   unexplainedCriticalHighVolumeChange: number;
   telemetryComplete: boolean;
-  crossTenantLeakCount: number;
-  secretLeakCount: number;
-  sandboxEscapeCount: number;
-  staleExternalPublicationCount: number;
-  unauthorizedEgressCount: number;
-  missingDestructionEvidenceCount: number;
-  evidencePolicyViolationCount: number;
-  unsignedArtifactExecutionCount: number;
   securityApprovalRef: string;
   platformApprovalRef: string;
   rollbackRef: string;
@@ -634,7 +669,10 @@ export const SAST_KILL_SWITCH_SCOPES = [
   'RULE_BUNDLE',
   'SEMANTIC_RULE',
   'TENANT',
+  'REPOSITORY_BINDING',
+  'CAPABILITY',
   'PROFILE',
+  'EXTERNAL_PUBLICATION',
   'GLOBAL'
 ] as const;
 export type SastKillSwitchScope = (typeof SAST_KILL_SWITCH_SCOPES)[number];
@@ -667,7 +705,10 @@ export interface TenantSastRulePolicy {
   createdAt: string;
 }
 
-export interface SastQualityMeasurements {
+export interface SastQualityMeasurements
+  extends SastZeroToleranceCounts,
+    SastCommonQualityRates,
+    SastVerificationPassRates {
   eligibleCompletedScans: number;
   observationHours: number;
   performanceRunsPerProfileSizeBucket: number;
@@ -679,21 +720,18 @@ export interface SastQualityMeasurements {
   parserRejectRate: number;
   fastLaneP95Milliseconds: number;
   deepLaneP95Milliseconds: number;
-  falsePositiveIncrease: number;
-  scannerFailureRate: number;
-  normalizationDeterminismPassRate: number;
-  artifactBindingPassRate: number;
-  fingerprintFixturePassRate: number;
-  coverageDecisionFixturePassRate: number;
-  retentionExpiryPassRate: number;
-  crossTenantLeakCount: number;
-  secretLeakCount: number;
-  sandboxEscapeCount: number;
-  staleExternalPublicationCount: number;
-  unauthorizedEgressCount: number;
-  missingDestructionEvidenceCount: number;
-  evidencePolicyViolationCount: number;
-  unsignedArtifactExecutionCount: number;
+}
+
+export interface SastCleanupEvidence {
+  attemptId: string;
+  credentialRevokedAndWiped: true;
+  scannerProcessesTerminated: true;
+  writableVolumesDestroyed: true;
+  microVmTerminated: true;
+  resultIngressClosed: true;
+  cleanupEvidenceRef: string;
+  finalAuditEventRef: string;
+  completedAt: string;
 }
 
 export interface SastFailureDecision {
@@ -898,6 +936,8 @@ export function isScannerArtifactEnvelopeBoundToPlan(
     !isNonBlank(expectedBinding.attemptId) ||
     !isNonBlank(expectedBinding.scannerRunId) ||
     !isNonBlank(expectedBinding.workloadIdentityRef) ||
+    !isNonBlank(expectedBinding.preflightAttestationRef) ||
+    !isSha256Digest(expectedBinding.preflightInventoryDigest) ||
     !isSastScanPlanValid(plan)
   ) {
     return false;
@@ -918,6 +958,9 @@ export function isScannerArtifactEnvelopeBoundToPlan(
     envelope.attemptId === expectedBinding.attemptId &&
     envelope.scannerRunId === expectedBinding.scannerRunId &&
     envelope.workloadIdentityRef === expectedBinding.workloadIdentityRef &&
+    envelope.preflightAttestationRef === expectedBinding.preflightAttestationRef &&
+    envelope.preflightInventoryDigest === expectedBinding.preflightInventoryDigest &&
+    envelope.scannerWorkspaceInventoryDigest === expectedBinding.preflightInventoryDigest &&
     scannerSelectedByProfile &&
     envelope.scannerVersion === scanner.version &&
     envelope.scannerImageDigest === scanner.digest &&
@@ -960,8 +1003,7 @@ export function isScannerArtifactEligibleForNormalization(
 }
 
 export function buildFindingFingerprintPreimage(input: FindingFingerprintInput): string {
-  return [
-    'sast-fingerprint-v1',
+  const fields = [
     input.repositoryBindingId,
     input.capability,
     input.ruleSemanticId,
@@ -969,9 +1011,75 @@ export function buildFindingFingerprintPreimage(input: FindingFingerprintInput):
     input.symbolAnchor,
     input.sinkKind,
     input.structuralHash
-  ]
-    .map((value) => encodeURIComponent(value.normalize('NFC')))
-    .join('|');
+  ];
+
+  return `sast-fingerprint-v1\0${fields.map(encodeFingerprintField).join('')}`;
+}
+
+export function isSastFindingLocationValid(
+  location: SastFindingLocation,
+  fileMetadata?: SastFileCoordinateMetadata
+): boolean {
+  if (!location || typeof location !== 'object') return false;
+
+  if (location.kind === 'UNKNOWN') {
+    const unknown = location as SastUnknownFindingLocation & Record<string, unknown>;
+    return (
+      SAST_UNKNOWN_LOCATION_REASONS.includes(unknown.reasonCode) &&
+      isOptionalBoundedText(unknown.symbol, 512) &&
+      !('normalizedPath' in unknown) &&
+      !('lineStart' in unknown) &&
+      !('lineEnd' in unknown) &&
+      !('columnStart' in unknown) &&
+      !('columnEnd' in unknown)
+    );
+  }
+
+  if (
+    location.kind !== 'FILE' ||
+    fileMetadata === undefined ||
+    fileMetadata === null ||
+    !Array.isArray(fileMetadata.maxColumnByLine) ||
+    typeof location.normalizedPath !== 'string' ||
+    typeof fileMetadata.normalizedPath !== 'string'
+  ) {
+    return false;
+  }
+
+  const lineEnd = location.lineEnd ?? location.lineStart;
+  const metadataValid =
+    isSafeNormalizedRelativePath(fileMetadata.normalizedPath) &&
+    Number.isSafeInteger(fileMetadata.lineCount) &&
+    fileMetadata.lineCount > 0 &&
+    fileMetadata.lineCount <= SAST_MAX_COORDINATE_VALUE &&
+    fileMetadata.maxColumnByLine.length === fileMetadata.lineCount &&
+    fileMetadata.maxColumnByLine.every(isSafeCoordinateValue);
+  if (!metadataValid || location.normalizedPath !== fileMetadata.normalizedPath) return false;
+
+  const linesValid =
+    isSafeCoordinateValue(location.lineStart) &&
+    isSafeCoordinateValue(lineEnd) &&
+    lineEnd >= location.lineStart &&
+    lineEnd <= fileMetadata.lineCount;
+  if (!linesValid) return false;
+
+  const columnStartValid =
+    location.columnStart === undefined ||
+    (isSafeCoordinateValue(location.columnStart) &&
+      location.columnStart <= fileMetadata.maxColumnByLine[location.lineStart - 1]);
+  const columnEndValid =
+    location.columnEnd === undefined ||
+    (location.columnStart !== undefined &&
+      isSafeCoordinateValue(location.columnEnd) &&
+      location.columnEnd <= fileMetadata.maxColumnByLine[lineEnd - 1] &&
+      (lineEnd !== location.lineStart || location.columnEnd >= location.columnStart));
+
+  return (
+    isSafeNormalizedRelativePath(location.normalizedPath) &&
+    isOptionalBoundedText(location.symbol, 512) &&
+    columnStartValid &&
+    columnEndValid
+  );
 }
 
 export function evaluateSastCoverage(input: {
@@ -1164,8 +1272,8 @@ export function isSastEvidencePackSafe(
 export function isRuleBundlePromotionReady(evidence: RuleBundlePromotionEvidence): boolean {
   const changedCriticalHighRuleSampleReady =
     !evidence.criticalHighRuleChanged ||
-    (isSafeIntegerAtLeast(evidence.minimumChangedCriticalHighRulePositiveCaseCount, 20) &&
-      isSafeIntegerAtLeast(evidence.minimumChangedCriticalHighRuleNegativeCaseCount, 20));
+    (isSafeIntegerAtLeast(evidence.observedChangedCriticalHighRulePositiveCaseCount, 20) &&
+      isSafeIntegerAtLeast(evidence.observedChangedCriticalHighRuleNegativeCaseCount, 20));
 
   return (
     isRuleBundleDescriptorValid(evidence.bundle) &&
@@ -1188,8 +1296,8 @@ export function isRuleBundlePromotionReady(evidence: RuleBundlePromotionEvidence
     evidence.p95LatencyIncrease <= 0.2 &&
     isSafeIntegerAtLeast(evidence.affectedProfilePositiveCaseCount, 200) &&
     isSafeIntegerAtLeast(evidence.affectedProfileNegativeCaseCount, 200) &&
-    isSafeIntegerAtLeast(evidence.minimumChangedRulePositiveCaseCount, 10) &&
-    isSafeIntegerAtLeast(evidence.minimumChangedRuleNegativeCaseCount, 10) &&
+    isSafeIntegerAtLeast(evidence.observedChangedRulePositiveCaseCount, 10) &&
+    isSafeIntegerAtLeast(evidence.observedChangedRuleNegativeCaseCount, 10) &&
     changedCriticalHighRuleSampleReady &&
     isSafeIntegerAtLeast(evidence.performanceRunsPerProfileSizeBucket, 30) &&
     evidence.normalizationDeterminismPassRate === 1 &&
@@ -1219,7 +1327,7 @@ export function isRuleBundleCanaryHealthy(evidence: RuleBundleCanaryEvidence): b
   return (
     isRuleBundleDescriptorValid(evidence.bundle) &&
     evidence.bundle.state === 'CANARY' &&
-    isSafeIntegerAtLeast(evidence.completedEligibleScans, minimumScans) &&
+    isSafeIntegerAtLeast(evidence.eligibleCompletedScans, minimumScans) &&
     Number.isFinite(evidence.observationHours) &&
     evidence.observationHours >= minimumHours &&
     isRelativeDelta(evidence.falsePositiveIncrease) &&
@@ -1334,6 +1442,26 @@ export function areSastProductionQualityGatesSatisfied(
   );
 }
 
+export function canSastRuntimeTransitionToCompleted(
+  currentStage: SastRuntimeStage,
+  expectedAttemptId: string,
+  evidence: SastCleanupEvidence
+): boolean {
+  return (
+    currentStage === 'CLEANUP_PENDING' &&
+    isNonBlank(expectedAttemptId) &&
+    evidence.attemptId === expectedAttemptId &&
+    evidence.credentialRevokedAndWiped === true &&
+    evidence.scannerProcessesTerminated === true &&
+    evidence.writableVolumesDestroyed === true &&
+    evidence.microVmTerminated === true &&
+    evidence.resultIngressClosed === true &&
+    isNonBlank(evidence.cleanupEvidenceRef) &&
+    isNonBlank(evidence.finalAuditEventRef) &&
+    isIsoTimestamp(evidence.completedAt)
+  );
+}
+
 export function decideSastFailure(input: {
   failureClass: SastFailureClass;
   attempt: number;
@@ -1357,8 +1485,8 @@ function isSha256Digest(value: string): value is `sha256:${string}` {
   return /^sha256:[a-f0-9]{64}$/u.test(value);
 }
 
-function isNonBlank(value: string): boolean {
-  return value.trim().length > 0;
+function isNonBlank(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function hasUniqueValues<T>(values: readonly T[]): boolean {
@@ -1417,6 +1545,26 @@ function isSafePositiveInteger(value: number): boolean {
 
 function isSafeIntegerAtLeast(value: number, minimum: number): boolean {
   return Number.isSafeInteger(value) && value >= minimum;
+}
+
+function isSafeCoordinateValue(value: number): boolean {
+  return Number.isSafeInteger(value) && value > 0 && value <= SAST_MAX_COORDINATE_VALUE;
+}
+
+function isOptionalBoundedText(value: string | undefined, maximumUtf8Bytes: number): boolean {
+  return (
+    value === undefined ||
+    (typeof value === 'string' &&
+      value === value.normalize('NFC') &&
+      !hasControlCharacters(value) &&
+      new TextEncoder().encode(value).byteLength <= maximumUtf8Bytes)
+  );
+}
+
+function encodeFingerprintField(value: string): string {
+  const normalized = value.normalize('NFC');
+  const utf8ByteLength = new TextEncoder().encode(normalized).byteLength;
+  return `${utf8ByteLength}:${normalized}`;
 }
 
 function isRate(value: number): boolean {

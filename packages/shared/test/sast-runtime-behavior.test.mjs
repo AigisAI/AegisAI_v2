@@ -128,6 +128,9 @@ const buildArtifactEnvelope = (plan) => ({
   scannerSetDigest: plan.scannerSet.scannerSetDigest,
   profileId: plan.profile.id,
   profileDigest: plan.profileDigest,
+  preflightAttestationRef: 'attestation://attempt-1/preflight',
+  preflightInventoryDigest: digest('3'),
+  scannerWorkspaceInventoryDigest: digest('3'),
   inputCommitSha: plan.repositoryState.fixedCommitSha,
   artifactSchema: 'OPENGREP_SARIF',
   artifactSchemaVersion: '2.1.0',
@@ -144,7 +147,9 @@ const buildArtifactEnvelope = (plan) => ({
 const expectedArtifactBinding = (envelope) => ({
   attemptId: envelope.attemptId,
   scannerRunId: envelope.scannerRunId,
-  workloadIdentityRef: envelope.workloadIdentityRef
+  workloadIdentityRef: envelope.workloadIdentityRef,
+  preflightAttestationRef: envelope.preflightAttestationRef,
+  preflightInventoryDigest: envelope.preflightInventoryDigest
 });
 
 const coverageRecord = (scanner, capabilities) => ({
@@ -172,11 +177,11 @@ const buildPromotionEvidence = () => ({
   p95LatencyIncrease: 0.2,
   affectedProfilePositiveCaseCount: 200,
   affectedProfileNegativeCaseCount: 200,
-  minimumChangedRulePositiveCaseCount: 10,
-  minimumChangedRuleNegativeCaseCount: 10,
+  observedChangedRulePositiveCaseCount: 10,
+  observedChangedRuleNegativeCaseCount: 10,
   criticalHighRuleChanged: true,
-  minimumChangedCriticalHighRulePositiveCaseCount: 20,
-  minimumChangedCriticalHighRuleNegativeCaseCount: 20,
+  observedChangedCriticalHighRulePositiveCaseCount: 20,
+  observedChangedCriticalHighRuleNegativeCaseCount: 20,
   performanceRunsPerProfileSizeBucket: 30,
   normalizationDeterminismPassRate: 1,
   artifactBindingPassRate: 1,
@@ -259,11 +264,89 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
     false
   );
   assert.equal(
+    runtime.isScannerArtifactEnvelopeBoundToPlan(
+      { ...envelope, scannerWorkspaceInventoryDigest: digest('5') },
+      plan,
+      expectedBinding
+    ),
+    false
+  );
+  assert.equal(
     runtime.isScannerArtifactEligibleForNormalization(
       { ...envelope, truncated: true },
       plan,
       expectedBinding
     ),
+    false
+  );
+});
+
+test('finding fingerprints use NFC-normalized UTF-8 length-prefix test vectors', () => {
+  const canonical = {
+    repositoryBindingId: 'repo-é',
+    capability: 'SAST',
+    ruleSemanticId: 'java.sql-injection',
+    normalizedPath: 'src/Café.java',
+    symbolAnchor: 'com.example.Café#run',
+    sinkKind: 'SQL_EXECUTE',
+    structuralHash: 'ast:v1|call(é)'
+  };
+  const decomposedAdapterOutput = {
+    ...canonical,
+    repositoryBindingId: 'repo-e\u0301',
+    normalizedPath: 'src/Cafe\u0301.java',
+    symbolAnchor: 'com.example.Cafe\u0301#run',
+    structuralHash: 'ast:v1|call(e\u0301)'
+  };
+  const expectedPreimage =
+    'sast-fingerprint-v1\0' +
+    '7:repo-é4:SAST18:java.sql-injection14:src/Café.java' +
+    '21:com.example.Café#run11:SQL_EXECUTE15:ast:v1|call(é)';
+
+  const canonicalPreimage = runtime.buildFindingFingerprintPreimage(canonical);
+  assert.equal(canonicalPreimage, expectedPreimage);
+  assert.equal(
+    runtime.buildFindingFingerprintPreimage(decomposedAdapterOutput),
+    canonicalPreimage
+  );
+  assert.equal(
+    createHash('sha256').update(canonicalPreimage, 'utf8').digest('hex'),
+    '7bc64e19d97c160a7d58334c79149af47c9148d7238732d6092f51c7df269661'
+  );
+});
+
+test('finding locations require attested file bounds or an explicit unknown location', () => {
+  const metadata = {
+    normalizedPath: 'src/main/java/App.java',
+    lineCount: 3,
+    maxColumnByLine: [20, 40, 10]
+  };
+  const known = {
+    kind: 'FILE',
+    normalizedPath: metadata.normalizedPath,
+    lineStart: 2,
+    lineEnd: 3,
+    columnStart: 10,
+    columnEnd: 8,
+    symbol: 'App#run'
+  };
+
+  assert.equal(runtime.isSastFindingLocationValid(known, metadata), true);
+  assert.equal(runtime.isSastFindingLocationValid(known), false);
+  assert.equal(
+    runtime.isSastFindingLocationValid({ ...known, lineStart: Number.MAX_SAFE_INTEGER }, metadata),
+    false
+  );
+  assert.equal(
+    runtime.isSastFindingLocationValid({ kind: 'UNKNOWN', reasonCode: 'LOCATION_NOT_MAPPABLE' }),
+    true
+  );
+  assert.equal(
+    runtime.isSastFindingLocationValid({
+      kind: 'UNKNOWN',
+      reasonCode: 'LOCATION_NOT_MAPPABLE',
+      lineStart: 1
+    }),
     false
   );
 });
@@ -384,7 +467,7 @@ test('promotion, canary, and production gates enforce samples, approvals, and ze
 
   const canary = {
     bundle: ruleBundle('OPENGREP', '7', 'CANARY'),
-    completedEligibleScans: 1000,
+    eligibleCompletedScans: 1000,
     observationHours: 48,
     finalStep: true,
     falsePositiveIncrease: 0.02,
@@ -406,7 +489,7 @@ test('promotion, canary, and production gates enforce samples, approvals, and ze
   };
   assert.equal(runtime.isRuleBundleActivationReady(canary), true);
   assert.equal(
-    runtime.isRuleBundleActivationReady({ ...canary, completedEligibleScans: 999 }),
+    runtime.isRuleBundleActivationReady({ ...canary, eligibleCompletedScans: 999 }),
     false
   );
   for (const zeroToleranceSignal of [
@@ -456,6 +539,52 @@ test('promotion, canary, and production gates enforce samples, approvals, and ze
   );
   assert.equal(
     runtime.areSastProductionQualityGatesSatisfied({ ...quality, scannerFailureRate: -0.01 }),
+    false
+  );
+});
+
+test('kill-switch scopes are complete and cleanup evidence gates completion', () => {
+  assert.deepEqual(runtime.SAST_KILL_SWITCH_SCOPES, [
+    'SCANNER_VERSION',
+    'RULE_BUNDLE',
+    'SEMANTIC_RULE',
+    'TENANT',
+    'REPOSITORY_BINDING',
+    'CAPABILITY',
+    'PROFILE',
+    'EXTERNAL_PUBLICATION',
+    'GLOBAL'
+  ]);
+
+  const cleanup = {
+    attemptId: 'attempt-1',
+    credentialRevokedAndWiped: true,
+    scannerProcessesTerminated: true,
+    writableVolumesDestroyed: true,
+    microVmTerminated: true,
+    resultIngressClosed: true,
+    cleanupEvidenceRef: 'cleanup://attempt-1',
+    finalAuditEventRef: 'audit://attempt-1/terminated',
+    completedAt: '2026-07-21T00:02:00Z'
+  };
+  assert.equal(
+    runtime.canSastRuntimeTransitionToCompleted('CLEANUP_PENDING', 'attempt-1', cleanup),
+    true
+  );
+  assert.equal(
+    runtime.canSastRuntimeTransitionToCompleted('POLICY_PENDING', 'attempt-1', cleanup),
+    false
+  );
+  assert.equal(
+    runtime.canSastRuntimeTransitionToCompleted('CLEANUP_PENDING', 'attempt-current', cleanup),
+    false
+  );
+  assert.equal(
+    runtime.canSastRuntimeTransitionToCompleted(
+      'CLEANUP_PENDING',
+      'attempt-1',
+      { ...cleanup, resultIngressClosed: false }
+    ),
     false
   );
 });

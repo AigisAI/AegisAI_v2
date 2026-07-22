@@ -9,7 +9,7 @@
 ## Core References
 
 - Canonical execution entry point: [`specs/006-production-sast-runtime-design/quickstart.md`](./specs/006-production-sast-runtime-design/quickstart.md)
-- Primary product baseline: `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`
+- Primary product baseline: `Security Scan SaaS Final Specification.docx` (private product baseline)
 - Legacy product baseline: [`spec 2.2.md`](./spec%202.2.md)
 - Repository constitution: [`.specify/memory/constitution.md`](./.specify/memory/constitution.md)
 - Active implementation package: [`specs/006-production-sast-runtime-design/`](./specs/006-production-sast-runtime-design/)

@@ -120,8 +120,15 @@ Preflight runs before any scanner and in the same microVM boundary. Validation o
 7. Refuse archive expansion.
 8. Produce an inventory digest and `ACCEPT`, `REJECT`, or `RESTRICTED_ESCALATION` decision.
 
-Any mismatch between preflight inventory and the scanner-visible workspace is a security
-violation.
+For an accepted decision, the platform signs an attestation over the attempt ID, fixed commit,
+path-policy version, normalized inventory digest, and decision. The control plane passes that
+attestation reference and digest as immutable wrapper inputs. Immediately before each scanner
+starts, its wrapper re-manifests the exact read-only repository mount visible to that scanner,
+using the same canonicalization algorithm and limits, and compares the new digest with the
+attested digest. The wrapper records both digests and the attestation reference in the artifact
+envelope. A missing attestation, stale attempt binding, re-manifest failure, or digest mismatch is
+a `SECURITY_VIOLATION`: the scanner does not start, the sandbox is terminated, the attempt and
+artifact metadata are quarantined, and coverage cannot become complete.
 
 ## Scanner Wrapper Contract
 
@@ -192,7 +199,12 @@ Normalized limits:
 - symbol <= 512 UTF-8 bytes
 - rule ID/revision <= 256 UTF-8 bytes each
 - maximum 25 CWE and 25 CVE identifiers per finding
-- line and column values must be positive and within known file metadata when available
+- a file-relative location requires the matching attested file metadata; line and column values
+  are positive safe integers no greater than `2,147,483,647`, lines cannot exceed the attested
+  line count, and columns cannot exceed the attested per-line maximum
+- absent file metadata never relaxes validation: adapters must emit the explicit `UNKNOWN`
+  location with `SCANNER_LOCATION_OMITTED` or `LOCATION_NOT_MAPPABLE` and no path or coordinate
+  fields; arbitrary fallback coordinates are rejected
 - HTML is encoded as text; Markdown is sanitized only at presentation
 - unknown severity maps to `INFO` plus `UNKNOWN_SEVERITY`, never silently to `HIGH`
 
@@ -201,22 +213,46 @@ normalized finding, logs, audit metadata, or evidence.
 
 ## Stable Fingerprint Contract
 
-The canonical preimage is:
+The canonical field order is:
 
 ```text
-sast-fingerprint-v1
-| repositoryBindingId
-| capability
-| ruleSemanticId
-| normalizedPath
-| symbolAnchor
-| sinkKind
-| structuralHash
+repositoryBindingId, capability, ruleSemanticId, normalizedPath,
+symbolAnchor, sinkKind, structuralHash
 ```
 
-Every field is Unicode NFC normalized and delimiter escaped. The durable fingerprint is the
-SHA-256 digest of the UTF-8 preimage. Branch, target ref, commit SHA, line, column, scanner
-patch version, message text, and severity are excluded.
+The preimage algorithm is byte-exact and versioned:
+
+1. Start with UTF-8 bytes for `sast-fingerprint-v1`, followed by one `0x00` byte.
+2. For each field in the order above, normalize the string to Unicode NFC and encode it as
+   UTF-8 bytes.
+3. Append the ASCII decimal UTF-8 byte length with no leading zero, one ASCII colon (`0x3A`),
+   and then the field bytes. Append no delimiter or terminator between fields.
+4. Hash the complete byte sequence with SHA-256 and store `sha256:` followed by lowercase hex.
+
+The length prefix makes colons, newlines, NULs, pipes, and multibyte characters unambiguous.
+Adapters must use this algorithm rather than language-native string lengths or URL encoding.
+Branch, target ref, commit SHA, line, column, scanner patch version, message text, and severity
+are excluded.
+
+Interoperability test vector:
+
+| Field | Canonical value |
+| --- | --- |
+| `repositoryBindingId` | `repo-é` |
+| `capability` | `SAST` |
+| `ruleSemanticId` | `java.sql-injection` |
+| `normalizedPath` | `src/Café.java` |
+| `symbolAnchor` | `com.example.Café#run` |
+| `sinkKind` | `SQL_EXECUTE` |
+| `structuralHash` | `ast:v1\|call(é)` |
+
+The escaped display form of the preimage is
+`sast-fingerprint-v1\0` +
+`7:repo-é4:SAST18:java.sql-injection14:src/Café.java` +
+`21:com.example.Café#run11:SQL_EXECUTE15:ast:v1|call(é)`. Its digest is
+`sha256:7bc64e19d97c160a7d58334c79149af47c9148d7238732d6092f51c7df269661`.
+An adapter that emits decomposed `e` + U+0301 for every `é` must produce the same preimage and
+digest after NFC normalization.
 
 If a rule changes semantic meaning, it receives a new `ruleSemanticId` even when its
 scanner-local rule ID stays unchanged.
@@ -293,6 +329,12 @@ A scan attempt is not operationally complete until:
 - microVM is terminated
 - result ingress is closed to new writes
 - cleanup evidence and final audit signal are recorded
+
+After policy evaluation, the attempt enters `CLEANUP_PENDING`. It may transition to
+`COMPLETED` only when every condition above is true and its signed cleanup evidence is bound to
+the current attempt. A failed, missing, or overdue condition transitions to `CLEANUP_FAILED`;
+that state cannot transition to `COMPLETED`, denies external publication and AI advisory, and
+requires an incident/audit record even if finding normalization already succeeded.
 
 Missing destruction evidence beyond the cleanup SLO is a security alert and blocks the
 sandbox provider from accepting new work when the failure rate exceeds its threshold.

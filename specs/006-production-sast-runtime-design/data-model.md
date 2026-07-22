@@ -142,7 +142,8 @@ The final successful lifecycle requires a `TERMINATED` event and cleanup evidenc
 
 ### RepositoryPreflightResult
 
-- canonical path inventory digest
+- attempt ID, fixed commit SHA, path-policy version, and canonical path inventory digest
+- signed attestation reference bound to the accepted decision and inventory digest
 - repository and selected byte totals
 - file, directory, symlink, LFS pointer, submodule, and archive counts
 - maximum depth
@@ -175,6 +176,8 @@ Metadata that crosses out of the sandbox.
 - scanner, wrapper, image, scanner-set, profile, rule, database, schema, and normalizer
   versions/digests
 - fixed input commit SHA
+- preflight attestation reference, attested inventory digest, and scanner-visible re-manifest
+  digest
 - content digest
 - object reference
 - byte and record counts
@@ -197,7 +200,8 @@ The envelope never embeds raw artifact bytes.
 
 ### NormalizedSastFinding
 
-- immutable tenant, repository, scan, attempt, and commit attribution
+- immutable `tenantId`, `repositoryBindingId`, `scanRequestId`, `attemptId`, and `commitSha`
+  attribution
 - lane and capability family
 - stable fingerprint
 - title, bounded description, severity, and confidence
@@ -241,6 +245,7 @@ Occurrences provide history without changing stable identity.
 - capability set
 - scanner/rule/schema versions
 - execution status
+- `artifactAccepted`; `SUCCEEDED` without an accepted, digest-bound artifact is incomplete
 - output digest
 - reason code
 
@@ -249,6 +254,7 @@ Occurrences provide history without changing stable identity.
 - `PENDING | COMPLETE | PARTIAL | FAILED`
 - missing and failed required scanners
 - achieved and missing capabilities
+- `duplicateScanners`; any duplicate authoritative scanner record is a security failure
 - stale/security-blocked markers
 - external publication and AI advisory eligibility
 - reason codes
@@ -256,25 +262,23 @@ Occurrences provide history without changing stable identity.
 
 ### EvidenceFragment
 
-- evidence pack and finding identifiers
-- fragment classification and language
-- normalized path or manifest label
-- redacted text object reference
-- byte, bounded line range, and source-file line counts
-- context line counts
-- redaction summary and decision reference
-- AI-safe/dashboard-safe/truncated flags
+- evidence pack and finding identifiers plus `normalizedPath`
+- bounded `startLine`, `endLine`, `sourceFileLineCount`, and `byteSize`
+- `redactedContent` and its SHA-256 `contentDigest`
+- invariant `secretRedactionApplied = true` plus `redactionDecisionRef`
+- invariant `isFullFile = false`; a fragment spanning the complete source file is invalid
 
 ### SastEvidencePack
 
-- tenant and scan attribution
-- normalized finding references
-- fragment references
-- total byte and fragment counts
-- policy version plus redaction, classification, and reconstruction-risk decision references
-- deletion schedule reference
-- object digest/reference
-- creation and expiry timestamps
+- `evidencePackId`, tenant, repository, scan, and `findingFingerprint` attribution
+- `policyVersion`, fragments, exact `totalBytes`, and per-fragment content digests
+- `truncated` and non-negative `suppressedFragmentCount`
+- invariant `reconstructionRiskChecked = true` plus `reconstructionRiskDecisionRef`
+- `classificationDecisionRef`, `deletionScheduleRef`, `dashboardSafe`, and `aiSafe`
+- `createdAt` and `expiresAt`; retention cannot exceed the evidence policy
+
+The pack is unavailable to the dashboard when `dashboardSafe = false` and unavailable to the AI
+Plane when `aiSafe = false`. These decisions cannot be inferred from a successful scan status.
 
 ### RuleBundlePromotionEvidence
 
@@ -311,11 +315,17 @@ QUEUED
   -> CORRELATING
   -> EVIDENCE_BUILDING
   -> POLICY_PENDING
+  -> CLEANUP_PENDING
   -> COMPLETED
 ```
 
-Every non-terminal runtime state may transition to `FAILED` or `CANCELED`. Security
-violations transition to `FAILED` with quarantine and no automatic identical retry.
+`CLEANUP_PENDING` transitions to `COMPLETED` only after credential revocation/wipe, scanner and
+child-process termination, writable-volume destruction, microVM termination, result-ingress
+closure, and attempt-bound cleanup evidence plus the final audit event. Any missing, failed, or
+overdue cleanup condition transitions to terminal `CLEANUP_FAILED`; it cannot transition to
+`COMPLETED` and denies external publication and AI advisory. Every other non-terminal runtime
+state may transition to `FAILED` or `CANCELED`. Security violations transition to `FAILED` with
+quarantine and no automatic identical retry.
 
 ### Scanner Run
 
@@ -332,13 +342,12 @@ PENDING -> SKIPPED_BY_POLICY
 
 ```text
 DRAFT -> VALIDATED -> CANARY -> ACTIVE -> RETIRED
-                       |          |
-                       v          v
-                   SUSPENDED <- SUSPENDED
-                       |
-                       v
-                  ROLLED_BACK
+CANARY --suspend--> SUSPENDED <--suspend-- ACTIVE
+SUSPENDED --rollback--> ROLLED_BACK
 ```
+
+The two incoming edges are `CANARY -> SUSPENDED` and `ACTIVE -> SUSPENDED`; the single recovery
+edge is `SUSPENDED -> ROLLED_BACK`.
 
 ### Finding
 
@@ -368,5 +377,9 @@ FIXED -> OPEN only when a later complete scan observes the same stable fingerpri
 - Unique occurrence by `(findingId, scanRequestId, scannerRunId, artifactDigest)`.
 - Tenant-first indexes on every queryable entity.
 - Expiry indexes on raw artifacts, evidence, quarantine, and AI payload metadata.
-- Check constraints for positive sizes/counts, valid coordinate ranges, and retention limits.
+- Check constraints require non-negative counts, including zero findings, symlinks, archives,
+  rejected paths, and suppressed fragments. Strict positivity is reserved for non-empty artifact
+  or evidence byte sizes, declared resource limits, attempt numbers, and known file coordinates.
+  Coordinate constraints also require safe-integer bounds and matching attested file metadata;
+  retention constraints enforce the declared maximums.
 - Foreign keys must prevent cross-tenant association even when application checks fail.
