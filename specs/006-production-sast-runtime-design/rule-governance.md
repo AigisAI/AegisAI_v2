@@ -128,6 +128,9 @@ finding counts, severity, or customer identity attributes.
   an experimental cohort.
 - Canary findings are authoritative only when the bundle is `CANARY`, its gates remain
   healthy, and selected profile coverage is complete.
+- Every security zero-tolerance counter in `quality-gates.md`, including unauthorized egress,
+  missing destruction evidence, evidence-policy violations, and unsigned artifact execution,
+  must remain exactly zero at every step or the canary pauses immediately.
 
 ## Tenant Policy, Suppression, and Waiver
 

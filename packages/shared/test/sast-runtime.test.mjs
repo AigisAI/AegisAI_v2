@@ -83,6 +83,8 @@ test('scanner sets and scan plans bind every executable supply-chain artifact', 
     'ScannerRuntimeDescriptor',
     'VulnerabilityDatabaseDescriptor',
     'ScannerSetDescriptor',
+    'ExpectedScannerArtifactBinding',
+    'SAST_APPROVED_PROFILE_DIGESTS',
     'isSignedSastArtifactDescriptorValid',
     'isScannerSetDescriptorValid',
     'isSastScanPlanValid',
@@ -97,7 +99,17 @@ test('scanner sets and scan plans bind every executable supply-chain artifact', 
   assert.match(contract, /schemaBundle:\s*SignedSastArtifactDescriptor/);
   assert.match(contract, /normalizerBundle:\s*SignedSastArtifactDescriptor/);
   assert.match(contract, /profileDigest:\s*`sha256:\$\{string\}`/);
+  assert.match(
+    contract,
+    /plan\.profileDigest\s*===\s*SAST_APPROVED_PROFILE_DIGESTS\[plan\.profile\.id\]/
+  );
   assert.match(contract, /workloadIdentityRef:\s*string/);
+  assert.match(contract, /envelope\.attemptId\s*===\s*expectedBinding\.attemptId/);
+  assert.match(contract, /envelope\.scannerRunId\s*===\s*expectedBinding\.scannerRunId/);
+  assert.match(
+    contract,
+    /envelope\.workloadIdentityRef\s*===\s*expectedBinding\.workloadIdentityRef/
+  );
 });
 
 test('rule bundles require immutable signed provenance and reversible rollout', () => {
@@ -225,6 +237,17 @@ test('rule policy, kill switches, and canary activation remain governed and reve
   assert.match(contract, /isRuleBundleActivationReady/);
   assert.match(contract, /isSafeIntegerAtLeast\(evidence\.completedEligibleScans, minimumScans\)/);
   assert.match(contract, /observationHours\s*>=\s*minimumHours/);
+  const canaryFunction = contract
+    .split('export function isRuleBundleCanaryHealthy')[1]
+    .split('export function isRuleBundleActivationReady')[0];
+  for (const zeroToleranceSignal of [
+    'unauthorizedEgressCount',
+    'missingDestructionEvidenceCount',
+    'evidencePolicyViolationCount',
+    'unsignedArtifactExecutionCount'
+  ]) {
+    assert.match(canaryFunction, new RegExp(`evidence\\.${zeroToleranceSignal}\\s*===\\s*0`));
+  }
 });
 
 test('production quality gates are quantitative and fail closed', () => {

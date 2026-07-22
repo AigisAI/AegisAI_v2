@@ -318,6 +318,14 @@ export const SAST_SCAN_PROFILES: Readonly<Record<SastProfileId, SastScanProfile>
   })
 });
 
+export const SAST_APPROVED_PROFILE_DIGESTS: Readonly<
+  Record<SastProfileId, `sha256:${string}`>
+> = Object.freeze({
+  JAVA_FAST_V1: 'sha256:19743211685c76ac7c63cb8c829823c45bf458da3aee5dac4f5eaba2b44bbe74',
+  JAVA_DEEP_V1: 'sha256:df79726b0d32cf7b1c5987f73a3b1f510b29ba57c67567083c94ad77f7a4b321',
+  COMMON_DEEP_V1: 'sha256:2751b8dcd7b4ca7a44fba24a940800c557a03279efc47ba6cf67d6c1151cc8e9'
+});
+
 export interface RuleBundleDescriptor {
   bundleId: string;
   version: string;
@@ -416,6 +424,12 @@ export interface ScannerArtifactEnvelope {
   exitCode: number;
   executionStatus: ScannerExecutionStatus;
   producedAt: string;
+}
+
+export interface ExpectedScannerArtifactBinding {
+  attemptId: string;
+  scannerRunId: string;
+  workloadIdentityRef: string;
 }
 
 export interface FindingFingerprintInput {
@@ -606,6 +620,10 @@ export interface RuleBundleCanaryEvidence {
   secretLeakCount: number;
   sandboxEscapeCount: number;
   staleExternalPublicationCount: number;
+  unauthorizedEgressCount: number;
+  missingDestructionEvidenceCount: number;
+  evidencePolicyViolationCount: number;
+  unsignedArtifactExecutionCount: number;
   securityApprovalRef: string;
   platformApprovalRef: string;
   rollbackRef: string;
@@ -756,6 +774,14 @@ export function isScannerSetDescriptorValid(scannerSet: ScannerSetDescriptor): b
 }
 
 export function isSastScanProfileValid(profile: SastScanProfile): boolean {
+  if (
+    !profile ||
+    !SAST_PROFILE_IDS.includes(profile.id) ||
+    !hasSameImmutableData(profile, SAST_SCAN_PROFILES[profile.id])
+  ) {
+    return false;
+  }
+
   const uniqueRequiredScanners = new Set(profile.requiredScanners);
   const scannerOverlap = profile.optionalScanners.some((scanner) => uniqueRequiredScanners.has(scanner));
   const requiredCapabilitiesCovered = profile.requiredCapabilities.every((capability) =>
@@ -832,6 +858,7 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
     isSha256Digest(plan.canonicalScanKey) &&
     isSastScanProfileValid(plan.profile) &&
     isSha256Digest(plan.profileDigest) &&
+    plan.profileDigest === SAST_APPROVED_PROFILE_DIGESTS[plan.profile.id] &&
     isNonBlank(plan.policyVersion) &&
     isNonBlank(plan.repositoryState.repositoryBindingId) &&
     isGitCommitSha(plan.repositoryState.fixedCommitSha) &&
@@ -860,8 +887,22 @@ export function doesSastPlanRespectForbiddenCapabilities(plan: SastScanPlan): bo
 
 export function isScannerArtifactEnvelopeBoundToPlan(
   envelope: ScannerArtifactEnvelope,
-  plan: SastScanPlan
+  plan: SastScanPlan,
+  expectedBinding: ExpectedScannerArtifactBinding
 ): boolean {
+  if (
+    !envelope ||
+    !plan ||
+    !expectedBinding ||
+    !SAST_SCANNER_KINDS.includes(envelope.scanner as SastScannerKind) ||
+    !isNonBlank(expectedBinding.attemptId) ||
+    !isNonBlank(expectedBinding.scannerRunId) ||
+    !isNonBlank(expectedBinding.workloadIdentityRef) ||
+    !isSastScanPlanValid(plan)
+  ) {
+    return false;
+  }
+
   const scanner = plan.scannerSet.scanners[envelope.scanner];
   const expectedSchema = SAST_SCANNER_RESPONSIBILITIES[envelope.scanner].outputSchema;
   const expectedRuleBundle = plan.scannerSet.ruleBundles.find(
@@ -872,12 +913,11 @@ export function isScannerArtifactEnvelopeBoundToPlan(
     plan.profile.optionalScanners.includes(envelope.scanner);
 
   return (
-    isSastScanPlanValid(plan) &&
     envelope.tenantId === plan.tenantId &&
     envelope.scanRequestId === plan.scanRequestId &&
-    isNonBlank(envelope.attemptId) &&
-    isNonBlank(envelope.scannerRunId) &&
-    isNonBlank(envelope.workloadIdentityRef) &&
+    envelope.attemptId === expectedBinding.attemptId &&
+    envelope.scannerRunId === expectedBinding.scannerRunId &&
+    envelope.workloadIdentityRef === expectedBinding.workloadIdentityRef &&
     scannerSelectedByProfile &&
     envelope.scannerVersion === scanner.version &&
     envelope.scannerImageDigest === scanner.digest &&
@@ -907,10 +947,11 @@ export function isScannerArtifactEnvelopeBoundToPlan(
 
 export function isScannerArtifactEligibleForNormalization(
   envelope: ScannerArtifactEnvelope,
-  plan: SastScanPlan
+  plan: SastScanPlan,
+  expectedBinding: ExpectedScannerArtifactBinding
 ): boolean {
   return (
-    isScannerArtifactEnvelopeBoundToPlan(envelope, plan) &&
+    isScannerArtifactEnvelopeBoundToPlan(envelope, plan, expectedBinding) &&
     envelope.executionStatus === 'SUCCEEDED' &&
     envelope.exitCode === 0 &&
     envelope.truncated === false &&
@@ -1194,6 +1235,10 @@ export function isRuleBundleCanaryHealthy(evidence: RuleBundleCanaryEvidence): b
     evidence.secretLeakCount === 0 &&
     evidence.sandboxEscapeCount === 0 &&
     evidence.staleExternalPublicationCount === 0 &&
+    evidence.unauthorizedEgressCount === 0 &&
+    evidence.missingDestructionEvidenceCount === 0 &&
+    evidence.evidencePolicyViolationCount === 0 &&
+    evidence.unsignedArtifactExecutionCount === 0 &&
     isNonBlank(evidence.securityApprovalRef) &&
     isNonBlank(evidence.platformApprovalRef) &&
     evidence.securityApprovalRef !== evidence.platformApprovalRef &&
@@ -1318,6 +1363,41 @@ function isNonBlank(value: string): boolean {
 
 function hasUniqueValues<T>(values: readonly T[]): boolean {
   return new Set(values).size === values.length;
+}
+
+function hasSameImmutableData(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) {
+    return true;
+  }
+  if (
+    left === null ||
+    right === null ||
+    typeof left !== 'object' ||
+    typeof right !== 'object'
+  ) {
+    return false;
+  }
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((value, index) => hasSameImmutableData(value, right[index]))
+    );
+  }
+
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const leftKeys = Object.keys(leftRecord).sort();
+  const rightKeys = Object.keys(rightRecord).sort();
+
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key, index) =>
+        key === rightKeys[index] && hasSameImmutableData(leftRecord[key], rightRecord[key])
+    )
+  );
 }
 
 function freezeSastProfile(profile: SastScanProfile): SastScanProfile {

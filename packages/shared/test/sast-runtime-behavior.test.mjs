@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ts from 'typescript';
@@ -16,6 +17,26 @@ evaluateModule(localModule, localModule.exports);
 const runtime = localModule.exports;
 
 const digest = (character) => `sha256:${character.repeat(64)}`;
+
+const canonicalJson = (value) => {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((entry) => canonicalJson(entry)).join(',')}]`;
+  }
+
+  const entries = Object.keys(value)
+    .filter((key) => value[key] !== undefined)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`);
+  return `{${entries.join(',')}}`;
+};
+
+const approvedProfileDigest = (profile) =>
+  `sha256:${createHash('sha256')
+    .update(canonicalJson({ version: 'sast-profile-digest-v1', profile }), 'utf8')
+    .digest('hex')}`;
 
 const signedArtifact = (character) => ({
   digest: digest(character),
@@ -74,7 +95,7 @@ const buildPlan = () => ({
   scanRequestId: 'scan-1',
   canonicalScanKey: digest('2'),
   profile: runtime.SAST_SCAN_PROFILES.JAVA_FAST_V1,
-  profileDigest: digest('3'),
+  profileDigest: runtime.SAST_APPROVED_PROFILE_DIGESTS.JAVA_FAST_V1,
   policyVersion: 'policy-1',
   repositoryState: {
     repositoryBindingId: 'repository-1',
@@ -118,6 +139,12 @@ const buildArtifactEnvelope = (plan) => ({
   exitCode: 0,
   executionStatus: 'SUCCEEDED',
   producedAt: '2026-07-21T00:01:00Z'
+});
+
+const expectedArtifactBinding = (envelope) => ({
+  attemptId: envelope.attemptId,
+  scannerRunId: envelope.scannerRunId,
+  workloadIdentityRef: envelope.workloadIdentityRef
 });
 
 const coverageRecord = (scanner, capabilities) => ({
@@ -172,6 +199,7 @@ const buildPromotionEvidence = () => ({
 test('built-in SAST profiles are immutable and satisfy the complete profile validator', () => {
   for (const profile of Object.values(runtime.SAST_SCAN_PROFILES)) {
     assert.equal(runtime.isSastScanProfileValid(profile), true);
+    assert.equal(runtime.SAST_APPROVED_PROFILE_DIGESTS[profile.id], approvedProfileDigest(profile));
     assert.equal(Object.isFrozen(profile), true);
     assert.equal(Object.isFrozen(profile.requiredScanners), true);
     assert.equal(Object.isFrozen(profile.limits), true);
@@ -181,7 +209,7 @@ test('built-in SAST profiles are immutable and satisfy the complete profile vali
   const invalidProfile = {
     ...runtime.SAST_SCAN_PROFILES.JAVA_FAST_V1,
     requiredScanners: ['OPENGREP'],
-    requiredCapabilities: ['SAST', 'SECRET_DETECTION']
+    requiredCapabilities: ['SAST']
   };
   assert.equal(runtime.isSastScanProfileValid(invalidProfile), false);
 });
@@ -189,21 +217,53 @@ test('built-in SAST profiles are immutable and satisfy the complete profile vali
 test('scan plans and artifact envelopes bind fixed intent and reject normalization ambiguity', () => {
   const plan = buildPlan();
   const envelope = buildArtifactEnvelope(plan);
+  const expectedBinding = expectedArtifactBinding(envelope);
 
   assert.equal(runtime.isScannerSetDescriptorValid(plan.scannerSet), true);
   assert.equal(runtime.isSastScanPlanValid(plan), true);
-  assert.equal(runtime.isScannerArtifactEnvelopeBoundToPlan(envelope, plan), true);
-  assert.equal(runtime.isScannerArtifactEligibleForNormalization(envelope, plan), true);
+  assert.equal(
+    runtime.isScannerArtifactEnvelopeBoundToPlan(envelope, plan, expectedBinding),
+    true
+  );
+  assert.equal(
+    runtime.isScannerArtifactEligibleForNormalization(envelope, plan, expectedBinding),
+    true
+  );
+  assert.equal(
+    runtime.isSastScanPlanValid({ ...plan, profileDigest: digest('3') }),
+    false
+  );
 
   assert.equal(
     runtime.isScannerArtifactEnvelopeBoundToPlan(
       { ...envelope, inputCommitSha: 'b'.repeat(40) },
-      plan
+      plan,
+      expectedBinding
     ),
     false
   );
   assert.equal(
-    runtime.isScannerArtifactEligibleForNormalization({ ...envelope, truncated: true }, plan),
+    runtime.isScannerArtifactEnvelopeBoundToPlan(
+      { ...envelope, scanner: 'UNSUPPORTED' },
+      plan,
+      expectedBinding
+    ),
+    false
+  );
+  assert.equal(
+    runtime.isScannerArtifactEnvelopeBoundToPlan(
+      envelope,
+      plan,
+      { ...expectedBinding, attemptId: 'attempt-current' }
+    ),
+    false
+  );
+  assert.equal(
+    runtime.isScannerArtifactEligibleForNormalization(
+      { ...envelope, truncated: true },
+      plan,
+      expectedBinding
+    ),
     false
   );
 });
@@ -336,6 +396,10 @@ test('promotion, canary, and production gates enforce samples, approvals, and ze
     secretLeakCount: 0,
     sandboxEscapeCount: 0,
     staleExternalPublicationCount: 0,
+    unauthorizedEgressCount: 0,
+    missingDestructionEvidenceCount: 0,
+    evidencePolicyViolationCount: 0,
+    unsignedArtifactExecutionCount: 0,
     securityApprovalRef: 'approval://security',
     platformApprovalRef: 'approval://platform',
     rollbackRef: 'rollback://rules-0'
@@ -345,6 +409,17 @@ test('promotion, canary, and production gates enforce samples, approvals, and ze
     runtime.isRuleBundleActivationReady({ ...canary, completedEligibleScans: 999 }),
     false
   );
+  for (const zeroToleranceSignal of [
+    'unauthorizedEgressCount',
+    'missingDestructionEvidenceCount',
+    'evidencePolicyViolationCount',
+    'unsignedArtifactExecutionCount'
+  ]) {
+    assert.equal(
+      runtime.isRuleBundleActivationReady({ ...canary, [zeroToleranceSignal]: 1 }),
+      false
+    );
+  }
 
   const quality = {
     eligibleCompletedScans: 1000,

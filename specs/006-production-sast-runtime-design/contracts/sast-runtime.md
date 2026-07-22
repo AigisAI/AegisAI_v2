@@ -53,6 +53,11 @@ DLQ preserves tenant and scan attribution but not payload secrets.
 
 ## Profile Contract
 
+A known profile ID is accepted only when the complete snapshot exactly matches its immutable
+platform definition and its digest matches the compiled approved-profile allowlist. A caller
+cannot narrow required scanners, capabilities, limits, or path controls while retaining the
+same profile ID.
+
 ### `JAVA_FAST_V1`
 
 - Scope: changed `.java` files plus bounded symbol/import context, relevant Java manifests,
@@ -156,7 +161,8 @@ If retained as supporting evidence, they cannot independently create or block a 
 The sandbox writes only `ScannerArtifactEnvelope` plus artifact bytes to a per-scan,
 write-only endpoint. Result ingress checks in this order:
 
-1. mTLS/workload identity and sandbox/attempt binding
+1. mTLS/workload identity and exact expected sandbox attempt, scanner run, and workload
+   identity binding
 2. tenant, repository, scan, scanner, fixed commit, and profile binding
 3. scanner-set, profile, scanner image, wrapper, rule, database, schema, and normalizer digests,
    signatures, provenance, and compatibility allowlists
