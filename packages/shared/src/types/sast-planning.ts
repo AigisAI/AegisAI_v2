@@ -609,6 +609,8 @@ function isSastQueueUsageSnapshotValid(usage: SastQueueUsageSnapshot): boolean {
       usage.activeForRepository,
       usage.queuedInLane
     ].every(isNonNegativeSafeInteger) &&
+    usage.activeForRepository <= usage.activeForTenant &&
+    usage.queuedForTenant <= usage.queuedInLane &&
     (usage.lastRepositoryAdmissionAt === undefined ||
       isIsoTimestamp(usage.lastRepositoryAdmissionAt))
   );

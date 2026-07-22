@@ -1,4 +1,7 @@
+import { createHash } from 'node:crypto';
+
 import {
+  buildSastCanonicalScanKeyPreimage,
   isSastScanPlanValid,
   evaluateSastQueueAdmission,
   orderSastQueueCandidatesFairly,
@@ -243,6 +246,13 @@ describe('SastScanPlannerService', () => {
     input.scannerSet.scanners.OPENGREP.digest = digest('4');
     expect(first.plan?.scannerSet.scanners.OPENGREP.digest).toBe(plannedScannerDigest);
 
+    expect(() =>
+      harness.planner.plan({
+        ...input,
+        repositoryMetadata: { ...input.repositoryMetadata, inventoryDigest: digest('3') }
+      })
+    ).toThrow('canonical planning identity is immutable');
+
     expect(
       harness.controlPlane.getScanRequest('tenant-1', harness.scanRequest.id)
     ).toMatchObject({
@@ -314,6 +324,32 @@ describe('SastScanPlannerService', () => {
     expect(policyMismatch.planning.reasonCodes).toEqual([
       'PROFILE_POLICY_VERSION_MISMATCH'
     ]);
+
+    const futureMetadataHarness = createHarness('FAST');
+    const futureMetadata = futureMetadataHarness.planner.plan(
+      buildPlanningInput(
+        futureMetadataHarness.repositoryBindingId,
+        futureMetadataHarness.scanRequest.id,
+        {
+          repositoryMetadata: {
+            ...buildMetadata(futureMetadataHarness.repositoryBindingId),
+            collectedAt: '2026-07-22T02:00:00Z'
+          }
+        }
+      )
+    );
+    expect(futureMetadata.planning.reasonCodes).toEqual(['TRUSTED_METADATA_INVALID']);
+
+    const invalidTimestampHarness = createHarness('FAST');
+    expect(() =>
+      invalidTimestampHarness.planner.plan(
+        buildPlanningInput(
+          invalidTimestampHarness.repositoryBindingId,
+          invalidTimestampHarness.scanRequest.id,
+          { requestedAt: 'not-a-timestamp' }
+        )
+      )
+    ).toThrow('requestedAt must be a valid UTC timestamp');
   });
 
   it('exposes every exceeded profile limit as a user-visible rejected state', () => {
@@ -351,7 +387,36 @@ describe('SastScanPlannerService', () => {
   it('binds every execution artifact digest into the canonical scan key', () => {
     const harness = createHarness('FAST');
     const baseInput = buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id);
-    const baseline = harness.planner.plan(baseInput).planning.canonicalScanKey;
+    const baselineResult = harness.planner.plan(baseInput);
+    const baseline = baselineResult.planning.canonicalScanKey;
+    const baseCanonicalInput = {
+      tenantId: 'tenant-1',
+      repositoryBindingId: harness.repositoryBindingId,
+      lane: 'FAST' as const,
+      targetRef: harness.scanRequest.targetRef,
+      fixedCommitSha: harness.scanRequest.commitSha,
+      inventoryDigest: baseInput.repositoryMetadata.inventoryDigest,
+      policyVersion: harness.scanRequest.policyVersion,
+      profile: baselineResult.plan!.profile,
+      profileDigest: baselineResult.plan!.profileDigest,
+      scannerSet: baseInput.scannerSet,
+      isolationClass: baselineResult.plan!.isolationClass
+    };
+    const keyFor = (
+      scannerSet: ScannerSetDescriptor,
+      inventoryDigest = baseCanonicalInput.inventoryDigest
+    ): `sha256:${string}` =>
+      `sha256:${createHash('sha256')
+        .update(
+          buildSastCanonicalScanKeyPreimage({
+            ...baseCanonicalInput,
+            scannerSet,
+            inventoryDigest
+          }),
+          'utf8'
+        )
+        .digest('hex')}`;
+    expect(keyFor(baseInput.scannerSet)).toBe(baseline);
     const variants: ScannerSetDescriptor[] = [
       { ...baseInput.scannerSet, scannerSetDigest: digest('2') },
       {
@@ -379,20 +444,11 @@ describe('SastScanPlannerService', () => {
       }
     ];
 
-    const keys = variants.map(
-      (scannerSet) =>
-        harness.planner.plan({ ...baseInput, scannerSet }).planning.canonicalScanKey
-    );
+    const keys = variants.map((scannerSet) => keyFor(scannerSet));
     expect(keys.every((key) => key !== baseline)).toBe(true);
     expect(new Set(keys).size).toBe(keys.length);
 
-    const inventoryKey = harness.planner.plan({
-      ...baseInput,
-      repositoryMetadata: {
-        ...baseInput.repositoryMetadata,
-        inventoryDigest: digest('3')
-      }
-    }).planning.canonicalScanKey;
+    const inventoryKey = keyFor(baseInput.scannerSet, digest('3'));
     expect(inventoryKey).not.toBe(baseline);
   });
 
@@ -473,7 +529,7 @@ describe('SastScanPlannerService', () => {
       retryAfterSeconds: number;
     }> = [
       {
-        usage: { ...baseUsage, activeForRepository: 1 },
+        usage: { ...baseUsage, activeForRepository: 1, activeForTenant: 1 },
         reasonCode: 'REPOSITORY_CONCURRENCY_LIMIT',
         retryAfterSeconds: 30
       },
@@ -483,7 +539,7 @@ describe('SastScanPlannerService', () => {
         retryAfterSeconds: 30
       },
       {
-        usage: { ...baseUsage, queuedForTenant: 10 },
+        usage: { ...baseUsage, queuedForTenant: 10, queuedInLane: 10 },
         reasonCode: 'TENANT_QUEUED_LIMIT',
         retryAfterSeconds: 30
       },
@@ -539,5 +595,29 @@ describe('SastScanPlannerService', () => {
       queuePolicyDigest: digest('e'),
       reasonCodes: ['QUEUE_USAGE_INVALID']
     });
+
+    expect(
+      evaluateSastQueueAdmission({
+        lane: 'FAST',
+        tenantId: 'tenant-1',
+        repositoryBindingId,
+        requestedAt: '2026-07-22T01:00:00Z',
+        policySet: queuePolicy,
+        usage: { ...baseUsage, activeForRepository: 1, activeForTenant: 0 }
+      })
+    ).toMatchObject({ state: 'REJECTED', reasonCodes: ['QUEUE_USAGE_INVALID'] });
+  });
+
+  it('does not let late planning rewrite a running scan', () => {
+    const harness = createHarness('FAST');
+    harness.scanRequest.status = 'RUNNING';
+
+    expect(() =>
+      harness.planner.plan(
+        buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id)
+      )
+    ).toThrow('cannot rewrite a terminal or running scan');
+    expect(harness.scanRequest.status).toBe('RUNNING');
+    expect(harness.scanRequest.sastPlanning).toBeUndefined();
   });
 });

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   SAST_FORBIDDEN_CAPABILITIES,
   buildSastCanonicalScanKeyPreimage,
@@ -33,11 +33,18 @@ export class SastScanPlannerService {
   plan(input: SastScanPlanningInput): SastScanPlanningResult {
     const scanRequest = this.controlPlaneService.getScanRequest(input.tenantId, input.scanRequestId);
 
+    if (!this.isIsoTimestamp(input.requestedAt)) {
+      throw new BadRequestException('SAST planning requestedAt must be a valid UTC timestamp.');
+    }
+
     if (!this.isFullCommitSha(scanRequest.commitSha)) {
       return this.reject(scanRequest, input.requestedAt, 'FIXED_COMMIT_REQUIRED');
     }
 
-    if (!isTrustedSastRepositoryMetadataValid(input.repositoryMetadata)) {
+    if (
+      !isTrustedSastRepositoryMetadataValid(input.repositoryMetadata) ||
+      Date.parse(input.repositoryMetadata.collectedAt) > Date.parse(input.requestedAt)
+    ) {
       return this.reject(scanRequest, input.requestedAt, 'TRUSTED_METADATA_INVALID');
     }
 
@@ -299,6 +306,14 @@ export class SastScanPlannerService {
 
   private isFullCommitSha(value: string): boolean {
     return /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i.test(value);
+  }
+
+  private isIsoTimestamp(value: string): boolean {
+    return (
+      typeof value === 'string' &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u.test(value) &&
+      Number.isFinite(Date.parse(value))
+    );
   }
 
   private deepFreeze<T>(value: T): T {

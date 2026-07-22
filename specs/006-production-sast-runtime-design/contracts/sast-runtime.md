@@ -63,7 +63,8 @@ Trusted repository metadata is accepted only when it contains a full 40- or 64-c
 commit SHA, inventory digest, attestation reference, collection timestamp, normalized
 language byte/file signals, manifest names, and bounded resource counters. Its repository
 binding and commit must equal the immutable scan request. Profile-policy and scanner-set
-versions must also equal the versions already bound to that request.
+versions must also equal the versions already bound to that request. The planning timestamp
+must be valid UTC, and metadata collected in the future relative to that timestamp is rejected.
 
 Selection is deterministic for v1:
 
@@ -89,16 +90,21 @@ references are scoped to tenant and scan but are not mutable customer inputs.
 
 Queue policy is itself versioned, digest-pinned, signed, and provenance-attributed. Its usage
 snapshot must match the tenant, repository binding, lane, and current UTC daily window of the
-decision. Fast and Deep must resolve to `scan.fast.v1` and `scan.deep.v1` respectively. Admission evaluates
-tenant active/queued/daily limits, repository concurrency/frequency, and lane queue capacity.
-Capacity outcomes are `DEFERRED` with a bounded retry condition; malformed policy or usage is
-`REJECTED`. Within one lane, dispatch interleaves the oldest item from each tenant using
-deterministic tenant round-robin ordering, with the last-served tenant rotated to the end.
+decision. Repository-active counts cannot exceed tenant-active counts, and tenant-queued counts
+cannot exceed the lane total. Fast and Deep must resolve to `scan.fast.v1` and `scan.deep.v1`
+respectively. Admission evaluates tenant active/queued/daily limits, repository
+concurrency/frequency, and lane queue capacity. Capacity outcomes are `DEFERRED` with a bounded
+retry condition; malformed policy or usage is `REJECTED`. Within one lane, dispatch interleaves
+the oldest item from each tenant using deterministic tenant round-robin ordering, with the
+last-served tenant rotated to the end.
 
 The public scan status exposes only `ADMITTED | DEFERRED | REJECTED`, selected profile,
 coverage claim, queue name, queue-policy version/digest, canonical key, reason codes,
 retry-after seconds, and timestamp.
 It never exposes trusted inventory internals, source, credentials, or scanner configuration.
+Once a canonical planning identity is recorded it cannot be replaced by a different identity.
+An admitted decision is idempotent and immutable, and planning cannot rewrite a running,
+completed, failed, or canceled scan.
 
 ## Profile Contract
 

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from 'node:crypto';
 import {
   buildCanonicalScanKey,
@@ -263,6 +263,26 @@ export class ControlPlaneService {
   ): ControlPlaneScanRequest {
     const scanRequest = this.getScanRequest(tenantId, scanRequestId);
 
+    if (scanRequest.status !== 'QUEUED' && scanRequest.status !== 'PLANNING') {
+      throw new ConflictException('SAST planning cannot rewrite a terminal or running scan.');
+    }
+
+    const existingPlanning = scanRequest.sastPlanning;
+    if (
+      existingPlanning?.canonicalScanKey &&
+      planning.canonicalScanKey !== existingPlanning.canonicalScanKey
+    ) {
+      throw new ConflictException('SAST canonical planning identity is immutable.');
+    }
+
+    if (existingPlanning?.state === 'ADMITTED') {
+      if (!this.isEquivalentSastPlanningState(existingPlanning, planning)) {
+        throw new ConflictException('An admitted SAST planning decision is immutable.');
+      }
+
+      return scanRequest;
+    }
+
     scanRequest.sastPlanning = {
       ...planning,
       reasonCodes: [...planning.reasonCodes]
@@ -275,6 +295,25 @@ export class ControlPlaneService {
           : 'FAILED';
 
     return scanRequest;
+  }
+
+  private isEquivalentSastPlanningState(
+    left: SastUserVisiblePlanningState,
+    right: SastUserVisiblePlanningState
+  ): boolean {
+    return (
+      left.state === right.state &&
+      left.profileId === right.profileId &&
+      left.coverageClaim === right.coverageClaim &&
+      left.queueName === right.queueName &&
+      left.queuePolicyVersion === right.queuePolicyVersion &&
+      left.queuePolicyDigest === right.queuePolicyDigest &&
+      left.canonicalScanKey === right.canonicalScanKey &&
+      left.retryAfterSeconds === right.retryAfterSeconds &&
+      left.updatedAt === right.updatedAt &&
+      left.reasonCodes.length === right.reasonCodes.length &&
+      left.reasonCodes.every((reasonCode, index) => reasonCode === right.reasonCodes[index])
+    );
   }
 
   planCommentDispatch(input: CommentDispatchPlanRequest): CommentDispatchPlan {

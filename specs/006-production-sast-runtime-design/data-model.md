@@ -156,6 +156,9 @@ Safe status attached to the tenant-scoped scan request and returned by status re
 
 `COMMON_DEEP_V1` reports `COMMON_STATIC_COVERAGE_ONLY` and
 `LANGUAGE_SPECIFIC_SAST_UNAVAILABLE`; it never claims language-complete SAST coverage.
+The first recorded canonical planning identity is immutable. A deferred decision may become
+admitted only for that same identity; an admitted decision is idempotent and cannot be downgraded
+or replaced, and no planning write may change a running or terminal scan.
 
 ### SastScanAttempt
 
