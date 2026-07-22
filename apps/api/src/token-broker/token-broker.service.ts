@@ -18,8 +18,8 @@ export class TokenBrokerService {
     private readonly controlPlaneService: ControlPlaneService
   ) {}
 
-  issue(input: TokenBrokerIssueRequest): TokenBrokerIssueResponse {
-    this.assertBoundToScan(input);
+  async issue(input: TokenBrokerIssueRequest): Promise<TokenBrokerIssueResponse> {
+    await this.assertBoundToScan(input);
     const issuedCredential = this.tokenCredentialIssuer.issue(input);
     const response: TokenBrokerIssueResponse = {
       ...input,
@@ -53,7 +53,7 @@ export class TokenBrokerService {
     return this.auditEvents.filter((event) => event.tenantId === tenantId);
   }
 
-  private assertBoundToScan(input: TokenBrokerIssueRequest): void {
+  private async assertBoundToScan(input: TokenBrokerIssueRequest): Promise<void> {
     if (
       input.principal !== 'REPO_READ' ||
       !Number.isInteger(input.ttlSeconds) ||
@@ -63,7 +63,10 @@ export class TokenBrokerService {
       throw new BadRequestException('Token scope or TTL is outside the scan credential policy.');
     }
 
-    const scanRequest = this.controlPlaneService.getScanRequest(input.tenantId, input.scanRequestId);
+    const scanRequest = await this.controlPlaneService.getScanRequest(
+      input.tenantId,
+      input.scanRequestId
+    );
     if (
       scanRequest.repositoryBindingId !== input.repositoryBindingId ||
       scanRequest.commitSha !== input.commitSha

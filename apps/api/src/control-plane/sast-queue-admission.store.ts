@@ -2,7 +2,9 @@ import type {
   SastQueueAdmissionDecision,
   SastQueuePolicySet,
   SastQueueUsageSnapshot,
-  SastScanLane
+  SastScanLane,
+  SastScanPlan,
+  SastUserVisiblePlanningState
 } from '@aegisai/shared';
 
 export interface SastQueueReservationInput {
@@ -14,6 +16,11 @@ export interface SastQueueReservationInput {
   requestedAt: string;
   policySet: SastQueuePolicySet;
   usage: SastQueueUsageSnapshot;
+  plan: SastScanPlan;
+  planningContext: Pick<
+    SastUserVisiblePlanningState,
+    'profileId' | 'coverageClaim' | 'reasonCodes'
+  >;
 }
 
 export interface SastQueueReservationRecord {
@@ -27,6 +34,8 @@ export interface SastQueueReservationRecord {
   dailyWindowStartedAt: string;
   enqueuedAt: string;
   decision: SastQueueAdmissionDecision;
+  planning: SastUserVisiblePlanningState;
+  plan: SastScanPlan;
 }
 
 export type SastQueueReservationWriteResult =
@@ -54,6 +63,7 @@ export interface SastQueueDispatchClaim {
   enqueuedAt: string;
   leaseOwner: string;
   leaseExpiresAt: string;
+  plan: SastScanPlan;
 }
 
 export interface SastQueueDispatchAcknowledgementInput {
@@ -62,12 +72,20 @@ export interface SastQueueDispatchAcknowledgementInput {
   acknowledgedAt: string;
 }
 
+export interface SastQueueDispatchCompletionInput {
+  scanRequestId: string;
+  workerId: string;
+  completedAt: string;
+  terminalStatus: 'COMPLETED' | 'FAILED' | 'CANCELED';
+}
+
 export abstract class SastQueueAdmissionStore {
   abstract findReservation(scanRequestId: string): Promise<SastQueueReservationRecord | null>;
 
   abstract reserveAdmitted(
     input: SastQueueReservationInput,
-    decision: SastQueueAdmissionDecision
+    decision: SastQueueAdmissionDecision,
+    planning: SastUserVisiblePlanningState
   ): Promise<SastQueueReservationWriteResult>;
 
   abstract claimNextForDispatch(
@@ -76,5 +94,9 @@ export abstract class SastQueueAdmissionStore {
 
   abstract acknowledgeDispatch(
     input: SastQueueDispatchAcknowledgementInput
+  ): Promise<boolean>;
+
+  abstract completeDispatch(
+    input: SastQueueDispatchCompletionInput
   ): Promise<boolean>;
 }

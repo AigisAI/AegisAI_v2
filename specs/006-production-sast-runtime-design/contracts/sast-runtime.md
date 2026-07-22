@@ -66,6 +66,9 @@ is the only HTTP entry point for trusted metadata, signed profile/scanner/queue 
 authoritative usage counters. The session-authenticated scan status returns only the reduced
 planning state. This two-step flow prevents a user from supplying trusted planning inputs while
 ensuring the planner is part of the production request lifecycle rather than a test-only helper.
+The internal DTO validates every nested planning object against the shared runtime predicates and
+an exact allowlist of keys; unknown command, environment, plugin, or executable-config fields are
+rejected before the planner runs.
 
 Trusted repository metadata is accepted only when it contains a full 40- or 64-character
 commit SHA, inventory digest, attestation reference, collection timestamp, normalized
@@ -90,7 +93,7 @@ single-file bytes, and path-depth reason codes. Missing or invalid required scan
 vulnerability database, schema, or normalizer assets reject planning before queue admission.
 
 The SHA-256 canonical key binds tenant, repository, lane, target context, full fixed commit,
-trusted inventory digest, policy, isolation class, immutable profile digest, scanner-set
+trusted inventory digest and attestation reference, policy, isolation class, immutable profile digest, scanner-set
 version/digest, every scanner image and wrapper digest, every sorted rule-bundle digest,
 vulnerability database
 version/digest, schema digest, normalizer digest, and SBOM schema. Result/evidence/audit
@@ -113,6 +116,11 @@ publication; a per-replica cache is not authoritative. `PrismaSastQueueAdmission
 that boundary with PostgreSQL `SERIALIZABLE` transactions, bounded serialization/unique-conflict
 retries, durable reservation records, and a canonical millisecond UTC lane/day key. Equivalent UTC
 representations therefore cannot create parallel ledgers, and process restarts retain idempotency.
+The immutable `ScanRequest` exists in PostgreSQL before reservation. The admitted planning state
+and complete immutable `SastScanPlan` are written with the reservation in the same transaction,
+and the reservation has a restrictive foreign key to that request. A dispatcher therefore receives
+the exact profile, scanner-set snapshot, repository attestation binding, and output references even
+after every API process restarts; it never reconstructs execution inputs from mutable state.
 
 Capacity outcomes are `DEFERRED` with a bounded retry condition; malformed policy or usage is
 `REJECTED`. Within one lane, dispatch interleaves the oldest item from each tenant using
@@ -120,7 +128,10 @@ deterministic tenant round-robin ordering, with the last-served tenant rotated t
 capacity and dispatch order are separate concerns: durable admitted reservations form the pending
 dispatch set, while `claimNextForDispatch` advances the shared ledger cursor in the same serializable
 transaction that acquires a bounded dispatch lease. An acknowledgement is accepted only from the
-lease owner before lease expiry; unacknowledged work becomes eligible again after expiry.
+lease owner before lease expiry; unacknowledged work becomes eligible again after expiry. A valid
+acknowledgement atomically moves lane/tenant counters from queued to active and marks the durable
+scan request `RUNNING`. Completion atomically decrements tenant/repository active counters, advances
+the ledger version, records the terminal state, and is idempotent for the same worker and outcome.
 
 The public scan status exposes only `ADMITTED | DEFERRED | REJECTED`, selected profile,
 coverage claim, queue name, queue-policy version/digest, canonical key, reason codes,

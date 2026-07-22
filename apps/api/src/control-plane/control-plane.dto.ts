@@ -22,6 +22,7 @@ import {
   type ScannerSetDescriptor,
   type TrustedSastRepositoryMetadata
 } from '@aegisai/shared';
+import { IsValidSastPlanningInput } from './sast-planning-input.validator';
 
 const RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
 const VERSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
@@ -152,18 +153,23 @@ export class PlanSastScanRequestDto {
   tenantId!: string;
 
   @IsObject()
+  @IsValidSastPlanningInput('REPOSITORY_METADATA')
   repositoryMetadata!: TrustedSastRepositoryMetadata;
 
   @IsObject()
+  @IsValidSastPlanningInput('PROFILE_POLICY')
   profilePolicy!: SastProfileSelectionPolicy;
 
   @IsObject()
+  @IsValidSastPlanningInput('SCANNER_SET')
   scannerSet!: ScannerSetDescriptor;
 
   @IsObject()
+  @IsValidSastPlanningInput('QUEUE_POLICY_SET')
   queuePolicySet!: SastQueuePolicySet;
 
   @IsObject()
+  @IsValidSastPlanningInput('QUEUE_USAGE')
   queueUsage!: SastQueueUsageSnapshot;
 
   @IsString()

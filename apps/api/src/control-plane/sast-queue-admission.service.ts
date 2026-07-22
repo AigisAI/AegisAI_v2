@@ -1,9 +1,12 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import {
   evaluateSastQueueAdmission,
+  isSastScanPlanValid,
   type SastQueueAdmissionDecision,
   type SastQueuePolicySet,
-  type SastScanLane
+  type SastScanLane,
+  type SastScanPlan,
+  type SastUserVisiblePlanningState
 } from '@aegisai/shared';
 
 import {
@@ -11,6 +14,7 @@ import {
   type SastQueueDispatchAcknowledgementInput,
   type SastQueueDispatchClaim,
   type SastQueueDispatchClaimInput,
+  type SastQueueDispatchCompletionInput,
   type SastQueueReservationInput,
   type SastQueueReservationRecord
 } from './sast-queue-admission.store';
@@ -20,6 +24,8 @@ const MAX_DISPATCH_LEASE_SECONDS = 300;
 export interface SastQueueAdmissionResult {
   decision: SastQueueAdmissionDecision;
   admittedAt?: string;
+  planning?: SastUserVisiblePlanningState;
+  plan?: SastScanPlan;
 }
 
 @Injectable()
@@ -33,12 +39,15 @@ export class SastQueueAdmissionService {
   async reserveWithContext(
     input: SastQueueReservationInput
   ): Promise<SastQueueAdmissionResult> {
+    this.assertPlanIdentity(input);
     const existingReservation = await this.store.findReservation(input.scanRequestId);
     if (existingReservation) {
       this.assertReservationIdentity(existingReservation, input);
       return {
         decision: this.cloneDecision(existingReservation.decision),
-        admittedAt: existingReservation.enqueuedAt
+        admittedAt: existingReservation.enqueuedAt,
+        planning: this.clonePlanning(existingReservation.planning),
+        plan: this.clonePlan(existingReservation.plan)
       };
     }
 
@@ -58,7 +67,21 @@ export class SastQueueAdmissionService {
       return { decision: evaluated };
     }
 
-    const result = await this.store.reserveAdmitted(input, evaluated);
+    const planning: SastUserVisiblePlanningState = {
+      state: 'ADMITTED',
+      profileId: input.planningContext.profileId,
+      coverageClaim: input.planningContext.coverageClaim,
+      queueName: evaluated.queueName,
+      queuePolicyVersion: evaluated.queuePolicyVersion,
+      queuePolicyDigest: evaluated.queuePolicyDigest,
+      canonicalScanKey: input.canonicalScanKey,
+      reasonCodes: [
+        ...input.planningContext.reasonCodes,
+        ...evaluated.reasonCodes
+      ],
+      updatedAt: this.normalizeTimestamp(input.requestedAt)
+    };
+    const result = await this.store.reserveAdmitted(input, evaluated, planning);
     if (result.state === 'STALE') {
       return { decision: this.staleUsageDecision(input.policySet, input.lane) };
     }
@@ -66,7 +89,9 @@ export class SastQueueAdmissionService {
     this.assertReservationIdentity(result.reservation, input);
     return {
       decision: this.cloneDecision(result.reservation.decision),
-      admittedAt: result.reservation.enqueuedAt
+      admittedAt: result.reservation.enqueuedAt,
+      planning: this.clonePlanning(result.reservation.planning),
+      plan: this.clonePlan(result.reservation.plan)
     };
   }
 
@@ -85,11 +110,12 @@ export class SastQueueAdmissionService {
       throw new BadRequestException('SAST dispatch claim input is invalid.');
     }
 
-    return this.store.claimNextForDispatch({
+    const claim = await this.store.claimNextForDispatch({
       ...input,
       dailyWindowStartedAt: this.normalizeTimestamp(input.dailyWindowStartedAt),
       claimedAt: this.normalizeTimestamp(input.claimedAt)
     });
+    return claim ? { ...claim, plan: this.clonePlan(claim.plan) } : null;
   }
 
   async acknowledgeDispatch(input: SastQueueDispatchAcknowledgementInput): Promise<boolean> {
@@ -107,6 +133,22 @@ export class SastQueueAdmissionService {
     });
   }
 
+  async completeDispatch(input: SastQueueDispatchCompletionInput): Promise<boolean> {
+    if (
+      !this.isNonBlankBounded(input.scanRequestId, 200) ||
+      !this.isNonBlankBounded(input.workerId, 200) ||
+      !this.isIsoTimestamp(input.completedAt) ||
+      !['COMPLETED', 'FAILED', 'CANCELED'].includes(input.terminalStatus)
+    ) {
+      throw new BadRequestException('SAST dispatch completion input is invalid.');
+    }
+
+    return this.store.completeDispatch({
+      ...input,
+      completedAt: this.normalizeTimestamp(input.completedAt)
+    });
+  }
+
   private assertReservationIdentity(
     reservation: SastQueueReservationRecord,
     input: SastQueueReservationInput
@@ -117,7 +159,9 @@ export class SastQueueAdmissionService {
       reservation.tenantId !== input.tenantId ||
       reservation.repositoryBindingId !== input.repositoryBindingId ||
       reservation.queuePolicyVersion !== input.policySet.policyVersion ||
-      reservation.queuePolicyDigest !== input.policySet.digest
+      reservation.queuePolicyDigest !== input.policySet.digest ||
+      reservation.plan.canonicalScanKey !== input.plan.canonicalScanKey ||
+      reservation.planning.canonicalScanKey !== input.canonicalScanKey
     ) {
       throw new ConflictException('An admitted SAST queue reservation is immutable.');
     }
@@ -151,6 +195,36 @@ export class SastQueueAdmissionService {
     return { ...decision, reasonCodes: [...decision.reasonCodes] };
   }
 
+  private clonePlanning(
+    planning: SastUserVisiblePlanningState
+  ): SastUserVisiblePlanningState {
+    return { ...planning, reasonCodes: [...planning.reasonCodes] };
+  }
+
+  private clonePlan(plan: SastScanPlan): SastScanPlan {
+    return this.deepFreeze(structuredClone(plan));
+  }
+
+  private assertPlanIdentity(input: SastQueueReservationInput): void {
+    let validPlan = false;
+    try {
+      validPlan = isSastScanPlanValid(input.plan);
+    } catch {
+      validPlan = false;
+    }
+    if (
+      !validPlan ||
+      input.plan.scanRequestId !== input.scanRequestId ||
+      input.plan.canonicalScanKey !== input.canonicalScanKey ||
+      input.plan.tenantId !== input.tenantId ||
+      input.plan.repositoryState.repositoryBindingId !== input.repositoryBindingId ||
+      input.plan.profile.lane !== input.lane ||
+      input.plan.profile.id !== input.planningContext.profileId
+    ) {
+      throw new BadRequestException('SAST queue plan identity is invalid.');
+    }
+  }
+
   private isUtcDayStart(value: string): boolean {
     if (!this.isIsoTimestamp(value)) {
       return false;
@@ -182,5 +256,16 @@ export class SastQueueAdmissionService {
 
   private normalizeTimestamp(value: string): string {
     return new Date(value).toISOString();
+  }
+
+  private deepFreeze<T>(value: T): T {
+    if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+      for (const nested of Object.values(value)) {
+        this.deepFreeze(nested);
+      }
+      Object.freeze(value);
+    }
+
+    return value;
   }
 }

@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import type {
   ControlPlaneIntegration,
-  InstallRepositoryInput
+  ControlPlaneRepositoryBinding
 } from "./control-plane.types";
 
 @Injectable()
@@ -13,7 +13,7 @@ export class GithubAppInstallationStateService {
 
   async persistInstallation(
     integration: ControlPlaneIntegration,
-    repositories: InstallRepositoryInput[]
+    repositories: ControlPlaneRepositoryBinding[]
   ): Promise<void> {
     await this.upsertTenant(integration.tenantId);
 
@@ -60,7 +60,7 @@ export class GithubAppInstallationStateService {
 
   async reconcileRepositories(
     integration: ControlPlaneIntegration,
-    addedRepositories: InstallRepositoryInput[],
+    addedRepositories: ControlPlaneRepositoryBinding[],
     removedProviderRepoIds: string[],
     event: string,
     action: string
@@ -108,7 +108,7 @@ export class GithubAppInstallationStateService {
 
   private async upsertRepositoryBinding(
     integration: ControlPlaneIntegration,
-    repository: InstallRepositoryInput
+    repository: ControlPlaneRepositoryBinding
   ): Promise<void> {
     await this.prisma.repositoryBinding.upsert({
       where: {
@@ -124,6 +124,7 @@ export class GithubAppInstallationStateService {
         isPrivate: repository.isPrivate
       },
       create: {
+        id: repository.id,
         tenantId: integration.tenantId,
         scmIntegrationId: integration.id,
         providerRepoId: repository.providerRepoId,

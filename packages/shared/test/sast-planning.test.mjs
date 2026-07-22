@@ -19,6 +19,7 @@ test('SAST planning contracts expose trusted metadata, profile, queue, and user-
     'SastScanPlanningResult',
     'selectSastScanProfile',
     'evaluateSastQueueAdmission',
+    'isSastQueueUsageSnapshotValid',
     'orderSastQueueCandidatesFairly',
     'buildSastCanonicalScanKeyPreimage'
   ]) {
@@ -82,6 +83,7 @@ test('canonical scan identity includes fixed source and every executable artifac
   for (const field of [
     'fixedCommitSha',
     'inventoryDigest',
+    'attestationRef',
     'profileDigest',
     'scannerSetDigest',
     'imageDigest',

@@ -24,6 +24,17 @@ describe('production scan architecture contracts', () => {
     join(__dirname, '../../src/control-plane/prisma-sast-queue-admission.store.ts'),
     'utf8'
   );
+  const sastDurabilityMigration = readFileSync(
+    join(
+      __dirname,
+      '../../prisma/migrations/20260722141000_sast_durable_plan_lifecycle/migration.sql'
+    ),
+    'utf8'
+  );
+  const scanRequestStore = readFileSync(
+    join(__dirname, '../../src/control-plane/prisma-control-plane-scan-request.store.ts'),
+    'utf8'
+  );
   const modelBody = (model: string) => {
     const start = schema.indexOf(`model ${model} {`);
     if (start === -1) {
@@ -205,7 +216,19 @@ describe('production scan architecture contracts', () => {
     expect(sastQueueMigration).toContain('"dispatchLeaseExpiresAt" TIMESTAMP(3)');
     expect(sastQueueStore).toContain('Prisma.TransactionIsolationLevel.Serializable');
     expect(sastQueueStore).toContain('orderSastQueueCandidatesFairly');
+    expect(sastQueueStore).toContain('transaction.scanRequest.update');
+    expect(sastQueueStore).toContain('completeDispatch');
     expect(sastQueueStore).not.toMatch(/new Map/);
+    expect(scanRequestStore).toContain('Prisma.TransactionIsolationLevel.Serializable');
+    expect(scanRequestStore).not.toMatch(/new Map/);
+    expect(sastDurabilityMigration).toContain('"sastPlanning" JSONB');
+    expect(sastDurabilityMigration).toContain('"planning" JSONB NOT NULL');
+    expect(sastDurabilityMigration).toContain('"immutablePlan" JSONB NOT NULL');
+    expect(sastDurabilityMigration).toContain('"startedAt" TIMESTAMP(3)');
+    expect(sastDurabilityMigration).toContain('"completedAt" TIMESTAMP(3)');
+    expect(sastDurabilityMigration).toContain(
+      'FOREIGN KEY ("scanRequestId") REFERENCES "ScanRequest"("id")'
+    );
   });
 
   it('ships a deployable Prisma migration for AI advisory metadata', () => {

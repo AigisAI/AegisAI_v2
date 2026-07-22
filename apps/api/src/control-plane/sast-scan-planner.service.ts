@@ -34,7 +34,10 @@ export class SastScanPlannerService {
   ) {}
 
   async plan(input: SastScanPlanningInput): Promise<SastScanPlanningResult> {
-    const scanRequest = this.controlPlaneService.getScanRequest(input.tenantId, input.scanRequestId);
+    const scanRequest = await this.controlPlaneService.getScanRequest(
+      input.tenantId,
+      input.scanRequestId
+    );
 
     if (!this.isIsoTimestamp(input.requestedAt)) {
       throw new BadRequestException('SAST planning requestedAt must be a valid UTC timestamp.');
@@ -128,6 +131,7 @@ export class SastScanPlannerService {
         targetRef: scanRequest.targetRef,
         fixedCommitSha: scanRequest.commitSha,
         inventoryDigest: input.repositoryMetadata.inventoryDigest,
+        attestationRef: input.repositoryMetadata.attestationRef,
         policyVersion: scanRequest.policyVersion,
         profile: profileSelection.profile,
         profileDigest,
@@ -136,7 +140,7 @@ export class SastScanPlannerService {
       })
     );
 
-    this.controlPlaneService.assertSastQueueReservationAllowed(
+    await this.controlPlaneService.assertSastQueueReservationAllowed(
       scanRequest.tenantId,
       scanRequest.id,
       canonicalScanKey
@@ -153,6 +157,7 @@ export class SastScanPlannerService {
       input.scannerSet,
       isolationClass,
       input.repositoryMetadata.inventoryDigest,
+      input.repositoryMetadata.attestationRef,
       planCreatedAt
     );
 
@@ -174,7 +179,13 @@ export class SastScanPlannerService {
       repositoryBindingId: scanRequest.repositoryBindingId,
       requestedAt,
       policySet: input.queuePolicySet,
-      usage: input.queueUsage
+      usage: input.queueUsage,
+      plan,
+      planningContext: {
+        profileId: profileSelection.profile.id,
+        coverageClaim: profileSelection.coverageClaim,
+        reasonCodes: [...profileSelection.reasonCodes]
+      }
     });
     const queueAdmission = queueAdmissionResult.decision;
     const planningUpdatedAt =
@@ -182,26 +193,37 @@ export class SastScanPlannerService {
         ? (queueAdmissionResult.admittedAt ?? requestedAt)
         : requestedAt;
 
-    const planning: SastUserVisiblePlanningState = {
-      state: queueAdmission.state,
-      profileId: profileSelection.profile.id,
-      coverageClaim: profileSelection.coverageClaim,
-      queueName: queueAdmission.queueName,
-      queuePolicyVersion: queueAdmission.queuePolicyVersion,
-      queuePolicyDigest: queueAdmission.queuePolicyDigest,
-      canonicalScanKey,
-      reasonCodes: [...profileSelection.reasonCodes, ...queueAdmission.reasonCodes],
-      retryAfterSeconds: queueAdmission.retryAfterSeconds,
-      updatedAt: planningUpdatedAt
-    };
-    const recordedRequest = this.controlPlaneService.recordSastPlanningState(
+    if (
+      queueAdmission.state === 'ADMITTED' &&
+      (!queueAdmissionResult.planning || !queueAdmissionResult.plan)
+    ) {
+      throw new Error('Admitted SAST queue reservation is missing its immutable plan.');
+    }
+    const planning: SastUserVisiblePlanningState =
+      queueAdmission.state === 'ADMITTED'
+        ? queueAdmissionResult.planning!
+        : {
+            state: queueAdmission.state,
+            profileId: profileSelection.profile.id,
+            coverageClaim: profileSelection.coverageClaim,
+            queueName: queueAdmission.queueName,
+            queuePolicyVersion: queueAdmission.queuePolicyVersion,
+            queuePolicyDigest: queueAdmission.queuePolicyDigest,
+            canonicalScanKey,
+            reasonCodes: [...profileSelection.reasonCodes, ...queueAdmission.reasonCodes],
+            retryAfterSeconds: queueAdmission.retryAfterSeconds,
+            updatedAt: planningUpdatedAt
+          };
+    const recordedRequest = await this.controlPlaneService.recordSastPlanningState(
       scanRequest.tenantId,
       scanRequest.id,
       planning
     );
     const recordedPlanning = recordedRequest.sastPlanning ?? planning;
     const recordedPlan =
-      recordedPlanning.state === 'REJECTED'
+      recordedPlanning.state === 'ADMITTED'
+        ? queueAdmissionResult.plan
+        : recordedPlanning.state === 'REJECTED'
         ? undefined
         : recordedPlanning.updatedAt === plan.createdAt
           ? plan
@@ -213,6 +235,7 @@ export class SastScanPlannerService {
               input.scannerSet,
               isolationClass,
               input.repositoryMetadata.inventoryDigest,
+              input.repositoryMetadata.attestationRef,
               recordedPlanning.updatedAt
             );
 
@@ -233,6 +256,7 @@ export class SastScanPlannerService {
     scannerSet: ScannerSetDescriptor,
     isolationClass: 'HARDENED' | 'RESTRICTED',
     inventoryDigest: `sha256:${string}`,
+    attestationRef: string,
     createdAt: string
   ): SastScanPlan {
     const tenantScope = encodeURIComponent(scanRequest.tenantId);
@@ -252,6 +276,7 @@ export class SastScanPlannerService {
         fixedCommitSha: scanRequest.commitSha.toLowerCase(),
         targetRef: scanRequest.targetRef,
         inventoryDigest,
+        attestationRef,
         shallowFetchPreferred: true,
         submodulesEnabled: false,
         lfsObjectsFetched: false
@@ -317,13 +342,13 @@ export class SastScanPlannerService {
     return Array.from(new Set(reasonCodes));
   }
 
-  private reject(
+  private async reject(
     scanRequest: ControlPlaneScanRequest,
     updatedAt: string,
     reasonCodes: SastPlanningReasonCode | SastPlanningReasonCode[],
     coverageClaim: SastCoverageClaim = 'NONE',
     profile?: SastScanProfile
-  ): SastScanPlanningResult {
+  ): Promise<SastScanPlanningResult> {
     const planning: SastUserVisiblePlanningState = {
       state: 'REJECTED',
       profileId: profile?.id,
@@ -331,7 +356,7 @@ export class SastScanPlannerService {
       reasonCodes: Array.isArray(reasonCodes) ? [...reasonCodes] : [reasonCodes],
       updatedAt
     };
-    const recordedRequest = this.controlPlaneService.recordSastPlanningState(
+    const recordedRequest = await this.controlPlaneService.recordSastPlanningState(
       scanRequest.tenantId,
       scanRequest.id,
       planning

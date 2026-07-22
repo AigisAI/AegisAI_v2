@@ -1,6 +1,8 @@
 import {
   orderSastQueueCandidatesFairly,
-  type SastQueueAdmissionDecision
+  type SastQueueAdmissionDecision,
+  type SastScanPlan,
+  type SastUserVisiblePlanningState
 } from '@aegisai/shared';
 
 import {
@@ -8,6 +10,7 @@ import {
   type SastQueueDispatchAcknowledgementInput,
   type SastQueueDispatchClaim,
   type SastQueueDispatchClaimInput,
+  type SastQueueDispatchCompletionInput,
   type SastQueueReservationInput,
   type SastQueueReservationRecord,
   type SastQueueReservationWriteResult
@@ -36,6 +39,8 @@ interface ReservationState extends SastQueueReservationRecord {
   dispatchLeaseOwner?: string;
   dispatchLeaseExpiresAt?: string;
   publishedAt?: string;
+  completedAt?: string;
+  terminalStatus?: 'COMPLETED' | 'FAILED' | 'CANCELED';
 }
 
 export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
@@ -50,7 +55,8 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
 
   async reserveAdmitted(
     input: SastQueueReservationInput,
-    decision: SastQueueAdmissionDecision
+    decision: SastQueueAdmissionDecision,
+    planning: SastUserVisiblePlanningState
   ): Promise<SastQueueReservationWriteResult> {
     return this.exclusive(() => {
       const existing = this.reservations.get(input.scanRequestId);
@@ -116,7 +122,9 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
         queuePolicyDigest: input.policySet.digest,
         dailyWindowStartedAt,
         enqueuedAt: this.normalizeTimestamp(input.requestedAt),
-        decision: storedDecision
+        decision: storedDecision,
+        planning: this.clonePlanning(planning),
+        plan: this.clonePlan(input.plan)
       };
       this.reservations.set(input.scanRequestId, reservation);
 
@@ -201,7 +209,61 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
         return false;
       }
 
+      const ledger = this.ledgers.get(
+        this.ledgerKey(reservation.lane, reservation.dailyWindowStartedAt)
+      );
+      const tenantUsage = ledger?.tenants.get(reservation.tenantId);
+      const repositoryUsage = ledger?.repositories.get(
+        this.repositoryKey(reservation.tenantId, reservation.repositoryBindingId)
+      );
+      if (!ledger || !tenantUsage || !repositoryUsage || tenantUsage.queuedForTenant < 1) {
+        throw new Error('Test SAST queue usage cannot transition to active.');
+      }
+      ledger.queuedInLane -= 1;
+      ledger.snapshotVersion += 1;
+      tenantUsage.queuedForTenant -= 1;
+      tenantUsage.activeForTenant += 1;
+      repositoryUsage.activeForRepository += 1;
       reservation.publishedAt = this.normalizeTimestamp(input.acknowledgedAt);
+      return true;
+    });
+  }
+
+  async completeDispatch(input: SastQueueDispatchCompletionInput): Promise<boolean> {
+    return this.exclusive(() => {
+      const reservation = this.reservations.get(input.scanRequestId);
+      if (!reservation || reservation.dispatchLeaseOwner !== input.workerId) {
+        return false;
+      }
+      if (reservation.completedAt !== undefined) {
+        return reservation.terminalStatus === input.terminalStatus;
+      }
+      if (reservation.publishedAt === undefined) {
+        return false;
+      }
+
+      const ledger = this.ledgers.get(
+        this.ledgerKey(reservation.lane, reservation.dailyWindowStartedAt)
+      );
+      const tenantUsage = ledger?.tenants.get(reservation.tenantId);
+      const repositoryUsage = ledger?.repositories.get(
+        this.repositoryKey(reservation.tenantId, reservation.repositoryBindingId)
+      );
+      if (
+        !ledger ||
+        !tenantUsage ||
+        tenantUsage.activeForTenant < 1 ||
+        !repositoryUsage ||
+        repositoryUsage.activeForRepository < 1
+      ) {
+        throw new Error('Test SAST queue usage cannot transition to terminal.');
+      }
+
+      reservation.completedAt = this.normalizeTimestamp(input.completedAt);
+      reservation.terminalStatus = input.terminalStatus;
+      ledger.snapshotVersion += 1;
+      tenantUsage.activeForTenant -= 1;
+      repositoryUsage.activeForRepository -= 1;
       return true;
     });
   }
@@ -273,7 +335,8 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       queuePolicyDigest: reservation.queuePolicyDigest,
       enqueuedAt: reservation.enqueuedAt,
       leaseOwner: reservation.dispatchLeaseOwner,
-      leaseExpiresAt: reservation.dispatchLeaseExpiresAt
+      leaseExpiresAt: reservation.dispatchLeaseExpiresAt,
+      plan: this.clonePlan(reservation.plan)
     };
   }
 
@@ -288,12 +351,24 @@ export class InMemorySastQueueAdmissionStore extends SastQueueAdmissionStore {
       queuePolicyDigest: reservation.queuePolicyDigest,
       dailyWindowStartedAt: reservation.dailyWindowStartedAt,
       enqueuedAt: reservation.enqueuedAt,
-      decision: this.cloneDecision(reservation.decision)
+      decision: this.cloneDecision(reservation.decision),
+      planning: this.clonePlanning(reservation.planning),
+      plan: this.clonePlan(reservation.plan)
     };
   }
 
   private cloneDecision(decision: SastQueueAdmissionDecision): SastQueueAdmissionDecision {
     return { ...decision, reasonCodes: [...decision.reasonCodes] };
+  }
+
+  private clonePlanning(
+    planning: SastUserVisiblePlanningState
+  ): SastUserVisiblePlanningState {
+    return { ...planning, reasonCodes: [...planning.reasonCodes] };
+  }
+
+  private clonePlan(plan: SastScanPlan): SastScanPlan {
+    return structuredClone(plan);
   }
 
   private compareReservations(left: ReservationState, right: ReservationState): number {

@@ -330,6 +330,7 @@ model ScanRequest {
   canonicalKey        String                 @unique
   status              ArchitectureScanStatus @default(QUEUED)
   isolationClass      IsolationClass         @default(STANDARD)
+  sastPlanning        Json?
   createdAt           DateTime               @default(now())
   startedAt           DateTime?
   completedAt         DateTime?
@@ -344,6 +345,7 @@ model ScanRequest {
   aiAdvisoryMetadata AiAdvisoryMetadata[]
   suppressions      Suppression[]
   auditEvents       AuditEvent[]
+  sastQueueReservation SastQueueReservation?
 
   @@index([tenantId])
   @@index([repositoryBindingId])
@@ -409,19 +411,26 @@ model SastQueueReservation {
   queuePolicyVersion     String
   queuePolicyDigest      String
   decision               Json
+  planning               Json
+  immutablePlan          Json
   enqueuedAt             DateTime
   dispatchLeaseOwner     String?
   dispatchLeaseExpiresAt DateTime?
   dispatchAttempt        Int       @default(0)
   publishedAt            DateTime?
+  startedAt              DateTime?
+  completedAt            DateTime?
+  terminalStatus         ArchitectureScanStatus?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
   ledger SastQueueLedger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest @relation(fields: [scanRequestId], references: [id], onDelete: Restrict)
 
   @@index([ledgerId, publishedAt, enqueuedAt])
   @@index([tenantId, lane, enqueuedAt])
   @@index([dispatchLeaseExpiresAt])
+  @@index([completedAt])
 }
 
 model ScannerRun {

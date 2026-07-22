@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  SAST_COVERAGE_CLAIMS,
   SAST_PLANNING_REASON_CODES,
+  SAST_PLANNING_STATES,
+  SAST_PROFILE_IDS,
+  isSastScanPlanValid,
   orderSastQueueCandidatesFairly,
   type SastPlanningReasonCode,
-  type SastQueueAdmissionDecision
+  type SastQueueAdmissionDecision,
+  type SastScanPlan,
+  type SastUserVisiblePlanningState
 } from '@aegisai/shared';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,6 +19,7 @@ import {
   type SastQueueDispatchAcknowledgementInput,
   type SastQueueDispatchClaim,
   type SastQueueDispatchClaimInput,
+  type SastQueueDispatchCompletionInput,
   type SastQueueReservationInput,
   type SastQueueReservationRecord,
   type SastQueueReservationWriteResult
@@ -20,6 +27,7 @@ import {
 
 interface PersistedReservationRow {
   scanRequestId: string;
+  ledgerId: string;
   canonicalScanKey: string;
   lane: 'FAST' | 'DEEP';
   tenantId: string;
@@ -28,8 +36,14 @@ interface PersistedReservationRow {
   queuePolicyDigest: string;
   enqueuedAt: Date;
   decision: Prisma.JsonValue;
+  planning: Prisma.JsonValue;
+  immutablePlan: Prisma.JsonValue;
   dispatchLeaseOwner: string | null;
   dispatchLeaseExpiresAt: Date | null;
+  publishedAt: Date | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  terminalStatus: string | null;
 }
 
 class RetryableDispatchClaimConflict extends Error {}
@@ -53,8 +67,10 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
 
   async reserveAdmitted(
     input: SastQueueReservationInput,
-    decision: SastQueueAdmissionDecision
+    decision: SastQueueAdmissionDecision,
+    planning: SastUserVisiblePlanningState
   ): Promise<SastQueueReservationWriteResult> {
+    this.assertAdmissionWriteIdentity(input, decision, planning);
     return this.runSerializable(async (transaction) => {
       const existing = await transaction.sastQueueReservation.findUnique({
         where: { scanRequestId: input.scanRequestId },
@@ -62,6 +78,35 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       });
       if (existing) {
         return { state: 'EXISTING', reservation: this.toReservationRecord(existing) };
+      }
+
+      const scanRequest = await transaction.scanRequest.findUnique({
+        where: { id: input.scanRequestId }
+      });
+      if (!scanRequest || scanRequest.tenantId !== input.tenantId) {
+        throw new NotFoundException('Durable scan request not found for queue admission.');
+      }
+      if (
+        scanRequest.repositoryBindingId !== input.repositoryBindingId ||
+        scanRequest.lane !== input.lane ||
+        (scanRequest.status !== 'QUEUED' && scanRequest.status !== 'PLANNING')
+      ) {
+        throw new ConflictException('Durable scan request is not eligible for queue admission.');
+      }
+      if (scanRequest.sastPlanning !== null) {
+        const existingPlanning = this.parsePlanning(scanRequest.sastPlanning);
+        if (
+          existingPlanning.canonicalScanKey &&
+          existingPlanning.canonicalScanKey !== input.canonicalScanKey
+        ) {
+          throw new ConflictException('SAST canonical planning identity is immutable.');
+        }
+        if (
+          existingPlanning.state === 'ADMITTED' &&
+          !this.isEquivalentPlanning(existingPlanning, planning)
+        ) {
+          throw new ConflictException('An admitted SAST planning decision is immutable.');
+        }
       }
 
       const dailyWindowStartedAt = this.normalizeDate(input.usage.dailyWindowStartedAt);
@@ -164,7 +209,16 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
           queuePolicyVersion: input.policySet.policyVersion,
           queuePolicyDigest: input.policySet.digest,
           enqueuedAt: requestedAt,
-          decision: this.toJson(decision)
+          decision: this.toJson(decision),
+          planning: this.toJson(planning),
+          immutablePlan: this.toJson(input.plan)
+        }
+      });
+      await transaction.scanRequest.update({
+        where: { id: input.scanRequestId },
+        data: {
+          sastPlanning: this.toJson(planning),
+          status: 'QUEUED'
         }
       });
 
@@ -180,7 +234,9 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
           queuePolicyDigest: input.policySet.digest,
           dailyWindowStartedAt: dailyWindowStartedAt.toISOString(),
           enqueuedAt: requestedAt.toISOString(),
-          decision: this.cloneDecision(decision)
+          decision: this.cloneDecision(decision),
+          planning: this.clonePlanning(planning),
+          plan: this.clonePlan(input.plan)
         }
       };
     });
@@ -289,6 +345,38 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
         return false;
       }
 
+      const [ledger, tenantUsage, repositoryUsage] = await Promise.all([
+        transaction.sastQueueLedger.findUnique({
+          where: { id: reservation.ledgerId }
+        }),
+        transaction.sastQueueTenantUsage.findUnique({
+          where: {
+            ledgerId_tenantId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId
+            }
+          }
+        }),
+        transaction.sastQueueRepositoryUsage.findUnique({
+          where: {
+            ledgerId_tenantId_repositoryBindingId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId,
+              repositoryBindingId: reservation.repositoryBindingId
+            }
+          }
+        })
+      ]);
+      if (
+        !ledger ||
+        ledger.queuedInLane < 1 ||
+        !tenantUsage ||
+        tenantUsage.queuedForTenant < 1 ||
+        !repositoryUsage
+      ) {
+        throw new Error('Persisted SAST queue usage cannot transition to active.');
+      }
+
       const acknowledged = await transaction.sastQueueReservation.updateMany({
         where: {
           scanRequestId: input.scanRequestId,
@@ -296,10 +384,144 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
           publishedAt: null,
           dispatchLeaseExpiresAt: { gte: acknowledgedAt }
         },
-        data: { publishedAt: acknowledgedAt }
+        data: { publishedAt: acknowledgedAt, startedAt: acknowledgedAt }
       });
 
-      return acknowledged.count === 1;
+      if (acknowledged.count !== 1) {
+        throw new RetryableDispatchClaimConflict();
+      }
+
+      await Promise.all([
+        transaction.sastQueueLedger.update({
+          where: { id: reservation.ledgerId },
+          data: {
+            queuedInLane: { decrement: 1 },
+            snapshotVersion: { increment: 1 }
+          }
+        }),
+        transaction.sastQueueTenantUsage.update({
+          where: {
+            ledgerId_tenantId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId
+            }
+          },
+          data: {
+            queuedForTenant: { decrement: 1 },
+            activeForTenant: { increment: 1 }
+          }
+        }),
+        transaction.sastQueueRepositoryUsage.update({
+          where: {
+            ledgerId_tenantId_repositoryBindingId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId,
+              repositoryBindingId: reservation.repositoryBindingId
+            }
+          },
+          data: { activeForRepository: { increment: 1 } }
+        }),
+        transaction.scanRequest.update({
+          where: { id: reservation.scanRequestId },
+          data: { status: 'RUNNING', startedAt: acknowledgedAt }
+        })
+      ]);
+
+      return true;
+    });
+  }
+
+  async completeDispatch(input: SastQueueDispatchCompletionInput): Promise<boolean> {
+    return this.runSerializable(async (transaction) => {
+      const completedAt = this.normalizeDate(input.completedAt);
+      const reservation = await transaction.sastQueueReservation.findUnique({
+        where: { scanRequestId: input.scanRequestId }
+      });
+      if (!reservation || reservation.dispatchLeaseOwner !== input.workerId) {
+        return false;
+      }
+      if (reservation.completedAt) {
+        return reservation.terminalStatus === input.terminalStatus;
+      }
+      if (!reservation.publishedAt || !reservation.startedAt) {
+        return false;
+      }
+
+      const [tenantUsage, repositoryUsage] = await Promise.all([
+        transaction.sastQueueTenantUsage.findUnique({
+          where: {
+            ledgerId_tenantId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId
+            }
+          }
+        }),
+        transaction.sastQueueRepositoryUsage.findUnique({
+          where: {
+            ledgerId_tenantId_repositoryBindingId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId,
+              repositoryBindingId: reservation.repositoryBindingId
+            }
+          }
+        })
+      ]);
+      if (
+        !tenantUsage ||
+        tenantUsage.activeForTenant < 1 ||
+        !repositoryUsage ||
+        repositoryUsage.activeForRepository < 1
+      ) {
+        throw new Error('Persisted SAST queue usage cannot transition to terminal.');
+      }
+
+      const completed = await transaction.sastQueueReservation.updateMany({
+        where: {
+          scanRequestId: input.scanRequestId,
+          dispatchLeaseOwner: input.workerId,
+          publishedAt: { not: null },
+          completedAt: null
+        },
+        data: {
+          completedAt,
+          terminalStatus: input.terminalStatus
+        }
+      });
+      if (completed.count !== 1) {
+        throw new RetryableDispatchClaimConflict();
+      }
+
+      await Promise.all([
+        transaction.sastQueueLedger.update({
+          where: { id: reservation.ledgerId },
+          data: { snapshotVersion: { increment: 1 } }
+        }),
+        transaction.sastQueueTenantUsage.update({
+          where: {
+            ledgerId_tenantId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId
+            }
+          },
+          data: { activeForTenant: { decrement: 1 } }
+        }),
+        transaction.sastQueueRepositoryUsage.update({
+          where: {
+            ledgerId_tenantId_repositoryBindingId: {
+              ledgerId: reservation.ledgerId,
+              tenantId: reservation.tenantId,
+              repositoryBindingId: reservation.repositoryBindingId
+            }
+          },
+          data: { activeForRepository: { decrement: 1 } }
+        }),
+        transaction.scanRequest.update({
+          where: { id: reservation.scanRequestId },
+          data: { status: input.terminalStatus, completedAt }
+        })
+      ]);
+
+      return true;
     });
   }
 
@@ -379,7 +601,9 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
     }
   ): SastQueueReservationRecord {
     const decision = this.parseDecision(reservation.decision);
-    this.assertPersistedAdmissionIdentity(reservation, decision);
+    const planning = this.parsePlanning(reservation.planning);
+    const plan = this.parsePlan(reservation.immutablePlan);
+    this.assertPersistedAdmissionIdentity(reservation, decision, planning, plan);
     if (reservation.ledger.lane !== reservation.lane) {
       throw new Error('Persisted SAST queue ledger lane is invalid.');
     }
@@ -394,13 +618,17 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       queuePolicyDigest: this.asDigest(reservation.queuePolicyDigest),
       dailyWindowStartedAt: reservation.ledger.dailyWindowStartedAt.toISOString(),
       enqueuedAt: reservation.enqueuedAt.toISOString(),
-      decision
+      decision,
+      planning,
+      plan
     };
   }
 
   private toDispatchClaim(reservation: PersistedReservationRow): SastQueueDispatchClaim {
     const decision = this.parseDecision(reservation.decision);
-    this.assertPersistedAdmissionIdentity(reservation, decision);
+    const planning = this.parsePlanning(reservation.planning);
+    const plan = this.parsePlan(reservation.immutablePlan);
+    this.assertPersistedAdmissionIdentity(reservation, decision, planning, plan);
     if (
       !decision.queueName ||
       !reservation.dispatchLeaseOwner ||
@@ -420,13 +648,16 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       queuePolicyDigest: this.asDigest(reservation.queuePolicyDigest),
       enqueuedAt: reservation.enqueuedAt.toISOString(),
       leaseOwner: reservation.dispatchLeaseOwner,
-      leaseExpiresAt: reservation.dispatchLeaseExpiresAt.toISOString()
+      leaseExpiresAt: reservation.dispatchLeaseExpiresAt.toISOString(),
+      plan
     };
   }
 
   private assertPersistedAdmissionIdentity(
     reservation: PersistedReservationRow,
-    decision: SastQueueAdmissionDecision
+    decision: SastQueueAdmissionDecision,
+    planning: SastUserVisiblePlanningState,
+    plan: SastScanPlan
   ): void {
     const expectedQueueName =
       reservation.lane === 'FAST' ? 'scan.fast.v1' : 'scan.deep.v1';
@@ -437,10 +668,81 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       decision.queuePolicyVersion !== reservation.queuePolicyVersion ||
       decision.queuePolicyDigest !== reservation.queuePolicyDigest ||
       decision.reasonCodes.length !== 0 ||
-      decision.retryAfterSeconds !== undefined
+      decision.retryAfterSeconds !== undefined ||
+      planning.state !== 'ADMITTED' ||
+      planning.profileId !== plan.profile.id ||
+      planning.canonicalScanKey !== reservation.canonicalScanKey ||
+      planning.queueName !== expectedQueueName ||
+      planning.queuePolicyVersion !== reservation.queuePolicyVersion ||
+      planning.queuePolicyDigest !== reservation.queuePolicyDigest ||
+      plan.scanRequestId !== reservation.scanRequestId ||
+      plan.canonicalScanKey !== reservation.canonicalScanKey ||
+      plan.tenantId !== reservation.tenantId ||
+      plan.repositoryState.repositoryBindingId !== reservation.repositoryBindingId ||
+      plan.profile.lane !== reservation.lane
     ) {
       throw new Error('Persisted SAST queue admission identity is invalid.');
     }
+  }
+
+  private assertAdmissionWriteIdentity(
+    input: SastQueueReservationInput,
+    decision: SastQueueAdmissionDecision,
+    planning: SastUserVisiblePlanningState
+  ): void {
+    let validPlan = false;
+    try {
+      validPlan = isSastScanPlanValid(input.plan);
+    } catch {
+      validPlan = false;
+    }
+    const expectedQueueName = input.lane === 'FAST' ? 'scan.fast.v1' : 'scan.deep.v1';
+    if (
+      !validPlan ||
+      input.plan.scanRequestId !== input.scanRequestId ||
+      input.plan.canonicalScanKey !== input.canonicalScanKey ||
+      input.plan.tenantId !== input.tenantId ||
+      input.plan.repositoryState.repositoryBindingId !== input.repositoryBindingId ||
+      input.plan.profile.lane !== input.lane ||
+      decision.state !== 'ADMITTED' ||
+      decision.queueName !== expectedQueueName ||
+      decision.fairnessKey !== input.tenantId ||
+      decision.queuePolicyVersion !== input.policySet.policyVersion ||
+      decision.queuePolicyDigest !== input.policySet.digest ||
+      decision.reasonCodes.length !== 0 ||
+      decision.retryAfterSeconds !== undefined ||
+      planning.state !== 'ADMITTED' ||
+      planning.profileId !== input.plan.profile.id ||
+      !(SAST_COVERAGE_CLAIMS as readonly string[]).includes(planning.coverageClaim) ||
+      !planning.reasonCodes.every((reasonCode) =>
+        (SAST_PLANNING_REASON_CODES as readonly string[]).includes(reasonCode)
+      ) ||
+      !Number.isFinite(Date.parse(planning.updatedAt)) ||
+      planning.canonicalScanKey !== input.canonicalScanKey ||
+      planning.queueName !== expectedQueueName ||
+      planning.queuePolicyVersion !== input.policySet.policyVersion ||
+      planning.queuePolicyDigest !== input.policySet.digest
+    ) {
+      throw new ConflictException('SAST admitted reservation payload is invalid.');
+    }
+  }
+
+  private isEquivalentPlanning(
+    left: SastUserVisiblePlanningState,
+    right: SastUserVisiblePlanningState
+  ): boolean {
+    return (
+      left.state === right.state &&
+      left.profileId === right.profileId &&
+      left.coverageClaim === right.coverageClaim &&
+      left.queueName === right.queueName &&
+      left.queuePolicyVersion === right.queuePolicyVersion &&
+      left.queuePolicyDigest === right.queuePolicyDigest &&
+      left.canonicalScanKey === right.canonicalScanKey &&
+      left.retryAfterSeconds === right.retryAfterSeconds &&
+      left.reasonCodes.length === right.reasonCodes.length &&
+      left.reasonCodes.every((reasonCode, index) => reasonCode === right.reasonCodes[index])
+    );
   }
 
   private parseDecision(value: Prisma.JsonValue): SastQueueAdmissionDecision {
@@ -487,12 +789,92 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
     };
   }
 
+  private parsePlanning(value: Prisma.JsonValue): SastUserVisiblePlanningState {
+    if (!value || Array.isArray(value) || typeof value !== 'object') {
+      throw new Error('Persisted SAST planning state is invalid.');
+    }
+    const candidate = value as Record<string, Prisma.JsonValue>;
+    const reasonCodes = candidate.reasonCodes;
+    if (
+      typeof candidate.state !== 'string' ||
+      !(SAST_PLANNING_STATES as readonly string[]).includes(candidate.state) ||
+      typeof candidate.coverageClaim !== 'string' ||
+      !(SAST_COVERAGE_CLAIMS as readonly string[]).includes(candidate.coverageClaim) ||
+      !Array.isArray(reasonCodes) ||
+      !reasonCodes.every(
+        (reasonCode): reasonCode is SastPlanningReasonCode =>
+          typeof reasonCode === 'string' &&
+          (SAST_PLANNING_REASON_CODES as readonly string[]).includes(reasonCode)
+      ) ||
+      typeof candidate.updatedAt !== 'string' ||
+      !Number.isFinite(Date.parse(candidate.updatedAt))
+    ) {
+      throw new Error('Persisted SAST planning state is invalid.');
+    }
+
+    return {
+      state: candidate.state as SastUserVisiblePlanningState['state'],
+      profileId:
+        typeof candidate.profileId === 'string' &&
+        (SAST_PROFILE_IDS as readonly string[]).includes(candidate.profileId)
+          ? (candidate.profileId as SastUserVisiblePlanningState['profileId'])
+          : undefined,
+      coverageClaim: candidate.coverageClaim as SastUserVisiblePlanningState['coverageClaim'],
+      queueName:
+        candidate.queueName === 'scan.fast.v1' || candidate.queueName === 'scan.deep.v1'
+          ? candidate.queueName
+          : undefined,
+      queuePolicyVersion:
+        typeof candidate.queuePolicyVersion === 'string'
+          ? candidate.queuePolicyVersion
+          : undefined,
+      queuePolicyDigest:
+        typeof candidate.queuePolicyDigest === 'string'
+          ? this.asDigest(candidate.queuePolicyDigest)
+          : undefined,
+      canonicalScanKey:
+        typeof candidate.canonicalScanKey === 'string'
+          ? this.asDigest(candidate.canonicalScanKey)
+          : undefined,
+      reasonCodes: [...reasonCodes],
+      retryAfterSeconds:
+        typeof candidate.retryAfterSeconds === 'number'
+          ? candidate.retryAfterSeconds
+          : undefined,
+      updatedAt: new Date(candidate.updatedAt).toISOString()
+    };
+  }
+
+  private parsePlan(value: Prisma.JsonValue): SastScanPlan {
+    const plan = structuredClone(value) as unknown as SastScanPlan;
+    let valid = false;
+    try {
+      valid = isSastScanPlanValid(plan);
+    } catch {
+      valid = false;
+    }
+    if (!valid) {
+      throw new Error('Persisted immutable SAST scan plan is invalid.');
+    }
+    return plan;
+  }
+
   private cloneDecision(decision: SastQueueAdmissionDecision): SastQueueAdmissionDecision {
     return { ...decision, reasonCodes: [...decision.reasonCodes] };
   }
 
-  private toJson(decision: SastQueueAdmissionDecision): Prisma.InputJsonValue {
-    return JSON.parse(JSON.stringify(decision)) as Prisma.InputJsonValue;
+  private clonePlanning(
+    planning: SastUserVisiblePlanningState
+  ): SastUserVisiblePlanningState {
+    return { ...planning, reasonCodes: [...planning.reasonCodes] };
+  }
+
+  private clonePlan(plan: SastScanPlan): SastScanPlan {
+    return structuredClone(plan);
+  }
+
+  private toJson(value: unknown): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
   }
 
   private asDigest(value: string): `sha256:${string}` {

@@ -105,7 +105,7 @@ Immutable execution plan produced from `ScanRequest`.
 - `canonicalScanKey`
 - `repositoryBindingId`
 - fixed commit SHA and contextual target ref
-- trusted inventory digest used for deterministic selection
+- trusted inventory digest and signed preflight attestation reference used for deterministic selection
 - profile snapshot and digest
 - scanner-set snapshot and digest
 - tenant rule-policy version
@@ -148,14 +148,17 @@ scan/canonical-key reservation and advances the counters/version atomically. Sta
 retryable and cannot be admitted. The production ledger is shared across replicas and cannot be
 implemented as an independent per-pod cache. PostgreSQL persists this boundary as
 `SastQueueLedger`, `SastQueueTenantUsage`, `SastQueueRepositoryUsage`, and
-`SastQueueReservation`. The lane/day timestamp is normalized before identity selection, and
+`SastQueueReservation`. The immutable `ScanRequest` and reduced planning state are durable rather
+than process-local. The lane/day timestamp is normalized before identity selection, and
 serializable transactions make ledger initialization, counter comparison, reservation creation,
 and version advancement one atomic operation.
 
-The reservation row is also the durable pending-dispatch record. It stores no source or credential
-material. A shared `lastServedTenantId` cursor selects the oldest eligible reservation by tenant
-round robin; bounded owner/expiry fields make dispatch claims recoverable, and `publishedAt` records
-successful acknowledgement without deleting the immutable admission identity.
+The reservation row is also the durable pending-dispatch record. It stores the admitted planning
+state and complete immutable `SastScanPlan`, but no source or credential material, and has a
+restrictive foreign key to the durable scan request. A shared `lastServedTenantId` cursor selects the
+oldest eligible reservation by tenant round robin; bounded owner/expiry fields make dispatch claims
+recoverable. `publishedAt`/`startedAt`, `completedAt`, and terminal status make queued-to-active-to-
+terminal counter transitions transactional and idempotent without deleting the admission identity.
 
 ### SastPlanningState
 

@@ -36,12 +36,12 @@ import type {
 import { GithubAppInstallationClient } from "./github-app-installation.client";
 import { GithubAppInstallationStateService } from "./github-app-installation-state.service";
 import { GitlabCloudIntegrationClient } from "./gitlab-cloud-integration.client";
+import { ControlPlaneScanRequestStore } from './control-plane-scan-request.store';
 
 @Injectable()
 export class ControlPlaneService {
   private readonly integrations = new Map<string, ControlPlaneIntegration>();
   private readonly repositoryBindings = new Map<string, ControlPlaneRepositoryBinding>();
-  private readonly scanRequests = new Map<string, ControlPlaneScanRequest>();
   private readonly commentDispatchPlans = new Map<string, CommentDispatchPlan>();
   private readonly commentDispatchOutboxItems = new Map<string, CommentDispatchOutboxItem>();
   private readonly commentDispatchAuditEvents: CommentDispatchAuditEvent[] = [];
@@ -53,7 +53,8 @@ export class ControlPlaneService {
   constructor(
     private readonly githubAppInstallationClient: GithubAppInstallationClient,
     private readonly githubAppInstallationState: GithubAppInstallationStateService,
-    private readonly gitlabCloudIntegrationClient: GitlabCloudIntegrationClient
+    private readonly gitlabCloudIntegrationClient: GitlabCloudIntegrationClient,
+    private readonly scanRequestStore: ControlPlaneScanRequestStore
   ) {}
 
   async installGithubAppIntegration(input: InstallIntegrationInput): Promise<ControlPlaneIntegration> {
@@ -72,7 +73,12 @@ export class ControlPlaneService {
       }
     );
 
-    await this.githubAppInstallationState.persistInstallation(integration, repositories);
+    await this.githubAppInstallationState.persistInstallation(
+      integration,
+      this.listRepositoryBindings(integration.tenantId).filter(
+        (binding) => binding.scmIntegrationId === integration.id
+      )
+    );
 
     return integration;
   }
@@ -185,9 +191,9 @@ export class ControlPlaneService {
       (repository) => repository.providerRepoId
     );
 
-    for (const repository of addedRepositories) {
-      this.upsertRepositoryBinding(integration, repository);
-    }
+    const addedBindings = addedRepositories.map((repository) =>
+      this.upsertRepositoryBinding(integration, repository)
+    );
 
     for (const providerRepoId of removedProviderRepoIds) {
       this.removeRepositoryBinding(integration, providerRepoId);
@@ -195,7 +201,7 @@ export class ControlPlaneService {
 
     await this.githubAppInstallationState.reconcileRepositories(
       integration,
-      addedRepositories,
+      addedBindings,
       removedProviderRepoIds,
       event,
       input.action
@@ -211,10 +217,14 @@ export class ControlPlaneService {
     };
   }
 
-  createScanRequest(input: CreateScanRequestInput): ControlPlaneScanRequest {
+  async createScanRequest(input: CreateScanRequestInput): Promise<ControlPlaneScanRequest> {
     const repositoryBinding = this.repositoryBindings.get(input.repositoryBindingId);
     if (!repositoryBinding || repositoryBinding.tenantId !== input.tenantId) {
       throw new NotFoundException("Repository binding not found for tenant");
+    }
+    const integration = this.integrations.get(repositoryBinding.scmIntegrationId);
+    if (!integration || integration.tenantId !== input.tenantId) {
+      throw new NotFoundException('SCM integration not found for tenant');
     }
 
     const isolationClass: IsolationClass =
@@ -223,13 +233,6 @@ export class ControlPlaneService {
         : "STANDARD";
 
     const canonicalKey = buildCanonicalScanKey(input);
-    const existingScanRequest = Array.from(this.scanRequests.values()).find(
-      (candidate) => candidate.canonicalKey === canonicalKey
-    );
-    if (existingScanRequest) {
-      return existingScanRequest;
-    }
-
     const scanRequest: ControlPlaneScanRequest = {
       id: `scan_request_${randomUUID()}`,
       tenantId: input.tenantId,
@@ -244,64 +247,43 @@ export class ControlPlaneService {
       status: "QUEUED"
     };
 
-    this.scanRequests.set(scanRequest.id, scanRequest);
-
-    return scanRequest;
+    return this.scanRequestStore.createOrGet({
+      scanRequest,
+      repositoryBinding,
+      integration
+    });
   }
 
-  getScanRequest(tenantId: string, scanRequestId: string): ControlPlaneScanRequest {
-    const scanRequest = this.scanRequests.get(scanRequestId);
-    if (!scanRequest || scanRequest.tenantId !== tenantId) {
+  async getScanRequest(
+    tenantId: string,
+    scanRequestId: string
+  ): Promise<ControlPlaneScanRequest> {
+    const scanRequest = await this.scanRequestStore.find(tenantId, scanRequestId);
+    if (!scanRequest) {
       throw new NotFoundException("Scan request not found");
     }
 
     return scanRequest;
   }
 
-  recordSastPlanningState(
+  async recordSastPlanningState(
     tenantId: string,
     scanRequestId: string,
     planning: SastUserVisiblePlanningState
-  ): ControlPlaneScanRequest {
-    const scanRequest = this.getScanRequest(tenantId, scanRequestId);
-
-    this.assertSastQueueReservationAllowed(
+  ): Promise<ControlPlaneScanRequest> {
+    return this.scanRequestStore.recordPlanningState({
       tenantId,
       scanRequestId,
-      planning.canonicalScanKey
-    );
-
-    const existingPlanning = scanRequest.sastPlanning;
-    const nextPlanning: SastUserVisiblePlanningState = {
-      ...planning,
-      canonicalScanKey: planning.canonicalScanKey ?? existingPlanning?.canonicalScanKey,
-      reasonCodes: [...planning.reasonCodes]
-    };
-    if (existingPlanning?.state === 'ADMITTED') {
-      if (!this.isEquivalentSastPlanningState(existingPlanning, nextPlanning)) {
-        throw new ConflictException('An admitted SAST planning decision is immutable.');
-      }
-
-      return scanRequest;
-    }
-
-    scanRequest.sastPlanning = nextPlanning;
-    scanRequest.status =
-      nextPlanning.state === 'ADMITTED'
-        ? 'QUEUED'
-        : nextPlanning.state === 'DEFERRED'
-          ? 'PLANNING'
-          : 'FAILED';
-
-    return scanRequest;
+      planning
+    });
   }
 
-  assertSastQueueReservationAllowed(
+  async assertSastQueueReservationAllowed(
     tenantId: string,
     scanRequestId: string,
     canonicalScanKey?: `sha256:${string}`
-  ): void {
-    const scanRequest = this.getScanRequest(tenantId, scanRequestId);
+  ): Promise<void> {
+    const scanRequest = await this.getScanRequest(tenantId, scanRequestId);
 
     if (scanRequest.status !== 'QUEUED' && scanRequest.status !== 'PLANNING') {
       throw new ConflictException('SAST planning cannot rewrite a terminal or running scan.');
@@ -317,22 +299,12 @@ export class ControlPlaneService {
     }
   }
 
-  private isEquivalentSastPlanningState(
-    left: SastUserVisiblePlanningState,
-    right: SastUserVisiblePlanningState
-  ): boolean {
-    return (
-      left.state === right.state &&
-      left.profileId === right.profileId &&
-      left.coverageClaim === right.coverageClaim &&
-      left.queueName === right.queueName &&
-      left.queuePolicyVersion === right.queuePolicyVersion &&
-      left.queuePolicyDigest === right.queuePolicyDigest &&
-      left.canonicalScanKey === right.canonicalScanKey &&
-      left.retryAfterSeconds === right.retryAfterSeconds &&
-      left.reasonCodes.length === right.reasonCodes.length &&
-      left.reasonCodes.every((reasonCode, index) => reasonCode === right.reasonCodes[index])
-    );
+  async updateScanRequestStatus(
+    tenantId: string,
+    scanRequestId: string,
+    status: ControlPlaneScanRequest['status']
+  ): Promise<ControlPlaneScanRequest> {
+    return this.scanRequestStore.updateStatus({ tenantId, scanRequestId, status });
   }
 
   planCommentDispatch(input: CommentDispatchPlanRequest): CommentDispatchPlan {

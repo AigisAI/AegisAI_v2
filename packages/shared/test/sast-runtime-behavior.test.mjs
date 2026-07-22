@@ -102,6 +102,7 @@ const buildPlan = () => ({
     fixedCommitSha: 'a'.repeat(40),
     targetRef: 'refs/heads/dev',
     inventoryDigest: digest('4'),
+    attestationRef: 'attestation://inventory-1',
     shallowFetchPreferred: true,
     submodulesEnabled: false,
     lfsObjectsFetched: false
@@ -228,6 +229,14 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
 
   assert.equal(runtime.isScannerSetDescriptorValid(plan.scannerSet), true);
   assert.equal(runtime.isSastScanPlanValid(plan), true);
+  assert.equal(runtime.isSastScanPlanValid({}), false);
+  assert.equal(
+    runtime.isSastScanPlanValid({
+      ...plan,
+      repositoryState: { ...plan.repositoryState, attestationRef: '' }
+    }),
+    false
+  );
   assert.equal(
     runtime.isScannerArtifactEnvelopeBoundToPlan(envelope, plan, expectedBinding),
     true

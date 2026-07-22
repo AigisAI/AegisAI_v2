@@ -148,6 +148,7 @@ export interface SastCanonicalScanKeyInput {
   targetRef: string;
   fixedCommitSha: string;
   inventoryDigest: `sha256:${string}`;
+  attestationRef: string;
   policyVersion: string;
   profile: SastScanProfile;
   profileDigest: `sha256:${string}`;
@@ -558,6 +559,7 @@ export function buildSastCanonicalScanKeyPreimage(
     targetRef: input.targetRef,
     fixedCommitSha: input.fixedCommitSha.toLowerCase(),
     inventoryDigest: input.inventoryDigest,
+    attestationRef: input.attestationRef,
     policyVersion: input.policyVersion,
     profileId: input.profile.id,
     profileDigest: input.profileDigest,
@@ -605,7 +607,7 @@ function isSastLaneQueuePolicyValid(
   );
 }
 
-function isSastQueueUsageSnapshotValid(usage: SastQueueUsageSnapshot): boolean {
+export function isSastQueueUsageSnapshotValid(usage: SastQueueUsageSnapshot): boolean {
   return (
     Boolean(usage) &&
     isNonBlank(usage.tenantId) &&
