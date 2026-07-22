@@ -13,6 +13,7 @@ import {
 } from '@aegisai/shared';
 
 import { ControlPlaneService } from '../../src/control-plane/control-plane.service';
+import { SastQueueAdmissionService } from '../../src/control-plane/sast-queue-admission.service';
 import { SastScanPlannerService } from '../../src/control-plane/sast-scan-planner.service';
 
 const digest = (character: string): `sha256:${string}` =>
@@ -110,6 +111,7 @@ const buildQueueUsage = (
   repositoryBindingId: string,
   lane: 'FAST' | 'DEEP'
 ): SastQueueUsageSnapshot => ({
+  snapshotVersion: 0,
   tenantId: 'tenant-1',
   repositoryBindingId,
   lane,
@@ -145,6 +147,7 @@ const buildMetadata = (
 
 function createHarness(lane: 'FAST' | 'DEEP' = 'FAST') {
   const controlPlane = new ControlPlaneService(null as never, null as never, null as never);
+  const queueAdmission = new SastQueueAdmissionService();
   controlPlane.installIntegration(
     {
       tenantId: 'tenant-1',
@@ -174,7 +177,8 @@ function createHarness(lane: 'FAST' | 'DEEP' = 'FAST') {
 
   return {
     controlPlane,
-    planner: new SastScanPlannerService(controlPlane),
+    queueAdmission,
+    planner: new SastScanPlannerService(controlPlane, queueAdmission),
     repositoryBindingId,
     scanRequest
   };
@@ -251,7 +255,7 @@ describe('SastScanPlannerService', () => {
         ...input,
         repositoryMetadata: { ...input.repositoryMetadata, inventoryDigest: digest('3') }
       })
-    ).toThrow('canonical planning identity is immutable');
+    ).toThrow('immutable');
 
     expect(
       harness.controlPlane.getScanRequest('tenant-1', harness.scanRequest.id)
@@ -608,6 +612,53 @@ describe('SastScanPlannerService', () => {
     ).toMatchObject({ state: 'REJECTED', reasonCodes: ['QUEUE_USAGE_INVALID'] });
   });
 
+  it('atomically reserves queue capacity and defers a replayed usage snapshot', () => {
+    const harness = createHarness('FAST');
+    const firstInput = buildPlanningInput(
+      harness.repositoryBindingId,
+      harness.scanRequest.id
+    );
+    expect(harness.planner.plan(firstInput).planning.state).toBe('ADMITTED');
+
+    const secondScanRequest = harness.controlPlane.createScanRequest({
+      tenantId: 'tenant-1',
+      repositoryBindingId: harness.repositoryBindingId,
+      lane: 'FAST',
+      targetRef: 'refs/pull/8/head',
+      commitSha: 'a'.repeat(40),
+      policyVersion: 'policy-1',
+      scannerSetVersion: 'scanner-set-1'
+    });
+    const staleInput = buildPlanningInput(
+      harness.repositoryBindingId,
+      secondScanRequest.id,
+      { requestedAt: '2026-07-22T01:00:01Z' }
+    );
+    const staleResult = harness.planner.plan(staleInput);
+    expect(staleResult.planning).toMatchObject({
+      state: 'DEFERRED',
+      reasonCodes: ['QUEUE_USAGE_STALE'],
+      retryAfterSeconds: 30
+    });
+
+    const refreshedResult = harness.planner.plan({
+      ...staleInput,
+      requestedAt: '2026-07-22T01:01:00Z',
+      queueUsage: {
+        ...staleInput.queueUsage,
+        snapshotVersion: 1,
+        queuedForTenant: 1,
+        admittedTodayForTenant: 1,
+        queuedInLane: 1,
+        lastRepositoryAdmissionAt: '2026-07-22T01:00:00Z'
+      }
+    });
+    expect(refreshedResult.planning).toMatchObject({
+      state: 'ADMITTED',
+      reasonCodes: []
+    });
+  });
+
   it('does not let late planning rewrite a running scan', () => {
     const harness = createHarness('FAST');
     harness.scanRequest.status = 'RUNNING';
@@ -619,5 +670,20 @@ describe('SastScanPlannerService', () => {
     ).toThrow('cannot rewrite a terminal or running scan');
     expect(harness.scanRequest.status).toBe('RUNNING');
     expect(harness.scanRequest.sastPlanning).toBeUndefined();
+
+    const nextScanRequest = harness.controlPlane.createScanRequest({
+      tenantId: 'tenant-1',
+      repositoryBindingId: harness.repositoryBindingId,
+      lane: 'FAST',
+      targetRef: 'refs/pull/9/head',
+      commitSha: 'a'.repeat(40),
+      policyVersion: 'policy-1',
+      scannerSetVersion: 'scanner-set-1'
+    });
+    expect(
+      harness.planner.plan(
+        buildPlanningInput(harness.repositoryBindingId, nextScanRequest.id)
+      ).planning.state
+    ).toBe('ADMITTED');
   });
 });

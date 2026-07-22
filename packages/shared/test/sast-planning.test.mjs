@@ -104,7 +104,9 @@ test('queue admission is lane-separated, quota-bounded, and tenant-fair', () => 
   assert.match(contract, /TENANT_CONCURRENCY_LIMIT/);
   assert.match(contract, /TENANT_QUEUED_LIMIT/);
   assert.match(contract, /TENANT_DAILY_BUDGET_EXHAUSTED/);
+  assert.match(contract, /QUEUE_USAGE_STALE/);
   assert.match(contract, /REPOSITORY_FREQUENCY_LIMIT/);
   assert.match(contract, /LANE_QUEUE_CAPACITY_EXHAUSTED/);
+  assert.match(contract, /snapshotVersion:\s*number/);
   assert.match(contract, /rotateAfterTenant/);
 });

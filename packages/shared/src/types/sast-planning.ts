@@ -44,6 +44,7 @@ export const SAST_PLANNING_REASON_CODES = [
   'NORMALIZER_BUNDLE_INVALID',
   'QUEUE_POLICY_INVALID',
   'QUEUE_USAGE_INVALID',
+  'QUEUE_USAGE_STALE',
   'TENANT_CONCURRENCY_LIMIT',
   'TENANT_QUEUED_LIMIT',
   'TENANT_DAILY_BUDGET_EXHAUSTED',
@@ -110,6 +111,7 @@ export interface SastQueuePolicySet {
 }
 
 export interface SastQueueUsageSnapshot {
+  snapshotVersion: number;
   tenantId: string;
   repositoryBindingId: string;
   lane: SastScanLane;
@@ -603,6 +605,7 @@ function isSastQueueUsageSnapshotValid(usage: SastQueueUsageSnapshot): boolean {
     (usage.lane === 'FAST' || usage.lane === 'DEEP') &&
     isIsoTimestamp(usage.dailyWindowStartedAt) &&
     [
+      usage.snapshotVersion,
       usage.activeForTenant,
       usage.queuedForTenant,
       usage.admittedTodayForTenant,

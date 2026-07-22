@@ -5,7 +5,6 @@ import {
   SAST_FORBIDDEN_CAPABILITIES,
   buildSastCanonicalScanKeyPreimage,
   buildSastProfileDigestPreimage,
-  evaluateSastQueueAdmission,
   findSastProfileLimitReasonCodes,
   isSastScanPlanValid,
   isSastProfileSelectionPolicyValid,
@@ -25,10 +24,14 @@ import {
 
 import { ControlPlaneService } from './control-plane.service';
 import type { ControlPlaneScanRequest } from './control-plane.types';
+import { SastQueueAdmissionService } from './sast-queue-admission.service';
 
 @Injectable()
 export class SastScanPlannerService {
-  constructor(private readonly controlPlaneService: ControlPlaneService) {}
+  constructor(
+    private readonly controlPlaneService: ControlPlaneService,
+    private readonly queueAdmissionService: SastQueueAdmissionService
+  ) {}
 
   plan(input: SastScanPlanningInput): SastScanPlanningResult {
     const scanRequest = this.controlPlaneService.getScanRequest(input.tenantId, input.scanRequestId);
@@ -152,7 +155,15 @@ export class SastScanPlannerService {
       );
     }
 
-    const queueAdmission = evaluateSastQueueAdmission({
+    this.controlPlaneService.assertSastQueueReservationAllowed(
+      scanRequest.tenantId,
+      scanRequest.id,
+      canonicalScanKey
+    );
+
+    const queueAdmission = this.queueAdmissionService.reserve({
+      scanRequestId: scanRequest.id,
+      canonicalScanKey,
       lane: scanRequest.lane,
       tenantId: scanRequest.tenantId,
       repositoryBindingId: scanRequest.repositoryBindingId,

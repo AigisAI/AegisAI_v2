@@ -142,6 +142,11 @@ inside a public API.
 Usage snapshots are attributed to exactly one tenant, repository binding, lane, and UTC
 daily window. Beyond those identifiers they contain counters and timestamps only; they
 contain no repository content or credential material.
+Every snapshot carries a monotonic authoritative lane/day `snapshotVersion`. Admission compares
+that version and all applicable lane, tenant, and repository counters, then creates one
+scan/canonical-key reservation and advances the counters/version atomically. Stale versions are
+retryable and cannot be admitted. The production ledger is shared across replicas and cannot be
+implemented as an independent per-pod cache.
 
 ### SastPlanningState
 

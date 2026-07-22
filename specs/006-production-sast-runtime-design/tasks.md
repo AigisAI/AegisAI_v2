@@ -30,7 +30,7 @@
 
 - [x] T018 Implement deterministic trusted-metadata profile selection
 - [x] T019 Bind fixed commit, profile/scanner-set/rule/schema digests into canonical scan keys
-- [x] T020 Add Fast and Deep queue admission, quota, and fairness policies
+- [x] T020 Add Fast and Deep atomic queue reservation, quota, stale-snapshot denial, and fairness policies
 - [x] T021 Add unsupported-language/profile and over-limit reason codes to user-visible state
 
 ## Phase 5: Hardened Fetch and Scanner Wrapper

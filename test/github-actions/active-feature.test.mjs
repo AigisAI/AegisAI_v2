@@ -26,6 +26,7 @@ const files = {
   sharedSastPlanning: new URL('../../packages/shared/src/types/sast-planning.ts', import.meta.url),
   sharedSastPlanningTest: new URL('../../packages/shared/test/sast-planning.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
+  apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlannerTest: new URL('../../apps/api/test/control-plane/sast-scan-planner.service.e2e-spec.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -164,6 +165,7 @@ test('SAST Phase 4 planner runtime is implemented and guarded by executable test
   const sharedSastPlanning = readNormalizedText(files.sharedSastPlanning);
   const sharedSastPlanningTest = readNormalizedText(files.sharedSastPlanningTest);
   const apiSastPlanner = readNormalizedText(files.apiSastPlanner);
+  const apiSastQueueAdmission = readNormalizedText(files.apiSastQueueAdmission);
   const apiSastPlannerTest = readNormalizedText(files.apiSastPlannerTest);
   const tasks = readNormalizedText(files.tasks);
 
@@ -173,9 +175,13 @@ test('SAST Phase 4 planner runtime is implemented and guarded by executable test
   assert.match(sharedSastPlanning, /UNSUPPORTED_POLYGLOT_PROFILE/);
   assert.match(apiSastPlanner, /class SastScanPlannerService/);
   assert.match(apiSastPlanner, /isSastScanPlanValid/);
+  assert.match(apiSastQueueAdmission, /class SastQueueAdmissionService/);
+  assert.match(apiSastQueueAdmission, /snapshotVersion/);
+  assert.match(apiSastQueueAdmission, /QUEUE_USAGE_STALE/);
   assert.match(sharedSastPlanningTest, /canonical scan identity includes fixed source and every executable artifact digest/);
   assert.match(apiSastPlannerTest, /binds every execution artifact digest into the canonical scan key/);
   assert.match(apiSastPlannerTest, /orders one lane by deterministic tenant round-robin fairness/);
+  assert.match(apiSastPlannerTest, /atomically reserves queue capacity/);
 
   for (const taskId of ['T018', 'T019', 'T020', 'T021']) {
     assert.match(tasks, new RegExp(`- \\[x\\] ${taskId}\\b`));

@@ -263,18 +263,13 @@ export class ControlPlaneService {
   ): ControlPlaneScanRequest {
     const scanRequest = this.getScanRequest(tenantId, scanRequestId);
 
-    if (scanRequest.status !== 'QUEUED' && scanRequest.status !== 'PLANNING') {
-      throw new ConflictException('SAST planning cannot rewrite a terminal or running scan.');
-    }
+    this.assertSastQueueReservationAllowed(
+      tenantId,
+      scanRequestId,
+      planning.canonicalScanKey
+    );
 
     const existingPlanning = scanRequest.sastPlanning;
-    if (
-      existingPlanning?.canonicalScanKey &&
-      planning.canonicalScanKey !== existingPlanning.canonicalScanKey
-    ) {
-      throw new ConflictException('SAST canonical planning identity is immutable.');
-    }
-
     if (existingPlanning?.state === 'ADMITTED') {
       if (!this.isEquivalentSastPlanningState(existingPlanning, planning)) {
         throw new ConflictException('An admitted SAST planning decision is immutable.');
@@ -295,6 +290,26 @@ export class ControlPlaneService {
           : 'FAILED';
 
     return scanRequest;
+  }
+
+  assertSastQueueReservationAllowed(
+    tenantId: string,
+    scanRequestId: string,
+    canonicalScanKey?: `sha256:${string}`
+  ): void {
+    const scanRequest = this.getScanRequest(tenantId, scanRequestId);
+
+    if (scanRequest.status !== 'QUEUED' && scanRequest.status !== 'PLANNING') {
+      throw new ConflictException('SAST planning cannot rewrite a terminal or running scan.');
+    }
+
+    const existingPlanning = scanRequest.sastPlanning;
+    if (
+      existingPlanning?.canonicalScanKey &&
+      canonicalScanKey !== existingPlanning.canonicalScanKey
+    ) {
+      throw new ConflictException('SAST canonical planning identity is immutable.');
+    }
   }
 
   private isEquivalentSastPlanningState(

@@ -55,7 +55,7 @@ DLQ preserves tenant and scan attribution but not payload secrets.
 
 `SastScanPlannerService` composes the immutable scan request with
 `TrustedSastRepositoryMetadata`, an approved profile policy, a signed scanner set, a signed
-queue-policy set, and a counter-only queue-usage snapshot. These are internal runtime inputs;
+queue-policy set, and a versioned counter-only queue-usage snapshot. These are internal runtime inputs;
 the public scan-request DTO cannot provide source content, language overrides, scanner
 commands, executable configuration, queue limits, credential values, or artifact bodies.
 
@@ -89,14 +89,23 @@ version/digest, schema digest, normalizer digest, and SBOM schema. Result/eviden
 references are scoped to tenant and scan but are not mutable customer inputs.
 
 Queue policy is itself versioned, digest-pinned, signed, and provenance-attributed. Its usage
-snapshot must match the tenant, repository binding, lane, and current UTC daily window of the
-decision. Repository-active counts cannot exceed tenant-active counts, and tenant-queued counts
-cannot exceed the lane total. Fast and Deep must resolve to `scan.fast.v1` and `scan.deep.v1`
-respectively. Admission evaluates tenant active/queued/daily limits, repository
-concurrency/frequency, and lane queue capacity. Capacity outcomes are `DEFERRED` with a bounded
-retry condition; malformed policy or usage is `REJECTED`. Within one lane, dispatch interleaves
-the oldest item from each tenant using deterministic tenant round-robin ordering, with the
-last-served tenant rotated to the end.
+snapshot must carry the authoritative lane/day `snapshotVersion` and match the tenant,
+repository binding, lane, and current UTC daily window of the decision. Repository-active counts
+cannot exceed tenant-active counts, and tenant-queued counts cannot exceed the lane total. Fast
+and Deep must resolve to `scan.fast.v1` and `scan.deep.v1` respectively. Admission evaluates
+tenant active/queued/daily limits, repository concurrency/frequency, and lane queue capacity.
+
+The pure policy evaluator is not an admission authority. `SastQueueAdmissionService` must compare
+the complete observed counters and `snapshotVersion` with the authoritative lane/day ledger and,
+in one critical section, create an idempotent reservation, increment tenant/lane/daily counters,
+record the repository admission time, and advance the version. A replayed or concurrently consumed
+snapshot is `DEFERRED` as `QUEUE_USAGE_STALE`; it cannot consume capacity. The production adapter
+for this boundary must use one shared transactional/CAS store across API replicas before queue
+publication; a per-replica cache is not authoritative.
+
+Capacity outcomes are `DEFERRED` with a bounded retry condition; malformed policy or usage is
+`REJECTED`. Within one lane, dispatch interleaves the oldest item from each tenant using
+deterministic tenant round-robin ordering, with the last-served tenant rotated to the end.
 
 The public scan status exposes only `ADMITTED | DEFERRED | REJECTED`, selected profile,
 coverage claim, queue name, queue-policy version/digest, canonical key, reason codes,
