@@ -40,8 +40,6 @@ import { ControlPlaneScanRequestStore } from './control-plane-scan-request.store
 
 @Injectable()
 export class ControlPlaneService {
-  private readonly integrations = new Map<string, ControlPlaneIntegration>();
-  private readonly repositoryBindings = new Map<string, ControlPlaneRepositoryBinding>();
   private readonly commentDispatchPlans = new Map<string, CommentDispatchPlan>();
   private readonly commentDispatchOutboxItems = new Map<string, CommentDispatchOutboxItem>();
   private readonly commentDispatchAuditEvents: CommentDispatchAuditEvent[] = [];
@@ -62,7 +60,7 @@ export class ControlPlaneService {
       input.repositories ??
       (await this.githubAppInstallationClient.listInstallationRepositories(input.externalInstallationId));
 
-    const integration = this.installIntegration(
+    const integration = await this.installIntegration(
       {
         ...input,
         repositories
@@ -75,7 +73,7 @@ export class ControlPlaneService {
 
     await this.githubAppInstallationState.persistInstallation(
       integration,
-      this.listRepositoryBindings(integration.tenantId).filter(
+      (await this.listRepositoryBindings(integration.tenantId)).filter(
         (binding) => binding.scmIntegrationId === integration.id
       )
     );
@@ -104,20 +102,10 @@ export class ControlPlaneService {
     );
   }
 
-  installIntegration(
+  async installIntegration(
     input: InstallIntegrationInput,
     options: InstallIntegrationOptions
-  ): ControlPlaneIntegration {
-    const existingIntegration = Array.from(this.integrations.values()).find(
-      (candidate) =>
-        candidate.tenantId === input.tenantId &&
-        candidate.provider === options.provider &&
-        candidate.externalInstallationId === input.externalInstallationId
-    );
-    if (existingIntegration) {
-      return existingIntegration;
-    }
-
+  ): Promise<ControlPlaneIntegration> {
     const integration: ControlPlaneIntegration = {
       id: `integration_${randomUUID()}`,
       tenantId: input.tenantId,
@@ -130,9 +118,7 @@ export class ControlPlaneService {
       status: "ACTIVE"
     };
 
-    this.integrations.set(integration.id, integration);
-
-    for (const repository of input.repositories ?? []) {
+    const repositoryBindings = (input.repositories ?? []).map((repository) => {
       const binding: ControlPlaneRepositoryBinding = {
         id: `repository_binding_${randomUUID()}`,
         tenantId: input.tenantId,
@@ -142,35 +128,34 @@ export class ControlPlaneService {
         defaultBranch: repository.defaultBranch,
         isPrivate: repository.isPrivate
       };
-      this.repositoryBindings.set(binding.id, binding);
-    }
+      return binding;
+    });
 
-    return integration;
+    const persisted = await this.scanRequestStore.persistIntegrationContext({
+      integration,
+      repositoryBindings
+    });
+
+    return persisted.integration;
   }
 
-  listIntegrations(tenantId: string): ControlPlaneIntegration[] {
-    return Array.from(this.integrations.values()).filter((integration) => integration.tenantId === tenantId);
+  listIntegrations(tenantId: string): Promise<ControlPlaneIntegration[]> {
+    return this.scanRequestStore.listIntegrations(tenantId);
   }
 
-  removeIntegration(tenantId: string, integrationId: string): { deleted: true; id: string } {
-    const integration = this.integrations.get(integrationId);
-    if (!integration || integration.tenantId !== tenantId) {
+  async removeIntegration(
+    tenantId: string,
+    integrationId: string
+  ): Promise<{ deleted: true; id: string }> {
+    if (!(await this.scanRequestStore.revokeIntegration(tenantId, integrationId))) {
       throw new NotFoundException("Integration not found");
-    }
-
-    this.integrations.delete(integrationId);
-
-    for (const binding of this.repositoryBindings.values()) {
-      if (binding.scmIntegrationId === integrationId) {
-        this.repositoryBindings.delete(binding.id);
-      }
     }
 
     return { deleted: true, id: integrationId };
   }
 
-  listRepositoryBindings(tenantId: string): ControlPlaneRepositoryBinding[] {
-    return Array.from(this.repositoryBindings.values()).filter((binding) => binding.tenantId === tenantId);
+  listRepositoryBindings(tenantId: string): Promise<ControlPlaneRepositoryBinding[]> {
+    return this.scanRequestStore.listRepositoryBindings(tenantId);
   }
 
   async reconcileGithubInstallationWebhook(
@@ -182,7 +167,13 @@ export class ControlPlaneService {
       throw new BadRequestException("GitHub installation webhook is missing installation id");
     }
 
-    const integration = this.findGithubAppIntegration(externalInstallationId);
+    const integration = await this.scanRequestStore.findIntegrationByExternalInstallation(
+      'GITHUB',
+      externalInstallationId
+    );
+    if (!integration || integration.integrationType !== 'GITHUB_APP') {
+      throw new NotFoundException("GitHub App installation integration not found");
+    }
 
     const addedRepositories = this.normalizeGithubRepositories(
       input.repositories_added ?? (input.action === "created" ? input.repositories : undefined)
@@ -191,17 +182,27 @@ export class ControlPlaneService {
       (repository) => repository.providerRepoId
     );
 
-    const addedBindings = addedRepositories.map((repository) =>
-      this.upsertRepositoryBinding(integration, repository)
+    const addedContext = await this.scanRequestStore.persistIntegrationContext({
+      integration,
+      repositoryBindings: addedRepositories.map((repository) => ({
+        id: `repository_binding_${randomUUID()}`,
+        tenantId: integration.tenantId,
+        scmIntegrationId: integration.id,
+        providerRepoId: repository.providerRepoId,
+        fullName: repository.fullName,
+        defaultBranch: repository.defaultBranch,
+        isPrivate: repository.isPrivate
+      }))
+    });
+    await this.scanRequestStore.revokeRepositoryBindings(
+      integration.tenantId,
+      integration.id,
+      removedProviderRepoIds
     );
-
-    for (const providerRepoId of removedProviderRepoIds) {
-      this.removeRepositoryBinding(integration, providerRepoId);
-    }
 
     await this.githubAppInstallationState.reconcileRepositories(
       integration,
-      addedBindings,
+      addedContext.repositoryBindings,
       removedProviderRepoIds,
       event,
       input.action
@@ -218,14 +219,14 @@ export class ControlPlaneService {
   }
 
   async createScanRequest(input: CreateScanRequestInput): Promise<ControlPlaneScanRequest> {
-    const repositoryBinding = this.repositoryBindings.get(input.repositoryBindingId);
-    if (!repositoryBinding || repositoryBinding.tenantId !== input.tenantId) {
+    const repositoryContext = await this.scanRequestStore.findRepositoryContext(
+      input.tenantId,
+      input.repositoryBindingId
+    );
+    if (!repositoryContext) {
       throw new NotFoundException("Repository binding not found for tenant");
     }
-    const integration = this.integrations.get(repositoryBinding.scmIntegrationId);
-    if (!integration || integration.tenantId !== input.tenantId) {
-      throw new NotFoundException('SCM integration not found for tenant');
-    }
+    const { integration, repositoryBinding } = repositoryContext;
 
     const isolationClass: IsolationClass =
       input.isolationSignals && shouldEscalateIsolation(input.isolationSignals)
@@ -307,18 +308,17 @@ export class ControlPlaneService {
     return this.scanRequestStore.updateStatus({ tenantId, scanRequestId, status });
   }
 
-  planCommentDispatch(input: CommentDispatchPlanRequest): CommentDispatchPlan {
+  async planCommentDispatch(input: CommentDispatchPlanRequest): Promise<CommentDispatchPlan> {
     this.assertSafeCommentDispatchPayload(input);
 
-    const repositoryBinding = this.repositoryBindings.get(input.repositoryBindingId);
-    if (!repositoryBinding || repositoryBinding.tenantId !== input.tenantId) {
+    const repositoryContext = await this.scanRequestStore.findRepositoryContext(
+      input.tenantId,
+      input.repositoryBindingId
+    );
+    if (!repositoryContext) {
       throw new NotFoundException("Repository binding not found for tenant");
     }
-
-    const integration = this.integrations.get(repositoryBinding.scmIntegrationId);
-    if (!integration || integration.tenantId !== input.tenantId) {
-      throw new NotFoundException("SCM integration not found for tenant");
-    }
+    const { integration, repositoryBinding } = repositoryContext;
 
     if (!integration.commentWritePrincipalId) {
       throw new BadRequestException("Repository binding does not have a comment-write principal.");
@@ -721,64 +721,6 @@ export class ControlPlaneService {
     });
 
     return updatedOutboxItem;
-  }
-
-  private findGithubAppIntegration(
-    externalInstallationId: string
-  ): ControlPlaneIntegration {
-    const integration = Array.from(this.integrations.values()).find(
-      (candidate) =>
-        candidate.provider === "GITHUB" &&
-        candidate.integrationType === "GITHUB_APP" &&
-        candidate.externalInstallationId === externalInstallationId
-    );
-
-    if (!integration) {
-      throw new NotFoundException("GitHub App installation integration not found");
-    }
-
-    return integration;
-  }
-
-  private upsertRepositoryBinding(
-    integration: ControlPlaneIntegration,
-    repository: InstallRepositoryInput
-  ): ControlPlaneRepositoryBinding {
-    const existing = Array.from(this.repositoryBindings.values()).find(
-      (binding) =>
-        binding.tenantId === integration.tenantId &&
-        binding.scmIntegrationId === integration.id &&
-        binding.providerRepoId === repository.providerRepoId
-    );
-
-    const binding: ControlPlaneRepositoryBinding = {
-      id: existing?.id ?? `repository_binding_${randomUUID()}`,
-      tenantId: integration.tenantId,
-      scmIntegrationId: integration.id,
-      providerRepoId: repository.providerRepoId,
-      fullName: repository.fullName,
-      defaultBranch: repository.defaultBranch,
-      isPrivate: repository.isPrivate
-    };
-
-    this.repositoryBindings.set(binding.id, binding);
-
-    return binding;
-  }
-
-  private removeRepositoryBinding(
-    integration: ControlPlaneIntegration,
-    providerRepoId: string
-  ): void {
-    for (const binding of this.repositoryBindings.values()) {
-      if (
-        binding.tenantId === integration.tenantId &&
-        binding.scmIntegrationId === integration.id &&
-        binding.providerRepoId === providerRepoId
-      ) {
-        this.repositoryBindings.delete(binding.id);
-      }
-    }
   }
 
   private normalizeGithubRepositories(

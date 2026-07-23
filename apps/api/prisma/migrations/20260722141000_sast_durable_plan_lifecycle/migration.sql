@@ -1,5 +1,11 @@
 -- A queue reservation may only exist for a durable scan request and must carry
 -- the exact admitted planning state and immutable execution plan.
+BEGIN;
+
+-- Keep the emptiness precondition and required-column expansion atomic against
+-- any replica that still knows the pre-expansion reservation shape.
+LOCK TABLE "SastQueueReservation" IN ACCESS EXCLUSIVE MODE;
+
 ALTER TABLE "ScanRequest"
 ADD COLUMN "sastPlanning" JSONB;
 
@@ -26,3 +32,5 @@ ON DELETE RESTRICT ON UPDATE CASCADE;
 
 CREATE INDEX "SastQueueReservation_lane_publishedAt_completedAt_enqueuedAt_idx"
 ON "SastQueueReservation"("lane", "publishedAt", "completedAt", "enqueuedAt");
+
+COMMIT;

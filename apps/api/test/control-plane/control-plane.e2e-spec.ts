@@ -399,6 +399,13 @@ describe("Control Plane skeleton (e2e)", () => {
       .expect(201);
 
     const installData = dataOf<Record<string, unknown>>(install.body);
+    const bindingsBeforeRemoval = await request(app.getHttpServer())
+      .get("/api/repository-bindings")
+      .query({ tenantId: "tenant_webhook_github_app" })
+      .expect(200);
+    const removedBinding = dataOf<Array<Record<string, unknown>>>(
+      bindingsBeforeRemoval.body
+    )[0];
 
     const webhook = await request(app.getHttpServer())
       .post("/api/webhooks/github")
@@ -472,6 +479,18 @@ describe("Control Plane skeleton (e2e)", () => {
         }
       })
     );
+    await request(app.getHttpServer())
+      .post("/api/scan-requests")
+      .send({
+        tenantId: "tenant_webhook_github_app",
+        repositoryBindingId: removedBinding.id,
+        lane: "FAST",
+        targetRef: "refs/heads/main",
+        commitSha: "a".repeat(40),
+        policyVersion: "policy-1",
+        scannerSetVersion: "scanner-set-1"
+      })
+      .expect(404);
     expect(JSON.stringify(webhook.body)).not.toMatch(/accessToken|installation-token|secretValue|tokenValue/i);
   });
 

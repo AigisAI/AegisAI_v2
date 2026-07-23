@@ -45,6 +45,10 @@ describe('production scan architecture contracts', () => {
     join(__dirname, '../../src/control-plane/prisma-control-plane-scan-request.store.ts'),
     'utf8'
   );
+  const controlPlaneService = readFileSync(
+    join(__dirname, '../../src/control-plane/control-plane.service.ts'),
+    'utf8'
+  );
   const modelBody = (model: string) => {
     const start = schema.indexOf(`model ${model} {`);
     if (start === -1) {
@@ -236,11 +240,24 @@ describe('production scan architecture contracts', () => {
     expect(sastQueueStore).not.toMatch(/new Map/);
     expect(scanRequestStore).toContain('Prisma.TransactionIsolationLevel.Serializable');
     expect(scanRequestStore).not.toMatch(/new Map/);
+    expect(controlPlaneService).toContain('persistIntegrationContext');
+    expect(controlPlaneService).toContain('findRepositoryContext');
+    expect(controlPlaneService).not.toContain(
+      'new Map<string, ControlPlaneIntegration>()'
+    );
+    expect(controlPlaneService).not.toContain(
+      'new Map<string, ControlPlaneRepositoryBinding>()'
+    );
     expect(sastDurabilityMigration).toContain('"sastPlanning" JSONB');
     expect(sastDurabilityMigration).toContain('"planning" JSONB NOT NULL');
     expect(sastDurabilityMigration).toContain('"immutablePlan" JSONB NOT NULL');
     expect(sastDurabilityMigration).toContain('"startedAt" TIMESTAMP(3)');
     expect(sastDurabilityMigration).toContain('"completedAt" TIMESTAMP(3)');
+    expect(sastDurabilityMigration).toContain('BEGIN;');
+    expect(sastDurabilityMigration).toContain(
+      'LOCK TABLE "SastQueueReservation" IN ACCESS EXCLUSIVE MODE;'
+    );
+    expect(sastDurabilityMigration).toContain('COMMIT;');
     expect(sastDurabilityMigration).toContain(
       'FOREIGN KEY ("scanRequestId") REFERENCES "ScanRequest"("id")'
     );

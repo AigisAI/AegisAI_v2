@@ -168,7 +168,9 @@ admission identity.
 
 Repository removal is durable revocation rather than row deletion. `RepositoryBinding.status` and
 `revokedAt` hide the binding from new work while preserving historical `ScanRequest` and queue
-reservation foreign keys. A later authorized re-add reactivates the same binding identity.
+reservation foreign keys. Integration and binding inventory reads are durable rather than
+process-local, so replicas and restarts reuse the same identity. A later authorized re-add
+reactivates the same binding identity.
 
 ### SastPlanningState
 

@@ -5,6 +5,7 @@ import {
   SAST_PLANNING_REASON_CODES,
   SAST_PLANNING_STATES,
   SAST_PROFILE_IDS,
+  type ScmProvider,
   type SastPlanningReasonCode,
   type SastUserVisiblePlanningState
 } from '@aegisai/shared';
@@ -12,11 +13,19 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ControlPlaneScanRequestStore,
+  isScanRequestStatusTransitionAllowed,
+  type ControlPlaneIntegrationContext,
+  type ControlPlaneIntegrationContextInput,
+  type ControlPlaneRepositoryContext,
   type ControlPlaneScanRequestCreateInput,
   type ControlPlaneScanRequestPlanningInput,
   type ControlPlaneScanRequestStatusInput
 } from './control-plane-scan-request.store';
-import type { ControlPlaneScanRequest } from './control-plane.types';
+import type {
+  ControlPlaneIntegration,
+  ControlPlaneRepositoryBinding,
+  ControlPlaneScanRequest
+} from './control-plane.types';
 
 interface PersistedScanRequestRow {
   id: string;
@@ -41,22 +50,22 @@ export class PrismaControlPlaneScanRequestStore extends ControlPlaneScanRequestS
     super();
   }
 
-  async createOrGet(
-    input: ControlPlaneScanRequestCreateInput
-  ): Promise<ControlPlaneScanRequest> {
+  async persistIntegrationContext(
+    input: ControlPlaneIntegrationContextInput
+  ): Promise<ControlPlaneIntegrationContext> {
     return this.runSerializable(async (transaction) => {
       await transaction.tenant.upsert({
-        where: { id: input.scanRequest.tenantId },
+        where: { id: input.integration.tenantId },
         update: {},
         create: {
-          id: input.scanRequest.tenantId,
-          slug: this.toTenantSlug(input.scanRequest.tenantId),
-          name: input.scanRequest.tenantId,
+          id: input.integration.tenantId,
+          slug: this.toTenantSlug(input.integration.tenantId),
+          name: input.integration.tenantId,
           status: 'ACTIVE'
         }
       });
 
-      const integration = await transaction.scmIntegration.upsert({
+      const integrationRow = await transaction.scmIntegration.upsert({
         where: {
           tenantId_provider_externalInstallationId: {
             tenantId: input.integration.tenantId,
@@ -82,37 +91,149 @@ export class PrismaControlPlaneScanRequestStore extends ControlPlaneScanRequestS
           status: input.integration.status
         }
       });
-      if (integration.id !== input.integration.id) {
-        throw new ConflictException('Durable SCM integration identity does not match runtime state.');
+      const integration = this.toIntegration(integrationRow);
+      const repositoryBindings: ControlPlaneRepositoryBinding[] = [];
+
+      for (const candidate of input.repositoryBindings) {
+        const row = await transaction.repositoryBinding.upsert({
+          where: {
+            tenantId_scmIntegrationId_providerRepoId: {
+              tenantId: integration.tenantId,
+              scmIntegrationId: integration.id,
+              providerRepoId: candidate.providerRepoId
+            }
+          },
+          update: {
+            fullName: candidate.fullName,
+            defaultBranch: candidate.defaultBranch,
+            isPrivate: candidate.isPrivate,
+            status: 'ACTIVE',
+            revokedAt: null
+          },
+          create: {
+            id: candidate.id,
+            tenantId: integration.tenantId,
+            scmIntegrationId: integration.id,
+            providerRepoId: candidate.providerRepoId,
+            fullName: candidate.fullName,
+            defaultBranch: candidate.defaultBranch,
+            isPrivate: candidate.isPrivate,
+            status: 'ACTIVE'
+          }
+        });
+        repositoryBindings.push(this.toRepositoryBinding(row));
       }
 
-      const repositoryBinding = await transaction.repositoryBinding.upsert({
-        where: {
-          tenantId_scmIntegrationId_providerRepoId: {
-            tenantId: input.repositoryBinding.tenantId,
-            scmIntegrationId: input.repositoryBinding.scmIntegrationId,
-            providerRepoId: input.repositoryBinding.providerRepoId
-          }
-        },
-        update: {
-          fullName: input.repositoryBinding.fullName,
-          defaultBranch: input.repositoryBinding.defaultBranch,
-          isPrivate: input.repositoryBinding.isPrivate
-        },
-        create: {
-          id: input.repositoryBinding.id,
-          tenantId: input.repositoryBinding.tenantId,
-          scmIntegrationId: input.repositoryBinding.scmIntegrationId,
-          providerRepoId: input.repositoryBinding.providerRepoId,
-          fullName: input.repositoryBinding.fullName,
-          defaultBranch: input.repositoryBinding.defaultBranch,
-          isPrivate: input.repositoryBinding.isPrivate,
-          status: 'ACTIVE'
-        }
+      return { integration, repositoryBindings };
+    });
+  }
+
+  async findRepositoryContext(
+    tenantId: string,
+    repositoryBindingId: string
+  ): Promise<ControlPlaneRepositoryContext | null> {
+    const row = await this.prisma.repositoryBinding.findFirst({
+      where: { id: repositoryBindingId, tenantId, status: 'ACTIVE' },
+      include: { integration: true }
+    });
+    if (!row || row.integration.tenantId !== tenantId || row.integration.status !== 'ACTIVE') {
+      return null;
+    }
+
+    return {
+      integration: this.toIntegration(row.integration),
+      repositoryBinding: this.toRepositoryBinding(row)
+    };
+  }
+
+  async findIntegrationByExternalInstallation(
+    provider: ScmProvider,
+    externalInstallationId: string
+  ): Promise<ControlPlaneIntegration | null> {
+    const row = await this.prisma.scmIntegration.findFirst({
+      where: { provider, externalInstallationId, status: 'ACTIVE' }
+    });
+    return row ? this.toIntegration(row) : null;
+  }
+
+  async listIntegrations(tenantId: string): Promise<ControlPlaneIntegration[]> {
+    const rows = await this.prisma.scmIntegration.findMany({
+      where: { tenantId, status: 'ACTIVE' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+    });
+    return rows.map((row) => this.toIntegration(row));
+  }
+
+  async listRepositoryBindings(
+    tenantId: string
+  ): Promise<ControlPlaneRepositoryBinding[]> {
+    const rows = await this.prisma.repositoryBinding.findMany({
+      where: {
+        tenantId,
+        status: 'ACTIVE',
+        integration: { status: 'ACTIVE' }
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+    });
+    return rows.map((row) => this.toRepositoryBinding(row));
+  }
+
+  async revokeIntegration(tenantId: string, integrationId: string): Promise<boolean> {
+    return this.runSerializable(async (transaction) => {
+      const integration = await transaction.scmIntegration.findUnique({
+        where: { id: integrationId }
+      });
+      if (!integration || integration.tenantId !== tenantId) {
+        return false;
+      }
+
+      const revokedAt = new Date();
+      await transaction.scmIntegration.update({
+        where: { id: integrationId },
+        data: { status: 'REVOKED' }
+      });
+      await transaction.repositoryBinding.updateMany({
+        where: { tenantId, scmIntegrationId: integrationId, status: 'ACTIVE' },
+        data: { status: 'REVOKED', revokedAt }
+      });
+      return true;
+    });
+  }
+
+  async revokeRepositoryBindings(
+    tenantId: string,
+    integrationId: string,
+    providerRepoIds: string[]
+  ): Promise<void> {
+    if (providerRepoIds.length === 0) {
+      return;
+    }
+    await this.prisma.repositoryBinding.updateMany({
+      where: {
+        tenantId,
+        scmIntegrationId: integrationId,
+        providerRepoId: { in: providerRepoIds },
+        status: 'ACTIVE'
+      },
+      data: { status: 'REVOKED', revokedAt: new Date() }
+    });
+  }
+
+  async createOrGet(
+    input: ControlPlaneScanRequestCreateInput
+  ): Promise<ControlPlaneScanRequest> {
+    return this.runSerializable(async (transaction) => {
+      const repositoryBinding = await transaction.repositoryBinding.findUnique({
+        where: { id: input.repositoryBinding.id },
+        include: { integration: true }
       });
       if (
-        repositoryBinding.id !== input.repositoryBinding.id ||
-        repositoryBinding.status !== 'ACTIVE'
+        !repositoryBinding ||
+        repositoryBinding.tenantId !== input.scanRequest.tenantId ||
+        repositoryBinding.status !== 'ACTIVE' ||
+        repositoryBinding.integration.id !== input.integration.id ||
+        repositoryBinding.integration.tenantId !== input.scanRequest.tenantId ||
+        repositoryBinding.integration.status !== 'ACTIVE'
       ) {
         throw new ConflictException(
           'Durable repository binding is revoked or does not match runtime state.'
@@ -190,18 +311,28 @@ export class PrismaControlPlaneScanRequestStore extends ControlPlaneScanRequestS
   async updateStatus(
     input: ControlPlaneScanRequestStatusInput
   ): Promise<ControlPlaneScanRequest> {
-    const updated = await this.prisma.scanRequest.updateMany({
-      where: { id: input.scanRequestId, tenantId: input.tenantId },
-      data: { status: input.status }
-    });
-    if (updated.count !== 1) {
-      throw new NotFoundException('Scan request not found');
-    }
+    return this.runSerializable(async (transaction) => {
+      const row = await transaction.scanRequest.findUnique({
+        where: { id: input.scanRequestId }
+      });
+      if (!row || row.tenantId !== input.tenantId) {
+        throw new NotFoundException('Scan request not found');
+      }
+      if (!isScanRequestStatusTransitionAllowed(row.status, input.status)) {
+        throw new ConflictException(
+          `Scan request status cannot transition from ${row.status} to ${input.status}.`
+        );
+      }
+      if (row.status === input.status) {
+        return this.toScanRequest(row);
+      }
 
-    const row = await this.prisma.scanRequest.findUniqueOrThrow({
-      where: { id: input.scanRequestId }
+      const updated = await transaction.scanRequest.update({
+        where: { id: input.scanRequestId },
+        data: { status: input.status }
+      });
+      return this.toScanRequest(updated);
     });
-    return this.toScanRequest(row);
   }
 
   private async runSerializable<T>(
@@ -248,6 +379,50 @@ export class PrismaControlPlaneScanRequestStore extends ControlPlaneScanRequestS
       status: row.status,
       isolationClass: row.isolationClass,
       sastPlanning: row.sastPlanning === null ? undefined : this.parsePlanning(row.sastPlanning)
+    };
+  }
+
+  private toIntegration(row: {
+    id: string;
+    tenantId: string;
+    provider: ControlPlaneIntegration['provider'];
+    integrationType: ControlPlaneIntegration['integrationType'];
+    externalInstallationId: string;
+    repoReadPrincipalId: string;
+    commentWritePrincipalId: string | null;
+    integrationAdminPrincipalId: string | null;
+    status: ControlPlaneIntegration['status'];
+  }): ControlPlaneIntegration {
+    return {
+      id: row.id,
+      tenantId: row.tenantId,
+      provider: row.provider,
+      integrationType: row.integrationType,
+      externalInstallationId: row.externalInstallationId,
+      repoReadPrincipalId: row.repoReadPrincipalId,
+      commentWritePrincipalId: row.commentWritePrincipalId ?? undefined,
+      integrationAdminPrincipalId: row.integrationAdminPrincipalId ?? undefined,
+      status: row.status
+    };
+  }
+
+  private toRepositoryBinding(row: {
+    id: string;
+    tenantId: string;
+    scmIntegrationId: string;
+    providerRepoId: string;
+    fullName: string;
+    defaultBranch: string;
+    isPrivate: boolean;
+  }): ControlPlaneRepositoryBinding {
+    return {
+      id: row.id,
+      tenantId: row.tenantId,
+      scmIntegrationId: row.scmIntegrationId,
+      providerRepoId: row.providerRepoId,
+      fullName: row.fullName,
+      defaultBranch: row.defaultBranch,
+      isPrivate: row.isPrivate
     };
   }
 

@@ -249,7 +249,7 @@ async function createHarness(lane: 'FAST' | 'DEEP' = 'FAST') {
   const queueAdmission = new SastQueueAdmissionService(
     queueStore
   );
-  controlPlane.installIntegration(
+  await controlPlane.installIntegration(
     {
       tenantId: 'tenant-1',
       externalInstallationId: 'installation-1',
@@ -265,7 +265,7 @@ async function createHarness(lane: 'FAST' | 'DEEP' = 'FAST') {
     },
     { provider: 'GITHUB', integrationType: 'GITHUB_APP' }
   );
-  const repositoryBindingId = controlPlane.listRepositoryBindings('tenant-1')[0].id;
+  const repositoryBindingId = (await controlPlane.listRepositoryBindings('tenant-1'))[0].id;
   const scanRequest = await controlPlane.createScanRequest({
     tenantId: 'tenant-1',
     repositoryBindingId,
@@ -390,6 +390,23 @@ describe('SastScanPlannerService', () => {
       restartedControlPlane,
       restartedQueue
     );
+    await expect(restartedControlPlane.listIntegrations('tenant-1')).resolves.toHaveLength(1);
+    await expect(
+      restartedControlPlane.listRepositoryBindings('tenant-1')
+    ).resolves.toEqual([
+      expect.objectContaining({ id: harness.repositoryBindingId })
+    ]);
+    const postRestartRequest = await restartedControlPlane.createScanRequest({
+      tenantId: 'tenant-1',
+      repositoryBindingId: harness.repositoryBindingId,
+      lane: 'FAST',
+      targetRef: 'refs/pull/8/head',
+      commitSha: 'b'.repeat(40),
+      policyVersion: 'policy-1',
+      scannerSetVersion: 'scanner-set-1'
+    });
+    expect(postRestartRequest.repositoryBindingId).toBe(harness.repositoryBindingId);
+
     const replay = await restartedPlanner.plan({
       ...input,
       requestedAt: '2026-07-22T01:05:00Z'
@@ -1310,6 +1327,13 @@ describe('SastScanPlannerService', () => {
       harness.scanRequest.id,
       'RUNNING'
     );
+    await expect(
+      harness.controlPlane.updateScanRequestStatus(
+        'tenant-1',
+        harness.scanRequest.id,
+        'QUEUED'
+      )
+    ).rejects.toThrow('cannot transition from RUNNING to QUEUED');
 
     await expect(
       harness.planner.plan(

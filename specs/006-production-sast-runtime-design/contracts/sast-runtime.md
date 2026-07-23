@@ -147,6 +147,12 @@ Once a canonical planning identity is recorded it cannot be replaced by a differ
 An admitted decision is idempotent across delivery timestamps and immutable, and planning cannot rewrite a running,
 completed, failed, or canceled scan.
 
+Scan creation resolves the active tenant-attributed SCM integration and repository binding from
+the durable Control Plane store. Process-local inventory caches are not authoritative, so a restarted
+or newly scheduled API replica reuses the persisted binding identity and rejects revoked context.
+Scan-request status changes read, validate, and write inside a serializable transaction. Running or
+terminal requests cannot move backward, while identical status delivery remains idempotent.
+
 SCM repository removal soft-revokes the durable repository binding instead of deleting immutable
 scan history. Revoked bindings cannot create new work; historical requests and reservations retain
 their tenant/repository attribution, and an authorized re-add explicitly restores `ACTIVE` state.
