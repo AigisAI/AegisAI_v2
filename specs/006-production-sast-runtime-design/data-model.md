@@ -272,7 +272,7 @@ Extends the production architecture scanner run with:
 
 Metadata that crosses out of the sandbox.
 
-- tenant, scan, attempt, scanner run, and workload-identity references
+- tenant, repository binding, scan, attempt, scanner run, and workload-identity references
 - scanner, wrapper, image, scanner-set, profile, rule, database, schema, and normalizer
   versions/digests
 - fixed input commit SHA
@@ -286,6 +286,23 @@ Metadata that crosses out of the sandbox.
 - produced timestamp
 
 The envelope never embeds raw artifact bytes.
+
+### SastArtifactIngestion
+
+Operational write-only intake state before an `ArtifactIngestionDecision`.
+
+- tenant, repository binding, scan, attempt, scanner run, and workload-identity references
+- scanner-run-unique idempotency key and canonical envelope digest
+- declared and independently observed content digests and byte counts
+- opaque Data/Security Plane object key, never returned by the ingress or user-facing APIs
+- workload-identity validation result
+- `RECEIVING | PENDING_VALIDATION | ACCEPTED | REJECTED | QUARANTINED`
+- rejection reason, bounded validation metadata, received timestamp, and audit references
+
+Only a directly authenticated, attempt-bound workload can create the row. `RECEIVING` has no
+object key or observed metadata. `PENDING_VALIDATION` has an immutable object key, matching
+transport byte count, observed digest, and receipt timestamp; it is not yet eligible for
+normalization. One scanner run can own at most one ingestion.
 
 ### ArtifactIngestionDecision
 

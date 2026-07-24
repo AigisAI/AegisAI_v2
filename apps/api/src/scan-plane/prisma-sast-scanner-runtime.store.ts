@@ -5,6 +5,7 @@ import {
   buildSastScanPlanDigestPreimage,
   isSastScanPlanValid,
   type SastScannerExecutionRecord,
+  type SastScannerInvocation,
   type SastScannerRuntimeAuditSignal,
   type SastScannerWrapperExecutionRequest,
   type SastScanPlan
@@ -210,24 +211,70 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
   ): Promise<void> {
     const allowedPriorStages: SastScanAttemptStage[] =
       stage === 'SCANNING' ? ['VALIDATING'] : ['VALIDATING', 'SCANNING'];
-    const result = await this.prisma.sastScanAttempt.updateMany({
-      where: {
-        id: request.attemptId,
-        tenantId: request.plan.tenantId,
-        repositoryBindingId:
-          request.plan.repositoryState.repositoryBindingId,
-        scanRequestId: request.plan.scanRequestId,
-        sandboxId: request.sandboxId,
-        workloadIdentityRef: request.workloadIdentityRef,
-        stage: { in: allowedPriorStages }
-      },
-      data: { stage }
-    });
-    if (result.count !== 1) {
-      throw securityViolation(
-        'SCAN_ATTEMPT_STAGE_CONFLICT',
-        'Scan attempt stage transition was rejected.'
+    const transition = async (
+      client: Pick<PrismaService, 'sastArtifactIngestion' | 'sastScanAttempt'>
+    ) => {
+      if (stage === 'CLEANUP_PENDING') {
+        const activeIngress = await client.sastArtifactIngestion.count({
+          where: {
+            tenantId: request.plan.tenantId,
+            scanRequestId: request.plan.scanRequestId,
+            attemptId: request.attemptId,
+            status: 'RECEIVING'
+          }
+        });
+        if (activeIngress !== 0) {
+          throw securityViolation(
+            'ARTIFACT_INGRESS_STILL_RECEIVING',
+            'Cleanup cannot start while an artifact ingress is receiving bytes.'
+          );
+        }
+      }
+
+      const result = await client.sastScanAttempt.updateMany({
+        where: {
+          id: request.attemptId,
+          tenantId: request.plan.tenantId,
+          repositoryBindingId:
+            request.plan.repositoryState.repositoryBindingId,
+          scanRequestId: request.plan.scanRequestId,
+          sandboxId: request.sandboxId,
+          workloadIdentityRef: request.workloadIdentityRef,
+          stage: { in: allowedPriorStages }
+        },
+        data: { stage }
+      });
+      if (result.count !== 1) {
+        throw securityViolation(
+          'SCAN_ATTEMPT_STAGE_CONFLICT',
+          'Scan attempt stage transition was rejected.'
+        );
+      }
+    };
+
+    if (stage === 'SCANNING') {
+      await transition(this.prisma);
+      return;
+    }
+
+    try {
+      await this.prisma.$transaction(
+        async (transaction) => transition(transaction),
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+        }
       );
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      ) {
+        throw retryableInfrastructureFailure(
+          'ARTIFACT_INGRESS_STAGE_SERIALIZATION_CONFLICT',
+          'Artifact ingress and cleanup stage transition must be retried.'
+        );
+      }
+      throw error;
     }
   }
 
@@ -239,56 +286,83 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
     const completedAt = new Date(record.observation.completedAt);
     const durationMilliseconds = completedAt.getTime() - startedAt.getTime();
 
+    const result = await this.prisma.scannerRun.updateMany({
+      where: {
+        id: record.scannerRunId,
+        tenantId: request.plan.tenantId,
+        repositoryBindingId:
+          request.plan.repositoryState.repositoryBindingId,
+        scanRequestId: request.plan.scanRequestId,
+        attemptId: request.attemptId,
+        scanner: record.invocation.scanner,
+        status: 'RUNNING'
+      },
+      data: {
+        scannerWorkspaceInventoryDigest:
+          record.observation.scannerWorkspaceInventoryDigest,
+        exitCode: record.observation.exitCode,
+        terminationSignal: record.observation.terminationSignal,
+        timedOut: record.observation.timedOut,
+        outputLimitExceeded: record.observation.outputLimitExceeded,
+        durationMilliseconds,
+        stdoutMetadata:
+          record.observation.stdout as unknown as Prisma.InputJsonValue,
+        stderrMetadata:
+          record.observation.stderr as unknown as Prisma.InputJsonValue,
+        resourceMetadata:
+          record.observation.resources as unknown as Prisma.InputJsonValue,
+        artifactMetadata: record.observation.artifact
+          ? (record.observation.artifact as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+        status: this.scannerRunStatus(record.status),
+        errorMessage:
+          record.status === 'SUCCEEDED' ? null : record.status,
+        startedAt,
+        completedAt
+      }
+    });
+    if (result.count !== 1) {
+      throw securityViolation(
+        'SCANNER_RUN_STATE_CONFLICT',
+        'Scanner terminal state did not match one running scanner record.'
+      );
+    }
+  }
+
+  async beginScannerRun(
+    request: Readonly<SastScannerWrapperExecutionRequest>,
+    scannerRunId: string,
+    invocation: Readonly<SastScannerInvocation>,
+    startedAt: string
+  ): Promise<void> {
     try {
       await this.prisma.scannerRun.create({
         data: {
-          id: record.scannerRunId,
+          id: scannerRunId,
           tenantId: request.plan.tenantId,
           scanRequestId: request.plan.scanRequestId,
           repositoryBindingId:
             request.plan.repositoryState.repositoryBindingId,
           attemptId: request.attemptId,
-          scanner: record.invocation.scanner,
-          scannerVersion: record.invocation.scannerVersion,
-          required: record.invocation.required,
-          wrapperDigest: record.invocation.wrapperDigest,
-          scannerImageDigest: record.invocation.scannerImageDigest,
-          ruleBundleDigest: record.invocation.ruleBundleDigest,
-          databaseDigest:
-            record.invocation.vulnerabilityDatabaseDigest,
-          scannerSetDigest: record.invocation.scannerSetDigest,
-          profileId: record.invocation.profileId,
-          profileDigest: record.invocation.profileDigest,
-          preflightAttestationRef:
-            record.invocation.preflightAttestationRef,
-          preflightInventoryDigest:
-            record.invocation.preflightInventoryDigest,
-          scannerWorkspaceInventoryDigest:
-            record.observation.scannerWorkspaceInventoryDigest,
-          artifactSchema: record.invocation.artifactSchema,
-          artifactSchemaVersion:
-            record.invocation.artifactSchemaVersion,
-          exitCode: record.observation.exitCode,
-          terminationSignal: record.observation.terminationSignal,
-          timedOut: record.observation.timedOut,
-          outputLimitExceeded: record.observation.outputLimitExceeded,
-          durationMilliseconds,
-          stdoutMetadata:
-            record.observation.stdout as unknown as Prisma.InputJsonValue,
-          stderrMetadata:
-            record.observation.stderr as unknown as Prisma.InputJsonValue,
-          resourceMetadata:
-            record.observation.resources as unknown as Prisma.InputJsonValue,
-          artifactMetadata: record.observation.artifact
-            ? (record.observation.artifact as unknown as Prisma.InputJsonValue)
-            : undefined,
-          status: this.scannerRunStatus(record.status),
-          rawArtifactObjectKey:
-            record.observation.artifact?.artifactRef,
-          errorMessage:
-            record.status === 'SUCCEEDED' ? null : record.status,
-          startedAt,
-          completedAt
+          scanner: invocation.scanner,
+          scannerVersion: invocation.scannerVersion,
+          required: invocation.required,
+          wrapperDigest: invocation.wrapperDigest,
+          scannerImageDigest: invocation.scannerImageDigest,
+          ruleBundleDigest: invocation.ruleBundleDigest,
+          databaseDigest: invocation.vulnerabilityDatabaseDigest,
+          scannerSetDigest: invocation.scannerSetDigest,
+          profileId: invocation.profileId,
+          profileDigest: invocation.profileDigest,
+          preflightAttestationRef: invocation.preflightAttestationRef,
+          preflightInventoryDigest: invocation.preflightInventoryDigest,
+          artifactSchema: invocation.artifactSchema,
+          artifactSchemaVersion: invocation.artifactSchemaVersion,
+          artifactMetadata: {
+            artifactRef: `${request.plan.resultIngressRef}/${invocation.scanner.toLowerCase()}`
+          },
+          status: 'RUNNING',
+          startedAt: new Date(startedAt)
         }
       });
     } catch (error) {
@@ -299,6 +373,80 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
         );
       }
       throw error;
+    }
+  }
+
+  async failScannerRun(
+    request: Readonly<SastScannerWrapperExecutionRequest>,
+    scannerRunId: string,
+    invocation: Readonly<SastScannerInvocation>,
+    reasonCode: string,
+    completedAt: string
+  ): Promise<void> {
+    const terminalAt = new Date(completedAt);
+    const started = await this.prisma.scannerRun.findFirst({
+      where: {
+        id: scannerRunId,
+        tenantId: request.plan.tenantId,
+        repositoryBindingId:
+          request.plan.repositoryState.repositoryBindingId,
+        scanRequestId: request.plan.scanRequestId,
+        attemptId: request.attemptId,
+        scanner: invocation.scanner,
+        status: 'RUNNING'
+      },
+      select: { startedAt: true }
+    });
+    if (!started?.startedAt) {
+      return;
+    }
+
+    const timedOut = /(?:DEADLINE|TIMEOUT)/u.test(reasonCode);
+    const result = await this.prisma.scannerRun.updateMany({
+      where: {
+        id: scannerRunId,
+        tenantId: request.plan.tenantId,
+        repositoryBindingId:
+          request.plan.repositoryState.repositoryBindingId,
+        scanRequestId: request.plan.scanRequestId,
+        attemptId: request.attemptId,
+        scanner: invocation.scanner,
+        status: 'RUNNING'
+      },
+      data: {
+        scannerWorkspaceInventoryDigest:
+          invocation.preflightInventoryDigest,
+        exitCode: -1,
+        timedOut,
+        outputLimitExceeded: false,
+        durationMilliseconds: Math.max(
+          0,
+          terminalAt.getTime() - started.startedAt.getTime()
+        ),
+        stdoutMetadata: {
+          byteSize: 0,
+          truncated: false,
+          secretRedactionApplied: true
+        },
+        stderrMetadata: {
+          byteSize: 0,
+          truncated: false,
+          secretRedactionApplied: true
+        },
+        resourceMetadata: {
+          unavailable: true
+        },
+        artifactMetadata: Prisma.JsonNull,
+        status: timedOut ? 'TIMED_OUT' : 'FAILED',
+        errorMessage: reasonCode,
+        completedAt: terminalAt
+      }
+    });
+    if (result.count !== 1) {
+      throw securityViolation(
+        'SCANNER_RUN_STATE_CONFLICT',
+        'Scanner failure did not match one running scanner record.'
+      );
     }
   }
 

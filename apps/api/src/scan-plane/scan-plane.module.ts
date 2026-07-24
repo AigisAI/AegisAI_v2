@@ -6,6 +6,21 @@ import { EvidenceExpiryTask } from "./evidence-expiry.task";
 import { EvidenceObjectStorageService } from "./evidence-object-storage.service";
 import { FindingsController } from "./findings.controller";
 import { ScanPlaneController } from "./scan-plane.controller";
+import { SastArtifactIngressController } from './sast-artifact-ingress.controller';
+import { SastArtifactIngressService } from './sast-artifact-ingress.service';
+import {
+  PrismaSastArtifactIngressStore
+} from './prisma-sast-artifact-ingress.store';
+import { SastArtifactIngressStore } from './sast-artifact-ingress.store';
+import {
+  SastArtifactObjectStore,
+  UnavailableSastArtifactObjectStore
+} from './sast-artifact-object-store';
+import {
+  DirectMtlsSastWorkloadIdentityAuthenticator,
+  SastWorkloadIdentityAuthenticator
+} from './sast-workload-identity.authenticator';
+import { SastWorkloadIdentityGuard } from './sast-workload-identity.guard';
 import { ScanPlaneMockController } from './scan-plane-mock.controller';
 import { ScanPlaneService } from "./scan-plane.service";
 import { ScannerSandboxAdapterService } from "./scanner-sandbox-adapter.service";
@@ -40,12 +55,30 @@ import {
   imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
   controllers: [
     ScanPlaneController,
+    SastArtifactIngressController,
     FindingsController,
     EvidenceController,
     ...(isMockAnalysisFixtureEnabled() ? [ScanPlaneMockController] : [])
   ],
   providers: [
     ScanPlaneService,
+    SastArtifactIngressService,
+    SastWorkloadIdentityGuard,
+    DirectMtlsSastWorkloadIdentityAuthenticator,
+    {
+      provide: SastWorkloadIdentityAuthenticator,
+      useExisting: DirectMtlsSastWorkloadIdentityAuthenticator
+    },
+    PrismaSastArtifactIngressStore,
+    {
+      provide: SastArtifactIngressStore,
+      useExisting: PrismaSastArtifactIngressStore
+    },
+    UnavailableSastArtifactObjectStore,
+    {
+      provide: SastArtifactObjectStore,
+      useExisting: UnavailableSastArtifactObjectStore
+    },
     ScannerSandboxAdapterService,
     SandboxRuntimeAttestationService,
     ScannerWorkspaceManifestService,

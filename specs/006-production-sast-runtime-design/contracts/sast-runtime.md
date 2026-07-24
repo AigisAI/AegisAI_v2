@@ -374,6 +374,31 @@ write-only endpoint. Result ingress checks in this order:
 8. secret-field and unsafe markup checks
 9. produced timestamp and replay/idempotency key
 
+The T029 transport is `PUT
+/api/scan-plane/result-ingress/{scanRequestId}/scanner-runs/{scannerRunId}` with
+`application/octet-stream`. `x-aegis-sast-artifact-envelope` carries at most 8 KiB of
+canonical JSON encoded as unpadded base64url, `Idempotency-Key` is exactly
+`sast-ingress-v1:{scannerRunId}:{contentDigest}`, and a positive canonical `Content-Length`
+must equal the envelope byte count before streaming begins. The path, envelope, immutable
+plan, active attempt, and pre-registered `RUNNING` scanner run must all agree.
+
+The ingress identity comes only from a directly authorized TLS peer certificate containing
+exactly one bounded SPIFFE URI SAN. Caller headers, including forwarded client-certificate
+headers, are never an identity source. The identity must match both the active durable attempt
+and envelope before the artifact stream is passed to object storage. The attempt must remain
+`SCANNING`, the scanner run must remain `RUNNING`, and the signed attempt deadline must not
+have elapsed. SPIFFE syntax validation requires a lowercase trust domain, path segments limited
+to `[A-Za-z0-9._-]+`, and rejects percent encoding plus `.` or `..` path segments.
+
+The Scan Plane object-store interface intentionally exposes only immutable `put` and cleanup
+`delete`; it has no read method. A first upload creates one scanner-run-unique
+`RECEIVING` record, atomically binds the opaque object key, observed byte count, and observed
+digest, then returns only a `PENDING_VALIDATION` receipt. An exact retry returns the same
+receipt without overwriting the object; changed-envelope replay fails closed. No GET route
+exists and the object key is absent from all ingress responses. The default production
+adapter remains unavailable until a Data/Security Plane object-store implementation is
+installed, so local filesystem storage cannot become a production fallback.
+
 Accepted artifacts become short-lived Data/Security objects. Rejected artifacts record
 metadata only. Security-significant mismatches are encrypted into an access-restricted
 quarantine prefix with the same maximum seven-day retention and no user access.

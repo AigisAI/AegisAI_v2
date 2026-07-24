@@ -114,11 +114,13 @@ export class SastScannerRuntimeService {
 
       for (const invocation of invocations) {
         activeInvocation = invocation;
+        activeScannerRunId = `scanner_run_${randomUUID()}`;
         activeScannerTerminalAuditRecorded = false;
         const controller = new AbortController();
         const operation = {
           request,
           invocation,
+          scannerRunId: activeScannerRunId,
           attemptDeadlineAt,
           signal: controller.signal
         };
@@ -129,7 +131,12 @@ export class SastScannerRuntimeService {
           invocation.scanner
         );
         this.manifestVerifier.verify(request, invocation, manifest);
-        activeScannerRunId = `scanner_run_${randomUUID()}`;
+        await this.store.beginScannerRun(
+          request,
+          activeScannerRunId,
+          invocation,
+          new Date().toISOString()
+        );
 
         await this.emitAudit(
           request,
@@ -210,15 +217,31 @@ export class SastScannerRuntimeService {
           }
         );
         activeScannerTerminalAuditRecorded = true;
+        activeInvocation = undefined;
+        activeScannerRunId = undefined;
 
         if (status !== 'SUCCEEDED') {
           throw this.scannerExecutionFailure(status, invocation.scanner);
         }
-        activeInvocation = undefined;
-        activeScannerRunId = undefined;
       }
     } catch (error) {
       runtimeFailure = this.normalizeFailure(error);
+      if (activeInvocation && activeScannerRunId) {
+        try {
+          await this.store.failScannerRun(
+            request,
+            activeScannerRunId,
+            activeInvocation,
+            runtimeFailure.reasonCode,
+            new Date().toISOString()
+          );
+        } catch {
+          runtimeFailure = retryableInfrastructureFailure(
+            'SCANNER_RUN_PERSISTENCE_FAILED',
+            'Scanner failure state could not be persisted.'
+          );
+        }
+      }
       if (activeInvocation && !activeScannerTerminalAuditRecorded) {
         try {
           await this.emitAudit(

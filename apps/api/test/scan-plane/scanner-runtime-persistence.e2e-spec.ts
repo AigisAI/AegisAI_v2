@@ -23,6 +23,13 @@ describe('Scanner runtime persistence and deployment contract', () => {
       ),
       'utf8'
     );
+    const ingressMigration = readFileSync(
+      resolve(
+        __dirname,
+        '../../prisma/migrations/20260724180000_sast_artifact_ingress/migration.sql'
+      ),
+      'utf8'
+    );
     const packageJson = JSON.parse(
       readFileSync(resolve(__dirname, '../../package.json'), 'utf8')
     ) as {
@@ -41,6 +48,13 @@ describe('Scanner runtime persistence and deployment contract', () => {
     expect(schema).toMatch(/resourceMetadata\s+Json\?/);
     expect(schema).toMatch(/artifactMetadata\s+Json\?/);
     expect(schema).toMatch(/@@unique\(\[attemptId, scanner\]\)/);
+    expect(schema).toMatch(/model SastArtifactIngestion \{/);
+    expect(schema).toMatch(
+      /scannerRunId\s+String\s+@unique/
+    );
+    expect(schema).toMatch(
+      /status\s+SastArtifactIngestionStatus\s+@default\(RECEIVING\)/
+    );
 
     expect(migration).toContain(
       'CONSTRAINT "SastScanAttempt_attempt_number_check"'
@@ -87,7 +101,7 @@ describe('Scanner runtime persistence and deployment contract', () => {
       "name: 'ScannerRun_exit_code_check'"
     );
     expect(onlineSchema).toContain(
-      "name: 'ScannerRun_runtime_metadata_check'"
+      "name: 'ScannerRun_runtime_metadata_v2_check'"
     );
     expect(onlineSchema).toContain(
       `("artifactMetadata" ->> 'byteSize')::numeric > 0`
@@ -120,14 +134,38 @@ describe('Scanner runtime persistence and deployment contract', () => {
     expect(onlineSchema).toContain(
       'REFERENCES "AuditEvent"("id", "attemptId", "tenantId")'
     );
+    expect(onlineSchema).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "ScannerRun_ingress_scope_key"'
+    );
+    expect(onlineSchema).toContain(
+      "name: 'SastArtifactIngestion_scanner_run_scope_fkey'"
+    );
+    expect(ingressMigration).toContain(
+      'CONSTRAINT "SastArtifactIngestion_identity_check"'
+    );
+    expect(ingressMigration).toContain(
+      'CONSTRAINT "SastArtifactIngestion_lifecycle_check"'
+    );
+    expect(ingressMigration).not.toContain(
+      'DROP CONSTRAINT IF EXISTS "ScannerRun_runtime_metadata_check"'
+    );
+    expect(onlineSchema).toContain(
+      "replacement: 'ScannerRun_runtime_metadata_v2_check'"
+    );
+    expect(onlineSchema).toContain(
+      'superseded constraint removed:'
+    );
+    expect(ingressMigration).not.toMatch(
+      /^\s*CREATE (?:UNIQUE )?INDEX CONCURRENTLY/m
+    );
     expect(onlineSchema).toMatch(/OR COALESCE\(/);
     expect(onlineSchema).toContain(' NOT VALID');
     expect(onlineSchema).toContain('DROP INDEX CONCURRENTLY IF EXISTS');
     expect(migration).not.toMatch(
       /^\s*CREATE (?:UNIQUE )?INDEX CONCURRENTLY/m
     );
-    expect(packageJson.scripts['prisma:migrate:deploy']).toContain(
-      'corepack pnpm prisma:online-schema'
+    expect(packageJson.scripts['prisma:migrate:deploy']).toBe(
+      'prisma migrate deploy --schema prisma/schema.prisma && corepack pnpm prisma:online-schema'
     );
     expect(packageJson.scripts['prisma:online-schema']).toBe(
       'node scripts/apply-online-sast-runtime-schema.mjs'
@@ -203,6 +241,25 @@ describe('Scanner runtime persistence and deployment contract', () => {
         scannerReceivesRepositoryRootForFastScan: false,
         preScannerProjectionAttestationRequired: true,
         projectionMismatchPolicy: 'FAIL_CLOSED'
+      },
+      resultIngress: {
+        method: 'PUT',
+        mediaType: 'application/octet-stream',
+        directAuthorizedMtlsRequired: true,
+        singleSpiffeUriSanRequired: true,
+        lowercaseSpiffeTrustDomainRequired: true,
+        spiffePathSegmentPattern: '[A-Za-z0-9._-]+',
+        spiffePercentEncodingAllowed: false,
+        spiffeRelativePathSegmentsAllowed: false,
+        forwardedIdentityHeadersTrusted: false,
+        attemptStageRequired: 'SCANNING',
+        scannerRunStatusRequired: 'RUNNING',
+        oneImmutableObjectPerScannerRun: true,
+        readRouteAllowed: false,
+        responseObjectKeyAllowed: false,
+        acceptedTransportState: 'PENDING_VALIDATION',
+        defaultObjectStoreProvider:
+          'FAIL_CLOSED_UNTIL_DATA_SECURITY_ADAPTER_INSTALLED'
       },
       productionMockAnalysisAllowed: false,
       scannerEntrypoints: {

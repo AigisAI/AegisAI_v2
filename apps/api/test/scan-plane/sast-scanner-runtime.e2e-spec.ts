@@ -59,6 +59,8 @@ class InMemoryRuntimeStore extends SastScannerRuntimeStore {
   began = false;
   stages: string[] = [];
   scannerRuns: SastScannerExecutionRecord[] = [];
+  begunScannerRunIds: string[] = [];
+  failedScannerRunIds: string[] = [];
   auditSignals: SastScannerRuntimeAuditSignal[] = [];
   finished?: FinishSastAttemptInput;
   credentialCleanupDurable = true;
@@ -81,6 +83,22 @@ class InMemoryRuntimeStore extends SastScannerRuntimeStore {
     record: SastScannerExecutionRecord
   ): Promise<void> {
     this.scannerRuns.push(record);
+    return Promise.resolve();
+  }
+
+  beginScannerRun(
+    _request: SastScannerWrapperExecutionRequest,
+    scannerRunId: string
+  ): Promise<void> {
+    this.begunScannerRunIds.push(scannerRunId);
+    return Promise.resolve();
+  }
+
+  failScannerRun(
+    _request: SastScannerWrapperExecutionRequest,
+    scannerRunId: string
+  ): Promise<void> {
+    this.failedScannerRunIds.push(scannerRunId);
     return Promise.resolve();
   }
 
@@ -346,10 +364,19 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
     expect(
       harness.provider.executeScanner.mock.calls[0][0]
     ).toMatchObject({
+      scannerRunId: expect.stringMatching(/^scanner_run_/),
       attemptDeadlineAt:
         harness.request.sandboxAttestation.claims.attemptDeadlineAt,
       signal: expect.any(AbortSignal)
     });
+    expect(harness.store.begunScannerRunIds).toEqual(
+      harness.store.scannerRuns.map((record) => record.scannerRunId)
+    );
+    expect(
+      harness.provider.executeScanner.mock.calls.map(
+        ([operation]) => operation.scannerRunId
+      )
+    ).toEqual(harness.store.begunScannerRunIds);
     for (let index = 0; index < 3; index += 1) {
       expect(
         harness.provider.readRepositoryManifest.mock.invocationCallOrder[index]

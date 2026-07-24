@@ -1,6 +1,7 @@
 import type {
   SastFailureClass,
   SastScannerExecutionRecord,
+  SastScannerInvocation,
   SastScannerRuntimeAuditSignal,
   SastScannerWrapperExecutionRequest,
   SastSignedSandboxCleanupObservation
@@ -42,9 +43,24 @@ export abstract class SastScannerRuntimeStore {
     >
   ): Promise<void>;
 
+  abstract beginScannerRun(
+    request: Readonly<SastScannerWrapperExecutionRequest>,
+    scannerRunId: string,
+    invocation: Readonly<SastScannerInvocation>,
+    startedAt: string
+  ): Promise<void>;
+
   abstract recordScannerRun(
     request: Readonly<SastScannerWrapperExecutionRequest>,
     record: Readonly<SastScannerExecutionRecord>
+  ): Promise<void>;
+
+  abstract failScannerRun(
+    request: Readonly<SastScannerWrapperExecutionRequest>,
+    scannerRunId: string,
+    invocation: Readonly<SastScannerInvocation>,
+    reasonCode: string,
+    completedAt: string
   ): Promise<void>;
 
   abstract recordAuditSignal(

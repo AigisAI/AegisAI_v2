@@ -12,6 +12,7 @@ import { retryableInfrastructureFailure } from './scanner-runtime.errors';
 export interface ScannerSandboxRuntimeOperation {
   request: Readonly<SastScannerWrapperExecutionRequest>;
   invocation: Readonly<SastScannerInvocation>;
+  scannerRunId: string;
   attemptDeadlineAt: string;
   signal: AbortSignal;
 }

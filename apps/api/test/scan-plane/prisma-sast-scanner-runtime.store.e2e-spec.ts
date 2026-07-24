@@ -3,6 +3,7 @@ import {
   isSastAttemptSequenceEligible,
   PrismaSastScannerRuntimeStore
 } from '../../src/scan-plane/prisma-sast-scanner-runtime.store';
+import type { SastScannerWrapperExecutionRequest } from '@aegisai/shared';
 
 describe('PrismaSastScannerRuntimeStore', () => {
   it('admits attempt two only after attempt one has a durable retry-eligible infrastructure failure', () => {
@@ -110,5 +111,47 @@ describe('PrismaSastScannerRuntimeStore', () => {
         completedAt: new Date(referenceTime)
       }
     });
+  });
+
+  it('does not close an attempt while artifact bytes are still being received', async () => {
+    const attemptUpdate = jest.fn();
+    const transaction = {
+      sastArtifactIngestion: {
+        count: jest.fn().mockResolvedValue(1)
+      },
+      sastScanAttempt: {
+        updateMany: attemptUpdate
+      }
+    };
+    const prisma = {
+      $transaction: jest.fn(
+        async (
+          operation: (client: typeof transaction) => Promise<unknown>
+        ) => operation(transaction)
+      )
+    };
+    const store = new PrismaSastScannerRuntimeStore(
+      prisma as unknown as PrismaService
+    );
+    const request = {
+      attemptId: 'attempt-1',
+      sandboxId: 'sandbox-1',
+      workloadIdentityRef: 'spiffe://aegis/scan/attempt-1',
+      plan: {
+        tenantId: 'tenant-1',
+        scanRequestId: 'scan-1',
+        repositoryState: {
+          repositoryBindingId: 'repository-1'
+        }
+      }
+    } as unknown as SastScannerWrapperExecutionRequest;
+
+    await expect(
+      store.markStage(request, 'CLEANUP_PENDING')
+    ).rejects.toMatchObject({
+      failureClass: 'SECURITY_VIOLATION',
+      reasonCode: 'ARTIFACT_INGRESS_STILL_RECEIVING'
+    });
+    expect(attemptUpdate).not.toHaveBeenCalled();
   });
 });
