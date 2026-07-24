@@ -89,6 +89,7 @@ Required runtime values include:
 - `TOKEN_ENCRYPTION_KEY`
 - `WORKLOAD_ATTESTATION_KEY`
 - `PREFLIGHT_ATTESTATION_KEY`
+- `CREDENTIAL_LEASE_EXPIRY_INTERVAL_MS`
 - OAuth client ids and secrets
 - `AI_PORT`
 - `AI_SERVER_URL`

@@ -7,6 +7,7 @@ import {
 import {
   MAX_WORKLOAD_IDENTITY_ATTESTATION_TTL_SECONDS,
   WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE,
+  WORKLOAD_IDENTITY_ATTESTATION_ISSUER,
   WORKLOAD_IDENTITY_ATTESTATION_VERSION,
   type WorkloadIdentityAttestation,
   type WorkloadIdentityAttestationClaims
@@ -15,7 +16,6 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { ConfigService } from '../config/config.service';
 
-const ATTESTATION_ISSUER = 'aegisai-sandbox-provisioner';
 const MAX_CLOCK_SKEW_MS = 30_000;
 
 export interface WorkloadIdentityScope {
@@ -47,7 +47,7 @@ export class WorkloadIdentityAttestationService {
 
     const claims: WorkloadIdentityAttestationClaims = {
       version: WORKLOAD_IDENTITY_ATTESTATION_VERSION,
-      issuer: ATTESTATION_ISSUER,
+      issuer: WORKLOAD_IDENTITY_ATTESTATION_ISSUER,
       audience: WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE,
       ...scope,
       nonce: randomUUID(),
@@ -78,7 +78,7 @@ export class WorkloadIdentityAttestationService {
 
     if (
       claims.version !== WORKLOAD_IDENTITY_ATTESTATION_VERSION ||
-      claims.issuer !== ATTESTATION_ISSUER ||
+      claims.issuer !== WORKLOAD_IDENTITY_ATTESTATION_ISSUER ||
       claims.audience !== WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE ||
       !claims.nonce ||
       issuedAt > now.getTime() + MAX_CLOCK_SKEW_MS ||

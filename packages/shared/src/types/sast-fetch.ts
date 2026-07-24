@@ -28,6 +28,18 @@ export const SAST_PREFLIGHT_DECISIONS = [
 ] as const;
 export type SastPreflightDecision = (typeof SAST_PREFLIGHT_DECISIONS)[number];
 
+export const SAST_PREFLIGHT_SELECTION_MODES = [
+  'ALL_SCANNABLE',
+  'PATH_ALLOWLIST'
+] as const;
+export type SastPreflightSelectionMode =
+  (typeof SAST_PREFLIGHT_SELECTION_MODES)[number];
+
+export interface SastRepositoryPreflightSelection {
+  mode: SastPreflightSelectionMode;
+  paths: readonly string[];
+}
+
 export const SAST_PREFLIGHT_REASON_CODES = [
   'PATH_INVALID_UTF8',
   'PATH_NUL_OR_CONTROL',
@@ -80,6 +92,7 @@ export interface SastRepositoryPreflightInput {
   >;
   sourceExtensions: readonly string[];
   manifestNames: readonly string[];
+  selection: Readonly<SastRepositoryPreflightSelection>;
   entries: readonly SastRepositoryTreeEntry[];
 }
 

@@ -141,6 +141,24 @@ export class PrismaRepositoryCredentialLeaseStore extends RepositoryCredentialLe
     throw new ConflictException('Credential lease cannot be revoked from its current state.');
   }
 
+  async revokeExpired(referenceTime: string): Promise<number> {
+    const timestamp = new Date(referenceTime);
+    if (!Number.isFinite(timestamp.getTime())) {
+      throw new Error('Credential lease expiry reference time is invalid.');
+    }
+    const updated = await this.prisma.sastRepositoryCredentialLease.updateMany({
+      where: {
+        status: { in: ['RESERVED', 'ISSUED'] },
+        expiresAt: { lte: timestamp }
+      },
+      data: {
+        status: 'REVOKED',
+        revokedAt: timestamp
+      }
+    });
+    return updated.count;
+  }
+
   async findByAttempt(
     tenantId: string,
     attemptId: string

@@ -51,8 +51,8 @@ CREATE TABLE "SastRepositoryCredentialLease" (
       )
 );
 
-CREATE UNIQUE INDEX "SastRepositoryCredentialLease_attemptId_key"
-ON "SastRepositoryCredentialLease"("attemptId");
+CREATE UNIQUE INDEX "SastRepositoryCredentialLease_tenantId_attemptId_key"
+ON "SastRepositoryCredentialLease"("tenantId", "attemptId");
 
 CREATE INDEX "SastRepositoryCredentialLease_tenantId_scanRequestId_status_idx"
 ON "SastRepositoryCredentialLease"("tenantId", "scanRequestId", "status");
@@ -63,23 +63,17 @@ ON "SastRepositoryCredentialLease"("repositoryBindingId", "status");
 CREATE INDEX "SastRepositoryCredentialLease_expiresAt_status_idx"
 ON "SastRepositoryCredentialLease"("expiresAt", "status");
 
-CREATE UNIQUE INDEX "RepositoryBinding_id_tenantId_key"
-ON "RepositoryBinding"("id", "tenantId");
-
-CREATE UNIQUE INDEX "ScanRequest_id_tenantId_repositoryBindingId_key"
-ON "ScanRequest"("id", "tenantId", "repositoryBindingId");
-
 ALTER TABLE "SastRepositoryCredentialLease"
 ADD CONSTRAINT "SastRepositoryCredentialLease_tenantId_fkey"
 FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "SastRepositoryCredentialLease"
-ADD CONSTRAINT "SastRepositoryCredentialLease_repositoryBindingId_tenantId_fkey"
+ADD CONSTRAINT "SastCredentialLease_repository_scope_fkey"
 FOREIGN KEY ("repositoryBindingId", "tenantId")
-REFERENCES "RepositoryBinding"("id", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE;
+REFERENCES "RepositoryBinding"("id", "tenantId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "SastRepositoryCredentialLease"
-ADD CONSTRAINT "SastRepositoryCredentialLease_scanRequestId_tenantId_repositoryBindingId_fkey"
+ADD CONSTRAINT "SastCredentialLease_scan_scope_fkey"
 FOREIGN KEY ("scanRequestId", "tenantId", "repositoryBindingId")
 REFERENCES "ScanRequest"("id", "tenantId", "repositoryBindingId")
-ON DELETE RESTRICT ON UPDATE CASCADE;
+ON DELETE CASCADE ON UPDATE CASCADE;

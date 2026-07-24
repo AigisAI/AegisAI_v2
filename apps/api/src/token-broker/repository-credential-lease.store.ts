@@ -38,6 +38,8 @@ export abstract class RepositoryCredentialLeaseStore {
     revokedAt: string
   ): Promise<SastCredentialLeaseMetadata>;
 
+  abstract revokeExpired(referenceTime: string): Promise<number>;
+
   abstract findByAttempt(
     tenantId: string,
     attemptId: string

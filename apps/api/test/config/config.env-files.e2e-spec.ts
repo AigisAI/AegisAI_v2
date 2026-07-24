@@ -70,6 +70,12 @@ describe('Config environment files', () => {
         PREFLIGHT_ATTESTATION_KEY: environment.WORKLOAD_ATTESTATION_KEY
       }).error
     ).toBeDefined();
+    expect(
+      ENVIRONMENT_VALIDATION_SCHEMA.validate({
+        ...environment,
+        TOKEN_ENCRYPTION_KEY: environment.WORKLOAD_ATTESTATION_KEY.toUpperCase()
+      }).error
+    ).toBeDefined();
   });
 
   it('loads env files from deterministic workspace and api locations', () => {

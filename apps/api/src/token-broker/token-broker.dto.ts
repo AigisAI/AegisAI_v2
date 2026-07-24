@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   Equals,
+  IsIn,
   IsInt,
   IsString,
   Matches,
@@ -11,6 +12,7 @@ import {
 import {
   MAX_SCAN_CREDENTIAL_TTL_SECONDS,
   WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE,
+  WORKLOAD_IDENTITY_ATTESTATION_ISSUER,
   WORKLOAD_IDENTITY_ATTESTATION_VERSION
 } from '@aegisai/shared';
 
@@ -23,8 +25,8 @@ class WorkloadIdentityAttestationClaimsDto {
   @Equals(WORKLOAD_IDENTITY_ATTESTATION_VERSION)
   version!: typeof WORKLOAD_IDENTITY_ATTESTATION_VERSION;
 
-  @Equals('aegisai-sandbox-provisioner')
-  issuer!: 'aegisai-sandbox-provisioner';
+  @Equals(WORKLOAD_IDENTITY_ATTESTATION_ISSUER)
+  issuer!: typeof WORKLOAD_IDENTITY_ATTESTATION_ISSUER;
 
   @Equals(WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE)
   audience!: typeof WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE;
@@ -116,4 +118,41 @@ export class TokenBrokerIssueDto {
   @IsString()
   @Matches(RESOURCE_ID)
   auditReason!: string;
+}
+
+export class TokenBrokerLeaseCompletionDto {
+  @IsString()
+  @Matches(RESOURCE_ID)
+  credentialId!: string;
+
+  @IsString()
+  @Matches(RESOURCE_ID)
+  tenantId!: string;
+
+  @IsString()
+  @Matches(RESOURCE_ID)
+  repositoryBindingId!: string;
+
+  @IsString()
+  @Matches(RESOURCE_ID)
+  scanRequestId!: string;
+
+  @IsString()
+  @Matches(RESOURCE_ID)
+  attemptId!: string;
+
+  @IsString()
+  @Matches(RESOURCE_ID)
+  workloadIdentityRef!: string;
+
+  @ValidateNested()
+  @Type(() => WorkloadIdentityAttestationDto)
+  workloadIdentityAttestation!: WorkloadIdentityAttestationDto;
+
+  @IsString()
+  @Matches(FULL_COMMIT_SHA)
+  commitSha!: string;
+
+  @IsIn(['WIPED', 'REVOKED'])
+  disposition!: 'WIPED' | 'REVOKED';
 }

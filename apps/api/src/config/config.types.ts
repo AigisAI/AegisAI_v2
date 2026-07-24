@@ -28,6 +28,7 @@ export interface EnvironmentVariables {
   TOKEN_ENCRYPTION_KEY: string;
   WORKLOAD_ATTESTATION_KEY: string;
   PREFLIGHT_ATTESTATION_KEY: string;
+  CREDENTIAL_LEASE_EXPIRY_INTERVAL_MS: number;
   ANALYSIS_CLIENT_MODE: AnalysisClientMode;
   AI_SERVER_URL: string;
   USE_INTERNAL_AI: BooleanString;

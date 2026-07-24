@@ -1,12 +1,9 @@
 import { createHash } from 'node:crypto';
 import {
   chmod,
-  constants,
   lstat,
   mkdtemp,
   mkdir,
-  open,
-  readlink,
   readdir,
   realpath,
   rm,
@@ -19,10 +16,15 @@ import { TextDecoder } from 'node:util';
 import {
   type ScmProvider,
   type SastRepositoryFetchMetadata,
+  type SastRepositoryPreflightInput,
   type SastRepositoryTreeEntry,
   type TokenBrokerIssueRequest
 } from '@aegisai/shared';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  ServiceUnavailableException
+} from '@nestjs/common';
 
 import { ControlPlaneService } from '../control-plane/control-plane.service';
 import { TokenBrokerService } from '../token-broker/token-broker.service';
@@ -33,9 +35,10 @@ import {
 } from './repository-git-executor';
 
 const FULL_COMMIT_SHA = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
-const SAFE_PREACCESS_PATH = /^(?!\/)(?![A-Za-z]:)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/;
 const GIT_COMMAND_TIMEOUT_MS = 120_000;
 const TREE_ENRICHMENT_CONCURRENCY = 16;
+const MAX_TREE_INVENTORY_OUTPUT_BYTES = 64 * 1024 * 1024;
+const MAX_SYMLINK_TARGET_BYTES = 4096;
 const ALLOWED_GIT_TREE_ENTRIES = new Set([
   '100644:blob',
   '100755:blob',
@@ -44,11 +47,15 @@ const ALLOWED_GIT_TREE_ENTRIES = new Set([
 ]);
 
 type ParsedGitTreeEntry = SastRepositoryTreeEntry;
+type PendingRepositoryFetchResult = Omit<RepositoryFetchResult, 'metadata'> & {
+  metadata: Omit<SastRepositoryFetchMetadata, 'credentialWiped'>;
+};
 
 export interface RepositoryFetchInput {
   scratchRoot: string;
   workspaceRoot: string;
   credentialTmpfsRoot: string;
+  limits: SastRepositoryPreflightInput['limits'];
   tokenRequest: TokenBrokerIssueRequest;
 }
 
@@ -84,6 +91,8 @@ export class RepositoryFetchService {
       return await this.tokenBroker.withCredential(input.tokenRequest, async (credential) => {
         let environment: Record<string, string> | undefined;
         let remoteAdded = false;
+        let completed: PendingRepositoryFetchResult | undefined;
+        let credentialFilesWiped = false;
         try {
           environment = await this.createGitEnvironment(
             credentialDirectory,
@@ -130,6 +139,32 @@ export class RepositoryFetchService {
             throw new BadRequestException('Fetched commit does not match the immutable scan SHA.');
           }
 
+          const tree = await this.run(
+            input.workspaceRoot,
+            environment,
+            ['ls-tree', '-r', '-z', '-l', input.tokenRequest.commitSha],
+            MAX_TREE_INVENTORY_OUTPUT_BYTES
+          );
+          const parsedEntries = this.parseTree(
+            tree.stdout,
+            input.tokenRequest.commitSha.length
+          );
+          this.assertMaterializationLimits(parsedEntries, input.limits);
+          const entries = await this.enrichEntries(
+            input.workspaceRoot,
+            environment,
+            parsedEntries
+          );
+          const countObjects = this.singleLineBlock(
+            await this.run(input.workspaceRoot, environment, ['count-objects', '-v'])
+          );
+          const counts = this.parseObjectCounts(countObjects);
+          if (counts.fetchedBytes > input.limits.maxRepositoryBytes) {
+            throw new BadRequestException(
+              'Fetched Git object storage exceeds the repository byte limit.'
+            );
+          }
+
           await this.run(input.workspaceRoot, environment, [
             'checkout',
             '--quiet',
@@ -153,21 +188,6 @@ export class RepositoryFetchService {
             throw new BadRequestException('Repository fetch did not produce a shallow checkout.');
           }
 
-          const tree = await this.run(input.workspaceRoot, environment, [
-            'ls-tree',
-            '-r',
-            '-z',
-            '-l',
-            'HEAD'
-          ]);
-          const entries = await this.enrichEntries(
-            input.workspaceRoot,
-            this.parseTree(tree.stdout, input.tokenRequest.commitSha.length)
-          );
-          const countObjects = this.singleLineBlock(
-            await this.run(input.workspaceRoot, environment, ['count-objects', '-v'])
-          );
-          const counts = this.parseObjectCounts(countObjects);
           await this.run(input.workspaceRoot, environment, [
             'remote',
             'remove',
@@ -176,7 +196,7 @@ export class RepositoryFetchService {
           remoteAdded = false;
           await this.removeGitMetadata(input.workspaceRoot);
 
-          return {
+          completed = {
             metadata: {
               attemptId: input.tokenRequest.attemptId,
               fixedCommitSha: input.tokenRequest.commitSha,
@@ -188,8 +208,7 @@ export class RepositoryFetchService {
               submodulesFetched: false,
               lfsObjectsFetched: false,
               archivesExpanded: false,
-              gitMetadataRemoved: true,
-              credentialWiped: true
+              gitMetadataRemoved: true
             },
             workspaceRoot: resolve(input.workspaceRoot),
             entries
@@ -202,8 +221,23 @@ export class RepositoryFetchService {
               'origin'
             ]).catch(() => undefined);
           }
-          await this.destroyCredentialFiles(credentialDirectory, credential.byteLength);
+          credentialFilesWiped = await this.destroyCredentialFiles(
+            credentialDirectory,
+            credential.byteLength
+          );
         }
+        if (!completed || !credentialFilesWiped) {
+          throw new ServiceUnavailableException(
+            'Repository fetch cleanup evidence is incomplete.'
+          );
+        }
+        return {
+          ...completed,
+          metadata: {
+            ...completed.metadata,
+            credentialWiped: true
+          }
+        };
       });
     } finally {
       await this.removeCredentialDirectory(input.scratchRoot, credentialDirectory);
@@ -213,7 +247,12 @@ export class RepositoryFetchService {
   private validateInput(input: RepositoryFetchInput): void {
     if (
       !FULL_COMMIT_SHA.test(input.tokenRequest.commitSha) ||
-      input.tokenRequest.principal !== 'REPO_READ'
+      input.tokenRequest.principal !== 'REPO_READ' ||
+      !this.validPositiveLimit(input.limits?.maxRepositoryBytes) ||
+      !this.validPositiveLimit(input.limits?.maxSelectedBytes) ||
+      !this.validPositiveLimit(input.limits?.maxFileCount) ||
+      !this.validPositiveLimit(input.limits?.maxSingleFileBytes) ||
+      !this.validPositiveLimit(input.limits?.maxPathDepth)
     ) {
       throw new BadRequestException('Repository fetch requires a full fixed commit and REPO_READ.');
     }
@@ -337,17 +376,47 @@ export class RepositoryFetchService {
   private async destroyCredentialFiles(
     credentialDirectory: string,
     credentialBytes: number
-  ): Promise<void> {
+  ): Promise<boolean> {
     const credentialPath = join(credentialDirectory, 'credential');
+    const paths = [
+      credentialPath,
+      join(credentialDirectory, 'askpass.sh'),
+      join(credentialDirectory, 'gitconfig')
+    ];
     await writeFile(credentialPath, Buffer.alloc(credentialBytes), {
       mode: 0o600,
       flag: 'w'
     }).catch(() => undefined);
-    await Promise.all([
-      unlink(credentialPath).catch(() => undefined),
-      unlink(join(credentialDirectory, 'askpass.sh')).catch(() => undefined),
-      unlink(join(credentialDirectory, 'gitconfig')).catch(() => undefined)
-    ]);
+    await Promise.all(paths.map((path) => this.unlinkIfPresent(path)));
+    const remaining = await Promise.all(
+      paths.map((path) =>
+        lstat(path).then(
+          () => true,
+          (error: NodeJS.ErrnoException) => {
+            if (error.code === 'ENOENT') {
+              return false;
+            }
+            throw error;
+          }
+        )
+      )
+    );
+    if (remaining.some(Boolean)) {
+      throw new ServiceUnavailableException(
+        'Repository credential files could not be removed.'
+      );
+    }
+    return true;
+  }
+
+  private async unlinkIfPresent(path: string): Promise<void> {
+    try {
+      await unlink(path);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+    }
   }
 
   private async removeCredentialDirectory(
@@ -377,13 +446,15 @@ export class RepositoryFetchService {
   private async run(
     cwd: string,
     environment: Record<string, string>,
-    args: string[]
+    args: string[],
+    maxOutputBytes?: number
   ): Promise<RepositoryGitCommandResult> {
     return this.git.run({
       args,
       cwd,
       environment,
-      timeoutMilliseconds: GIT_COMMAND_TIMEOUT_MS
+      timeoutMilliseconds: GIT_COMMAND_TIMEOUT_MS,
+      maxOutputBytes
     });
   }
 
@@ -462,6 +533,7 @@ export class RepositoryFetchService {
 
   private async enrichEntries(
     workspaceRoot: string,
+    environment: Record<string, string>,
     entries: ParsedGitTreeEntry[]
   ): Promise<SastRepositoryTreeEntry[]> {
     const enriched = new Array<SastRepositoryTreeEntry>(entries.length);
@@ -473,7 +545,11 @@ export class RepositoryFetchService {
         const index = cursor;
         cursor += 1;
         try {
-          enriched[index] = await this.enrichEntry(workspaceRoot, entries[index]);
+          enriched[index] = await this.enrichEntry(
+            workspaceRoot,
+            environment,
+            entries[index]
+          );
         } catch (error) {
           failed = true;
           firstError = error;
@@ -494,6 +570,7 @@ export class RepositoryFetchService {
 
   private async enrichEntry(
     workspaceRoot: string,
+    environment: Record<string, string>,
     parsedEntry: ParsedGitTreeEntry
   ): Promise<SastRepositoryTreeEntry> {
     const entry: SastRepositoryTreeEntry = {
@@ -507,17 +584,18 @@ export class RepositoryFetchService {
       symlinkTargetEncodingValid: parsedEntry.symlinkTargetEncodingValid,
       lfsPointer: parsedEntry.lfsPointer
     };
-    if (
-      !entry.pathEncodingValid ||
-      hasControlCharacters(entry.path) ||
-      !SAFE_PREACCESS_PATH.test(entry.path)
-    ) {
-      return entry;
-    }
-    const absolutePath = resolve(workspaceRoot, ...entry.path.split('/'));
-    this.assertDescendant(workspaceRoot, absolutePath, 'repository entry');
     if (entry.kind === 'SYMLINK') {
-      const targetBytes = await readlink(absolutePath, { encoding: 'buffer' });
+      if (entry.byteSize > MAX_SYMLINK_TARGET_BYTES) {
+        throw new BadRequestException(
+          'Symlink target exceeds the pre-materialization safety limit.'
+        );
+      }
+      const targetBytes = await this.readGitBlob(
+        workspaceRoot,
+        environment,
+        entry,
+        MAX_SYMLINK_TARGET_BYTES
+      );
       const decoder = new TextDecoder('utf-8', { fatal: true });
       try {
         return {
@@ -540,22 +618,80 @@ export class RepositoryFetchService {
       return entry;
     }
 
-    const handle = await open(
-      absolutePath,
-      constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)
+    const prefix = await this.readGitBlob(
+      workspaceRoot,
+      environment,
+      entry,
+      1024
     );
-    try {
-      const prefix = Buffer.alloc(Math.min(entry.byteSize, 256));
-      await handle.read(prefix, 0, prefix.length, 0);
-      return {
-        ...entry,
-        lfsPointer: prefix
-          .toString('utf8')
-          .startsWith('version https://git-lfs.github.com/spec/v1\n')
-      };
-    } finally {
-      await handle.close();
+    return {
+      ...entry,
+      lfsPointer: prefix
+        .subarray(0, 256)
+        .toString('utf8')
+        .startsWith('version https://git-lfs.github.com/spec/v1\n')
+    };
+  }
+
+  private async readGitBlob(
+    workspaceRoot: string,
+    environment: Record<string, string>,
+    entry: SastRepositoryTreeEntry,
+    maxOutputBytes: number
+  ): Promise<Buffer> {
+    const objectId = entry.gitObjectId.slice(entry.gitObjectId.indexOf(':') + 1);
+    const result = await this.run(
+      workspaceRoot,
+      environment,
+      ['cat-file', 'blob', objectId],
+      maxOutputBytes
+    );
+    if (result.stdout.length !== entry.byteSize) {
+      throw new BadRequestException(
+        'Git blob size does not match the attested tree inventory.'
+      );
     }
+    return result.stdout;
+  }
+
+  private assertMaterializationLimits(
+    entries: SastRepositoryTreeEntry[],
+    limits: SastRepositoryPreflightInput['limits']
+  ): void {
+    if (entries.length > limits.maxFileCount) {
+      throw new BadRequestException(
+        'Repository file count exceeds the pre-materialization limit.'
+      );
+    }
+    let repositoryBytes = 0;
+    for (const entry of entries) {
+      repositoryBytes += entry.byteSize;
+      if (!Number.isSafeInteger(repositoryBytes)) {
+        throw new BadRequestException(
+          'Repository byte count exceeds safe integer bounds.'
+        );
+      }
+      if (entry.byteSize > limits.maxSingleFileBytes) {
+        throw new BadRequestException(
+          'Repository entry exceeds the pre-materialization file byte limit.'
+        );
+      }
+      const depth = entry.path.replace(/\\/g, '/').split('/').filter(Boolean).length;
+      if (depth > limits.maxPathDepth) {
+        throw new BadRequestException(
+          'Repository path depth exceeds the pre-materialization limit.'
+        );
+      }
+      if (repositoryBytes > limits.maxRepositoryBytes) {
+        throw new BadRequestException(
+          'Repository bytes exceed the pre-materialization limit.'
+        );
+      }
+    }
+  }
+
+  private validPositiveLimit(value: number | undefined): boolean {
+    return Number.isSafeInteger(value) && (value ?? 0) > 0;
   }
 
   private parseObjectCounts(output: string): { objectCount: number; fetchedBytes: number } {
@@ -684,11 +820,4 @@ export class RepositoryFetchService {
       this.assertDescendant(realRoot, realCursor, label);
     }
   }
-}
-
-function hasControlCharacters(value: string): boolean {
-  return Array.from(value).some((character) => {
-    const codePoint = character.codePointAt(0) ?? 0;
-    return codePoint <= 31 || codePoint === 127;
-  });
 }

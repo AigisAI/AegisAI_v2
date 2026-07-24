@@ -2,7 +2,10 @@ import { mkdtemp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import type { TokenBrokerIssueRequest } from '@aegisai/shared';
+import {
+  SAST_SCAN_PROFILES,
+  type TokenBrokerIssueRequest
+} from '@aegisai/shared';
 
 import {
   RepositoryGitExecutor,
@@ -52,7 +55,7 @@ class RecordingGitExecutor extends RepositoryGitExecutor {
     if (args === 'rev-parse --is-shallow-repository') {
       return this.output('true\n');
     }
-    if (args === 'ls-tree -r -z -l HEAD') {
+    if (args === `ls-tree -r -z -l ${this.commitSha}`) {
       const tree =
         this.treeOutput ??
         [
@@ -60,6 +63,14 @@ class RecordingGitExecutor extends RepositoryGitExecutor {
           `100644 blob ${'2'.repeat(40)}     130\tassets/large.bin\0`
         ].join('');
       return { stdout: Buffer.from(tree), stderr: Buffer.alloc(0) };
+    }
+    if (args === `cat-file blob ${'1'.repeat(40)}`) {
+      return this.output('class App {}');
+    }
+    if (args === `cat-file blob ${'2'.repeat(40)}`) {
+      const pointer = Buffer.alloc(130);
+      pointer.write('version https://git-lfs.github.com/spec/v1\n');
+      return { stdout: pointer, stderr: Buffer.alloc(0) };
     }
     if (args === 'count-objects -v') {
       return this.output('count: 2\nsize: 4\nin-pack: 5\nsize-pack: 8\n');
@@ -74,6 +85,7 @@ class RecordingGitExecutor extends RepositoryGitExecutor {
 
 describe('RepositoryFetchService', () => {
   const commitSha = 'a'.repeat(40);
+  const fetchLimits = SAST_SCAN_PROFILES.JAVA_DEEP_V1.limits;
   let scratchRoot: string;
   let workspaceRoot: string;
   let credentialTmpfsRoot: string;
@@ -153,6 +165,7 @@ describe('RepositoryFetchService', () => {
       scratchRoot,
       workspaceRoot,
       credentialTmpfsRoot,
+      limits: fetchLimits,
       tokenRequest: tokenRequest()
     });
 
@@ -206,6 +219,10 @@ describe('RepositoryFetchService', () => {
         command.args.some((argument) => /refs\/heads|refs\/tags|main|master/.test(argument))
       )
     ).toBe(false);
+    const commandNames = executor.commands.map((command) => command.args[0]);
+    expect(commandNames.indexOf('ls-tree')).toBeLessThan(
+      commandNames.indexOf('checkout')
+    );
     expect(credentialAfterUse && [...credentialAfterUse].every((value) => value === 0)).toBe(true);
     expect(await readdir(credentialTmpfsRoot)).toEqual([]);
     expect(await readdir(workspaceRoot)).not.toContain('.git');
@@ -227,6 +244,7 @@ describe('RepositoryFetchService', () => {
       scratchRoot,
       workspaceRoot,
       credentialTmpfsRoot,
+      limits: fetchLimits,
       tokenRequest: tokenRequest()
     };
 
@@ -292,9 +310,57 @@ describe('RepositoryFetchService', () => {
         scratchRoot,
         workspaceRoot,
         credentialTmpfsRoot,
+        limits: fetchLimits,
         tokenRequest: tokenRequest()
       })
     ).rejects.toThrow('entry type or size');
+    expect(await readdir(credentialTmpfsRoot)).toEqual([]);
+  });
+
+  it('rejects expanded tree limits before checkout materializes repository files', async () => {
+    const tokenBroker = {
+      withCredential: jest.fn(
+        async (
+          _request: TokenBrokerIssueRequest,
+          consumer: (credential: Uint8Array) => Promise<unknown>
+        ) => {
+          const credential = Buffer.from('repository-secret-value');
+          try {
+            return await consumer(credential);
+          } finally {
+            credential.fill(0);
+          }
+        }
+      )
+    } as unknown as TokenBrokerService;
+    const executor = new RecordingGitExecutor(commitSha, workspaceRoot);
+    const service = new RepositoryFetchService(
+      tokenBroker,
+      executor,
+      {
+        getRepositoryFetchTarget: jest.fn().mockResolvedValue({
+          provider: 'GITHUB',
+          fullName: 'acme/service'
+        })
+      } as unknown as ControlPlaneService,
+      { assertTmpfs: jest.fn() } as unknown as CredentialTmpfsVerifier
+    );
+
+    await expect(
+      service.fetch({
+        scratchRoot,
+        workspaceRoot,
+        credentialTmpfsRoot,
+        limits: {
+          ...fetchLimits,
+          maxRepositoryBytes: 100
+        },
+        tokenRequest: tokenRequest()
+      })
+    ).rejects.toThrow('pre-materialization limit');
+    expect(
+      executor.commands.some((command) => command.args[0] === 'checkout')
+    ).toBe(false);
     expect(await readdir(credentialTmpfsRoot)).toEqual([]);
   });
 });

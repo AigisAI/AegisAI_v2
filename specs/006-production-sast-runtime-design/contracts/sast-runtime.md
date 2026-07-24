@@ -206,8 +206,11 @@ or recognizing an extension cannot create a language-complete profile.
 2. Provisioner establishes a unique workload identity and empty encrypted scratch volume.
 3. Sandbox exchanges its attested identity for one fixed-scan repo-read credential through
    Token Broker.
-4. Sandbox fetches the fixed commit SHA. It never resolves a mutable ref itself.
-5. Credential is held in memory or tmpfs, excluded from process arguments, and wiped before
+4. Sandbox fetches the fixed commit SHA. It never resolves a mutable ref itself. Before checkout,
+   it inventories Git tree/object metadata and enforces the selected profile's file-count,
+   expanded-byte, single-file, and path-depth materialization limits.
+5. Only a tree within those bounds is checked out. Credential is held in memory or tmpfs,
+   excluded from process arguments, and wiped before
    artifact handoff completes.
 6. Fetch metadata records the remote host, fixed commit, object count, and byte count, but
    never records URL userinfo or credential material.
@@ -229,6 +232,11 @@ Preflight runs before any scanner and in the same microVM boundary. Validation o
 7. Refuse archive expansion.
 8. Produce an inventory digest and `ACCEPT`, `REJECT`, or `RESTRICTED_ESCALATION` decision.
 
+The selection input is explicit: Deep uses `ALL_SCANNABLE`, while Fast supplies the
+deterministic changed/context path allowlist. Selected bytes include only scannable entries in
+that selection. The selection mode and normalized sorted paths are part of the length-prefixed
+inventory digest, so a changed-file selection cannot be substituted after attestation.
+
 For an accepted decision, the platform signs an attestation over the attempt ID, fixed commit,
 path-policy version, normalized inventory digest, and decision. The control plane passes that
 attestation reference and digest as immutable wrapper inputs. Immediately before each scanner
@@ -244,10 +252,13 @@ a SHA-256 credential fingerprint. The credential value remains in an opaque memo
 verified tmpfs handoff file, is never accepted in command arguments, and is zeroized after fetch.
 Lease reservation requires a `RUNNING` durable scan and database-enforced tenant/repository/scan
 association. Workload and preflight signing keys are distinct from each other and from the token
-encryption key.
+encryption key. Replay uniqueness is tenant plus attempt scoped. Distributed HTTP consumers
+complete the lease with a fresh scope-bound workload attestation and `WIPED` or `REVOKED`
+disposition; a bounded background reconciliation atomically revokes expired nonterminal leases.
 The durable active repository binding determines the SCM host and repository path; callers cannot
 substitute a remote URL. Fetch uses the full fixed SHA with `--depth=1`, no tags, no submodule
-recursion, LFS smudge disabled, detached checkout verification, remote removal, and `.git`
+recursion, LFS smudge disabled, pre-checkout tree/object limit enforcement, detached checkout
+verification, remote removal, and `.git`
 metadata destruction before scanner handoff. Preflight binds each entry's Git object ID so
 same-size content replacement changes the bytewise-sorted, length-prefixed UTF-8 inventory
 digest, uses the validation order above, and signs its decision. Provider

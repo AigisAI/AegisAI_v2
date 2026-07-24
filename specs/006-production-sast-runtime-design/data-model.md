@@ -210,7 +210,7 @@ Maximum automatic attempts are two and only retryable infrastructure failures qu
 
 ### SastRepositoryCredentialLease
 
-Durable, attempt-unique metadata for the repository credential handoff. It contains no
+Durable, tenant-and-attempt-unique metadata for the repository credential handoff. It contains no
 credential value.
 
 - tenant, repository binding, scan request, and attempt identifiers
@@ -219,12 +219,13 @@ credential value.
 - `RESERVED | ISSUED | WIPED | REVOKED`
 - issued, expiry, wiped, and revoked timestamps
 
-The database enforces one lease per attempt, valid fixed-SHA/fingerprint forms, expiry after
+The database enforces one lease per tenant/attempt, valid fixed-SHA/fingerprint forms, expiry after
 issuance, and terminal timestamp consistency. Lifecycle mutations are tenant- and attempt-scoped
 conditional updates so concurrent wipe/revoke handling cannot reopen or rewrite a terminal
 lease. Composite foreign keys bind the lease to one tenant/repository/scan tuple even if
 application checks fail, and reservation is allowed only while that durable scan request is
-`RUNNING`.
+`RUNNING`. An attested HTTP completion records distributed wipe/revoke, while periodic expiry
+reconciliation atomically revokes stale `RESERVED` or `ISSUED` leases.
 
 ### SandboxLifecycleEvent
 
@@ -242,6 +243,7 @@ The final successful lifecycle requires a `TERMINATED` event and cleanup evidenc
 - attempt ID, fixed commit SHA, path-policy version, and canonical path/content inventory digest
 - each entry's Git object ID, normalized metadata, and bytewise length-prefixed digest binding
 - signed attestation reference bound to the accepted decision and inventory digest
+- `ALL_SCANNABLE` or normalized changed/context path allowlist selection bound into that digest
 - repository and selected byte totals
 - file, directory, symlink, LFS pointer, submodule, and archive counts
 - maximum depth

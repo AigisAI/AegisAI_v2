@@ -48,6 +48,22 @@ describe('production scan architecture contracts', () => {
     ),
     'utf8'
   );
+  const credentialLeaseScopeIndexes = [
+    readFileSync(
+      join(
+        __dirname,
+        '../../prisma/migrations/20260724110000_repository_binding_lease_scope_index/migration.sql'
+      ),
+      'utf8'
+    ),
+    readFileSync(
+      join(
+        __dirname,
+        '../../prisma/migrations/20260724111000_scan_request_lease_scope_index/migration.sql'
+      ),
+      'utf8'
+    )
+  ].join('\n');
   const tokenBrokerService = readFileSync(
     join(__dirname, '../../src/token-broker/token-broker.service.ts'),
     'utf8'
@@ -320,12 +336,13 @@ describe('production scan architecture contracts', () => {
     expect(leaseModel).toContain('attemptId');
     expect(leaseModel).toContain('credentialFingerprint');
     expect(leaseModel).toContain('workloadIdentityRef');
+    expect(leaseModel).toContain('@@unique([tenantId, attemptId])');
     expect(leaseModel).not.toMatch(/credentialValue|accessToken|refreshToken|secretValue/);
     expect(credentialLeaseMigration).toContain(
       'CREATE TABLE "SastRepositoryCredentialLease"'
     );
     expect(credentialLeaseMigration).toContain(
-      'CREATE UNIQUE INDEX "SastRepositoryCredentialLease_attemptId_key"'
+      'CREATE UNIQUE INDEX "SastRepositoryCredentialLease_tenantId_attemptId_key"'
     );
     expect(credentialLeaseMigration).toContain(
       'FOREIGN KEY ("scanRequestId", "tenantId", "repositoryBindingId")'
@@ -340,7 +357,19 @@ describe('production scan architecture contracts', () => {
       'REFERENCES "RepositoryBinding"("id", "tenantId")'
     );
     expect(credentialLeaseMigration).toContain(
+      'ADD CONSTRAINT "SastCredentialLease_scan_scope_fkey"'
+    );
+    expect(credentialLeaseMigration).toMatch(
+      /REFERENCES "ScanRequest"\("id", "tenantId", "repositoryBindingId"\)\s+ON DELETE CASCADE/
+    );
+    expect(credentialLeaseMigration).toContain(
       'CONSTRAINT "SastRepositoryCredentialLease_lifecycle_check"'
+    );
+    expect(credentialLeaseScopeIndexes).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY "RepositoryBinding_id_tenantId_key"'
+    );
+    expect(credentialLeaseScopeIndexes).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY "ScanRequest_id_tenantId_repositoryBindingId_key"'
     );
     expect(credentialLeaseMigration).not.toMatch(
       /credentialValue|accessToken|refreshToken|secretValue/

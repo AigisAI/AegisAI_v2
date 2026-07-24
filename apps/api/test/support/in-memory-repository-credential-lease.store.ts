@@ -14,7 +14,13 @@ export class InMemoryRepositoryCredentialLeaseStore extends RepositoryCredential
     input: ReserveRepositoryCredentialLeaseInput
   ): Promise<SastCredentialLeaseMetadata> {
     return this.exclusive(() => {
-      if (Array.from(this.leases.values()).some((lease) => lease.attemptId === input.attemptId)) {
+      if (
+        Array.from(this.leases.values()).some(
+          (lease) =>
+            lease.tenantId === input.tenantId &&
+            lease.attemptId === input.attemptId
+        )
+      ) {
         throw new ConflictException('A credential was already reserved for this scan attempt.');
       }
       const lease: SastCredentialLeaseMetadata = {
@@ -79,11 +85,38 @@ export class InMemoryRepositoryCredentialLeaseStore extends RepositoryCredential
   ): Promise<SastCredentialLeaseMetadata> {
     return this.exclusive(() => {
       const lease = this.requireAttempt(credentialId, tenantId, attemptId);
-      if (lease.status !== 'WIPED') {
-        lease.status = 'REVOKED';
-        lease.revokedAt = revokedAt;
+      if (lease.status === 'WIPED' || lease.status === 'REVOKED') {
+        return this.clone(lease);
       }
+      if (lease.status !== 'RESERVED' && lease.status !== 'ISSUED') {
+        throw new ConflictException(
+          'Credential lease cannot be revoked from its current state.'
+        );
+      }
+      lease.status = 'REVOKED';
+      lease.revokedAt = revokedAt;
       return this.clone(lease);
+    });
+  }
+
+  async revokeExpired(referenceTime: string): Promise<number> {
+    return this.exclusive(() => {
+      const timestamp = Date.parse(referenceTime);
+      if (!Number.isFinite(timestamp)) {
+        throw new Error('Credential lease expiry reference time is invalid.');
+      }
+      let revoked = 0;
+      for (const lease of this.leases.values()) {
+        if (
+          (lease.status === 'RESERVED' || lease.status === 'ISSUED') &&
+          Date.parse(lease.expiresAt) <= timestamp
+        ) {
+          lease.status = 'REVOKED';
+          lease.revokedAt = referenceTime;
+          revoked += 1;
+        }
+      }
+      return revoked;
     });
   }
 

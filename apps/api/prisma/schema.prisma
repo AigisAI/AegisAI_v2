@@ -393,7 +393,7 @@ model SastRepositoryCredentialLease {
   tenantId              String
   repositoryBindingId   String
   scanRequestId         String
-  attemptId             String                    @unique
+  attemptId             String
   workloadIdentityRef   String
   commitSha             String
   credentialFingerprint String?
@@ -406,9 +406,10 @@ model SastRepositoryCredentialLease {
   updatedAt             DateTime                  @updatedAt
 
   tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding RepositoryBinding @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Restrict)
-  scanRequest       ScanRequest       @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Restrict)
+  repositoryBinding RepositoryBinding @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastCredentialLease_repository_scope_fkey")
+  scanRequest       ScanRequest       @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastCredentialLease_scan_scope_fkey")
 
+  @@unique([tenantId, attemptId])
   @@index([tenantId, scanRequestId, status])
   @@index([repositoryBindingId, status])
   @@index([expiresAt, status])

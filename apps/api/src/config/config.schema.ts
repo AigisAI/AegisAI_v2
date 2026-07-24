@@ -35,7 +35,7 @@ export const ENVIRONMENT_VALIDATION_SCHEMA = Joi.object({
   SESSION_TTL_SECONDS: Joi.number().integer().min(900).max(86_400).default(28_800),
   THROTTLE_TTL_MS: Joi.number().integer().min(1_000).max(3_600_000).default(60_000),
   THROTTLE_LIMIT: Joi.number().integer().min(1).max(10_000).default(120),
-  TOKEN_ENCRYPTION_KEY: Joi.string().length(64).required(),
+  TOKEN_ENCRYPTION_KEY: Joi.string().hex().length(64).lowercase().required(),
   WORKLOAD_ATTESTATION_KEY: Joi.when('NODE_ENV', {
     is: 'production',
     then: Joi.string()
@@ -68,6 +68,11 @@ export const ENVIRONMENT_VALIDATION_SCHEMA = Joi.object({
       .invalid(Joi.ref('WORKLOAD_ATTESTATION_KEY'))
       .default('b'.repeat(64))
   }),
+  CREDENTIAL_LEASE_EXPIRY_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(1_000)
+    .max(3_600_000)
+    .default(60_000),
   ANALYSIS_CLIENT_MODE: Joi.string().valid('mock', 'internal').default('mock'),
   AI_SERVER_URL: Joi.string().uri().default('http://localhost:8000'),
   USE_INTERNAL_AI: Joi.string().valid('true', 'false').default('false'),

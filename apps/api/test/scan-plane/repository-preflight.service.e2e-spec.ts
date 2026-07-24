@@ -42,6 +42,10 @@ describe('RepositoryPreflightService', () => {
     limits: profile.limits,
     sourceExtensions: profile.sourceExtensions,
     manifestNames: profile.manifestNames,
+    selection: {
+      mode: 'ALL_SCANNABLE' as const,
+      paths: []
+    },
     entries
   });
 
@@ -237,6 +241,36 @@ describe('RepositoryPreflightService', () => {
     );
   });
 
+  it('binds deterministic changed-path selection and counts only selected Fast bytes', () => {
+    const entries = [
+      file('src/main/java/App.java', 100),
+      file('src/main/java/Large.java', 300),
+      file('pom.xml', 20)
+    ];
+    const selected = service.evaluate({
+      ...baseInput(entries),
+      limits: {
+        ...profile.limits,
+        maxSelectedBytes: 150
+      },
+      selection: {
+        mode: 'PATH_ALLOWLIST',
+        paths: ['src\\main\\java\\App.java']
+      }
+    });
+    const differentSelection = service.evaluate({
+      ...baseInput(entries),
+      selection: {
+        mode: 'PATH_ALLOWLIST',
+        paths: ['src/main/java/Large.java']
+      }
+    });
+
+    expect(selected.selectedBytes).toBe(100);
+    expect(selected.reasonCodes).not.toContain('SELECTED_BYTES_LIMIT_EXCEEDED');
+    expect(selected.inventoryDigest).not.toBe(differentSelection.inventoryDigest);
+  });
+
   it('rejects malformed runtime metadata before evaluating hostile paths', () => {
     const malformedEntry = {
       ...file('src/App.java'),
@@ -268,5 +302,15 @@ describe('RepositoryPreflightService', () => {
         }
       })
     ).toThrow('Repository preflight input is incomplete.');
+
+    expect(() =>
+      service.evaluate({
+        ...baseInput([file('src/App.java')]),
+        selection: {
+          mode: 'PATH_ALLOWLIST',
+          paths: ['src/App.java', 'src/./App.java']
+        }
+      })
+    ).toThrow('Repository preflight selection contains duplicate normalized paths.');
   });
 });

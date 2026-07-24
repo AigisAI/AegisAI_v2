@@ -1,7 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
   MAX_SCAN_CREDENTIAL_TTL_SECONDS,
+  type SastCredentialLeaseMetadata,
+  type TokenBrokerLeaseCompletionRequest,
   type TokenBrokerIssueRequest
 } from '@aegisai/shared';
 
@@ -66,6 +72,57 @@ export class TokenBrokerService {
         this.terminalTimestamp(issued.issuedAt)
       );
     }
+  }
+
+  async completeLease(
+    input: TokenBrokerLeaseCompletionRequest
+  ): Promise<SastCredentialLeaseMetadata> {
+    this.workloadIdentityAttestation.verify(input.workloadIdentityAttestation, {
+      tenantId: input.tenantId,
+      repositoryBindingId: input.repositoryBindingId,
+      scanRequestId: input.scanRequestId,
+      attemptId: input.attemptId,
+      workloadIdentityRef: input.workloadIdentityRef,
+      commitSha: input.commitSha
+    });
+    const lease = await this.credentialLeaseStore.findByAttempt(
+      input.tenantId,
+      input.attemptId
+    );
+    if (!lease) {
+      throw new NotFoundException('Credential lease not found for attempt.');
+    }
+    if (
+      lease.credentialId !== input.credentialId ||
+      lease.repositoryBindingId !== input.repositoryBindingId ||
+      lease.scanRequestId !== input.scanRequestId ||
+      lease.workloadIdentityRef !== input.workloadIdentityRef ||
+      lease.commitSha !== input.commitSha
+    ) {
+      throw new BadRequestException(
+        'Credential cleanup does not match the immutable lease scope.'
+      );
+    }
+    const terminalAt = this.terminalTimestamp(lease.issuedAt);
+    if (input.disposition === 'WIPED') {
+      return this.credentialLeaseStore.markWiped(
+        input.credentialId,
+        input.tenantId,
+        input.attemptId,
+        terminalAt
+      );
+    }
+    if (input.disposition === 'REVOKED') {
+      return this.credentialLeaseStore.revoke(
+        input.credentialId,
+        input.tenantId,
+        input.attemptId,
+        terminalAt
+      );
+    }
+    throw new BadRequestException(
+      'Credential cleanup disposition is outside policy.'
+    );
   }
 
   async listAuditEvents(tenantId: string): Promise<TokenBrokerAuditEvent[]> {

@@ -200,6 +200,33 @@ describe("Token Broker and audit skeleton (e2e)", () => {
         await credentialLeases.findByAttempt('tenant_gamma', 'attempt-1')
       )
     ).not.toContain(responseData.credentialValue);
+
+    const cleanupScope = issueBody('attempt-1');
+    const cleanup = await request(app.getHttpServer())
+      .post('/api/token-broker/leases/complete')
+      .send({
+        credentialId: responseData.credentialId,
+        tenantId: cleanupScope.tenantId,
+        repositoryBindingId: cleanupScope.repositoryBindingId,
+        scanRequestId: cleanupScope.scanRequestId,
+        attemptId: cleanupScope.attemptId,
+        workloadIdentityRef: cleanupScope.workloadIdentityRef,
+        workloadIdentityAttestation:
+          cleanupScope.workloadIdentityAttestation,
+        commitSha: cleanupScope.commitSha,
+        disposition: 'WIPED'
+      })
+      .expect(201);
+
+    expect(dataOf<Record<string, unknown>>(cleanup.body)).toMatchObject({
+      credentialId: responseData.credentialId,
+      attemptId: 'attempt-1',
+      status: 'WIPED',
+      wipedAt: expect.any(String)
+    });
+    await expect(
+      credentialLeases.findByAttempt('tenant_gamma', 'attempt-1')
+    ).resolves.toMatchObject({ status: 'WIPED' });
   });
 
   it('rejects attempt replay and tampered workload identity attestations', async () => {
@@ -231,6 +258,24 @@ describe("Token Broker and audit skeleton (e2e)", () => {
       .post('/api/token-broker/issue')
       .send(expired)
       .expect(401);
+  });
+
+  it('scopes attempt replay protection to the tenant', async () => {
+    await request(app.getHttpServer())
+      .post('/api/token-broker/issue')
+      .send(issueBody('attempt-shared'))
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/api/token-broker/issue')
+      .send(
+        issueBody('attempt-shared', {
+          tenantId: 'tenant_epsilon',
+          repositoryBindingId: 'repository_binding_2',
+          scanRequestId: 'scan_request_2',
+          commitSha: commitTwo
+        })
+      )
+      .expect(201);
   });
 
   it('zeroizes the in-memory handoff and records wiped lease evidence after fetch use', async () => {

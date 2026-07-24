@@ -3,11 +3,13 @@ import { createHash } from 'node:crypto';
 import {
   SAST_REPOSITORY_ENTRY_KINDS,
   SAST_PREFLIGHT_REASON_CODES,
+  SAST_PREFLIGHT_SELECTION_MODES,
   type SastPreflightDecision,
   type SastPreflightReasonCode,
   type SastRepositoryEntryClassification,
   type SastRepositoryPreflightInput,
   type SastRepositoryPreflightResult,
+  type SastRepositoryPreflightSelection,
   type SastRepositoryTreeEntry
 } from '@aegisai/shared';
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -80,6 +82,13 @@ interface EvaluatedEntry {
   normalizedPath: string;
   normalizedTarget?: string;
   classification: SastRepositoryEntryClassification;
+  selected: boolean;
+}
+
+interface NormalizedSelection {
+  mode: SastRepositoryPreflightSelection['mode'];
+  paths: readonly string[];
+  pathSet: ReadonlySet<string>;
 }
 
 @Injectable()
@@ -95,6 +104,7 @@ export class RepositoryPreflightService {
     const exactPaths = new Map<string, string>();
     const caseFoldedPaths = new Map<string, string>();
     const evaluated: EvaluatedEntry[] = [];
+    const selection = this.normalizeSelection(input.selection);
 
     for (const entry of [...input.entries].sort((left, right) =>
       Buffer.from(left.path).compare(Buffer.from(right.path))
@@ -129,11 +139,16 @@ export class RepositoryPreflightService {
               rejectedPaths
             )
           : undefined;
+      const classification = this.classify(entry, normalizedPath, input);
       evaluated.push({
         input: entry,
         normalizedPath,
         normalizedTarget,
-        classification: this.classify(entry, normalizedPath, input)
+        classification,
+        selected:
+          this.isScannable(classification) &&
+          (selection.mode === 'ALL_SCANNABLE' ||
+            selection.pathSet.has(normalizedPath))
       });
     }
 
@@ -142,7 +157,7 @@ export class RepositoryPreflightService {
     const repositoryBytes = this.safeSum(evaluated.map((entry) => entry.input.byteSize));
     const selectedBytes = this.safeSum(
       evaluated
-        .filter((entry) => this.isSelected(entry.classification))
+        .filter((entry) => entry.selected)
         .map((entry) => entry.input.byteSize)
     );
     let maxSingleFileBytes = 0;
@@ -179,7 +194,7 @@ export class RepositoryPreflightService {
 
     const reasonCodes = SAST_PREFLIGHT_REASON_CODES.filter((reason) => reasons.has(reason));
     const decision = this.decision(reasonCodes);
-    const inventoryDigest = this.inventoryDigest(evaluated);
+    const inventoryDigest = this.inventoryDigest(evaluated, selection);
     const attestationRef = this.attestation.issue({
       attemptId: input.attemptId,
       fixedCommitSha: input.fixedCommitSha,
@@ -228,7 +243,13 @@ export class RepositoryPreflightService {
       !this.validPositiveLimit(input.limits.maxSingleFileBytes) ||
       !this.validPositiveLimit(input.limits.maxPathDepth) ||
       !this.validStringList(input.sourceExtensions) ||
-      !this.validStringList(input.manifestNames)
+      !this.validStringList(input.manifestNames) ||
+      !input.selection ||
+      !SAST_PREFLIGHT_SELECTION_MODES.includes(input.selection.mode) ||
+      !Array.isArray(input.selection.paths) ||
+      input.selection.paths.length > input.limits.maxFileCount ||
+      (input.selection.mode === 'ALL_SCANNABLE' &&
+        input.selection.paths.length !== 0)
     ) {
       throw new BadRequestException('Repository preflight input is incomplete.');
     }
@@ -280,6 +301,63 @@ export class RepositoryPreflightService {
           !hasControlCharacters(item)
       )
     );
+  }
+
+  private normalizeSelection(
+    selection: Readonly<SastRepositoryPreflightSelection>
+  ): NormalizedSelection {
+    const paths = selection.paths
+      .map((path) => this.normalizeSelectionPath(path))
+      .sort((left, right) => Buffer.from(left).compare(Buffer.from(right)));
+    if (new Set(paths).size !== paths.length) {
+      throw new BadRequestException(
+        'Repository preflight selection contains duplicate normalized paths.'
+      );
+    }
+    return {
+      mode: selection.mode,
+      paths,
+      pathSet: new Set(paths)
+    };
+  }
+
+  private normalizeSelectionPath(path: string): string {
+    if (
+      typeof path !== 'string' ||
+      !path ||
+      hasControlCharacters(path) ||
+      Buffer.byteLength(path, 'utf8') > MAX_PATH_BYTES
+    ) {
+      throw new BadRequestException(
+        'Repository preflight selection path is invalid.'
+      );
+    }
+    const separated = path.replace(/\\/g, '/');
+    if (
+      separated.startsWith('/') ||
+      path.startsWith('\\\\') ||
+      DRIVE_ROOT.test(separated)
+    ) {
+      throw new BadRequestException(
+        'Repository preflight selection path is invalid.'
+      );
+    }
+    const segments = separated.split('/');
+    if (segments.includes('..')) {
+      throw new BadRequestException(
+        'Repository preflight selection path is invalid.'
+      );
+    }
+    const normalized = segments
+      .filter((segment) => segment && segment !== '.')
+      .map((segment) => segment.normalize('NFC'))
+      .join('/');
+    if (!normalized) {
+      throw new BadRequestException(
+        'Repository preflight selection path is invalid.'
+      );
+    }
+    return normalized;
   }
 
   private normalizePath(
@@ -522,7 +600,7 @@ export class RepositoryPreflightService {
     };
   }
 
-  private isSelected(classification: SastRepositoryEntryClassification): boolean {
+  private isScannable(classification: SastRepositoryEntryClassification): boolean {
     return ['SOURCE', 'MANIFEST', 'GENERATED', 'FIXTURE'].includes(classification);
   }
 
@@ -547,9 +625,16 @@ export class RepositoryPreflightService {
     return 'ACCEPT';
   }
 
-  private inventoryDigest(entries: EvaluatedEntry[]): `sha256:${string}` {
-    const records = entries
-      .map((entry) =>
+  private inventoryDigest(
+    entries: EvaluatedEntry[],
+    selection: NormalizedSelection
+  ): `sha256:${string}` {
+    const records = [
+      Buffer.from(
+        JSON.stringify(['selection', selection.mode, selection.paths]),
+        'utf8'
+      ),
+      ...entries.map((entry) =>
         Buffer.from(
           JSON.stringify([
             entry.normalizedPath,
@@ -561,12 +646,13 @@ export class RepositoryPreflightService {
             entry.normalizedTarget ?? null,
             entry.input.symlinkTargetEncodingValid ?? null,
             entry.input.lfsPointer,
-            entry.classification
+            entry.classification,
+            entry.selected
           ]),
           'utf8'
         )
       )
-      .sort(Buffer.compare);
+    ].sort(Buffer.compare);
     const digest = createHash('sha256');
     for (const record of records) {
       const length = Buffer.allocUnsafe(4);

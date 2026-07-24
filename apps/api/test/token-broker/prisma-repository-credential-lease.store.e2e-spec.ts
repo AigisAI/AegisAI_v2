@@ -220,4 +220,24 @@ describe('PrismaRepositoryCredentialLeaseStore', () => {
       }
     });
   });
+
+  it('revokes only expired reserved or issued leases in one durable update', async () => {
+    const updateMany = jest.fn().mockResolvedValue({ count: 2 });
+    const store = new PrismaRepositoryCredentialLeaseStore({
+      sastRepositoryCredentialLease: { updateMany }
+    } as unknown as PrismaService);
+    const referenceTime = '2026-07-24T00:10:00.000Z';
+
+    await expect(store.revokeExpired(referenceTime)).resolves.toBe(2);
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        status: { in: ['RESERVED', 'ISSUED'] },
+        expiresAt: { lte: new Date(referenceTime) }
+      },
+      data: {
+        status: 'REVOKED',
+        revokedAt: new Date(referenceTime)
+      }
+    });
+  });
 });

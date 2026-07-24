@@ -365,12 +365,14 @@ export interface TokenBrokerIssueRequest {
 }
 
 export const WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE = 'aegisai-token-broker' as const;
+export const WORKLOAD_IDENTITY_ATTESTATION_ISSUER =
+  'aegisai-sandbox-provisioner' as const;
 export const WORKLOAD_IDENTITY_ATTESTATION_VERSION = '1' as const;
 export const MAX_WORKLOAD_IDENTITY_ATTESTATION_TTL_SECONDS = 5 * 60;
 
 export interface WorkloadIdentityAttestationClaims {
   version: typeof WORKLOAD_IDENTITY_ATTESTATION_VERSION;
-  issuer: string;
+  issuer: typeof WORKLOAD_IDENTITY_ATTESTATION_ISSUER;
   audience: typeof WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE;
   tenantId: string;
   repositoryBindingId: string;
@@ -386,6 +388,21 @@ export interface WorkloadIdentityAttestationClaims {
 export interface WorkloadIdentityAttestation {
   claims: WorkloadIdentityAttestationClaims;
   signature: `sha256:${string}`;
+}
+
+export interface TokenBrokerLeaseCompletionRequest
+  extends Pick<
+    TokenBrokerIssueRequest,
+    | 'tenantId'
+    | 'repositoryBindingId'
+    | 'scanRequestId'
+    | 'attemptId'
+    | 'workloadIdentityRef'
+    | 'workloadIdentityAttestation'
+    | 'commitSha'
+  > {
+  credentialId: string;
+  disposition: 'WIPED' | 'REVOKED';
 }
 
 export const MAX_SCAN_CREDENTIAL_TTL_SECONDS = 10 * 60;
