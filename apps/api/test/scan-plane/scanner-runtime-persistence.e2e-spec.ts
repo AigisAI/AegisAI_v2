@@ -146,8 +146,14 @@ describe('Scanner runtime persistence and deployment contract', () => {
     expect(ingressMigration).toContain(
       'CONSTRAINT "SastArtifactIngestion_lifecycle_check"'
     );
-    expect(ingressMigration).toContain(
+    expect(ingressMigration).not.toContain(
       'DROP CONSTRAINT IF EXISTS "ScannerRun_runtime_metadata_check"'
+    );
+    expect(onlineSchema).toContain(
+      "replacement: 'ScannerRun_runtime_metadata_v2_check'"
+    );
+    expect(onlineSchema).toContain(
+      'superseded constraint removed:'
     );
     expect(ingressMigration).not.toMatch(
       /^\s*CREATE (?:UNIQUE )?INDEX CONCURRENTLY/m

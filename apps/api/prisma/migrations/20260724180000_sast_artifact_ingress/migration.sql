@@ -6,10 +6,9 @@ CREATE TYPE "SastArtifactIngestionStatus" AS ENUM (
   'QUARANTINED'
 );
 
--- The v1 constraint did not permit a scanner run to exist while its write-only
--- ingress was open. It is replaced online by the post-migration v2 constraint.
-ALTER TABLE "ScannerRun"
-  DROP CONSTRAINT IF EXISTS "ScannerRun_runtime_metadata_check";
+-- The v1 ScannerRun runtime constraint stays active throughout this
+-- transactional migration. The mandatory online schema step validates v2
+-- first and only then removes v1, so a failed rollout cannot leave a gap.
 
 CREATE TABLE "SastArtifactIngestion" (
   "id" TEXT NOT NULL,

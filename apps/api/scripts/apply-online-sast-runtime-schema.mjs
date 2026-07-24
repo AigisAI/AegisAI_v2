@@ -167,6 +167,14 @@ const constraints = [
   }
 ];
 
+const supersededConstraints = [
+  {
+    table: 'ScannerRun',
+    name: 'ScannerRun_runtime_metadata_check',
+    replacement: 'ScannerRun_runtime_metadata_v2_check'
+  }
+];
+
 async function applyIndex(index) {
   assertIdentifier(index.name);
   const existing = await readIndex(index.name);
@@ -255,6 +263,36 @@ async function readConstraint(table, name) {
   return rows[0];
 }
 
+async function dropSupersededConstraint(constraint) {
+  assertIdentifier(constraint.table);
+  assertIdentifier(constraint.name);
+  assertIdentifier(constraint.replacement);
+  const replacement = await readConstraint(
+    constraint.table,
+    constraint.replacement
+  );
+  if (!replacement?.validated) {
+    throw new Error(
+      `Replacement constraint ${constraint.replacement} is not validated.`
+    );
+  }
+
+  const existing = await readConstraint(constraint.table, constraint.name);
+  if (existing) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "${constraint.table}" DROP CONSTRAINT "${constraint.name}"`
+    );
+  }
+  if (await readConstraint(constraint.table, constraint.name)) {
+    throw new Error(
+      `Superseded constraint ${constraint.name} was not removed.`
+    );
+  }
+  process.stdout.write(
+    `superseded constraint removed: ${constraint.name}\n`
+  );
+}
+
 function assertIdentifier(value) {
   if (!/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(value)) {
     throw new Error('Online schema identifier is invalid.');
@@ -267,6 +305,9 @@ async function main() {
   }
   for (const constraint of constraints) {
     await applyConstraint(constraint);
+  }
+  for (const constraint of supersededConstraints) {
+    await dropSupersededConstraint(constraint);
   }
 }
 
