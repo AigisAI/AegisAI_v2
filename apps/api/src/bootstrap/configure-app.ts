@@ -24,6 +24,7 @@ const SENSITIVE_RESPONSE_PATHS = [
   '/api/integrations',
   '/api/repository-bindings',
   '/api/scan-requests',
+  '/api/scan-plane',
   '/api/sast-planning',
   '/api/token-broker',
   '/api/audit-events',

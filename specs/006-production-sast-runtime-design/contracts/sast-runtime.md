@@ -261,8 +261,10 @@ recursion, LFS smudge disabled, pre-checkout tree/object limit enforcement, deta
 verification, remote removal, and `.git`
 metadata destruction before scanner handoff. Preflight binds each entry's Git object ID so
 same-size content replacement changes the bytewise-sorted, length-prefixed UTF-8 inventory
-digest, uses the validation order above, and signs its decision. Provider
-microVM execution and scanner wrapper launch remain T025-T028 work.
+digest, uses the validation order above, and signs its decision. T025-T028 connect this
+verified state to a plan-digest-bound sandbox attestation, fixed scanner wrappers, bounded
+runtime observations, signed attempt number/deadline, and signed cleanup evidence. The default provider intentionally fails
+closed until the 005 rollout installs a live microVM adapter.
 The repository credential issuer uses an opaque synthetic value only outside production for
 contract and handoff tests. Its default production path fails closed until the provider rollout
 installs a GitHub App/GitLab scoped credential-minting adapter; it never treats the synthetic
@@ -287,6 +289,46 @@ Required wrapper controls:
 
 The wrapper cannot accept tenant-provided command fragments, plugins, environment maps, or
 executable rules.
+
+The implemented wrapper uses fixed platform paths and does not accept a workspace or output
+path from the caller:
+
+- OpenGrep: `scan -f <pinned-rule-asset> --sarif-output=<private-output>
+  --no-autofix --disable-nosem --no-git-ignore --x-ignore-semgrepignore-files
+  --disable-version-check ... <read-only-repository>`. Repository ignore files and inline
+  suppression cannot reduce authoritative coverage.
+- Trivy: `filesystem --format json --output <private-output>` with vulnerability,
+  misconfiguration, and secret scanners plus offline/skip-update/disable-telemetry flags.
+  Its read-only cache path includes both the pinned vulnerability-database digest and the
+  pinned checks-bundle digest. Explicit wrapper-owned config, empty ignore policy,
+  platform-owned secret configuration, emitted suppressed results, and signed-profile timeout
+  prevent repository `trivy.yaml`/`.trivyignore` files or the tool's five-minute default from
+  changing coverage.
+- Syft: `dir:<read-only-repository> --config <pinned-wrapper-config>
+  --output cyclonedx-json=<private-output>` with update, archive expansion, repository config
+  discovery, Maven/local-cache enrichment, remote-license lookup, and external Go
+  package-tool execution disabled by platform-owned environment.
+
+Only scanners required by the immutable profile are launched. Before every launch, the
+provider-facing runtime re-manifests the exact mount and verifies the original signed
+preflight decision and inventory digest. Provider observations with unknown fields, raw log
+content, mismatched identities/digests, unbounded resources, or schema-invalid artifact
+metadata are rejected and never persisted.
+All scanner processes start in `/workspace/output`, not the customer repository, and receive an
+exact allowlisted environment.
+
+The sandbox attestation binds the attempt identifier and attempt number and derives one
+attempt-wide deadline from its issue time and the signed profile hard timeout. Manifest reads
+and all required scanner executions share that cumulative deadline; the provider receives an
+abort signal and may not reset the timeout per scanner.
+Cleanup has a separate 60-second destruction deadline. Signed cleanup evidence predating the
+runtime attempt is rejected.
+Attempt admission runs in a serializable transaction, and a database partial unique index
+allows only one `VALIDATING`, `SCANNING`, or `CLEANUP_PENDING` attempt for a scan request.
+The signed attempt deadline is durable. A bounded reconciliation loop atomically transitions
+any process-orphaned attempt still nonterminal 60 seconds after that deadline to
+`CLEANUP_FAILED` and records an attempt-scoped final `sandbox.cleanup_failed` audit event. The
+default reconciliation poll is 10 seconds and uses a stage/deadline index plus bounded batches.
 
 ## Scanner Responsibility Matrix
 

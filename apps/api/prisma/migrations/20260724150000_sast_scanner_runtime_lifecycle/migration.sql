@@ -1,0 +1,282 @@
+CREATE TYPE "SastScanAttemptStage" AS ENUM (
+  'VALIDATING',
+  'SCANNING',
+  'CLEANUP_PENDING',
+  'COMPLETED',
+  'FAILED',
+  'CLEANUP_FAILED'
+);
+
+ALTER TYPE "ScannerRunStatus" ADD VALUE 'QUARANTINED';
+ALTER TYPE "ScannerRunStatus" ADD VALUE 'KILLED';
+
+CREATE TYPE "SastScanFailureClass" AS ENUM (
+  'RETRYABLE_INFRASTRUCTURE',
+  'NON_RETRYABLE_INPUT',
+  'SCANNER_DEFECT',
+  'SECURITY_VIOLATION',
+  'CAPACITY_REJECTED'
+);
+
+CREATE TABLE "SastScanAttempt" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "repositoryBindingId" TEXT NOT NULL,
+  "scanRequestId" TEXT NOT NULL,
+  "attemptNumber" INTEGER NOT NULL,
+  "sandboxId" TEXT NOT NULL,
+  "workloadIdentityRef" TEXT NOT NULL,
+  "stage" "SastScanAttemptStage" NOT NULL DEFAULT 'VALIDATING',
+  "failureClass" "SastScanFailureClass",
+  "failureReason" TEXT,
+  "retryEligible" BOOLEAN NOT NULL DEFAULT false,
+  "cleanupEvidence" JSONB,
+  "cleanupEvidenceDigest" TEXT,
+  "finalAuditEventId" TEXT,
+  "startedAt" TIMESTAMP(3) NOT NULL,
+  "attemptDeadlineAt" TIMESTAMP(3) NOT NULL,
+  "completedAt" TIMESTAMP(3),
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+
+  CONSTRAINT "SastScanAttempt_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "SastScanAttempt_attempt_number_check"
+    CHECK ("attemptNumber" BETWEEN 1 AND 2),
+  CONSTRAINT "SastScanAttempt_deadline_check"
+    CHECK (
+      "attemptDeadlineAt" > "startedAt"
+      AND "attemptDeadlineAt" <= "startedAt" + INTERVAL '1 hour 5 seconds'
+    ),
+  CONSTRAINT "SastScanAttempt_cleanup_digest_check"
+    CHECK (
+      "cleanupEvidenceDigest" IS NULL
+      OR "cleanupEvidenceDigest" ~ '^sha256:[a-f0-9]{64}$'
+    ),
+  CONSTRAINT "SastScanAttempt_retry_eligibility_check"
+    CHECK (
+      "retryEligible" = false
+      OR COALESCE(
+        (
+          "stage" = 'FAILED'
+          AND "failureClass" = 'RETRYABLE_INFRASTRUCTURE'
+          AND "attemptNumber" = 1
+        ),
+        false
+      )
+    ),
+  CONSTRAINT "SastScanAttempt_completed_cleanup_check"
+    CHECK (
+      "stage" NOT IN ('COMPLETED', 'FAILED')
+      OR COALESCE(
+        (
+          "cleanupEvidence" IS NOT NULL
+          AND "cleanupEvidenceDigest" IS NOT NULL
+          AND "cleanupEvidence" #>> '{observation,credentialRevokedAndWiped}' = 'true'
+          AND "cleanupEvidence" #>> '{observation,scannerProcessesTerminated}' = 'true'
+          AND "cleanupEvidence" #>> '{observation,writableVolumesDestroyed}' = 'true'
+          AND "cleanupEvidence" #>> '{observation,microVmTerminated}' = 'true'
+          AND "cleanupEvidence" #>> '{observation,resultIngressClosed}' = 'true'
+          AND "cleanupEvidence" #>> '{signature}' ~ '^sha256:[a-f0-9]{64}$'
+        ),
+        false
+      )
+    ),
+  CONSTRAINT "SastScanAttempt_lifecycle_state_check"
+    CHECK (
+      COALESCE(
+        (
+          "stage" IN ('VALIDATING', 'SCANNING', 'CLEANUP_PENDING')
+          AND "completedAt" IS NULL
+          AND "finalAuditEventId" IS NULL
+          AND "failureClass" IS NULL
+          AND "failureReason" IS NULL
+          AND "retryEligible" = false
+        )
+        OR (
+          "stage" = 'COMPLETED'
+          AND "completedAt" IS NOT NULL
+          AND "completedAt" >= "startedAt"
+          AND "finalAuditEventId" IS NOT NULL
+          AND "failureClass" IS NULL
+          AND "failureReason" IS NULL
+          AND "retryEligible" = false
+        )
+        OR (
+          "stage" = 'FAILED'
+          AND "completedAt" IS NOT NULL
+          AND "completedAt" >= "startedAt"
+          AND "finalAuditEventId" IS NOT NULL
+          AND "failureClass" IS NOT NULL
+          AND char_length("failureReason") BETWEEN 1 AND 255
+        )
+        OR (
+          "stage" = 'CLEANUP_FAILED'
+          AND "completedAt" IS NOT NULL
+          AND "completedAt" >= "startedAt"
+          AND "finalAuditEventId" IS NOT NULL
+          AND "failureClass" IS NOT NULL
+          AND char_length("failureReason") BETWEEN 1 AND 255
+          AND "retryEligible" = false
+        ),
+        false
+      )
+    )
+);
+
+CREATE UNIQUE INDEX "SastScanAttempt_scanRequestId_attemptNumber_key"
+  ON "SastScanAttempt"("scanRequestId", "attemptNumber");
+CREATE UNIQUE INDEX "SastScanAttempt_one_active_per_scan_key"
+  ON "SastScanAttempt"("scanRequestId")
+  WHERE "stage" IN ('VALIDATING', 'SCANNING', 'CLEANUP_PENDING');
+CREATE UNIQUE INDEX "SastScanAttempt_sandboxId_key"
+  ON "SastScanAttempt"("sandboxId");
+CREATE UNIQUE INDEX "SastScanAttempt_workloadIdentityRef_key"
+  ON "SastScanAttempt"("workloadIdentityRef");
+CREATE UNIQUE INDEX "SastScanAttempt_id_tenantId_key"
+  ON "SastScanAttempt"("id", "tenantId");
+CREATE UNIQUE INDEX "SastScanAttempt_scope_key"
+  ON "SastScanAttempt"("id", "tenantId", "repositoryBindingId", "scanRequestId");
+CREATE UNIQUE INDEX "SastScanAttempt_finalAuditEventId_key"
+  ON "SastScanAttempt"("finalAuditEventId");
+CREATE UNIQUE INDEX "SastScanAttempt_final_audit_scope_key"
+  ON "SastScanAttempt"("finalAuditEventId", "id", "tenantId");
+CREATE INDEX "SastScanAttempt_tenantId_stage_idx"
+  ON "SastScanAttempt"("tenantId", "stage");
+CREATE INDEX "SastScanAttempt_stage_attemptDeadlineAt_idx"
+  ON "SastScanAttempt"("stage", "attemptDeadlineAt");
+CREATE INDEX "SastScanAttempt_repositoryBindingId_idx"
+  ON "SastScanAttempt"("repositoryBindingId");
+CREATE INDEX "SastScanAttempt_completedAt_idx"
+  ON "SastScanAttempt"("completedAt");
+
+ALTER TABLE "SastScanAttempt"
+  ADD CONSTRAINT "SastScanAttempt_tenantId_fkey"
+  FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id")
+  ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "SastScanAttempt"
+  ADD CONSTRAINT "SastScanAttempt_repository_scope_fkey"
+  FOREIGN KEY ("repositoryBindingId", "tenantId")
+  REFERENCES "RepositoryBinding"("id", "tenantId")
+  ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "SastScanAttempt"
+  ADD CONSTRAINT "SastScanAttempt_scan_scope_fkey"
+  FOREIGN KEY ("scanRequestId", "tenantId", "repositoryBindingId")
+  REFERENCES "ScanRequest"("id", "tenantId", "repositoryBindingId")
+  ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "ScannerRun"
+  ADD COLUMN "attemptId" TEXT,
+  ADD COLUMN "repositoryBindingId" TEXT,
+  ADD COLUMN "required" BOOLEAN,
+  ADD COLUMN "wrapperDigest" TEXT,
+  ADD COLUMN "scannerImageDigest" TEXT,
+  ADD COLUMN "ruleBundleDigest" TEXT,
+  ADD COLUMN "databaseDigest" TEXT,
+  ADD COLUMN "scannerSetDigest" TEXT,
+  ADD COLUMN "profileId" TEXT,
+  ADD COLUMN "profileDigest" TEXT,
+  ADD COLUMN "preflightAttestationRef" TEXT,
+  ADD COLUMN "preflightInventoryDigest" TEXT,
+  ADD COLUMN "scannerWorkspaceInventoryDigest" TEXT,
+  ADD COLUMN "artifactSchema" TEXT,
+  ADD COLUMN "artifactSchemaVersion" TEXT,
+  ADD COLUMN "exitCode" INTEGER,
+  ADD COLUMN "terminationSignal" TEXT,
+  ADD COLUMN "timedOut" BOOLEAN,
+  ADD COLUMN "outputLimitExceeded" BOOLEAN,
+  ADD COLUMN "durationMilliseconds" INTEGER,
+  ADD COLUMN "stdoutMetadata" JSONB,
+  ADD COLUMN "stderrMetadata" JSONB,
+  ADD COLUMN "resourceMetadata" JSONB,
+  ADD COLUMN "artifactMetadata" JSONB;
+
+ALTER TABLE "ScannerRun"
+  ADD CONSTRAINT "ScannerRun_attempt_scope_fkey"
+  FOREIGN KEY ("attemptId", "tenantId", "repositoryBindingId", "scanRequestId")
+  REFERENCES "SastScanAttempt"("id", "tenantId", "repositoryBindingId", "scanRequestId")
+  ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ScannerRun"
+  ADD CONSTRAINT "ScannerRun_exit_code_check"
+  CHECK ("exitCode" IS NULL OR "exitCode" BETWEEN -1 AND 255);
+ALTER TABLE "ScannerRun"
+  ADD CONSTRAINT "ScannerRun_duration_check"
+  CHECK (
+    "durationMilliseconds" IS NULL
+    OR "durationMilliseconds" >= 0
+  );
+ALTER TABLE "ScannerRun"
+  ADD CONSTRAINT "ScannerRun_runtime_metadata_check"
+  CHECK (
+    "attemptId" IS NULL
+    OR COALESCE(
+      (
+        "repositoryBindingId" IS NOT NULL
+        AND "required" = true
+        AND "scanner" IN ('OPENGREP', 'TRIVY', 'SYFT')
+        AND "status"::text IN ('COMPLETED', 'FAILED', 'TIMED_OUT', 'QUARANTINED', 'KILLED')
+        AND "wrapperDigest" ~ '^sha256:[a-f0-9]{64}$'
+        AND "scannerImageDigest" ~ '^sha256:[a-f0-9]{64}$'
+        AND "scannerSetDigest" ~ '^sha256:[a-f0-9]{64}$'
+        AND char_length("profileId") BETWEEN 1 AND 255
+        AND "profileDigest" ~ '^sha256:[a-f0-9]{64}$'
+        AND char_length("preflightAttestationRef") BETWEEN 1 AND 8192
+        AND "preflightInventoryDigest" ~ '^sha256:[a-f0-9]{64}$'
+        AND "scannerWorkspaceInventoryDigest" ~ '^sha256:[a-f0-9]{64}$'
+        AND (
+          (
+            "scanner" = 'OPENGREP'
+            AND "ruleBundleDigest" ~ '^sha256:[a-f0-9]{64}$'
+            AND "databaseDigest" IS NULL
+            AND "artifactSchema" = 'OPENGREP_SARIF'
+          )
+          OR (
+            "scanner" = 'TRIVY'
+            AND "ruleBundleDigest" ~ '^sha256:[a-f0-9]{64}$'
+            AND "databaseDigest" ~ '^sha256:[a-f0-9]{64}$'
+            AND "artifactSchema" = 'TRIVY_JSON'
+          )
+          OR (
+            "scanner" = 'SYFT'
+            AND "ruleBundleDigest" IS NULL
+            AND "databaseDigest" IS NULL
+            AND "artifactSchema" = 'CYCLONEDX_JSON'
+          )
+        )
+        AND "artifactSchemaVersion" ~ '^sha256:[a-f0-9]{64}$'
+        AND "exitCode" IS NOT NULL
+        AND "timedOut" IS NOT NULL
+        AND "outputLimitExceeded" IS NOT NULL
+        AND "durationMilliseconds" IS NOT NULL
+        AND jsonb_typeof("stdoutMetadata") = 'object'
+        AND jsonb_typeof("stderrMetadata") = 'object'
+        AND jsonb_typeof("resourceMetadata") = 'object'
+        AND (
+          "status" <> 'COMPLETED'
+          OR (
+            jsonb_typeof("artifactMetadata") = 'object'
+            AND char_length("rawArtifactObjectKey") BETWEEN 1 AND 2048
+          )
+        )
+      ),
+      false
+    )
+  );
+
+CREATE UNIQUE INDEX "ScannerRun_attemptId_scanner_key"
+  ON "ScannerRun"("attemptId", "scanner");
+CREATE INDEX "ScannerRun_attemptId_idx" ON "ScannerRun"("attemptId");
+
+ALTER TABLE "AuditEvent" ADD COLUMN "attemptId" TEXT;
+ALTER TABLE "AuditEvent"
+  ADD CONSTRAINT "AuditEvent_attempt_scope_fkey"
+  FOREIGN KEY ("attemptId", "tenantId")
+  REFERENCES "SastScanAttempt"("id", "tenantId")
+  ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE INDEX "AuditEvent_attemptId_idx" ON "AuditEvent"("attemptId");
+CREATE UNIQUE INDEX "AuditEvent_final_attempt_scope_key"
+  ON "AuditEvent"("id", "attemptId", "tenantId");
+ALTER TABLE "SastScanAttempt"
+  ADD CONSTRAINT "SastScanAttempt_finalAuditEventId_fkey"
+  FOREIGN KEY ("finalAuditEventId", "id", "tenantId")
+  REFERENCES "AuditEvent"("id", "attemptId", "tenantId")
+  ON DELETE NO ACTION ON UPDATE NO ACTION;

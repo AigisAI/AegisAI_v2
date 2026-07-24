@@ -89,7 +89,10 @@ Required runtime values include:
 - `TOKEN_ENCRYPTION_KEY`
 - `WORKLOAD_ATTESTATION_KEY`
 - `PREFLIGHT_ATTESTATION_KEY`
+- `SANDBOX_ATTESTATION_KEY`
 - `CREDENTIAL_LEASE_EXPIRY_INTERVAL_MS`
+- `SAST_ATTEMPT_RECONCILIATION_INTERVAL_MS`
+- `ANALYSIS_CLIENT_MODE=internal`
 - OAuth client ids and secrets
 - `AI_PORT`
 - `AI_SERVER_URL`
@@ -101,7 +104,8 @@ Required runtime values include:
 - `GRAFANA_CLOUD_METRICS_PASSWORD`
 - `GRAFANA_CLOUD_INSTANCE_NAME`
 
-Generate the encryption and both attestation keys independently; the API rejects any reused key.
+Generate the encryption key and all three attestation keys independently; the API rejects any
+reused key. Production configuration rejects `ANALYSIS_CLIENT_MODE=mock`.
 
 ## 7. Bootstrap Infra Once
 

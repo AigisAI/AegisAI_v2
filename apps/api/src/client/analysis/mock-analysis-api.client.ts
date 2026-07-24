@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { isMockAnalysisFixtureEnabled } from './analysis-fixture.policy';
 import type {
   AnalysisRequest,
   AnalysisResult,
@@ -12,6 +13,9 @@ export class MockAnalysisApiClient implements IAnalysisApiClient {
     request: AnalysisRequest,
     options?: { signal?: AbortSignal }
   ): Promise<AnalysisResult> {
+    if (!isMockAnalysisFixtureEnabled()) {
+      throw new Error('MockAnalysisApiClient is a test-only fixture.');
+    }
     throwIfAborted(options?.signal);
     await Promise.resolve();
     throwIfAborted(options?.signal);

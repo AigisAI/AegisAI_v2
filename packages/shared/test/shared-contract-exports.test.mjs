@@ -14,6 +14,8 @@ const files = {
   deploymentOperations: new URL('../src/types/deployment-operations.ts', import.meta.url),
   sastRuntime: new URL('../src/types/sast-runtime.ts', import.meta.url),
   sastPlanning: new URL('../src/types/sast-planning.ts', import.meta.url),
+  sastFetch: new URL('../src/types/sast-fetch.ts', import.meta.url),
+  sastWrapper: new URL('../src/types/sast-wrapper.ts', import.meta.url),
   index: new URL('../src/index.ts', import.meta.url)
 };
 
@@ -35,7 +37,9 @@ test('shared contract modules exist and are re-exported from the package root', 
     'ai-inference-runtime',
     'deployment-operations',
     'sast-runtime',
-    'sast-planning'
+    'sast-planning',
+    'sast-fetch',
+    'sast-wrapper'
   ]) {
     assert.match(
       indexContent,
@@ -43,6 +47,39 @@ test('shared contract modules exist and are re-exported from the package root', 
       `Expected packages/shared/src/index.ts to re-export ./types/${moduleName}`
     );
   }
+});
+
+test('SAST wrapper contracts expose only fixed invocation and bounded observation metadata', () => {
+  const contract = readFileSync(files.sastWrapper, 'utf8');
+
+  for (const exportName of [
+    'SastSandboxRuntimePolicy',
+    'SastSandboxRuntimeAttestation',
+    'SastScannerWrapperExecutionRequest',
+    'SastScannerInvocation',
+    'SastScannerProcessObservation',
+    'SastSignedSandboxCleanupObservation',
+    'isSastScannerWrapperExecutionRequestValid',
+    'isSastScannerProcessObservationValid'
+  ]) {
+    assert.match(contract, new RegExp(`export (interface|const|function|type) ${exportName}\\b`));
+  }
+
+  for (const forbiddenInput of [
+    'customerCommand',
+    'customerArgs',
+    'customerEnvironment',
+    'pluginBody',
+    'executableConfigBody',
+    'repositoryContent',
+    'credentialValue'
+  ]) {
+    assert.doesNotMatch(contract, new RegExp(`\\b${forbiddenInput}\\b`, 'i'));
+  }
+
+  assert.match(contract, /shellInterpolationAllowed:\s*false/);
+  assert.match(contract, /publicInternetEgressAllowed:\s*false/);
+  assert.match(contract, /runtimeAssetUpdateAllowed:\s*false/);
 });
 
 test('AI inference runtime contracts are advisory-only and exclude forbidden payload fields', () => {

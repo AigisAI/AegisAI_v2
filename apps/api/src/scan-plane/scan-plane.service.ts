@@ -1,14 +1,19 @@
 import { BadRequestException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { createEvidencePackMetadata, MAX_EVIDENCE_TTL_MS } from '@aegisai/shared';
+import {
+  createEvidencePackMetadata,
+  MAX_EVIDENCE_TTL_MS,
+  type SastScannerRuntimeExecutionResult,
+  type SastScannerWrapperExecutionRequest
+} from '@aegisai/shared';
 
 import { ControlPlaneService } from '../control-plane/control-plane.service';
+import { isMockAnalysisFixtureEnabled } from '../client/analysis/analysis-fixture.policy';
+import { PrismaService } from '../prisma/prisma.service';
 import type {
   DeterministicScannerKind,
   MockScanPlaneRunResult,
   RunMockScanPlaneInput,
-  RunSandboxScannersInput,
-  SandboxScannerExecutionResult
 } from "./scan-plane.types";
 import type {
   EvidenceAccessRequest,
@@ -17,7 +22,7 @@ import type {
   ScannerRun
 } from '@aegisai/shared';
 import { EvidenceObjectStorageService } from "./evidence-object-storage.service";
-import { ScannerSandboxAdapterService } from "./scanner-sandbox-adapter.service";
+import { SastScannerRuntimeService } from './sast-scanner-runtime.service';
 
 @Injectable()
 export class ScanPlaneService {
@@ -25,15 +30,18 @@ export class ScanPlaneService {
   private readonly findings: NormalizedFinding[] = [];
   private readonly evidencePacks: EvidencePack[] = [];
   private readonly completedPipelines = new Map<string, MockScanPlaneRunResult>();
-  private readonly completedSandboxRuns = new Map<string, SandboxScannerExecutionResult>();
 
   constructor(
-    private readonly scannerSandboxAdapter: ScannerSandboxAdapterService,
+    private readonly sastScannerRuntime: SastScannerRuntimeService,
     private readonly evidenceObjectStorage: EvidenceObjectStorageService,
-    private readonly controlPlaneService: ControlPlaneService
+    private readonly controlPlaneService: ControlPlaneService,
+    private readonly prisma: PrismaService
   ) {}
 
   async runMockPipeline(input: RunMockScanPlaneInput): Promise<MockScanPlaneRunResult> {
+    if (!isMockAnalysisFixtureEnabled()) {
+      throw new NotFoundException('Mock scan pipeline is a test-only fixture.');
+    }
     await this.assertScanScope(input);
     const pipelineKey = `mock:${input.tenantId}:${input.scanRequestId}:${input.scannerSetVersion}`;
     const completedPipeline = this.completedPipelines.get(pipelineKey);
@@ -69,58 +77,48 @@ export class ScanPlaneService {
   }
 
   async runSandboxScanners(
-    input: RunSandboxScannersInput
-  ): Promise<SandboxScannerExecutionResult> {
-    await this.assertScanScope(input);
-    const pipelineKey = `sandbox:${input.tenantId}:${input.scanRequestId}:${input.scannerSetVersion}`;
-    const completedPipeline = this.completedSandboxRuns.get(pipelineKey);
-    if (completedPipeline) {
-      return completedPipeline;
-    }
-
-    const adapterInvocations = this.scannerSandboxAdapter.buildInvocations(input);
-    const scannerRuns = adapterInvocations.map((invocation) => ({
-      id: `scanner_run_${randomUUID()}`,
-      tenantId: input.tenantId,
-      scanRequestId: input.scanRequestId,
-      scanner: invocation.scanner,
-      scannerVersion: this.scannerSandboxAdapter.scannerVersion(
-        invocation.scanner,
-        input.scannerSetVersion
-      ),
-      status: "COMPLETED" as const,
-      rawArtifactObjectKey: this.buildRawArtifactObjectKey(
-        input.tenantId,
-        input.scanRequestId,
-        invocation.scanner
-      )
-    }));
-    const evidence = createEvidencePackMetadata({
-      id: `evidence_${randomUUID()}`,
-      tenantId: input.tenantId,
-      scanRequestId: input.scanRequestId,
-      byteSize: 1024,
-      expiresAt: new Date(Date.now() + MAX_EVIDENCE_TTL_MS).toISOString(),
-      redacted: true
-    });
-
-    this.scannerRuns.push(...scannerRuns);
-    this.evidencePacks.push(evidence);
-
-    const result = {
-      scannerRuns,
-      evidencePacks: [evidence],
-      adapterInvocations
-    };
-    this.completedSandboxRuns.set(pipelineKey, result);
-
-    return result;
+    input: SastScannerWrapperExecutionRequest
+  ): Promise<SastScannerRuntimeExecutionResult> {
+    return this.sastScannerRuntime.execute(input);
   }
 
-  listScannerRuns(tenantId: string, scanRequestId: string): ScannerRun[] {
-    return this.scannerRuns.filter(
-      (run) => run.tenantId === tenantId && run.scanRequestId === scanRequestId
-    );
+  listScannerRuns(tenantId: string, scanRequestId: string) {
+    if (isMockAnalysisFixtureEnabled()) {
+      return Promise.resolve(
+        this.scannerRuns.filter(
+          (run) =>
+            run.tenantId === tenantId &&
+            run.scanRequestId === scanRequestId
+        )
+      );
+    }
+    return this.prisma.scannerRun.findMany({
+      where: { tenantId, scanRequestId },
+      select: {
+        id: true,
+        tenantId: true,
+        scanRequestId: true,
+        scanner: true,
+        scannerVersion: true,
+        status: true,
+        required: true,
+        scannerImageDigest: true,
+        wrapperDigest: true,
+        ruleBundleDigest: true,
+        databaseDigest: true,
+        scannerSetDigest: true,
+        profileId: true,
+        profileDigest: true,
+        exitCode: true,
+        terminationSignal: true,
+        timedOut: true,
+        outputLimitExceeded: true,
+        durationMilliseconds: true,
+        startedAt: true,
+        completedAt: true
+      },
+      orderBy: [{ startedAt: 'asc' }, { id: 'asc' }]
+    });
   }
 
   listFindings(tenantId: string, scanRequestId: string): NormalizedFinding[] {

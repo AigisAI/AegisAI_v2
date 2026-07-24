@@ -469,4 +469,48 @@ describe('ScanService', () => {
         totalPages: 2
       });
   });
+
+  it('blocks the legacy scan path before repository or credential access outside tests', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousMode = process.env.ANALYSIS_CLIENT_MODE;
+    process.env.NODE_ENV = 'production';
+    process.env.ANALYSIS_CLIENT_MODE = 'internal';
+    const prisma = {
+      connectedRepo: { findFirst: jest.fn() },
+      oAuthToken: { findFirst: jest.fn() }
+    };
+    const service = new ScanService(
+      prisma as never,
+      { add: jest.fn() } as never,
+      { get: jest.fn() } as never,
+      { decrypt: jest.fn() } as never
+    );
+
+    try {
+      await expect(
+        service.createScan({
+          userId: 'user-1',
+          connectedRepoId: 'repo-1',
+          branch: 'main'
+        })
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          errorCode: 'LEGACY_ANALYSIS_DISABLED'
+        })
+      });
+      expect(prisma.connectedRepo.findFirst).not.toHaveBeenCalled();
+      expect(prisma.oAuthToken.findFirst).not.toHaveBeenCalled();
+    } finally {
+      if (previousNodeEnv === undefined) {
+        delete process.env.NODE_ENV;
+      } else {
+        process.env.NODE_ENV = previousNodeEnv;
+      }
+      if (previousMode === undefined) {
+        delete process.env.ANALYSIS_CLIENT_MODE;
+      } else {
+        process.env.ANALYSIS_CLIENT_MODE = previousMode;
+      }
+    }
+  });
 });

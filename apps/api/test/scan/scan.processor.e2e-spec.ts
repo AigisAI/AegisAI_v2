@@ -287,4 +287,44 @@ describe('ScanProcessor', () => {
       }
     });
   });
+
+  it('blocks production legacy processing before token decryption or source collection', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousMode = process.env.ANALYSIS_CLIENT_MODE;
+    process.env.NODE_ENV = 'production';
+    process.env.ANALYSIS_CLIENT_MODE = 'internal';
+    const prisma = {
+      scan: { findUnique: jest.fn() }
+    };
+    const tokenCrypto = { decrypt: jest.fn() };
+    const collector = { collect: jest.fn() };
+    const analysisClient = { analyze: jest.fn() };
+    const processor = new ScanProcessor(
+      prisma as never,
+      tokenCrypto as never,
+      collector as never,
+      analysisClient as never
+    );
+
+    try {
+      await expect(
+        processor.process({ data: { scanId: 'scan-1' } } as never)
+      ).rejects.toThrow('LEGACY_ANALYSIS_DISABLED');
+      expect(prisma.scan.findUnique).not.toHaveBeenCalled();
+      expect(tokenCrypto.decrypt).not.toHaveBeenCalled();
+      expect(collector.collect).not.toHaveBeenCalled();
+      expect(analysisClient.analyze).not.toHaveBeenCalled();
+    } finally {
+      if (previousNodeEnv === undefined) {
+        delete process.env.NODE_ENV;
+      } else {
+        process.env.NODE_ENV = previousNodeEnv;
+      }
+      if (previousMode === undefined) {
+        delete process.env.ANALYSIS_CLIENT_MODE;
+      } else {
+        process.env.ANALYSIS_CLIENT_MODE = previousMode;
+      }
+    }
+  });
 });

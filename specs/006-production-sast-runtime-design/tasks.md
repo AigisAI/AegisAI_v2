@@ -38,10 +38,10 @@
 - [x] T022 Implement per-attempt short-lived repo-read token handoff
 - [x] T023 Implement shallow fixed-commit fetch with submodule/LFS/archive defaults
 - [x] T024 Implement hostile path, symlink, case-collision, size, count, and file-type preflight
-- [ ] T025 Implement pinned OpenGrep, Trivy, and Syft wrapper commands from signed profiles
-- [ ] T026 Enforce no build, install, dynamic execution, runtime update, or unrestricted egress
-- [ ] T027 Remove production routing to the mock-analysis path while preserving test fixtures
-- [ ] T028 Capture scanner exit, resource, digest, and sandbox destruction audit signals
+- [x] T025 Implement pinned OpenGrep, Trivy, and Syft wrapper commands from signed profiles
+- [x] T026 Enforce no build, install, dynamic execution, runtime update, or unrestricted egress
+- [x] T027 Remove production routing to the mock-analysis path while preserving test fixtures
+- [x] T028 Capture scanner exit, resource, digest, and sandbox destruction audit signals
 
 ## Phase 6: Artifact Ingress and Normalization
 

@@ -16,8 +16,24 @@ test('microVM scanner sandbox provisioning contract defines stronger-than-pod sc
   assert.equal(contract.sandboxProvider, 'MICROVM');
   assert.deepEqual(contract.supportedIsolationClasses, ['HARDENED', 'RESTRICTED']);
   assert.equal(contract.defaultIsolationClass, 'HARDENED');
-  assert.equal(contract.ttlSeconds, 900);
-  assert.equal(contract.networkEgressPolicy, 'SCM_AND_SCANNER_UPDATES_ONLY');
+  assert.equal(contract.ttlSeconds, 3960);
+  assert.deepEqual(contract.ttlPolicy, {
+    source: 'SIGNED_PROFILE',
+    maximumExecutionSeconds: 3600,
+    provisioningGraceSeconds: 300,
+    cleanupGraceSeconds: 60,
+    hardMaximumSeconds: 3960
+  });
+  assert.equal(contract.networkEgressPolicy, 'RESULT_INGRESS_AND_TELEMETRY_ONLY');
+  assert.equal(contract.publicInternetEgressAllowed, false);
+  assert.equal(contract.cloudMetadataAccessAllowed, false);
+  assert.equal(contract.executionBoundary.runAsNonRoot, true);
+  assert.equal(contract.executionBoundary.readOnlyRootFilesystem, true);
+  assert.equal(contract.executionBoundary.signedAttemptDeadlineRequired, true);
+  assert.equal(
+    contract.executionBoundary.orphanedAttemptReconciliationRequired,
+    true
+  );
   assert.equal(contract.repositoryAccess.principal, 'REPO_READ');
   assert.equal(contract.repositoryAccess.tokenScope, 'tenant-repository-scan');
   assert.equal(contract.repositoryAccess.shortLived, true);
@@ -39,6 +55,13 @@ test('microVM scanner sandbox forbids package install, builds, dynamic tests, di
     'PACKAGE_INSTALL',
     'CUSTOMER_REPOSITORY_BUILD',
     'DYNAMIC_TESTING',
+    'SHELL_INTERPOLATION',
+    'ARBITRARY_COMMAND_OR_ARGUMENT',
+    'CUSTOMER_ENVIRONMENT',
+    'CUSTOMER_EXECUTABLE_CONFIG',
+    'RUNTIME_RULE_OR_DATABASE_UPDATE',
+    'PUBLIC_INTERNET_EGRESS',
+    'CLOUD_METADATA_ACCESS',
     'DIRECT_SOURCE_UPLOAD',
     'AI_FULL_REPOSITORY_ACCESS',
     'AUTO_FIX_PR_OR_MR'
