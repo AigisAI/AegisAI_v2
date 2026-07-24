@@ -1,4 +1,18 @@
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
+import type {
+  SastSandboxRuntimeAttestation,
+  SastScannerPreflightBinding,
+  SastScanPlan
+} from '@aegisai/shared';
+import {
+  IsBoolean,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  Min
+} from 'class-validator';
 
 const RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
 const VERSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
@@ -17,18 +31,32 @@ export class RunMockScanPlaneDto {
   scannerSetVersion!: string;
 }
 
-export class RunSandboxScannersDto extends RunMockScanPlaneDto {
+export class RunSandboxScannersDto {
+  @IsObject()
+  plan!: SastScanPlan;
+
   @IsString()
   @Matches(RESOURCE_ID)
-  workspaceRef!: string;
-
-  @IsIn(['STANDARD', 'HARDENED', 'RESTRICTED'])
-  isolationClass!: 'STANDARD' | 'HARDENED' | 'RESTRICTED';
+  attemptId!: string;
 
   @IsInt()
   @Min(1)
-  @Max(3600)
-  timeoutSeconds!: number;
+  @Max(2)
+  attemptNumber!: number;
+
+  @IsString()
+  @Matches(RESOURCE_ID)
+  sandboxId!: string;
+
+  @IsString()
+  @Matches(RESOURCE_ID)
+  workloadIdentityRef!: string;
+
+  @IsObject()
+  preflight!: SastScannerPreflightBinding;
+
+  @IsObject()
+  sandboxAttestation!: SastSandboxRuntimeAttestation;
 }
 
 export class ScanArtifactsQueryDto {

@@ -1,14 +1,122 @@
 {
   "kind": "ScannerSandboxProvisioning",
-  "version": "004-production-runtime-infrastructure.v1",
+  "version": "006-production-sast-runtime-design.v1",
   "sandboxProvider": "MICROVM",
   "supportedIsolationClasses": [
     "HARDENED",
     "RESTRICTED"
   ],
   "defaultIsolationClass": "HARDENED",
-  "ttlSeconds": 900,
-  "networkEgressPolicy": "SCM_AND_SCANNER_UPDATES_ONLY",
+  "ttlSeconds": 3960,
+  "ttlPolicy": {
+    "source": "SIGNED_PROFILE",
+    "maximumExecutionSeconds": 3600,
+    "provisioningGraceSeconds": 300,
+    "cleanupGraceSeconds": 60,
+    "hardMaximumSeconds": 3960
+  },
+  "networkEgressPolicy": "PHASE_BOUND_DENY_BY_DEFAULT",
+  "networkEgressPhases": {
+    "REPOSITORY_FETCH": {
+      "allowedDestinationPolicy": "BOUND_SCM_HOST_ONLY",
+      "boundHostSource": "SIGNED_REPOSITORY_BINDING",
+      "allowedProtocols": [
+        "HTTPS"
+      ],
+      "unboundPublicInternetEgressAllowed": false,
+      "resultIngressAllowed": false,
+      "transitionRequires": [
+        "FIXED_COMMIT_FETCHED",
+        "REMOTE_REMOVED",
+        "GIT_METADATA_REMOVED",
+        "CREDENTIAL_WIPED_AND_REVOKED",
+        "SCM_EGRESS_RULE_REMOVED"
+      ]
+    },
+    "SCANNER_EXECUTION": {
+      "allowedDestinationPolicy": "RESULT_INGRESS_AND_TELEMETRY_ONLY",
+      "boundScmHostAllowed": false,
+      "runtimeAssetUpdateAllowed": false,
+      "unboundPublicInternetEgressAllowed": false
+    },
+    "CLEANUP": {
+      "allowedDestinationPolicy": "CONTROL_PLANE_CLEANUP_EVIDENCE_ONLY",
+      "boundScmHostAllowed": false,
+      "resultIngressClosedBeforeCompletion": true,
+      "unboundPublicInternetEgressAllowed": false
+    }
+  },
+  "publicInternetEgressAllowed": false,
+  "cloudMetadataAccessAllowed": false,
+  "runtimeAssetUpdateAllowed": false,
+  "executionBoundary": {
+    "runAsNonRoot": true,
+    "readOnlyRootFilesystem": true,
+    "readOnlyRepositoryMount": "/workspace/repository",
+    "privateWritableOutputMount": "/workspace/output",
+    "workingDirectory": "/workspace/output",
+    "shellInterpolationAllowed": false,
+    "customerArgumentsAllowed": false,
+    "customerEnvironmentAllowed": false,
+    "customerExecutableConfigAllowed": false,
+    "customerSuppressionConfigAllowed": false,
+    "repositoryToolConfigDiscoveryAllowed": false,
+    "providerAttestationRequired": true,
+    "signedAttemptNumberRequired": true,
+    "preScannerRemanifestRequired": true,
+    "signedAttemptDeadlineRequired": true,
+    "signedAttemptDeadlinePersistenceRequired": true,
+    "providerAbortSignalRequired": true,
+    "resourceLimitsSource": "SIGNED_PROFILE",
+    "cleanupTimeoutSeconds": 60,
+    "orphanedAttemptReconciliationRequired": true,
+    "orphanedAttemptReconciliationIntervalMilliseconds": 10000
+  },
+  "scannerInputBoundary": {
+    "deepScanMount": "/workspace/repository",
+    "fastScanMountTemplate": "/workspace/selected/<preflight-inventory-sha256>",
+    "fastScanMaterializer": "PLATFORM_OWNED",
+    "fastScanSelectionSource": "ATTESTED_PATH_ALLOWLIST",
+    "fastScanContentBinding": "PREFLIGHT_INVENTORY_DIGEST",
+    "fastScanReadOnly": true,
+    "fastScanUnselectedEntriesAllowed": false,
+    "scannerReceivesRepositoryRootForFastScan": false,
+    "preScannerProjectionAttestationRequired": true,
+    "projectionMismatchPolicy": "FAIL_CLOSED"
+  },
+  "scannerEntrypoints": {
+    "OPENGREP": {
+      "binary": "/opt/aegis/scanners/opengrep",
+      "output": "OPENGREP_SARIF",
+      "repositoryIgnoreFilesAllowed": false,
+      "inlineNosemSuppressionAllowed": false,
+      "versionCheckAllowed": false,
+      "runtimeUpdateAllowed": false
+    },
+    "TRIVY": {
+      "binary": "/opt/aegis/scanners/trivy",
+      "output": "TRIVY_JSON",
+      "cachePathShape": "/opt/aegis/assets/trivy/<database-sha256>/<checks-bundle-sha256>",
+      "configPathSource": "PINNED_WRAPPER_DIGEST",
+      "repositoryIgnoreFilesAllowed": false,
+      "suppressedResultsMustBeEmitted": true,
+      "timeoutSource": "SIGNED_PROFILE",
+      "offlineScanRequired": true,
+      "runtimeUpdateAllowed": false,
+      "telemetryAllowed": false
+    },
+    "SYFT": {
+      "binary": "/opt/aegis/scanners/syft",
+      "output": "CYCLONEDX_JSON",
+      "configPathSource": "PINNED_WRAPPER_DIGEST",
+      "repositoryConfigDiscoveryAllowed": false,
+      "archiveExpansionAllowed": false,
+      "packageManagerOrCompilerInvocationAllowed": false,
+      "runtimeUpdateAllowed": false,
+      "remoteLicenseSearchAllowed": false,
+      "versionCheckAllowed": false
+    }
+  },
   "repositoryAccess": {
     "principal": "REPO_READ",
     "tokenScope": "tenant-repository-scan",
@@ -25,6 +133,13 @@
     "PACKAGE_INSTALL",
     "CUSTOMER_REPOSITORY_BUILD",
     "DYNAMIC_TESTING",
+    "SHELL_INTERPOLATION",
+    "ARBITRARY_COMMAND_OR_ARGUMENT",
+    "CUSTOMER_ENVIRONMENT",
+    "CUSTOMER_EXECUTABLE_CONFIG",
+    "RUNTIME_RULE_OR_DATABASE_UPDATE",
+    "PUBLIC_INTERNET_EGRESS",
+    "CLOUD_METADATA_ACCESS",
     "DIRECT_SOURCE_UPLOAD",
     "AI_FULL_REPOSITORY_ACCESS",
     "AUTO_FIX_PR_OR_MR"
@@ -46,14 +161,32 @@
     "tenantIdRequired": true,
     "scanRequestIdRequired": true,
     "repositoryBindingIdRequired": true,
+    "attemptIdRequired": true,
+    "sandboxIdRequired": true,
+    "workloadIdentityRefRequired": true,
+    "boundedMetadataOnly": true,
+    "scannerExitAndResourceMetadataRequired": true,
     "sandboxLifecycleEvents": [
-      "planned",
-      "provisioning",
-      "ready",
-      "running",
-      "draining",
-      "terminated",
-      "failed"
+      "sandbox.ready",
+      "scanner.started",
+      "scanner.completed",
+      "scanner.failed",
+      "sandbox.cleanup_pending",
+      "sandbox.terminated",
+      "sandbox.cleanup_failed"
+    ],
+    "completionRequires": [
+      "CREDENTIAL_REVOKED_AND_WIPED",
+      "SCANNER_PROCESSES_TERMINATED",
+      "WRITABLE_VOLUMES_DESTROYED",
+      "MICROVM_TERMINATED",
+      "RESULT_INGRESS_CLOSED",
+      "SIGNED_CLEANUP_EVIDENCE",
+      "FINAL_AUDIT_SIGNAL"
     ]
+  },
+  "productionMockAnalysisAllowed": false,
+  "defaultRuntimeProvider": {
+    "mode": "FAIL_CLOSED_UNTIL_LIVE_MICROVM_ADAPTER_INSTALLED"
   }
 }

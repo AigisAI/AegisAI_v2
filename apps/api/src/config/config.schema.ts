@@ -68,12 +68,40 @@ export const ENVIRONMENT_VALIDATION_SCHEMA = Joi.object({
       .invalid(Joi.ref('WORKLOAD_ATTESTATION_KEY'))
       .default('b'.repeat(64))
   }),
+  SANDBOX_ATTESTATION_KEY: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string()
+      .hex()
+      .length(64)
+      .lowercase()
+      .invalid(Joi.ref('TOKEN_ENCRYPTION_KEY'))
+      .invalid(Joi.ref('WORKLOAD_ATTESTATION_KEY'))
+      .invalid(Joi.ref('PREFLIGHT_ATTESTATION_KEY'))
+      .required(),
+    otherwise: Joi.string()
+      .hex()
+      .length(64)
+      .lowercase()
+      .invalid(Joi.ref('TOKEN_ENCRYPTION_KEY'))
+      .invalid(Joi.ref('WORKLOAD_ATTESTATION_KEY'))
+      .invalid(Joi.ref('PREFLIGHT_ATTESTATION_KEY'))
+      .default('d'.repeat(64))
+  }),
   CREDENTIAL_LEASE_EXPIRY_INTERVAL_MS: Joi.number()
     .integer()
     .min(1_000)
     .max(3_600_000)
     .default(60_000),
-  ANALYSIS_CLIENT_MODE: Joi.string().valid('mock', 'internal').default('mock'),
+  SAST_ATTEMPT_RECONCILIATION_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(10_000)
+    .max(300_000)
+    .default(10_000),
+  ANALYSIS_CLIENT_MODE: Joi.when('NODE_ENV', {
+    is: 'test',
+    then: Joi.string().valid('mock', 'internal').default('mock'),
+    otherwise: Joi.string().valid('internal').default('internal')
+  }),
   AI_SERVER_URL: Joi.string().uri().default('http://localhost:8000'),
   USE_INTERNAL_AI: Joi.string().valid('true', 'false').default('false'),
   AI_ADVISORY_TIMEOUT_MS: Joi.number().integer().positive().default(2500),

@@ -4,10 +4,16 @@ import request from "supertest";
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
 import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
 import { ControlPlaneService } from '../../src/control-plane/control-plane.service';
+import { ScannerSandboxRuntimeProvider } from '../../src/scan-plane/scanner-sandbox-runtime.provider';
 import { TestInternalServiceGuard, TestSessionAuthGuard } from '../support/security-guards';
 
 describe("Scan Plane mock pipeline skeleton (e2e)", () => {
   let app: INestApplication;
+  const scannerRuntimeProvider = {
+    readRepositoryManifest: jest.fn(),
+    executeScanner: jest.fn(),
+    cleanup: jest.fn()
+  };
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
@@ -51,6 +57,8 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
             : 'scanner-set-v1'
         }))
       })
+      .overrideProvider(ScannerSandboxRuntimeProvider)
+      .useValue(scannerRuntimeProvider)
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .overrideGuard(InternalServiceGuard)
@@ -67,6 +75,10 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
     if (app) {
       await app.close();
     }
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   const dataOf = <T>(body: { data?: T } | T): T => {
@@ -133,7 +145,23 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
       .get("/api/scan-plane/scanner-runs")
       .query({ tenantId: "tenant_reads", scanRequestId: "scan_request_2" })
       .expect(200);
-    expect(dataOf<unknown[]>(scannerRuns.body)).toHaveLength(3);
+    const scannerRunData = dataOf<Array<Record<string, unknown>>>(
+      scannerRuns.body
+    );
+    expect(scannerRunData).toHaveLength(3);
+    expect(scannerRunData[0]).toEqual(
+      expect.objectContaining({
+        scanner: 'OPENGREP',
+        required: true,
+        scannerImageDigest: null,
+        wrapperDigest: null,
+        exitCode: null,
+        terminationSignal: null,
+        startedAt: null,
+        completedAt: null
+      })
+    );
+    expect(scannerRunData[0]).not.toHaveProperty('rawArtifactObjectKey');
 
     const findings = await request(app.getHttpServer())
       .get("/api/findings")
@@ -152,7 +180,7 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
     expect(evidenceData[0].objectKey).toContain("tenant_reads/scan_request_2/evidence/");
   });
 
-  it("executes scanner adapters through sandbox metadata without package install or credential leakage", async () => {
+  it("rejects the legacy caller-controlled workspace, timeout, and isolation execution shape", async () => {
     const response = await request(app.getHttpServer())
       .post("/api/scan-plane/scanner-runs/execute")
       .send({
@@ -163,83 +191,23 @@ describe("Scan Plane mock pipeline skeleton (e2e)", () => {
         isolationClass: "HARDENED",
         timeoutSeconds: 120
       })
-      .expect(201);
+      .expect(403);
 
-    const responseData = dataOf<{
-      scannerRuns: Array<Record<string, unknown>>;
-      evidencePacks: Array<Record<string, unknown>>;
-      adapterInvocations: Array<{
-        scanner: string;
-        command: string;
-        args: string[];
-        sandbox: Record<string, unknown>;
-      }>;
-    }>(response.body);
-
-    expect(responseData.scannerRuns).toEqual([
-      expect.objectContaining({ scanner: "OPENGREP", status: "COMPLETED" }),
-      expect.objectContaining({ scanner: "TRIVY", status: "COMPLETED" }),
-      expect.objectContaining({ scanner: "SYFT", status: "COMPLETED" })
-    ]);
-    expect(responseData.adapterInvocations).toEqual([
-      expect.objectContaining({
-        scanner: "OPENGREP",
-        command: "opengrep",
-        args: expect.arrayContaining(["--json", "--timeout", "120", "sandbox://tenant_exec/scan_request_3/workspace"]),
-        sandbox: expect.objectContaining({
-          isolationClass: "HARDENED",
-          networkEgress: false,
-          readOnlyWorkspace: true,
-          packageInstallAllowed: false,
-          buildAllowed: false
-        })
-      }),
-      expect.objectContaining({
-        scanner: "TRIVY",
-        command: "trivy",
-        args: expect.arrayContaining(["fs", "--format", "json", "--timeout", "120s", "sandbox://tenant_exec/scan_request_3/workspace"]),
-        sandbox: expect.objectContaining({
-          networkEgress: false,
-          readOnlyWorkspace: true,
-          packageInstallAllowed: false,
-          buildAllowed: false
-        })
-      }),
-      expect.objectContaining({
-        scanner: "SYFT",
-        command: "syft",
-        args: expect.arrayContaining(["sandbox://tenant_exec/scan_request_3/workspace", "-o", "json"]),
-        sandbox: expect.objectContaining({
-          networkEgress: false,
-          readOnlyWorkspace: true,
-          packageInstallAllowed: false,
-          buildAllowed: false
-        })
-      })
-    ]);
-    expect(responseData.evidencePacks).toEqual([
-      expect.objectContaining({
-        tenantId: "tenant_exec",
-        scanRequestId: "scan_request_3",
-        classification: "SHORT_LIVED_EVIDENCE",
-        redacted: true
-      })
-    ]);
-    expect(JSON.stringify(responseData)).not.toMatch(
-      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|npm install|pip install|mvn package|gradle build/i
+    expect(JSON.stringify(response.body)).not.toMatch(
+      /accessToken|refreshToken|tokenValue|secretValue/i
     );
+    expect(scannerRuntimeProvider.readRepositoryManifest).not.toHaveBeenCalled();
+    expect(scannerRuntimeProvider.executeScanner).not.toHaveBeenCalled();
+    expect(scannerRuntimeProvider.cleanup).not.toHaveBeenCalled();
   });
 
   it("creates metadata-only evidence access requests without leaking repository content or credentials", async () => {
     const scanRun = await request(app.getHttpServer())
-      .post("/api/scan-plane/scanner-runs/execute")
+      .post("/api/scan-plane/mock-runs")
       .send({
         tenantId: "tenant_evidence",
         scanRequestId: "scan_request_4",
-        scannerSetVersion: "scanner-set-v2",
-        workspaceRef: "sandbox://tenant_evidence/scan_request_4/workspace",
-        isolationClass: "HARDENED",
-        timeoutSeconds: 120
+        scannerSetVersion: "scanner-set-v2"
       })
       .expect(201);
 

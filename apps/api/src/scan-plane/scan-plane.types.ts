@@ -1,6 +1,5 @@
 import type {
   EvidencePack,
-  IsolationClass,
   NormalizedFinding,
   ScannerRun,
   ScannerKind
@@ -18,35 +17,31 @@ export interface MockScanPlaneRunResult {
   evidencePacks: EvidencePack[];
 }
 
-export type DeterministicScannerKind = Exclude<ScannerKind, "MOCK">;
-
-export interface RunSandboxScannersInput {
+export interface ScannerRunView {
+  id: string;
   tenantId: string;
   scanRequestId: string;
-  scannerSetVersion: string;
-  workspaceRef: string;
-  isolationClass: IsolationClass;
-  timeoutSeconds: number;
+  scanner: ScannerKind;
+  scannerVersion: string;
+  status:
+    | ScannerRun['status']
+    | 'QUARANTINED'
+    | 'KILLED';
+  required: boolean | null;
+  scannerImageDigest: string | null;
+  wrapperDigest: string | null;
+  ruleBundleDigest: string | null;
+  databaseDigest: string | null;
+  scannerSetDigest: string | null;
+  profileId: string | null;
+  profileDigest: string | null;
+  exitCode: number | null;
+  terminationSignal: string | null;
+  timedOut: boolean | null;
+  outputLimitExceeded: boolean | null;
+  durationMilliseconds: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
 }
 
-export interface ScannerSandboxPolicy {
-  isolationClass: IsolationClass;
-  networkEgress: false;
-  readOnlyWorkspace: true;
-  packageInstallAllowed: false;
-  buildAllowed: false;
-  customerCodeExecutionAllowed: false;
-}
-
-export interface ScannerAdapterInvocation {
-  scanner: DeterministicScannerKind;
-  command: string;
-  args: string[];
-  sandbox: ScannerSandboxPolicy;
-}
-
-export interface SandboxScannerExecutionResult {
-  scannerRuns: ScannerRun[];
-  evidencePacks: EvidencePack[];
-  adapterInvocations: ScannerAdapterInvocation[];
-}
+export type DeterministicScannerKind = Exclude<ScannerKind, "MOCK">;

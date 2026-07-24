@@ -18,7 +18,8 @@ describe('Config environment files', () => {
       for (const key of [
         'TOKEN_ENCRYPTION_KEY',
         'WORKLOAD_ATTESTATION_KEY',
-        'PREFLIGHT_ATTESTATION_KEY'
+        'PREFLIGHT_ATTESTATION_KEY',
+        'SANDBOX_ATTESTATION_KEY'
       ]) {
         const keyLine = contents
           .split(/\r?\n/)
@@ -48,7 +49,8 @@ describe('Config environment files', () => {
       FRONTEND_URL: 'http://localhost:5173',
       TOKEN_ENCRYPTION_KEY: 'c'.repeat(64),
       WORKLOAD_ATTESTATION_KEY: 'a'.repeat(64),
-      PREFLIGHT_ATTESTATION_KEY: 'b'.repeat(64)
+      PREFLIGHT_ATTESTATION_KEY: 'b'.repeat(64),
+      SANDBOX_ATTESTATION_KEY: 'd'.repeat(64)
     };
 
     expect(ENVIRONMENT_VALIDATION_SCHEMA.validate(environment).error).toBeUndefined();
@@ -74,6 +76,52 @@ describe('Config environment files', () => {
       ENVIRONMENT_VALIDATION_SCHEMA.validate({
         ...environment,
         TOKEN_ENCRYPTION_KEY: environment.WORKLOAD_ATTESTATION_KEY.toUpperCase()
+      }).error
+    ).toBeDefined();
+    for (const reusedKey of [
+      'TOKEN_ENCRYPTION_KEY',
+      'WORKLOAD_ATTESTATION_KEY',
+      'PREFLIGHT_ATTESTATION_KEY'
+    ] as const) {
+      expect(
+        ENVIRONMENT_VALIDATION_SCHEMA.validate({
+          ...environment,
+          SANDBOX_ATTESTATION_KEY: environment[reusedKey]
+        }).error
+      ).toBeDefined();
+    }
+  });
+
+  it('allows mock analysis only in the test environment', () => {
+    const base = {
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/aegisai',
+      REDIS_URL: 'redis://localhost:6379',
+      SESSION_SECRET: 's'.repeat(32),
+      CSRF_SECRET: 'c'.repeat(32),
+      GITHUB_CLIENT_ID: 'github-client',
+      GITHUB_CLIENT_SECRET: 'github-secret',
+      GITLAB_CLIENT_ID: 'gitlab-client',
+      GITLAB_CLIENT_SECRET: 'gitlab-secret',
+      APP_URL: 'http://localhost:3000',
+      FRONTEND_URL: 'http://localhost:5173',
+      TOKEN_ENCRYPTION_KEY: 'c'.repeat(64),
+      WORKLOAD_ATTESTATION_KEY: 'a'.repeat(64),
+      PREFLIGHT_ATTESTATION_KEY: 'b'.repeat(64),
+      SANDBOX_ATTESTATION_KEY: 'd'.repeat(64)
+    };
+
+    expect(
+      ENVIRONMENT_VALIDATION_SCHEMA.validate({
+        ...base,
+        NODE_ENV: 'test',
+        ANALYSIS_CLIENT_MODE: 'mock'
+      }).error
+    ).toBeUndefined();
+    expect(
+      ENVIRONMENT_VALIDATION_SCHEMA.validate({
+        ...base,
+        NODE_ENV: 'development',
+        ANALYSIS_CLIENT_MODE: 'mock'
       }).error
     ).toBeDefined();
   });

@@ -100,16 +100,18 @@ Fast and Deep lanes use separate queues and budgets but the same microVM securit
 3. Provision one ephemeral microVM and attest its workload identity.
 4. Inject a short-lived fixed-commit repo-read credential without persistence or logging.
 5. Fetch the repository, enforce path/resource policy, and reject unsafe input.
-6. Run signed, digest-pinned scanner wrappers without package install, build, dynamic
+6. Remove the SCM remote and Git metadata, wipe and revoke the credential, and remove the
+   signed repository-binding host egress rule.
+7. Run signed, digest-pinned scanner wrappers without package install, build, dynamic
    execution, or runtime internet enrichment.
-7. Upload bounded artifact envelopes to the result ingestor and wipe the credential.
-8. Validate, normalize, fingerprint, correlate, reduce evidence, and evaluate coverage.
-9. Send normalized findings to policy and reduced evidence references to AI when eligible.
-10. Wipe the workspace, destroy the microVM, and record destruction evidence.
+8. Upload non-empty bounded artifact envelopes to the result ingestor.
+9. Validate, normalize, fingerprint, correlate, reduce evidence, and evaluate coverage.
+10. Send normalized findings to policy and reduced evidence references to AI when eligible.
+11. Wipe the workspace, destroy the microVM, and record destruction evidence.
 
 ## Implemented Runtime Checkpoint
 
-T022 through T024 are implemented as the first Phase 5 runtime slice:
+T022 through T028 are implemented as the complete Phase 5 runtime boundary:
 
 - Token Broker verifies a signed, bounded-lifetime workload attestation against tenant,
   repository binding, scan request, attempt, workload identity, and fixed commit. A durable
@@ -132,12 +134,62 @@ T022 through T024 are implemented as the first Phase 5 runtime slice:
   submodule/archive entries, binds Git object IDs against same-size content replacement,
   and produces a deterministic inventory digest plus signed
   `ACCEPT`, `REJECT`, or `RESTRICTED_ESCALATION` attestation.
+- The scanner wrapper accepts only an immutable `SastScanPlan`, attempt binding, preflight
+  binding, and a short-lived sandbox attestation that signs the complete plan digest, attempt
+  identifier, attempt number, and cumulative deadline. It
+  generates fixed shell-less OpenGrep SARIF, Trivy JSON offline, and Syft CycloneDX commands
+  against `/workspace/repository` for Deep or the platform-owned,
+  inventory-digest-bound `/workspace/selected/<digest>` projection for Fast, with output
+  under `/workspace/output`; caller paths, commands, flags, environment maps, plugins, and
+  executable configuration are not request fields. Processes
+  start in the private output directory. OpenGrep repository ignore/`nosem`, Trivy repository
+  config/ignore files, and Syft repository config/archive expansion, remote enrichment, and
+  external package-tool execution are disabled; only wrapper/rule-digest-bound platform
+  configuration is loaded.
+- Immediately before each scanner launch, the installed provider must read the exact
+  read-only repository mount, attest the exact scanner input, and return a content-bound
+  manifest. Fast requires `PATH_ALLOWLIST` plus a read-only selected projection containing no
+  unselected entry; Deep requires `ALL_SCANNABLE` plus the repository root. The runtime applies the same
+  preflight algorithm and refuses to call the scanner when the attestation, attempt, selection,
+  decision, or inventory digest differs.
+- Sandbox policy requires non-root execution, read-only root and repository mounts, private
+  writable output, bounded CPU/memory/disk/process/FD/log/artifact/time, no build/install/
+  dynamic execution/runtime asset update, and no unrestricted public internet or cloud
+  metadata access. Repository fetch temporarily permits HTTPS only to the signed
+  repository-binding SCM host; scanner execution starts only after credential wipe/revocation
+  and removal of that egress rule, then permits Result Ingress and telemetry only.
+  The signed profile timeout is one cumulative attempt deadline shared by manifest and scanner
+  calls, not a fresh allowance per scanner; provider calls receive an abort signal and cleanup
+  has a separate 60-second deadline.
+  The default provider remains unavailable and fails closed until the 005 provider rollout
+  installs the live microVM adapter.
+- Scanner terminal records persist exit/status/timing, bounded stdout/stderr metadata,
+  resource observations, artifact metadata, and every relevant image/wrapper/rule/database/
+  profile/preflight digest. Trivy's immutable cache path binds both its database and checks
+  bundle digests, and a zero-byte JSON/SARIF/CycloneDX artifact is rejected before persistence.
+  Serializable attempt admission plus a database partial unique index prevents concurrent active
+  sandboxes for one scan. Attempt 2 is admitted only when durable attempt 1 ended `FAILED` with
+  `RETRYABLE_INFRASTRUCTURE`, `retryEligible=true`, completion metadata, and a final audit event.
+  The signed deadline is persisted, and reconciliation
+  marks process-orphaned overdue attempts `CLEANUP_FAILED` with a final audit signal. Attempt
+  completion additionally requires signed credential,
+  process, volume, result-ingress, and microVM destruction evidence plus a final audit event;
+  a missing, stale, or late condition becomes `CLEANUP_FAILED`. Database constraints reject
+  null-bypassed runtime metadata and bind audit events to the same tenant and attempt. Existing
+  `ScannerRun` and `AuditEvent` tables are handled by the mandatory, idempotent
+  `prisma:online-schema` step immediately after transactional Prisma migration: it builds
+  indexes concurrently, adds constraints `NOT VALID`, then validates them in separate
+  autocommit statements to avoid holding write-blocking locks during existing-row scans.
+- `ANALYSIS_CLIENT_MODE=mock`, the mock scan controller, legacy source collection, and
+  `MockAnalysisApiClient` are test-only. Non-test configuration and runtime paths fail closed
+  before repository credential decryption or source collection.
 
-This checkpoint does not claim that the provider microVM platform is live. T025 through T028
-must connect the verified repository state to pinned scanner wrappers and destruction evidence
-before production execution is eligible. The non-production opaque credential issuer exists
-only to verify the handoff contract; the default production issuer fails closed until live
-rollout installs a provider-backed GitHub App/GitLab scoped minting adapter.
+This checkpoint proves the provider-facing execution contract but does not claim that the
+provider microVM platform is live. The non-production opaque credential issuer and test
+runtime provider exist only to verify the handoff contract. Default production credential
+issuance and scanner execution both fail closed until live rollout installs provider-backed
+GitHub App/GitLab scoped minting and microVM adapters. T029 is therefore the next implementation
+task; live deployment eligibility still requires the 005 rollout and the remaining 006 gates.
 
 ## Deployment Position
 

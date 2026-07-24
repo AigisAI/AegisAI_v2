@@ -1,14 +1,20 @@
 import { BadRequestException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { createEvidencePackMetadata, MAX_EVIDENCE_TTL_MS } from '@aegisai/shared';
+import {
+  createEvidencePackMetadata,
+  MAX_EVIDENCE_TTL_MS,
+  type SastScannerRuntimeExecutionResult,
+  type SastScannerWrapperExecutionRequest
+} from '@aegisai/shared';
 
 import { ControlPlaneService } from '../control-plane/control-plane.service';
+import { isMockAnalysisFixtureEnabled } from '../client/analysis/analysis-fixture.policy';
+import { PrismaService } from '../prisma/prisma.service';
 import type {
   DeterministicScannerKind,
   MockScanPlaneRunResult,
   RunMockScanPlaneInput,
-  RunSandboxScannersInput,
-  SandboxScannerExecutionResult
+  ScannerRunView,
 } from "./scan-plane.types";
 import type {
   EvidenceAccessRequest,
@@ -17,7 +23,7 @@ import type {
   ScannerRun
 } from '@aegisai/shared';
 import { EvidenceObjectStorageService } from "./evidence-object-storage.service";
-import { ScannerSandboxAdapterService } from "./scanner-sandbox-adapter.service";
+import { SastScannerRuntimeService } from './sast-scanner-runtime.service';
 
 @Injectable()
 export class ScanPlaneService {
@@ -25,15 +31,18 @@ export class ScanPlaneService {
   private readonly findings: NormalizedFinding[] = [];
   private readonly evidencePacks: EvidencePack[] = [];
   private readonly completedPipelines = new Map<string, MockScanPlaneRunResult>();
-  private readonly completedSandboxRuns = new Map<string, SandboxScannerExecutionResult>();
 
   constructor(
-    private readonly scannerSandboxAdapter: ScannerSandboxAdapterService,
+    private readonly sastScannerRuntime: SastScannerRuntimeService,
     private readonly evidenceObjectStorage: EvidenceObjectStorageService,
-    private readonly controlPlaneService: ControlPlaneService
+    private readonly controlPlaneService: ControlPlaneService,
+    private readonly prisma: PrismaService
   ) {}
 
   async runMockPipeline(input: RunMockScanPlaneInput): Promise<MockScanPlaneRunResult> {
+    if (!isMockAnalysisFixtureEnabled()) {
+      throw new NotFoundException('Mock scan pipeline is a test-only fixture.');
+    }
     await this.assertScanScope(input);
     const pipelineKey = `mock:${input.tenantId}:${input.scanRequestId}:${input.scannerSetVersion}`;
     const completedPipeline = this.completedPipelines.get(pipelineKey);
@@ -69,58 +78,78 @@ export class ScanPlaneService {
   }
 
   async runSandboxScanners(
-    input: RunSandboxScannersInput
-  ): Promise<SandboxScannerExecutionResult> {
-    await this.assertScanScope(input);
-    const pipelineKey = `sandbox:${input.tenantId}:${input.scanRequestId}:${input.scannerSetVersion}`;
-    const completedPipeline = this.completedSandboxRuns.get(pipelineKey);
-    if (completedPipeline) {
-      return completedPipeline;
-    }
-
-    const adapterInvocations = this.scannerSandboxAdapter.buildInvocations(input);
-    const scannerRuns = adapterInvocations.map((invocation) => ({
-      id: `scanner_run_${randomUUID()}`,
-      tenantId: input.tenantId,
-      scanRequestId: input.scanRequestId,
-      scanner: invocation.scanner,
-      scannerVersion: this.scannerSandboxAdapter.scannerVersion(
-        invocation.scanner,
-        input.scannerSetVersion
-      ),
-      status: "COMPLETED" as const,
-      rawArtifactObjectKey: this.buildRawArtifactObjectKey(
-        input.tenantId,
-        input.scanRequestId,
-        invocation.scanner
-      )
-    }));
-    const evidence = createEvidencePackMetadata({
-      id: `evidence_${randomUUID()}`,
-      tenantId: input.tenantId,
-      scanRequestId: input.scanRequestId,
-      byteSize: 1024,
-      expiresAt: new Date(Date.now() + MAX_EVIDENCE_TTL_MS).toISOString(),
-      redacted: true
-    });
-
-    this.scannerRuns.push(...scannerRuns);
-    this.evidencePacks.push(evidence);
-
-    const result = {
-      scannerRuns,
-      evidencePacks: [evidence],
-      adapterInvocations
-    };
-    this.completedSandboxRuns.set(pipelineKey, result);
-
-    return result;
+    input: SastScannerWrapperExecutionRequest
+  ): Promise<SastScannerRuntimeExecutionResult> {
+    return this.sastScannerRuntime.execute(input);
   }
 
-  listScannerRuns(tenantId: string, scanRequestId: string): ScannerRun[] {
-    return this.scannerRuns.filter(
-      (run) => run.tenantId === tenantId && run.scanRequestId === scanRequestId
-    );
+  async listScannerRuns(
+    tenantId: string,
+    scanRequestId: string
+  ): Promise<ScannerRunView[]> {
+    if (isMockAnalysisFixtureEnabled()) {
+      return this.scannerRuns
+        .filter(
+          (run) =>
+            run.tenantId === tenantId &&
+            run.scanRequestId === scanRequestId
+        )
+        .map((run) => ({
+          id: run.id,
+          tenantId: run.tenantId,
+          scanRequestId: run.scanRequestId,
+          scanner: run.scanner,
+          scannerVersion: run.scannerVersion,
+          status: run.status,
+          required: true,
+          scannerImageDigest: null,
+          wrapperDigest: null,
+          ruleBundleDigest: null,
+          databaseDigest: null,
+          scannerSetDigest: null,
+          profileId: null,
+          profileDigest: null,
+          exitCode: null,
+          terminationSignal: null,
+          timedOut: null,
+          outputLimitExceeded: null,
+          durationMilliseconds: null,
+          startedAt: null,
+          completedAt: null
+        }));
+    }
+    const scannerRuns = await this.prisma.scannerRun.findMany({
+      where: { tenantId, scanRequestId },
+      select: {
+        id: true,
+        tenantId: true,
+        scanRequestId: true,
+        scanner: true,
+        scannerVersion: true,
+        status: true,
+        required: true,
+        scannerImageDigest: true,
+        wrapperDigest: true,
+        ruleBundleDigest: true,
+        databaseDigest: true,
+        scannerSetDigest: true,
+        profileId: true,
+        profileDigest: true,
+        exitCode: true,
+        terminationSignal: true,
+        timedOut: true,
+        outputLimitExceeded: true,
+        durationMilliseconds: true,
+        startedAt: true,
+        completedAt: true
+      },
+      orderBy: [{ startedAt: 'asc' }, { id: 'asc' }]
+    });
+    return scannerRuns.map((run) => ({
+      ...run,
+      startedAt: run.startedAt?.toISOString() ?? null,
+      completedAt: run.completedAt?.toISOString() ?? null
+    }));
   }
 
   listFindings(tenantId: string, scanRequestId: string): NormalizedFinding[] {

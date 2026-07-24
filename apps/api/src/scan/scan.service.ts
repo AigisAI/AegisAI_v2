@@ -24,6 +24,7 @@ import {
   GitProviderUnauthorizedError,
   GitProviderUnavailableError
 } from '../client/git/git-provider-client.errors';
+import { isMockAnalysisFixtureEnabled } from '../client/analysis/analysis-fixture.policy';
 import { GitClientRegistry } from '../client/git/git-client.registry';
 import { TokenCryptoUtil } from '../auth/utils/token-crypto.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -53,6 +54,7 @@ export class ScanService {
   ) {}
 
   async createScan(input: CreateScanInput): Promise<ScanRequestResponse> {
+    this.assertLegacyFixtureEnabled();
     const branch = input.branch.trim();
     if (!branch) {
       throw new BadRequestException({
@@ -283,6 +285,16 @@ export class ScanService {
       message: 'An active scan already exists for this repository branch.',
       errorCode: 'SCAN_ALREADY_ACTIVE'
     });
+  }
+
+  private assertLegacyFixtureEnabled(): void {
+    if (!isMockAnalysisFixtureEnabled()) {
+      throw new ServiceUnavailableException({
+        message:
+          'Legacy scan creation is disabled; use the production Scan Plane request flow.',
+        errorCode: 'LEGACY_ANALYSIS_DISABLED'
+      });
+    }
   }
 
   private toScanSummary(scan: {

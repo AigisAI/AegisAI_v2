@@ -89,7 +89,10 @@ Required runtime values include:
 - `TOKEN_ENCRYPTION_KEY`
 - `WORKLOAD_ATTESTATION_KEY`
 - `PREFLIGHT_ATTESTATION_KEY`
+- `SANDBOX_ATTESTATION_KEY`
 - `CREDENTIAL_LEASE_EXPIRY_INTERVAL_MS`
+- `SAST_ATTEMPT_RECONCILIATION_INTERVAL_MS`
+- `ANALYSIS_CLIENT_MODE=internal`
 - OAuth client ids and secrets
 - `AI_PORT`
 - `AI_SERVER_URL`
@@ -101,7 +104,8 @@ Required runtime values include:
 - `GRAFANA_CLOUD_METRICS_PASSWORD`
 - `GRAFANA_CLOUD_INSTANCE_NAME`
 
-Generate the encryption and both attestation keys independently; the API rejects any reused key.
+Generate the encryption key and all three attestation keys independently; the API rejects any
+reused key. Production configuration rejects `ANALYSIS_CLIENT_MODE=mock`.
 
 ## 7. Bootstrap Infra Once
 
@@ -174,6 +178,13 @@ After bootstrap, trigger one deployment and confirm:
 - `docker compose -f docker-compose.app.yml config | grep '^name:'`
 - `docker compose -f docker-compose.infra.yml config | grep '^name:'`
 - the web container is reachable on port `80`
+
+The deploy script runs `prisma:migrate:deploy` before starting the refreshed application.
+That package command also runs the mandatory idempotent `prisma:online-schema` step: existing
+`ScannerRun` and `AuditEvent` indexes are built with `CONCURRENTLY`, then `NOT VALID`
+constraints are validated in separate autocommit statements. Do not replace the package
+command with a direct `prisma migrate deploy`; an online-schema failure must stop deployment
+before application containers are refreshed.
 - Grafana Cloud Explore shows new Docker logs for `api`, `ai`, and `web`
 - the Docker integration dashboards begin to populate
 - Teams receives the deploy result if `TEAMS_WEBHOOK_URL` is configured

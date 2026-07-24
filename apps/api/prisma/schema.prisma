@@ -89,6 +89,23 @@ enum SastCredentialLeaseStatus {
   REVOKED
 }
 
+enum SastScanAttemptStage {
+  VALIDATING
+  SCANNING
+  CLEANUP_PENDING
+  COMPLETED
+  FAILED
+  CLEANUP_FAILED
+}
+
+enum SastScanFailureClass {
+  RETRYABLE_INFRASTRUCTURE
+  NON_RETRYABLE_INPUT
+  SCANNER_DEFECT
+  SECURITY_VIOLATION
+  CAPACITY_REJECTED
+}
+
 enum IsolationClass {
   STANDARD
   HARDENED
@@ -108,6 +125,8 @@ enum ScannerRunStatus {
   COMPLETED
   FAILED
   TIMED_OUT
+  QUARANTINED
+  KILLED
   SKIPPED
 }
 
@@ -288,6 +307,7 @@ model Tenant {
   suppressions         Suppression[]
   auditEvents          AuditEvent[]
   sastCredentialLeases SastRepositoryCredentialLease[]
+  sastScanAttempts     SastScanAttempt[]
   users                User[]
 }
 
@@ -328,6 +348,7 @@ model RepositoryBinding {
   integration          ScmIntegration                  @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
   scanRequests         ScanRequest[]
   sastCredentialLeases SastRepositoryCredentialLease[]
+  sastScanAttempts     SastScanAttempt[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
@@ -365,6 +386,7 @@ model ScanRequest {
   auditEvents          AuditEvent[]
   sastQueueReservation SastQueueReservation?
   sastCredentialLeases SastRepositoryCredentialLease[]
+  sastScanAttempts     SastScanAttempt[]
 
   @@unique([id, tenantId, repositoryBindingId])
   @@index([tenantId])
@@ -413,6 +435,45 @@ model SastRepositoryCredentialLease {
   @@index([tenantId, scanRequestId, status])
   @@index([repositoryBindingId, status])
   @@index([expiresAt, status])
+}
+
+model SastScanAttempt {
+  /// The migration also enforces one non-terminal attempt per scan request with a partial unique index.
+  id                    String                @id
+  tenantId              String
+  repositoryBindingId   String
+  scanRequestId         String
+  attemptNumber         Int
+  sandboxId             String                @unique
+  workloadIdentityRef   String                @unique
+  stage                 SastScanAttemptStage  @default(VALIDATING)
+  failureClass          SastScanFailureClass?
+  failureReason         String?
+  retryEligible         Boolean               @default(false)
+  cleanupEvidence       Json?
+  cleanupEvidenceDigest String?
+  finalAuditEventId     String?               @unique
+  startedAt             DateTime
+  attemptDeadlineAt     DateTime
+  completedAt           DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastScanAttempt_repository_scope_fkey")
+  scanRequest       ScanRequest       @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastScanAttempt_scan_scope_fkey")
+  scannerRuns       ScannerRun[]
+  auditEvents       AuditEvent[]      @relation("SastScanAttemptAuditEvents")
+  finalAuditEvent   AuditEvent?       @relation("SastScanAttemptFinalAuditEvent", fields: [finalAuditEventId, id, tenantId], references: [id, attemptId, tenantId], onDelete: NoAction, onUpdate: NoAction, map: "SastScanAttempt_finalAuditEventId_fkey")
+
+  @@unique([scanRequestId, attemptNumber])
+  @@unique([id, tenantId], map: "SastScanAttempt_id_tenantId_key")
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId], map: "SastScanAttempt_scope_key")
+  @@unique([finalAuditEventId, id, tenantId], map: "SastScanAttempt_final_audit_scope_key")
+  @@index([tenantId, stage])
+  @@index([stage, attemptDeadlineAt])
+  @@index([repositoryBindingId])
+  @@index([completedAt])
 }
 
 model SastQueueTenantUsage {
@@ -493,24 +554,51 @@ model SastQueueReservation {
 }
 
 model ScannerRun {
-  id                   String           @id @default(uuid())
-  tenantId             String
-  scanRequestId        String
-  scanner              ScannerKind
-  scannerVersion       String
-  status               ScannerRunStatus @default(QUEUED)
-  rawArtifactObjectKey String?
-  coverageState        Json?
-  errorMessage         String?
-  createdAt            DateTime         @default(now())
-  startedAt            DateTime?
-  completedAt          DateTime?
-  updatedAt            DateTime         @updatedAt
+  id                              String           @id @default(uuid())
+  tenantId                        String
+  scanRequestId                   String
+  repositoryBindingId             String?
+  scanner                         ScannerKind
+  scannerVersion                  String
+  attemptId                       String?
+  required                        Boolean?
+  wrapperDigest                   String?
+  scannerImageDigest              String?
+  ruleBundleDigest                String?
+  databaseDigest                  String?
+  scannerSetDigest                String?
+  profileId                       String?
+  profileDigest                   String?
+  preflightAttestationRef         String?
+  preflightInventoryDigest        String?
+  scannerWorkspaceInventoryDigest String?
+  artifactSchema                  String?
+  artifactSchemaVersion           String?
+  exitCode                        Int?
+  terminationSignal               String?
+  timedOut                        Boolean?
+  outputLimitExceeded             Boolean?
+  durationMilliseconds            Int?
+  stdoutMetadata                  Json?
+  stderrMetadata                  Json?
+  resourceMetadata                Json?
+  artifactMetadata                Json?
+  status                          ScannerRunStatus @default(QUEUED)
+  rawArtifactObjectKey            String?
+  coverageState                   Json?
+  errorMessage                    String?
+  createdAt                       DateTime         @default(now())
+  startedAt                       DateTime?
+  completedAt                     DateTime?
+  updatedAt                       DateTime         @updatedAt
 
   tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   scanRequest ScanRequest         @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  attempt     SastScanAttempt?    @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "ScannerRun_attempt_scope_fkey")
   findings    NormalizedFinding[]
 
+  @@unique([attemptId, scanner])
+  @@index([attemptId])
   @@index([tenantId])
   @@index([scanRequestId])
   @@index([scanner])
@@ -659,6 +747,7 @@ model AuditEvent {
   id            String   @id @default(uuid())
   tenantId      String
   scanRequestId String?
+  attemptId     String?
   eventType     String
   actor         String
   targetType    String
@@ -666,11 +755,15 @@ model AuditEvent {
   metadata      Json?
   occurredAt    DateTime @default(now())
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  scanRequest ScanRequest? @relation(fields: [scanRequestId], references: [id], onDelete: SetNull)
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest     ScanRequest?     @relation(fields: [scanRequestId], references: [id], onDelete: SetNull)
+  attempt         SastScanAttempt? @relation("SastScanAttemptAuditEvents", fields: [attemptId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "AuditEvent_attempt_scope_fkey")
+  finalForAttempt SastScanAttempt? @relation("SastScanAttemptFinalAuditEvent")
 
+  @@unique([id, attemptId, tenantId], map: "AuditEvent_final_attempt_scope_key")
   @@index([tenantId])
   @@index([scanRequestId])
+  @@index([attemptId])
   @@index([eventType])
   @@index([occurredAt])
 }

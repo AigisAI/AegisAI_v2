@@ -3,18 +3,12 @@ import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { InternalServiceGuard } from '../common/security/internal-service.guard';
-import { RunMockScanPlaneDto, RunSandboxScannersDto, ScanArtifactsQueryDto } from './scan-plane.dto';
+import { RunSandboxScannersDto, ScanArtifactsQueryDto } from './scan-plane.dto';
 import { ScanPlaneService } from "./scan-plane.service";
 
 @Controller("scan-plane")
 export class ScanPlaneController {
   constructor(private readonly scanPlaneService: ScanPlaneService) {}
-
-  @Post("mock-runs")
-  @UseGuards(InternalServiceGuard)
-  runMockPipeline(@Body() body: RunMockScanPlaneDto) {
-    return this.scanPlaneService.runMockPipeline(body);
-  }
 
   @Post("scanner-runs/execute")
   @UseGuards(InternalServiceGuard)

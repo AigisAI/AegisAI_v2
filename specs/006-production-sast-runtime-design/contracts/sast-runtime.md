@@ -210,10 +210,12 @@ or recognizing an extension cannot create a language-complete profile.
    it inventories Git tree/object metadata and enforces the selected profile's file-count,
    expanded-byte, single-file, and path-depth materialization limits.
 5. Only a tree within those bounds is checked out. Credential is held in memory or tmpfs,
-   excluded from process arguments, and wiped before
-   artifact handoff completes.
+   excluded from process arguments, and wiped and revoked before any scanner starts.
 6. Fetch metadata records the remote host, fixed commit, object count, and byte count, but
    never records URL userinfo or credential material.
+7. Network egress is phase-bound: fetch permits HTTPS only to the SCM host from the signed
+   repository binding. The remote, Git metadata, credential, and SCM egress rule are removed
+   before scanner execution switches to Result Ingress and telemetry only.
 
 Submodules and LFS object content are disabled by default. A future policy must enumerate
 each allowed secondary repository and issue separate scope-bound access.
@@ -236,6 +238,11 @@ The selection input is explicit: Deep uses `ALL_SCANNABLE`, while Fast supplies 
 deterministic changed/context path allowlist. Selected bytes include only scannable entries in
 that selection. The selection mode and normalized sorted paths are part of the length-prefixed
 inventory digest, so a changed-file selection cannot be substituted after attestation.
+Fast scanners never receive `/workspace/repository` as their input. The provider materializes
+a platform-owned, read-only `/workspace/selected/<preflight-inventory-sha256>` projection from
+the attested allowlist, excludes every unselected entry, and attests the projection path and
+source inventory digest. Deep scanners use the read-only repository root. A missing or
+mismatched projection fails closed before process start.
 
 For an accepted decision, the platform signs an attestation over the attempt ID, fixed commit,
 path-policy version, normalized inventory digest, and decision. The control plane passes that
@@ -261,8 +268,10 @@ recursion, LFS smudge disabled, pre-checkout tree/object limit enforcement, deta
 verification, remote removal, and `.git`
 metadata destruction before scanner handoff. Preflight binds each entry's Git object ID so
 same-size content replacement changes the bytewise-sorted, length-prefixed UTF-8 inventory
-digest, uses the validation order above, and signs its decision. Provider
-microVM execution and scanner wrapper launch remain T025-T028 work.
+digest, uses the validation order above, and signs its decision. T025-T028 connect this
+verified state to a plan-digest-bound sandbox attestation, fixed scanner wrappers, bounded
+runtime observations, signed attempt number/deadline, and signed cleanup evidence. The default provider intentionally fails
+closed until the 005 rollout installs a live microVM adapter.
 The repository credential issuer uses an opaque synthetic value only outside production for
 contract and handoff tests. Its default production path fails closed until the provider rollout
 installs a GitHub App/GitLab scoped credential-minting adapter; it never treats the synthetic
@@ -277,7 +286,8 @@ Required wrapper controls:
 
 - scanner binary/image and wrapper digest verification before start
 - non-root identity, read-only root, read-only repository mount, private writable output
-- default-deny network with no runtime database or rule download
+- phase-bound default-deny network: signed SCM host only during fetch, then Result Ingress
+  and telemetry only with no runtime database or rule download during scanning
 - CPU, memory, disk, process, file descriptor, output, finding, and wall-clock enforcement
 - bounded stdout/stderr capture with secret redaction
 - deterministic locale, timezone, and clock metadata
@@ -287,6 +297,52 @@ Required wrapper controls:
 
 The wrapper cannot accept tenant-provided command fragments, plugins, environment maps, or
 executable rules.
+
+The implemented wrapper derives fixed platform paths and does not accept a workspace or output
+path from the caller. Deep input is `/workspace/repository`; Fast input is the
+inventory-digest-bound selected projection:
+
+- OpenGrep: `scan -f <pinned-rule-asset> --sarif-output=<private-output>
+  --no-autofix --disable-nosem --no-git-ignore --x-ignore-semgrepignore-files
+  --disable-version-check ... <read-only-repository>`. Repository ignore files and inline
+  suppression cannot reduce authoritative coverage.
+- Trivy: `filesystem --format json --output <private-output>` with vulnerability,
+  misconfiguration, and secret scanners plus offline/skip-update/disable-telemetry flags.
+  Its read-only cache path includes both the pinned vulnerability-database digest and the
+  pinned checks-bundle digest. Explicit wrapper-owned config, empty ignore policy,
+  platform-owned secret configuration, emitted suppressed results, and signed-profile timeout
+  prevent repository `trivy.yaml`/`.trivyignore` files or the tool's five-minute default from
+  changing coverage.
+- Syft: `dir:<read-only-repository> --config <pinned-wrapper-config>
+  --output cyclonedx-json=<private-output>` with update, archive expansion, repository config
+  discovery, Maven/local-cache enrichment, remote-license lookup, and external Go
+  package-tool execution disabled by platform-owned environment.
+
+Only scanners required by the immutable profile are launched. Before every launch, the
+provider-facing runtime re-manifests the exact mount and verifies the original signed
+preflight decision and inventory digest. Provider observations with unknown fields, raw log
+content, mismatched identities/digests, unbounded resources, zero-byte artifacts, or
+schema-invalid artifact metadata are rejected and never persisted.
+All scanner processes start in `/workspace/output`, not the customer repository, and receive an
+exact allowlisted environment.
+
+The sandbox attestation binds the attempt identifier and attempt number and derives one
+attempt-wide deadline from its issue time and the signed profile hard timeout. Manifest reads
+and all required scanner executions share that cumulative deadline; the provider receives an
+abort signal and may not reset the timeout per scanner.
+Cleanup has a separate 60-second destruction deadline. Signed cleanup evidence predating the
+runtime attempt is rejected.
+Attempt admission runs in a serializable transaction, and a database partial unique index
+allows only one `VALIDATING`, `SCANNING`, or `CLEANUP_PENDING` attempt for a scan request.
+Attempt 1 requires no prior attempt. Attempt 2 additionally requires durable attempt 1 to be
+terminal `FAILED` with `failureClass=RETRYABLE_INFRASTRUCTURE`, `retryEligible=true`, a
+completion timestamp, and an attempt-scoped final audit event. Scanner defects, input
+rejections, security violations, cleanup failures, or completed scans cannot be retried with
+an identical second execution.
+The signed attempt deadline is durable. A bounded reconciliation loop atomically transitions
+any process-orphaned attempt still nonterminal 60 seconds after that deadline to
+`CLEANUP_FAILED` and records an attempt-scoped final `sandbox.cleanup_failed` audit event. The
+default reconciliation poll is 10 seconds and uses a stage/deadline index plus bounded batches.
 
 ## Scanner Responsibility Matrix
 
@@ -434,7 +490,9 @@ required by tenant policy becomes required before execution and affects the cano
 | `CAPACITY_REJECTED` | tenant budget or concurrency exceeded | No immediate retry | Defer/reject with retry condition |
 
 Every retry revalidates current kill switches and scanner-set availability but preserves the
-original immutable scan intent.
+original immutable scan intent. The second attempt cannot be admitted unless the immediately
+preceding durable attempt carries the retry-eligible infrastructure decision and final audit
+binding.
 
 ## Evidence Contract
 

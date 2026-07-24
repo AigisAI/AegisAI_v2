@@ -4,6 +4,7 @@ import type { Provider } from '@aegisai/shared';
 import { Prisma, ScanStatus } from '@prisma/client';
 import type { Job } from 'bullmq';
 
+import { isMockAnalysisFixtureEnabled } from '../client/analysis/analysis-fixture.policy';
 import { ANALYSIS_API_CLIENT } from '../client/analysis/analysis-api-client.interface';
 import type {
   IAnalysisApiClient,
@@ -32,6 +33,11 @@ export class ScanProcessor extends WorkerHost {
   }
 
   async process(job: Job<ScanJobData>): Promise<void> {
+    if (!isMockAnalysisFixtureEnabled()) {
+      throw new Error(
+        'LEGACY_ANALYSIS_DISABLED: use the attested Scan Plane runtime'
+      );
+    }
     const scan = await this.prisma.scan.findUnique({
       where: { id: job.data.scanId },
       include: { connectedRepo: true }
