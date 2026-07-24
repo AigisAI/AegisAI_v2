@@ -26,6 +26,12 @@ const indexes = [
     unique: true,
     create:
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "AuditEvent_final_attempt_scope_key" ON "AuditEvent"("id", "attemptId", "tenantId")'
+  },
+  {
+    name: 'ScannerRun_ingress_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "ScannerRun_ingress_scope_key" ON "ScannerRun"("id", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId")'
   }
 ];
 
@@ -53,7 +59,7 @@ const constraints = [
   },
   {
     table: 'ScannerRun',
-    name: 'ScannerRun_runtime_metadata_check',
+    name: 'ScannerRun_runtime_metadata_v2_check',
     type: 'c',
     definition: `CHECK (
       "attemptId" IS NULL
@@ -62,7 +68,7 @@ const constraints = [
           "repositoryBindingId" IS NOT NULL
           AND "required" = true
           AND "scanner" IN ('OPENGREP', 'TRIVY', 'SYFT')
-          AND "status"::text IN ('COMPLETED', 'FAILED', 'TIMED_OUT', 'QUARANTINED', 'KILLED')
+          AND "status"::text IN ('RUNNING', 'COMPLETED', 'FAILED', 'TIMED_OUT', 'QUARANTINED', 'KILLED')
           AND "wrapperDigest" ~ '^sha256:[a-f0-9]{64}$'
           AND "scannerImageDigest" ~ '^sha256:[a-f0-9]{64}$'
           AND "scannerSetDigest" ~ '^sha256:[a-f0-9]{64}$'
@@ -70,7 +76,10 @@ const constraints = [
           AND "profileDigest" ~ '^sha256:[a-f0-9]{64}$'
           AND char_length("preflightAttestationRef") BETWEEN 1 AND 8192
           AND "preflightInventoryDigest" ~ '^sha256:[a-f0-9]{64}$'
-          AND "scannerWorkspaceInventoryDigest" ~ '^sha256:[a-f0-9]{64}$'
+          AND (
+            "scannerWorkspaceInventoryDigest" IS NULL
+            OR "scannerWorkspaceInventoryDigest" ~ '^sha256:[a-f0-9]{64}$'
+          )
           AND (
             (
               "scanner" = 'OPENGREP'
@@ -92,20 +101,42 @@ const constraints = [
             )
           )
           AND "artifactSchemaVersion" ~ '^sha256:[a-f0-9]{64}$'
-          AND "exitCode" IS NOT NULL
-          AND "timedOut" IS NOT NULL
-          AND "outputLimitExceeded" IS NOT NULL
-          AND "durationMilliseconds" IS NOT NULL
-          AND jsonb_typeof("stdoutMetadata") = 'object'
-          AND jsonb_typeof("stderrMetadata") = 'object'
-          AND jsonb_typeof("resourceMetadata") = 'object'
+          AND "startedAt" IS NOT NULL
           AND (
-            "status" <> 'COMPLETED'
+            (
+              "status" = 'RUNNING'
+              AND "completedAt" IS NULL
+              AND "exitCode" IS NULL
+              AND "timedOut" IS NULL
+              AND "outputLimitExceeded" IS NULL
+              AND "durationMilliseconds" IS NULL
+              AND jsonb_typeof("artifactMetadata") = 'object'
+              AND char_length("artifactMetadata" ->> 'artifactRef') BETWEEN 1 AND 2048
+              AND (
+                "rawArtifactObjectKey" IS NULL
+                OR char_length("rawArtifactObjectKey") BETWEEN 1 AND 2048
+              )
+            )
             OR (
-              jsonb_typeof("artifactMetadata") = 'object'
-              AND jsonb_typeof("artifactMetadata" -> 'byteSize') = 'number'
-              AND ("artifactMetadata" ->> 'byteSize')::numeric > 0
-              AND char_length("rawArtifactObjectKey") BETWEEN 1 AND 2048
+              "status" IN ('COMPLETED', 'FAILED', 'TIMED_OUT', 'QUARANTINED', 'KILLED')
+              AND "completedAt" IS NOT NULL
+              AND "completedAt" >= "startedAt"
+              AND "exitCode" IS NOT NULL
+              AND "timedOut" IS NOT NULL
+              AND "outputLimitExceeded" IS NOT NULL
+              AND "durationMilliseconds" IS NOT NULL
+              AND jsonb_typeof("stdoutMetadata") = 'object'
+              AND jsonb_typeof("stderrMetadata") = 'object'
+              AND jsonb_typeof("resourceMetadata") = 'object'
+              AND (
+                "status" <> 'COMPLETED'
+                OR (
+                  jsonb_typeof("artifactMetadata") = 'object'
+                  AND jsonb_typeof("artifactMetadata" -> 'byteSize') = 'number'
+                  AND ("artifactMetadata" ->> 'byteSize')::numeric > 0
+                  AND char_length("rawArtifactObjectKey") BETWEEN 1 AND 2048
+                )
+              )
             )
           )
         ),
@@ -126,6 +157,13 @@ const constraints = [
     type: 'f',
     definition:
       'FOREIGN KEY ("finalAuditEventId", "id", "tenantId") REFERENCES "AuditEvent"("id", "attemptId", "tenantId") ON DELETE NO ACTION ON UPDATE NO ACTION'
+  },
+  {
+    table: 'SastArtifactIngestion',
+    name: 'SastArtifactIngestion_scanner_run_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("scannerRunId", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId") REFERENCES "ScannerRun"("id", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId") ON DELETE CASCADE ON UPDATE CASCADE'
   }
 ];
 

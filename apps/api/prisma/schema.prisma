@@ -130,6 +130,14 @@ enum ScannerRunStatus {
   SKIPPED
 }
 
+enum SastArtifactIngestionStatus {
+  RECEIVING
+  PENDING_VALIDATION
+  ACCEPTED
+  REJECTED
+  QUARANTINED
+}
+
 enum NormalizedFindingStatus {
   OPEN
   ACCEPTED
@@ -295,20 +303,21 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  integrations         ScmIntegration[]
-  repositoryBindings   RepositoryBinding[]
-  scanRequests         ScanRequest[]
-  scannerRuns          ScannerRun[]
-  normalizedFindings   NormalizedFinding[]
-  evidencePacks        EvidencePack[]
-  policyDecisions      PolicyDecision[]
-  aiAdvisoryMetadata   AiAdvisoryMetadata[]
-  waivers              Waiver[]
-  suppressions         Suppression[]
-  auditEvents          AuditEvent[]
-  sastCredentialLeases SastRepositoryCredentialLease[]
-  sastScanAttempts     SastScanAttempt[]
-  users                User[]
+  integrations           ScmIntegration[]
+  repositoryBindings     RepositoryBinding[]
+  scanRequests           ScanRequest[]
+  scannerRuns            ScannerRun[]
+  normalizedFindings     NormalizedFinding[]
+  evidencePacks          EvidencePack[]
+  policyDecisions        PolicyDecision[]
+  aiAdvisoryMetadata     AiAdvisoryMetadata[]
+  waivers                Waiver[]
+  suppressions           Suppression[]
+  auditEvents            AuditEvent[]
+  sastCredentialLeases   SastRepositoryCredentialLease[]
+  sastScanAttempts       SastScanAttempt[]
+  sastArtifactIngestions SastArtifactIngestion[]
+  users                  User[]
 }
 
 model ScmIntegration {
@@ -344,11 +353,12 @@ model RepositoryBinding {
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
 
-  tenant               Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration          ScmIntegration                  @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
-  scanRequests         ScanRequest[]
-  sastCredentialLeases SastRepositoryCredentialLease[]
-  sastScanAttempts     SastScanAttempt[]
+  tenant                 Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration            ScmIntegration                  @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
+  scanRequests           ScanRequest[]
+  sastCredentialLeases   SastRepositoryCredentialLease[]
+  sastScanAttempts       SastScanAttempt[]
+  sastArtifactIngestions SastArtifactIngestion[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
@@ -375,18 +385,19 @@ model ScanRequest {
   completedAt         DateTime?
   updatedAt           DateTime               @updatedAt
 
-  tenant               Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding    RepositoryBinding               @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
-  scannerRuns          ScannerRun[]
-  findings             NormalizedFinding[]
-  evidencePacks        EvidencePack[]
-  policyDecisions      PolicyDecision[]
-  aiAdvisoryMetadata   AiAdvisoryMetadata[]
-  suppressions         Suppression[]
-  auditEvents          AuditEvent[]
-  sastQueueReservation SastQueueReservation?
-  sastCredentialLeases SastRepositoryCredentialLease[]
-  sastScanAttempts     SastScanAttempt[]
+  tenant                 Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding      RepositoryBinding               @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
+  scannerRuns            ScannerRun[]
+  findings               NormalizedFinding[]
+  evidencePacks          EvidencePack[]
+  policyDecisions        PolicyDecision[]
+  aiAdvisoryMetadata     AiAdvisoryMetadata[]
+  suppressions           Suppression[]
+  auditEvents            AuditEvent[]
+  sastQueueReservation   SastQueueReservation?
+  sastCredentialLeases   SastRepositoryCredentialLease[]
+  sastScanAttempts       SastScanAttempt[]
+  sastArtifactIngestions SastArtifactIngestion[]
 
   @@unique([id, tenantId, repositoryBindingId])
   @@index([tenantId])
@@ -459,12 +470,13 @@ model SastScanAttempt {
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
-  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding RepositoryBinding @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastScanAttempt_repository_scope_fkey")
-  scanRequest       ScanRequest       @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastScanAttempt_scan_scope_fkey")
-  scannerRuns       ScannerRun[]
-  auditEvents       AuditEvent[]      @relation("SastScanAttemptAuditEvents")
-  finalAuditEvent   AuditEvent?       @relation("SastScanAttemptFinalAuditEvent", fields: [finalAuditEventId, id, tenantId], references: [id, attemptId, tenantId], onDelete: NoAction, onUpdate: NoAction, map: "SastScanAttempt_finalAuditEventId_fkey")
+  tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding  RepositoryBinding       @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastScanAttempt_repository_scope_fkey")
+  scanRequest        ScanRequest             @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastScanAttempt_scan_scope_fkey")
+  scannerRuns        ScannerRun[]
+  artifactIngestions SastArtifactIngestion[]
+  auditEvents        AuditEvent[]            @relation("SastScanAttemptAuditEvents")
+  finalAuditEvent    AuditEvent?             @relation("SastScanAttemptFinalAuditEvent", fields: [finalAuditEventId, id, tenantId], references: [id, attemptId, tenantId], onDelete: NoAction, onUpdate: NoAction, map: "SastScanAttempt_finalAuditEventId_fkey")
 
   @@unique([scanRequestId, attemptNumber])
   @@unique([id, tenantId], map: "SastScanAttempt_id_tenantId_key")
@@ -592,17 +604,55 @@ model ScannerRun {
   completedAt                     DateTime?
   updatedAt                       DateTime         @updatedAt
 
-  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  scanRequest ScanRequest         @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
-  attempt     SastScanAttempt?    @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "ScannerRun_attempt_scope_fkey")
-  findings    NormalizedFinding[]
+  tenant            Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest       ScanRequest            @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  attempt           SastScanAttempt?       @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "ScannerRun_attempt_scope_fkey")
+  findings          NormalizedFinding[]
+  artifactIngestion SastArtifactIngestion?
 
   @@unique([attemptId, scanner])
+  @@unique([id, attemptId, tenantId, repositoryBindingId, scanRequestId], map: "ScannerRun_ingress_scope_key")
   @@index([attemptId])
   @@index([tenantId])
   @@index([scanRequestId])
   @@index([scanner])
   @@index([status])
+}
+
+model SastArtifactIngestion {
+  id                    String                      @id
+  tenantId              String
+  repositoryBindingId   String
+  scanRequestId         String
+  attemptId             String
+  scannerRunId          String                      @unique
+  workloadIdentityRef   String
+  idempotencyKey        String
+  envelopeDigest        String
+  declaredContentDigest String
+  observedContentDigest String?
+  declaredByteSize      Int
+  observedByteSize      Int?
+  objectKey             String?                     @unique
+  identityValidated     Boolean                     @default(false)
+  status                SastArtifactIngestionStatus @default(RECEIVING)
+  validationMetadata    Json?
+  rejectionReason       String?
+  receivedAt            DateTime?
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastArtifactIngestion_repository_scope_fkey")
+  scanRequest       ScanRequest       @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastArtifactIngestion_scan_scope_fkey")
+  attempt           SastScanAttempt   @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastArtifactIngestion_attempt_scope_fkey")
+  scannerRun        ScannerRun        @relation(fields: [scannerRunId, attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, attemptId, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastArtifactIngestion_scanner_run_scope_fkey")
+
+  @@unique([tenantId, scanRequestId, idempotencyKey], map: "SastArtifactIngestion_idempotency_scope_key")
+  @@unique([scannerRunId, attemptId, tenantId, repositoryBindingId, scanRequestId], map: "SastArtifactIngestion_scanner_scope_key")
+  @@index([tenantId, scanRequestId, status])
+  @@index([attemptId, status])
+  @@index([createdAt])
 }
 
 model NormalizedFinding {

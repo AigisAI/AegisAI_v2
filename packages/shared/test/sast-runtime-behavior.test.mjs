@@ -118,6 +118,7 @@ const buildPlan = () => ({
 
 const buildArtifactEnvelope = (plan) => ({
   tenantId: plan.tenantId,
+  repositoryBindingId: plan.repositoryState.repositoryBindingId,
   scanRequestId: plan.scanRequestId,
   attemptId: 'attempt-1',
   scannerRunId: 'scanner-run-1',
@@ -230,6 +231,15 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
   assert.equal(runtime.isScannerSetDescriptorValid(plan.scannerSet), true);
   assert.equal(runtime.isSastScanPlanValid(plan), true);
   assert.equal(runtime.isSastScanPlanValid({}), false);
+  assert.equal(runtime.isScannerArtifactEnvelopeShapeValid(envelope), true);
+  assert.equal(
+    runtime.buildSastArtifactIngressIdempotencyKey(envelope),
+    `sast-ingress-v1:${envelope.scannerRunId}:${envelope.contentDigest}`
+  );
+  assert.equal(
+    runtime.canonicalizeScannerArtifactEnvelope(envelope),
+    JSON.stringify(envelope)
+  );
   assert.equal(
     runtime.isSastScanPlanValid({
       ...plan,
@@ -256,6 +266,21 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
       plan,
       expectedBinding
     ),
+    false
+  );
+  assert.equal(
+    runtime.isScannerArtifactEnvelopeBoundToPlan(
+      { ...envelope, repositoryBindingId: 'repository-other' },
+      plan,
+      expectedBinding
+    ),
+    false
+  );
+  assert.equal(
+    runtime.isScannerArtifactEnvelopeShapeValid({
+      ...envelope,
+      callerControlledField: true
+    }),
     false
   );
   assert.equal(

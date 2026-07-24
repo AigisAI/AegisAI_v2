@@ -50,6 +50,21 @@ export const SCANNER_EXECUTION_STATUSES = [
 ] as const;
 export type ScannerExecutionStatus = (typeof SCANNER_EXECUTION_STATUSES)[number];
 
+export const SAST_ARTIFACT_INGRESS_MEDIA_TYPE = 'application/octet-stream';
+export const SAST_ARTIFACT_ENVELOPE_HEADER = 'x-aegis-sast-artifact-envelope';
+export const SAST_ARTIFACT_IDEMPOTENCY_HEADER = 'idempotency-key';
+export const SAST_MAX_ARTIFACT_ENVELOPE_BYTES = 8192;
+
+export const SAST_ARTIFACT_INGESTION_STATES = [
+  'RECEIVING',
+  'PENDING_VALIDATION',
+  'ACCEPTED',
+  'REJECTED',
+  'QUARANTINED'
+] as const;
+export type SastArtifactIngestionState =
+  (typeof SAST_ARTIFACT_INGESTION_STATES)[number];
+
 export const SAST_COVERAGE_STATES = ['PENDING', 'COMPLETE', 'PARTIAL', 'FAILED'] as const;
 export type SastCoverageState = (typeof SAST_COVERAGE_STATES)[number];
 
@@ -406,6 +421,7 @@ export interface SastScanPlan {
 
 export interface ScannerArtifactEnvelope {
   tenantId: string;
+  repositoryBindingId: string;
   scanRequestId: string;
   attemptId: string;
   scannerRunId: string;
@@ -432,6 +448,14 @@ export interface ScannerArtifactEnvelope {
   exitCode: number;
   executionStatus: ScannerExecutionStatus;
   producedAt: string;
+}
+
+export interface SastArtifactIngressReceipt {
+  ingestionId: string;
+  scannerRunId: string;
+  state: Extract<SastArtifactIngestionState, 'PENDING_VALIDATION'>;
+  replayed: boolean;
+  receivedAt: string;
 }
 
 export interface ExpectedScannerArtifactBinding {
@@ -951,6 +975,7 @@ export function isScannerArtifactEnvelopeBoundToPlan(
 ): boolean {
   if (
     !envelope ||
+    !isScannerArtifactEnvelopeShapeValid(envelope) ||
     !plan ||
     !expectedBinding ||
     !SAST_SCANNER_KINDS.includes(envelope.scanner as SastScannerKind) ||
@@ -975,6 +1000,7 @@ export function isScannerArtifactEnvelopeBoundToPlan(
 
   return (
     envelope.tenantId === plan.tenantId &&
+    envelope.repositoryBindingId === plan.repositoryState.repositoryBindingId &&
     envelope.scanRequestId === plan.scanRequestId &&
     envelope.attemptId === expectedBinding.attemptId &&
     envelope.scannerRunId === expectedBinding.scannerRunId &&
@@ -995,7 +1021,7 @@ export function isScannerArtifactEnvelopeBoundToPlan(
     isNonBlank(envelope.artifactRef) &&
     isSha256Digest(envelope.contentDigest) &&
     Number.isSafeInteger(envelope.byteSize) &&
-    envelope.byteSize >= 0 &&
+    envelope.byteSize > 0 &&
     envelope.byteSize <= plan.profile.limits.maxArtifactBytes &&
     Number.isSafeInteger(envelope.recordCount) &&
     envelope.recordCount >= 0 &&
@@ -1007,6 +1033,150 @@ export function isScannerArtifactEnvelopeBoundToPlan(
       ? envelope.ruleBundleDigest === undefined
       : envelope.ruleBundleDigest === expectedRuleBundle?.digest)
   );
+}
+
+export function isScannerArtifactEnvelopeShapeValid(
+  value: unknown
+): value is ScannerArtifactEnvelope {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const envelope = value as Record<string, unknown>;
+  const requiredKeys = [
+    'tenantId',
+    'repositoryBindingId',
+    'scanRequestId',
+    'attemptId',
+    'scannerRunId',
+    'workloadIdentityRef',
+    'scanner',
+    'scannerVersion',
+    'scannerImageDigest',
+    'wrapperDigest',
+    'scannerSetDigest',
+    'profileId',
+    'profileDigest',
+    'preflightAttestationRef',
+    'preflightInventoryDigest',
+    'scannerWorkspaceInventoryDigest',
+    'inputCommitSha',
+    'artifactSchema',
+    'artifactSchemaVersion',
+    'artifactRef',
+    'contentDigest',
+    'byteSize',
+    'recordCount',
+    'truncated',
+    'exitCode',
+    'executionStatus',
+    'producedAt'
+  ] as const;
+  const optionalKeys = ['ruleBundleDigest'] as const;
+  const actualKeys = Object.keys(envelope);
+  if (
+    requiredKeys.some((key) => !Object.hasOwn(envelope, key)) ||
+    actualKeys.some(
+      (key) =>
+        !(requiredKeys as readonly string[]).includes(key) &&
+        !(optionalKeys as readonly string[]).includes(key)
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    isBoundedIngressText(envelope.tenantId, 256) &&
+    isBoundedIngressText(envelope.repositoryBindingId, 256) &&
+    isBoundedIngressText(envelope.scanRequestId, 256) &&
+    isBoundedIngressText(envelope.attemptId, 256) &&
+    isBoundedIngressText(envelope.scannerRunId, 256) &&
+    isBoundedIngressText(envelope.workloadIdentityRef, 512) &&
+    SAST_SCANNER_KINDS.includes(envelope.scanner as SastScannerKind) &&
+    isBoundedIngressText(envelope.scannerVersion, 255) &&
+    isSha256Digest(envelope.scannerImageDigest as string) &&
+    isSha256Digest(envelope.wrapperDigest as string) &&
+    (envelope.ruleBundleDigest === undefined ||
+      isSha256Digest(envelope.ruleBundleDigest as string)) &&
+    isSha256Digest(envelope.scannerSetDigest as string) &&
+    SAST_PROFILE_IDS.includes(envelope.profileId as SastProfileId) &&
+    isSha256Digest(envelope.profileDigest as string) &&
+    isBoundedIngressText(envelope.preflightAttestationRef, 8192) &&
+    isSha256Digest(envelope.preflightInventoryDigest as string) &&
+    isSha256Digest(envelope.scannerWorkspaceInventoryDigest as string) &&
+    typeof envelope.inputCommitSha === 'string' &&
+    isGitCommitSha(envelope.inputCommitSha) &&
+    ['OPENGREP_SARIF', 'TRIVY_JSON', 'CYCLONEDX_JSON'].includes(
+      envelope.artifactSchema as string
+    ) &&
+    isBoundedIngressText(envelope.artifactSchemaVersion, 255) &&
+    isBoundedIngressText(envelope.artifactRef, 2048) &&
+    isSha256Digest(envelope.contentDigest as string) &&
+    typeof envelope.byteSize === 'number' &&
+    Number.isSafeInteger(envelope.byteSize) &&
+    envelope.byteSize > 0 &&
+    envelope.byteSize <= 268435456 &&
+    typeof envelope.recordCount === 'number' &&
+    Number.isSafeInteger(envelope.recordCount) &&
+    envelope.recordCount >= 0 &&
+    envelope.recordCount <= 250000 &&
+    typeof envelope.truncated === 'boolean' &&
+    typeof envelope.exitCode === 'number' &&
+    Number.isSafeInteger(envelope.exitCode) &&
+    envelope.exitCode >= -1 &&
+    envelope.exitCode <= 255 &&
+    SCANNER_EXECUTION_STATUSES.includes(
+      envelope.executionStatus as ScannerExecutionStatus
+    ) &&
+    typeof envelope.producedAt === 'string' &&
+    isIsoTimestamp(envelope.producedAt)
+  );
+}
+
+export function canonicalizeScannerArtifactEnvelope(
+  envelope: ScannerArtifactEnvelope
+): string {
+  const canonicalEnvelope = {
+    tenantId: envelope.tenantId,
+    repositoryBindingId: envelope.repositoryBindingId,
+    scanRequestId: envelope.scanRequestId,
+    attemptId: envelope.attemptId,
+    scannerRunId: envelope.scannerRunId,
+    workloadIdentityRef: envelope.workloadIdentityRef,
+    scanner: envelope.scanner,
+    scannerVersion: envelope.scannerVersion,
+    scannerImageDigest: envelope.scannerImageDigest,
+    wrapperDigest: envelope.wrapperDigest,
+    ...(envelope.ruleBundleDigest === undefined
+      ? {}
+      : { ruleBundleDigest: envelope.ruleBundleDigest }),
+    scannerSetDigest: envelope.scannerSetDigest,
+    profileId: envelope.profileId,
+    profileDigest: envelope.profileDigest,
+    preflightAttestationRef: envelope.preflightAttestationRef,
+    preflightInventoryDigest: envelope.preflightInventoryDigest,
+    scannerWorkspaceInventoryDigest:
+      envelope.scannerWorkspaceInventoryDigest,
+    inputCommitSha: envelope.inputCommitSha,
+    artifactSchema: envelope.artifactSchema,
+    artifactSchemaVersion: envelope.artifactSchemaVersion,
+    artifactRef: envelope.artifactRef,
+    contentDigest: envelope.contentDigest,
+    byteSize: envelope.byteSize,
+    recordCount: envelope.recordCount,
+    truncated: envelope.truncated,
+    exitCode: envelope.exitCode,
+    executionStatus: envelope.executionStatus,
+    producedAt: envelope.producedAt
+  };
+
+  return JSON.stringify(canonicalEnvelope);
+}
+
+export function buildSastArtifactIngressIdempotencyKey(
+  envelope: Pick<ScannerArtifactEnvelope, 'scannerRunId' | 'contentDigest'>
+): string {
+  return `sast-ingress-v1:${envelope.scannerRunId}:${envelope.contentDigest}`;
 }
 
 export function isScannerArtifactEligibleForNormalization(
@@ -1508,6 +1678,20 @@ function isSha256Digest(value: string): value is `sha256:${string}` {
 
 function isNonBlank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isBoundedIngressText(
+  value: unknown,
+  maximumUtf8Bytes: number
+): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value === value.trim() &&
+    value === value.normalize('NFC') &&
+    !hasControlCharacters(value) &&
+    new TextEncoder().encode(value).byteLength <= maximumUtf8Bytes
+  );
 }
 
 function hasUniqueValues<T>(values: readonly T[]): boolean {

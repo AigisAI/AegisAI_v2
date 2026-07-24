@@ -15,6 +15,7 @@ import {
 } from 'class-validator';
 
 const RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
+const ROUTE_RESOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,255}$/;
 const VERSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 export class RunMockScanPlaneDto {
@@ -74,4 +75,14 @@ export class EvidenceAccessRequestDto extends ScanArtifactsQueryDto {
   @IsOptional()
   @IsBoolean()
   metadataOnly?: boolean;
+}
+
+export class SastArtifactIngressPathDto {
+  @IsString()
+  @Matches(ROUTE_RESOURCE_ID)
+  scanRequestId!: string;
+
+  @IsString()
+  @Matches(ROUTE_RESOURCE_ID)
+  scannerRunId!: string;
 }

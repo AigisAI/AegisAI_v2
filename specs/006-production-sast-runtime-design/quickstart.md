@@ -111,7 +111,8 @@ Fast and Deep lanes use separate queues and budgets but the same microVM securit
 
 ## Implemented Runtime Checkpoint
 
-T022 through T028 are implemented as the complete Phase 5 runtime boundary:
+T022 through T029 are implemented as the complete Phase 5 runtime boundary plus the first
+Phase 6 ingress boundary:
 
 - Token Broker verifies a signed, bounded-lifetime workload attestation against tenant,
   repository binding, scan request, attempt, workload identity, and fixed commit. A durable
@@ -183,12 +184,22 @@ T022 through T028 are implemented as the complete Phase 5 runtime boundary:
 - `ANALYSIS_CLIENT_MODE=mock`, the mock scan controller, legacy source collection, and
   `MockAnalysisApiClient` are test-only. Non-test configuration and runtime paths fail closed
   before repository credential decryption or source collection.
+- Scanner runs are registered durably as `RUNNING` before sandbox execution so a scanner can
+  upload only while its attempt remains `SCANNING` and before the signed deadline. The
+  per-scan `application/octet-stream` ingress accepts canonical envelope metadata plus a
+  bounded stream only from a directly authenticated mTLS SPIFFE identity that exactly matches
+  the durable attempt. One immutable artifact is reserved per scanner run; exact replay is
+  idempotent, changed replay is rejected, and the response exposes only a
+  `PENDING_VALIDATION` receipt.
+- The Scan Plane has no artifact read route and its object-store port exposes only immutable
+  write and cleanup delete. The default provider fails closed until the production
+  Data/Security Plane adapter is installed; raw object keys never enter user-facing responses.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
 runtime provider exist only to verify the handoff contract. Default production credential
 issuance and scanner execution both fail closed until live rollout installs provider-backed
-GitHub App/GitLab scoped minting and microVM adapters. T029 is therefore the next implementation
+GitHub App/GitLab scoped minting, microVM, and artifact object-store adapters. T030 is therefore the next implementation
 task; live deployment eligibility still requires the 005 rollout and the remaining 006 gates.
 
 ## Deployment Position
