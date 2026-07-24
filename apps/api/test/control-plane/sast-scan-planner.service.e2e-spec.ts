@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 
+import { ConflictException } from '@nestjs/common';
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
   SAST_FORBIDDEN_CAPABILITIES,
@@ -426,6 +427,22 @@ describe('SastScanPlannerService', () => {
     });
     expect(claim?.plan).toEqual(first.plan);
     expect(Object.isFrozen(claim?.plan)).toBe(true);
+  });
+
+  it('matches the production store conflict contract for revoked repository context', async () => {
+    const harness = await createHarness('FAST');
+    const [integration] = await harness.scanRequestStore.listIntegrations('tenant-1');
+    const [repositoryBinding] = await harness.scanRequestStore.listRepositoryBindings('tenant-1');
+
+    await harness.scanRequestStore.revokeIntegration('tenant-1', integration.id);
+
+    await expect(
+      harness.scanRequestStore.createOrGet({
+        scanRequest: harness.scanRequest,
+        integration,
+        repositoryBinding
+      })
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('selects Java Deep or limited Common Deep without overstating language coverage', async () => {

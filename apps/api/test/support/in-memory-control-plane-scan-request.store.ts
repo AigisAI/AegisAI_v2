@@ -167,7 +167,9 @@ export class InMemoryControlPlaneScanRequestStore extends ControlPlaneScanReques
         integration.tenantId !== input.scanRequest.tenantId ||
         integration.status !== 'ACTIVE'
       ) {
-        throw new NotFoundException('Active durable repository context not found');
+        throw new ConflictException(
+          'Durable repository binding is revoked or does not match runtime state.'
+        );
       }
 
       const existing = Array.from(this.requests.values()).find(
