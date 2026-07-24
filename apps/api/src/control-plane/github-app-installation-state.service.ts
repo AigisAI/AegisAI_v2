@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import type {
   ControlPlaneIntegration,
-  InstallRepositoryInput
+  ControlPlaneRepositoryBinding
 } from "./control-plane.types";
 
 @Injectable()
@@ -13,7 +13,7 @@ export class GithubAppInstallationStateService {
 
   async persistInstallation(
     integration: ControlPlaneIntegration,
-    repositories: InstallRepositoryInput[]
+    repositories: ControlPlaneRepositoryBinding[]
   ): Promise<void> {
     await this.upsertTenant(integration.tenantId);
 
@@ -60,7 +60,7 @@ export class GithubAppInstallationStateService {
 
   async reconcileRepositories(
     integration: ControlPlaneIntegration,
-    addedRepositories: InstallRepositoryInput[],
+    addedRepositories: ControlPlaneRepositoryBinding[],
     removedProviderRepoIds: string[],
     event: string,
     action: string
@@ -72,11 +72,15 @@ export class GithubAppInstallationStateService {
     }
 
     if (removedProviderRepoIds.length > 0) {
-      await this.prisma.repositoryBinding.deleteMany({
+      await this.prisma.repositoryBinding.updateMany({
         where: {
           tenantId: integration.tenantId,
           scmIntegrationId: integration.id,
           providerRepoId: { in: removedProviderRepoIds }
+        },
+        data: {
+          status: 'REVOKED',
+          revokedAt: new Date()
         }
       });
     }
@@ -108,7 +112,7 @@ export class GithubAppInstallationStateService {
 
   private async upsertRepositoryBinding(
     integration: ControlPlaneIntegration,
-    repository: InstallRepositoryInput
+    repository: ControlPlaneRepositoryBinding
   ): Promise<void> {
     await this.prisma.repositoryBinding.upsert({
       where: {
@@ -121,15 +125,19 @@ export class GithubAppInstallationStateService {
       update: {
         fullName: repository.fullName,
         defaultBranch: repository.defaultBranch,
-        isPrivate: repository.isPrivate
+        isPrivate: repository.isPrivate,
+        status: 'ACTIVE',
+        revokedAt: null
       },
       create: {
+        id: repository.id,
         tenantId: integration.tenantId,
         scmIntegrationId: integration.id,
         providerRepoId: repository.providerRepoId,
         fullName: repository.fullName,
         defaultBranch: repository.defaultBranch,
-        isPrivate: repository.isPrivate
+        isPrivate: repository.isPrivate,
+        status: 'ACTIVE'
       }
     });
   }

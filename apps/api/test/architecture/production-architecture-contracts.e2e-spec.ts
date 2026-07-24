@@ -16,6 +16,39 @@ describe('production scan architecture contracts', () => {
     join(__dirname, '../../prisma/migrations/20260603072000_ai_advisory_metadata/migration.sql'),
     'utf8'
   );
+  const sastQueueStore = readFileSync(
+    join(__dirname, '../../src/control-plane/prisma-sast-queue-admission.store.ts'),
+    'utf8'
+  );
+  const sastDurabilityMigration = readFileSync(
+    join(
+      __dirname,
+      '../../prisma/migrations/20260722141000_sast_durable_plan_lifecycle/migration.sql'
+    ),
+    'utf8'
+  );
+  const sastQueueMigration = readFileSync(
+    join(
+      __dirname,
+      '../../prisma/migrations/20260722124500_sast_queue_atomic_ledger/migration.sql'
+    ),
+    'utf8'
+  );
+  const repositoryRevocationMigration = readFileSync(
+    join(
+      __dirname,
+      '../../prisma/migrations/20260722152000_repository_binding_revocation/migration.sql'
+    ),
+    'utf8'
+  );
+  const scanRequestStore = readFileSync(
+    join(__dirname, '../../src/control-plane/prisma-control-plane-scan-request.store.ts'),
+    'utf8'
+  );
+  const controlPlaneService = readFileSync(
+    join(__dirname, '../../src/control-plane/control-plane.service.ts'),
+    'utf8'
+  );
   const modelBody = (model: string) => {
     const start = schema.indexOf(`model ${model} {`);
     if (start === -1) {
@@ -180,6 +213,62 @@ describe('production scan architecture contracts', () => {
     expect(body).toContain('@@index([tenantId])');
     expect(body).toContain('@@index([scanRequestId])');
     expect(body).not.toMatch(/enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/);
+  });
+
+  it('persists SAST admission and fair dispatch state in a shared serializable ledger', () => {
+    for (const model of [
+      'SastQueueLedger',
+      'SastQueueTenantUsage',
+      'SastQueueDailyTenantUsage',
+      'SastQueueRepositoryUsage',
+      'SastQueueReservation'
+    ]) {
+      expect(schema).toContain(`model ${model} {`);
+      expect(sastQueueMigration).toContain(`CREATE TABLE "${model}"`);
+    }
+
+    expect(sastQueueMigration).toContain('"snapshotVersion" BIGINT NOT NULL');
+    expect(sastQueueMigration).toContain('"dispatchLeaseExpiresAt" TIMESTAMP(3)');
+    expect(sastQueueStore).toContain('Prisma.TransactionIsolationLevel.Serializable');
+    expect(sastQueueStore).toContain('orderSastQueueCandidatesFairly');
+    expect(sastQueueStore).toContain('oldestPending');
+    expect(sastQueueStore).toContain('SAST_QUEUE_MAX_DISPATCH_ATTEMPTS');
+    expect(sastQueueStore).toContain('expireExhaustedDispatches');
+    expect(sastQueueStore).toContain('queuedInLane: { decrement: 1 }');
+    expect(sastQueueStore).toContain('transaction.scanRequest.update');
+    expect(sastQueueStore).toContain('completeDispatch');
+    expect(sastQueueStore).not.toMatch(/new Map/);
+    expect(scanRequestStore).toContain('Prisma.TransactionIsolationLevel.Serializable');
+    expect(scanRequestStore).not.toMatch(/new Map/);
+    expect(controlPlaneService).toContain('persistIntegrationContext');
+    expect(controlPlaneService).toContain('findRepositoryContext');
+    expect(controlPlaneService).not.toContain(
+      'new Map<string, ControlPlaneIntegration>()'
+    );
+    expect(controlPlaneService).not.toContain(
+      'new Map<string, ControlPlaneRepositoryBinding>()'
+    );
+    expect(sastDurabilityMigration).toContain('"sastPlanning" JSONB');
+    expect(sastDurabilityMigration).toContain('"planning" JSONB NOT NULL');
+    expect(sastDurabilityMigration).toContain('"immutablePlan" JSONB NOT NULL');
+    expect(sastDurabilityMigration).toContain('"startedAt" TIMESTAMP(3)');
+    expect(sastDurabilityMigration).toContain('"completedAt" TIMESTAMP(3)');
+    expect(sastDurabilityMigration).toContain('BEGIN;');
+    expect(sastDurabilityMigration).toContain(
+      'LOCK TABLE "SastQueueReservation" IN ACCESS EXCLUSIVE MODE;'
+    );
+    expect(sastDurabilityMigration).toContain('COMMIT;');
+    expect(sastDurabilityMigration).toContain(
+      'FOREIGN KEY ("scanRequestId") REFERENCES "ScanRequest"("id")'
+    );
+    expect(modelBody('SastQueueLedger')).not.toContain('dailyWindowStartedAt');
+    expect(modelBody('SastQueueTenantUsage')).not.toContain('admittedTodayForTenant');
+    expect(modelBody('SastQueueDailyTenantUsage')).toContain('admittedTodayForTenant');
+    expect(modelBody('RepositoryBinding')).toContain('status');
+    expect(modelBody('RepositoryBinding')).toContain('revokedAt');
+    expect(repositoryRevocationMigration).toContain('"RepositoryBindingStatus"');
+    expect(repositoryRevocationMigration).toContain('"status"');
+    expect(repositoryRevocationMigration).toContain('"revokedAt"');
   });
 
   it('ships a deployable Prisma migration for AI advisory metadata', () => {

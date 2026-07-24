@@ -380,6 +380,8 @@ export interface SastRepositoryState {
   repositoryBindingId: string;
   fixedCommitSha: string;
   targetRef: string;
+  inventoryDigest: `sha256:${string}`;
+  attestationRef: string;
   shallowFetchPreferred: true;
   submodulesEnabled: false;
   lfsObjectsFetched: false;
@@ -399,6 +401,7 @@ export interface SastScanPlan {
   evidenceOutputRef: string;
   auditSinkRef: string;
   forbiddenCapabilities: SastForbiddenCapability[];
+  createdAt: string;
 }
 
 export interface ScannerArtifactEnvelope {
@@ -890,27 +893,45 @@ export function isSastScanProfileValid(profile: SastScanProfile): boolean {
 }
 
 export function isSastScanPlanValid(plan: SastScanPlan): boolean {
-  return (
-    isNonBlank(plan.tenantId) &&
-    isNonBlank(plan.scanRequestId) &&
-    isSha256Digest(plan.canonicalScanKey) &&
-    isSastScanProfileValid(plan.profile) &&
-    isSha256Digest(plan.profileDigest) &&
-    plan.profileDigest === SAST_APPROVED_PROFILE_DIGESTS[plan.profile.id] &&
-    isNonBlank(plan.policyVersion) &&
-    isNonBlank(plan.repositoryState.repositoryBindingId) &&
-    isGitCommitSha(plan.repositoryState.fixedCommitSha) &&
-    isNonBlank(plan.repositoryState.targetRef) &&
-    plan.repositoryState.shallowFetchPreferred === true &&
-    plan.repositoryState.submodulesEnabled === false &&
-    plan.repositoryState.lfsObjectsFetched === false &&
-    isScannerSetDescriptorValid(plan.scannerSet) &&
-    (plan.isolationClass === 'HARDENED' || plan.isolationClass === 'RESTRICTED') &&
-    isNonBlank(plan.resultIngressRef) &&
-    isNonBlank(plan.evidenceOutputRef) &&
-    isNonBlank(plan.auditSinkRef) &&
-    doesSastPlanRespectForbiddenCapabilities(plan)
-  );
+  if (
+    !plan ||
+    typeof plan !== 'object' ||
+    !plan.profile ||
+    !plan.repositoryState ||
+    !plan.scannerSet ||
+    !Array.isArray(plan.forbiddenCapabilities)
+  ) {
+    return false;
+  }
+
+  try {
+    return (
+      isNonBlank(plan.tenantId) &&
+      isNonBlank(plan.scanRequestId) &&
+      isSha256Digest(plan.canonicalScanKey) &&
+      isSastScanProfileValid(plan.profile) &&
+      isSha256Digest(plan.profileDigest) &&
+      plan.profileDigest === SAST_APPROVED_PROFILE_DIGESTS[plan.profile.id] &&
+      isNonBlank(plan.policyVersion) &&
+      isNonBlank(plan.repositoryState.repositoryBindingId) &&
+      isGitCommitSha(plan.repositoryState.fixedCommitSha) &&
+      isNonBlank(plan.repositoryState.targetRef) &&
+      isSha256Digest(plan.repositoryState.inventoryDigest) &&
+      isNonBlank(plan.repositoryState.attestationRef) &&
+      plan.repositoryState.shallowFetchPreferred === true &&
+      plan.repositoryState.submodulesEnabled === false &&
+      plan.repositoryState.lfsObjectsFetched === false &&
+      isScannerSetDescriptorValid(plan.scannerSet) &&
+      (plan.isolationClass === 'HARDENED' || plan.isolationClass === 'RESTRICTED') &&
+      isNonBlank(plan.resultIngressRef) &&
+      isNonBlank(plan.evidenceOutputRef) &&
+      isNonBlank(plan.auditSinkRef) &&
+      isIsoTimestamp(plan.createdAt) &&
+      doesSastPlanRespectForbiddenCapabilities(plan)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function doesSastPlanRespectForbiddenCapabilities(plan: SastScanPlan): boolean {

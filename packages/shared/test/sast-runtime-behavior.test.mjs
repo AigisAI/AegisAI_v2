@@ -101,6 +101,8 @@ const buildPlan = () => ({
     repositoryBindingId: 'repository-1',
     fixedCommitSha: 'a'.repeat(40),
     targetRef: 'refs/heads/dev',
+    inventoryDigest: digest('4'),
+    attestationRef: 'attestation://inventory-1',
     shallowFetchPreferred: true,
     submodulesEnabled: false,
     lfsObjectsFetched: false
@@ -110,7 +112,8 @@ const buildPlan = () => ({
   resultIngressRef: 'ingress://scan-1',
   evidenceOutputRef: 'evidence://scan-1',
   auditSinkRef: 'audit://scan-1',
-  forbiddenCapabilities: [...runtime.SAST_FORBIDDEN_CAPABILITIES]
+  forbiddenCapabilities: [...runtime.SAST_FORBIDDEN_CAPABILITIES],
+  createdAt: '2026-07-21T00:00:00Z'
 });
 
 const buildArtifactEnvelope = (plan) => ({
@@ -226,6 +229,14 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
 
   assert.equal(runtime.isScannerSetDescriptorValid(plan.scannerSet), true);
   assert.equal(runtime.isSastScanPlanValid(plan), true);
+  assert.equal(runtime.isSastScanPlanValid({}), false);
+  assert.equal(
+    runtime.isSastScanPlanValid({
+      ...plan,
+      repositoryState: { ...plan.repositoryState, attestationRef: '' }
+    }),
+    false
+  );
   assert.equal(
     runtime.isScannerArtifactEnvelopeBoundToPlan(envelope, plan, expectedBinding),
     true

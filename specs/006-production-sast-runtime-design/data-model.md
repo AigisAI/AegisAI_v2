@@ -105,12 +105,91 @@ Immutable execution plan produced from `ScanRequest`.
 - `canonicalScanKey`
 - `repositoryBindingId`
 - fixed commit SHA and contextual target ref
+- trusted inventory digest and signed preflight attestation reference used for deterministic selection
 - profile snapshot and digest
 - scanner-set snapshot and digest
 - tenant rule-policy version
 - isolation class
 - per-scan result ingress, evidence output, and audit references
 - creation timestamp
+
+### TrustedSastRepositoryMetadata
+
+Attested, content-free inventory consumed by the planner. It is produced by an approved
+internal metadata/preflight path, never supplied by a public scan request.
+
+- repository binding and full fixed commit SHA
+- inventory digest, attestation reference, and collection timestamp
+- normalized source-language file/byte signals and manifest names
+- repository/selected bytes, file count, largest file, and maximum path depth
+
+The entity contains no source text, archive, credential, command, environment map, or
+tenant-provided scanner configuration. Metadata and the immutable scan request must bind to
+the same repository and fixed commit before profile selection.
+
+### SastQueuePolicySet
+
+Signed platform policy controlling lane admission without hard-coding environment capacity
+inside a public API.
+
+- policy version, digest, signature, and provenance
+- distinct `scan.fast.v1` and `scan.deep.v1` lane policies
+- tenant active/queued/daily limits
+- repository concurrency and minimum-frequency limits
+- lane queue capacity and bounded retry condition
+- mandatory `TENANT_ROUND_ROBIN` fairness strategy
+
+Usage snapshots are attributed to exactly one tenant, repository binding, lane, and UTC
+daily window. Beyond those identifiers they contain counters and timestamps only; they
+contain no repository content or credential material.
+Every snapshot carries a monotonic authoritative lane-global `snapshotVersion`. Active/queued
+lane, tenant, and repository counters remain in that lane-global ledger across UTC rollover;
+only `admittedTodayForTenant` is keyed by the normalized UTC day. Admission compares the global
+version, every live counter, and the current daily-admission row, then creates one
+scan/canonical-key reservation and advances them atomically. Stale versions are retryable and
+cannot be admitted. The production ledger is shared across replicas and cannot be implemented as
+an independent per-pod cache. PostgreSQL persists this boundary as `SastQueueLedger`,
+`SastQueueTenantUsage`, `SastQueueDailyTenantUsage`, `SastQueueRepositoryUsage`, and
+`SastQueueReservation`. The immutable `ScanRequest` and reduced planning state are durable rather
+than process-local. Serializable transactions make ledger initialization, global live-counter
+comparison, daily-budget comparison, reservation creation, and version advancement one atomic
+operation.
+
+The reservation row is also the durable pending-dispatch record. It stores the admitted planning
+state and complete immutable `SastScanPlan`, but no source or credential material, and has a
+restrictive foreign key to the durable scan request. A shared lane-global `lastServedTenantId`
+cursor selects the oldest eligible reservation by tenant round robin; bounded owner/expiry fields
+make dispatch claims recoverable. Dispatch searches pending reservations across every admission
+day, so a dispatcher restart cannot strand yesterday's backlog. An unacknowledged lease is attempted at most
+twice; the next post-expiry claim atomically marks the reservation and scan request `FAILED` and
+returns its queued capacity. `publishedAt`/`startedAt`, `completedAt`, and terminal status make
+queued-to-active-to-terminal counter transitions transactional and idempotent without deleting the
+admission identity.
+
+Repository removal is durable revocation rather than row deletion. `RepositoryBinding.status` and
+`revokedAt` hide the binding from new work while preserving historical `ScanRequest` and queue
+reservation foreign keys. Integration and binding inventory reads are durable rather than
+process-local, so replicas and restarts reuse the same identity. A later authorized re-add
+reactivates the same binding identity.
+
+### SastPlanningState
+
+Safe status attached to the tenant-scoped scan request and returned by status reads.
+
+- `ADMITTED | DEFERRED | REJECTED`
+- selected profile and coverage claim when available
+- lane queue and SHA-256 canonical scan key when available
+- queue-policy version and digest when admission reached a valid policy
+- bounded reason codes and retry-after condition
+- decision timestamp
+
+`COMMON_DEEP_V1` reports `COMMON_STATIC_COVERAGE_ONLY` and
+`LANGUAGE_SPECIFIC_SAST_UNAVAILABLE`; it never claims language-complete SAST coverage.
+The first recorded canonical planning identity is immutable. A deferred decision may become
+admitted only for that same identity; an admitted decision is idempotent and cannot be downgraded
+or replaced. Redelivery with a later request timestamp returns the original decision timestamp
+and plan, and no planning write may change a running or terminal scan. Risk-escalated requests
+retain `RESTRICTED` isolation in their immutable plan.
 
 ### SastScanAttempt
 
@@ -383,3 +462,5 @@ FIXED -> OPEN only when a later complete scan observes the same stable fingerpri
   Coordinate constraints also require safe-integer bounds and matching attested file metadata;
   retention constraints enforce the declared maximums.
 - Foreign keys must prevent cross-tenant association even when application checks fail.
+- Planning-state reason codes are constrained to the shared contract enum and never carry
+  free-form repository, scanner output, or credential material.

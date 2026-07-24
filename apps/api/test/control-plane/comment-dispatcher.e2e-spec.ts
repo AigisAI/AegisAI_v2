@@ -3,6 +3,8 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
 import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
+import { ControlPlaneScanRequestStore } from '../../src/control-plane/control-plane-scan-request.store';
+import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
 import { TestInternalServiceGuard, TestSessionAuthGuard } from '../support/security-guards';
 
 describe("Comment dispatcher boundary API (e2e)", () => {
@@ -50,7 +52,7 @@ describe("Comment dispatcher boundary API (e2e)", () => {
         scmIntegration: { upsert: jest.fn().mockResolvedValue({}) },
         repositoryBinding: {
           upsert: jest.fn().mockResolvedValue({}),
-          deleteMany: jest.fn().mockResolvedValue({ count: 1 })
+          updateMany: jest.fn().mockResolvedValue({ count: 1 })
         },
         auditEvent: { create: jest.fn().mockResolvedValue({}) }
       })
@@ -62,6 +64,8 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .useValue({
         listIntegrationRepositories: jest.fn().mockResolvedValue([])
       })
+      .overrideProvider(ControlPlaneScanRequestStore)
+      .useValue(new InMemoryControlPlaneScanRequestStore())
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .overrideGuard(InternalServiceGuard)

@@ -33,8 +33,8 @@ export class ScanPlaneService {
     private readonly controlPlaneService: ControlPlaneService
   ) {}
 
-  runMockPipeline(input: RunMockScanPlaneInput): MockScanPlaneRunResult {
-    this.assertScanScope(input);
+  async runMockPipeline(input: RunMockScanPlaneInput): Promise<MockScanPlaneRunResult> {
+    await this.assertScanScope(input);
     const pipelineKey = `mock:${input.tenantId}:${input.scanRequestId}:${input.scannerSetVersion}`;
     const completedPipeline = this.completedPipelines.get(pipelineKey);
     if (completedPipeline) {
@@ -68,8 +68,10 @@ export class ScanPlaneService {
     return result;
   }
 
-  runSandboxScanners(input: RunSandboxScannersInput): SandboxScannerExecutionResult {
-    this.assertScanScope(input);
+  async runSandboxScanners(
+    input: RunSandboxScannersInput
+  ): Promise<SandboxScannerExecutionResult> {
+    await this.assertScanScope(input);
     const pipelineKey = `sandbox:${input.tenantId}:${input.scanRequestId}:${input.scannerSetVersion}`;
     const completedPipeline = this.completedSandboxRuns.get(pipelineKey);
     if (completedPipeline) {
@@ -223,8 +225,11 @@ export class ScanPlaneService {
     };
   }
 
-  private assertScanScope(input: RunMockScanPlaneInput): void {
-    const scanRequest = this.controlPlaneService.getScanRequest(input.tenantId, input.scanRequestId);
+  private async assertScanScope(input: RunMockScanPlaneInput): Promise<void> {
+    const scanRequest = await this.controlPlaneService.getScanRequest(
+      input.tenantId,
+      input.scanRequestId
+    );
     if (scanRequest.scannerSetVersion !== input.scannerSetVersion) {
       throw new BadRequestException('Scanner set version does not match the immutable scan request.');
     }

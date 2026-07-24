@@ -51,6 +51,115 @@ profile/scanner-set availability, kill switches, and quota before acknowledging.
 leases are shorter than the sandbox hard timeout and are renewed by the orchestrator. The
 DLQ preserves tenant and scan attribution but not payload secrets.
 
+## Planner Runtime Contract
+
+`SastScanPlannerService` composes the immutable scan request with
+`TrustedSastRepositoryMetadata`, an approved profile policy, a signed scanner set, a signed
+queue-policy set, and a versioned counter-only queue-usage snapshot. These are internal runtime inputs;
+the public scan-request DTO cannot provide source content, language overrides, scanner
+commands, executable configuration, queue limits, credential values, or artifact bodies.
+
+The session-authenticated `POST /api/scan-requests` creates only immutable user intent. An
+approved metadata/preflight workload continues that request through the
+internal-service-authenticated `POST /api/sast-planning/:scanRequestId` boundary. That boundary
+is the only HTTP entry point for trusted metadata, signed profile/scanner/queue policy, and
+authoritative usage counters. The session-authenticated scan status returns only the reduced
+planning state. This two-step flow prevents a user from supplying trusted planning inputs while
+ensuring the planner is part of the production request lifecycle rather than a test-only helper.
+The internal DTO validates every nested planning object against the shared runtime predicates and
+an exact allowlist of keys; unknown command, environment, plugin, or executable-config fields are
+rejected before the planner runs.
+
+Trusted repository metadata is accepted only when it contains a full 40- or 64-character
+commit SHA, inventory digest, attestation reference, collection timestamp, normalized
+language byte/file signals, manifest names, and bounded resource counters. Its repository
+binding and commit must equal the immutable scan request. Profile-policy and scanner-set
+versions must also equal the versions already bound to that request. The planning timestamp
+must be valid UTC, and metadata collected in the future relative to that timestamp is rejected.
+
+Selection is deterministic for v1:
+
+| Lane and trusted inventory | Decision | User-visible coverage |
+| --- | --- | --- |
+| Fast with Java only | `JAVA_FAST_V1` | language SAST complete for the approved profile |
+| Deep with Java only | `JAVA_DEEP_V1` | language SAST complete for the approved profile |
+| Deep without Java | `COMMON_DEEP_V1` | common static coverage only; language SAST unavailable |
+| Fast without Java | reject | `UNSUPPORTED_LANGUAGE_FOR_FAST` |
+| Java plus another source language | reject | `UNSUPPORTED_POLYGLOT_PROFILE` |
+| Selected profile disallowed by policy | reject | `PROFILE_NOT_ALLOWED_BY_POLICY` |
+
+The profile limit check returns explicit repository bytes, selected bytes, file count,
+single-file bytes, and path-depth reason codes. Missing or invalid required scanner, rule,
+vulnerability database, schema, or normalizer assets reject planning before queue admission.
+
+The SHA-256 canonical key binds tenant, repository, lane, target context, full fixed commit,
+trusted inventory digest and attestation reference, policy, isolation class, immutable profile digest, scanner-set
+version/digest, every scanner image and wrapper digest, every sorted rule-bundle digest,
+vulnerability database
+version/digest, schema digest, normalizer digest, and SBOM schema. Result/evidence/audit
+references are scoped to tenant and scan but are not mutable customer inputs.
+
+Queue policy is itself versioned, digest-pinned, signed, and provenance-attributed. Its usage
+snapshot must carry the authoritative lane/day `snapshotVersion` and match the tenant,
+repository binding, lane, and current UTC daily window of the decision. Repository-active counts
+cannot exceed tenant-active counts, and tenant-queued counts cannot exceed the lane total. Fast
+and Deep must resolve to `scan.fast.v1` and `scan.deep.v1` respectively. Admission evaluates
+tenant active/queued/daily limits, repository concurrency/frequency, and lane queue capacity.
+
+The pure policy evaluator is not an admission authority. `SastQueueAdmissionService` must compare
+the complete observed live counters and `snapshotVersion` with the authoritative lane-global
+ledger, compare the daily budget in a separate normalized UTC-day row, and in one critical section
+create an idempotent reservation, increment tenant/lane/daily counters, record the repository
+admission time, and advance the version. A replayed or concurrently consumed
+snapshot is `DEFERRED` as `QUEUE_USAGE_STALE`; it cannot consume capacity. The production adapter
+for this boundary must use one shared transactional/CAS store across API replicas before queue
+publication; a per-replica cache is not authoritative. `PrismaSastQueueAdmissionStore` implements
+that boundary with PostgreSQL `SERIALIZABLE` transactions, bounded serialization/unique-conflict
+retries, durable reservation records, one live ledger per lane, and canonical millisecond UTC
+daily-budget keys. Equivalent UTC representations therefore cannot create parallel daily budgets,
+active/queued work cannot disappear or become ghost usage at midnight, and process restarts retain idempotency.
+The immutable `ScanRequest` exists in PostgreSQL before reservation. The admitted planning state
+and complete immutable `SastScanPlan` are written with the reservation in the same transaction,
+and the reservation has a restrictive foreign key to that request. A dispatcher therefore receives
+the exact profile, scanner-set snapshot, repository attestation binding, and output references even
+after every API process restarts; it never reconstructs execution inputs from mutable state.
+
+Capacity outcomes are `DEFERRED` with a bounded retry condition; malformed policy or usage is
+`REJECTED`. Within one lane, dispatch interleaves the oldest item from each tenant using
+deterministic tenant round-robin ordering, with the last-served tenant rotated to the end. Admission
+capacity and dispatch order are separate concerns: durable admitted reservations form the pending
+dispatch set, while `claimNextForDispatch` advances the shared ledger cursor in the same serializable
+transaction that acquires a bounded dispatch lease. Claiming searches all pending UTC windows for
+the lane through the lane-global ledger and selects the oldest eligible backlog, so a day rollover
+or dispatcher restart cannot hide older work. An acknowledgement is accepted only from the lease owner before lease expiry;
+unacknowledged work becomes eligible for one retry after the first expiry. After two total expired
+leases, the next claim atomically marks the reservation and scan request `FAILED`, decrements queued
+lane/tenant counters, and advances the ledger version instead of redispatching forever. A valid
+acknowledgement atomically moves lane/tenant counters from queued to active and marks the durable
+scan request `RUNNING`. Completion atomically decrements tenant/repository active counters, advances
+the ledger version, records the terminal state, and is idempotent for the same worker and outcome.
+
+The public scan status exposes only `ADMITTED | DEFERRED | REJECTED`, selected profile,
+coverage claim, queue name, queue-policy version/digest, canonical key, reason codes,
+retry-after seconds, and timestamp.
+It never exposes trusted inventory internals, source, credentials, or scanner configuration.
+Once a canonical planning identity is recorded it cannot be replaced by a different identity.
+An admitted decision is idempotent across delivery timestamps and immutable, and planning cannot rewrite a running,
+completed, failed, or canceled scan.
+
+Scan creation resolves the active tenant-attributed SCM integration and repository binding from
+the durable Control Plane store. Process-local inventory caches are not authoritative, so a restarted
+or newly scheduled API replica reuses the persisted binding identity and rejects revoked context.
+Scan-request status changes read, validate, and write inside a serializable transaction. Running or
+terminal requests cannot move backward, while identical status delivery remains idempotent.
+
+SCM repository removal soft-revokes the durable repository binding instead of deleting immutable
+scan history. Revoked bindings cannot create new work; historical requests and reservations retain
+their tenant/repository attribution, and an authorized re-add explicitly restores `ACTIVE` state.
+
+Risk escalation signals on the immutable request select `RESTRICTED`; ordinary SAST requests are
+raised from `STANDARD` intent to the mandatory `HARDENED` execution floor by the planner.
+
 ## Profile Contract
 
 A known profile ID is accepted only when the complete snapshot exactly matches its immutable

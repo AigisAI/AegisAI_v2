@@ -4,6 +4,7 @@ import type {
   RepositoryBinding,
   ScanLane,
   ScanRequest,
+  SastUserVisiblePlanningState,
   ScmIntegration,
   ScmProvider
 } from '@aegisai/shared';
@@ -69,7 +70,9 @@ export interface CreateScanRequestInput {
 
 export type ControlPlaneIntegration = ScmIntegration;
 export type ControlPlaneRepositoryBinding = RepositoryBinding;
-export type ControlPlaneScanRequest = ScanRequest;
+export interface ControlPlaneScanRequest extends ScanRequest {
+  sastPlanning?: SastUserVisiblePlanningState;
+}
 
 export interface InstallIntegrationOptions {
   provider: ScmProvider;
