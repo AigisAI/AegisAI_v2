@@ -35,9 +35,9 @@
 
 ## Phase 5: Hardened Fetch and Scanner Wrapper
 
-- [ ] T022 Implement per-attempt short-lived repo-read token handoff
-- [ ] T023 Implement shallow fixed-commit fetch with submodule/LFS/archive defaults
-- [ ] T024 Implement hostile path, symlink, case-collision, size, count, and file-type preflight
+- [x] T022 Implement per-attempt short-lived repo-read token handoff
+- [x] T023 Implement shallow fixed-commit fetch with submodule/LFS/archive defaults
+- [x] T024 Implement hostile path, symlink, case-collision, size, count, and file-type preflight
 - [ ] T025 Implement pinned OpenGrep, Trivy, and Syft wrapper commands from signed profiles
 - [ ] T026 Enforce no build, install, dynamic execution, runtime update, or unrestricted egress
 - [ ] T027 Remove production routing to the mock-analysis path while preserving test fixtures
@@ -90,5 +90,6 @@
 
 - [ ] Provision the live production Kubernetes cluster through `005-production-deployment-operations`
 - [ ] Roll out the provider-specific production microVM platform through `005-production-deployment-operations`
+- [ ] Install provider-backed GitHub App/GitLab repo-read credential minting adapters during live provider rollout
 - [ ] Add language-specific SAST profiles beyond Java after independent corpus and gate approval
 - [ ] Add build-assisted or dynamic analysis; prohibited in v1 and requires a separate threat model

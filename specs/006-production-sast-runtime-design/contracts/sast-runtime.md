@@ -239,6 +239,24 @@ envelope. A missing attestation, stale attempt binding, re-manifest failure, or 
 a `SECURITY_VIOLATION`: the scanner does not start, the sandbox is terminated, the attempt and
 artifact metadata are quarantined, and coverage cannot become complete.
 
+The T022-T024 runtime implementation persists only attempt-bound credential lease metadata and
+a SHA-256 credential fingerprint. The credential value remains in an opaque memory buffer and a
+verified tmpfs handoff file, is never accepted in command arguments, and is zeroized after fetch.
+Lease reservation requires a `RUNNING` durable scan and database-enforced tenant/repository/scan
+association. Workload and preflight signing keys are distinct from each other and from the token
+encryption key.
+The durable active repository binding determines the SCM host and repository path; callers cannot
+substitute a remote URL. Fetch uses the full fixed SHA with `--depth=1`, no tags, no submodule
+recursion, LFS smudge disabled, detached checkout verification, remote removal, and `.git`
+metadata destruction before scanner handoff. Preflight binds each entry's Git object ID so
+same-size content replacement changes the bytewise-sorted, length-prefixed UTF-8 inventory
+digest, uses the validation order above, and signs its decision. Provider
+microVM execution and scanner wrapper launch remain T025-T028 work.
+The repository credential issuer uses an opaque synthetic value only outside production for
+contract and handoff tests. Its default production path fails closed until the provider rollout
+installs a GitHub App/GitLab scoped credential-minting adapter; it never treats the synthetic
+value as a live SCM token.
+
 ## Scanner Wrapper Contract
 
 A wrapper is an immutable image entrypoint with no shell interpolation. It accepts a typed

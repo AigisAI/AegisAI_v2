@@ -208,6 +208,24 @@ One execution attempt for a plan. A retry creates a new attempt.
 
 Maximum automatic attempts are two and only retryable infrastructure failures qualify.
 
+### SastRepositoryCredentialLease
+
+Durable, attempt-unique metadata for the repository credential handoff. It contains no
+credential value.
+
+- tenant, repository binding, scan request, and attempt identifiers
+- workload identity reference and full fixed commit SHA
+- opaque credential ID and SHA-256 credential fingerprint
+- `RESERVED | ISSUED | WIPED | REVOKED`
+- issued, expiry, wiped, and revoked timestamps
+
+The database enforces one lease per attempt, valid fixed-SHA/fingerprint forms, expiry after
+issuance, and terminal timestamp consistency. Lifecycle mutations are tenant- and attempt-scoped
+conditional updates so concurrent wipe/revoke handling cannot reopen or rewrite a terminal
+lease. Composite foreign keys bind the lease to one tenant/repository/scan tuple even if
+application checks fail, and reservation is allowed only while that durable scan request is
+`RUNNING`.
+
 ### SandboxLifecycleEvent
 
 - tenant, scan, attempt, and sandbox identifiers
@@ -221,7 +239,8 @@ The final successful lifecycle requires a `TERMINATED` event and cleanup evidenc
 
 ### RepositoryPreflightResult
 
-- attempt ID, fixed commit SHA, path-policy version, and canonical path inventory digest
+- attempt ID, fixed commit SHA, path-policy version, and canonical path/content inventory digest
+- each entry's Git object ID, normalized metadata, and bytewise length-prefixed digest binding
 - signed attestation reference bound to the accepted decision and inventory digest
 - repository and selected byte totals
 - file, directory, symlink, LFS pointer, submodule, and archive counts

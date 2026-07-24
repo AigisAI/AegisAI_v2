@@ -1,13 +1,33 @@
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
+import type { TokenBrokerIssueRequest } from '@aegisai/shared';
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
 import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
 import { ControlPlaneService } from '../../src/control-plane/control-plane.service';
+import { RepositoryCredentialLeaseStore } from '../../src/token-broker/repository-credential-lease.store';
+import { WorkloadIdentityAttestationService } from '../../src/token-broker/workload-identity-attestation.service';
+import { TokenBrokerService } from '../../src/token-broker/token-broker.service';
+import { InMemoryRepositoryCredentialLeaseStore } from '../support/in-memory-repository-credential-lease.store';
 import { TestInternalServiceGuard, TestSessionAuthGuard } from '../support/security-guards';
 
 describe("Token Broker and audit skeleton (e2e)", () => {
   let app: INestApplication;
+  let workloadAttestation: WorkloadIdentityAttestationService;
+  let tokenBroker: TokenBrokerService;
+  let credentialLeases: InMemoryRepositoryCredentialLeaseStore;
+  const auditRows: Array<{
+    id: string;
+    tenantId: string;
+    eventType: string;
+    actor: string;
+    targetType: string;
+    targetId: string;
+    occurredAt: Date;
+    metadata: Record<string, unknown>;
+  }> = [];
+  const commitOne = 'a'.repeat(40);
+  const commitTwo = 'b'.repeat(40);
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
@@ -30,6 +50,7 @@ describe("Token Broker and audit skeleton (e2e)", () => {
       import("../../src/prisma/prisma.service")
     ]);
 
+    credentialLeases = new InMemoryRepositoryCredentialLeaseStore();
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule]
     })
@@ -39,7 +60,28 @@ describe("Token Broker and audit skeleton (e2e)", () => {
         $disconnect: jest.fn().mockResolvedValue(undefined),
         onModuleInit: jest.fn().mockResolvedValue(undefined),
         onModuleDestroy: jest.fn().mockResolvedValue(undefined),
-        $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }])
+        $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }]),
+        auditEvent: {
+          create: jest.fn().mockImplementation(
+            async ({ data }: { data: (typeof auditRows)[number] }) => {
+              auditRows.push(data);
+              return data;
+            }
+          ),
+          findMany: jest.fn().mockImplementation(
+            async ({
+              where
+            }: {
+              where: { tenantId: string; eventType: string; actor: string };
+            }) =>
+              auditRows.filter(
+                (row) =>
+                  row.tenantId === where.tenantId &&
+                  row.eventType === where.eventType &&
+                  row.actor === where.actor
+              )
+          )
+        }
       })
       .overrideProvider(ControlPlaneService)
       .useValue({
@@ -48,9 +90,11 @@ describe("Token Broker and audit skeleton (e2e)", () => {
           tenantId,
           repositoryBindingId:
             scanRequestId === 'scan_request_2' ? 'repository_binding_2' : 'repository_binding_1',
-          commitSha: scanRequestId === 'scan_request_2' ? 'def456' : 'abc123'
+          commitSha: scanRequestId === 'scan_request_2' ? commitTwo : commitOne
         }))
       })
+      .overrideProvider(RepositoryCredentialLeaseStore)
+      .useValue(credentialLeases)
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .overrideGuard(InternalServiceGuard)
@@ -61,6 +105,8 @@ describe("Token Broker and audit skeleton (e2e)", () => {
     app.setGlobalPrefix("api");
 
     await app.init();
+    workloadAttestation = app.get(WorkloadIdentityAttestationService);
+    tokenBroker = app.get(TokenBrokerService);
   });
 
   afterAll(async () => {
@@ -77,18 +123,39 @@ describe("Token Broker and audit skeleton (e2e)", () => {
     return body as T;
   };
 
+  const issueBody = (
+    attemptId: string,
+    overrides: Partial<{
+      tenantId: string;
+      repositoryBindingId: string;
+      scanRequestId: string;
+      workloadIdentityRef: string;
+      commitSha: string;
+      ttlSeconds: number;
+    }> = {}
+  ): TokenBrokerIssueRequest => {
+    const scope = {
+      tenantId: overrides.tenantId ?? "tenant_gamma",
+      repositoryBindingId: overrides.repositoryBindingId ?? "repository_binding_1",
+      scanRequestId: overrides.scanRequestId ?? "scan_request_1",
+      attemptId,
+      workloadIdentityRef:
+        overrides.workloadIdentityRef ?? `spiffe://aegisai/scan/${attemptId}`,
+      commitSha: overrides.commitSha ?? commitOne
+    };
+    return {
+      ...scope,
+      workloadIdentityAttestation: workloadAttestation.issue(scope),
+      principal: "REPO_READ" as const,
+      ttlSeconds: overrides.ttlSeconds ?? 600,
+      auditReason: "scan-fetch"
+    };
+  };
+
   it("issues scan-scoped short-lived credential values without persisting them", async () => {
     const response = await request(app.getHttpServer())
       .post("/api/token-broker/issue")
-      .send({
-        tenantId: "tenant_gamma",
-        repositoryBindingId: "repository_binding_1",
-        scanRequestId: "scan_request_1",
-        principal: "REPO_READ",
-        commitSha: "abc123",
-        ttlSeconds: 600,
-        auditReason: "scan-fetch"
-      })
+      .send(issueBody('attempt-1'))
       .expect(201);
 
     const responseData = dataOf<Record<string, unknown>>(response.body);
@@ -97,8 +164,10 @@ describe("Token Broker and audit skeleton (e2e)", () => {
       tenantId: "tenant_gamma",
       repositoryBindingId: "repository_binding_1",
       scanRequestId: "scan_request_1",
+      attemptId: "attempt-1",
+      workloadIdentityRef: "spiffe://aegisai/scan/attempt-1",
       principal: "REPO_READ",
-      commitSha: "abc123",
+      commitSha: commitOne,
       ttlSeconds: 600,
       expiresInSeconds: 600,
       auditEventType: "token.issued",
@@ -113,34 +182,89 @@ describe("Token Broker and audit skeleton (e2e)", () => {
 
     const secondResponse = await request(app.getHttpServer())
       .post("/api/token-broker/issue")
-      .send({
-        tenantId: "tenant_gamma",
-        repositoryBindingId: "repository_binding_1",
-        scanRequestId: "scan_request_1",
-        principal: "REPO_READ",
-        commitSha: "abc123",
-        ttlSeconds: 600,
-        auditReason: "scan-fetch"
-      })
+      .send(issueBody('attempt-2'))
       .expect(201);
 
     expect(dataOf<Record<string, unknown>>(secondResponse.body).credentialValue).not.toBe(
       responseData.credentialValue
     );
+    expect(JSON.stringify(responseData)).not.toMatch(/workloadIdentityAttestation|signature/i);
+    await expect(
+      credentialLeases.findByAttempt('tenant_gamma', 'attempt-1')
+    ).resolves.toMatchObject({
+      status: 'ISSUED',
+      credentialFingerprint: expect.stringMatching(/^sha256:[0-9a-f]{64}$/)
+    });
+    expect(
+      JSON.stringify(
+        await credentialLeases.findByAttempt('tenant_gamma', 'attempt-1')
+      )
+    ).not.toContain(responseData.credentialValue);
+  });
+
+  it('rejects attempt replay and tampered workload identity attestations', async () => {
+    const body = issueBody('attempt-replay');
+    await request(app.getHttpServer()).post('/api/token-broker/issue').send(body).expect(201);
+    await request(app.getHttpServer()).post('/api/token-broker/issue').send(body).expect(409);
+
+    const tampered = issueBody('attempt-tampered');
+    tampered.workloadIdentityAttestation.claims.workloadIdentityRef =
+      'spiffe://aegisai/scan/other-attempt';
+    await request(app.getHttpServer())
+      .post('/api/token-broker/issue')
+      .send(tampered)
+      .expect(401);
+
+    const expired = issueBody('attempt-expired');
+    expired.workloadIdentityAttestation = workloadAttestation.issue(
+      {
+        tenantId: expired.tenantId,
+        repositoryBindingId: expired.repositoryBindingId,
+        scanRequestId: expired.scanRequestId,
+        attemptId: expired.attemptId,
+        workloadIdentityRef: expired.workloadIdentityRef,
+        commitSha: expired.commitSha
+      },
+      { now: new Date('2020-01-01T00:00:00.000Z'), ttlSeconds: 60 }
+    );
+    await request(app.getHttpServer())
+      .post('/api/token-broker/issue')
+      .send(expired)
+      .expect(401);
+  });
+
+  it('zeroizes the in-memory handoff and records wiped lease evidence after fetch use', async () => {
+    const body = issueBody('attempt-handoff');
+    let observed: Uint8Array | undefined;
+    const result = await tokenBroker.withCredential(body, async (credential) => {
+      observed = credential;
+      expect(Buffer.from(credential).toString('utf8')).toMatch(/^aegis_tb_/);
+      return 'fetch-complete';
+    });
+
+    expect(result).toBe('fetch-complete');
+    expect(observed && [...observed].every((value) => value === 0)).toBe(true);
+    await expect(
+      credentialLeases.findByAttempt('tenant_gamma', 'attempt-handoff')
+    ).resolves.toMatchObject({
+      status: 'WIPED',
+      wipedAt: expect.any(String)
+    });
   });
 
   it("records tenant-scoped audit events for token issuance", async () => {
     await request(app.getHttpServer())
       .post("/api/token-broker/issue")
-      .send({
-        tenantId: "tenant_delta",
-        repositoryBindingId: "repository_binding_2",
-        scanRequestId: "scan_request_2",
-        principal: "REPO_READ",
-        commitSha: "def456",
-        ttlSeconds: 300,
-        auditReason: "scan-fetch"
-      })
+      .send(
+        issueBody('attempt-audit', {
+          tenantId: 'tenant_delta',
+          repositoryBindingId: 'repository_binding_2',
+          scanRequestId: 'scan_request_2',
+          workloadIdentityRef: 'spiffe://aegisai/scan/attempt-audit',
+          commitSha: commitTwo,
+          ttlSeconds: 300
+        })
+      )
       .expect(201);
 
     const audit = await request(app.getHttpServer())
@@ -159,8 +283,11 @@ describe("Token Broker and audit skeleton (e2e)", () => {
         targetId: "scan_request_2",
         metadata: expect.objectContaining({
           repositoryBindingId: "repository_binding_2",
+          attemptId: 'attempt-audit',
+          workloadIdentityRef: 'spiffe://aegisai/scan/attempt-audit',
+          credentialId: expect.stringMatching(/^credential_/),
           principal: "REPO_READ",
-          commitSha: "def456",
+          commitSha: commitTwo,
           ttlSeconds: 300,
           auditReason: "scan-fetch"
         })

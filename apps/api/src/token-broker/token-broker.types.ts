@@ -1,6 +1,7 @@
 import type { AuditEvent, ScmPrincipal, TokenBrokerIssueRequest } from '@aegisai/shared';
 
-export interface TokenBrokerIssueResponse extends TokenBrokerIssueRequest {
+export interface TokenBrokerIssueResponse
+  extends Omit<TokenBrokerIssueRequest, 'workloadIdentityAttestation'> {
   credentialId: string;
   credentialType: "SCM_REPOSITORY_ACCESS";
   credentialValue: string;
@@ -13,6 +14,9 @@ export interface TokenBrokerIssueResponse extends TokenBrokerIssueRequest {
 export interface TokenBrokerAuditEvent extends AuditEvent {
   metadata: {
     repositoryBindingId: string;
+    attemptId: string;
+    workloadIdentityRef: string;
+    credentialId: string;
     principal: Extract<ScmPrincipal, "REPO_READ">;
     commitSha: string;
     ttlSeconds: number;

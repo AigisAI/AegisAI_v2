@@ -26,6 +26,8 @@ export interface EnvironmentVariables {
   THROTTLE_TTL_MS: number;
   THROTTLE_LIMIT: number;
   TOKEN_ENCRYPTION_KEY: string;
+  WORKLOAD_ATTESTATION_KEY: string;
+  PREFLIGHT_ATTESTATION_KEY: string;
   ANALYSIS_CLIENT_MODE: AnalysisClientMode;
   AI_SERVER_URL: string;
   USE_INTERNAL_AI: BooleanString;

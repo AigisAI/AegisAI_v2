@@ -355,10 +355,37 @@ export interface TokenBrokerIssueRequest {
   tenantId: string;
   repositoryBindingId: string;
   scanRequestId: string;
+  attemptId: string;
+  workloadIdentityRef: string;
+  workloadIdentityAttestation: WorkloadIdentityAttestation;
   principal: Extract<ScmPrincipal, 'REPO_READ'>;
   commitSha: string;
   ttlSeconds: number;
   auditReason: string;
+}
+
+export const WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE = 'aegisai-token-broker' as const;
+export const WORKLOAD_IDENTITY_ATTESTATION_VERSION = '1' as const;
+export const MAX_WORKLOAD_IDENTITY_ATTESTATION_TTL_SECONDS = 5 * 60;
+
+export interface WorkloadIdentityAttestationClaims {
+  version: typeof WORKLOAD_IDENTITY_ATTESTATION_VERSION;
+  issuer: string;
+  audience: typeof WORKLOAD_IDENTITY_ATTESTATION_AUDIENCE;
+  tenantId: string;
+  repositoryBindingId: string;
+  scanRequestId: string;
+  attemptId: string;
+  workloadIdentityRef: string;
+  commitSha: string;
+  nonce: string;
+  issuedAt: string;
+  expiresAt: string;
+}
+
+export interface WorkloadIdentityAttestation {
+  claims: WorkloadIdentityAttestationClaims;
+  signature: `sha256:${string}`;
 }
 
 export const MAX_SCAN_CREDENTIAL_TTL_SECONDS = 10 * 60;
