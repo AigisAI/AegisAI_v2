@@ -3,6 +3,7 @@ import {
   SAST_FORBIDDEN_CAPABILITIES,
   SAST_SCAN_PROFILES,
   isSastScanPlanValid,
+  type SastRepositoryPreflightSelection,
   type SastScannerExecutionRecord,
   type SastScannerInvocation,
   type SastScannerProcessObservation,
@@ -159,6 +160,7 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         '/workspace/repository'
       ],
       workingDirectory: '/workspace/output',
+      scannerInputPath: '/workspace/repository',
       outputPath: '/workspace/output/opengrep.sarif',
       artifactSchema: 'OPENGREP_SARIF'
     });
@@ -197,6 +199,7 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         '--skip-version-check',
         '/workspace/repository'
       ],
+      scannerInputPath: '/workspace/repository',
       artifactSchema: 'TRIVY_JSON'
     });
     expect(invocations[2]).toMatchObject({
@@ -209,6 +212,7 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         '--output',
         'cyclonedx-json=/workspace/output/syft.cdx.json'
       ],
+      scannerInputPath: '/workspace/repository',
       environment: expect.objectContaining({
         SYFT_CHECK_FOR_APP_UPDATE: 'false',
         SYFT_GOLANG_SEARCH_REMOTE_LICENSES: 'false',
@@ -250,6 +254,69 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         Object.isFrozen(invocation.sandboxPolicy.resourceLimits)
       ).toBe(true);
     }
+  });
+
+  it('binds Fast scanners to a content-bound selected workspace instead of the repository root', async () => {
+    const harness = buildHarness({
+      profile: SAST_SCAN_PROFILES.JAVA_FAST_V1,
+      selection: {
+        mode: 'PATH_ALLOWLIST',
+        paths: ['src/main/java/com/acme/App.java']
+      }
+    });
+    const expectedInputPath = `/workspace/selected/${harness.request.preflight.inventoryDigest.slice(
+      'sha256:'.length
+    )}`;
+    const invocations = harness.adapter.buildInvocations(harness.request);
+
+    expect(invocations).toHaveLength(2);
+    for (const invocation of invocations) {
+      expect(invocation.scannerInputPath).toBe(expectedInputPath);
+      expect(invocation.args).toContain(expectedInputPath);
+      expect(invocation.args).not.toContain('/workspace/repository');
+    }
+
+    await expect(harness.runtime.execute(harness.request)).resolves.toMatchObject({
+      stage: 'COMPLETED',
+      scannerRuns: [{ status: 'SUCCEEDED' }, { status: 'SUCCEEDED' }]
+    });
+    for (const [operation] of harness.provider.executeScanner.mock.calls) {
+      expect(operation.invocation.scannerInputPath).toBe(expectedInputPath);
+    }
+  });
+
+  it('rejects a Fast scanner manifest that is not bound to the selected workspace projection', async () => {
+    const selection = {
+      mode: 'PATH_ALLOWLIST' as const,
+      paths: ['src/main/java/com/acme/App.java']
+    };
+    const harness = buildHarness({
+      profile: SAST_SCAN_PROFILES.JAVA_FAST_V1,
+      selection
+    });
+    harness.provider.readRepositoryManifest.mockImplementationOnce(
+      async (operation) => ({
+        scanner: operation.invocation.scanner,
+        source: 'MICROVM_READ_ONLY_MOUNT',
+        observedAt: new Date().toISOString(),
+        scannerInput: {
+          mode: 'FULL_REPOSITORY',
+          path: '/workspace/repository',
+          sourceInventoryDigest:
+            operation.invocation.preflightInventoryDigest,
+          readOnly: true
+        },
+        selection,
+        entries: repositoryEntries
+      })
+    );
+
+    await expect(harness.runtime.execute(harness.request)).rejects.toMatchObject({
+      failureClass: 'SECURITY_VIOLATION',
+      reasonCode: 'SCANNER_WORKSPACE_MANIFEST_INVALID'
+    });
+    expect(harness.provider.executeScanner).not.toHaveBeenCalled();
+    expect(harness.provider.cleanup).toHaveBeenCalledTimes(1);
   });
 
   it('re-manifests before each scanner, records bounded terminal metadata, and completes only after cleanup', async () => {
@@ -318,6 +385,13 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         scanner: operation.invocation.scanner,
         source: 'MICROVM_READ_ONLY_MOUNT',
         observedAt: new Date().toISOString(),
+        scannerInput: {
+          mode: 'FULL_REPOSITORY',
+          path: operation.invocation.scannerInputPath,
+          sourceInventoryDigest:
+            operation.invocation.preflightInventoryDigest,
+          readOnly: true
+        },
         selection: { mode: 'ALL_SCANNABLE', paths: [] },
         entries: [
           repositoryEntries[0],
@@ -400,6 +474,29 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         processObservation(operation.invocation, {
           exitCode: 0,
           terminationSignal: 'SIGKILL'
+        })
+    );
+
+    await expect(harness.runtime.execute(harness.request)).rejects.toMatchObject({
+      failureClass: 'SCANNER_DEFECT',
+      reasonCode: 'SCANNER_RUNTIME_OBSERVATION_INVALID'
+    });
+    expect(harness.store.scannerRuns).toHaveLength(0);
+    expect(harness.provider.cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a zero-byte scanner artifact before persistence', async () => {
+    const harness = buildHarness();
+    harness.provider.executeScanner.mockImplementationOnce(
+      async (operation) =>
+        processObservation(operation.invocation, {
+          artifact: {
+            artifactRef: `${harness.request.plan.resultIngressRef}/${operation.invocation.scanner.toLowerCase()}`,
+            contentDigest: digest('f'),
+            byteSize: 0,
+            recordCount: 0,
+            truncated: false
+          }
         })
     );
 
@@ -542,7 +639,12 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
   });
 });
 
-function buildHarness(): RuntimeHarness {
+interface BuildHarnessOptions {
+  profile?: SastScanPlan['profile'];
+  selection?: Readonly<SastRepositoryPreflightSelection>;
+}
+
+function buildHarness(options: BuildHarnessOptions = {}): RuntimeHarness {
   process.env.NODE_ENV = 'test';
   const config = {
     get: (key: string) => {
@@ -560,7 +662,11 @@ function buildHarness(): RuntimeHarness {
   const preflightAttestation =
     new RepositoryPreflightAttestationService(config as never);
   const preflight = new RepositoryPreflightService(preflightAttestation);
-  const profile = SAST_SCAN_PROFILES.JAVA_DEEP_V1;
+  const profile = options.profile ?? SAST_SCAN_PROFILES.JAVA_DEEP_V1;
+  const selection = options.selection ?? {
+    mode: 'ALL_SCANNABLE' as const,
+    paths: []
+  };
   const preflightResult = preflight.evaluate({
     attemptId: ATTEMPT_ID,
     fixedCommitSha: FIXED_COMMIT,
@@ -569,12 +675,13 @@ function buildHarness(): RuntimeHarness {
     limits: profile.limits,
     sourceExtensions: profile.sourceExtensions,
     manifestNames: profile.manifestNames,
-    selection: { mode: 'ALL_SCANNABLE', paths: [] },
+    selection,
     entries: repositoryEntries
   });
   const plan = scanPlan(
     preflightResult.inventoryDigest,
-    preflightResult.attestationRef
+    preflightResult.attestationRef,
+    profile
   );
   expect(isSastScanPlanValid(plan)).toBe(true);
 
@@ -610,7 +717,18 @@ function buildHarness(): RuntimeHarness {
         scanner: operation.invocation.scanner,
         source: 'MICROVM_READ_ONLY_MOUNT',
         observedAt: new Date().toISOString(),
-        selection: { mode: 'ALL_SCANNABLE', paths: [] },
+        scannerInput: {
+          mode:
+            operation.request.plan.profile.scope ===
+            'CHANGED_FILES_WITH_CONTEXT'
+              ? 'CONTENT_BOUND_PATH_ALLOWLIST'
+              : 'FULL_REPOSITORY',
+          path: operation.invocation.scannerInputPath,
+          sourceInventoryDigest:
+            operation.invocation.preflightInventoryDigest,
+          readOnly: true
+        },
+        selection,
         entries: repositoryEntries
       })
     ),
@@ -665,14 +783,15 @@ function buildHarness(): RuntimeHarness {
 
 function scanPlan(
   inventoryDigest: `sha256:${string}`,
-  attestationRef: string
+  attestationRef: string,
+  profile: SastScanPlan['profile'] = SAST_SCAN_PROFILES.JAVA_DEEP_V1
 ): SastScanPlan {
   return {
     tenantId: 'tenant-runtime',
     scanRequestId: 'scan-runtime-1',
     canonicalScanKey: digest('c'),
-    profile: SAST_SCAN_PROFILES.JAVA_DEEP_V1,
-    profileDigest: SAST_APPROVED_PROFILE_DIGESTS.JAVA_DEEP_V1,
+    profile,
+    profileDigest: SAST_APPROVED_PROFILE_DIGESTS[profile.id],
     policyVersion: 'policy-v1',
     repositoryState: {
       repositoryBindingId: 'repository-runtime-1',

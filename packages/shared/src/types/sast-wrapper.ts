@@ -23,6 +23,8 @@ export const SAST_SANDBOX_ATTESTATION_AUDIENCE =
 export const MAX_SAST_SANDBOX_ATTESTATION_TTL_SECONDS = 5 * 60;
 export const SAST_SANDBOX_CLEANUP_TIMEOUT_SECONDS = 60;
 export const SAST_SCANNER_WORKSPACE_ROOT = '/workspace/repository' as const;
+export const SAST_SCANNER_SELECTED_WORKSPACE_ROOT =
+  '/workspace/selected' as const;
 export const SAST_SCANNER_OUTPUT_ROOT = '/workspace/output' as const;
 export const SAST_SCANNER_ASSET_ROOT = '/opt/aegis/assets' as const;
 export const SAST_SCANNER_WORKING_DIRECTORY =
@@ -118,8 +120,16 @@ export interface SastScannerRepositoryManifest {
   scanner: SastScannerKind;
   source: 'MICROVM_READ_ONLY_MOUNT';
   observedAt: string;
+  scannerInput: Readonly<SastScannerInputBinding>;
   selection: Readonly<SastRepositoryPreflightSelection>;
   entries: readonly SastRepositoryTreeEntry[];
+}
+
+export interface SastScannerInputBinding {
+  mode: 'FULL_REPOSITORY' | 'CONTENT_BOUND_PATH_ALLOWLIST';
+  path: string;
+  sourceInventoryDigest: `sha256:${string}`;
+  readOnly: true;
 }
 
 export interface SastScannerWrapperExecutionRequest {
@@ -140,6 +150,7 @@ export interface SastScannerInvocation {
   args: readonly string[];
   environment: Readonly<Record<string, string>>;
   workingDirectory: string;
+  scannerInputPath: string;
   outputPath: string;
   artifactSchema: 'OPENGREP_SARIF' | 'TRIVY_JSON' | 'CYCLONEDX_JSON';
   artifactSchemaVersion: string;
@@ -464,6 +475,7 @@ export function isSastScannerInvocationBoundToPlan(
       'ruleBundleDigest',
       'sandboxPolicy',
       'scanner',
+      'scannerInputPath',
       'scannerImageDigest',
       'scannerSetDigest',
       'scannerVersion',
@@ -490,11 +502,13 @@ export function isSastScannerInvocationBoundToPlan(
   );
   const ruleBundleDigests = ruleBundles.map((bundle) => bundle.digest);
   const expectedOutputPath = expectedScannerOutputPath(invocation.scanner);
+  const expectedInputPath = expectedScannerInputPath(plan, preflight);
   const expectedArgs = expectedScannerArguments(
     invocation.scanner,
     plan,
     ruleBundles[0]?.digest,
-    expectedOutputPath
+    expectedOutputPath,
+    expectedInputPath
   );
   const expectedEnvironment = expectedScannerEnvironment(
     invocation.scanner,
@@ -515,6 +529,7 @@ export function isSastScannerInvocationBoundToPlan(
       `/opt/aegis/scanners/${invocation.scanner.toLowerCase()}` &&
     sameArray(invocation.args, expectedArgs) &&
     sameRecord(invocation.environment, expectedEnvironment) &&
+    invocation.scannerInputPath === expectedInputPath &&
     invocation.outputPath === expectedOutputPath &&
     invocation.artifactSchema === expectedArtifactSchema &&
     invocation.artifactSchemaVersion ===
@@ -645,7 +660,7 @@ export function isSastScannerProcessObservationValid(
         isBoundedIdentifier(artifact.artifactRef, 2048) &&
         isSha256Digest(artifact.contentDigest) &&
         Number.isSafeInteger(artifact.byteSize) &&
-        artifact.byteSize >= 0 &&
+        artifact.byteSize > 0 &&
         artifact.byteSize <= limits.maxArtifactBytes &&
         Number.isSafeInteger(artifact.recordCount) &&
         artifact.recordCount >= 0 &&
@@ -663,7 +678,11 @@ export function deriveScannerExecutionStatus(
   if (observation.timedOut) {
     return 'TIMED_OUT';
   }
-  if (observation.exitCode === 0 && observation.artifact) {
+  if (
+    observation.exitCode === 0 &&
+    observation.artifact &&
+    observation.artifact.byteSize > 0
+  ) {
     return 'SUCCEEDED';
   }
   return 'FAILED';
@@ -794,11 +813,23 @@ function expectedScannerOutputPath(scanner: SastScannerKind): string {
   return `${SAST_SCANNER_OUTPUT_ROOT}/syft.cdx.json`;
 }
 
+function expectedScannerInputPath(
+  plan: SastScanPlan,
+  preflight: SastScannerPreflightBinding
+): string {
+  return plan.profile.scope === 'CHANGED_FILES_WITH_CONTEXT'
+    ? `${SAST_SCANNER_SELECTED_WORKSPACE_ROOT}/${digestId(
+        preflight.inventoryDigest
+      )}`
+    : SAST_SCANNER_WORKSPACE_ROOT;
+}
+
 function expectedScannerArguments(
   scanner: SastScannerKind,
   plan: SastScanPlan,
   ruleBundleDigest: `sha256:${string}` | undefined,
-  outputPath: string
+  outputPath: string,
+  scannerInputPath: string
 ): readonly string[] {
   if (scanner === 'OPENGREP') {
     if (!ruleBundleDigest) return [];
@@ -816,7 +847,7 @@ function expectedScannerArguments(
       '--jobs=1',
       `--max-memory=${plan.profile.limits.memoryMiB}`,
       `--max-target-bytes=${plan.profile.limits.maxSingleFileBytes}`,
-      SAST_SCANNER_WORKSPACE_ROOT
+      scannerInputPath
     ];
   }
   if (scanner === 'TRIVY') {
@@ -859,7 +890,7 @@ function expectedScannerArguments(
       '--skip-vex-repo-update',
       '--disable-telemetry',
       '--skip-version-check',
-      SAST_SCANNER_WORKSPACE_ROOT
+      scannerInputPath
     ];
   }
   const wrapperAssetRoot = scannerWrapperAssetRoot(
@@ -867,7 +898,7 @@ function expectedScannerArguments(
     plan.scannerSet.scanners.SYFT.wrapper.digest
   );
   return [
-    `dir:${SAST_SCANNER_WORKSPACE_ROOT}`,
+    `dir:${scannerInputPath}`,
     '--config',
     `${wrapperAssetRoot}/config.yaml`,
     '--output',

@@ -1,6 +1,7 @@
 import {
   SAST_SCANNER_ASSET_ROOT,
   SAST_SCANNER_OUTPUT_ROOT,
+  SAST_SCANNER_SELECTED_WORKSPACE_ROOT,
   SAST_SCANNER_WORKING_DIRECTORY,
   SAST_SCANNER_WORKSPACE_ROOT,
   SAST_SCANNER_WRAPPER_SCHEMA_VERSION,
@@ -103,15 +104,23 @@ export class ScannerSandboxAdapterService {
         ? undefined
         : this.requiredRuleBundle(plan, scanner);
     const outputPath = this.outputPath(scanner);
+    const scannerInputPath = this.scannerInputPath(plan, preflight);
 
     return {
       wrapperSchemaVersion: SAST_SCANNER_WRAPPER_SCHEMA_VERSION,
       scanner,
       required: true,
       executable: SCANNER_BINARIES[scanner],
-      args: this.argumentsFor(scanner, plan, ruleBundle, outputPath),
+      args: this.argumentsFor(
+        scanner,
+        plan,
+        ruleBundle,
+        outputPath,
+        scannerInputPath
+      ),
       environment: this.environmentFor(scanner, plan),
       workingDirectory: SAST_SCANNER_WORKING_DIRECTORY,
+      scannerInputPath,
       outputPath,
       artifactSchema:
         scanner === 'OPENGREP'
@@ -141,7 +150,8 @@ export class ScannerSandboxAdapterService {
     scanner: SastScannerKind,
     plan: SastScanPlan,
     ruleBundle: RuleBundleDescriptor | undefined,
-    outputPath: string
+    outputPath: string,
+    scannerInputPath: string
   ): readonly string[] {
     if (scanner === 'OPENGREP') {
       return Object.freeze([
@@ -158,7 +168,7 @@ export class ScannerSandboxAdapterService {
         '--jobs=1',
         `--max-memory=${plan.profile.limits.memoryMiB}`,
         `--max-target-bytes=${plan.profile.limits.maxSingleFileBytes}`,
-        SAST_SCANNER_WORKSPACE_ROOT
+        scannerInputPath
       ]);
     }
 
@@ -205,7 +215,7 @@ export class ScannerSandboxAdapterService {
         '--skip-vex-repo-update',
         '--disable-telemetry',
         '--skip-version-check',
-        SAST_SCANNER_WORKSPACE_ROOT
+        scannerInputPath
       ]);
     }
 
@@ -214,7 +224,7 @@ export class ScannerSandboxAdapterService {
       plan.scannerSet.scanners.SYFT.wrapper.digest
     );
     return Object.freeze([
-      `dir:${SAST_SCANNER_WORKSPACE_ROOT}`,
+      `dir:${scannerInputPath}`,
       '--config',
       `${wrapperAssetRoot}/config.yaml`,
       '--output',
@@ -248,6 +258,17 @@ export class ScannerSandboxAdapterService {
       SYFT_FILE_CONTENT_SKIP_FILES_ABOVE_SIZE:
         String(plan.profile.limits.maxSingleFileBytes)
     });
+  }
+
+  private scannerInputPath(
+    plan: SastScanPlan,
+    preflight: SastScannerWrapperExecutionRequest['preflight']
+  ): string {
+    return plan.profile.scope === 'CHANGED_FILES_WITH_CONTEXT'
+      ? `${SAST_SCANNER_SELECTED_WORKSPACE_ROOT}/${this.digestId(
+          preflight.inventoryDigest
+        )}`
+      : SAST_SCANNER_WORKSPACE_ROOT;
   }
 
   private requiredRuleBundle(

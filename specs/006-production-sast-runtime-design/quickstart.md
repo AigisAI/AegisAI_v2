@@ -100,12 +100,14 @@ Fast and Deep lanes use separate queues and budgets but the same microVM securit
 3. Provision one ephemeral microVM and attest its workload identity.
 4. Inject a short-lived fixed-commit repo-read credential without persistence or logging.
 5. Fetch the repository, enforce path/resource policy, and reject unsafe input.
-6. Run signed, digest-pinned scanner wrappers without package install, build, dynamic
+6. Remove the SCM remote and Git metadata, wipe and revoke the credential, and remove the
+   signed repository-binding host egress rule.
+7. Run signed, digest-pinned scanner wrappers without package install, build, dynamic
    execution, or runtime internet enrichment.
-7. Upload bounded artifact envelopes to the result ingestor and wipe the credential.
-8. Validate, normalize, fingerprint, correlate, reduce evidence, and evaluate coverage.
-9. Send normalized findings to policy and reduced evidence references to AI when eligible.
-10. Wipe the workspace, destroy the microVM, and record destruction evidence.
+8. Upload non-empty bounded artifact envelopes to the result ingestor.
+9. Validate, normalize, fingerprint, correlate, reduce evidence, and evaluate coverage.
+10. Send normalized findings to policy and reduced evidence references to AI when eligible.
+11. Wipe the workspace, destroy the microVM, and record destruction evidence.
 
 ## Implemented Runtime Checkpoint
 
@@ -136,19 +138,26 @@ T022 through T028 are implemented as the complete Phase 5 runtime boundary:
   binding, and a short-lived sandbox attestation that signs the complete plan digest, attempt
   identifier, attempt number, and cumulative deadline. It
   generates fixed shell-less OpenGrep SARIF, Trivy JSON offline, and Syft CycloneDX commands
-  against `/workspace/repository` and `/workspace/output`; caller paths, commands, flags,
-  environment maps, plugins, and executable configuration are not request fields. Processes
+  against `/workspace/repository` for Deep or the platform-owned,
+  inventory-digest-bound `/workspace/selected/<digest>` projection for Fast, with output
+  under `/workspace/output`; caller paths, commands, flags, environment maps, plugins, and
+  executable configuration are not request fields. Processes
   start in the private output directory. OpenGrep repository ignore/`nosem`, Trivy repository
   config/ignore files, and Syft repository config/archive expansion, remote enrichment, and
   external package-tool execution are disabled; only wrapper/rule-digest-bound platform
   configuration is loaded.
 - Immediately before each scanner launch, the installed provider must read the exact
-  read-only microVM mount and return a content-bound manifest. The runtime applies the same
+  read-only repository mount, attest the exact scanner input, and return a content-bound
+  manifest. Fast requires `PATH_ALLOWLIST` plus a read-only selected projection containing no
+  unselected entry; Deep requires `ALL_SCANNABLE` plus the repository root. The runtime applies the same
   preflight algorithm and refuses to call the scanner when the attestation, attempt, selection,
   decision, or inventory digest differs.
 - Sandbox policy requires non-root execution, read-only root and repository mounts, private
   writable output, bounded CPU/memory/disk/process/FD/log/artifact/time, no build/install/
-  dynamic execution/runtime asset update, and no public internet or cloud metadata access.
+  dynamic execution/runtime asset update, and no unrestricted public internet or cloud
+  metadata access. Repository fetch temporarily permits HTTPS only to the signed
+  repository-binding SCM host; scanner execution starts only after credential wipe/revocation
+  and removal of that egress rule, then permits Result Ingress and telemetry only.
   The signed profile timeout is one cumulative attempt deadline shared by manifest and scanner
   calls, not a fresh allowance per scanner; provider calls receive an abort signal and cleanup
   has a separate 60-second deadline.
@@ -157,13 +166,18 @@ T022 through T028 are implemented as the complete Phase 5 runtime boundary:
 - Scanner terminal records persist exit/status/timing, bounded stdout/stderr metadata,
   resource observations, artifact metadata, and every relevant image/wrapper/rule/database/
   profile/preflight digest. Trivy's immutable cache path binds both its database and checks
-  bundle digests. Serializable attempt admission plus a database partial unique index prevents
-  concurrent active sandboxes for one scan. The signed deadline is persisted, and reconciliation
+  bundle digests, and a zero-byte JSON/SARIF/CycloneDX artifact is rejected before persistence.
+  Serializable attempt admission plus a database partial unique index prevents concurrent active
+  sandboxes for one scan. Attempt 2 is admitted only when durable attempt 1 ended `FAILED` with
+  `RETRYABLE_INFRASTRUCTURE`, `retryEligible=true`, completion metadata, and a final audit event.
+  The signed deadline is persisted, and reconciliation
   marks process-orphaned overdue attempts `CLEANUP_FAILED` with a final audit signal. Attempt
   completion additionally requires signed credential,
   process, volume, result-ingress, and microVM destruction evidence plus a final audit event;
   a missing, stale, or late condition becomes `CLEANUP_FAILED`. Database constraints reject
-  null-bypassed runtime metadata and bind audit events to the same tenant and attempt.
+  null-bypassed runtime metadata and bind audit events to the same tenant and attempt. Existing
+  `ScannerRun` and `AuditEvent` tables use `NOT VALID` followed by online validation plus
+  concurrent index builds to avoid long write-blocking scans during rollout.
 - `ANALYSIS_CLIENT_MODE=mock`, the mock scan controller, legacy source collection, and
   `MockAnalysisApiClient` are test-only. Non-test configuration and runtime paths fail closed
   before repository credential decryption or source collection.

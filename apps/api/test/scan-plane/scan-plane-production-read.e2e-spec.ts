@@ -12,7 +12,23 @@ describe('Scan Plane production reads', () => {
         tenantId: 'tenant-1',
         scanRequestId: 'scan-1',
         scanner: 'OPENGREP',
-        status: 'COMPLETED'
+        scannerVersion: '1.1.0',
+        status: 'COMPLETED',
+        required: true,
+        scannerImageDigest: 'sha256:image',
+        wrapperDigest: 'sha256:wrapper',
+        ruleBundleDigest: 'sha256:rules',
+        databaseDigest: null,
+        scannerSetDigest: 'sha256:set',
+        profileId: 'JAVA_DEEP_V1',
+        profileDigest: 'sha256:profile',
+        exitCode: 0,
+        terminationSignal: null,
+        timedOut: false,
+        outputLimitExceeded: false,
+        durationMilliseconds: 100,
+        startedAt: new Date('2026-07-24T12:00:00.000Z'),
+        completedAt: new Date('2026-07-24T12:00:00.100Z')
       }
     ]);
     const service = new ScanPlaneService(
@@ -25,7 +41,16 @@ describe('Scan Plane production reads', () => {
     try {
       await expect(
         service.listScannerRuns('tenant-1', 'scan-1')
-      ).resolves.toHaveLength(1);
+      ).resolves.toEqual([
+        expect.objectContaining({
+          id: 'scanner-run-1',
+          required: true,
+          scannerImageDigest: 'sha256:image',
+          exitCode: 0,
+          startedAt: '2026-07-24T12:00:00.000Z',
+          completedAt: '2026-07-24T12:00:00.100Z'
+        })
+      ]);
       const query = findMany.mock.calls[0][0] as {
         where: Record<string, unknown>;
         select: Record<string, boolean>;

@@ -194,16 +194,19 @@ ALTER TABLE "ScannerRun"
   ADD CONSTRAINT "ScannerRun_attempt_scope_fkey"
   FOREIGN KEY ("attemptId", "tenantId", "repositoryBindingId", "scanRequestId")
   REFERENCES "SastScanAttempt"("id", "tenantId", "repositoryBindingId", "scanRequestId")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+  ON DELETE CASCADE ON UPDATE CASCADE
+  NOT VALID;
 ALTER TABLE "ScannerRun"
   ADD CONSTRAINT "ScannerRun_exit_code_check"
-  CHECK ("exitCode" IS NULL OR "exitCode" BETWEEN -1 AND 255);
+  CHECK ("exitCode" IS NULL OR "exitCode" BETWEEN -1 AND 255)
+  NOT VALID;
 ALTER TABLE "ScannerRun"
   ADD CONSTRAINT "ScannerRun_duration_check"
   CHECK (
     "durationMilliseconds" IS NULL
     OR "durationMilliseconds" >= 0
-  );
+  )
+  NOT VALID;
 ALTER TABLE "ScannerRun"
   ADD CONSTRAINT "ScannerRun_runtime_metadata_check"
   CHECK (
@@ -254,26 +257,43 @@ ALTER TABLE "ScannerRun"
           "status" <> 'COMPLETED'
           OR (
             jsonb_typeof("artifactMetadata") = 'object'
+            AND jsonb_typeof("artifactMetadata" -> 'byteSize') = 'number'
+            AND ("artifactMetadata" ->> 'byteSize')::numeric > 0
             AND char_length("rawArtifactObjectKey") BETWEEN 1 AND 2048
           )
         )
       ),
       false
     )
-  );
+  )
+  NOT VALID;
 
-CREATE UNIQUE INDEX "ScannerRun_attemptId_scanner_key"
+ALTER TABLE "ScannerRun"
+  VALIDATE CONSTRAINT "ScannerRun_attempt_scope_fkey";
+ALTER TABLE "ScannerRun"
+  VALIDATE CONSTRAINT "ScannerRun_exit_code_check";
+ALTER TABLE "ScannerRun"
+  VALIDATE CONSTRAINT "ScannerRun_duration_check";
+ALTER TABLE "ScannerRun"
+  VALIDATE CONSTRAINT "ScannerRun_runtime_metadata_check";
+
+CREATE UNIQUE INDEX CONCURRENTLY "ScannerRun_attemptId_scanner_key"
   ON "ScannerRun"("attemptId", "scanner");
-CREATE INDEX "ScannerRun_attemptId_idx" ON "ScannerRun"("attemptId");
+CREATE INDEX CONCURRENTLY "ScannerRun_attemptId_idx"
+  ON "ScannerRun"("attemptId");
 
 ALTER TABLE "AuditEvent" ADD COLUMN "attemptId" TEXT;
 ALTER TABLE "AuditEvent"
   ADD CONSTRAINT "AuditEvent_attempt_scope_fkey"
   FOREIGN KEY ("attemptId", "tenantId")
   REFERENCES "SastScanAttempt"("id", "tenantId")
-  ON DELETE CASCADE ON UPDATE CASCADE;
-CREATE INDEX "AuditEvent_attemptId_idx" ON "AuditEvent"("attemptId");
-CREATE UNIQUE INDEX "AuditEvent_final_attempt_scope_key"
+  ON DELETE CASCADE ON UPDATE CASCADE
+  NOT VALID;
+ALTER TABLE "AuditEvent"
+  VALIDATE CONSTRAINT "AuditEvent_attempt_scope_fkey";
+CREATE INDEX CONCURRENTLY "AuditEvent_attemptId_idx"
+  ON "AuditEvent"("attemptId");
+CREATE UNIQUE INDEX CONCURRENTLY "AuditEvent_final_attempt_scope_key"
   ON "AuditEvent"("id", "attemptId", "tenantId");
 ALTER TABLE "SastScanAttempt"
   ADD CONSTRAINT "SastScanAttempt_finalAuditEventId_fkey"

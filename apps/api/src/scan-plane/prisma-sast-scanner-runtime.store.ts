@@ -15,6 +15,7 @@ import {
   Prisma,
   SastCredentialLeaseStatus,
   type ScannerRunStatus,
+  type SastScanFailureClass,
   type SastScanAttemptStage
 } from '@prisma/client';
 
@@ -31,6 +32,33 @@ import {
 
 const OVERDUE_ATTEMPT_BATCH_SIZE = 100;
 const OVERDUE_CLEANUP_REASON = 'SANDBOX_CLEANUP_EVIDENCE_OVERDUE';
+
+interface LatestSastAttemptRetryState {
+  attemptNumber: number;
+  stage: SastScanAttemptStage;
+  failureClass: SastScanFailureClass | null;
+  retryEligible: boolean;
+  completedAt: Date | null;
+  finalAuditEventId: string | null;
+}
+
+export function isSastAttemptSequenceEligible(
+  attemptNumber: number,
+  latestAttempt: LatestSastAttemptRetryState | null
+): boolean {
+  if (attemptNumber === 1) {
+    return latestAttempt === null;
+  }
+  return (
+    attemptNumber === 2 &&
+    latestAttempt?.attemptNumber === 1 &&
+    latestAttempt.stage === 'FAILED' &&
+    latestAttempt.failureClass === 'RETRYABLE_INFRASTRUCTURE' &&
+    latestAttempt.retryEligible === true &&
+    latestAttempt.completedAt !== null &&
+    latestAttempt.finalAuditEventId !== null
+  );
+}
 
 @Injectable()
 export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
@@ -98,6 +126,35 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
             throw securityViolation(
               'SCAN_ATTEMPT_ALREADY_ACTIVE',
               'A scan may have only one active sandbox attempt.'
+            );
+          }
+
+          const latestAttempt = await transaction.sastScanAttempt.findFirst({
+            where: {
+              scanRequestId: request.plan.scanRequestId
+            },
+            orderBy: {
+              attemptNumber: 'desc'
+            },
+            select: {
+              attemptNumber: true,
+              stage: true,
+              failureClass: true,
+              retryEligible: true,
+              completedAt: true,
+              finalAuditEventId: true
+            }
+          });
+
+          if (
+            !isSastAttemptSequenceEligible(
+              request.attemptNumber,
+              latestAttempt
+            )
+          ) {
+            throw securityViolation(
+              'SCAN_ATTEMPT_RETRY_NOT_ELIGIBLE',
+              'Attempt sequencing requires a first attempt with no predecessor or a completed retry-eligible infrastructure failure from attempt one.'
             );
           }
 

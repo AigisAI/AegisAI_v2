@@ -52,16 +52,57 @@ test('shared contract modules exist and are re-exported from the package root', 
 test('SAST wrapper contracts expose only fixed invocation and bounded observation metadata', () => {
   const contract = readFileSync(files.sastWrapper, 'utf8');
 
-  for (const exportName of [
-    'SastSandboxRuntimePolicy',
+  const allowedExportNames = [
+    'MAX_SAST_SANDBOX_ATTESTATION_TTL_SECONDS',
+    'SAST_SANDBOX_ATTESTATION_AUDIENCE',
+    'SAST_SANDBOX_ATTESTATION_ISSUER',
+    'SAST_SANDBOX_ATTESTATION_VERSION',
+    'SAST_SANDBOX_CLEANUP_TIMEOUT_SECONDS',
+    'SAST_SCANNER_ASSET_ROOT',
+    'SAST_SCANNER_OUTPUT_ROOT',
+    'SAST_SCANNER_PLAN_DIGEST_VERSION',
+    'SAST_SCANNER_RUNTIME_EVENT_TYPES',
+    'SAST_SCANNER_SELECTED_WORKSPACE_ROOT',
+    'SAST_SCANNER_WORKING_DIRECTORY',
+    'SAST_SCANNER_WORKSPACE_ROOT',
+    'SAST_SCANNER_WRAPPER_SCHEMA_VERSION',
+    'SastBoundedLogObservation',
+    'SastSandboxCleanupObservation',
     'SastSandboxRuntimeAttestation',
-    'SastScannerWrapperExecutionRequest',
+    'SastSandboxRuntimeAttestationClaims',
+    'SastSandboxRuntimePolicy',
+    'SastScannerArtifactObservation',
+    'SastScannerExecutionRecord',
+    'SastScannerInputBinding',
     'SastScannerInvocation',
+    'SastScannerPreflightBinding',
     'SastScannerProcessObservation',
+    'SastScannerRepositoryManifest',
+    'SastScannerResourceObservation',
+    'SastScannerRuntimeAuditSignal',
+    'SastScannerRuntimeEventType',
+    'SastScannerRuntimeExecutionResult',
+    'SastScannerWrapperExecutionRequest',
     'SastSignedSandboxCleanupObservation',
+    'buildSastScanPlanDigestPreimage',
+    'deriveScannerExecutionStatus',
+    'isSastSandboxRuntimePolicyValid',
+    'isSastScannerInvocationBoundToPlan',
+    'isSastScannerProcessObservationValid',
     'isSastScannerWrapperExecutionRequestValid',
-    'isSastScannerProcessObservationValid'
-  ]) {
+    'scannerRuntimeLimits'
+  ];
+  const exportedNames = [
+    ...contract.matchAll(
+      /^export\s+(?:interface|const|function|type)\s+([A-Za-z_]\w*)\b/gm
+    )
+  ].map((match) => match[1]);
+
+  assert.deepEqual(
+    [...new Set(exportedNames)].sort(),
+    [...allowedExportNames].sort()
+  );
+  for (const exportName of allowedExportNames) {
     assert.match(contract, new RegExp(`export (interface|const|function|type) ${exportName}\\b`));
   }
 
@@ -80,6 +121,11 @@ test('SAST wrapper contracts expose only fixed invocation and bounded observatio
   assert.match(contract, /shellInterpolationAllowed:\s*false/);
   assert.match(contract, /publicInternetEgressAllowed:\s*false/);
   assert.match(contract, /runtimeAssetUpdateAllowed:\s*false/);
+  assert.match(
+    contract,
+    /SAST_SCANNER_SELECTED_WORKSPACE_ROOT\s*=\s*[\r\n\s]*'\/workspace\/selected'/
+  );
+  assert.match(contract, /artifact\.byteSize\s*>\s*0/);
 });
 
 test('AI inference runtime contracts are advisory-only and exclude forbidden payload fields', () => {

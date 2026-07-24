@@ -59,6 +59,7 @@ export class ScannerWorkspaceManifestService {
         'entries',
         'observedAt',
         'scanner',
+        'scannerInput',
         'selection',
         'source'
       ]) ||
@@ -80,6 +81,22 @@ export class ScannerWorkspaceManifestService {
       ) ||
       !manifest.selection ||
       !this.hasOnlyKeys(manifest.selection, ['mode', 'paths']) ||
+      !manifest.scannerInput ||
+      !this.hasOnlyKeys(manifest.scannerInput, [
+        'mode',
+        'path',
+        'readOnly',
+        'sourceInventoryDigest'
+      ]) ||
+      manifest.scannerInput.path !== invocation.scannerInputPath ||
+      manifest.scannerInput.sourceInventoryDigest !==
+        invocation.preflightInventoryDigest ||
+      manifest.scannerInput.readOnly !== true ||
+      (request.plan.profile.scope === 'CHANGED_FILES_WITH_CONTEXT'
+        ? manifest.selection.mode !== 'PATH_ALLOWLIST' ||
+          manifest.scannerInput.mode !== 'CONTENT_BOUND_PATH_ALLOWLIST'
+        : manifest.selection.mode !== 'ALL_SCANNABLE' ||
+          manifest.scannerInput.mode !== 'FULL_REPOSITORY') ||
       !Number.isFinite(observedAt) ||
       observedAt > now.getTime() + MAX_MANIFEST_CLOCK_SKEW_MS ||
       observedAt < now.getTime() - MAX_MANIFEST_AGE_MS

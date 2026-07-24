@@ -24,7 +24,29 @@ test('microVM scanner sandbox provisioning contract defines stronger-than-pod sc
     cleanupGraceSeconds: 60,
     hardMaximumSeconds: 3960
   });
-  assert.equal(contract.networkEgressPolicy, 'RESULT_INGRESS_AND_TELEMETRY_ONLY');
+  assert.equal(contract.networkEgressPolicy, 'PHASE_BOUND_DENY_BY_DEFAULT');
+  assert.deepEqual(contract.networkEgressPhases.REPOSITORY_FETCH, {
+    allowedDestinationPolicy: 'BOUND_SCM_HOST_ONLY',
+    boundHostSource: 'SIGNED_REPOSITORY_BINDING',
+    allowedProtocols: ['HTTPS'],
+    unboundPublicInternetEgressAllowed: false,
+    resultIngressAllowed: false,
+    transitionRequires: [
+      'FIXED_COMMIT_FETCHED',
+      'REMOTE_REMOVED',
+      'GIT_METADATA_REMOVED',
+      'CREDENTIAL_WIPED_AND_REVOKED',
+      'SCM_EGRESS_RULE_REMOVED'
+    ]
+  });
+  assert.equal(
+    contract.networkEgressPhases.SCANNER_EXECUTION.allowedDestinationPolicy,
+    'RESULT_INGRESS_AND_TELEMETRY_ONLY'
+  );
+  assert.equal(
+    contract.networkEgressPhases.SCANNER_EXECUTION.boundScmHostAllowed,
+    false
+  );
   assert.equal(contract.publicInternetEgressAllowed, false);
   assert.equal(contract.cloudMetadataAccessAllowed, false);
   assert.equal(contract.executionBoundary.runAsNonRoot, true);
@@ -34,6 +56,19 @@ test('microVM scanner sandbox provisioning contract defines stronger-than-pod sc
     contract.executionBoundary.orphanedAttemptReconciliationRequired,
     true
   );
+  assert.deepEqual(contract.scannerInputBoundary, {
+    deepScanMount: '/workspace/repository',
+    fastScanMountTemplate:
+      '/workspace/selected/<preflight-inventory-sha256>',
+    fastScanMaterializer: 'PLATFORM_OWNED',
+    fastScanSelectionSource: 'ATTESTED_PATH_ALLOWLIST',
+    fastScanContentBinding: 'PREFLIGHT_INVENTORY_DIGEST',
+    fastScanReadOnly: true,
+    fastScanUnselectedEntriesAllowed: false,
+    scannerReceivesRepositoryRootForFastScan: false,
+    preScannerProjectionAttestationRequired: true,
+    projectionMismatchPolicy: 'FAIL_CLOSED'
+  });
   assert.equal(contract.repositoryAccess.principal, 'REPO_READ');
   assert.equal(contract.repositoryAccess.tokenScope, 'tenant-repository-scan');
   assert.equal(contract.repositoryAccess.shortLived, true);

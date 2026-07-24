@@ -78,6 +78,21 @@ describe('Scanner runtime persistence and deployment contract', () => {
       'CONSTRAINT "ScannerRun_runtime_metadata_check"'
     );
     expect(migration).toContain(
+      `("artifactMetadata" ->> 'byteSize')::numeric > 0`
+    );
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY "ScannerRun_attemptId_scanner_key"'
+    );
+    expect(migration).toContain(
+      'CREATE INDEX CONCURRENTLY "AuditEvent_attemptId_idx"'
+    );
+    expect(migration).toContain(
+      'VALIDATE CONSTRAINT "ScannerRun_runtime_metadata_check"'
+    );
+    expect(migration).toContain(
+      'VALIDATE CONSTRAINT "AuditEvent_attempt_scope_fkey"'
+    );
+    expect(migration).toContain(
       'CONSTRAINT "ScannerRun_attempt_scope_fkey"'
     );
     expect(migration).toContain(
@@ -114,7 +129,19 @@ describe('Scanner runtime persistence and deployment contract', () => {
 
     expect(contract).toMatchObject({
       sandboxProvider: 'MICROVM',
-      networkEgressPolicy: 'RESULT_INGRESS_AND_TELEMETRY_ONLY',
+      networkEgressPolicy: 'PHASE_BOUND_DENY_BY_DEFAULT',
+      networkEgressPhases: {
+        REPOSITORY_FETCH: {
+          allowedDestinationPolicy: 'BOUND_SCM_HOST_ONLY',
+          boundHostSource: 'SIGNED_REPOSITORY_BINDING',
+          unboundPublicInternetEgressAllowed: false
+        },
+        SCANNER_EXECUTION: {
+          allowedDestinationPolicy:
+            'RESULT_INGRESS_AND_TELEMETRY_ONLY',
+          boundScmHostAllowed: false
+        }
+      },
       publicInternetEgressAllowed: false,
       cloudMetadataAccessAllowed: false,
       runtimeAssetUpdateAllowed: false,
@@ -145,6 +172,19 @@ describe('Scanner runtime persistence and deployment contract', () => {
         cleanupTimeoutSeconds: 60,
         orphanedAttemptReconciliationRequired: true,
         orphanedAttemptReconciliationIntervalMilliseconds: 10_000
+      },
+      scannerInputBoundary: {
+        deepScanMount: '/workspace/repository',
+        fastScanMountTemplate:
+          '/workspace/selected/<preflight-inventory-sha256>',
+        fastScanMaterializer: 'PLATFORM_OWNED',
+        fastScanSelectionSource: 'ATTESTED_PATH_ALLOWLIST',
+        fastScanContentBinding: 'PREFLIGHT_INVENTORY_DIGEST',
+        fastScanReadOnly: true,
+        fastScanUnselectedEntriesAllowed: false,
+        scannerReceivesRepositoryRootForFastScan: false,
+        preScannerProjectionAttestationRequired: true,
+        projectionMismatchPolicy: 'FAIL_CLOSED'
       },
       productionMockAnalysisAllowed: false,
       scannerEntrypoints: {

@@ -1,7 +1,44 @@
 import type { PrismaService } from '../../src/prisma/prisma.service';
-import { PrismaSastScannerRuntimeStore } from '../../src/scan-plane/prisma-sast-scanner-runtime.store';
+import {
+  isSastAttemptSequenceEligible,
+  PrismaSastScannerRuntimeStore
+} from '../../src/scan-plane/prisma-sast-scanner-runtime.store';
 
 describe('PrismaSastScannerRuntimeStore', () => {
+  it('admits attempt two only after attempt one has a durable retry-eligible infrastructure failure', () => {
+    const eligibleAttemptOne = {
+      attemptNumber: 1,
+      stage: 'FAILED' as const,
+      failureClass: 'RETRYABLE_INFRASTRUCTURE' as const,
+      retryEligible: true,
+      completedAt: new Date('2026-07-24T12:00:00.000Z'),
+      finalAuditEventId: 'audit-attempt-1'
+    };
+
+    expect(isSastAttemptSequenceEligible(1, null)).toBe(true);
+    expect(isSastAttemptSequenceEligible(1, eligibleAttemptOne)).toBe(false);
+    expect(isSastAttemptSequenceEligible(2, eligibleAttemptOne)).toBe(true);
+    expect(
+      isSastAttemptSequenceEligible(2, {
+        ...eligibleAttemptOne,
+        failureClass: 'SCANNER_DEFECT'
+      })
+    ).toBe(false);
+    expect(
+      isSastAttemptSequenceEligible(2, {
+        ...eligibleAttemptOne,
+        retryEligible: false
+      })
+    ).toBe(false);
+    expect(
+      isSastAttemptSequenceEligible(2, {
+        ...eligibleAttemptOne,
+        finalAuditEventId: null
+      })
+    ).toBe(false);
+    expect(isSastAttemptSequenceEligible(3, eligibleAttemptOne)).toBe(false);
+  });
+
   it('atomically fails overdue active attempts with an attempt-scoped final audit event', async () => {
     const attemptDeadlineAt = new Date('2026-07-24T12:00:00.000Z');
     const auditCreate = jest.fn().mockResolvedValue({ id: 'audit-created' });

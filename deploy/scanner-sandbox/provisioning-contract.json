@@ -15,7 +15,37 @@
     "cleanupGraceSeconds": 60,
     "hardMaximumSeconds": 3960
   },
-  "networkEgressPolicy": "RESULT_INGRESS_AND_TELEMETRY_ONLY",
+  "networkEgressPolicy": "PHASE_BOUND_DENY_BY_DEFAULT",
+  "networkEgressPhases": {
+    "REPOSITORY_FETCH": {
+      "allowedDestinationPolicy": "BOUND_SCM_HOST_ONLY",
+      "boundHostSource": "SIGNED_REPOSITORY_BINDING",
+      "allowedProtocols": [
+        "HTTPS"
+      ],
+      "unboundPublicInternetEgressAllowed": false,
+      "resultIngressAllowed": false,
+      "transitionRequires": [
+        "FIXED_COMMIT_FETCHED",
+        "REMOTE_REMOVED",
+        "GIT_METADATA_REMOVED",
+        "CREDENTIAL_WIPED_AND_REVOKED",
+        "SCM_EGRESS_RULE_REMOVED"
+      ]
+    },
+    "SCANNER_EXECUTION": {
+      "allowedDestinationPolicy": "RESULT_INGRESS_AND_TELEMETRY_ONLY",
+      "boundScmHostAllowed": false,
+      "runtimeAssetUpdateAllowed": false,
+      "unboundPublicInternetEgressAllowed": false
+    },
+    "CLEANUP": {
+      "allowedDestinationPolicy": "CONTROL_PLANE_CLEANUP_EVIDENCE_ONLY",
+      "boundScmHostAllowed": false,
+      "resultIngressClosedBeforeCompletion": true,
+      "unboundPublicInternetEgressAllowed": false
+    }
+  },
   "publicInternetEgressAllowed": false,
   "cloudMetadataAccessAllowed": false,
   "runtimeAssetUpdateAllowed": false,
@@ -41,6 +71,18 @@
     "cleanupTimeoutSeconds": 60,
     "orphanedAttemptReconciliationRequired": true,
     "orphanedAttemptReconciliationIntervalMilliseconds": 10000
+  },
+  "scannerInputBoundary": {
+    "deepScanMount": "/workspace/repository",
+    "fastScanMountTemplate": "/workspace/selected/<preflight-inventory-sha256>",
+    "fastScanMaterializer": "PLATFORM_OWNED",
+    "fastScanSelectionSource": "ATTESTED_PATH_ALLOWLIST",
+    "fastScanContentBinding": "PREFLIGHT_INVENTORY_DIGEST",
+    "fastScanReadOnly": true,
+    "fastScanUnselectedEntriesAllowed": false,
+    "scannerReceivesRepositoryRootForFastScan": false,
+    "preScannerProjectionAttestationRequired": true,
+    "projectionMismatchPolicy": "FAIL_CLOSED"
   },
   "scannerEntrypoints": {
     "OPENGREP": {

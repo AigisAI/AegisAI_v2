@@ -14,6 +14,7 @@ import type {
   DeterministicScannerKind,
   MockScanPlaneRunResult,
   RunMockScanPlaneInput,
+  ScannerRunView,
 } from "./scan-plane.types";
 import type {
   EvidenceAccessRequest,
@@ -82,17 +83,42 @@ export class ScanPlaneService {
     return this.sastScannerRuntime.execute(input);
   }
 
-  listScannerRuns(tenantId: string, scanRequestId: string) {
+  async listScannerRuns(
+    tenantId: string,
+    scanRequestId: string
+  ): Promise<ScannerRunView[]> {
     if (isMockAnalysisFixtureEnabled()) {
-      return Promise.resolve(
-        this.scannerRuns.filter(
+      return this.scannerRuns
+        .filter(
           (run) =>
             run.tenantId === tenantId &&
             run.scanRequestId === scanRequestId
         )
-      );
+        .map((run) => ({
+          id: run.id,
+          tenantId: run.tenantId,
+          scanRequestId: run.scanRequestId,
+          scanner: run.scanner,
+          scannerVersion: run.scannerVersion,
+          status: run.status,
+          required: true,
+          scannerImageDigest: null,
+          wrapperDigest: null,
+          ruleBundleDigest: null,
+          databaseDigest: null,
+          scannerSetDigest: null,
+          profileId: null,
+          profileDigest: null,
+          exitCode: null,
+          terminationSignal: null,
+          timedOut: null,
+          outputLimitExceeded: null,
+          durationMilliseconds: null,
+          startedAt: null,
+          completedAt: null
+        }));
     }
-    return this.prisma.scannerRun.findMany({
+    const scannerRuns = await this.prisma.scannerRun.findMany({
       where: { tenantId, scanRequestId },
       select: {
         id: true,
@@ -119,6 +145,11 @@ export class ScanPlaneService {
       },
       orderBy: [{ startedAt: 'asc' }, { id: 'asc' }]
     });
+    return scannerRuns.map((run) => ({
+      ...run,
+      startedAt: run.startedAt?.toISOString() ?? null,
+      completedAt: run.completedAt?.toISOString() ?? null
+    }));
   }
 
   listFindings(tenantId: string, scanRequestId: string): NormalizedFinding[] {
