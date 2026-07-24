@@ -107,6 +107,38 @@ Fast and Deep lanes use separate queues and budgets but the same microVM securit
 9. Send normalized findings to policy and reduced evidence references to AI when eligible.
 10. Wipe the workspace, destroy the microVM, and record destruction evidence.
 
+## Implemented Runtime Checkpoint
+
+T022 through T024 are implemented as the first Phase 5 runtime slice:
+
+- Token Broker verifies a signed, bounded-lifetime workload attestation against tenant,
+  repository binding, scan request, attempt, workload identity, and fixed commit. A durable
+  tenant/attempt-unique lease prevents replay while persisting only a SHA-256 credential fingerprint
+  and lifecycle metadata, never the credential value. Reservation requires a `RUNNING` durable
+  scan, composite foreign keys preserve the complete tenant/repository/scan binding, and the
+  workload/preflight signing keys cannot reuse the token encryption key. Attested HTTP cleanup
+  records distributed wipe/revoke and periodic reconciliation revokes expired nonterminal leases.
+- The fetch runtime derives the GitHub Cloud or GitLab Cloud remote from the active durable
+  repository binding, requires a verified tmpfs credential mount, and uses an opaque
+  in-memory credential through `GIT_ASKPASS`. It performs only a full-SHA, `--depth=1`,
+  no-tag, no-submodule fetch with LFS smudge disabled, enforces profile file/expanded-byte/
+  single-file/depth limits from Git tree/object metadata before checkout, then removes the remote
+  and `.git` metadata before wiping the credential file and memory buffer.
+- Preflight normalizes separators and Unicode NFC, rejects unsafe roots/traversal/control
+  paths and duplicate/case/Unicode collisions, resolves symlinks lexically without following outside
+  the root, enforces profile limits, binds `ALL_SCANNABLE` or normalized Fast changed/context
+  path selection into selected-byte accounting and the inventory digest, classifies
+  generated/vendor/fixture/hidden/LFS/
+  submodule/archive entries, binds Git object IDs against same-size content replacement,
+  and produces a deterministic inventory digest plus signed
+  `ACCEPT`, `REJECT`, or `RESTRICTED_ESCALATION` attestation.
+
+This checkpoint does not claim that the provider microVM platform is live. T025 through T028
+must connect the verified repository state to pinned scanner wrappers and destruction evidence
+before production execution is eligible. The non-production opaque credential issuer exists
+only to verify the handoff contract; the default production issuer fails closed until live
+rollout installs a provider-backed GitHub App/GitLab scoped minting adapter.
+
 ## Deployment Position
 
 Oracle VPS and Docker Compose remain dev/demo paths. Production SAST execution requires the

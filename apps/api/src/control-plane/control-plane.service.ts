@@ -31,7 +31,8 @@ import type {
   GithubWebhookRepositoryInput,
   InstallIntegrationInput,
   InstallIntegrationOptions,
-  InstallRepositoryInput
+  InstallRepositoryInput,
+  RepositoryFetchTarget
 } from "./control-plane.types";
 import { GithubAppInstallationClient } from "./github-app-installation.client";
 import { GithubAppInstallationStateService } from "./github-app-installation-state.service";
@@ -156,6 +157,23 @@ export class ControlPlaneService {
 
   listRepositoryBindings(tenantId: string): Promise<ControlPlaneRepositoryBinding[]> {
     return this.scanRequestStore.listRepositoryBindings(tenantId);
+  }
+
+  async getRepositoryFetchTarget(
+    tenantId: string,
+    repositoryBindingId: string
+  ): Promise<RepositoryFetchTarget> {
+    const context = await this.scanRequestStore.findRepositoryContext(
+      tenantId,
+      repositoryBindingId
+    );
+    if (!context) {
+      throw new NotFoundException('Active repository binding not found for fetch.');
+    }
+    return {
+      provider: context.integration.provider,
+      fullName: context.repositoryBinding.fullName
+    };
   }
 
   async reconcileGithubInstallationWebhook(

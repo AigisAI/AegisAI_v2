@@ -82,3 +82,8 @@ export interface InstallIntegrationOptions {
 export interface BuildScanRequestOptions {
   isolationClass: IsolationClass;
 }
+
+export interface RepositoryFetchTarget {
+  provider: ScmProvider;
+  fullName: string;
+}

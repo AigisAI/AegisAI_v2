@@ -12,3 +12,4 @@ export * from './types/ai-inference-runtime';
 export * from './types/deployment-operations';
 export * from './types/sast-runtime';
 export * from './types/sast-planning';
+export * from './types/sast-fetch';

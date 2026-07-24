@@ -87,6 +87,9 @@ Required runtime values include:
 - `SESSION_SECRET`
 - `CSRF_SECRET`
 - `TOKEN_ENCRYPTION_KEY`
+- `WORKLOAD_ATTESTATION_KEY`
+- `PREFLIGHT_ATTESTATION_KEY`
+- `CREDENTIAL_LEASE_EXPIRY_INTERVAL_MS`
 - OAuth client ids and secrets
 - `AI_PORT`
 - `AI_SERVER_URL`
@@ -97,6 +100,8 @@ Required runtime values include:
 - `GRAFANA_CLOUD_METRICS_USERNAME`
 - `GRAFANA_CLOUD_METRICS_PASSWORD`
 - `GRAFANA_CLOUD_INSTANCE_NAME`
+
+Generate the encryption and both attestation keys independently; the API rejects any reused key.
 
 ## 7. Bootstrap Infra Once
 

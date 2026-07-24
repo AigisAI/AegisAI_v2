@@ -41,6 +41,37 @@ describe('production scan architecture contracts', () => {
     ),
     'utf8'
   );
+  const credentialLeaseMigration = readFileSync(
+    join(
+      __dirname,
+      '../../prisma/migrations/20260724120000_sast_repository_credential_lease/migration.sql'
+    ),
+    'utf8'
+  );
+  const credentialLeaseScopeIndexes = [
+    readFileSync(
+      join(
+        __dirname,
+        '../../prisma/migrations/20260724110000_repository_binding_lease_scope_index/migration.sql'
+      ),
+      'utf8'
+    ),
+    readFileSync(
+      join(
+        __dirname,
+        '../../prisma/migrations/20260724111000_scan_request_lease_scope_index/migration.sql'
+      ),
+      'utf8'
+    )
+  ].join('\n');
+  const tokenBrokerService = readFileSync(
+    join(__dirname, '../../src/token-broker/token-broker.service.ts'),
+    'utf8'
+  );
+  const repositoryFetchService = readFileSync(
+    join(__dirname, '../../src/scan-plane/repository-fetch.service.ts'),
+    'utf8'
+  );
   const scanRequestStore = readFileSync(
     join(__dirname, '../../src/control-plane/prisma-control-plane-scan-request.store.ts'),
     'utf8'
@@ -115,8 +146,27 @@ describe('production scan architecture contracts', () => {
       tenantId: 'tenant_a',
       repositoryBindingId: 'repo_1',
       scanRequestId: 'scan_1',
+      attemptId: 'attempt_1',
+      workloadIdentityRef: 'spiffe://aegisai/scan/attempt_1',
+      workloadIdentityAttestation: {
+        claims: {
+          version: '1',
+          issuer: 'aegisai-sandbox-provisioner',
+          audience: 'aegisai-token-broker',
+          tenantId: 'tenant_a',
+          repositoryBindingId: 'repo_1',
+          scanRequestId: 'scan_1',
+          attemptId: 'attempt_1',
+          workloadIdentityRef: 'spiffe://aegisai/scan/attempt_1',
+          commitSha: 'a'.repeat(40),
+          nonce: 'nonce_1',
+          issuedAt: '2026-07-24T00:00:00.000Z',
+          expiresAt: '2026-07-24T00:02:00.000Z'
+        },
+        signature: `sha256:${'b'.repeat(64)}`
+      },
       principal: 'REPO_READ',
-      commitSha: 'abc123',
+      commitSha: 'a'.repeat(40),
       ttlSeconds: 600,
       auditReason: 'scan-fetch'
     };
@@ -279,5 +329,59 @@ describe('production scan architecture contracts', () => {
     expect(aiAdvisoryMetadataMigration).not.toMatch(
       /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/
     );
+  });
+
+  it('persists only attempt-bound credential lease metadata and hardens fixed-SHA fetch', () => {
+    const leaseModel = modelBody('SastRepositoryCredentialLease');
+    expect(leaseModel).toContain('attemptId');
+    expect(leaseModel).toContain('credentialFingerprint');
+    expect(leaseModel).toContain('workloadIdentityRef');
+    expect(leaseModel).toContain('@@unique([tenantId, attemptId])');
+    expect(leaseModel).not.toMatch(/credentialValue|accessToken|refreshToken|secretValue/);
+    expect(credentialLeaseMigration).toContain(
+      'CREATE TABLE "SastRepositoryCredentialLease"'
+    );
+    expect(credentialLeaseMigration).toContain(
+      'CREATE UNIQUE INDEX "SastRepositoryCredentialLease_tenantId_attemptId_key"'
+    );
+    expect(credentialLeaseMigration).toContain(
+      'FOREIGN KEY ("scanRequestId", "tenantId", "repositoryBindingId")'
+    );
+    expect(credentialLeaseMigration).toContain(
+      'REFERENCES "ScanRequest"("id", "tenantId", "repositoryBindingId")'
+    );
+    expect(credentialLeaseMigration).toContain(
+      'FOREIGN KEY ("repositoryBindingId", "tenantId")'
+    );
+    expect(credentialLeaseMigration).toContain(
+      'REFERENCES "RepositoryBinding"("id", "tenantId")'
+    );
+    expect(credentialLeaseMigration).toContain(
+      'ADD CONSTRAINT "SastCredentialLease_scan_scope_fkey"'
+    );
+    expect(credentialLeaseMigration).toMatch(
+      /REFERENCES "ScanRequest"\("id", "tenantId", "repositoryBindingId"\)\s+ON DELETE CASCADE/
+    );
+    expect(credentialLeaseMigration).toContain(
+      'CONSTRAINT "SastRepositoryCredentialLease_lifecycle_check"'
+    );
+    expect(credentialLeaseScopeIndexes).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY "RepositoryBinding_id_tenantId_key"'
+    );
+    expect(credentialLeaseScopeIndexes).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY "ScanRequest_id_tenantId_repositoryBindingId_key"'
+    );
+    expect(credentialLeaseMigration).not.toMatch(
+      /credentialValue|accessToken|refreshToken|secretValue/
+    );
+    expect(tokenBrokerService).toContain('workloadIdentityAttestation.verify');
+    expect(tokenBrokerService).toContain('credentialLeaseStore.reserve');
+    expect(tokenBrokerService).toContain('credentialLeaseStore.markWiped');
+    expect(tokenBrokerService).not.toMatch(/private readonly auditEvents|new Map/);
+    expect(repositoryFetchService).toContain("'--depth=1'");
+    expect(repositoryFetchService).toContain("'--no-recurse-submodules'");
+    expect(repositoryFetchService).toContain("GIT_LFS_SKIP_SMUDGE: '1'");
+    expect(repositoryFetchService).toContain('credentialTmpfsVerifier.assertTmpfs');
+    expect(repositoryFetchService).not.toMatch(/execSync|shell:\s*true/);
   });
 });

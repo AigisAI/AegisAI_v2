@@ -82,6 +82,13 @@ enum ArchitectureScanStatus {
   CANCELED
 }
 
+enum SastCredentialLeaseStatus {
+  RESERVED
+  ISSUED
+  WIPED
+  REVOKED
+}
+
 enum IsolationClass {
   STANDARD
   HARDENED
@@ -269,18 +276,19 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  integrations       ScmIntegration[]
-  repositoryBindings RepositoryBinding[]
-  scanRequests       ScanRequest[]
-  scannerRuns        ScannerRun[]
-  normalizedFindings NormalizedFinding[]
-  evidencePacks      EvidencePack[]
-  policyDecisions    PolicyDecision[]
-  aiAdvisoryMetadata AiAdvisoryMetadata[]
-  waivers            Waiver[]
-  suppressions       Suppression[]
-  auditEvents        AuditEvent[]
-  users              User[]
+  integrations         ScmIntegration[]
+  repositoryBindings   RepositoryBinding[]
+  scanRequests         ScanRequest[]
+  scannerRuns          ScannerRun[]
+  normalizedFindings   NormalizedFinding[]
+  evidencePacks        EvidencePack[]
+  policyDecisions      PolicyDecision[]
+  aiAdvisoryMetadata   AiAdvisoryMetadata[]
+  waivers              Waiver[]
+  suppressions         Suppression[]
+  auditEvents          AuditEvent[]
+  sastCredentialLeases SastRepositoryCredentialLease[]
+  users                User[]
 }
 
 model ScmIntegration {
@@ -316,10 +324,12 @@ model RepositoryBinding {
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
 
-  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration  ScmIntegration @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
-  scanRequests ScanRequest[]
+  tenant               Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration          ScmIntegration                  @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
+  scanRequests         ScanRequest[]
+  sastCredentialLeases SastRepositoryCredentialLease[]
 
+  @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
   @@index([tenantId])
   @@index([tenantId, status])
@@ -344,8 +354,8 @@ model ScanRequest {
   completedAt         DateTime?
   updatedAt           DateTime               @updatedAt
 
-  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding    RepositoryBinding     @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
+  tenant               Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding    RepositoryBinding               @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
   scannerRuns          ScannerRun[]
   findings             NormalizedFinding[]
   evidencePacks        EvidencePack[]
@@ -354,7 +364,9 @@ model ScanRequest {
   suppressions         Suppression[]
   auditEvents          AuditEvent[]
   sastQueueReservation SastQueueReservation?
+  sastCredentialLeases SastRepositoryCredentialLease[]
 
+  @@unique([id, tenantId, repositoryBindingId])
   @@index([tenantId])
   @@index([repositoryBindingId])
   @@index([status])
@@ -374,6 +386,33 @@ model SastQueueLedger {
   dailyTenantUsages SastQueueDailyTenantUsage[]
   repositoryUsages  SastQueueRepositoryUsage[]
   reservations      SastQueueReservation[]
+}
+
+model SastRepositoryCredentialLease {
+  id                    String                    @id
+  tenantId              String
+  repositoryBindingId   String
+  scanRequestId         String
+  attemptId             String
+  workloadIdentityRef   String
+  commitSha             String
+  credentialFingerprint String?
+  status                SastCredentialLeaseStatus @default(RESERVED)
+  issuedAt              DateTime
+  expiresAt             DateTime
+  wipedAt               DateTime?
+  revokedAt             DateTime?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastCredentialLease_repository_scope_fkey")
+  scanRequest       ScanRequest       @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastCredentialLease_scan_scope_fkey")
+
+  @@unique([tenantId, attemptId])
+  @@index([tenantId, scanRequestId, status])
+  @@index([repositoryBindingId, status])
+  @@index([expiresAt, status])
 }
 
 model SastQueueTenantUsage {
