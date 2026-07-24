@@ -206,9 +206,6 @@ export class SastArtifactIngressService {
       };
     } catch (error) {
       if (error instanceof SastArtifactTransportError) {
-        if (objectKey) {
-          await this.deleteStoredObject(objectKey);
-        }
         const observedContentDigest =
           error.reasonCode === 'ARTIFACT_BODY_SIZE_MISMATCH'
             ? (`sha256:${observation.hash.digest('hex')}` as const)
@@ -220,6 +217,9 @@ export class SastArtifactIngressService {
           observedByteSize: observation.byteSize,
           rejectedAt: new Date().toISOString()
         });
+        if (objectKey) {
+          await this.deleteStoredObject(objectKey);
+        }
         if (error.reasonCode === 'ARTIFACT_BODY_EXCEEDS_DECLARED_SIZE') {
           throw new PayloadTooLargeException({
             errorCode: error.reasonCode,
@@ -232,20 +232,20 @@ export class SastArtifactIngressService {
         );
       }
 
+      const reasonCode =
+        error instanceof SastArtifactObjectStoreUnavailableError
+          ? 'ARTIFACT_OBJECT_STORE_UNAVAILABLE'
+          : 'ARTIFACT_OBJECT_WRITE_FAILED';
+      await this.store.abort({
+        ingestionId,
+        reasonCode,
+        occurredAt: new Date().toISOString()
+      });
       if (objectKey) {
         await this.deleteStoredObject(objectKey);
       }
-      await this.store.abort(
-        ingestionId,
-        error instanceof SastArtifactObjectStoreUnavailableError
-          ? 'ARTIFACT_OBJECT_STORE_UNAVAILABLE'
-          : 'ARTIFACT_OBJECT_WRITE_FAILED',
-        new Date().toISOString()
-      );
       throw this.unavailable(
-        error instanceof SastArtifactObjectStoreUnavailableError
-          ? 'ARTIFACT_OBJECT_STORE_UNAVAILABLE'
-          : 'ARTIFACT_OBJECT_WRITE_FAILED',
+        reasonCode,
         'Artifact object storage is temporarily unavailable.'
       );
     }

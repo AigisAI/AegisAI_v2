@@ -387,7 +387,8 @@ exactly one bounded SPIFFE URI SAN. Caller headers, including forwarded client-c
 headers, are never an identity source. The identity must match both the active durable attempt
 and envelope before the artifact stream is passed to object storage. The attempt must remain
 `SCANNING`, the scanner run must remain `RUNNING`, and the signed attempt deadline must not
-have elapsed.
+have elapsed. SPIFFE syntax validation requires a lowercase trust domain, path segments limited
+to `[A-Za-z0-9._-]+`, and rejects percent encoding plus `.` or `..` path segments.
 
 The Scan Plane object-store interface intentionally exposes only immutable `put` and cleanup
 `delete`; it has no read method. A first upload creates one scanner-run-unique

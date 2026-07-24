@@ -608,6 +608,8 @@ model ScannerRun {
   scanRequest       ScanRequest            @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
   attempt           SastScanAttempt?       @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "ScannerRun_attempt_scope_fkey")
   findings          NormalizedFinding[]
+  // The mapped ingress scope index and relation FK are installed by the mandatory,
+  // blocking prisma:online-schema step before new-version traffic is admitted.
   artifactIngestion SastArtifactIngestion?
 
   @@unique([attemptId, scanner])

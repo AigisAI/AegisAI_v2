@@ -51,6 +51,12 @@ export interface RejectSastArtifactIngressInput {
   rejectedAt: string;
 }
 
+export interface AbortSastArtifactIngressInput {
+  ingestionId: string;
+  reasonCode: string;
+  occurredAt: string;
+}
+
 export interface SastArtifactIngressRejectionAudit {
   expected: Readonly<SastArtifactIngressExpectedBinding>;
   certificateFingerprint: `sha256:${string}`;
@@ -99,9 +105,7 @@ export abstract class SastArtifactIngressStore {
   ): Promise<void>;
 
   abstract abort(
-    ingestionId: string,
-    reasonCode: string,
-    occurredAt: string
+    input: Readonly<AbortSastArtifactIngressInput>
   ): Promise<void>;
 
   abstract recordRejectedRequest(

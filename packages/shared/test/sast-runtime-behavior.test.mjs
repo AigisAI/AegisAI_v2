@@ -237,7 +237,9 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
     `sast-ingress-v1:${envelope.scannerRunId}:${envelope.contentDigest}`
   );
   assert.equal(
-    runtime.canonicalizeScannerArtifactEnvelope(envelope),
+    runtime.canonicalizeScannerArtifactEnvelope(
+      Object.fromEntries(Object.entries(envelope).reverse())
+    ),
     JSON.stringify(envelope)
   );
   assert.equal(

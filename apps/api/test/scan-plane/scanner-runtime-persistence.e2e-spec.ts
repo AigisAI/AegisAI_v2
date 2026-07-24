@@ -164,8 +164,8 @@ describe('Scanner runtime persistence and deployment contract', () => {
     expect(migration).not.toMatch(
       /^\s*CREATE (?:UNIQUE )?INDEX CONCURRENTLY/m
     );
-    expect(packageJson.scripts['prisma:migrate:deploy']).toContain(
-      'corepack pnpm prisma:online-schema'
+    expect(packageJson.scripts['prisma:migrate:deploy']).toBe(
+      'prisma migrate deploy --schema prisma/schema.prisma && corepack pnpm prisma:online-schema'
     );
     expect(packageJson.scripts['prisma:online-schema']).toBe(
       'node scripts/apply-online-sast-runtime-schema.mjs'
@@ -247,6 +247,10 @@ describe('Scanner runtime persistence and deployment contract', () => {
         mediaType: 'application/octet-stream',
         directAuthorizedMtlsRequired: true,
         singleSpiffeUriSanRequired: true,
+        lowercaseSpiffeTrustDomainRequired: true,
+        spiffePathSegmentPattern: '[A-Za-z0-9._-]+',
+        spiffePercentEncodingAllowed: false,
+        spiffeRelativePathSegmentsAllowed: false,
         forwardedIdentityHeadersTrusted: false,
         attemptStageRequired: 'SCANNING',
         scannerRunStatusRequired: 'RUNNING',

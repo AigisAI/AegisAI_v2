@@ -20,6 +20,7 @@ import request from 'supertest';
 import { SastArtifactIngressController } from '../../src/scan-plane/sast-artifact-ingress.controller';
 import { SastArtifactIngressService } from '../../src/scan-plane/sast-artifact-ingress.service';
 import {
+  type AbortSastArtifactIngressInput,
   type CompleteSastArtifactIngressInput,
   type RejectSastArtifactIngressInput,
   type ReserveSastArtifactIngressInput,
@@ -57,6 +58,7 @@ class InMemoryArtifactIngressStore extends SastArtifactIngressStore {
       receivedAt?: string;
     }
   >();
+  completeError?: Error;
 
   loadExpectedBinding(
     scanRequestId: string,
@@ -105,6 +107,9 @@ class InMemoryArtifactIngressStore extends SastArtifactIngressStore {
   complete(
     input: Readonly<CompleteSastArtifactIngressInput>
   ): Promise<void> {
+    if (this.completeError) {
+      return Promise.reject(this.completeError);
+    }
     const reservation = [...this.reservations.values()].find(
       (candidate) => candidate.input.ingestionId === input.ingestionId
     );
@@ -122,9 +127,9 @@ class InMemoryArtifactIngressStore extends SastArtifactIngressStore {
     return Promise.resolve();
   }
 
-  abort(ingestionId: string): Promise<void> {
+  abort(input: Readonly<AbortSastArtifactIngressInput>): Promise<void> {
     for (const [scannerRunId, reservation] of this.reservations.entries()) {
-      if (reservation.input.ingestionId === ingestionId) {
+      if (reservation.input.ingestionId === input.ingestionId) {
         this.reservations.delete(scannerRunId);
       }
     }
@@ -142,14 +147,18 @@ class InMemoryArtifactIngressStore extends SastArtifactIngressStore {
 class InMemoryArtifactObjectStore extends SastArtifactObjectStore {
   writes = 0;
   objects = new Map<string, Buffer>();
+  consumeBody = true;
+  deleteError?: Error;
 
   async put(
     input: Readonly<SastArtifactObjectWrite>
   ): Promise<SastArtifactObjectWriteResult> {
     this.writes += 1;
     const chunks: Buffer[] = [];
-    for await (const chunk of input.body) {
-      chunks.push(Buffer.from(chunk));
+    if (this.consumeBody) {
+      for await (const chunk of input.body) {
+        chunks.push(Buffer.from(chunk));
+      }
     }
     const objectKey = `raw-sast/${input.ingestionId}`;
     this.objects.set(objectKey, Buffer.concat(chunks));
@@ -157,6 +166,9 @@ class InMemoryArtifactObjectStore extends SastArtifactObjectStore {
   }
 
   delete(objectKey: string): Promise<void> {
+    if (this.deleteError) {
+      return Promise.reject(this.deleteError);
+    }
     this.objects.delete(objectKey);
     return Promise.resolve();
   }
@@ -361,6 +373,30 @@ describe('SAST per-scan write-only artifact ingress', () => {
 
     expect(objectStore.writes).toBe(0);
   });
+
+  it('leaves no RECEIVING reservation when rejected-object cleanup fails', async () => {
+    const envelope = buildEnvelope(ingressStore.expected.plan);
+    objectStore.consumeBody = false;
+    objectStore.deleteError = new Error('cleanup unavailable');
+
+    const response = await upload(app, envelope, ARTIFACT_BYTES).expect(503);
+
+    expect(response.body.errorCode).toBe('ARTIFACT_OBJECT_DELETE_FAILED');
+    expect(
+      ingressStore.reservations.get(envelope.scannerRunId)?.state
+    ).toBe('REJECTED');
+  });
+
+  it('aborts the RECEIVING reservation before failed cleanup after persistence errors', async () => {
+    const envelope = buildEnvelope(ingressStore.expected.plan);
+    ingressStore.completeError = new Error('persistence unavailable');
+    objectStore.deleteError = new Error('cleanup unavailable');
+
+    const response = await upload(app, envelope, ARTIFACT_BYTES).expect(503);
+
+    expect(response.body.errorCode).toBe('ARTIFACT_OBJECT_DELETE_FAILED');
+    expect(ingressStore.reservations.has(envelope.scannerRunId)).toBe(false);
+  });
 });
 
 describe('DirectMtlsSastWorkloadIdentityAuthenticator', () => {
@@ -421,6 +457,38 @@ describe('DirectMtlsSastWorkloadIdentityAuthenticator', () => {
         }
       } as unknown as Request)
     ).resolves.toBeNull();
+  });
+
+  it('rejects SPIFFE IDs with non-canonical trust domains or path segments', async () => {
+    const authenticate = (identityRef: string) =>
+      authenticator.authenticate({
+        socket: {
+          encrypted: true,
+          authorized: true,
+          getPeerCertificate: () => ({
+            raw: Buffer.from('certificate'),
+            subjectaltname: `URI:${identityRef}`,
+            valid_from: new Date(Date.now() - 60_000).toUTCString(),
+            valid_to: new Date(Date.now() + 60_000).toUTCString()
+          })
+        }
+      } as unknown as Request);
+
+    await expect(
+      authenticate('spiffe://Aegis/scan/attempt-1')
+    ).resolves.toBeNull();
+    await expect(
+      authenticate('spiffe://aegis/scan/attempt%2D1')
+    ).resolves.toBeNull();
+    await expect(
+      authenticate('spiffe://aegis/scan/attempt@1')
+    ).resolves.toBeNull();
+    await expect(authenticate('spiffe://aegis/scan/../attempt-1')).resolves.toBeNull();
+    await expect(
+      authenticate('spiffe://aegis/scan/attempt_1.with-valid-chars')
+    ).resolves.toMatchObject({
+      identityRef: 'spiffe://aegis/scan/attempt_1.with-valid-chars'
+    });
   });
 });
 

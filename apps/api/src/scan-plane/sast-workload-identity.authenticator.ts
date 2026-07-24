@@ -72,14 +72,20 @@ export class DirectMtlsSastWorkloadIdentityAuthenticator
     }
 
     const identityRef = uriEntries[0];
+    const spiffeId =
+      /^spiffe:\/\/([a-z0-9](?:[a-z0-9._-]{0,254}))((?:\/[A-Za-z0-9._-]+)+)$/u.exec(
+        identityRef
+      );
     if (
       identityRef.length === 0 ||
       Buffer.byteLength(identityRef, 'utf8') > 512 ||
       identityRef !== identityRef.trim() ||
       identityRef !== identityRef.normalize('NFC') ||
-      !/^spiffe:\/\/[A-Za-z0-9](?:[A-Za-z0-9._-]{0,252})(?:\/[A-Za-z0-9._~!$&'()*+,;=:@%-]+)+$/u.test(
-        identityRef
-      )
+      !spiffeId ||
+      spiffeId[2]
+        .slice(1)
+        .split('/')
+        .some((segment) => segment === '.' || segment === '..')
     ) {
       return null;
     }

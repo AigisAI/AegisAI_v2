@@ -6,9 +6,11 @@ CREATE TYPE "SastArtifactIngestionStatus" AS ENUM (
   'QUARANTINED'
 );
 
--- The v1 ScannerRun runtime constraint stays active throughout this
--- transactional migration. The mandatory online schema step validates v2
--- first and only then removes v1, so a failed rollout cannot leave a gap.
+-- Deployment contract: prisma:migrate:deploy synchronously runs
+-- scripts/apply-online-sast-runtime-schema.mjs and MUST finish before new-version
+-- traffic is admitted. The v1 ScannerRun runtime constraint stays active
+-- throughout this transaction; the online step validates v2 first and only then
+-- removes v1, so a failed rollout cannot leave a constraint gap.
 
 CREATE TABLE "SastArtifactIngestion" (
   "id" TEXT NOT NULL,

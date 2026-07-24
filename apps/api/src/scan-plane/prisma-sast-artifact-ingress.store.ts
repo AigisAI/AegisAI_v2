@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  type AbortSastArtifactIngressInput,
   type CompleteSastArtifactIngressInput,
   type RejectSastArtifactIngressInput,
   type ReserveSastArtifactIngressInput,
@@ -375,13 +376,11 @@ export class PrismaSastArtifactIngressStore
   }
 
   async abort(
-    ingestionId: string,
-    reasonCode: string,
-    occurredAt: string
+    input: Readonly<AbortSastArtifactIngressInput>
   ): Promise<void> {
     await this.prisma.$transaction(async (transaction) => {
       const ingestion = await transaction.sastArtifactIngestion.findUnique({
-        where: { id: ingestionId },
+        where: { id: input.ingestionId },
         select: {
           tenantId: true,
           scanRequestId: true,
@@ -395,7 +394,7 @@ export class PrismaSastArtifactIngressStore
       }
 
       await transaction.sastArtifactIngestion.delete({
-        where: { id: ingestionId }
+        where: { id: input.ingestionId }
       });
       await transaction.auditEvent.create({
         data: {
@@ -406,9 +405,9 @@ export class PrismaSastArtifactIngressStore
           actor: 'scan-plane',
           targetType: 'scanner_run',
           targetId: ingestion.scannerRunId,
-          occurredAt: new Date(occurredAt),
+          occurredAt: new Date(input.occurredAt),
           metadata: {
-            reasonCode
+            reasonCode: input.reasonCode
           }
         }
       });
