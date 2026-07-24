@@ -176,8 +176,10 @@ T022 through T028 are implemented as the complete Phase 5 runtime boundary:
   process, volume, result-ingress, and microVM destruction evidence plus a final audit event;
   a missing, stale, or late condition becomes `CLEANUP_FAILED`. Database constraints reject
   null-bypassed runtime metadata and bind audit events to the same tenant and attempt. Existing
-  `ScannerRun` and `AuditEvent` tables use `NOT VALID` followed by online validation plus
-  concurrent index builds to avoid long write-blocking scans during rollout.
+  `ScannerRun` and `AuditEvent` tables are handled by the mandatory, idempotent
+  `prisma:online-schema` step immediately after transactional Prisma migration: it builds
+  indexes concurrently, adds constraints `NOT VALID`, then validates them in separate
+  autocommit statements to avoid holding write-blocking locks during existing-row scans.
 - `ANALYSIS_CLIENT_MODE=mock`, the mock scan controller, legacy source collection, and
   `MockAnalysisApiClient` are test-only. Non-test configuration and runtime paths fail closed
   before repository credential decryption or source collection.

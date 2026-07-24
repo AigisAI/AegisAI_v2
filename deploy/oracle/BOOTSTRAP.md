@@ -178,6 +178,13 @@ After bootstrap, trigger one deployment and confirm:
 - `docker compose -f docker-compose.app.yml config | grep '^name:'`
 - `docker compose -f docker-compose.infra.yml config | grep '^name:'`
 - the web container is reachable on port `80`
+
+The deploy script runs `prisma:migrate:deploy` before starting the refreshed application.
+That package command also runs the mandatory idempotent `prisma:online-schema` step: existing
+`ScannerRun` and `AuditEvent` indexes are built with `CONCURRENTLY`, then `NOT VALID`
+constraints are validated in separate autocommit statements. Do not replace the package
+command with a direct `prisma migrate deploy`; an online-schema failure must stop deployment
+before application containers are refreshed.
 - Grafana Cloud Explore shows new Docker logs for `api`, `ai`, and `web`
 - the Docker integration dashboards begin to populate
 - Teams receives the deploy result if `TEAMS_WEBHOOK_URL` is configured

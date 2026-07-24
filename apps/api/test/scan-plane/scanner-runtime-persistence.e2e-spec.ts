@@ -16,6 +16,18 @@ describe('Scanner runtime persistence and deployment contract', () => {
       ),
       'utf8'
     );
+    const onlineSchema = readFileSync(
+      resolve(
+        __dirname,
+        '../../scripts/apply-online-sast-runtime-schema.mjs'
+      ),
+      'utf8'
+    );
+    const packageJson = JSON.parse(
+      readFileSync(resolve(__dirname, '../../package.json'), 'utf8')
+    ) as {
+      scripts: Record<string, string>;
+    };
 
     expect(schema).toMatch(/model SastScanAttempt \{/);
     expect(schema).toMatch(/@@unique\(\[scanRequestId, attemptNumber\]\)/);
@@ -71,49 +83,55 @@ describe('Scanner runtime persistence and deployment contract', () => {
         `'{observation,${condition}}' = 'true'`
       );
     }
-    expect(migration).toContain(
-      'CONSTRAINT "ScannerRun_exit_code_check"'
+    expect(onlineSchema).toContain(
+      "name: 'ScannerRun_exit_code_check'"
     );
-    expect(migration).toContain(
-      'CONSTRAINT "ScannerRun_runtime_metadata_check"'
+    expect(onlineSchema).toContain(
+      "name: 'ScannerRun_runtime_metadata_check'"
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       `("artifactMetadata" ->> 'byteSize')::numeric > 0`
     );
-    expect(migration).toContain(
-      'CREATE UNIQUE INDEX CONCURRENTLY "ScannerRun_attemptId_scanner_key"'
+    expect(onlineSchema).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "ScannerRun_attemptId_scanner_key"'
     );
-    expect(migration).toContain(
-      'CREATE INDEX CONCURRENTLY "AuditEvent_attemptId_idx"'
+    expect(onlineSchema).toContain(
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS "AuditEvent_attemptId_idx"'
     );
-    expect(migration).toContain(
-      'VALIDATE CONSTRAINT "ScannerRun_runtime_metadata_check"'
+    expect(onlineSchema).toContain('VALIDATE CONSTRAINT');
+    expect(onlineSchema).toContain(
+      "name: 'ScannerRun_attempt_scope_fkey'"
     );
-    expect(migration).toContain(
-      'VALIDATE CONSTRAINT "AuditEvent_attempt_scope_fkey"'
-    );
-    expect(migration).toContain(
-      'CONSTRAINT "ScannerRun_attempt_scope_fkey"'
-    );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       'FOREIGN KEY ("attemptId", "tenantId", "repositoryBindingId", "scanRequestId")'
     );
-    expect(migration).toContain(
-      'CONSTRAINT "AuditEvent_attempt_scope_fkey"'
+    expect(onlineSchema).toContain(
+      "name: 'AuditEvent_attempt_scope_fkey'"
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       'FOREIGN KEY ("attemptId", "tenantId")'
     );
-    expect(migration).toContain(
-      'CONSTRAINT "SastScanAttempt_finalAuditEventId_fkey"'
+    expect(onlineSchema).toContain(
+      "name: 'SastScanAttempt_finalAuditEventId_fkey'"
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       'FOREIGN KEY ("finalAuditEventId", "id", "tenantId")'
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       'REFERENCES "AuditEvent"("id", "attemptId", "tenantId")'
     );
-    expect(migration).toMatch(/OR COALESCE\(/);
+    expect(onlineSchema).toMatch(/OR COALESCE\(/);
+    expect(onlineSchema).toContain(' NOT VALID');
+    expect(onlineSchema).toContain('DROP INDEX CONCURRENTLY IF EXISTS');
+    expect(migration).not.toMatch(
+      /^\s*CREATE (?:UNIQUE )?INDEX CONCURRENTLY/m
+    );
+    expect(packageJson.scripts['prisma:migrate:deploy']).toContain(
+      'corepack pnpm prisma:online-schema'
+    );
+    expect(packageJson.scripts['prisma:online-schema']).toBe(
+      'node scripts/apply-online-sast-runtime-schema.mjs'
+    );
   });
 
   it('keeps the deployment contract non-root, offline, bounded, and mock-free', () => {

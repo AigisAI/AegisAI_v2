@@ -13,8 +13,9 @@
     "prisma:format": "prisma format --schema prisma/schema.prisma",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",
-    "prisma:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
-    "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma"
+    "prisma:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma && corepack pnpm prisma:online-schema",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma && corepack pnpm prisma:online-schema",
+    "prisma:online-schema": "node scripts/apply-online-sast-runtime-schema.mjs"
   },
   "dependencies": {
     "@aegisai/shared": "workspace:*",
