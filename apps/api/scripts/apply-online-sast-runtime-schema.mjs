@@ -28,10 +28,46 @@ const indexes = [
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "AuditEvent_final_attempt_scope_key" ON "AuditEvent"("id", "attemptId", "tenantId")'
   },
   {
+    name: 'AuditEvent_artifact_disposition_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "AuditEvent_artifact_disposition_scope_key" ON "AuditEvent"("id", "attemptId", "tenantId", "scanRequestId")'
+  },
+  {
     name: 'ScannerRun_ingress_scope_key',
     unique: true,
     create:
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "ScannerRun_ingress_scope_key" ON "ScannerRun"("id", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId")'
+  },
+  {
+    name: 'SastArtifactIngestion_dispositionLeaseToken_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactIngestion_dispositionLeaseToken_key" ON "SastArtifactIngestion"("dispositionLeaseToken")'
+  },
+  {
+    name: 'SastArtifactIngestion_dispositionOperationId_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactIngestion_dispositionOperationId_key" ON "SastArtifactIngestion"("dispositionOperationId")'
+  },
+  {
+    name: 'SastArtifactIngestion_disposition_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactIngestion_disposition_scope_key" ON "SastArtifactIngestion"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId")'
+  },
+  {
+    name: 'SastArtifactIngestion_retentionExpiresAt_status_idx',
+    unique: false,
+    create:
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactIngestion_retentionExpiresAt_status_idx" ON "SastArtifactIngestion"("retentionExpiresAt", "status")'
+  },
+  {
+    name: 'SastArtifactIngestion_disposition_claim_idx',
+    unique: false,
+    create:
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactIngestion_disposition_claim_idx" ON "SastArtifactIngestion"("dispositionNextAttemptAt", "dispositionLeaseExpiresAt", "receivedAt") WHERE "status" = \'PENDING_VALIDATION\''
   }
 ];
 
@@ -179,6 +215,295 @@ const constraints = [
     type: 'f',
     definition:
       'FOREIGN KEY ("scannerRunId", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId") REFERENCES "ScannerRun"("id", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastArtifactDispositionDecision',
+    name: 'SastArtifactDispositionDecision_ingestion_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("ingestionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") REFERENCES "SastArtifactIngestion"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastArtifactDispositionDecision',
+    name: 'SastArtifactDispositionDecision_audit_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("auditEventId", "attemptId", "tenantId", "scanRequestId") REFERENCES "AuditEvent"("id", "attemptId", "tenantId", "scanRequestId") ON DELETE RESTRICT ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastArtifactIngestion',
+    name: 'SastArtifactIngestion_lifecycle_v2_check',
+    type: 'c',
+    definition: `CHECK (
+      "dispositionAttemptCount" >= 0
+      AND (
+        (
+          "dispositionLeaseOwner" IS NULL
+          AND "dispositionLeaseToken" IS NULL
+          AND "dispositionLeaseExpiresAt" IS NULL
+        )
+        OR (
+          char_length("dispositionLeaseOwner") BETWEEN 1 AND 255
+          AND char_length("dispositionLeaseToken") BETWEEN 1 AND 255
+          AND "dispositionLeaseExpiresAt" IS NOT NULL
+          AND "dispositionNextAttemptAt" IS NULL
+        )
+      )
+      AND (
+        (
+          "dispositionIntent" IS NULL
+          AND "dispositionIntentDigest" IS NULL
+          AND "dispositionOperationId" IS NULL
+        )
+        OR (
+          jsonb_typeof("dispositionIntent") = 'object'
+          AND (
+            "dispositionIntent" - ARRAY[
+              'version',
+              'ingestionId',
+              'scope',
+              'disposition',
+              'storageAction',
+              'failureClass',
+              'reasonCodes',
+              'validationReasonCodes',
+              'validationResultDigest',
+              'normalizationEligible',
+              'retentionExpiresAt',
+              'acceptanceControlRef',
+              'createdAt',
+              'intentDigest'
+            ]::text[]
+          ) = '{}'::jsonb
+          AND "dispositionIntentDigest" ~ '^sha256:[a-f0-9]{64}$'
+          AND "dispositionOperationId" ~ '^sast-artifact-disposition-v1:[a-f0-9]{64}$'
+          AND "dispositionIntent" ->> 'version' = 'sast-artifact-disposition-v1'
+          AND "dispositionIntent" ->> 'ingestionId' = "id"
+          AND "dispositionIntent" ->> 'intentDigest' = "dispositionIntentDigest"
+          AND "dispositionIntent" ->> 'validationResultDigest'
+            ~ '^sha256:[a-f0-9]{64}$'
+          AND (
+            ("dispositionIntent" ->> 'createdAt')::timestamptz
+              AT TIME ZONE 'UTC'
+          ) >= "receivedAt"
+          AND (
+            NOT ("dispositionIntent" ? 'acceptanceControlRef')
+            OR char_length(
+              "dispositionIntent" ->> 'acceptanceControlRef'
+            ) BETWEEN 1 AND 2048
+          )
+          AND jsonb_typeof("dispositionIntent" -> 'reasonCodes') = 'array'
+          AND jsonb_typeof("dispositionIntent" -> 'validationReasonCodes') = 'array'
+          AND (
+            "dispositionIntent" -> 'reasonCodes'
+              ? 'ARTIFACT_VALIDATION_FAILED'
+          ) = (
+            jsonb_array_length(
+              "dispositionIntent" -> 'validationReasonCodes'
+            ) > 0
+          )
+          AND (
+            "dispositionIntent" -> 'reasonCodes' ? 'ARTIFACT_SOURCE_OBJECT_MISSING'
+            OR "dispositionOperationId"
+              = 'sast-artifact-disposition-v1:'
+                || substr("dispositionIntentDigest", 8)
+          )
+          AND jsonb_typeof("dispositionIntent" -> 'scope') = 'object'
+          AND "dispositionIntent" #>> '{scope,tenantId}' = "tenantId"
+          AND "dispositionIntent" #>> '{scope,repositoryBindingId}' = "repositoryBindingId"
+          AND "dispositionIntent" #>> '{scope,scanRequestId}' = "scanRequestId"
+          AND "dispositionIntent" #>> '{scope,attemptId}' = "attemptId"
+          AND "dispositionIntent" #>> '{scope,scannerRunId}' = "scannerRunId"
+          AND (
+            (
+              "dispositionIntent" ->> 'disposition' = 'ACCEPTED'
+              AND "dispositionIntent" ->> 'storageAction' = 'RETAIN_ACCEPTED'
+              AND NOT ("dispositionIntent" ? 'failureClass')
+              AND "dispositionIntent" -> 'reasonCodes'
+                = '["ARTIFACT_VALIDATION_ACCEPTED"]'::jsonb
+              AND jsonb_array_length(
+                "dispositionIntent" -> 'validationReasonCodes'
+              ) = 0
+              AND char_length(
+                "dispositionIntent" ->> 'acceptanceControlRef'
+              ) BETWEEN 1 AND 2048
+              AND (
+                ("dispositionIntent" ->> 'retentionExpiresAt')::timestamptz
+                  AT TIME ZONE 'UTC'
+              ) = "retentionExpiresAt"
+              AND "retentionExpiresAt" > (
+                ("dispositionIntent" ->> 'createdAt')::timestamptz
+                  AT TIME ZONE 'UTC'
+              )
+            )
+            OR (
+              "dispositionIntent" ->> 'disposition' = 'REJECTED'
+              AND "dispositionIntent" ->> 'storageAction' = 'DELETE_REJECTED'
+              AND "dispositionIntent" ->> 'failureClass'
+                IN ('NON_RETRYABLE_INPUT', 'SECURITY_VIOLATION')
+              AND NOT (
+                "dispositionIntent" -> 'reasonCodes'
+                  ? 'ARTIFACT_VALIDATION_ACCEPTED'
+              )
+              AND (
+                "dispositionIntent" -> 'reasonCodes'
+                  ? 'ARTIFACT_RETENTION_EXPIRED'
+                OR "dispositionIntent" -> 'reasonCodes'
+                  ? 'ARTIFACT_SOURCE_OBJECT_MISSING'
+              )
+              AND (
+                (
+                  "dispositionIntent" -> 'reasonCodes'
+                    ? 'ARTIFACT_ACCEPTANCE_DENIED'
+                ) = ("dispositionIntent" ? 'acceptanceControlRef')
+              )
+              AND NOT ("dispositionIntent" ? 'retentionExpiresAt')
+              AND "retentionExpiresAt" IS NULL
+            )
+            OR (
+              "dispositionIntent" ->> 'disposition' = 'QUARANTINED'
+              AND "dispositionIntent" ->> 'storageAction' = 'MOVE_REENCRYPT_QUARANTINE'
+              AND "dispositionIntent" ->> 'failureClass'
+                = 'SECURITY_VIOLATION'
+              AND jsonb_array_length(
+                "dispositionIntent" -> 'reasonCodes'
+              ) > 0
+              AND NOT (
+                "dispositionIntent" -> 'reasonCodes'
+                  ? 'ARTIFACT_VALIDATION_ACCEPTED'
+              )
+              AND NOT (
+                "dispositionIntent" -> 'reasonCodes'
+                  ? 'ARTIFACT_RETENTION_EXPIRED'
+              )
+              AND NOT (
+                "dispositionIntent" -> 'reasonCodes'
+                  ? 'ARTIFACT_SOURCE_OBJECT_MISSING'
+              )
+              AND (
+                (
+                  "dispositionIntent" -> 'reasonCodes'
+                    ? 'ARTIFACT_ACCEPTANCE_DENIED'
+                ) = ("dispositionIntent" ? 'acceptanceControlRef')
+              )
+              AND (
+                ("dispositionIntent" ->> 'retentionExpiresAt')::timestamptz
+                  AT TIME ZONE 'UTC'
+              ) = "retentionExpiresAt"
+              AND "retentionExpiresAt" > (
+                ("dispositionIntent" ->> 'createdAt')::timestamptz
+                  AT TIME ZONE 'UTC'
+              )
+            )
+          )
+          AND jsonb_typeof("dispositionIntent" -> 'normalizationEligible') = 'boolean'
+          AND ("dispositionIntent" ->> 'normalizationEligible')::boolean
+            = ("dispositionIntent" ->> 'disposition' = 'ACCEPTED')
+        )
+      )
+      AND (
+        "dispositionLastErrorCode" IS NULL
+        OR char_length("dispositionLastErrorCode") BETWEEN 1 AND 255
+      )
+      AND COALESCE(
+        (
+          "status" = 'RECEIVING'
+          AND "objectKey" IS NULL
+          AND "observedContentDigest" IS NULL
+          AND "observedByteSize" IS NULL
+          AND "rejectionReason" IS NULL
+          AND "receivedAt" IS NULL
+          AND "dispositionAttemptCount" = 0
+          AND "dispositionLeaseOwner" IS NULL
+          AND "dispositionIntent" IS NULL
+          AND "retentionExpiresAt" IS NULL
+          AND "dispositionDecidedAt" IS NULL
+          AND "dispositionNextAttemptAt" IS NULL
+          AND "dispositionLastErrorCode" IS NULL
+        )
+        OR (
+          "status" = 'PENDING_VALIDATION'
+          AND "objectKey" IS NOT NULL
+          AND "observedContentDigest" IS NOT NULL
+          AND "observedByteSize" = "declaredByteSize"
+          AND "rejectionReason" IS NULL
+          AND "receivedAt" IS NOT NULL
+          AND "dispositionDecidedAt" IS NULL
+          AND (
+            "dispositionIntent" IS NOT NULL
+            OR "retentionExpiresAt" IS NULL
+          )
+          AND (
+            "retentionExpiresAt" IS NULL
+            OR (
+              "retentionExpiresAt" > "receivedAt"
+              AND "retentionExpiresAt" <= "receivedAt" + INTERVAL '7 days'
+            )
+          )
+        )
+        OR (
+          "status" = 'ACCEPTED'
+          AND "objectKey" IS NOT NULL
+          AND "observedContentDigest" IS NOT NULL
+          AND "observedByteSize" = "declaredByteSize"
+          AND "rejectionReason" IS NULL
+          AND "receivedAt" IS NOT NULL
+          AND "dispositionIntent" IS NOT NULL
+          AND "dispositionIntent" ->> 'disposition' = 'ACCEPTED'
+          AND "retentionExpiresAt" > "receivedAt"
+          AND "retentionExpiresAt" <= "receivedAt" + INTERVAL '7 days'
+          AND "dispositionDecidedAt" >= "receivedAt"
+          AND "retentionExpiresAt" > "dispositionDecidedAt"
+          AND "dispositionLeaseOwner" IS NULL
+          AND "dispositionNextAttemptAt" IS NULL
+          AND "dispositionLastErrorCode" IS NULL
+        )
+        OR (
+          "status" = 'REJECTED'
+          AND "objectKey" IS NULL
+          AND char_length("rejectionReason") BETWEEN 1 AND 255
+          AND "receivedAt" IS NOT NULL
+          AND "dispositionAttemptCount" = 0
+          AND "dispositionIntent" IS NULL
+          AND "retentionExpiresAt" IS NULL
+          AND "dispositionDecidedAt" IS NULL
+          AND "dispositionLeaseOwner" IS NULL
+          AND "dispositionNextAttemptAt" IS NULL
+          AND "dispositionLastErrorCode" IS NULL
+        )
+        OR (
+          "status" = 'REJECTED'
+          AND "objectKey" IS NULL
+          AND char_length("rejectionReason") BETWEEN 1 AND 255
+          AND "receivedAt" IS NOT NULL
+          AND "dispositionIntent" IS NOT NULL
+          AND "dispositionIntent" ->> 'disposition' = 'REJECTED'
+          AND "retentionExpiresAt" IS NULL
+          AND "dispositionDecidedAt" >= "receivedAt"
+          AND "dispositionLeaseOwner" IS NULL
+          AND "dispositionNextAttemptAt" IS NULL
+          AND "dispositionLastErrorCode" IS NULL
+        )
+        OR (
+          "status" = 'QUARANTINED'
+          AND "objectKey" IS NOT NULL
+          AND "observedContentDigest" IS NOT NULL
+          AND "observedByteSize" IS NOT NULL
+          AND char_length("rejectionReason") BETWEEN 1 AND 255
+          AND "receivedAt" IS NOT NULL
+          AND "dispositionIntent" IS NOT NULL
+          AND "dispositionIntent" ->> 'disposition' = 'QUARANTINED'
+          AND "retentionExpiresAt" > "receivedAt"
+          AND "retentionExpiresAt" <= "receivedAt" + INTERVAL '7 days'
+          AND "dispositionDecidedAt" >= "receivedAt"
+          AND "retentionExpiresAt" > "dispositionDecidedAt"
+          AND "dispositionLeaseOwner" IS NULL
+          AND "dispositionNextAttemptAt" IS NULL
+          AND "dispositionLastErrorCode" IS NULL
+        ),
+        false
+      )
+    )`
   }
 ];
 
@@ -192,6 +517,11 @@ const supersededConstraints = [
     table: 'ScannerRun',
     name: 'ScannerRun_runtime_metadata_v2_check',
     replacement: 'ScannerRun_runtime_metadata_v3_check'
+  },
+  {
+    table: 'SastArtifactIngestion',
+    name: 'SastArtifactIngestion_lifecycle_check',
+    replacement: 'SastArtifactIngestion_lifecycle_v2_check'
   }
 ];
 

@@ -298,6 +298,9 @@ Operational write-only intake state before an `ArtifactIngestionDecision`.
 - workload-identity validation result
 - `RECEIVING | PENDING_VALIDATION | ACCEPTED | REJECTED | QUARANTINED`
 - rejection reason, bounded validation metadata, received timestamp, and audit references
+- disposition lease owner, opaque fencing token, expiry, retry time/count, and bounded error code
+- immutable disposition intent, intent digest, idempotent storage operation ID, retention expiry,
+  and final-decision timestamp
 
 Only a directly authenticated, attempt-bound workload can create the row. `RECEIVING` has no
 object key or observed metadata. `PENDING_VALIDATION` has an immutable object key, matching
@@ -313,17 +316,40 @@ independent disposition without trusting request reconstruction. The nullable da
 supports rolling deployment of legacy rows; every new application reservation writes it.
 `PENDING_VALIDATION` remains a transport-complete state regardless of validation outcome until
 T031 atomically chooses `ACCEPTED`, `REJECTED`, or `QUARANTINED`.
+An ingress rejected before immutable object creation remains a metadata-only `REJECTED` row
+with no T031 decision or disposition attempt. This distinct pre-object terminal path preserves
+rolling compatibility and cannot become normalization-eligible.
 
 ### ArtifactIngestionDecision
 
-- envelope reference and digest
-- workload identity validation result
-- scope, digest, schema, encoding, size, count, and timestamp validation results
+- ingestion plus tenant, repository, scan, attempt, and scanner-run scope
+- `sast-artifact-disposition-v1` intent and decision digests
+- validation-result digest and ordered validation/disposition reason codes
 - `ACCEPTED | REJECTED | QUARANTINED`
-- reason codes
-- quarantine object reference when applicable
-- retention expiry
-- audit reference
+- `RETAIN_ACCEPTED | DELETE_REJECTED | MOVE_REENCRYPT_QUARANTINE` storage action
+- failure class, normalization eligibility, acceptance-control reference, retention expiry,
+  opaque storage receipt reference/digest, and quarantine encryption-context digest
+- immutable audit reference and decision timestamp
+
+The decision never stores a raw artifact, object key, KMS key identifier, encryption key, or
+plaintext. The ingestion row alone owns the internal accepted/quarantine object key. A
+scanner-run-unique background worker claims `PENDING_VALIDATION` with a bounded lease and
+fencing token, revalidates the durable envelope, validation-result digest, transport metadata,
+immutable plan, and terminal scanner state, then persists an immutable intent before invoking
+the Data/Security Plane. The storage operation ID is deterministic per immutable
+storage-mutating intent generation, and the final decision binds that exact operation plus a
+bounded `storage-receipt://` opaque reference, so a crash after retain/delete/server-side
+re-encryption replays without duplication. A later safety supersession receives a different
+operation ID and cannot collide with an older storage receipt. A storage-confirmed
+missing-source intent retains the operation
+ID of that absence receipt because it performs no second object mutation. Only `ACCEPTED` is
+normalization-eligible.
+
+The maximum accepted or quarantine retention timestamp is derived from `receivedAt`, never
+from retry or decision time, and is no later than seven days. Expired or storage-confirmed
+missing objects become metadata-only `REJECTED` rows. Malformed validation metadata, digest or
+plan rebinding failures, unsuccessful scanner state, failed validation, and explicit acceptance
+denial become `QUARANTINED` with a restricted-prefix object and exact encryption-context digest.
 
 ### NormalizedSastFinding
 

@@ -97,6 +97,11 @@ export const ENVIRONMENT_VALIDATION_SCHEMA = Joi.object({
     .min(10_000)
     .max(300_000)
     .default(10_000),
+  SAST_ARTIFACT_DISPOSITION_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(10_000)
+    .max(300_000)
+    .default(10_000),
   ANALYSIS_CLIENT_MODE: Joi.when('NODE_ENV', {
     is: 'test',
     then: Joi.string().valid('mock', 'internal').default('mock'),

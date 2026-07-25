@@ -454,6 +454,33 @@ Accepted artifacts become short-lived Data/Security objects. Rejected artifacts 
 metadata only. Security-significant mismatches are encrypted into an access-restricted
 quarantine prefix with the same maximum seven-day retention and no user access.
 
+T031 uses the versioned `sast-artifact-disposition-v1` contract. A serializable worker claims
+only terminal scanner runs through a lease token and expiry fence, independently revalidates
+the stored canonical envelope, validation-result digest, observed transport values, immutable
+plan binding, every scanner image/wrapper/rule/database/schema/normalizer/profile/preflight/
+workspace digest, and scanner exit/timeout/output outcome, then writes an immutable disposition
+intent before any external storage mutation. The Data/Security port has no read operation and
+accepts only an intent-bound idempotency operation for accepted retention, rejected deletion, or
+server-side quarantine re-encryption. A quarantine receipt must return the exact
+`sast-artifact-quarantine-context-v1` digest and an object under the restricted quarantine
+prefix. Every receipt uses a bounded `storage-receipt://` opaque reference, and the canonical
+decision binds the exact storage operation ID; neither the context nor the durable decision
+carries an object key or key material.
+
+An ingress request rejected while still `RECEIVING` never created an immutable object and does
+not enter this worker. It remains a metadata-only `REJECTED` transport outcome with zero
+disposition attempts and no T031 intent. This path cannot be normalized and is distinct from a
+post-object T031 rejection, which always has an immutable decision and storage receipt.
+
+Finalization rechecks the live database fence and atomically writes the ingestion state,
+scanner terminal state, immutable decision, and bounded audit event. `ACCEPTED` requires a
+successful validation, successful scanner terminal state, and explicit acceptance-gate
+`ALLOW`; an unavailable gate leaves the row pending for retry. A gate `DENY`, durable metadata
+tamper, binding mismatch, unsuccessful scanner, or failed validation is security-significant
+and quarantined. A seven-day expiry or storage-confirmed missing source object is deleted or
+recorded as metadata-only `REJECTED`. Retention is always calculated from the original receipt
+time. Only an accepted decision sets `normalizationEligible=true`.
+
 The sandbox never has direct Prisma, findings, policy, comment, or AI access.
 
 ## Normalization Contract

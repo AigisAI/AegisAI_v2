@@ -31,6 +31,7 @@ export interface EnvironmentVariables {
   SANDBOX_ATTESTATION_KEY: string;
   CREDENTIAL_LEASE_EXPIRY_INTERVAL_MS: number;
   SAST_ATTEMPT_RECONCILIATION_INTERVAL_MS: number;
+  SAST_ARTIFACT_DISPOSITION_INTERVAL_MS: number;
   ANALYSIS_CLIENT_MODE: AnalysisClientMode;
   AI_SERVER_URL: string;
   USE_INTERNAL_AI: BooleanString;
