@@ -9,6 +9,7 @@ import {
   SAST_SCAN_PROFILES,
   buildSastArtifactIngressIdempotencyKey,
   canonicalizeScannerArtifactEnvelope,
+  SAST_ARTIFACT_SCHEMA_VERSIONS,
   type ScannerArtifactEnvelope,
   type SastScanPlan
 } from '@aegisai/shared';
@@ -19,6 +20,11 @@ import request from 'supertest';
 
 import { SastArtifactIngressController } from '../../src/scan-plane/sast-artifact-ingress.controller';
 import { SastArtifactIngressService } from '../../src/scan-plane/sast-artifact-ingress.service';
+import { SastArtifactValidationService } from '../../src/scan-plane/sast-artifact-validation.service';
+import {
+  SastFileCoordinateAttestationProvider,
+  UnavailableSastFileCoordinateAttestationProvider
+} from '../../src/scan-plane/sast-file-coordinate-attestation.provider';
 import {
   type AbortSastArtifactIngressInput,
   type CompleteSastArtifactIngressInput,
@@ -45,7 +51,10 @@ import { SastWorkloadIdentityGuard } from '../../src/scan-plane/sast-workload-id
 const digest = (value: string): `sha256:${string}` =>
   `sha256:${createHash('sha256').update(value).digest('hex')}`;
 const FIXED_COMMIT = 'a'.repeat(40);
-const ARTIFACT_BYTES = Buffer.from('{"runs":[]}', 'utf8');
+const ARTIFACT_BYTES = Buffer.from(
+  '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"OpenGrep"}},"results":[]}]}',
+  'utf8'
+);
 
 class InMemoryArtifactIngressStore extends SastArtifactIngressStore {
   expected = buildExpectedBinding();
@@ -59,6 +68,7 @@ class InMemoryArtifactIngressStore extends SastArtifactIngressStore {
     }
   >();
   completeError?: Error;
+  lastCompletion?: CompleteSastArtifactIngressInput;
 
   loadExpectedBinding(
     scanRequestId: string,
@@ -114,6 +124,7 @@ class InMemoryArtifactIngressStore extends SastArtifactIngressStore {
       (candidate) => candidate.input.ingestionId === input.ingestionId
     );
     if (!reservation) throw new Error('missing reservation');
+    this.lastCompletion = structuredClone(input);
     reservation.state = 'PENDING_VALIDATION';
     reservation.receivedAt = input.receivedAt;
     return Promise.resolve();
@@ -196,7 +207,13 @@ describe('SAST per-scan write-only artifact ingress', () => {
       controllers: [SastArtifactIngressController],
       providers: [
         SastArtifactIngressService,
+        SastArtifactValidationService,
         SastWorkloadIdentityGuard,
+        UnavailableSastFileCoordinateAttestationProvider,
+        {
+          provide: SastFileCoordinateAttestationProvider,
+          useExisting: UnavailableSastFileCoordinateAttestationProvider
+        },
         {
           provide: SastWorkloadIdentityAuthenticator,
           useValue: authenticator
@@ -244,6 +261,10 @@ describe('SAST per-scan write-only artifact ingress', () => {
     expect(
       ingressStore.reservations.get(envelope.scannerRunId)?.state
     ).toBe('PENDING_VALIDATION');
+    expect(ingressStore.lastCompletion?.validation).toMatchObject({
+      outcome: 'PASSED',
+      reasonCodes: []
+    });
   });
 
   it('has no artifact read route', async () => {
@@ -510,6 +531,8 @@ function buildEnvelope(plan: SastScanPlan): ScannerArtifactEnvelope {
     wrapperDigest: scanner.wrapper.digest,
     ruleBundleDigest: rule.digest,
     scannerSetDigest: plan.scannerSet.scannerSetDigest,
+    schemaBundleDigest: plan.scannerSet.schemaBundle.digest,
+    normalizerBundleDigest: plan.scannerSet.normalizerBundle.digest,
     profileId: plan.profile.id,
     profileDigest: plan.profileDigest,
     preflightAttestationRef: 'preflight://attempt-1',
@@ -517,7 +540,8 @@ function buildEnvelope(plan: SastScanPlan): ScannerArtifactEnvelope {
     scannerWorkspaceInventoryDigest: digest('inventory'),
     inputCommitSha: plan.repositoryState.fixedCommitSha,
     artifactSchema: 'OPENGREP_SARIF',
-    artifactSchemaVersion: plan.scannerSet.schemaBundle.digest,
+    artifactSchemaVersion:
+      SAST_ARTIFACT_SCHEMA_VERSIONS.OPENGREP_SARIF,
     artifactRef: `${plan.resultIngressRef}/opengrep`,
     contentDigest: digest(ARTIFACT_BYTES.toString('utf8')),
     byteSize: ARTIFACT_BYTES.byteLength,

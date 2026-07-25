@@ -399,6 +399,57 @@ exists and the object key is absent from all ingress responses. The default prod
 adapter remains unavailable until a Data/Security Plane object-store implementation is
 installed, so local filesystem storage cannot become a production fallback.
 
+T030 validates the first upload inline as a bounded tee before the object write completes.
+The parser uses fatal UTF-8 decoding, rejects a BOM and duplicate JSON keys, and caps nesting
+at 64, each key at 256 UTF-8 bytes, each object at 4,096 keys, strings at 4,096 UTF-8 bytes, number tokens at 128 bytes, and
+the document at 5,000,000 tokens. Parsing occurs on globally aligned, at most 4,096-byte slices
+independent of transport chunking and never builds the artifact object graph. A parser or schema
+failure stops further parsing but continues
+draining the already transport-bounded stream to the immutable object so T031 can apply the
+same quarantine policy without a second sandbox upload.
+
+The envelope carries a semantic artifact version separately from immutable supply-chain
+digests:
+
+- OpenGrep emits `OPENGREP_SARIF` version `2.1.0`.
+- Trivy emits `TRIVY_JSON` version `2` and must bind the pinned vulnerability database.
+- Syft emits `CYCLONEDX_JSON` version `1.6`.
+- Every scanner binds the scanner-set, schema-bundle, and normalizer-bundle digests; OpenGrep
+  and Trivy also bind their rule bundle.
+
+Schema-specific streaming inspection enforces root, run/result, finding, and component
+container types; required tool/message structures; pinned enum/version sets; and explicit
+unknown-field sets at security-relevant boundaries. The immutable binding includes the exact
+scanner-run scanner and canonical result-ingress artifact reference in addition to attempt,
+identity, inventory, profile, source, and supply-chain digests. It counts SARIF results, Trivy vulnerabilities/
+misconfigurations/secrets, and nested CycloneDX components independently of the envelope.
+The transport observer and validator independently recompute content SHA-256 and bytes and
+must agree with one another and the envelope; records are independently counted and checked
+against the envelope and immutable profile limits. OpenGrep and Trivy records are additionally capped by the smaller
+`maxFindings` limit, while CycloneDX inventory components use `maxArtifactRecords`.
+
+Artifact paths must be NFC repository-relative canonical paths with bounded length/depth and
+no absolute, drive, UNC, control, empty, dot, or parent segments. Case-fold ambiguity is
+rejected, and unique retained paths cannot exceed the smaller profile file/artifact-record
+limit. SARIF URI references may use only canonical uppercase percent-encoding; encoded
+separators, encoded unreserved characters, and indirect `uriBaseId`/artifact-index resolution
+are rejected, then the decoded direct path must match
+the provisioner-attested inventory exactly. Positive safe-integer lines and columns are
+checked against `2,147,483,647` and, when present, the exact attested file line/column bounds.
+The attestation provider is scoped to tenant, repository, scan, attempt, attestation reference,
+and inventory digest; unavailable, malformed, duplicate, or case-colliding metadata fails
+closed for every reported location. Coordinate metadata is also capped at 5,000,000 attested
+lines in addition to the profile file-count limit; provider implementations must apply the
+same cap before materializing their return value.
+
+The durable validation value is `sast-artifact-validation-v1`: ordered boolean checks, ordered
+reason codes, aggregate byte/record/depth/string/path/coordinate statistics, and a SHA-256
+result digest over its canonical core. Audit metadata receives only the outcome, result digest,
+and bounded reason-code list. Raw artifact bytes, source, secret values, and object keys are
+excluded. Completing T030 does not accept an artifact: all completed transports remain
+`PENDING_VALIDATION`, and T031 alone performs the atomic accept/reject/encrypted-quarantine
+disposition before any normalization adapter can run.
+
 Accepted artifacts become short-lived Data/Security objects. Rejected artifacts record
 metadata only. Security-significant mismatches are encrypted into an access-restricted
 quarantine prefix with the same maximum seven-day retention and no user access.

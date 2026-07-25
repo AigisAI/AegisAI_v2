@@ -579,6 +579,8 @@ model ScannerRun {
   ruleBundleDigest                String?
   databaseDigest                  String?
   scannerSetDigest                String?
+  schemaBundleDigest              String?
+  normalizerBundleDigest          String?
   profileId                       String?
   profileDigest                   String?
   preflightAttestationRef         String?
@@ -630,6 +632,7 @@ model SastArtifactIngestion {
   scannerRunId          String                      @unique
   workloadIdentityRef   String
   idempotencyKey        String
+  envelope              Json?
   envelopeDigest        String
   declaredContentDigest String
   observedContentDigest String?

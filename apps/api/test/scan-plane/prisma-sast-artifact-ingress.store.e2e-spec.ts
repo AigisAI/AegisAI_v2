@@ -1,4 +1,9 @@
-import type { SastScanPlan } from '@aegisai/shared';
+import {
+  SAST_ARTIFACT_VALIDATION_VERSION,
+  type ScannerArtifactEnvelope,
+  type SastArtifactValidationResult,
+  type SastScanPlan
+} from '@aegisai/shared';
 
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { PrismaSastArtifactIngressStore } from '../../src/scan-plane/prisma-sast-artifact-ingress.store';
@@ -37,10 +42,12 @@ describe('PrismaSastArtifactIngressStore', () => {
       prisma as unknown as PrismaService
     );
     const now = '2026-07-24T18:00:00.000Z';
+    const envelope = artifactEnvelope();
 
     await expect(
       store.reserve({
         ingestionId: 'ingestion-1',
+        envelope,
         envelopeDigest: DIGEST,
         idempotencyKey: `sast-ingress-v1:scanner-run-1:${DIGEST}`,
         expected: expectedBinding(),
@@ -84,6 +91,7 @@ describe('PrismaSastArtifactIngressStore', () => {
         id: 'ingestion-1',
         scannerRunId: 'scanner-run-1',
         workloadIdentityRef: 'spiffe://aegis/scan/attempt-1',
+        envelope,
         identityValidated: true,
         status: 'RECEIVING'
       })
@@ -130,6 +138,7 @@ describe('PrismaSastArtifactIngressStore', () => {
       objectKey: 'raw-sast/ingestion-1',
       observedContentDigest: DIGEST,
       observedByteSize: 128,
+      validation: validationResult(),
       receivedAt: '2026-07-24T18:00:01.000Z'
     });
 
@@ -145,6 +154,22 @@ describe('PrismaSastArtifactIngressStore', () => {
       data: {
         rawArtifactObjectKey: 'raw-sast/ingestion-1'
       }
+    });
+    expect(
+      transaction.sastArtifactIngestion.updateMany
+    ).toHaveBeenCalledWith({
+      where: {
+        id: 'ingestion-1',
+        status: 'RECEIVING'
+      },
+      data: expect.objectContaining({
+        status: 'PENDING_VALIDATION',
+        validationMetadata: {
+          workloadIdentityValidated: true,
+          transportByteCountValidated: true,
+          artifactValidation: validationResult()
+        }
+      })
     });
     expect(transaction.sastScanAttempt.findFirst).toHaveBeenCalledWith({
       where: {
@@ -199,6 +224,7 @@ describe('PrismaSastArtifactIngressStore', () => {
     await expect(
       store.reserve({
         ingestionId: 'ingestion-2',
+        envelope: artifactEnvelope(),
         envelopeDigest: `sha256:${'b'.repeat(64)}`,
         idempotencyKey: existing.idempotencyKey,
         expected: expectedBinding(),
@@ -229,5 +255,71 @@ function expectedBinding(): SastArtifactIngressExpectedBinding {
     attemptStage: 'SCANNING',
     attemptDeadlineAt: '2026-07-24T18:05:00.000Z',
     scannerRunStatus: 'RUNNING'
+  };
+}
+
+function artifactEnvelope(): ScannerArtifactEnvelope {
+  return {
+    tenantId: 'tenant-1',
+    repositoryBindingId: 'repository-1',
+    scanRequestId: 'scan-1',
+    attemptId: 'attempt-1',
+    scannerRunId: 'scanner-run-1',
+    workloadIdentityRef: 'spiffe://aegis/scan/attempt-1',
+    scanner: 'OPENGREP',
+    scannerVersion: '1.0.0',
+    scannerImageDigest: DIGEST,
+    wrapperDigest: DIGEST,
+    ruleBundleDigest: DIGEST,
+    scannerSetDigest: DIGEST,
+    schemaBundleDigest: DIGEST,
+    normalizerBundleDigest: DIGEST,
+    profileId: 'JAVA_FAST_V1',
+    profileDigest: DIGEST,
+    preflightAttestationRef: 'preflight://attempt-1',
+    preflightInventoryDigest: DIGEST,
+    scannerWorkspaceInventoryDigest: DIGEST,
+    inputCommitSha: 'a'.repeat(40),
+    artifactSchema: 'OPENGREP_SARIF',
+    artifactSchemaVersion: '2.1.0',
+    artifactRef: 'result-ingress://tenant-1/scan-1/opengrep',
+    contentDigest: DIGEST,
+    byteSize: 128,
+    recordCount: 0,
+    truncated: false,
+    exitCode: 0,
+    executionStatus: 'SUCCEEDED',
+    producedAt: '2026-07-24T18:00:00.000Z'
+  };
+}
+
+function validationResult(): SastArtifactValidationResult {
+  return {
+    version: SAST_ARTIFACT_VALIDATION_VERSION,
+    outcome: 'PASSED',
+    artifactSchema: 'OPENGREP_SARIF',
+    envelopeDigest: DIGEST,
+    observedContentDigest: DIGEST,
+    checks: {
+      planBinding: true,
+      schema: true,
+      contentDigest: true,
+      byteSize: true,
+      recordCount: true,
+      encoding: true,
+      jsonStructure: true,
+      path: true,
+      coordinate: true
+    },
+    reasonCodes: [],
+    statistics: {
+      observedByteSize: 128,
+      observedRecordCount: 0,
+      maximumObservedDepth: 4,
+      maximumObservedStringBytes: 8,
+      normalizedPathCount: 0,
+      coordinateCount: 0
+    },
+    resultDigest: DIGEST
   };
 }

@@ -16,6 +16,11 @@ import {
   SastArtifactObjectStore,
   UnavailableSastArtifactObjectStore
 } from './sast-artifact-object-store';
+import { SastArtifactValidationService } from './sast-artifact-validation.service';
+import {
+  SastFileCoordinateAttestationProvider,
+  UnavailableSastFileCoordinateAttestationProvider
+} from './sast-file-coordinate-attestation.provider';
 import {
   DirectMtlsSastWorkloadIdentityAuthenticator,
   SastWorkloadIdentityAuthenticator
@@ -63,6 +68,12 @@ import {
   providers: [
     ScanPlaneService,
     SastArtifactIngressService,
+    SastArtifactValidationService,
+    UnavailableSastFileCoordinateAttestationProvider,
+    {
+      provide: SastFileCoordinateAttestationProvider,
+      useExisting: UnavailableSastFileCoordinateAttestationProvider
+    },
     SastWorkloadIdentityGuard,
     DirectMtlsSastWorkloadIdentityAuthenticator,
     {

@@ -352,6 +352,8 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
           ruleBundleDigest: invocation.ruleBundleDigest,
           databaseDigest: invocation.vulnerabilityDatabaseDigest,
           scannerSetDigest: invocation.scannerSetDigest,
+          schemaBundleDigest: invocation.schemaBundleDigest,
+          normalizerBundleDigest: invocation.normalizerBundleDigest,
           profileId: invocation.profileId,
           profileDigest: invocation.profileDigest,
           preflightAttestationRef: invocation.preflightAttestationRef,

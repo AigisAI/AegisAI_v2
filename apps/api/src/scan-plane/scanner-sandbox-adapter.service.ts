@@ -1,4 +1,5 @@
 import {
+  SAST_ARTIFACT_SCHEMA_VERSIONS,
   SAST_SCANNER_ASSET_ROOT,
   SAST_SCANNER_OUTPUT_ROOT,
   SAST_SCANNER_SELECTED_WORKSPACE_ROOT,
@@ -9,6 +10,7 @@ import {
   isSastScannerWrapperExecutionRequestValid,
   scannerRuntimeLimits,
   type RuleBundleDescriptor,
+  type SastArtifactSchema,
   type SastSandboxRuntimePolicy,
   type SastScannerInvocation,
   type SastScannerKind,
@@ -105,6 +107,7 @@ export class ScannerSandboxAdapterService {
         : this.requiredRuleBundle(plan, scanner);
     const outputPath = this.outputPath(scanner);
     const scannerInputPath = this.scannerInputPath(plan, preflight);
+    const artifactSchema = this.artifactSchema(scanner);
 
     return {
       wrapperSchemaVersion: SAST_SCANNER_WRAPPER_SCHEMA_VERSION,
@@ -122,13 +125,11 @@ export class ScannerSandboxAdapterService {
       workingDirectory: SAST_SCANNER_WORKING_DIRECTORY,
       scannerInputPath,
       outputPath,
-      artifactSchema:
-        scanner === 'OPENGREP'
-          ? 'OPENGREP_SARIF'
-          : scanner === 'TRIVY'
-            ? 'TRIVY_JSON'
-            : 'CYCLONEDX_JSON',
-      artifactSchemaVersion: plan.scannerSet.schemaBundle.digest,
+      artifactSchema,
+      artifactSchemaVersion:
+        SAST_ARTIFACT_SCHEMA_VERSIONS[artifactSchema],
+      schemaBundleDigest: plan.scannerSet.schemaBundle.digest,
+      normalizerBundleDigest: plan.scannerSet.normalizerBundle.digest,
       scannerVersion: descriptor.version,
       scannerImageDigest: descriptor.digest,
       wrapperDigest: descriptor.wrapper.digest,
@@ -303,6 +304,14 @@ export class ScannerSandboxAdapterService {
       return `${SAST_SCANNER_OUTPUT_ROOT}/trivy.json`;
     }
     return `${SAST_SCANNER_OUTPUT_ROOT}/syft.cdx.json`;
+  }
+
+  private artifactSchema(scanner: SastScannerKind): SastArtifactSchema {
+    return scanner === 'OPENGREP'
+      ? 'OPENGREP_SARIF'
+      : scanner === 'TRIVY'
+        ? 'TRIVY_JSON'
+        : 'CYCLONEDX_JSON';
   }
 
   private digestId(digest: `sha256:${string}`): string {

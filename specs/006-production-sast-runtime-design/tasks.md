@@ -46,7 +46,7 @@
 ## Phase 6: Artifact Ingress and Normalization
 
 - [x] T029 Implement per-scan write-only artifact ingress and workload identity validation
-- [ ] T030 Verify plan binding, schema, digest, byte/count, encoding, path, and coordinate limits
+- [x] T030 Verify plan binding, schema, digest, byte/count, encoding, path, and coordinate limits
 - [ ] T031 Quarantine malformed, mismatched, oversized, and security-violating artifacts
 - [ ] T032 Implement versioned OpenGrep SARIF normalization with golden fixtures
 - [ ] T033 Implement versioned Trivy JSON normalization with golden fixtures

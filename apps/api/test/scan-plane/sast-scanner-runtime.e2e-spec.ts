@@ -180,7 +180,10 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
       workingDirectory: '/workspace/output',
       scannerInputPath: '/workspace/repository',
       outputPath: '/workspace/output/opengrep.sarif',
-      artifactSchema: 'OPENGREP_SARIF'
+      artifactSchema: 'OPENGREP_SARIF',
+      artifactSchemaVersion: '2.1.0',
+      schemaBundleDigest: digest('a'),
+      normalizerBundleDigest: digest('b')
     });
     expect(invocations[1]).toMatchObject({
       scanner: 'TRIVY',
@@ -218,7 +221,11 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         '/workspace/repository'
       ],
       scannerInputPath: '/workspace/repository',
-      artifactSchema: 'TRIVY_JSON'
+      artifactSchema: 'TRIVY_JSON',
+      artifactSchemaVersion: '2',
+      vulnerabilityDatabaseDigest: digest('7'),
+      schemaBundleDigest: digest('a'),
+      normalizerBundleDigest: digest('b')
     });
     expect(invocations[2]).toMatchObject({
       scanner: 'SYFT',
@@ -242,7 +249,10 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         SYFT_PYTHON_SEARCH_REMOTE_LICENSES: 'false',
         SYFT_FILE_CONTENT_SKIP_FILES_ABOVE_SIZE: '5242880'
       }),
-      artifactSchema: 'CYCLONEDX_JSON'
+      artifactSchema: 'CYCLONEDX_JSON',
+      artifactSchemaVersion: '1.6',
+      schemaBundleDigest: digest('a'),
+      normalizerBundleDigest: digest('b')
     });
 
     for (const invocation of invocations) {

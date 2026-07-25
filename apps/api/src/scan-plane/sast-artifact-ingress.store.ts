@@ -1,4 +1,6 @@
 import type {
+  ScannerArtifactEnvelope,
+  SastArtifactValidationResult,
   SastArtifactIngestionState,
   SastScannerKind,
   SastScanPlan
@@ -20,6 +22,7 @@ export interface SastArtifactIngressExpectedBinding {
 
 export interface ReserveSastArtifactIngressInput {
   ingestionId: string;
+  envelope: Readonly<ScannerArtifactEnvelope>;
   envelopeDigest: `sha256:${string}`;
   idempotencyKey: string;
   expected: Readonly<SastArtifactIngressExpectedBinding>;
@@ -40,6 +43,7 @@ export interface CompleteSastArtifactIngressInput {
   objectKey: string;
   observedContentDigest: `sha256:${string}`;
   observedByteSize: number;
+  validation: Readonly<SastArtifactValidationResult>;
   receivedAt: string;
 }
 

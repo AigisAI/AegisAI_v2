@@ -151,6 +151,9 @@ test('scanner artifacts carry bounded provenance metadata instead of raw reposit
   for (const field of [
     'scannerImageDigest',
     'ruleBundleDigest',
+    'vulnerabilityDatabaseDigest',
+    'schemaBundleDigest',
+    'normalizerBundleDigest',
     'inputCommitSha',
     'artifactSchemaVersion',
     'artifactRef',

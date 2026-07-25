@@ -194,13 +194,37 @@ Phase 6 ingress boundary:
 - The Scan Plane has no artifact read route and its object-store port exposes only immutable
   write and cleanup delete. The default provider fails closed until the production
   Data/Security Plane adapter is installed; raw object keys never enter user-facing responses.
+- The T030 validator tees each newly reserved artifact through a strict UTF-8 and bounded
+  streaming JSON parser while the immutable object write proceeds. Parser slices are aligned to
+  global byte offsets, so valid and invalid results are invariant to transport chunking. It independently binds the
+  semantic OpenGrep SARIF 2.1.0, Trivy JSON v2, or CycloneDX 1.6 schema plus scanner-set,
+  schema-bundle, normalizer-bundle, rule, and Trivy database digests together with the exact
+  scanner and canonical artifact reference. The transport and validator independently recompute
+  content digest and byte count, and the validator recomputes schema-specific record count; it
+  rejects duplicate keys, excessive depth/tokens/key size/object-key count/string/number size, unknown boundary fields
+  or enums, missing required tool/message structures, unsafe paths, path collisions,
+  and invalid coordinates. SARIF URI paths are decoded only from canonical uppercase
+  percent-encoding before exact attested-path comparison.
+- Validation emits only a versioned, bounded, deterministically ordered result containing
+  boolean checks, reason codes, aggregate statistics, and a result digest. The canonical
+  envelope snapshot and result are durable on `SastArtifactIngestion`; neither raw bytes nor
+  object keys enter logs, audit metadata, user APIs, or the AI Plane. File coordinates require
+  exact provisioner-attested metadata for the attempt and inventory digest; the production
+  default provider returns no attestation and therefore never relaxes a location check.
+- T030 deliberately leaves both valid and invalid completed transports in
+  `PENDING_VALIDATION`. T031 owns the atomic final disposition and encrypted quarantine move,
+  so no artifact is normalization-eligible merely because streaming validation completed.
+  The online `ScannerRun_runtime_metadata_v3_check` accepts legacy digest-version rows during
+  rolling deployment while enforcing semantic schema versions and separate schema/normalizer
+  digests for new rows, and removes v1/v2 only after v3 validation succeeds.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
 runtime provider exist only to verify the handoff contract. Default production credential
 issuance and scanner execution both fail closed until live rollout installs provider-backed
-GitHub App/GitLab scoped minting, microVM, and artifact object-store adapters. T030 is therefore the next implementation
-task; live deployment eligibility still requires the 005 rollout and the remaining 006 gates.
+GitHub App/GitLab scoped minting, microVM, artifact object-store, and file-coordinate
+attestation adapters. T031 is therefore the next implementation task; live deployment
+eligibility still requires the 005 rollout and the remaining 006 gates.
 
 ## Deployment Position
 

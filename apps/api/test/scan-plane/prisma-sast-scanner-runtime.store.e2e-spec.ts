@@ -3,9 +3,63 @@ import {
   isSastAttemptSequenceEligible,
   PrismaSastScannerRuntimeStore
 } from '../../src/scan-plane/prisma-sast-scanner-runtime.store';
-import type { SastScannerWrapperExecutionRequest } from '@aegisai/shared';
+import type {
+  SastScannerInvocation,
+  SastScannerWrapperExecutionRequest
+} from '@aegisai/shared';
 
 describe('PrismaSastScannerRuntimeStore', () => {
+  it('persists semantic schema and immutable schema/normalizer bundle bindings', async () => {
+    const create = jest.fn().mockResolvedValue({ id: 'scanner-run-1' });
+    const store = new PrismaSastScannerRuntimeStore({
+      scannerRun: { create }
+    } as unknown as PrismaService);
+    const request = {
+      attemptId: 'attempt-1',
+      plan: {
+        tenantId: 'tenant-1',
+        scanRequestId: 'scan-1',
+        repositoryState: {
+          repositoryBindingId: 'repository-1'
+        },
+        resultIngressRef: 'result-ingress://tenant-1/scan-1'
+      }
+    } as unknown as SastScannerWrapperExecutionRequest;
+    const invocation = {
+      scanner: 'OPENGREP',
+      scannerVersion: '1.1.0',
+      required: true,
+      wrapperDigest: digest('1'),
+      scannerImageDigest: digest('2'),
+      ruleBundleDigest: digest('3'),
+      scannerSetDigest: digest('4'),
+      schemaBundleDigest: digest('5'),
+      normalizerBundleDigest: digest('6'),
+      profileId: 'JAVA_FAST_V1',
+      profileDigest: digest('7'),
+      preflightAttestationRef: 'preflight://attempt-1',
+      preflightInventoryDigest: digest('8'),
+      artifactSchema: 'OPENGREP_SARIF',
+      artifactSchemaVersion: '2.1.0'
+    } as unknown as SastScannerInvocation;
+
+    await store.beginScannerRun(
+      request,
+      'scanner-run-1',
+      invocation,
+      '2026-07-24T12:00:00.000Z'
+    );
+
+    expect(create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        artifactSchema: 'OPENGREP_SARIF',
+        artifactSchemaVersion: '2.1.0',
+        schemaBundleDigest: digest('5'),
+        normalizerBundleDigest: digest('6')
+      })
+    });
+  });
+
   it('admits attempt two only after attempt one has a durable retry-eligible infrastructure failure', () => {
     const eligibleAttemptOne = {
       attemptNumber: 1,
@@ -155,3 +209,7 @@ describe('PrismaSastScannerRuntimeStore', () => {
     expect(attemptUpdate).not.toHaveBeenCalled();
   });
 });
+
+function digest(character: string): `sha256:${string}` {
+  return `sha256:${character.repeat(64)}`;
+}
