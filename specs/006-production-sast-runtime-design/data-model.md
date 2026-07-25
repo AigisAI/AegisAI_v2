@@ -292,7 +292,7 @@ The envelope never embeds raw artifact bytes.
 Operational write-only intake state before an `ArtifactIngestionDecision`.
 
 - tenant, repository binding, scan, attempt, scanner run, and workload-identity references
-- scanner-run-unique idempotency key and canonical envelope digest
+- scanner-run-unique idempotency key, canonical envelope snapshot, and canonical envelope digest
 - declared and independently observed content digests and byte counts
 - opaque Data/Security Plane object key, never returned by the ingress or user-facing APIs
 - workload-identity validation result
@@ -302,7 +302,17 @@ Operational write-only intake state before an `ArtifactIngestionDecision`.
 Only a directly authenticated, attempt-bound workload can create the row. `RECEIVING` has no
 object key or observed metadata. `PENDING_VALIDATION` has an immutable object key, matching
 transport byte count, observed digest, and receipt timestamp; it is not yet eligible for
-normalization. One scanner run can own at most one ingestion.
+normalization. Its bounded `artifactValidation` metadata contains
+`sast-artifact-validation-v1`, outcome, artifact schema, envelope and observed-content digests,
+per-boundary boolean checks, globally ordered reason codes, aggregate parser/path/coordinate
+statistics, and a deterministic result digest. It never contains raw artifact/source bytes,
+secret values, or the object key. One scanner run can own at most one ingestion.
+
+The canonical envelope JSON is stored separately from the digest so T031 can make an
+independent disposition without trusting request reconstruction. The nullable database column
+supports rolling deployment of legacy rows; every new application reservation writes it.
+`PENDING_VALIDATION` remains a transport-complete state regardless of validation outcome until
+T031 atomically chooses `ACCEPTED`, `REJECTED`, or `QUARANTINED`.
 
 ### ArtifactIngestionDecision
 

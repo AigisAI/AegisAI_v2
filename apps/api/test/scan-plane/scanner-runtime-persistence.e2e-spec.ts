@@ -30,6 +30,13 @@ describe('Scanner runtime persistence and deployment contract', () => {
       ),
       'utf8'
     );
+    const validationMigration = readFileSync(
+      resolve(
+        __dirname,
+        '../../prisma/migrations/20260724210000_sast_artifact_validation/migration.sql'
+      ),
+      'utf8'
+    );
     const packageJson = JSON.parse(
       readFileSync(resolve(__dirname, '../../package.json'), 'utf8')
     ) as {
@@ -47,6 +54,8 @@ describe('Scanner runtime persistence and deployment contract', () => {
     expect(schema).toMatch(/scannerWorkspaceInventoryDigest\s+String\?/);
     expect(schema).toMatch(/resourceMetadata\s+Json\?/);
     expect(schema).toMatch(/artifactMetadata\s+Json\?/);
+    expect(schema).toMatch(/schemaBundleDigest\s+String\?/);
+    expect(schema).toMatch(/normalizerBundleDigest\s+String\?/);
     expect(schema).toMatch(/@@unique\(\[attemptId, scanner\]\)/);
     expect(schema).toMatch(/model SastArtifactIngestion \{/);
     expect(schema).toMatch(
@@ -55,6 +64,7 @@ describe('Scanner runtime persistence and deployment contract', () => {
     expect(schema).toMatch(
       /status\s+SastArtifactIngestionStatus\s+@default\(RECEIVING\)/
     );
+    expect(schema).toMatch(/envelope\s+Json\?/);
 
     expect(migration).toContain(
       'CONSTRAINT "SastScanAttempt_attempt_number_check"'
@@ -101,7 +111,28 @@ describe('Scanner runtime persistence and deployment contract', () => {
       "name: 'ScannerRun_exit_code_check'"
     );
     expect(onlineSchema).toContain(
-      "name: 'ScannerRun_runtime_metadata_v2_check'"
+      "name: 'ScannerRun_runtime_metadata_v3_check'"
+    );
+    expect(onlineSchema).toContain(
+      `"artifactSchemaVersion" = '2.1.0'`
+    );
+    expect(onlineSchema).toContain(
+      `"artifactSchemaVersion" = '2'`
+    );
+    expect(onlineSchema).toContain(
+      `"artifactSchemaVersion" = '1.6'`
+    );
+    expect(onlineSchema).toContain(
+      `"schemaBundleDigest" IS NULL`
+    );
+    expect(validationMigration).toContain(
+      'ADD COLUMN "schemaBundleDigest" TEXT'
+    );
+    expect(validationMigration).toContain(
+      'ADD COLUMN "normalizerBundleDigest" TEXT'
+    );
+    expect(validationMigration).toContain(
+      'ADD COLUMN "envelope" JSONB'
     );
     expect(onlineSchema).toContain(
       `("artifactMetadata" ->> 'byteSize')::numeric > 0`
@@ -150,12 +181,18 @@ describe('Scanner runtime persistence and deployment contract', () => {
       'DROP CONSTRAINT IF EXISTS "ScannerRun_runtime_metadata_check"'
     );
     expect(onlineSchema).toContain(
-      "replacement: 'ScannerRun_runtime_metadata_v2_check'"
+      "name: 'ScannerRun_runtime_metadata_v2_check'"
+    );
+    expect(onlineSchema).toContain(
+      "replacement: 'ScannerRun_runtime_metadata_v3_check'"
     );
     expect(onlineSchema).toContain(
       'superseded constraint removed:'
     );
     expect(ingressMigration).not.toMatch(
+      /^\s*CREATE (?:UNIQUE )?INDEX CONCURRENTLY/m
+    );
+    expect(validationMigration).not.toMatch(
       /^\s*CREATE (?:UNIQUE )?INDEX CONCURRENTLY/m
     );
     expect(onlineSchema).toMatch(/OR COALESCE\(/);
@@ -259,7 +296,31 @@ describe('Scanner runtime persistence and deployment contract', () => {
         responseObjectKeyAllowed: false,
         acceptedTransportState: 'PENDING_VALIDATION',
         defaultObjectStoreProvider:
-          'FAIL_CLOSED_UNTIL_DATA_SECURITY_ADAPTER_INSTALLED'
+          'FAIL_CLOSED_UNTIL_DATA_SECURITY_ADAPTER_INSTALLED',
+        artifactValidation: {
+          version: 'sast-artifact-validation-v1',
+          mode: 'STREAMING_BOUNDED_TEE',
+          maximumJsonDepth: 64,
+          maximumObjectKeys: 4096,
+          maximumStringBytes: 4096,
+          maximumCoordinateAttestationLines: 5_000_000,
+          transportChunkInvariant: true,
+          duplicateKeysAllowed: false,
+          utf8BomAllowed: false,
+          schemas: {
+            OPENGREP_SARIF: '2.1.0',
+            TRIVY_JSON: '2',
+            CYCLONEDX_JSON: '1.6'
+          },
+          exactScannerArtifactRefBindingRequired: true,
+          pinnedEnumsRequired: true,
+          independentTransportAndValidatorDigestRequired: true,
+          coordinateAttestationRequiredForLocations: true,
+          defaultCoordinateAttestationProvider: 'FAIL_CLOSED',
+          deterministicReasonOrderingRequired: true,
+          rawPayloadInValidationMetadataAllowed: false,
+          finalDispositionOwner: 'T031_QUARANTINE'
+        }
       },
       productionMockAnalysisAllowed: false,
       scannerEntrypoints: {

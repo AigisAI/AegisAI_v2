@@ -59,7 +59,7 @@ const constraints = [
   },
   {
     table: 'ScannerRun',
-    name: 'ScannerRun_runtime_metadata_v2_check',
+    name: 'ScannerRun_runtime_metadata_v3_check',
     type: 'c',
     definition: `CHECK (
       "attemptId" IS NULL
@@ -100,7 +100,22 @@ const constraints = [
               AND "artifactSchema" = 'CYCLONEDX_JSON'
             )
           )
-          AND "artifactSchemaVersion" ~ '^sha256:[a-f0-9]{64}$'
+          AND (
+            (
+              "schemaBundleDigest" IS NULL
+              AND "normalizerBundleDigest" IS NULL
+              AND "artifactSchemaVersion" ~ '^sha256:[a-f0-9]{64}$'
+            )
+            OR (
+              "schemaBundleDigest" ~ '^sha256:[a-f0-9]{64}$'
+              AND "normalizerBundleDigest" ~ '^sha256:[a-f0-9]{64}$'
+              AND (
+                ("scanner" = 'OPENGREP' AND "artifactSchemaVersion" = '2.1.0')
+                OR ("scanner" = 'TRIVY' AND "artifactSchemaVersion" = '2')
+                OR ("scanner" = 'SYFT' AND "artifactSchemaVersion" = '1.6')
+              )
+            )
+          )
           AND "startedAt" IS NOT NULL
           AND (
             (
@@ -171,7 +186,12 @@ const supersededConstraints = [
   {
     table: 'ScannerRun',
     name: 'ScannerRun_runtime_metadata_check',
-    replacement: 'ScannerRun_runtime_metadata_v2_check'
+    replacement: 'ScannerRun_runtime_metadata_v3_check'
+  },
+  {
+    table: 'ScannerRun',
+    name: 'ScannerRun_runtime_metadata_v2_check',
+    replacement: 'ScannerRun_runtime_metadata_v3_check'
   }
 ];
 

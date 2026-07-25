@@ -161,6 +161,8 @@ export class PrismaSastArtifactIngressStore
               scannerRunId: input.expected.scannerRunId,
               workloadIdentityRef: input.expected.workloadIdentityRef,
               idempotencyKey: input.idempotencyKey,
+              envelope:
+                input.envelope as unknown as Prisma.InputJsonValue,
               envelopeDigest: input.envelopeDigest,
               declaredContentDigest: input.declaredContentDigest,
               declaredByteSize: input.declaredByteSize,
@@ -273,7 +275,9 @@ export class PrismaSastArtifactIngressStore
           receivedAt: new Date(input.receivedAt),
           validationMetadata: {
             workloadIdentityValidated: true,
-            transportByteCountValidated: true
+            transportByteCountValidated: true,
+            artifactValidation:
+              input.validation as unknown as Prisma.InputJsonValue
           }
         }
       });
@@ -311,6 +315,9 @@ export class PrismaSastArtifactIngressStore
               scannerRunId: ingestion.scannerRunId,
               observedContentDigest: input.observedContentDigest,
               observedByteSize: input.observedByteSize,
+              validationOutcome: input.validation.outcome,
+              validationResultDigest: input.validation.resultDigest,
+              validationReasonCodes: [...input.validation.reasonCodes],
               nextState: 'PENDING_VALIDATION'
             }
           }

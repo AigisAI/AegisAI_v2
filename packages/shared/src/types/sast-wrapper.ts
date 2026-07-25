@@ -4,8 +4,10 @@ import type {
   SastRepositoryTreeEntry
 } from './sast-fetch';
 import {
+  SAST_ARTIFACT_SCHEMA_VERSIONS,
   SAST_SCANNER_KINDS,
   isSastScanPlanValid,
+  type SastArtifactSchema,
   type SastProfileId,
   type SastResourceLimits,
   type SastScanPlan,
@@ -152,8 +154,10 @@ export interface SastScannerInvocation {
   workingDirectory: string;
   scannerInputPath: string;
   outputPath: string;
-  artifactSchema: 'OPENGREP_SARIF' | 'TRIVY_JSON' | 'CYCLONEDX_JSON';
+  artifactSchema: SastArtifactSchema;
   artifactSchemaVersion: string;
+  schemaBundleDigest: `sha256:${string}`;
+  normalizerBundleDigest: `sha256:${string}`;
   scannerVersion: string;
   scannerImageDigest: `sha256:${string}`;
   wrapperDigest: `sha256:${string}`;
@@ -477,6 +481,8 @@ export function isSastScannerInvocationBoundToPlan(
       'scanner',
       'scannerInputPath',
       'scannerImageDigest',
+      'schemaBundleDigest',
+      'normalizerBundleDigest',
       'scannerSetDigest',
       'scannerVersion',
       'vulnerabilityDatabaseDigest',
@@ -533,7 +539,10 @@ export function isSastScannerInvocationBoundToPlan(
     invocation.outputPath === expectedOutputPath &&
     invocation.artifactSchema === expectedArtifactSchema &&
     invocation.artifactSchemaVersion ===
-      plan.scannerSet.schemaBundle.digest &&
+      SAST_ARTIFACT_SCHEMA_VERSIONS[expectedArtifactSchema] &&
+    invocation.schemaBundleDigest === plan.scannerSet.schemaBundle.digest &&
+    invocation.normalizerBundleDigest ===
+      plan.scannerSet.normalizerBundle.digest &&
     invocation.scannerVersion === scanner.version &&
     invocation.scannerImageDigest === scanner.digest &&
     invocation.wrapperDigest === scanner.wrapper.digest &&
@@ -664,7 +673,13 @@ export function isSastScannerProcessObservationValid(
         artifact.byteSize <= limits.maxArtifactBytes &&
         Number.isSafeInteger(artifact.recordCount) &&
         artifact.recordCount >= 0 &&
-        artifact.recordCount <= limits.maxArtifactRecords &&
+        artifact.recordCount <=
+          (observation.scanner === 'SYFT'
+            ? limits.maxArtifactRecords
+            : Math.min(
+                limits.maxArtifactRecords,
+                limits.maxFindings
+              )) &&
         typeof artifact.truncated === 'boolean'))
   );
 }

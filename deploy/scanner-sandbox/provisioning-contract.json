@@ -146,7 +146,38 @@
     "readRouteAllowed": false,
     "responseObjectKeyAllowed": false,
     "acceptedTransportState": "PENDING_VALIDATION",
-    "defaultObjectStoreProvider": "FAIL_CLOSED_UNTIL_DATA_SECURITY_ADAPTER_INSTALLED"
+    "defaultObjectStoreProvider": "FAIL_CLOSED_UNTIL_DATA_SECURITY_ADAPTER_INSTALLED",
+    "artifactValidation": {
+      "version": "sast-artifact-validation-v1",
+      "mode": "STREAMING_BOUNDED_TEE",
+      "maximumJsonDepth": 64,
+      "maximumKeyBytes": 256,
+      "maximumObjectKeys": 4096,
+      "maximumStringBytes": 4096,
+      "maximumNumberTokenBytes": 128,
+      "maximumTokenCount": 5000000,
+      "maximumCoordinateAttestationLines": 5000000,
+      "parserSliceBytes": 4096,
+      "transportChunkInvariant": true,
+      "duplicateKeysAllowed": false,
+      "utf8BomAllowed": false,
+      "schemas": {
+        "OPENGREP_SARIF": "2.1.0",
+        "TRIVY_JSON": "2",
+        "CYCLONEDX_JSON": "1.6"
+      },
+      "schemaBundleDigestRequired": true,
+      "normalizerBundleDigestRequired": true,
+      "trivyDatabaseDigestRequired": true,
+      "exactScannerArtifactRefBindingRequired": true,
+      "pinnedEnumsRequired": true,
+      "independentTransportAndValidatorDigestRequired": true,
+      "coordinateAttestationRequiredForLocations": true,
+      "defaultCoordinateAttestationProvider": "FAIL_CLOSED",
+      "deterministicReasonOrderingRequired": true,
+      "rawPayloadInValidationMetadataAllowed": false,
+      "finalDispositionOwner": "T031_QUARANTINE"
+    }
   },
   "allowedOperations": [
     "SCAN_SCOPED_REPOSITORY_FETCH",

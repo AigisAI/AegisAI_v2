@@ -130,6 +130,8 @@ const buildArtifactEnvelope = (plan) => ({
   ruleBundleDigest: plan.scannerSet.ruleBundles.find((bundle) => bundle.scanner === 'OPENGREP')
     .digest,
   scannerSetDigest: plan.scannerSet.scannerSetDigest,
+  schemaBundleDigest: plan.scannerSet.schemaBundle.digest,
+  normalizerBundleDigest: plan.scannerSet.normalizerBundle.digest,
   profileId: plan.profile.id,
   profileDigest: plan.profileDigest,
   preflightAttestationRef: 'attestation://attempt-1/preflight',
@@ -138,7 +140,7 @@ const buildArtifactEnvelope = (plan) => ({
   inputCommitSha: plan.repositoryState.fixedCommitSha,
   artifactSchema: 'OPENGREP_SARIF',
   artifactSchemaVersion: '2.1.0',
-  artifactRef: 'artifact://scanner-run-1',
+  artifactRef: `${plan.resultIngressRef}/opengrep`,
   contentDigest: digest('4'),
   byteSize: 1024,
   recordCount: 10,
@@ -151,6 +153,8 @@ const buildArtifactEnvelope = (plan) => ({
 const expectedArtifactBinding = (envelope) => ({
   attemptId: envelope.attemptId,
   scannerRunId: envelope.scannerRunId,
+  scanner: envelope.scanner,
+  artifactRef: envelope.artifactRef,
   workloadIdentityRef: envelope.workloadIdentityRef,
   preflightAttestationRef: envelope.preflightAttestationRef,
   preflightInventoryDigest: envelope.preflightInventoryDigest
@@ -298,6 +302,22 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
       envelope,
       plan,
       { ...expectedBinding, attemptId: 'attempt-current' }
+    ),
+    false
+  );
+  assert.equal(
+    runtime.isScannerArtifactEnvelopeBoundToPlan(
+      envelope,
+      plan,
+      { ...expectedBinding, scanner: 'TRIVY' }
+    ),
+    false
+  );
+  assert.equal(
+    runtime.isScannerArtifactEnvelopeBoundToPlan(
+      envelope,
+      plan,
+      { ...expectedBinding, artifactRef: 'ingress://other/opengrep' }
     ),
     false
   );

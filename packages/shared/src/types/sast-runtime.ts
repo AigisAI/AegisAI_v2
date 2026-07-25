@@ -55,6 +55,19 @@ export const SAST_ARTIFACT_ENVELOPE_HEADER = 'x-aegis-sast-artifact-envelope';
 export const SAST_ARTIFACT_IDEMPOTENCY_HEADER = 'idempotency-key';
 export const SAST_MAX_ARTIFACT_ENVELOPE_BYTES = 8192;
 
+export const SAST_ARTIFACT_SCHEMAS = [
+  'OPENGREP_SARIF',
+  'TRIVY_JSON',
+  'CYCLONEDX_JSON'
+] as const;
+export type SastArtifactSchema = (typeof SAST_ARTIFACT_SCHEMAS)[number];
+
+export const SAST_ARTIFACT_SCHEMA_VERSIONS = {
+  OPENGREP_SARIF: '2.1.0',
+  TRIVY_JSON: '2',
+  CYCLONEDX_JSON: '1.6'
+} as const satisfies Record<SastArtifactSchema, string>;
+
 export const SAST_ARTIFACT_INGESTION_STATES = [
   'RECEIVING',
   'PENDING_VALIDATION',
@@ -431,14 +444,17 @@ export interface ScannerArtifactEnvelope {
   scannerImageDigest: `sha256:${string}`;
   wrapperDigest: `sha256:${string}`;
   ruleBundleDigest?: `sha256:${string}`;
+  vulnerabilityDatabaseDigest?: `sha256:${string}`;
   scannerSetDigest: `sha256:${string}`;
+  schemaBundleDigest: `sha256:${string}`;
+  normalizerBundleDigest: `sha256:${string}`;
   profileId: SastProfileId;
   profileDigest: `sha256:${string}`;
   preflightAttestationRef: string;
   preflightInventoryDigest: `sha256:${string}`;
   scannerWorkspaceInventoryDigest: `sha256:${string}`;
   inputCommitSha: string;
-  artifactSchema: 'OPENGREP_SARIF' | 'TRIVY_JSON' | 'CYCLONEDX_JSON';
+  artifactSchema: SastArtifactSchema;
   artifactSchemaVersion: string;
   artifactRef: string;
   contentDigest: `sha256:${string}`;
@@ -461,6 +477,8 @@ export interface SastArtifactIngressReceipt {
 export interface ExpectedScannerArtifactBinding {
   attemptId: string;
   scannerRunId: string;
+  scanner: SastScannerKind;
+  artifactRef: string;
   workloadIdentityRef: string;
   preflightAttestationRef: string;
   preflightInventoryDigest: `sha256:${string}`;
@@ -981,6 +999,8 @@ export function isScannerArtifactEnvelopeBoundToPlan(
     !SAST_SCANNER_KINDS.includes(envelope.scanner as SastScannerKind) ||
     !isNonBlank(expectedBinding.attemptId) ||
     !isNonBlank(expectedBinding.scannerRunId) ||
+    !SAST_SCANNER_KINDS.includes(expectedBinding.scanner) ||
+    !isNonBlank(expectedBinding.artifactRef) ||
     !isNonBlank(expectedBinding.workloadIdentityRef) ||
     !isNonBlank(expectedBinding.preflightAttestationRef) ||
     !isSha256Digest(expectedBinding.preflightInventoryDigest) ||
@@ -1004,6 +1024,10 @@ export function isScannerArtifactEnvelopeBoundToPlan(
     envelope.scanRequestId === plan.scanRequestId &&
     envelope.attemptId === expectedBinding.attemptId &&
     envelope.scannerRunId === expectedBinding.scannerRunId &&
+    envelope.scanner === expectedBinding.scanner &&
+    envelope.artifactRef === expectedBinding.artifactRef &&
+    envelope.artifactRef ===
+      `${plan.resultIngressRef}/${envelope.scanner.toLowerCase()}` &&
     envelope.workloadIdentityRef === expectedBinding.workloadIdentityRef &&
     envelope.preflightAttestationRef === expectedBinding.preflightAttestationRef &&
     envelope.preflightInventoryDigest === expectedBinding.preflightInventoryDigest &&
@@ -1013,11 +1037,14 @@ export function isScannerArtifactEnvelopeBoundToPlan(
     envelope.scannerImageDigest === scanner.digest &&
     envelope.wrapperDigest === scanner.wrapper.digest &&
     envelope.scannerSetDigest === plan.scannerSet.scannerSetDigest &&
+    envelope.schemaBundleDigest === plan.scannerSet.schemaBundle.digest &&
+    envelope.normalizerBundleDigest === plan.scannerSet.normalizerBundle.digest &&
     envelope.profileId === plan.profile.id &&
     envelope.profileDigest === plan.profileDigest &&
     envelope.inputCommitSha === plan.repositoryState.fixedCommitSha &&
     envelope.artifactSchema === expectedSchema &&
-    isNonBlank(envelope.artifactSchemaVersion) &&
+    envelope.artifactSchemaVersion ===
+      SAST_ARTIFACT_SCHEMA_VERSIONS[expectedSchema] &&
     isNonBlank(envelope.artifactRef) &&
     isSha256Digest(envelope.contentDigest) &&
     Number.isSafeInteger(envelope.byteSize) &&
@@ -1025,13 +1052,24 @@ export function isScannerArtifactEnvelopeBoundToPlan(
     envelope.byteSize <= plan.profile.limits.maxArtifactBytes &&
     Number.isSafeInteger(envelope.recordCount) &&
     envelope.recordCount >= 0 &&
-    envelope.recordCount <= plan.profile.limits.maxArtifactRecords &&
+    envelope.recordCount <=
+      (envelope.artifactSchema === 'CYCLONEDX_JSON'
+        ? plan.profile.limits.maxArtifactRecords
+        : Math.min(
+            plan.profile.limits.maxArtifactRecords,
+            plan.profile.limits.maxFindings
+          )) &&
     Number.isSafeInteger(envelope.exitCode) &&
     SCANNER_EXECUTION_STATUSES.includes(envelope.executionStatus) &&
     isIsoTimestamp(envelope.producedAt) &&
     (envelope.scanner === 'SYFT'
-      ? envelope.ruleBundleDigest === undefined
-      : envelope.ruleBundleDigest === expectedRuleBundle?.digest)
+      ? envelope.ruleBundleDigest === undefined &&
+        envelope.vulnerabilityDatabaseDigest === undefined
+      : envelope.ruleBundleDigest === expectedRuleBundle?.digest &&
+        (envelope.scanner === 'TRIVY'
+          ? envelope.vulnerabilityDatabaseDigest ===
+            plan.scannerSet.vulnerabilityDatabase.digest
+          : envelope.vulnerabilityDatabaseDigest === undefined))
   );
 }
 
@@ -1055,6 +1093,8 @@ export function isScannerArtifactEnvelopeShapeValid(
     'scannerImageDigest',
     'wrapperDigest',
     'scannerSetDigest',
+    'schemaBundleDigest',
+    'normalizerBundleDigest',
     'profileId',
     'profileDigest',
     'preflightAttestationRef',
@@ -1072,7 +1112,10 @@ export function isScannerArtifactEnvelopeShapeValid(
     'executionStatus',
     'producedAt'
   ] as const;
-  const optionalKeys = ['ruleBundleDigest'] as const;
+  const optionalKeys = [
+    'ruleBundleDigest',
+    'vulnerabilityDatabaseDigest'
+  ] as const;
   const actualKeys = Object.keys(envelope);
   if (
     requiredKeys.some((key) => !Object.hasOwn(envelope, key)) ||
@@ -1098,7 +1141,11 @@ export function isScannerArtifactEnvelopeShapeValid(
     isSha256Digest(envelope.wrapperDigest as string) &&
     (envelope.ruleBundleDigest === undefined ||
       isSha256Digest(envelope.ruleBundleDigest as string)) &&
+    (envelope.vulnerabilityDatabaseDigest === undefined ||
+      isSha256Digest(envelope.vulnerabilityDatabaseDigest as string)) &&
     isSha256Digest(envelope.scannerSetDigest as string) &&
+    isSha256Digest(envelope.schemaBundleDigest as string) &&
+    isSha256Digest(envelope.normalizerBundleDigest as string) &&
     SAST_PROFILE_IDS.includes(envelope.profileId as SastProfileId) &&
     isSha256Digest(envelope.profileDigest as string) &&
     isBoundedIngressText(envelope.preflightAttestationRef, 8192) &&
@@ -1106,8 +1153,8 @@ export function isScannerArtifactEnvelopeShapeValid(
     isSha256Digest(envelope.scannerWorkspaceInventoryDigest as string) &&
     typeof envelope.inputCommitSha === 'string' &&
     isGitCommitSha(envelope.inputCommitSha) &&
-    ['OPENGREP_SARIF', 'TRIVY_JSON', 'CYCLONEDX_JSON'].includes(
-      envelope.artifactSchema as string
+    SAST_ARTIFACT_SCHEMAS.includes(
+      envelope.artifactSchema as SastArtifactSchema
     ) &&
     isBoundedIngressText(envelope.artifactSchemaVersion, 255) &&
     isBoundedIngressText(envelope.artifactRef, 2048) &&
@@ -1150,7 +1197,15 @@ export function canonicalizeScannerArtifactEnvelope(
     ...(envelope.ruleBundleDigest === undefined
       ? {}
       : { ruleBundleDigest: envelope.ruleBundleDigest }),
+    ...(envelope.vulnerabilityDatabaseDigest === undefined
+      ? {}
+      : {
+          vulnerabilityDatabaseDigest:
+            envelope.vulnerabilityDatabaseDigest
+        }),
     scannerSetDigest: envelope.scannerSetDigest,
+    schemaBundleDigest: envelope.schemaBundleDigest,
+    normalizerBundleDigest: envelope.normalizerBundleDigest,
     profileId: envelope.profileId,
     profileDigest: envelope.profileDigest,
     preflightAttestationRef: envelope.preflightAttestationRef,

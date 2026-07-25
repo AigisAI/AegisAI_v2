@@ -34,6 +34,7 @@ import {
   SastArtifactObjectStore,
   SastArtifactObjectStoreUnavailableError
 } from './sast-artifact-object-store';
+import { SastArtifactValidationService } from './sast-artifact-validation.service';
 
 const MAX_BASE64URL_ENVELOPE_BYTES =
   Math.ceil((SAST_MAX_ARTIFACT_ENVELOPE_BYTES * 4) / 3) + 4;
@@ -64,7 +65,8 @@ class SastArtifactTransportError extends Error {
 export class SastArtifactIngressService {
   constructor(
     private readonly store: SastArtifactIngressStore,
-    private readonly objectStore: SastArtifactObjectStore
+    private readonly objectStore: SastArtifactObjectStore,
+    private readonly validation: SastArtifactValidationService
   ) {}
 
   async ingest(
@@ -124,6 +126,7 @@ export class SastArtifactIngressService {
     try {
       reservation = await this.store.reserve({
         ingestionId,
+        envelope,
         envelopeDigest,
         idempotencyKey: requiredIdempotencyKey,
         expected,
@@ -170,6 +173,11 @@ export class SastArtifactIngressService {
     };
     let objectKey: string | undefined;
     try {
+      const validationSession = await this.validation.createSession({
+        envelope,
+        envelopeDigest,
+        expected
+      });
       const write = await this.objectStore.put({
         ingestionId,
         tenantId: envelope.tenantId,
@@ -177,7 +185,9 @@ export class SastArtifactIngressService {
         scanRequestId: envelope.scanRequestId,
         attemptId: envelope.attemptId,
         scannerRunId: envelope.scannerRunId,
-        body: this.observeBody(input.body, envelope.byteSize, observation)
+        body: validationSession.observe(
+          this.observeBody(input.body, envelope.byteSize, observation)
+        )
       });
       objectKey = this.validateObjectKey(write.objectKey);
       if (observation.byteSize !== envelope.byteSize) {
@@ -189,11 +199,21 @@ export class SastArtifactIngressService {
       const receivedAt = new Date().toISOString();
       const observedContentDigest =
         `sha256:${observation.hash.digest('hex')}` as const;
+      const validationResult = validationSession.finish();
+      if (
+        validationResult.observedContentDigest !==
+          observedContentDigest ||
+        validationResult.statistics.observedByteSize !==
+          observation.byteSize
+      ) {
+        throw new Error('Artifact validation observation mismatch.');
+      }
       await this.store.complete({
         ingestionId,
         objectKey,
         observedContentDigest,
         observedByteSize: observation.byteSize,
+        validation: validationResult,
         receivedAt
       });
 
@@ -343,6 +363,8 @@ export class SastArtifactIngressService {
       isScannerArtifactEnvelopeBoundToPlan(envelope, expected.plan, {
         attemptId: expected.attemptId,
         scannerRunId: expected.scannerRunId,
+        scanner: expected.scanner,
+        artifactRef: expected.artifactRef,
         workloadIdentityRef: identity.identityRef,
         preflightAttestationRef: expected.preflightAttestationRef,
         preflightInventoryDigest: expected.preflightInventoryDigest
