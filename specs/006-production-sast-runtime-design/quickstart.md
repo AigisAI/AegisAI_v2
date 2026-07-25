@@ -276,11 +276,14 @@ portion of Phase 6:
   misconfiguration trace/rendered cause are discarded in favor of deterministic safe text.
   Dependency locations are explicitly unknown because the fixed wrapper omits package-file
   coordinates; secret/IaC ranges require exact attested bounds and never receive invented
-  fallback coordinates.
+  fallback coordinates. Those coordinates remain occurrence metadata and are excluded from
+  secret/IaC structural identity; deterministic producer-order ordinals distinguish repeated
+  same-rule/target records, while exact-coordinate ambiguity fails closed.
 - T033 golden and malicious fixtures prove chunk-invariant direct/modified normalization,
   exact record counts, capability-specific authority, zero-finding provenance, non-authoritative
   scanner disposition, secret/context non-copy, bounded identifiers/packages, duplicate
-  identity rejection, attestation/retention rebinding, and fail-closed malformed streams.
+  identity rejection, line-shift identity invariance, occurrence distinction,
+  attestation/retention rebinding, and fail-closed malformed streams.
   Its canonical Trivy candidate batches remain transient with
   `durablePersistenceAllowed=false`; T035 redaction and T036 fingerprinting are still mandatory.
 

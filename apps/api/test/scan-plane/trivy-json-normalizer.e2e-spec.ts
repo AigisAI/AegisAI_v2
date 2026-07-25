@@ -280,6 +280,88 @@ describe('TrivyJsonNormalizer', () => {
     );
   });
 
+  it('keeps secret and IaC structural identity line-independent while distinguishing ordered occurrences', async () => {
+    const original = loadTrivyFixture(
+      'upstream-compatible.trivy.json'
+    );
+    const secondSecret = structuredClone(
+      original.Results[2]!.Secrets![0]!
+    );
+    secondSecret.StartLine = 5;
+    secondSecret.EndLine = 5;
+    secondSecret.Match = 'SECOND_SYNTHETIC_SECRET';
+    original.Results[2]!.Secrets!.push(secondSecret);
+
+    const shifted = structuredClone(original);
+    const shiftedMisconfiguration =
+      shifted.Results[1]!.Misconfigurations![0]!;
+    shiftedMisconfiguration.CauseMetadata!.StartLine = 3;
+    shiftedMisconfiguration.CauseMetadata!.EndLine = 3;
+    shifted.Results[2]!.Secrets![0]!.StartLine = 4;
+    shifted.Results[2]!.Secrets![0]!.EndLine = 4;
+    shifted.Results[2]!.Secrets![1]!.StartLine = 6;
+    shifted.Results[2]!.Secrets![1]!.EndLine = 6;
+    const shiftedModified =
+      shifted.Results[2]!.ExperimentalModifiedFindings![0]!
+        .Finding;
+    shiftedModified.StartLine = 8;
+    shiftedModified.EndLine = 8;
+
+    const originalContext = buildContext(original);
+    const shiftedContext = buildContext(shifted);
+    const originalResult = await normalizeAt(
+      normalizer,
+      originalContext.input,
+      chunks(originalContext.artifact, [19, 4077])
+    );
+    const shiftedResult = await normalizeAt(
+      normalizer,
+      shiftedContext.input,
+      chunks(shiftedContext.artifact, [4095, 1])
+    );
+    expect(originalResult.outcome).toBe('NORMALIZED');
+    expect(shiftedResult.outcome).toBe('NORMALIZED');
+    if (
+      originalResult.outcome !== 'NORMALIZED' ||
+      shiftedResult.outcome !== 'NORMALIZED'
+    ) {
+      return;
+    }
+
+    const projectIdentity = (
+      result: typeof originalResult
+    ) =>
+      result.batch.findings
+        .filter(
+          (finding) =>
+            finding.capability === 'SECRET_DETECTION' ||
+            finding.capability === 'IAC_MISCONFIGURATION'
+        )
+        .map((finding) => ({
+          ruleId: finding.provenance.ruleId,
+          identityMaterial: finding.identityMaterial
+        }));
+    expect(projectIdentity(shiftedResult)).toEqual(
+      projectIdentity(originalResult)
+    );
+    expect(
+      shiftedResult.batch.findings.map(
+        (finding) => finding.location
+      )
+    ).not.toEqual(
+      originalResult.batch.findings.map(
+        (finding) => finding.location
+      )
+    );
+    const awsIdentities = projectIdentity(originalResult)
+      .filter(({ ruleId }) => ruleId === 'aws-access-key-id')
+      .map(({ identityMaterial }) =>
+        identityMaterial.scannerMatchBasedId
+      );
+    expect(awsIdentities).toHaveLength(2);
+    expect(new Set(awsIdentities).size).toBe(2);
+  });
+
   it('accepts the same pinned producer shape through T030 before T033', async () => {
     const fixture = loadTrivyFixture(
       'upstream-compatible.trivy.json'

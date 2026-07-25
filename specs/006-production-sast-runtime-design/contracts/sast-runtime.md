@@ -634,6 +634,12 @@ line ranges require a canonical result target and exact provisioner-attested fil
 Omitted scanner coordinates become `UNKNOWN/SCANNER_LOCATION_OMITTED`; safe coordinates with
 genuinely unavailable metadata become `UNKNOWN/LOCATION_NOT_MAPPABLE` without retaining the
 path; malformed or drifted supplied attestations reject before artifact bytes are read.
+Secret and IaC `scannerMatchBasedId` and `structuralHash` preimages exclude line and column
+coordinates: coordinates are occurrence metadata only and a pure line shift must preserve
+T036 identity material. Multiple records for the same semantic rule and canonical target use
+their deterministic producer-order occurrence ordinal to remain distinct. Two otherwise
+indistinguishable records at the same exact coordinate are rejected as ambiguous instead of
+being assigned an unstable identity.
 
 Severity `CRITICAL|HIGH|MEDIUM|LOW` maps directly. Missing or explicit `UNKNOWN` maps to
 `INFO` plus `UNKNOWN_SEVERITY`; every other enum rejects. Trivy does not supply an

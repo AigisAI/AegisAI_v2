@@ -754,6 +754,8 @@ export class TrivyJsonNormalizer {
     );
     const candidates: TrivyNormalizedFindingCandidate[] = [];
     const identityKeys = new Set<string>();
+    const coordinateKeys = new Set<string>();
+    const occurrenceOrdinals = new Map<string, number>();
     for (const record of parsed.records) {
       const result = resultsByIndex.get(record.resultIndex);
       if (!result) {
@@ -966,17 +968,40 @@ export class TrivyJsonNormalizer {
           if (description.reason) reasons.add(description.reason);
           continue;
         }
+        const canonicalTarget = canonicalTargetForIdentity(
+          record,
+          result,
+          input.plan.profile.limits.maxPathDepth
+        );
+        const coordinateKey = JSON.stringify([
+          'SECRET_DETECTION',
+          bundleRule.ruleSemanticId,
+          canonicalTarget,
+          record.startLine,
+          record.endLine
+        ]);
+        if (coordinateKeys.has(coordinateKey)) {
+          reasons.add('NORMALIZATION_TRIVY_RESULT_INVALID');
+          continue;
+        }
+        coordinateKeys.add(coordinateKey);
+        const occurrenceKey = JSON.stringify([
+          'SECRET_DETECTION',
+          bundleRule.ruleSemanticId,
+          canonicalTarget
+        ]);
+        const occurrenceOrdinal =
+          (occurrenceOrdinals.get(occurrenceKey) ?? 0) + 1;
+        occurrenceOrdinals.set(
+          occurrenceKey,
+          occurrenceOrdinal
+        );
         const scannerMatchBasedId = canonicalIdentityDigest(
           SECRET_IDENTITY_PREFIX,
           [
             bundleRule.ruleSemanticId,
-            canonicalTargetForIdentity(
-              record,
-              result,
-              input.plan.profile.limits.maxPathDepth
-            ),
-            String(record.startLine ?? 0),
-            String(record.endLine ?? 0)
+            canonicalTarget,
+            String(occurrenceOrdinal)
           ]
         );
         candidate = {
@@ -1057,17 +1082,40 @@ export class TrivyJsonNormalizer {
           reasons.add('NORMALIZATION_TRIVY_MISCONFIGURATION_INVALID');
           continue;
         }
+        const canonicalTarget = canonicalTargetForIdentity(
+          record,
+          result,
+          input.plan.profile.limits.maxPathDepth
+        );
+        const coordinateKey = JSON.stringify([
+          'IAC_MISCONFIGURATION',
+          bundleRule.ruleSemanticId,
+          canonicalTarget,
+          record.startLine ?? 0,
+          record.endLine ?? 0
+        ]);
+        if (coordinateKeys.has(coordinateKey)) {
+          reasons.add('NORMALIZATION_TRIVY_RESULT_INVALID');
+          continue;
+        }
+        coordinateKeys.add(coordinateKey);
+        const occurrenceKey = JSON.stringify([
+          'IAC_MISCONFIGURATION',
+          bundleRule.ruleSemanticId,
+          canonicalTarget
+        ]);
+        const occurrenceOrdinal =
+          (occurrenceOrdinals.get(occurrenceKey) ?? 0) + 1;
+        occurrenceOrdinals.set(
+          occurrenceKey,
+          occurrenceOrdinal
+        );
         const scannerMatchBasedId = canonicalIdentityDigest(
           IAC_IDENTITY_PREFIX,
           [
             bundleRule.ruleSemanticId,
-            canonicalTargetForIdentity(
-              record,
-              result,
-              input.plan.profile.limits.maxPathDepth
-            ),
-            String(record.startLine ?? 0),
-            String(record.endLine ?? 0)
+            canonicalTarget,
+            String(occurrenceOrdinal)
           ]
         );
         candidate = {

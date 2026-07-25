@@ -136,6 +136,9 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   candidates, identity/batch/rejection digests, logs, audit, evidence, or AI payloads.
 - 100% Trivy dependency findings without package-file coordinates use
   `UNKNOWN/SCANNER_LOCATION_OMITTED`; no adapter may invent a fallback line.
+- 100% Trivy secret/IaC `scannerMatchBasedId` and `structuralHash` stability under line-only
+  shifts, while deterministic producer-order ordinals keep multiple same-rule/target
+  occurrences distinct and exact-coordinate ambiguity rejects the complete batch.
 - 100% rejection equality for oversized/chunk-varied streams, unpaired Unicode escapes,
   pre-decision clocks, and retention expiry crossed during streaming.
 - 100% rejection before artifact reads for supplied coordinate-attestation drift, and 100%

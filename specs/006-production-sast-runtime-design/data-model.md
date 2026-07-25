@@ -369,7 +369,9 @@ An in-memory, non-durable T032/T033 handoff from one accepted scanner artifact.
   version, with `ruleSource=VULNERABILITY_DATABASE`
 - bounded scanner identity material for T036, including the OpenGrep `matchBasedId/v1` only
   as a non-authoritative hint and namespaced opaque Trivy structural hashes that never contain
-  detected secret values
+  detected secret values. Trivy secret/IaC identity preimages exclude line/column coordinates;
+  coordinates remain occurrence metadata, while a deterministic producer-order ordinal
+  distinguishes multiple findings for the same semantic rule and canonical target
 - capability-discriminated Trivy details: package/advisory state for
   `DEPENDENCY_VULNERABILITY`, category plus explicit payload-discard booleans for
   `SECRET_DETECTION`, or check type/AVD ID/failing result for `IAC_MISCONFIGURATION`
@@ -389,8 +391,9 @@ status, or policy authority. Raw snippets, fixes, code flows, help Markdown, Tri
 title/description/message, secret match/code/context, modified-finding statement/source,
 misconfiguration traces/rendered causes, and scanner payload substructures are never fields.
 Dependency locations remain explicitly unknown when the fixed Trivy wrapper omits package
-coordinates; no fallback line is invented. T035 must redact candidates before durable storage
-and T036 must construct the final entity below.
+coordinates; no fallback line is invented. Exact-coordinate secret/IaC duplicates that cannot
+be distinguished without coordinate-derived identity are rejected as ambiguous. T035 must
+redact candidates before durable storage and T036 must construct the final entity below.
 
 ### NormalizedSastFinding
 
