@@ -5,7 +5,6 @@ import {
   OPENGREP_SARIF_NORMALIZER_VERSION,
   SAST_ARTIFACT_SCHEMA_VERSIONS,
   SAST_ARTIFACT_VALIDATION_LIMITS,
-  SAST_MAX_COORDINATE_VALUE,
   SAST_NORMALIZATION_LIMITS,
   buildSastScanPlanDigestPreimage,
   canonicalizeOpenGrepSarifNormalizationBatch,
@@ -23,6 +22,7 @@ import {
   orderSastNormalizationNotes,
   orderSastNormalizationRejectionReasons,
   type ExpectedScannerArtifactBinding,
+  type OpenGrepNormalizedFindingCandidate,
   type OpenGrepSarifNormalizationBatchCore,
   type OpenGrepSarifNormalizationRejectionCore,
   type OpenGrepSarifNormalizationResult,
@@ -34,7 +34,6 @@ import {
   type SastFindingLocation,
   type SastNormalizationNoteCode,
   type SastNormalizationRejectionReasonCode,
-  type SastNormalizedFindingCandidate,
   type SastScanPlan,
   type ScannerArtifactEnvelope
 } from '@aegisai/shared';
@@ -54,6 +53,18 @@ import {
 import type {
   SastFileCoordinateAttestation
 } from './sast-file-coordinate-attestation.provider';
+import {
+  digest,
+  hasUnsafeControls,
+  loadSastNormalizationCoordinates,
+  normalizeSastDescription as normalizeDescription,
+  normalizeSastTitle as normalizeTitle,
+  omitDecisionDigest,
+  omitResultDigest,
+  readReferenceTime,
+  utf8Bytes,
+  validateSastNormalizationReferenceTime
+} from './sast-normalization-support';
 
 const OPENGREP_SARIF_SCHEMA =
   'https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json';
@@ -162,14 +173,6 @@ interface InvocationState {
 interface ParsedOpenGrepSarif {
   rules: RuleState[];
   results: ResultState[];
-}
-
-interface NormalizedText {
-  value?: string;
-  reason?: Extract<
-    SastNormalizationRejectionReasonCode,
-    'NORMALIZATION_TEXT_INVALID' | 'NORMALIZATION_FIELD_LIMIT_EXCEEDED'
-  >;
 }
 
 export interface OpenGrepSarifNormalizationInput {
@@ -410,26 +413,11 @@ export class OpenGrepSarifNormalizer {
     referenceTime: Readonly<Date>,
     reasons: Set<SastNormalizationRejectionReasonCode>
   ): number {
-    const referenceTimeMilliseconds =
-      referenceTime instanceof Date
-        ? referenceTime.getTime()
-        : Number.NaN;
-    const decidedAtMilliseconds = Date.parse(disposition.decidedAt);
-    if (
-      !Number.isFinite(referenceTimeMilliseconds) ||
-      referenceTimeMilliseconds < decidedAtMilliseconds
-    ) {
-      reasons.add('NORMALIZATION_ACCEPTANCE_INVALID');
-    }
-    if (
-      !Number.isFinite(referenceTimeMilliseconds) ||
-      !disposition.retentionExpiresAt ||
-      referenceTimeMilliseconds >=
-        Date.parse(disposition.retentionExpiresAt)
-    ) {
-      reasons.add('NORMALIZATION_RETENTION_EXPIRED');
-    }
-    return referenceTimeMilliseconds;
+    return validateSastNormalizationReferenceTime(
+      disposition,
+      referenceTime,
+      reasons
+    );
   }
 
   private loadCoordinates(
@@ -437,93 +425,15 @@ export class OpenGrepSarifNormalizer {
     input: Readonly<OpenGrepSarifNormalizationInput>,
     reasons: Set<SastNormalizationRejectionReasonCode>
   ): ReadonlyMap<string, Readonly<SastFileCoordinateMetadata>> | null {
-    if (!attestation) {
-      return null;
-    }
-    if (
-      attestation.verified !== true ||
-      attestation.attestationRef !==
-        input.expectedBinding.preflightAttestationRef ||
-      attestation.inventoryDigest !==
-        input.expectedBinding.preflightInventoryDigest
-    ) {
-      reasons.add('NORMALIZATION_PLAN_BINDING_MISMATCH');
-      return null;
-    }
-    if (
-      !Array.isArray(attestation.files) ||
-      attestation.files.length >
-        input.plan.profile.limits.maxFileCount
-    ) {
-      reasons.add('NORMALIZATION_OPENGREP_LOCATION_INVALID');
-      return null;
-    }
-
-    const coordinates = new Map<
-      string,
-      Readonly<SastFileCoordinateMetadata>
-    >();
-    const foldedPaths = new Set<string>();
-    let totalLines = 0;
-    for (const rawFile of attestation.files as readonly unknown[]) {
-      if (
-        !rawFile ||
-        typeof rawFile !== 'object' ||
-        Array.isArray(rawFile) ||
-        !hasExactObjectKeys(rawFile, [
-          'normalizedPath',
-          'lineCount',
-          'maxColumnByLine'
-        ])
-      ) {
-        reasons.add('NORMALIZATION_OPENGREP_LOCATION_INVALID');
-        return null;
-      }
-      const file = rawFile as Record<string, unknown>;
-      const normalizedPath = normalizeArtifactPath(
-        file.normalizedPath,
-        input.plan.profile.limits.maxPathDepth
-      );
-      const foldedPath = normalizedPath
-        ?.toLocaleLowerCase('en-US')
-        .normalize('NFC');
-      const lineCount = file.lineCount;
-      if (
-        !normalizedPath ||
-        normalizedPath !== file.normalizedPath ||
-        !foldedPath ||
-        foldedPaths.has(foldedPath) ||
-        typeof lineCount !== 'number' ||
-        !Number.isSafeInteger(lineCount) ||
-        lineCount <= 0 ||
-        lineCount > SAST_MAX_COORDINATE_VALUE ||
-        lineCount >
-          SAST_ARTIFACT_VALIDATION_LIMITS
-            .maximumCoordinateAttestationLines -
-            totalLines ||
-        coordinates.has(normalizedPath) ||
-        !Array.isArray(file.maxColumnByLine) ||
-        file.maxColumnByLine.length !== lineCount ||
-        !file.maxColumnByLine.every(
-          (column: unknown) =>
-            typeof column === 'number' &&
-            Number.isSafeInteger(column) &&
-            column > 0 &&
-            column <= SAST_MAX_COORDINATE_VALUE
-        )
-      ) {
-        reasons.add('NORMALIZATION_OPENGREP_LOCATION_INVALID');
-        return null;
-      }
-      totalLines += lineCount;
-      foldedPaths.add(foldedPath);
-      coordinates.set(normalizedPath, {
-        normalizedPath,
-        lineCount,
-        maxColumnByLine: file.maxColumnByLine
-      });
-    }
-    return coordinates;
+    return loadSastNormalizationCoordinates({
+      attestation,
+      expectedBinding: input.expectedBinding,
+      maximumFileCount: input.plan.profile.limits.maxFileCount,
+      maximumPathDepth: input.plan.profile.limits.maxPathDepth,
+      invalidLocationReason:
+        'NORMALIZATION_OPENGREP_LOCATION_INVALID',
+      reasons
+    });
   }
 
   private buildCandidates(
@@ -535,7 +445,7 @@ export class OpenGrepSarifNormalizer {
       | ReadonlyMap<string, Readonly<SastFileCoordinateMetadata>>
       | null,
     reasons: Set<SastNormalizationRejectionReasonCode>
-  ): SastNormalizedFindingCandidate[] | null {
+  ): OpenGrepNormalizedFindingCandidate[] | null {
     const bundleRulesById = new Map(
       ruleBundle.rules.map((rule) => [rule.ruleId, rule] as const)
     );
@@ -570,7 +480,7 @@ export class OpenGrepSarifNormalizer {
       rulesByIndex.set(rule.index, { ...rule, id: ruleId });
     }
 
-    const candidates: SastNormalizedFindingCandidate[] = [];
+    const candidates: OpenGrepNormalizedFindingCandidate[] = [];
     const identityKeys = new Set<string>();
     for (const result of parsed.results) {
       const ruleId = normalizeIdentifier(
@@ -1494,7 +1404,7 @@ function mapSeverity(
   securitySeverity: string | number | undefined
 ):
   | {
-      value: SastNormalizedFindingCandidate['severity'];
+      value: OpenGrepNormalizedFindingCandidate['severity'];
       unknown: boolean;
     }
   | null {
@@ -1536,7 +1446,7 @@ function mapConfidence(
   tags: readonly string[],
   reasons: Set<SastNormalizationRejectionReasonCode>
 ):
-  | { value: SastNormalizedFindingCandidate['confidence'] }
+  | { value: OpenGrepNormalizedFindingCandidate['confidence'] }
   | null {
   const values = new Set<'HIGH' | 'MEDIUM' | 'LOW'>();
   for (const tag of tags) {
@@ -1596,60 +1506,6 @@ function extractIdentifiers(
   };
 }
 
-function normalizeTitle(value: string | undefined): NormalizedText {
-  if (value === undefined) {
-    return { reason: 'NORMALIZATION_TEXT_INVALID' };
-  }
-  const normalized = normalizePlainText(value)
-    ?.replace(/[\t\n]+/gu, ' ')
-    .replace(/ {2,}/gu, ' ')
-    .trim();
-  if (!normalized) {
-    return { reason: 'NORMALIZATION_TEXT_INVALID' };
-  }
-  if (
-    utf8Bytes(normalized) > SAST_NORMALIZATION_LIMITS.titleBytes
-  ) {
-    return { reason: 'NORMALIZATION_FIELD_LIMIT_EXCEEDED' };
-  }
-  return { value: normalized };
-}
-
-function normalizeDescription(
-  value: string | undefined
-): NormalizedText {
-  const normalized =
-    value === undefined ? null : normalizePlainText(value)?.trim();
-  if (!normalized) {
-    return { reason: 'NORMALIZATION_TEXT_INVALID' };
-  }
-  if (
-    utf8Bytes(normalized) >
-    SAST_NORMALIZATION_LIMITS.descriptionBytes
-  ) {
-    return { reason: 'NORMALIZATION_FIELD_LIMIT_EXCEEDED' };
-  }
-  return { value: normalized };
-}
-
-function normalizePlainText(value: string): string | null {
-  const normalized = value
-    .replace(/\r\n?/gu, '\n')
-    .normalize('NFC');
-  return [...normalized].some((character) => {
-    const codePoint = character.codePointAt(0) ?? 0;
-    return (
-      (codePoint <= 0x1f &&
-        codePoint !== 0x09 &&
-        codePoint !== 0x0a) ||
-      (codePoint >= 0x7f && codePoint <= 0x9f) ||
-      (codePoint >= 0xd800 && codePoint <= 0xdfff)
-    );
-  })
-    ? null
-    : normalized;
-}
-
 function normalizeIdentifier(
   value: string | undefined,
   maximumBytes: number
@@ -1659,7 +1515,7 @@ function normalizeIdentifier(
   return normalized.length > 0 &&
     normalized === normalized.trim() &&
     utf8Bytes(normalized) <= maximumBytes &&
-    !hasUnsafeControls(normalized)
+    !hasUnsafeControls(normalized, false)
     ? normalized
     : null;
 }
@@ -2196,58 +2052,4 @@ function matches(
         segment === '*' || path[index] === segment
     )
   );
-}
-
-function omitResultDigest(
-  result: Readonly<SastArtifactValidationResult>
-) {
-  const { resultDigest, ...core } = result;
-  void resultDigest;
-  return core;
-}
-
-function omitDecisionDigest(
-  decision: Readonly<SastArtifactDispositionDecision>
-) {
-  const { decisionDigest, ...core } = decision;
-  void decisionDigest;
-  return core;
-}
-
-function hasUnsafeControls(value: string): boolean {
-  return [...value].some((character) => {
-    const codePoint = character.codePointAt(0) ?? 0;
-    return (
-      codePoint <= 0x1f ||
-      (codePoint >= 0x7f && codePoint <= 0x9f) ||
-      (codePoint >= 0xd800 && codePoint <= 0xdfff)
-    );
-  });
-}
-
-function utf8Bytes(value: string): number {
-  return Buffer.byteLength(value, 'utf8');
-}
-
-function hasExactObjectKeys(
-  value: object,
-  expected: readonly string[]
-): boolean {
-  const actual = Object.keys(value);
-  return (
-    actual.length === expected.length &&
-    actual.every((key) => expected.includes(key))
-  );
-}
-
-function readReferenceTime(clock: () => Date): Date {
-  try {
-    return new Date(Date.prototype.getTime.call(clock()));
-  } catch {
-    return new Date(Number.NaN);
-  }
-}
-
-function digest(value: string): `sha256:${string}` {
-  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }

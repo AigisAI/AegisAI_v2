@@ -1,0 +1,111 @@
+[
+  {
+    "capability": "DEPENDENCY_VULNERABILITY",
+    "ruleId": "CVE-2026-12345",
+    "ruleSource": "VULNERABILITY_DATABASE",
+    "severity": "HIGH",
+    "confidence": "UNKNOWN",
+    "cweIds": [
+      "CWE-79"
+    ],
+    "cveIds": [
+      "CVE-2026-12345"
+    ],
+    "location": {
+      "kind": "UNKNOWN",
+      "reasonCode": "SCANNER_LOCATION_OMITTED"
+    },
+    "scannerDisposition": {
+      "source": "DIRECT",
+      "status": "active",
+      "platformPolicyAuthority": false
+    },
+    "trivy": {
+      "kind": "DEPENDENCY_VULNERABILITY",
+      "vulnerabilityId": "CVE-2026-12345",
+      "packageName": "fixture-lib",
+      "packageType": "npm",
+      "installedVersion": "1.0.0",
+      "fixedVersion": "1.0.1",
+      "advisoryStatus": "fixed"
+    }
+  },
+  {
+    "capability": "IAC_MISCONFIGURATION",
+    "ruleId": "DS002",
+    "ruleSource": "CHECK_BUNDLE",
+    "severity": "HIGH",
+    "confidence": "UNKNOWN",
+    "cweIds": [],
+    "cveIds": [],
+    "location": {
+      "kind": "FILE",
+      "normalizedPath": "Dockerfile",
+      "lineStart": 2,
+      "lineEnd": 2
+    },
+    "scannerDisposition": {
+      "source": "DIRECT",
+      "status": "active",
+      "platformPolicyAuthority": false
+    },
+    "trivy": {
+      "kind": "IAC_MISCONFIGURATION",
+      "checkType": "Dockerfile Security Check",
+      "avdId": "AVD-DS-0002",
+      "resultStatus": "FAIL"
+    }
+  },
+  {
+    "capability": "SECRET_DETECTION",
+    "ruleId": "aws-access-key-id",
+    "ruleSource": "CHECK_BUNDLE",
+    "severity": "CRITICAL",
+    "confidence": "UNKNOWN",
+    "cweIds": [],
+    "cveIds": [],
+    "location": {
+      "kind": "FILE",
+      "normalizedPath": "deploy.sh",
+      "lineStart": 3,
+      "lineEnd": 3
+    },
+    "scannerDisposition": {
+      "source": "DIRECT",
+      "status": "active",
+      "platformPolicyAuthority": false
+    },
+    "trivy": {
+      "kind": "SECRET_DETECTION",
+      "category": "AWS",
+      "secretValueStored": false,
+      "secretPayloadDiscarded": true
+    }
+  },
+  {
+    "capability": "SECRET_DETECTION",
+    "ruleId": "github-pat",
+    "ruleSource": "CHECK_BUNDLE",
+    "severity": "HIGH",
+    "confidence": "UNKNOWN",
+    "cweIds": [],
+    "cveIds": [],
+    "location": {
+      "kind": "FILE",
+      "normalizedPath": "deploy.sh",
+      "lineStart": 7,
+      "lineEnd": 7
+    },
+    "scannerDisposition": {
+      "source": "MODIFIED",
+      "status": "ignored",
+      "platformPolicyAuthority": false
+    },
+    "trivy": {
+      "kind": "SECRET_DETECTION",
+      "category": "GitHub",
+      "secretValueStored": false,
+      "secretPayloadDiscarded": true
+    }
+  }
+]

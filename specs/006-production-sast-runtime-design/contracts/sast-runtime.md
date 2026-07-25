@@ -561,7 +561,7 @@ object key, or source bytes. The batch repeats the scanner kind/version/image di
 bundle digest, and every candidate repeats `scannerRunId`, so an accepted zero-finding batch
 still carries complete scanner provenance without dereferencing the source artifact.
 
-Normalized limits:
+OpenGrep normalized limits:
 
 - title <= 512 UTF-8 bytes
 - description <= 4,096 UTF-8 bytes
@@ -586,8 +586,82 @@ Normalized limits:
 - HTML is encoded as text; Markdown is sanitized only at presentation
 - unknown severity maps to `INFO` plus `UNKNOWN_SEVERITY`, never silently to `HIGH`
 
-Secret findings store a fingerprint and redacted preview. The detected value must not enter
-normalized finding, logs, audit metadata, or evidence.
+### Trivy JSON adapter v1
+
+`trivy-json-normalizer-v1` has the same T031 acceptance, retention, immutable-plan,
+coordinate-attestation, supply-chain, validation-result, and pre/post-stream rebinding
+requirements as the OpenGrep adapter. It additionally binds the exact immutable Trivy
+vulnerability-database digest and database version. It accepts only the JSON v2 shape emitted
+by the pinned Trivy 0.66.0 filesystem wrapper and only the three authoritative Trivy
+capabilities:
+
+OpenGrep, Trivy, and later normalizers consume one shared implementation for retention-clock
+validation, coordinate-attestation loading, safe text/identifier bounds, canonical SHA-256
+helpers, and digest-field omission. Adapter-specific reason codes remain explicit parameters;
+security-critical validation behavior must not be copied into an adapter-local variant.
+
+- dependency records from `Vulnerabilities` become `DEPENDENCY_VULNERABILITY`;
+- secret records from `Secrets` become `SECRET_DETECTION`;
+- failed IaC records from `Misconfigurations` become `IAC_MISCONFIGURATION`.
+
+The adapter also parses the pinned producer's `ExperimentalModifiedFindings`. Only nested
+vulnerability, secret, and misconfiguration findings are supported; license or unknown
+finding types reject the complete batch. The scanner status is retained as
+`scannerDisposition={source:"MODIFIED",status,platformPolicyAuthority:false}`. A direct finding
+uses `source:"DIRECT"` and `status:"active"`. Neither representation is a platform waiver,
+suppression, finding lifecycle state, severity override, policy decision, nor reason to omit
+the finding. Unknown modified-finding types or status enums reject as semantic ambiguity.
+
+Rule authority is capability-specific:
+
+- dependency `ruleSemanticId` is a namespaced projection of the validated vulnerability ID,
+  and `ruleRevision` is the pinned vulnerability-database version. Package type/name,
+  installed version, optional fixed version, advisory status, and database digest remain
+  structured provenance. Its non-authoritative scanner identity also includes the canonical
+  package/result target, so the same package advisory in separate monorepo manifests remains
+  distinct without inventing a source coordinate. The scan rule-bundle digest is still bound
+  at batch and candidate level, but it is not falsely presented as the dependency advisory source;
+- secret and IaC scanner rule IDs must resolve exactly to one entry in the signed immutable
+  checks-bundle manifest. Only its `ruleSemanticId` and `ruleRevision` are authoritative;
+  scanner-local titles, descriptions, and rule metadata cannot replace them.
+
+Trivy titles and descriptions are deterministic platform projections from those validated
+identifiers and bounded package/check metadata. Scanner `Title`, `Description`, `Message`,
+secret `Match`, `Code`, modified-finding `Statement`/`Source`, misconfiguration traces,
+rendered causes, and all other raw context are structurally bounded but discarded. In
+particular, Trivy secret `Code` can contain nearby unredacted values even when `Match` is
+masked, so neither value may enter a candidate, digest preimage, rejection, log, audit,
+dashboard, evidence, or AI payload. A secret candidate states
+`secretValueStored=false` and `secretPayloadDiscarded=true`; T035 remains a mandatory
+defense-in-depth redaction gate before any durable persistence.
+
+Dependency findings use `UNKNOWN/SCANNER_LOCATION_OMITTED` because the fixed wrapper does not
+enable Trivy package-file line coordinates; the adapter never invents line 1. Secret and IaC
+line ranges require a canonical result target and exact provisioner-attested file bounds.
+Omitted scanner coordinates become `UNKNOWN/SCANNER_LOCATION_OMITTED`; safe coordinates with
+genuinely unavailable metadata become `UNKNOWN/LOCATION_NOT_MAPPABLE` without retaining the
+path; malformed or drifted supplied attestations reject before artifact bytes are read.
+Secret and IaC `scannerMatchBasedId` and `structuralHash` preimages exclude line and column
+coordinates: coordinates are occurrence metadata only and a pure line shift must preserve
+T036 identity material. Multiple records for the same semantic rule and canonical target use
+their deterministic producer-order occurrence ordinal to remain distinct. Two otherwise
+indistinguishable records at the same exact coordinate are rejected as ambiguous instead of
+being assigned an unstable identity.
+
+Severity `CRITICAL|HIGH|MEDIUM|LOW` maps directly. Missing or explicit `UNKNOWN` maps to
+`INFO` plus `UNKNOWN_SEVERITY`; every other enum rejects. Trivy does not supply an
+authoritative confidence value, so confidence is `UNKNOWN` plus `UNKNOWN_CONFIDENCE`.
+Vulnerability IDs, package fields, check types, categories, statuses, CWE/CVE lists, and
+locations are syntax-checked and byte/count bounded without truncation. Duplicate semantic
+identity within one artifact rejects the complete batch.
+
+The adapter processes globally aligned 4,096-byte parser slices independent of transport
+chunking, collects only required scalar fields, and never materializes the artifact or a
+complete raw finding object. It independently rehashes bytes and recounts direct plus modified
+findings. A zero-finding artifact still emits the full scanner, rule bundle, vulnerability
+database, schema, normalizer, plan, attestation, validation, disposition, envelope, and
+artifact provenance. Canonical candidate ordering and the batch digest are byte-identical
+across transport chunk boundaries.
 
 ## Stable Fingerprint Contract
 

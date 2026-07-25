@@ -111,9 +111,13 @@ Fast and Deep lanes use separate queues and budgets but the same microVM securit
 
 ## Implemented Runtime Checkpoint
 
-T022 through T032 are implemented as the complete Phase 5 runtime boundary plus the
-ingress, validation, final-disposition, and OpenGrep normalization portion of Phase 6:
+T022 through T033 are implemented as the complete Phase 5 runtime boundary plus the
+ingress, validation, final-disposition, OpenGrep normalization, and Trivy normalization
+portion of Phase 6:
 
+- OpenGrep and Trivy adapters share one fail-closed implementation of retention clocks,
+  coordinate attestations, safe text/identifier bounds, and canonical digest primitives;
+  T034 must extend this support instead of cloning security-critical validation logic.
 - Token Broker verifies a signed, bounded-lifetime workload attestation against tenant,
   repository binding, scan request, attempt, workload identity, and fixed commit. A durable
   tenant/attempt-unique lease prevents replay while persisting only a SHA-256 credential fingerprint
@@ -257,15 +261,45 @@ ingress, validation, final-disposition, and OpenGrep normalization portion of Ph
   T036 identity hint; the candidate has no stable fingerprint, evidence reference, status,
   policy authority, user route, or AI path. T035 redaction and T036 fingerprinting remain
   mandatory before durable normalized finding persistence.
+- `trivy-json-normalizer-v1` independently rebinds the unexpired T031 accepted decision,
+  immutable plan, coordinated attestation, validation/envelope/content/disposition digests,
+  exact Trivy 0.66.0 scanner/image/wrapper/schema/normalizer/checks-bundle metadata, and pinned
+  vulnerability-database digest/version before reading a bounded stream. The adapter has no
+  route or general object-store capability and remains unwired until the later
+  Data/Security-owned redaction/persistence worker exists.
+- The Trivy adapter accepts only JSON v2 dependency, secret, and failed IaC result classes.
+  It streams bounded scalars through globally aligned parser slices, independently rehashes
+  bytes and recounts direct plus `ExperimentalModifiedFindings`, and never materializes the
+  artifact or a complete raw finding. Supported modified records remain findings; scanner
+  status is retained only with `platformPolicyAuthority=false`, while unknown/unsupported
+  status or capability rejects the complete batch.
+- Dependency semantic identity/revision comes from the pinned vulnerability ID/database;
+  secret and IaC identity/revision comes only from the signed checks manifest. Scanner
+  title/description/message, secret match/code/context, modified statement/source, and
+  misconfiguration trace/rendered cause are discarded in favor of deterministic safe text.
+  Dependency identity includes the canonical package/result target so identical advisories
+  in separate monorepo manifests remain distinct.
+  Dependency locations are explicitly unknown because the fixed wrapper omits package-file
+  coordinates; secret/IaC ranges require exact attested bounds and never receive invented
+  fallback coordinates. Those coordinates remain occurrence metadata and are excluded from
+  secret/IaC structural identity; deterministic producer-order ordinals distinguish repeated
+  same-rule/target records, while exact-coordinate ambiguity fails closed.
+- T033 golden and malicious fixtures prove chunk-invariant direct/modified normalization,
+  exact record counts, capability-specific authority, zero-finding provenance, non-authoritative
+  scanner disposition, secret/context non-copy, bounded identifiers/packages, duplicate
+  identity rejection, line-shift identity invariance, occurrence distinction,
+  attestation/retention rebinding, and fail-closed malformed streams.
+  Its canonical Trivy candidate batches remain transient with
+  `durablePersistenceAllowed=false`; T035 redaction and T036 fingerprinting are still mandatory.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
 runtime provider exist only to verify the handoff contract. Default production credential
 issuance and scanner execution both fail closed until live rollout installs provider-backed
 GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
-file-coordinate-attestation, and acceptance-gate adapters. T033 Trivy JSON normalization is
-therefore the next implementation task; live deployment eligibility still requires the 005
-rollout and the remaining 006 gates.
+file-coordinate-attestation, and acceptance-gate adapters. T034 CycloneDX SBOM validation and
+inventory ingestion is therefore the next implementation task; live deployment eligibility
+still requires the 005 rollout and the remaining 006 gates.
 
 ## Deployment Position
 

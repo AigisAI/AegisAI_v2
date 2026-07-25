@@ -6,6 +6,18 @@ import type {
   SastFindingProvenance,
   SastScanLane
 } from './sast-runtime';
+import {
+  hasExactKeys,
+  hasUnsafeControl,
+  isAllowedString,
+  isBoundedIdentifier,
+  isBoundedReference,
+  isCommitSha,
+  isNormalizationScopeValid,
+  isRecord,
+  isSha256Digest,
+  utf8Length
+} from './sast-normalization-validation';
 
 export const OPENGREP_SARIF_NORMALIZER_VERSION =
   'opengrep-sarif-normalizer-v1' as const;
@@ -19,6 +31,11 @@ export const SAST_NORMALIZATION_LIMITS = Object.freeze({
   ruleRevisionBytes: 256,
   scannerIdentityHintBytes: 512,
   vulnerabilityIdentifierBytes: 64,
+  vulnerabilityIdBytes: 256,
+  packageNameBytes: 512,
+  packageVersionBytes: 512,
+  packageTypeBytes: 128,
+  trivyCategoryBytes: 128,
   maximumRuleTags: 128,
   maximumCweIds: 25,
   maximumCveIds: 25
@@ -43,6 +60,15 @@ export const SAST_NORMALIZATION_REJECTION_REASON_CODES = [
   'NORMALIZATION_OPENGREP_RULE_INVALID',
   'NORMALIZATION_OPENGREP_RESULT_INVALID',
   'NORMALIZATION_OPENGREP_LOCATION_INVALID',
+  'NORMALIZATION_TRIVY_STRUCTURE_INVALID',
+  'NORMALIZATION_TRIVY_RESULT_INVALID',
+  'NORMALIZATION_TRIVY_VULNERABILITY_INVALID',
+  'NORMALIZATION_TRIVY_SECRET_INVALID',
+  'NORMALIZATION_TRIVY_MISCONFIGURATION_INVALID',
+  'NORMALIZATION_TRIVY_RULE_INVALID',
+  'NORMALIZATION_TRIVY_LOCATION_INVALID',
+  'NORMALIZATION_TRIVY_SUPPRESSION_INVALID',
+  'NORMALIZATION_TRIVY_PACKAGE_INVALID',
   'NORMALIZATION_TEXT_INVALID',
   'NORMALIZATION_FIELD_LIMIT_EXCEEDED',
   'NORMALIZATION_IDENTIFIER_INVALID',
@@ -70,11 +96,78 @@ export interface SastFindingIdentityMaterial {
   scannerMatchBasedId: string;
 }
 
+export const TRIVY_SCANNER_DISPOSITION_STATUSES = [
+  'active',
+  'ignored',
+  'unknown',
+  'not_affected',
+  'affected',
+  'fixed',
+  'under_investigation'
+] as const;
+export type TrivyScannerDispositionStatus =
+  (typeof TRIVY_SCANNER_DISPOSITION_STATUSES)[number];
+
+/**
+ * Trivy can emit externally modified findings when --show-suppressed is
+ * enabled. This value is provenance only and can never become a platform
+ * waiver, suppression, severity, lifecycle, or policy decision.
+ */
+export interface TrivyScannerDispositionProvenance {
+  source: 'DIRECT' | 'MODIFIED';
+  status: TrivyScannerDispositionStatus;
+  platformPolicyAuthority: false;
+}
+
+export interface TrivyDependencyVulnerabilityDetails {
+  kind: 'DEPENDENCY_VULNERABILITY';
+  vulnerabilityId: string;
+  packageName: string;
+  packageType: string;
+  installedVersion: string;
+  fixedVersion: string;
+  advisoryStatus:
+    | 'unknown'
+    | 'not_affected'
+    | 'affected'
+    | 'fixed'
+    | 'under_investigation'
+    | 'will_not_fix'
+    | 'fix_deferred'
+    | 'end_of_life';
+}
+
+export interface TrivySecretDetectionDetails {
+  kind: 'SECRET_DETECTION';
+  category: string;
+  secretValueStored: false;
+  secretPayloadDiscarded: true;
+}
+
+export interface TrivyIacMisconfigurationDetails {
+  kind: 'IAC_MISCONFIGURATION';
+  checkType: string;
+  avdId: string;
+  resultStatus: 'FAIL';
+}
+
+export type TrivyFindingDetails =
+  | TrivyDependencyVulnerabilityDetails
+  | TrivySecretDetectionDetails
+  | TrivyIacMisconfigurationDetails;
+
+export interface TrivyFindingProvenance
+  extends SastFindingProvenance {
+  scanner: 'TRIVY';
+  ruleSource: 'CHECK_BUNDLE' | 'VULNERABILITY_DATABASE';
+  vulnerabilityDatabaseDigest: `sha256:${string}`;
+}
+
 /**
  * T032/T033 adapters return transient candidates. T035 must redact them and
  * T036 must compute the platform fingerprint before durable finding storage.
  */
-export interface SastNormalizedFindingCandidate {
+interface SastNormalizedFindingCandidateBase {
   tenantId: string;
   repositoryBindingId: string;
   scanRequestId: string;
@@ -86,7 +179,6 @@ export interface SastNormalizedFindingCandidate {
   preflightInventoryDigest: `sha256:${string}`;
   commitSha: string;
   lane: SastScanLane;
-  capability: 'SAST';
   title: string;
   description: string;
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
@@ -95,10 +187,47 @@ export interface SastNormalizedFindingCandidate {
   cveIds: string[];
   location: SastFindingLocation;
   identityMaterial: SastFindingIdentityMaterial;
-  provenance: SastFindingProvenance & { scanner: 'OPENGREP' };
   notes: SastNormalizationNoteCode[];
   durablePersistenceAllowed: false;
 }
+
+export interface OpenGrepNormalizedFindingCandidate
+  extends SastNormalizedFindingCandidateBase {
+  capability: 'SAST';
+  provenance: SastFindingProvenance & { scanner: 'OPENGREP' };
+}
+
+interface TrivyNormalizedFindingCandidateBase
+  extends SastNormalizedFindingCandidateBase {
+  scannerDisposition: TrivyScannerDispositionProvenance;
+}
+
+export type TrivyNormalizedFindingCandidate =
+  | (TrivyNormalizedFindingCandidateBase & {
+      capability: 'DEPENDENCY_VULNERABILITY';
+      provenance: TrivyFindingProvenance & {
+        ruleSource: 'VULNERABILITY_DATABASE';
+      };
+      trivy: TrivyDependencyVulnerabilityDetails;
+    })
+  | (TrivyNormalizedFindingCandidateBase & {
+      capability: 'SECRET_DETECTION';
+      provenance: TrivyFindingProvenance & {
+        ruleSource: 'CHECK_BUNDLE';
+      };
+      trivy: TrivySecretDetectionDetails;
+    })
+  | (TrivyNormalizedFindingCandidateBase & {
+      capability: 'IAC_MISCONFIGURATION';
+      provenance: TrivyFindingProvenance & {
+        ruleSource: 'CHECK_BUNDLE';
+      };
+      trivy: TrivyIacMisconfigurationDetails;
+    });
+
+export type SastNormalizedFindingCandidate =
+  | OpenGrepNormalizedFindingCandidate
+  | TrivyNormalizedFindingCandidate;
 
 export interface OpenGrepSarifNormalizationBatch {
   version: typeof OPENGREP_SARIF_NORMALIZER_VERSION;
@@ -124,7 +253,7 @@ export interface OpenGrepSarifNormalizationBatch {
   normalizerBundleDigest: `sha256:${string}`;
   validationResultDigest: `sha256:${string}`;
   dispositionDecisionDigest: `sha256:${string}`;
-  findings: SastNormalizedFindingCandidate[];
+  findings: OpenGrepNormalizedFindingCandidate[];
   durablePersistenceAllowed: false;
   batchDigest: `sha256:${string}`;
 }
@@ -286,7 +415,9 @@ export function canonicalizeOpenGrepSarifNormalizationBatch(
     normalizerBundleDigest: batch.normalizerBundleDigest,
     validationResultDigest: batch.validationResultDigest,
     dispositionDecisionDigest: batch.dispositionDecisionDigest,
-    findings: batch.findings.map(canonicalFindingCandidate),
+    findings: batch.findings.map(
+      canonicalizeSastNormalizedFindingCandidate
+    ),
     durablePersistenceAllowed: false
   });
 }
@@ -372,7 +503,7 @@ export function isOpenGrepSarifNormalizationBatchShapeValid(
   if (value.scannerRunId !== scope.scannerRunId) return false;
   const findingsValid = value.findings.every(
     (finding) =>
-      isNormalizedFindingCandidateShapeValid(finding) &&
+      isSastNormalizedFindingCandidateShapeValid(finding) &&
       finding.tenantId === scope.tenantId &&
       finding.repositoryBindingId === scope.repositoryBindingId &&
       finding.scanRequestId === scope.scanRequestId &&
@@ -395,12 +526,12 @@ export function isOpenGrepSarifNormalizationBatchShapeValid(
   );
   if (!findingsValid) return false;
   const findings =
-    value.findings as readonly SastNormalizedFindingCandidate[];
+    value.findings as readonly OpenGrepNormalizedFindingCandidate[];
   return findings.every(
     (finding, index) =>
       index === 0 ||
       compareSastNormalizedFindingCandidates(
-        findings[index - 1] as SastNormalizedFindingCandidate,
+        findings[index - 1] as OpenGrepNormalizedFindingCandidate,
         finding
       ) < 0
   );
@@ -432,10 +563,10 @@ export function isOpenGrepSarifNormalizationRejectionShapeValid(
   );
 }
 
-function canonicalFindingCandidate(
+export function canonicalizeSastNormalizedFindingCandidate(
   finding: Readonly<SastNormalizedFindingCandidate>
 ) {
-  return {
+  const common = {
     tenantId: finding.tenantId,
     repositoryBindingId: finding.repositoryBindingId,
     scanRequestId: finding.scanRequestId,
@@ -495,43 +626,95 @@ function canonicalFindingCandidate(
       ruleId: finding.provenance.ruleId,
       ruleRevision: finding.provenance.ruleRevision,
       ruleBundleDigest: finding.provenance.ruleBundleDigest,
-      artifactDigest: finding.provenance.artifactDigest
+      artifactDigest: finding.provenance.artifactDigest,
+      ...(finding.provenance.scanner === 'TRIVY'
+        ? {
+            ruleSource: finding.provenance.ruleSource,
+            vulnerabilityDatabaseDigest:
+              finding.provenance.vulnerabilityDatabaseDigest
+          }
+        : {})
     },
     notes: [...finding.notes],
     durablePersistenceAllowed: false
   };
+  if (
+    !('scannerDisposition' in finding) ||
+    !('trivy' in finding)
+  ) {
+    return common;
+  }
+  return {
+    ...common,
+    scannerDisposition: {
+      source: finding.scannerDisposition.source,
+      status: finding.scannerDisposition.status,
+      platformPolicyAuthority: false
+    },
+    trivy:
+      finding.trivy.kind === 'DEPENDENCY_VULNERABILITY'
+        ? {
+            kind: finding.trivy.kind,
+            vulnerabilityId: finding.trivy.vulnerabilityId,
+            packageName: finding.trivy.packageName,
+            packageType: finding.trivy.packageType,
+            installedVersion: finding.trivy.installedVersion,
+            fixedVersion: finding.trivy.fixedVersion,
+            advisoryStatus: finding.trivy.advisoryStatus
+          }
+        : finding.trivy.kind === 'SECRET_DETECTION'
+          ? {
+              kind: finding.trivy.kind,
+              category: finding.trivy.category,
+              secretValueStored: false,
+              secretPayloadDiscarded: true
+            }
+          : {
+              kind: finding.trivy.kind,
+              checkType: finding.trivy.checkType,
+              avdId: finding.trivy.avdId,
+              resultStatus: finding.trivy.resultStatus
+            }
+  };
 }
 
-function isNormalizedFindingCandidateShapeValid(
+export function isSastNormalizedFindingCandidateShapeValid(
   value: unknown
 ): value is SastNormalizedFindingCandidate {
+  if (!isRecord(value) || !isRecord(value.provenance)) return false;
+  const isTrivy = value.provenance.scanner === 'TRIVY';
+  const commonKeys = [
+    'tenantId',
+    'repositoryBindingId',
+    'scanRequestId',
+    'attemptId',
+    'scannerRunId',
+    'planDigest',
+    'canonicalScanKey',
+    'preflightAttestationRef',
+    'preflightInventoryDigest',
+    'commitSha',
+    'lane',
+    'capability',
+    'title',
+    'description',
+    'severity',
+    'confidence',
+    'cweIds',
+    'cveIds',
+    'location',
+    'identityMaterial',
+    'provenance',
+    'notes',
+    'durablePersistenceAllowed'
+  ] as const;
   if (
-    !isRecord(value) ||
-    !hasExactKeys(value, [
-      'tenantId',
-      'repositoryBindingId',
-      'scanRequestId',
-      'attemptId',
-      'scannerRunId',
-      'planDigest',
-      'canonicalScanKey',
-      'preflightAttestationRef',
-      'preflightInventoryDigest',
-      'commitSha',
-      'lane',
-      'capability',
-      'title',
-      'description',
-      'severity',
-      'confidence',
-      'cweIds',
-      'cveIds',
-      'location',
-      'identityMaterial',
-      'provenance',
-      'notes',
-      'durablePersistenceAllowed'
-    ]) ||
+    !hasExactKeys(
+      value,
+      isTrivy
+        ? [...commonKeys, 'scannerDisposition', 'trivy']
+        : commonKeys
+    ) ||
     ![
       value.tenantId,
       value.repositoryBindingId,
@@ -545,7 +728,16 @@ function isNormalizedFindingCandidateShapeValid(
     !isSha256Digest(value.preflightInventoryDigest) ||
     !isCommitSha(value.commitSha) ||
     !isAllowedString(value.lane, ['FAST', 'DEEP']) ||
-    value.capability !== 'SAST' ||
+    !isAllowedString(
+      value.capability,
+      isTrivy
+        ? [
+            'DEPENDENCY_VULNERABILITY',
+            'SECRET_DETECTION',
+            'IAC_MISCONFIGURATION'
+          ]
+        : ['SAST']
+    ) ||
     !isBoundedPlainText(value.title, SAST_NORMALIZATION_LIMITS.titleBytes, false) ||
     !isBoundedPlainText(
       value.description,
@@ -577,7 +769,16 @@ function isNormalizedFindingCandidateShapeValid(
     ) ||
     !isNormalizationLocationShapeValid(value.location) ||
     !isIdentityMaterialValid(value.identityMaterial) ||
-    !isOpenGrepProvenanceValid(value.provenance) ||
+    !(isTrivy
+      ? isTrivyProvenanceValid(value.provenance)
+      : isOpenGrepProvenanceValid(value.provenance)) ||
+    (isTrivy &&
+      (!isTrivyScannerDispositionValid(value.scannerDisposition) ||
+        !isTrivyFindingDetailsValid(
+          value.trivy,
+          value.capability
+        ) ||
+        !isTrivyCandidateSemanticsValid(value))) ||
     !isStrictOrderedMembers(value.notes, SAST_NORMALIZATION_NOTE_CODES) ||
     value.durablePersistenceAllowed !== false
   ) {
@@ -715,19 +916,200 @@ function isOpenGrepProvenanceValid(value: unknown): boolean {
   );
 }
 
-function isNormalizationScopeValid(
-  value: unknown
-): value is SastArtifactDispositionScope {
+function isTrivyProvenanceValid(value: unknown): boolean {
   return (
     isRecord(value) &&
     hasExactKeys(value, [
-      'tenantId',
-      'repositoryBindingId',
-      'scanRequestId',
-      'attemptId',
-      'scannerRunId'
+      'scanner',
+      'scannerVersion',
+      'scannerImageDigest',
+      'ruleId',
+      'ruleRevision',
+      'ruleBundleDigest',
+      'artifactDigest',
+      'ruleSource',
+      'vulnerabilityDatabaseDigest'
     ]) &&
-    Object.values(value).every(isBoundedReference)
+    value.scanner === 'TRIVY' &&
+    isBoundedIdentifier(value.scannerVersion, 255, false) &&
+    isSha256Digest(value.scannerImageDigest) &&
+    isBoundedIdentifier(
+      value.ruleId,
+      SAST_NORMALIZATION_LIMITS.ruleIdBytes,
+      false
+    ) &&
+    isBoundedIdentifier(
+      value.ruleRevision,
+      SAST_NORMALIZATION_LIMITS.ruleRevisionBytes,
+      false
+    ) &&
+    isSha256Digest(value.ruleBundleDigest) &&
+    isSha256Digest(value.artifactDigest) &&
+    isAllowedString(value.ruleSource, [
+      'CHECK_BUNDLE',
+      'VULNERABILITY_DATABASE'
+    ]) &&
+    isSha256Digest(value.vulnerabilityDatabaseDigest)
+  );
+}
+
+function isTrivyScannerDispositionValid(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, [
+      'source',
+      'status',
+      'platformPolicyAuthority'
+    ]) &&
+    isAllowedString(value.source, ['DIRECT', 'MODIFIED']) &&
+    isAllowedString(value.status, TRIVY_SCANNER_DISPOSITION_STATUSES) &&
+    value.platformPolicyAuthority === false &&
+    (value.source === 'MODIFIED' || value.status === 'active')
+  );
+}
+
+function isTrivyCandidateSemanticsValid(
+  value: Record<string, unknown>
+): boolean {
+  if (
+    !isRecord(value.provenance) ||
+    !isRecord(value.identityMaterial) ||
+    !isRecord(value.location) ||
+    !isRecord(value.trivy) ||
+    value.confidence !== 'UNKNOWN' ||
+    !Array.isArray(value.notes) ||
+    !value.notes.includes('UNKNOWN_CONFIDENCE') ||
+    (value.severity === 'INFO') !==
+      value.notes.includes('UNKNOWN_SEVERITY') ||
+    !isSha256Digest(value.identityMaterial.structuralHash) ||
+    !isSha256Digest(value.identityMaterial.scannerMatchBasedId)
+  ) {
+    return false;
+  }
+
+  if (value.capability === 'DEPENDENCY_VULNERABILITY') {
+    const vulnerabilityId = value.trivy.vulnerabilityId;
+    return (
+      value.provenance.ruleSource === 'VULNERABILITY_DATABASE' &&
+      typeof vulnerabilityId === 'string' &&
+      value.provenance.ruleId === vulnerabilityId &&
+      value.identityMaterial.ruleSemanticId ===
+        `trivy-advisory:${vulnerabilityId}` &&
+      value.identityMaterial.symbolAnchor ===
+        value.trivy.packageName &&
+      value.identityMaterial.sinkKind === value.trivy.packageType &&
+      value.location.kind === 'UNKNOWN' &&
+      value.location.reasonCode === 'SCANNER_LOCATION_OMITTED' &&
+      (!/^CVE-/u.test(vulnerabilityId) ||
+        (Array.isArray(value.cveIds) &&
+          value.cveIds.includes(vulnerabilityId)))
+    );
+  }
+
+  if (
+    value.provenance.ruleSource !== 'CHECK_BUNDLE' ||
+    value.identityMaterial.symbolAnchor !== ''
+  ) {
+    return false;
+  }
+  return value.capability === 'SECRET_DETECTION'
+    ? value.identityMaterial.sinkKind === value.trivy.category
+    : value.capability === 'IAC_MISCONFIGURATION' &&
+        value.identityMaterial.sinkKind === value.trivy.checkType;
+}
+
+function isTrivyFindingDetailsValid(
+  value: unknown,
+  capability: unknown
+): boolean {
+  if (!isRecord(value) || value.kind !== capability) return false;
+  if (value.kind === 'DEPENDENCY_VULNERABILITY') {
+    return (
+      hasExactKeys(value, [
+        'kind',
+        'vulnerabilityId',
+        'packageName',
+        'packageType',
+        'installedVersion',
+        'fixedVersion',
+        'advisoryStatus'
+      ]) &&
+      isBoundedIdentifier(
+        value.vulnerabilityId,
+        SAST_NORMALIZATION_LIMITS.vulnerabilityIdBytes,
+        false
+      ) &&
+      /^[A-Z0-9][A-Z0-9._:+-]*$/u.test(
+        value.vulnerabilityId as string
+      ) &&
+      isBoundedIdentifier(
+        value.packageName,
+        SAST_NORMALIZATION_LIMITS.packageNameBytes,
+        false
+      ) &&
+      isBoundedIdentifier(
+        value.packageType,
+        SAST_NORMALIZATION_LIMITS.packageTypeBytes,
+        false
+      ) &&
+      isBoundedIdentifier(
+        value.installedVersion,
+        SAST_NORMALIZATION_LIMITS.packageVersionBytes,
+        false
+      ) &&
+      isBoundedIdentifier(
+        value.fixedVersion,
+        SAST_NORMALIZATION_LIMITS.packageVersionBytes,
+        true
+      ) &&
+      isAllowedString(value.advisoryStatus, [
+        'unknown',
+        'not_affected',
+        'affected',
+        'fixed',
+        'under_investigation',
+        'will_not_fix',
+        'fix_deferred',
+        'end_of_life'
+      ])
+    );
+  }
+  if (value.kind === 'SECRET_DETECTION') {
+    return (
+      hasExactKeys(value, [
+        'kind',
+        'category',
+        'secretValueStored',
+        'secretPayloadDiscarded'
+      ]) &&
+      isBoundedIdentifier(
+        value.category,
+        SAST_NORMALIZATION_LIMITS.trivyCategoryBytes,
+        false
+      ) &&
+      value.secretValueStored === false &&
+      value.secretPayloadDiscarded === true
+    );
+  }
+  return (
+    value.kind === 'IAC_MISCONFIGURATION' &&
+    hasExactKeys(value, [
+      'kind',
+      'checkType',
+      'avdId',
+      'resultStatus'
+    ]) &&
+    isBoundedIdentifier(
+      value.checkType,
+      SAST_NORMALIZATION_LIMITS.ruleIdBytes,
+      false
+    ) &&
+    isBoundedIdentifier(
+      value.avdId,
+      SAST_NORMALIZATION_LIMITS.ruleIdBytes,
+      true
+    ) &&
+    value.resultStatus === 'FAIL'
   );
 }
 
@@ -790,17 +1172,6 @@ function isSafeNormalizedPath(value: unknown): value is string {
   );
 }
 
-function isBoundedReference(value: unknown): value is string {
-  return isBoundedIdentifier(value, 2048, false);
-}
-
-function isAllowedString(
-  value: unknown,
-  allowed: readonly string[]
-): value is string {
-  return typeof value === 'string' && allowed.includes(value);
-}
-
 function isOptionalBoundedText(
   value: unknown,
   maximumBytes: number,
@@ -827,38 +1198,6 @@ function isBoundedPlainText(
   );
 }
 
-function isBoundedIdentifier(
-  value: unknown,
-  maximumBytes: number,
-  allowEmpty: boolean
-): value is string {
-  return (
-    typeof value === 'string' &&
-    (allowEmpty || value.length > 0) &&
-    value === value.normalize('NFC') &&
-    value === value.trim() &&
-    utf8Length(value) <= maximumBytes &&
-    !hasUnsafeControl(value, false)
-  );
-}
-
-function hasUnsafeControl(
-  value: string,
-  allowNewlines: boolean
-): boolean {
-  return [...value].some((character) => {
-    const codePoint = character.codePointAt(0) ?? 0;
-    if (allowNewlines && [0x09, 0x0a].includes(codePoint)) {
-      return false;
-    }
-    return (
-      codePoint <= 0x1f ||
-      (codePoint >= 0x7f && codePoint <= 0x9f) ||
-      (codePoint >= 0xd800 && codePoint <= 0xdfff)
-    );
-  });
-}
-
 function isOptionalPositiveCoordinate(value: unknown): boolean {
   return value === undefined || isPositiveCoordinate(value);
 }
@@ -872,41 +1211,8 @@ function isPositiveCoordinate(value: unknown): value is number {
   );
 }
 
-function isCommitSha(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(value)
-  );
-}
-
-function isSha256Digest(value: unknown): value is `sha256:${string}` {
-  return (
-    typeof value === 'string' &&
-    /^sha256:[a-f0-9]{64}$/u.test(value)
-  );
-}
-
-function utf8Length(value: string): number {
-  return new TextEncoder().encode(value).byteLength;
-}
-
 function compareCodeUnitStrings(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function hasExactKeys(
-  value: Record<string, unknown>,
-  expected: readonly string[]
-): boolean {
-  const actual = Object.keys(value);
-  return (
-    actual.length === expected.length &&
-    actual.every((key) => expected.includes(key))
-  );
 }
 
 function hasOnlyKeys(

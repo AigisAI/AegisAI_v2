@@ -47,6 +47,10 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Rule identity forgery | Scanner-local rule ID is presented as a platform semantic identity | Resolve semantic ID/revision only from unique signed bundle-manifest metadata; bind plan digest in every candidate | Golden mismatched-ID corpus; whole-batch rejection |
 | Coordinate-attestation downgrade | Supplied unverified or drifted attestation is treated as unavailable metadata | Distinguish provider absence from supplied drift; reject drift before artifact reads | Negative binding corpus; zero body-read assertion |
 | Raw SARIF retention | Snippets, fixes, code flows, or help content are copied into findings | Scalar-only streaming projection; transient candidates; T035 persistence gate | Golden privacy corpus; zero raw-payload audit/API assertions |
+| Trivy disposition smuggling | `ExperimentalModifiedFindings` status is treated as a platform waiver, suppression, or lifecycle decision | Normalize supported modified records; preserve status only with `platformPolicyAuthority=false`; reject unknown type/status | Direct/modified golden parity and unsupported-license/status corpus |
+| Trivy capability forgery | Scanner-local metadata changes dependency, secret, or IaC semantic authority | DB-derived dependency identity; signed checks-manifest identity for secret/IaC; exact capability/result class allowlist | Cross-capability/rule/database mismatch corpus; whole-batch rejection |
+| Trivy secret-context leakage | Masked `Match` is accepted while nearby `Code`, `Statement`, or `Source` contains the secret | Never collect raw secret/context scalar values; emit deterministic platform text and explicit discard flags | Sentinel secret corpus; zero occurrence in candidates/digests/rejections |
+| Trivy coordinate identity split | A line-only edit changes secret/IaC structural identity and breaks later finding lineage | Exclude coordinates from identity preimages; use deterministic producer-order occurrence ordinals; reject exact-coordinate ambiguity | Line-shift invariance and repeated-occurrence golden corpus |
 | Canonical Unicode collapse | An escaped unpaired surrogate is decoded to a replacement character before hashing | Validate raw JSON escape pairs before token decoding; NFC plus scalar-value checks | One-byte-chunk paired/unpaired surrogate corpus |
 | Retention clock rollback | A caller supplies a past payload timestamp to normalize an expired accepted object | Adapter-owned default clock checked before and after streaming; trusted test/task clock seam only; require monotonic time at or after disposition | Expiry, stream-crossing, and pre-decision clock tests |
 | Stored XSS | Rule message/path/package contains markup | Treat all strings as text; output encoding; sanitized Markdown only | Stored-XSS corpus; presentation CSP |
@@ -105,6 +109,11 @@ The following must always remain true:
 6. Raw artifacts and evidence expire within seven days.
 7. No customer-derived content enters a cross-tenant reusable cache.
 8. Every attempt ends with auditable credential, workspace, and microVM destruction.
+9. Scanner-side modified/ignored status never gains platform policy or lifecycle authority.
+10. Detected secret values and neighboring scanner context never enter a normalized candidate,
+    identity digest, rejection, log, audit, evidence, or AI payload.
+11. A normalizer accepts only the authoritative capability families and exact producer schema
+    pinned by its immutable plan.
 
 ## Required Security Test Corpus
 
@@ -116,6 +125,11 @@ The following must always remain true:
 - malformed SARIF, Trivy JSON, CycloneDX JSON, deep nesting, duplicate keys, invalid UTF-8
 - foreign/multi-run OpenGrep SARIF, notification-bearing invocation, duplicate/missing rule
   descriptors, multiple primary locations, invalid `%SRCROOT%`, and content rebinding
+- Trivy direct and modified vulnerability/secret/IaC records, unsupported modified licenses,
+  unknown disposition/status enums, cross-capability result arrays, duplicate semantic
+  identities, package/database/check-bundle rebinding, and omitted dependency coordinates
+- Trivy secret fixtures with sentinel values in `Match`, neighboring `Code`, modified-finding
+  `Statement`/`Source`, and untrusted misconfiguration message/trace/rendered-cause fields
 - malicious filenames, package names, symbols, rule messages, HTML, Markdown, and ANSI codes
 - known token formats and high-entropy secret fixtures
 - scanner crash/timeout/output bomb/truncation and result replay

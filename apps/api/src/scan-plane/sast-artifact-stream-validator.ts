@@ -224,6 +224,18 @@ const TRIVY_SECRET_FIELDS = new Set([
   'Layer',
   'Offset'
 ]);
+const TRIVY_MODIFIED_FINDING_FIELDS = new Set([
+  'Type',
+  'Status',
+  'Statement',
+  'Source',
+  'Finding'
+]);
+const TRIVY_MODIFIED_RECORD_FIELDS = new Set([
+  ...TRIVY_VULNERABILITY_FIELDS,
+  ...TRIVY_MISCONFIGURATION_FIELDS,
+  ...TRIVY_SECRET_FIELDS
+]);
 const CYCLONEDX_ROOT_FIELDS = new Set([
   '$schema',
   'bomFormat',
@@ -353,6 +365,19 @@ const TRIVY_MISCONFIGURATION_STATUSES = new Set([
   'PASS',
   'FAIL',
   'EXCEPTION'
+]);
+const TRIVY_MODIFIED_FINDING_TYPES = new Set([
+  'vulnerability',
+  'misconfiguration',
+  'secret'
+]);
+const TRIVY_MODIFIED_FINDING_STATUSES = new Set([
+  'ignored',
+  'unknown',
+  'not_affected',
+  'affected',
+  'fixed',
+  'under_investigation'
 ]);
 
 export interface SastArtifactStreamValidationInput {
@@ -1069,6 +1094,10 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
   private readonly physicalLocations = new Map<string, LocationState>();
   private readonly trivyTargets = new Map<number, string>();
   private readonly trivyResultKeys = new Map<number, Set<string>>();
+  private readonly trivyModifiedFindingKeys = new Map<
+    string,
+    Set<string>
+  >();
   private readonly pendingTrivyLocations = new Map<
     number,
     LocationState[]
@@ -1159,6 +1188,19 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
       this.recordStates.delete(pathKey);
     }
 
+    const modifiedFindingKeys =
+      this.trivyModifiedFindingKeys.get(pathKey);
+    if (modifiedFindingKeys) {
+      if (
+        !modifiedFindingKeys.has('Type') ||
+        !modifiedFindingKeys.has('Status') ||
+        !modifiedFindingKeys.has('Finding')
+      ) {
+        this.requiredFieldMissing();
+      }
+      this.trivyModifiedFindingKeys.delete(pathKey);
+    }
+
     const location = this.physicalLocations.get(pathKey);
     if (location) {
       this.validateLocation(location);
@@ -1185,6 +1227,7 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
     this.runKeys.get(pathKey)?.add(key);
     this.requiredObjects.get(pathKey)?.keys.add(key);
     this.recordStates.get(pathKey)?.keys.add(key);
+    this.trivyModifiedFindingKeys.get(pathKey)?.add(key);
     if (
       this.envelope.artifactSchema === 'TRIVY_JSON' &&
       isTrivyResultPath(objectPath)
@@ -1224,6 +1267,13 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
 
     const trivyKind = trivyRecordKind(objectPath);
     if (trivyKind && !this.allowedTrivyRecordFields(trivyKind).has(key)) {
+      this.unknownField();
+    }
+    if (
+      this.envelope.artifactSchema === 'TRIVY_JSON' &&
+      isTrivyModifiedFindingPath(objectPath) &&
+      !TRIVY_MODIFIED_FINDING_FIELDS.has(key)
+    ) {
       this.unknownField();
     }
     if (
@@ -1366,6 +1416,15 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
       }
     } else if (isTrivyRecordArrayPath(path)) {
       if (kind !== 'ARRAY') this.schemaInvalid();
+    } else if (isTrivyModifiedFindingPath(path)) {
+      if (kind !== 'OBJECT') {
+        this.schemaInvalid();
+      } else {
+        this.trivyModifiedFindingKeys.set(
+          keyForPath(path),
+          new Set()
+        );
+      }
     } else {
       const recordKind = trivyRecordKind(path);
       if (recordKind) this.startRecord(path, kind, recordKind);
@@ -1470,6 +1529,30 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
       matchesPath(path, ['Results', '*', 'Class'])
     ) {
       return TRIVY_RESULT_CLASSES;
+    }
+    if (
+      this.envelope.artifactSchema === 'TRIVY_JSON' &&
+      matchesPath(path, [
+        'Results',
+        '*',
+        'ExperimentalModifiedFindings',
+        '*',
+        'Type'
+      ])
+    ) {
+      return TRIVY_MODIFIED_FINDING_TYPES;
+    }
+    if (
+      this.envelope.artifactSchema === 'TRIVY_JSON' &&
+      matchesPath(path, [
+        'Results',
+        '*',
+        'ExperimentalModifiedFindings',
+        '*',
+        'Status'
+      ])
+    ) {
+      return TRIVY_MODIFIED_FINDING_STATUSES;
     }
     const record = this.recordStates.get(
       keyForPath(path.slice(0, -1))
@@ -1649,7 +1732,9 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
             ? ['ID', 'Title']
             : record.kind === 'TRIVY_SECRET'
               ? ['RuleID', 'Title', 'StartLine', 'EndLine']
-              : ['type', 'name'];
+              : record.kind === 'TRIVY_MODIFIED_FINDING'
+                ? []
+                : ['type', 'name'];
     if (required.some((key) => !record.keys.has(key))) {
       this.requiredFieldMissing();
     }
@@ -1867,11 +1952,15 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
       );
     }
     if (this.envelope.artifactSchema === 'TRIVY_JSON') {
-      const recordPath = path.slice(0, 4);
+      const recordPath =
+        path[2] === 'ExperimentalModifiedFindings'
+          ? path.slice(0, 5)
+          : path.slice(0, 4);
       const recordKind = trivyRecordKind(recordPath);
       if (!recordKind) return false;
       return (
         recordKind === 'TRIVY_SECRET' ||
+        recordKind === 'TRIVY_MODIFIED_FINDING' ||
         path.includes('CauseMetadata')
       );
     }
@@ -1966,7 +2055,8 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
       return (
         matchesPath(path, ['Results']) ||
         isTrivyResultPath(path) ||
-        isTrivyRecordArrayPath(path)
+        isTrivyRecordArrayPath(path) ||
+        isTrivyModifiedFindingPath(path)
       );
     }
     return isCycloneDxComponentArrayPath(path);
@@ -2008,6 +2098,9 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
     }
     if (kind === 'TRIVY_MISCONFIGURATION') {
       return TRIVY_MISCONFIGURATION_FIELDS;
+    }
+    if (kind === 'TRIVY_MODIFIED_FINDING') {
+      return TRIVY_MODIFIED_RECORD_FIELDS;
     }
     return TRIVY_SECRET_FIELDS;
   }
@@ -2102,11 +2195,22 @@ function isTrivyResultPath(path: JsonPath): boolean {
 function isTrivyRecordArrayPath(path: JsonPath): boolean {
   return (
     matchesPath(path, ['Results', '*', '*']) &&
-    TRIVY_RECORD_ARRAYS.has(String(path[2]))
+    (TRIVY_RECORD_ARRAYS.has(String(path[2])) ||
+      path[2] === 'ExperimentalModifiedFindings')
   );
 }
 
 function trivyRecordKind(path: JsonPath): string | null {
+  if (
+    path.length === 5 &&
+    path[0] === 'Results' &&
+    typeof path[1] === 'number' &&
+    path[2] === 'ExperimentalModifiedFindings' &&
+    typeof path[3] === 'number' &&
+    path[4] === 'Finding'
+  ) {
+    return 'TRIVY_MODIFIED_FINDING';
+  }
   if (
     path.length !== 4 ||
     path[0] !== 'Results' ||
@@ -2122,6 +2226,16 @@ function trivyRecordKind(path: JsonPath): string | null {
       : path[2] === 'Secrets'
         ? 'TRIVY_SECRET'
         : null;
+}
+
+function isTrivyModifiedFindingPath(path: JsonPath): boolean {
+  return (
+    path.length === 4 &&
+    path[0] === 'Results' &&
+    typeof path[1] === 'number' &&
+    path[2] === 'ExperimentalModifiedFindings' &&
+    typeof path[3] === 'number'
+  );
 }
 
 function isCycloneDxComponentArrayPath(path: JsonPath): boolean {

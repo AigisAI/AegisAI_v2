@@ -1,0 +1,199 @@
+{
+  "SchemaVersion": 2,
+  "CreatedAt": "2026-07-26T12:00:00.000Z",
+  "ArtifactName": "/workspace/repository",
+  "ArtifactType": "filesystem",
+  "Metadata": {
+    "ImageConfig": {
+      "architecture": "",
+      "created": "0001-01-01T00:00:00Z",
+      "os": "",
+      "rootfs": {
+        "type": "",
+        "diff_ids": null
+      },
+      "config": {}
+    }
+  },
+  "Results": [
+    {
+      "Target": "package-lock.json",
+      "Class": "lang-pkgs",
+      "Type": "npm",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2026-12345",
+          "VendorIDs": [
+            "GHSA-AAAA-BBBB-CCCC"
+          ],
+          "PkgID": "fixture-lib@1.0.0",
+          "PkgName": "fixture-lib",
+          "PkgIdentifier": {
+            "PURL": "pkg:npm/fixture-lib@1.0.0",
+            "UID": "fixture-uid"
+          },
+          "InstalledVersion": "1.0.0",
+          "FixedVersion": "1.0.1",
+          "Status": "fixed",
+          "Layer": {},
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://example.invalid/CVE-2026-12345",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "Fixture advisory source",
+            "URL": "https://example.invalid/advisories"
+          },
+          "Title": "Fixture dependency vulnerability",
+          "Description": "A deterministic dependency vulnerability used to verify Trivy JSON normalization.",
+          "Severity": "HIGH",
+          "CweIDs": [
+            "CWE-79"
+          ],
+          "VendorSeverity": {
+            "ghsa": 3
+          },
+          "CVSS": {
+            "ghsa": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N",
+              "V3Score": 8.1
+            }
+          },
+          "References": [
+            "https://example.invalid/reference"
+          ],
+          "PublishedDate": "2026-07-20T00:00:00.000Z",
+          "LastModifiedDate": "2026-07-24T00:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "Target": "Dockerfile",
+      "Class": "config",
+      "Type": "dockerfile",
+      "MisconfSummary": {
+        "Successes": 26,
+        "Failures": 1
+      },
+      "Misconfigurations": [
+        {
+          "Type": "Dockerfile Security Check",
+          "ID": "DS002",
+          "AVDID": "AVD-DS-0002",
+          "Title": "Image user should not be root",
+          "Description": "Run the container as a non-root user.",
+          "Message": "UNTRUSTED-MISCONFIG-MESSAGE-MUST-NOT-BE-COPIED",
+          "Namespace": "builtin.dockerfile.DS002",
+          "Query": "data.builtin.dockerfile.DS002.deny",
+          "Resolution": "Add a non-root USER instruction.",
+          "Severity": "HIGH",
+          "PrimaryURL": "https://example.invalid/AVD-DS-0002",
+          "References": [
+            "https://example.invalid/dockerfile"
+          ],
+          "Status": "FAIL",
+          "Layer": {},
+          "CauseMetadata": {
+            "Provider": "Dockerfile",
+            "Service": "general",
+            "StartLine": 2,
+            "EndLine": 2,
+            "Code": {
+              "Lines": [
+                {
+                  "Number": 2,
+                  "Content": "RUN echo SHOULD-NOT-BE-COPIED",
+                  "IsCause": true,
+                  "Annotation": "",
+                  "Truncated": false,
+                  "FirstCause": true,
+                  "LastCause": true
+                }
+              ]
+            },
+            "RenderedCause": {
+              "Raw": "SHOULD-NOT-BE-COPIED",
+              "Highlighted": "SHOULD-NOT-BE-COPIED"
+            }
+          },
+          "Traces": [
+            "UNTRUSTED-TRACE-MUST-NOT-BE-COPIED"
+          ]
+        }
+      ]
+    },
+    {
+      "Target": "deploy.sh",
+      "Class": "secret",
+      "Secrets": [
+        {
+          "RuleID": "aws-access-key-id",
+          "Category": "AWS",
+          "Severity": "CRITICAL",
+          "Title": "AWS Access Key ID",
+          "StartLine": 3,
+          "EndLine": 3,
+          "Code": {
+            "Lines": [
+              {
+                "Number": 1,
+                "Content": "export OTHER_TOKEN=ghp_SYNTHETIC_NEVER_COPY",
+                "IsCause": false,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "export OTHER_TOKEN=ghp_SYNTHETIC_NEVER_COPY",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 3,
+                "Content": "export AWS_ACCESS_KEY_ID=********************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "export AWS_ACCESS_KEY_ID=********************",
+                "FirstCause": true,
+                "LastCause": true
+              }
+            ]
+          },
+          "Match": "AKIA_SYNTHETIC_NEVER_COPY",
+          "Offset": 36,
+          "Layer": {}
+        }
+      ],
+      "ExperimentalModifiedFindings": [
+        {
+          "Type": "secret",
+          "Status": "ignored",
+          "Statement": "UNTRUSTED-SUPPRESSION-STATEMENT",
+          "Source": "./customer-controlled.trivyignore",
+          "Finding": {
+            "RuleID": "github-pat",
+            "Category": "GitHub",
+            "Severity": "HIGH",
+            "Title": "GitHub Personal Access Token",
+            "StartLine": 7,
+            "EndLine": 7,
+            "Code": {
+              "Lines": [
+                {
+                  "Number": 7,
+                  "Content": "export GITHUB_TOKEN=ghp_SECOND_SYNTHETIC_NEVER_COPY",
+                  "IsCause": true,
+                  "Annotation": "",
+                  "Truncated": false,
+                  "Highlighted": "export GITHUB_TOKEN=****************",
+                  "FirstCause": true,
+                  "LastCause": true
+                }
+              ]
+            },
+            "Match": "ghp_SECOND_SYNTHETIC_NEVER_COPY",
+            "Offset": 144,
+            "Layer": {}
+          }
+        }
+      ]
+    }
+  ]
+}
