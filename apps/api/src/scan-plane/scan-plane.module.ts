@@ -69,6 +69,7 @@ import {
   CredentialTmpfsVerifier,
   NodeCredentialTmpfsVerifier
 } from './credential-tmpfs-verifier.service';
+import { OpenGrepSarifNormalizer } from './opengrep-sarif-normalizer';
 
 @Module({
   imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
@@ -83,6 +84,7 @@ import {
     ScanPlaneService,
     SastArtifactIngressService,
     SastArtifactValidationService,
+    OpenGrepSarifNormalizer,
     SastArtifactDispositionService,
     SastArtifactDispositionTask,
     PrismaSastArtifactDispositionStore,
@@ -156,7 +158,8 @@ import {
     RepositoryFetchService,
     RepositoryPreflightService,
     SandboxRuntimeAttestationService,
-    SastScannerRuntimeService
+    SastScannerRuntimeService,
+    OpenGrepSarifNormalizer
   ]
 })
 export class ScanPlaneModule {}

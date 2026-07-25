@@ -351,6 +351,28 @@ missing objects become metadata-only `REJECTED` rows. Malformed validation metad
 plan rebinding failures, unsuccessful scanner state, failed validation, and explicit acceptance
 denial become `QUARANTINED` with a restricted-prefix object and exact encryption-context digest.
 
+### SastNormalizedFindingCandidate
+
+An in-memory, non-durable T032/T033 handoff from one accepted scanner artifact.
+
+- immutable tenant, repository binding, scan request, attempt, scanner run, fixed commit, and
+  lane attribution
+- `opengrep-sarif-normalizer-v1` or the explicit schema adapter version
+- bounded title/description, severity/confidence, CWE/CVE identifiers, location, and complete
+  scanner/rule/artifact provenance
+- bounded scanner identity material for T036, including the OpenGrep `matchBasedId/v1` only
+  as a non-authoritative hint
+- deterministic validation/disposition/envelope/schema/normalizer/artifact digest binding and
+  canonical batch digest
+- batch-level scanner version/image and rule-bundle provenance, retained even when the accepted
+  artifact has zero findings, plus candidate-level `scannerRunId`
+- `durablePersistenceAllowed=false`
+
+The candidate intentionally has no stable fingerprint, evidence reference, finding status, or
+policy authority. Raw snippets, fixes, code flows, help Markdown, and scanner payload
+substructures are never fields. T035 must redact candidates before durable storage and T036
+must construct the final entity below.
+
 ### NormalizedSastFinding
 
 - immutable `tenantId`, `repositoryBindingId`, `scanRequestId`, `attemptId`, and `commitSha`

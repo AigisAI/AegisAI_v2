@@ -121,6 +121,10 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
 ## Normalization and Data Integrity Gates
 
 - 100% deterministic normalized output for repeated identical plan/artifact inputs.
+- 100% OpenGrep golden-fixture equality across transport chunk boundaries, with zero raw
+  snippet/fix/code-flow/help payload fields in transient candidates.
+- 100% rejection equality for oversized/chunk-varied streams, unpaired Unicode escapes,
+  pre-decision clocks, and retention expiry crossed during streaming.
 - 100% artifact tenant, scan, scanner, commit, schema, digest, size, and count binding.
 - 100% unknown/unsafe enum, coordinate, path, encoding, and over-limit rejection.
 - 100% secret-value redaction before persistence outside the scanner artifact quarantine.

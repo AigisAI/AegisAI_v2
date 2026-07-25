@@ -48,7 +48,7 @@
 - [x] T029 Implement per-scan write-only artifact ingress and workload identity validation
 - [x] T030 Verify plan binding, schema, digest, byte/count, encoding, path, and coordinate limits
 - [x] T031 Quarantine malformed, mismatched, oversized, and security-violating artifacts
-- [ ] T032 Implement versioned OpenGrep SARIF normalization with golden fixtures
+- [x] T032 Implement versioned OpenGrep SARIF normalization with golden fixtures
 - [ ] T033 Implement versioned Trivy JSON normalization with golden fixtures
 - [ ] T034 Implement versioned CycloneDX SBOM validation and inventory ingestion
 - [ ] T035 Redact secret values before normalized persistence, logs, audit, or evidence

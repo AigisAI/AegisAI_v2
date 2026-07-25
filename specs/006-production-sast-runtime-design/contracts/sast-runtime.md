@@ -485,8 +485,72 @@ The sandbox never has direct Prisma, findings, policy, comment, or AI access.
 
 ## Normalization Contract
 
-Each supported artifact schema has one explicit adapter version. Adapters emit
-`NormalizedSastFinding` and cannot change policy state.
+Each supported artifact schema has one explicit adapter version. T032 and T033 adapters emit
+transient `SastNormalizedFindingCandidate` values and cannot change policy state. A candidate
+is not a `NormalizedSastFinding`: it has no platform stable fingerprint, evidence reference,
+or finding lifecycle status and carries `durablePersistenceAllowed=false`. T035 must redact
+the transient candidate before any durable storage, log, audit, dashboard, or evidence path;
+T036 then computes the platform fingerprint and constructs the final normalized finding.
+
+### OpenGrep SARIF adapter v1
+
+`opengrep-sarif-normalizer-v1` accepts only an unexpired T031 `ACCEPTED` decision whose
+ingestion ID, validation-result digest, canonical envelope digest, content digest/byte/record
+counts, tenant/repository/scan/attempt/scanner binding, fixed commit, profile, scanner image,
+wrapper, rule bundle, schema bundle, and normalizer bundle still match the immutable plan.
+Retention is evaluated before and after streaming against the adapter's own default wall clock;
+an alternate clock exists only as an explicit trusted test/task seam and is never read from
+artifact or envelope payload.
+The adapter does not expose a route and does not gain a general object-store read capability.
+Its bounded stream is supplied only by the later Data/Security-owned redaction/persistence
+worker; the default runtime remains unwired and fail closed until that worker exists.
+
+The v1 schema mapping is deliberately narrower than generic SARIF:
+
+- schema URI is the OASIS SARIF 2.1.0 release schema and `version` is exactly `2.1.0`;
+- exactly one run is allowed, with driver name `Opengrep OSS` and `semanticVersion` equal to
+  the envelope's pinned OpenGrep version;
+- exactly one invocation must report `executionSuccessful=true` with zero execution
+  notifications; a partial/error notification rejects the entire batch;
+- result `ruleId`, and `ruleIndex` when present, must resolve to one unique driver rule;
+- the result `message.text` is the plain-text description; rule `shortDescription.text` is
+  the title, with a bounded deterministic rule-ID fallback;
+- only zero or one primary location is accepted. OpenGrep's literal `%SRCROOT%` URI base is
+  the sole permitted base. Its canonical uppercase percent-encoded relative URI is decoded,
+  NFC checked, and rebound to exact provisioner-attested coordinates. SARIF `endColumn`
+  remains the standard exclusive end coordinate;
+- an omitted location becomes `UNKNOWN/SCANNER_LOCATION_OMITTED`; a safe but unattestable
+  location becomes `UNKNOWN/LOCATION_NOT_MAPPABLE` with no retained path or coordinates;
+  multiple primary locations, unsafe bases, or invalid attested bounds reject the batch;
+- `fingerprints["matchBasedId/v1"]` is retained only as bounded T036 identity material. A
+  namespaced SHA-256 projection supplies the candidate's non-authoritative `structuralHash`;
+  neither value is copied into `stableFingerprint` or treated as platform authority.
+
+Severity resolution uses valid result `level` over the matching rule default level. A valid
+OpenGrep rule `security-severity` score refines that mapping: `9.0..10.0 -> CRITICAL`,
+`7.0..<9.0 -> HIGH`, `4.0..<7.0 -> MEDIUM`, `>0..<4.0 -> LOW`, and `0 -> INFO`. Without a
+score, SARIF `error/warning/note/none` maps to `HIGH/MEDIUM/LOW/INFO`. A missing severity maps
+to `INFO` plus `UNKNOWN_SEVERITY`; an explicit unknown enum rejects. The unique
+`HIGH|MEDIUM|LOW CONFIDENCE` rule tag maps confidence; absence becomes `UNKNOWN` plus
+`UNKNOWN_CONFIDENCE`, while conflicting tags reject.
+
+Only canonical leading `CWE-<id>` and `CVE-<year>-<id>` rule tags become identifiers. Values
+are uppercased, de-duplicated, naturally sorted, and capped by the limits below. Scanner
+snippets, fixes, code flows, help Markdown, result properties, and any other raw substructure
+are parsed only for bounded structural validity and discarded. HTML and Markdown-looking
+characters in `message.text` remain literal text; no adapter renders trusted markup.
+
+Parsing reuses the T030 fatal UTF-8, duplicate-key, nesting, token, string, and number bounds
+with globally aligned fixed parser slices. It collects only required scalar fields rather
+than materializing the raw SARIF or a complete result object. Raw JSON Unicode escapes are
+validated before token decoding so an unpaired surrogate cannot collapse to a replacement
+character and alter canonical identity. The adapter independently
+rehashes bytes, checks byte/record counts, deterministically sorts candidates, and binds the
+canonical batch to a SHA-256 digest. Any semantic ambiguity rejects the complete batch with
+ordered bounded reason codes; rejection metadata contains no raw message, snippet, path,
+object key, or source bytes. The batch repeats the scanner kind/version/image digest and rule
+bundle digest, and every candidate repeats `scannerRunId`, so an accepted zero-finding batch
+still carries complete scanner provenance without dereferencing the source artifact.
 
 Normalized limits:
 
@@ -495,7 +559,10 @@ Normalized limits:
 - normalized path <= 1,024 UTF-8 bytes
 - symbol <= 512 UTF-8 bytes
 - rule ID/revision <= 256 UTF-8 bytes each
-- maximum 25 CWE and 25 CVE identifiers per finding
+- scanner identity hint <= 512 UTF-8 bytes; its namespaced structural projection is SHA-256
+- maximum 128 bounded OpenGrep rule tags inspected per rule
+- maximum 25 CWE and 25 CVE identifiers per finding; each canonical identifier <= 64 UTF-8
+  bytes
 - a file-relative location requires the matching attested file metadata; line and column values
   are positive safe integers no greater than `2,147,483,647`, lines cannot exceed the attested
   line count, and columns cannot exceed the attested per-line maximum

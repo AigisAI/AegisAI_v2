@@ -292,6 +292,43 @@ describe('SAST bounded artifact validation', () => {
     );
   });
 
+  it('rejects unpaired JSON Unicode escapes across byte-sized chunks', async () => {
+    const artifact = validCycloneDx();
+    artifact.components[0]!.name = '\ud800';
+    const result = await validate({
+      schema: 'CYCLONEDX_JSON',
+      artifact: jsonBytes(artifact),
+      recordCount: 1,
+      attestation: null,
+      chunkSizes: [1]
+    });
+
+    expect(result.validation.reasonCodes).toContain(
+      'ARTIFACT_INVALID_UTF8'
+    );
+  });
+
+  it('accepts a paired JSON Unicode surrogate escape across byte-sized chunks', async () => {
+    const artifact = Buffer.from(
+      jsonBytes(validCycloneDx())
+        .toString('utf8')
+        .replace(
+          '"name":"example"',
+          '"name":"\\ud83d\\ude00"'
+        ),
+      'utf8'
+    );
+    const result = await validate({
+      schema: 'CYCLONEDX_JSON',
+      artifact,
+      recordCount: 1,
+      attestation: null,
+      chunkSizes: [1]
+    });
+
+    expect(result.validation.outcome).toBe('PASSED');
+  });
+
   it.each([
     {
       name: 'content digest',
@@ -387,7 +424,7 @@ describe('SAST bounded artifact validation', () => {
     ).toBe(false);
   });
 
-  it('rejects indirect SARIF physical artifact locations', async () => {
+  it('accepts only the OpenGrep %SRCROOT% physical URI base', async () => {
     const artifact = validSarif();
     Object.assign(
       artifact.runs[0]!.results[0]!.locations[0]!.physicalLocation
@@ -695,7 +732,8 @@ function sarifResult(uri: string, line: number) {
       {
         physicalLocation: {
           artifactLocation: {
-            uri
+            uri,
+            uriBaseId: '%SRCROOT%'
           },
           region: {
             startLine: line,

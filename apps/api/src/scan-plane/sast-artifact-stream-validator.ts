@@ -23,15 +23,15 @@ import { Tokenizer, TokenType } from '@streamparser/json';
 
 import type { SastFileCoordinateAttestation } from './sast-file-coordinate-attestation.provider';
 
-type JsonPrimitive = string | number | boolean | null;
-type JsonPath = readonly (string | number)[];
-type ContainerKind = 'OBJECT' | 'ARRAY';
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonPath = readonly (string | number)[];
+export type ContainerKind = 'OBJECT' | 'ARRAY';
 
 interface ArtifactValidationFault extends Error {
   reasonCode: SastArtifactValidationReasonCode;
 }
 
-interface ArtifactValidationCallbacks {
+export interface ArtifactValidationCallbacks {
   onContainer(path: JsonPath, kind: ContainerKind): void;
   onContainerEnd(path: JsonPath, kind: ContainerKind): void;
   onKey(objectPath: JsonPath, key: string): void;
@@ -680,7 +680,7 @@ export class SastArtifactStreamValidationSession {
 
 }
 
-class BoundedJsonStructureTracker {
+export class BoundedJsonStructureTracker {
   private readonly stack: JsonFrame[] = [];
   private rootState: 'VALUE' | 'CONTAINER' | 'END' = 'VALUE';
   private tokenCount = 0;
@@ -939,12 +939,14 @@ class BoundedJsonStructureTracker {
   }
 }
 
-class RawJsonTokenLimiter {
+export class RawJsonTokenLimiter {
   private offset = 0;
   private readonly prefix: number[] = [];
   private inString = false;
   private escaped = false;
   private unicodeDigitsRemaining = 0;
+  private unicodeValue = 0;
+  private pendingHighSurrogate = false;
   private rawStringBytes = 0;
   private inNumber = false;
   private numberBytes = 0;
@@ -973,10 +975,28 @@ class RawJsonTokenLimiter {
           throw validationFault('ARTIFACT_JSON_STRING_LIMIT_EXCEEDED');
         }
         if (this.unicodeDigitsRemaining > 0) {
+          const digit = hexDigitValue(byte);
+          if (digit === null) {
+            throw validationFault('ARTIFACT_JSON_MALFORMED');
+          }
+          this.unicodeValue = this.unicodeValue * 16 + digit;
           this.unicodeDigitsRemaining -= 1;
+          if (this.unicodeDigitsRemaining === 0) {
+            this.finishUnicodeEscape();
+          }
         } else if (this.escaped) {
           this.escaped = false;
-          if (byte === 0x75) this.unicodeDigitsRemaining = 4;
+          if (byte === 0x75) {
+            this.unicodeDigitsRemaining = 4;
+            this.unicodeValue = 0;
+          } else if (this.pendingHighSurrogate) {
+            throw validationFault('ARTIFACT_INVALID_UTF8');
+          }
+        } else if (this.pendingHighSurrogate) {
+          if (byte !== 0x5c) {
+            throw validationFault('ARTIFACT_INVALID_UTF8');
+          }
+          this.escaped = true;
         } else if (byte === 0x5c) {
           this.escaped = true;
         } else if (byte === 0x22) {
@@ -1012,8 +1032,31 @@ class RawJsonTokenLimiter {
   }
 
   end(): void {
+    if (this.pendingHighSurrogate) {
+      throw validationFault('ARTIFACT_INVALID_UTF8');
+    }
     if (this.inString || this.escaped || this.unicodeDigitsRemaining > 0) {
       throw validationFault('ARTIFACT_JSON_MALFORMED');
+    }
+  }
+
+  private finishUnicodeEscape(): void {
+    if (this.unicodeValue >= 0xd800 && this.unicodeValue <= 0xdbff) {
+      if (this.pendingHighSurrogate) {
+        throw validationFault('ARTIFACT_INVALID_UTF8');
+      }
+      this.pendingHighSurrogate = true;
+      return;
+    }
+    if (this.unicodeValue >= 0xdc00 && this.unicodeValue <= 0xdfff) {
+      if (!this.pendingHighSurrogate) {
+        throw validationFault('ARTIFACT_INVALID_UTF8');
+      }
+      this.pendingHighSurrogate = false;
+      return;
+    }
+    if (this.pendingHighSurrogate) {
+      throw validationFault('ARTIFACT_INVALID_UTF8');
     }
   }
 }
@@ -1167,7 +1210,7 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
       this.envelope.artifactSchema === 'OPENGREP_SARIF' &&
       objectPath.at(-1) === 'artifactLocation' &&
       objectPath.includes('physicalLocation') &&
-      (key === 'uriBaseId' || key === 'index')
+      key === 'index'
     ) {
       this.reasons.add('ARTIFACT_PATH_INVALID');
     }
@@ -1480,10 +1523,18 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
           '*',
           'message',
           'id'
-        ])) &&
+        ]) ||
+        this.isSarifPhysicalUriBaseIdField(path)) &&
       typeof value !== 'string'
     ) {
       this.schemaInvalid();
+    }
+    if (
+      this.envelope.artifactSchema === 'OPENGREP_SARIF' &&
+      this.isSarifPhysicalUriBaseIdField(path) &&
+      value !== '%SRCROOT%'
+    ) {
+      this.reasons.add('ARTIFACT_PATH_INVALID');
     }
 
     if (
@@ -1852,7 +1903,8 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
           '*',
           'message',
           'id'
-        ])
+        ]) ||
+        this.isSarifPhysicalUriBaseIdField(path)
       );
     }
     if (this.envelope.artifactSchema === 'TRIVY_JSON') {
@@ -1931,6 +1983,15 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
     );
   }
 
+  private isSarifPhysicalUriBaseIdField(path: JsonPath): boolean {
+    return (
+      this.envelope.artifactSchema === 'OPENGREP_SARIF' &&
+      path.at(-1) === 'uriBaseId' &&
+      path.at(-2) === 'artifactLocation' &&
+      path.includes('physicalLocation')
+    );
+  }
+
   private allowedRootFields(): ReadonlySet<string> {
     if (this.envelope.artifactSchema === 'OPENGREP_SARIF') {
       return SARIF_ROOT_FIELDS;
@@ -1964,7 +2025,7 @@ class SastArtifactSchemaInspector implements ArtifactValidationCallbacks {
   }
 }
 
-function decodeSarifArtifactUri(value: string): string | null {
+export function decodeSarifArtifactUri(value: string): string | null {
   if (
     value.includes('?') ||
     value.includes('#') ||
@@ -1988,7 +2049,7 @@ function decodeSarifArtifactUri(value: string): string | null {
   }
 }
 
-function normalizeArtifactPath(
+export function normalizeArtifactPath(
   value: unknown,
   maximumDepth: number
 ): string | null {
@@ -2004,7 +2065,11 @@ function normalizeArtifactPath(
     /^[A-Za-z][A-Za-z0-9+.-]*:/u.test(value) ||
     [...value].some((character) => {
       const codePoint = character.codePointAt(0)!;
-      return codePoint <= 31 || codePoint === 127;
+      return (
+        codePoint <= 0x1f ||
+        (codePoint >= 0x7f && codePoint <= 0x9f) ||
+        (codePoint >= 0xd800 && codePoint <= 0xdfff)
+      );
     })
   ) {
     return null;
@@ -2138,6 +2203,13 @@ function isJsonDelimiter(byte: number): boolean {
     byte === 0x5d ||
     byte === 0x7d
   );
+}
+
+function hexDigitValue(byte: number): number | null {
+  if (byte >= 0x30 && byte <= 0x39) return byte - 0x30;
+  if (byte >= 0x41 && byte <= 0x46) return byte - 0x41 + 10;
+  if (byte >= 0x61 && byte <= 0x66) return byte - 0x61 + 10;
+  return null;
 }
 
 function hasUnpairedSurrogate(value: string): boolean {

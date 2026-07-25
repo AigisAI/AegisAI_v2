@@ -156,6 +156,8 @@ incomplete, stale, quarantined, or security-blocked scan.
 - **FR-030**: Normalized findings MUST include capability, severity, confidence, location,
   scanner/rule/artifact provenance, stable fingerprint, and evidence references.
 - **FR-031**: Normalization MUST use explicit per-schema adapters with golden fixtures.
+  Adapter output before T035 redaction and T036 fingerprinting MUST be an in-memory,
+  non-durable candidate with no evidence, lifecycle, policy, or AI authority.
 - **FR-032**: Unknown enum values, invalid coordinates, overlong strings, unsafe encodings,
   and excessive nesting MUST fail closed.
 

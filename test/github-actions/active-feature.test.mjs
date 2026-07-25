@@ -25,10 +25,15 @@ const files = {
   sharedSastBehaviorTest: new URL('../../packages/shared/test/sast-runtime-behavior.test.mjs', import.meta.url),
   sharedSastPlanning: new URL('../../packages/shared/src/types/sast-planning.ts', import.meta.url),
   sharedSastPlanningTest: new URL('../../packages/shared/test/sast-planning.test.mjs', import.meta.url),
+  sharedSastNormalization: new URL('../../packages/shared/src/types/sast-normalization.ts', import.meta.url),
+  sharedSastNormalizationTest: new URL('../../packages/shared/test/sast-normalization.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
   apiSastPlannerTest: new URL('../../apps/api/test/control-plane/sast-scan-planner.service.e2e-spec.ts', import.meta.url),
+  apiOpenGrepNormalizer: new URL('../../apps/api/src/scan-plane/opengrep-sarif-normalizer.ts', import.meta.url),
+  apiOpenGrepNormalizerTest: new URL('../../apps/api/test/scan-plane/opengrep-sarif-normalizer.e2e-spec.ts', import.meta.url),
+  openGrepGoldenFixture: new URL('../../apps/api/test/fixtures/opengrep-sarif/upstream-compatible.sarif.json', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
   completedDeploymentChecklist: new URL('../../specs/005-production-deployment-operations/checklists/requirements.md', import.meta.url),
@@ -190,6 +195,33 @@ test('SAST Phase 4 planner runtime is implemented and guarded by executable test
   for (const taskId of ['T018', 'T019', 'T020', 'T021']) {
     assert.match(tasks, new RegExp(`- \\[x\\] ${taskId}\\b`));
   }
+});
+
+test('SAST T032 OpenGrep normalization is versioned, transient, and fixture-guarded', () => {
+  const sharedNormalization = readNormalizedText(files.sharedSastNormalization);
+  const sharedNormalizationTest = readNormalizedText(
+    files.sharedSastNormalizationTest
+  );
+  const normalizer = readNormalizedText(files.apiOpenGrepNormalizer);
+  const normalizerTest = readNormalizedText(files.apiOpenGrepNormalizerTest);
+  const fixture = readNormalizedText(files.openGrepGoldenFixture);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+
+  assert.match(sharedNormalization, /opengrep-sarif-normalizer-v1/);
+  assert.match(sharedNormalization, /durablePersistenceAllowed:\s*false/);
+  assert.doesNotMatch(sharedNormalization, /stableFingerprint:\s*/);
+  assert.match(sharedNormalizationTest, /without inventing durable finding state/);
+  assert.match(normalizer, /class OpenGrepSarifNormalizer/);
+  assert.match(normalizer, /Opengrep OSS/);
+  assert.match(normalizer, /matchBasedId\/v1/);
+  assert.match(normalizerTest, /byte-exactly across chunking/);
+  assert.match(normalizerTest, /not\.toContain\('super-secret'\)/);
+  assert.match(fixture, /"uriBaseId": "%SRCROOT%"/);
+  assert.match(tasks, /- \[x\] T032\b/);
+  assert.match(quickstart, /T033 Trivy JSON normalization is/);
+  assert.match(contract, /OpenGrep SARIF adapter v1/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

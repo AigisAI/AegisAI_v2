@@ -1,0 +1,114 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolExecutionNotifications": []
+        }
+      ],
+      "results": [
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb_0"
+          },
+          "locations": [],
+          "message": {
+            "text": "A nullable value is dereferenced"
+          },
+          "properties": {},
+          "ruleId": "rules.null-deref"
+        },
+        {
+          "fingerprints": {
+            "matchBasedId/v1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/Caf%C3%A9.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "endColumn": 28,
+                  "endLine": 4,
+                  "snippet": {
+                    "text": "PASSWORD=super-secret"
+                  },
+                  "startColumn": 9,
+                  "startLine": 4
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "<b>Do not render</b> [details](https://example.invalid)"
+          },
+          "properties": {
+            "exposure": "reachable"
+          },
+          "ruleId": "rules.sql-injection"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "Opengrep OSS",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": "A nullable value can be dereferenced."
+              },
+              "help": {
+                "markdown": "A nullable value can be dereferenced.",
+                "text": "A nullable value can be dereferenced."
+              },
+              "id": "rules.null-deref",
+              "name": "rules.null-deref",
+              "properties": {
+                "precision": "very-high",
+                "tags": []
+              },
+              "shortDescription": {
+                "text": "Possible null dereference"
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": "Untrusted input reaches a SQL execution sink."
+              },
+              "help": {
+                "markdown": "Untrusted input reaches a SQL execution sink.",
+                "text": "Untrusted input reaches a SQL execution sink."
+              },
+              "id": "rules.sql-injection",
+              "name": "rules.sql-injection",
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "9.8",
+                "tags": [
+                  "CVE-2026-12345",
+                  "CWE-89: Improper Neutralization of Special Elements used in an SQL Command",
+                  "HIGH CONFIDENCE",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": "SQL injection"
+              }
+            }
+          ],
+          "semanticVersion": "1.22.0"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}
