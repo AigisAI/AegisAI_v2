@@ -50,7 +50,7 @@
 - [x] T031 Quarantine malformed, mismatched, oversized, and security-violating artifacts
 - [x] T032 Implement versioned OpenGrep SARIF normalization with golden fixtures
 - [x] T033 Implement versioned Trivy JSON normalization with golden fixtures
-- [ ] T034 Implement versioned CycloneDX SBOM validation and inventory ingestion
+- [x] T034 Implement versioned CycloneDX SBOM validation and inventory ingestion
 - [ ] T035 Redact secret values before normalized persistence, logs, audit, or evidence
 
 ## Phase 7: Finding Identity and Coverage

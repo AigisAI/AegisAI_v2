@@ -121,8 +121,10 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
 ## Normalization and Data Integrity Gates
 
 - 100% deterministic normalized output for repeated identical plan/artifact inputs.
-- 100% OpenGrep/Trivy parity for shared retention-clock, coordinate-attestation, Unicode/control,
-  text-bound, digest-field omission, and SHA-256 primitives through one common implementation.
+- 100% OpenGrep/Trivy/Syft parity for fixed-slice scalar streaming, fatal UTF-8, raw
+  token/depth/duplicate-key bounds, byte/content-digest recount, retention rebinding, and
+  ordered rejection through one common implementation; finding-only coordinate/text helpers
+  remain shared by OpenGrep and Trivy.
 - 100% OpenGrep golden-fixture equality across transport chunk boundaries, with zero raw
   snippet/fix/code-flow/help payload fields in transient candidates.
 - 100% Trivy golden-fixture equality across transport chunk boundaries for direct and
@@ -142,6 +144,22 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
 - 100% Trivy secret/IaC `scannerMatchBasedId` and `structuralHash` stability under line-only
   shifts, while deterministic producer-order ordinals keep multiple same-rule/target
   occurrences distinct and exact-coordinate ambiguity rejects the complete batch.
+- 100% Syft v1.44.0 CycloneDX JSON 1.6 golden-inventory equality across transport chunk
+  boundaries, including zero components, package-ID fallback, library/application/model/OS
+  components, URL-empty Java `build-meta` hashes, repeated-license de-duplication, sorted
+  dependency edges, complete producer/supply-chain provenance, and canonical batch digest.
+- Exactly zero raw CycloneDX properties, source paths, BOM references, license text/URLs,
+  prose, external-reference payloads, artifact bytes, findings, severity, evidence, policy,
+  or AI content may occur in the transient inventory or bounded rejection. Producer BOM
+  references and the serial number may appear only as SHA-256 digests where contracted.
+- 100% complete-batch rejection for CycloneDX schema/tool/version/source drift,
+  metadata-tool count smuggling, vulnerability/VEX/nested/file extensions, malformed or
+  duplicate BOM references, malformed PURL/CPE/SWID/license/hash identities, dangling/duplicate/self/
+  non-canonical dependencies, resource bombs, and pre/post-stream retention drift.
+- 100% CycloneDX authority assertions:
+  `mayCreateFindings=false`, `mayEvaluateVulnerabilities=false`,
+  `policyAuthority=false`, `aiPayloadEligible=false`, and
+  `durablePersistenceAllowed=false`.
 - 100% rejection equality for oversized/chunk-varied streams, unpaired Unicode escapes,
   pre-decision clocks, and retention expiry crossed during streaming.
 - 100% rejection before artifact reads for supplied coordinate-attestation drift, and 100%

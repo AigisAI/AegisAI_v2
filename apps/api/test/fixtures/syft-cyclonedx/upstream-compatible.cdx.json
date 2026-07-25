@@ -1,0 +1,196 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:123e4567-e89b-42d3-a456-426614174000",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-07-26T12:00:00Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "author": "anchore",
+          "name": "syft",
+          "version": "1.44.0"
+        }
+      ]
+    },
+    "component": {
+      "bom-ref": "0123456789abcdef",
+      "type": "file",
+      "name": "/workspace/repository"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:maven/org.example/package-a@1.2.3?package-id=1111111111111111",
+      "type": "library",
+      "group": "org.example",
+      "name": "package-a",
+      "version": "1.2.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0",
+            "url": "https://spdx.org/licenses/Apache-2.0.html"
+          }
+        }
+      ],
+      "cpe": "cpe:2.3:a:example:package-a:1.2.3:*:*:*:*:*:*:*",
+      "purl": "pkg:maven/org.example/package-a@1.2.3",
+      "author": "UNTRUSTED-AUTHOR-MUST-NOT-BE-COPIED",
+      "publisher": "UNTRUSTED-PUBLISHER-MUST-NOT-BE-COPIED",
+      "description": "UNTRUSTED-DESCRIPTION-MUST-NOT-BE-COPIED",
+      "externalReferences": [
+        {
+          "type": "build-meta",
+          "url": "",
+          "hashes": [
+            {
+              "alg": "SHA-1",
+              "content": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "java-pom-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "java"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "java-archive"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "java-archive"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/workspace/repository/PRIVATE_PATH_SENTINEL/pom.xml"
+        },
+        {
+          "name": "syft:metadata:virtualPath",
+          "value": "SHOULD_NOT_COPY_PROPERTY_VALUE"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/%40scope/package-b@4.5.6?package-id=2222222222222222",
+      "type": "library",
+      "name": "@scope/package-b",
+      "version": "4.5.6",
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "purl": "pkg:npm/%40scope/package-b@4.5.6",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://example.invalid/package-b"
+        }
+      ],
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "javascript-package-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "javascript"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "npm"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "javascript-npm-package"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/workspace/repository/PRIVATE_PATH_SENTINEL/package-lock.json"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:pypi/package-c@7.8.9?package-id=3333333333333333",
+      "type": "library",
+      "name": "package-c",
+      "version": "7.8.9",
+      "purl": "pkg:pypi/package-c@7.8.9",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://example.invalid/package-c.git",
+          "comment": "commit: UNTRUSTED-EXTERNAL-COMMENT-MUST-NOT-BE-COPIED"
+        }
+      ],
+      "properties": [
+        {
+          "name": "syft:package:foundBy",
+          "value": "python-installed-package-cataloger"
+        },
+        {
+          "name": "syft:package:language",
+          "value": "python"
+        },
+        {
+          "name": "syft:package:type",
+          "value": "python"
+        },
+        {
+          "name": "syft:package:metadataType",
+          "value": "python-package"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "/workspace/repository/PRIVATE_PATH_SENTINEL/site-packages/package-c"
+        }
+      ]
+    },
+    {
+      "bom-ref": "os:debian@12",
+      "type": "operating-system",
+      "name": "debian",
+      "version": "12",
+      "description": "UNTRUSTED-OS-DESCRIPTION-MUST-NOT-BE-COPIED",
+      "swid": {
+        "tagId": "debian",
+        "name": "debian",
+        "version": "12"
+      },
+      "cpe": "cpe:2.3:o:debian:debian_linux:12:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "syft:distro:id",
+          "value": "debian"
+        },
+        {
+          "name": "syft:distro:prettyName",
+          "value": "Debian GNU/Linux 12"
+        },
+        {
+          "name": "syft:distro:versionID",
+          "value": "12"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:maven/org.example/package-a@1.2.3?package-id=1111111111111111",
+      "dependsOn": [
+        "pkg:npm/%40scope/package-b@4.5.6?package-id=2222222222222222"
+      ]
+    }
+  ]
+}

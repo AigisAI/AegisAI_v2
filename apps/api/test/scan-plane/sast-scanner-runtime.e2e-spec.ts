@@ -235,7 +235,7 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         '--config',
         `/opt/aegis/assets/wrappers/syft/${'9'.repeat(64)}/config.yaml`,
         '--output',
-        'cyclonedx-json=/workspace/output/syft.cdx.json'
+        'cyclonedx-json@1.6=/workspace/output/syft.cdx.json'
       ],
       scannerInputPath: '/workspace/repository',
       environment: expect.objectContaining({
@@ -244,6 +244,7 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
         SYFT_GOLANG_USE_PACKAGES_LIB: 'false',
         SYFT_JAVA_USE_NETWORK: 'false',
         SYFT_JAVASCRIPT_SEARCH_REMOTE_LICENSES: 'false',
+        SYFT_FILE_METADATA_SELECTION: 'none',
         SYFT_PACKAGE_SEARCH_INDEXED_ARCHIVES: 'false',
         SYFT_PACKAGE_SEARCH_UNINDEXED_ARCHIVES: 'false',
         SYFT_PYTHON_SEARCH_REMOTE_LICENSES: 'false',

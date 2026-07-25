@@ -1,0 +1,74 @@
+{
+  "components": [
+    {
+      "type": "library",
+      "group": "",
+      "name": "@scope/package-b",
+      "version": "4.5.6",
+      "purl": "pkg:npm/%40scope/package-b@4.5.6",
+      "cpe": "",
+      "licenses": [
+        {
+          "kind": "SPDX_EXPRESSION",
+          "value": "MIT OR Apache-2.0"
+        }
+      ],
+      "rawPropertiesStored": false,
+      "sourceLocationsStored": false
+    },
+    {
+      "type": "operating-system",
+      "group": "",
+      "name": "debian",
+      "version": "12",
+      "purl": "",
+      "cpe": "cpe:2.3:o:debian:debian_linux:12:*:*:*:*:*:*:*",
+      "licenses": [],
+      "rawPropertiesStored": false,
+      "sourceLocationsStored": false
+    },
+    {
+      "type": "library",
+      "group": "org.example",
+      "name": "package-a",
+      "version": "1.2.3",
+      "purl": "pkg:maven/org.example/package-a@1.2.3",
+      "cpe": "cpe:2.3:a:example:package-a:1.2.3:*:*:*:*:*:*:*",
+      "licenses": [
+        {
+          "kind": "SPDX_ID",
+          "value": "Apache-2.0"
+        }
+      ],
+      "rawPropertiesStored": false,
+      "sourceLocationsStored": false
+    },
+    {
+      "type": "library",
+      "group": "",
+      "name": "package-c",
+      "version": "7.8.9",
+      "purl": "pkg:pypi/package-c@7.8.9",
+      "cpe": "",
+      "licenses": [],
+      "rawPropertiesStored": false,
+      "sourceLocationsStored": false
+    }
+  ],
+  "dependencies": [
+    {
+      "component": "package-a",
+      "dependsOn": "@scope/package-b"
+    }
+  ],
+  "statistics": {
+    "observedComponentCount": 4,
+    "observedDependencyNodeCount": 1,
+    "observedDependencyEdgeCount": 1,
+    "discardedPropertyCount": 19,
+    "discardedSourceLocationPropertyCount": 3,
+    "discardedExternalReferenceCount": 3,
+    "discardedLicenseUrlCount": 1,
+    "discardedProseFieldCount": 4
+  }
+}

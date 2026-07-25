@@ -2239,14 +2239,18 @@ function isTrivyModifiedFindingPath(path: JsonPath): boolean {
 }
 
 function isCycloneDxComponentArrayPath(path: JsonPath): boolean {
-  return path.at(-1) === 'components';
+  if (matchesPath(path, ['components'])) return true;
+  return (
+    path.at(-1) === 'components' &&
+    isCycloneDxComponentPath(path.slice(0, -1))
+  );
 }
 
 function isCycloneDxComponentPath(path: JsonPath): boolean {
   return (
     path.length >= 2 &&
-    path.at(-2) === 'components' &&
-    typeof path.at(-1) === 'number'
+    typeof path.at(-1) === 'number' &&
+    isCycloneDxComponentArrayPath(path.slice(0, -1))
   );
 }
 
