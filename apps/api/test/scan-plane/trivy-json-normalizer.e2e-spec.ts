@@ -362,6 +362,42 @@ describe('TrivyJsonNormalizer', () => {
     expect(new Set(awsIdentities).size).toBe(2);
   });
 
+  it('distinguishes the same dependency advisory across canonical package targets', async () => {
+    const fixture = loadTrivyFixture(
+      'upstream-compatible.trivy.json'
+    );
+    const secondTarget = structuredClone(fixture.Results[0]!);
+    fixture.Results[0]!.Target = 'apps/a/package-lock.json';
+    secondTarget.Target = 'apps/b/package-lock.json';
+    fixture.Results.push(secondTarget);
+
+    const result = await normalizeFixture(normalizer, fixture);
+    expect(result.outcome).toBe('NORMALIZED');
+    if (result.outcome !== 'NORMALIZED') return;
+
+    const dependencies = result.batch.findings.filter(
+      (finding) =>
+        finding.capability === 'DEPENDENCY_VULNERABILITY'
+    );
+    expect(dependencies).toHaveLength(2);
+    expect(
+      new Set(
+        dependencies.map(
+          (finding) =>
+            finding.identityMaterial.scannerMatchBasedId
+        )
+      ).size
+    ).toBe(2);
+    expect(
+      dependencies.every(
+        (finding) =>
+          finding.location.kind === 'UNKNOWN' &&
+          finding.location.reasonCode ===
+            'SCANNER_LOCATION_OMITTED'
+      )
+    ).toBe(true);
+  });
+
   it('accepts the same pinned producer shape through T030 before T033', async () => {
     const fixture = loadTrivyFixture(
       'upstream-compatible.trivy.json'

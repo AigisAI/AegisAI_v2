@@ -9,6 +9,16 @@ import {
   type SastNormalizationRejectionReasonCode,
   type TrivyNormalizedFindingCandidate
 } from './sast-normalization';
+import {
+  hasExactKeys,
+  isAllowedString,
+  isBoundedIdentifier,
+  isBoundedReference,
+  isCommitSha,
+  isNormalizationScopeValid,
+  isRecord,
+  isSha256Digest
+} from './sast-normalization-validation';
 import type { SastScanLane } from './sast-runtime';
 
 export const TRIVY_JSON_NORMALIZER_VERSION =
@@ -263,22 +273,6 @@ export function isTrivyJsonNormalizationRejectionShapeValid(
   );
 }
 
-function isNormalizationScopeValid(
-  value: unknown
-): value is SastArtifactDispositionScope {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, [
-      'tenantId',
-      'repositoryBindingId',
-      'scanRequestId',
-      'attemptId',
-      'scannerRunId'
-    ]) &&
-    Object.values(value).every(isBoundedReference)
-  );
-}
-
 function arraysEqual(
   left: readonly unknown[],
   right: readonly unknown[]
@@ -286,67 +280,5 @@ function arraysEqual(
   return (
     left.length === right.length &&
     left.every((value, index) => value === right[index])
-  );
-}
-
-function isBoundedReference(value: unknown): value is string {
-  return isBoundedIdentifier(value, 2048, false);
-}
-
-function isBoundedIdentifier(
-  value: unknown,
-  maximumBytes: number,
-  allowEmpty: boolean
-): value is string {
-  return (
-    typeof value === 'string' &&
-    (allowEmpty || value.length > 0) &&
-    value === value.normalize('NFC') &&
-    value === value.trim() &&
-    new TextEncoder().encode(value).byteLength <= maximumBytes &&
-    ![...value].some((character) => {
-      const codePoint = character.codePointAt(0) ?? 0;
-      return (
-        codePoint <= 0x1f ||
-        (codePoint >= 0x7f && codePoint <= 0x9f) ||
-        (codePoint >= 0xd800 && codePoint <= 0xdfff)
-      );
-    })
-  );
-}
-
-function isAllowedString(
-  value: unknown,
-  allowed: readonly string[]
-): value is string {
-  return typeof value === 'string' && allowed.includes(value);
-}
-
-function isCommitSha(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(value)
-  );
-}
-
-function isSha256Digest(value: unknown): value is `sha256:${string}` {
-  return (
-    typeof value === 'string' &&
-    /^sha256:[a-f0-9]{64}$/u.test(value)
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function hasExactKeys(
-  value: Record<string, unknown>,
-  expected: readonly string[]
-): boolean {
-  const actual = Object.keys(value);
-  return (
-    actual.length === expected.length &&
-    actual.every((key) => expected.includes(key))
   );
 }

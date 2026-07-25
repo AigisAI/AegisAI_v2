@@ -115,6 +115,9 @@ T022 through T033 are implemented as the complete Phase 5 runtime boundary plus 
 ingress, validation, final-disposition, OpenGrep normalization, and Trivy normalization
 portion of Phase 6:
 
+- OpenGrep and Trivy adapters share one fail-closed implementation of retention clocks,
+  coordinate attestations, safe text/identifier bounds, and canonical digest primitives;
+  T034 must extend this support instead of cloning security-critical validation logic.
 - Token Broker verifies a signed, bounded-lifetime workload attestation against tenant,
   repository binding, scan request, attempt, workload identity, and fixed commit. A durable
   tenant/attempt-unique lease prevents replay while persisting only a SHA-256 credential fingerprint
@@ -274,6 +277,8 @@ portion of Phase 6:
   secret and IaC identity/revision comes only from the signed checks manifest. Scanner
   title/description/message, secret match/code/context, modified statement/source, and
   misconfiguration trace/rendered cause are discarded in favor of deterministic safe text.
+  Dependency identity includes the canonical package/result target so identical advisories
+  in separate monorepo manifests remain distinct.
   Dependency locations are explicitly unknown because the fixed wrapper omits package-file
   coordinates; secret/IaC ranges require exact attested bounds and never receive invented
   fallback coordinates. Those coordinates remain occurrence metadata and are excluded from

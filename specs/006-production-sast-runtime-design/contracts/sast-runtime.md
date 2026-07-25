@@ -595,6 +595,11 @@ vulnerability-database digest and database version. It accepts only the JSON v2 
 by the pinned Trivy 0.66.0 filesystem wrapper and only the three authoritative Trivy
 capabilities:
 
+OpenGrep, Trivy, and later normalizers consume one shared implementation for retention-clock
+validation, coordinate-attestation loading, safe text/identifier bounds, canonical SHA-256
+helpers, and digest-field omission. Adapter-specific reason codes remain explicit parameters;
+security-critical validation behavior must not be copied into an adapter-local variant.
+
 - dependency records from `Vulnerabilities` become `DEPENDENCY_VULNERABILITY`;
 - secret records from `Secrets` become `SECRET_DETECTION`;
 - failed IaC records from `Misconfigurations` become `IAC_MISCONFIGURATION`.
@@ -612,8 +617,10 @@ Rule authority is capability-specific:
 - dependency `ruleSemanticId` is a namespaced projection of the validated vulnerability ID,
   and `ruleRevision` is the pinned vulnerability-database version. Package type/name,
   installed version, optional fixed version, advisory status, and database digest remain
-  structured provenance. The scan rule-bundle digest is still bound at batch and candidate
-  level, but it is not falsely presented as the dependency advisory source;
+  structured provenance. Its non-authoritative scanner identity also includes the canonical
+  package/result target, so the same package advisory in separate monorepo manifests remains
+  distinct without inventing a source coordinate. The scan rule-bundle digest is still bound
+  at batch and candidate level, but it is not falsely presented as the dependency advisory source;
 - secret and IaC scanner rule IDs must resolve exactly to one entry in the signed immutable
   checks-bundle manifest. Only its `ruleSemanticId` and `ruleRevision` are authoritative;
   scanner-local titles, descriptions, and rule metadata cannot replace them.

@@ -121,6 +121,8 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
 ## Normalization and Data Integrity Gates
 
 - 100% deterministic normalized output for repeated identical plan/artifact inputs.
+- 100% OpenGrep/Trivy parity for shared retention-clock, coordinate-attestation, Unicode/control,
+  text-bound, digest-field omission, and SHA-256 primitives through one common implementation.
 - 100% OpenGrep golden-fixture equality across transport chunk boundaries, with zero raw
   snippet/fix/code-flow/help payload fields in transient candidates.
 - 100% Trivy golden-fixture equality across transport chunk boundaries for direct and
@@ -130,7 +132,8 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   `platformPolicyAuthority=false`; unknown status/type and unsupported license capabilities
   reject the complete batch, and scanner disposition never changes severity or policy state.
 - 100% Trivy dependency semantic identity/revision resolves from the pinned vulnerability
-  database while secret/IaC identity/revision resolves from the signed checks manifest.
+  database while secret/IaC identity/revision resolves from the signed checks manifest;
+  identical package advisories in different canonical result targets remain distinct.
 - Exactly zero scanner `Title`, `Description`, `Message`, secret `Match`/`Code`,
   modified-finding `Statement`/`Source`, trace, or rendered-cause values may occur in transient
   candidates, identity/batch/rejection digests, logs, audit, evidence, or AI payloads.

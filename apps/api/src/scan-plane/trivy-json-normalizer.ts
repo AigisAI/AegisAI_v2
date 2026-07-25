@@ -55,6 +55,18 @@ import {
 import type {
   SastFileCoordinateAttestation
 } from './sast-file-coordinate-attestation.provider';
+import {
+  digest,
+  hasUnsafeControls,
+  loadSastNormalizationCoordinates,
+  normalizeSastDescription as normalizeDescription,
+  normalizeSastTitle as normalizeTitle,
+  omitDecisionDigest,
+  omitResultDigest,
+  readReferenceTime,
+  utf8Bytes,
+  validateSastNormalizationReferenceTime
+} from './sast-normalization-support';
 
 const TRIVY_FILESYSTEM_ARTIFACT_TYPE = 'filesystem';
 const DEPENDENCY_SEMANTIC_PREFIX = 'trivy-advisory:';
@@ -308,14 +320,6 @@ interface ModifiedFindingState {
 interface ParsedTrivyJson {
   results: TrivyResultState[];
   records: CompletedTrivyRecordState[];
-}
-
-interface NormalizedText {
-  value?: string;
-  reason?: Extract<
-    SastNormalizationRejectionReasonCode,
-    'NORMALIZATION_TEXT_INVALID' | 'NORMALIZATION_FIELD_LIMIT_EXCEEDED'
-  >;
 }
 
 export interface TrivyJsonNormalizationInput {
@@ -578,26 +582,11 @@ export class TrivyJsonNormalizer {
     referenceTime: Readonly<Date>,
     reasons: Set<SastNormalizationRejectionReasonCode>
   ): number {
-    const referenceTimeMilliseconds =
-      referenceTime instanceof Date
-        ? referenceTime.getTime()
-        : Number.NaN;
-    const decidedAtMilliseconds = Date.parse(disposition.decidedAt);
-    if (
-      !Number.isFinite(referenceTimeMilliseconds) ||
-      referenceTimeMilliseconds < decidedAtMilliseconds
-    ) {
-      reasons.add('NORMALIZATION_ACCEPTANCE_INVALID');
-    }
-    if (
-      !Number.isFinite(referenceTimeMilliseconds) ||
-      !disposition.retentionExpiresAt ||
-      referenceTimeMilliseconds >=
-        Date.parse(disposition.retentionExpiresAt)
-    ) {
-      reasons.add('NORMALIZATION_RETENTION_EXPIRED');
-    }
-    return referenceTimeMilliseconds;
+    return validateSastNormalizationReferenceTime(
+      disposition,
+      referenceTime,
+      reasons
+    );
   }
 
   private loadCoordinates(
@@ -605,91 +594,14 @@ export class TrivyJsonNormalizer {
     input: Readonly<TrivyJsonNormalizationInput>,
     reasons: Set<SastNormalizationRejectionReasonCode>
   ): ReadonlyMap<string, Readonly<SastFileCoordinateMetadata>> | null {
-    if (!attestation) return null;
-    if (
-      attestation.verified !== true ||
-      attestation.attestationRef !==
-        input.expectedBinding.preflightAttestationRef ||
-      attestation.inventoryDigest !==
-        input.expectedBinding.preflightInventoryDigest
-    ) {
-      reasons.add('NORMALIZATION_PLAN_BINDING_MISMATCH');
-      return null;
-    }
-    if (
-      !Array.isArray(attestation.files) ||
-      attestation.files.length >
-        input.plan.profile.limits.maxFileCount
-    ) {
-      reasons.add('NORMALIZATION_TRIVY_LOCATION_INVALID');
-      return null;
-    }
-
-    const coordinates = new Map<
-      string,
-      Readonly<SastFileCoordinateMetadata>
-    >();
-    const foldedPaths = new Set<string>();
-    let totalLines = 0;
-    for (const rawFile of attestation.files as readonly unknown[]) {
-      if (
-        !rawFile ||
-        typeof rawFile !== 'object' ||
-        Array.isArray(rawFile) ||
-        !hasExactObjectKeys(rawFile, [
-          'normalizedPath',
-          'lineCount',
-          'maxColumnByLine'
-        ])
-      ) {
-        reasons.add('NORMALIZATION_TRIVY_LOCATION_INVALID');
-        return null;
-      }
-      const file = rawFile as Record<string, unknown>;
-      const normalizedPath = normalizeArtifactPath(
-        file.normalizedPath,
-        input.plan.profile.limits.maxPathDepth
-      );
-      const foldedPath = normalizedPath
-        ?.toLocaleLowerCase('en-US')
-        .normalize('NFC');
-      const lineCount = file.lineCount;
-      if (
-        !normalizedPath ||
-        normalizedPath !== file.normalizedPath ||
-        !foldedPath ||
-        foldedPaths.has(foldedPath) ||
-        typeof lineCount !== 'number' ||
-        !Number.isSafeInteger(lineCount) ||
-        lineCount <= 0 ||
-        lineCount > SAST_MAX_COORDINATE_VALUE ||
-        lineCount >
-          SAST_ARTIFACT_VALIDATION_LIMITS
-            .maximumCoordinateAttestationLines -
-            totalLines ||
-        coordinates.has(normalizedPath) ||
-        !Array.isArray(file.maxColumnByLine) ||
-        file.maxColumnByLine.length !== lineCount ||
-        !file.maxColumnByLine.every(
-          (column: unknown) =>
-            typeof column === 'number' &&
-            Number.isSafeInteger(column) &&
-            column > 0 &&
-            column <= SAST_MAX_COORDINATE_VALUE
-        )
-      ) {
-        reasons.add('NORMALIZATION_TRIVY_LOCATION_INVALID');
-        return null;
-      }
-      totalLines += lineCount;
-      foldedPaths.add(foldedPath);
-      coordinates.set(normalizedPath, {
-        normalizedPath,
-        lineCount,
-        maxColumnByLine: file.maxColumnByLine
-      });
-    }
-    return coordinates;
+    return loadSastNormalizationCoordinates({
+      attestation,
+      expectedBinding: input.expectedBinding,
+      maximumFileCount: input.plan.profile.limits.maxFileCount,
+      maximumPathDepth: input.plan.profile.limits.maxPathDepth,
+      invalidLocationReason: 'NORMALIZATION_TRIVY_LOCATION_INVALID',
+      reasons
+    });
   }
 
   private buildCandidates(
@@ -890,6 +802,11 @@ export class TrivyJsonNormalizer {
           reasons.add('NORMALIZATION_TRIVY_VULNERABILITY_INVALID');
           continue;
         }
+        const canonicalTarget = canonicalTargetForIdentity(
+          record,
+          result,
+          input.plan.profile.limits.maxPathDepth
+        );
         const scannerMatchBasedId = canonicalIdentityDigest(
           DEPENDENCY_IDENTITY_PREFIX,
           [
@@ -897,7 +814,8 @@ export class TrivyJsonNormalizer {
             packageType,
             packageName,
             installedVersion,
-            packagePurl ?? ''
+            packagePurl ?? '',
+            canonicalTarget
           ]
         );
         candidate = {
@@ -1838,6 +1756,8 @@ class TrivyJsonCollector implements ArtifactValidationCallbacks {
       } else if (field === 'FixedVersion') {
         record.fixedVersion = value;
       } else if (field === 'Status') {
+        // Modified record kind is finalized after parsing, and Status may
+        // precede ID. Keep resultStatus populated in both branches.
         if (
           record.kind === 'MISCONFIGURATION' ||
           (record.source === 'MODIFIED' &&
@@ -2192,49 +2112,6 @@ function normalizeVulnerabilityId(
     /^[A-Z0-9][A-Z0-9._:+-]*$/u.test(normalized)
     ? normalized
     : null;
-}
-
-function normalizeTitle(value: string | undefined): NormalizedText {
-  if (value === undefined) {
-    return { reason: 'NORMALIZATION_TEXT_INVALID' };
-  }
-  const normalized = normalizePlainText(value)
-    ?.replace(/[\t\n]+/gu, ' ')
-    .replace(/ {2,}/gu, ' ')
-    .trim();
-  if (!normalized) {
-    return { reason: 'NORMALIZATION_TEXT_INVALID' };
-  }
-  if (
-    utf8Bytes(normalized) > SAST_NORMALIZATION_LIMITS.titleBytes
-  ) {
-    return { reason: 'NORMALIZATION_FIELD_LIMIT_EXCEEDED' };
-  }
-  return { value: normalized };
-}
-
-function normalizeDescription(
-  value: string | undefined
-): NormalizedText {
-  const normalized =
-    value === undefined ? null : normalizePlainText(value)?.trim();
-  if (!normalized) {
-    return { reason: 'NORMALIZATION_TEXT_INVALID' };
-  }
-  if (
-    utf8Bytes(normalized) >
-    SAST_NORMALIZATION_LIMITS.descriptionBytes
-  ) {
-    return { reason: 'NORMALIZATION_FIELD_LIMIT_EXCEEDED' };
-  }
-  return { value: normalized };
-}
-
-function normalizePlainText(value: string): string | null {
-  const normalized = value
-    .replace(/\r\n?/gu, '\n')
-    .normalize('NFC');
-  return hasUnsafeControls(normalized, true) ? null : normalized;
 }
 
 function normalizeIdentifier(
@@ -2617,65 +2494,6 @@ function keyForPath(path: JsonPath): string {
   return JSON.stringify(path);
 }
 
-function omitResultDigest(
-  value: Readonly<SastArtifactValidationResult>
-): Omit<SastArtifactValidationResult, 'resultDigest'> {
-  const { resultDigest, ...core } = value;
-  void resultDigest;
-  return core;
-}
-
-function omitDecisionDigest(
-  value: Readonly<SastArtifactDispositionDecision>
-): Omit<SastArtifactDispositionDecision, 'decisionDigest'> {
-  const { decisionDigest, ...core } = value;
-  void decisionDigest;
-  return core;
-}
-
-function hasUnsafeControls(
-  value: string,
-  allowTextWhitespace: boolean
-): boolean {
-  return [...value].some((character) => {
-    const codePoint = character.codePointAt(0) ?? 0;
-    return (
-      (codePoint <= 0x1f &&
-        (!allowTextWhitespace ||
-          (codePoint !== 0x09 && codePoint !== 0x0a))) ||
-      (codePoint >= 0x7f && codePoint <= 0x9f) ||
-      (codePoint >= 0xd800 && codePoint <= 0xdfff)
-    );
-  });
-}
-
-function utf8Bytes(value: string): number {
-  return new TextEncoder().encode(value).byteLength;
-}
-
 function compareCodeUnitStrings(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function hasExactObjectKeys(
-  value: object,
-  expected: readonly string[]
-): boolean {
-  const keys = Object.keys(value);
-  return (
-    keys.length === expected.length &&
-    keys.every((key) => expected.includes(key))
-  );
-}
-
-function readReferenceTime(clock: () => Date): Date {
-  try {
-    return clock();
-  } catch {
-    return new Date(Number.NaN);
-  }
-}
-
-function digest(value: string): `sha256:${string}` {
-  return `sha256:${createHash('sha256').update(value).digest('hex')}`;
 }
