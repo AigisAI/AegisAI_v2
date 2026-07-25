@@ -18,6 +18,20 @@ import {
 } from './sast-artifact-object-store';
 import { SastArtifactValidationService } from './sast-artifact-validation.service';
 import {
+  SastArtifactAcceptanceGate,
+  UnavailableSastArtifactAcceptanceGate
+} from './sast-artifact-acceptance-gate';
+import {
+  SastArtifactDispositionStorage,
+  UnavailableSastArtifactDispositionStorage
+} from './sast-artifact-disposition-storage';
+import { SastArtifactDispositionService } from './sast-artifact-disposition.service';
+import { SastArtifactDispositionTask } from './sast-artifact-disposition.task';
+import {
+  PrismaSastArtifactDispositionStore
+} from './prisma-sast-artifact-disposition.store';
+import { SastArtifactDispositionStore } from './sast-artifact-disposition.store';
+import {
   SastFileCoordinateAttestationProvider,
   UnavailableSastFileCoordinateAttestationProvider
 } from './sast-file-coordinate-attestation.provider';
@@ -69,6 +83,23 @@ import {
     ScanPlaneService,
     SastArtifactIngressService,
     SastArtifactValidationService,
+    SastArtifactDispositionService,
+    SastArtifactDispositionTask,
+    PrismaSastArtifactDispositionStore,
+    {
+      provide: SastArtifactDispositionStore,
+      useExisting: PrismaSastArtifactDispositionStore
+    },
+    UnavailableSastArtifactDispositionStorage,
+    {
+      provide: SastArtifactDispositionStorage,
+      useExisting: UnavailableSastArtifactDispositionStorage
+    },
+    UnavailableSastArtifactAcceptanceGate,
+    {
+      provide: SastArtifactAcceptanceGate,
+      useExisting: UnavailableSastArtifactAcceptanceGate
+    },
     UnavailableSastFileCoordinateAttestationProvider,
     {
       provide: SastFileCoordinateAttestationProvider,

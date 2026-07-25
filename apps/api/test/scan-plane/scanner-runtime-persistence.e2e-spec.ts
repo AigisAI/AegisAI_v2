@@ -320,6 +320,38 @@ describe('Scanner runtime persistence and deployment contract', () => {
           deterministicReasonOrderingRequired: true,
           rawPayloadInValidationMetadataAllowed: false,
           finalDispositionOwner: 'T031_QUARANTINE'
+        },
+        artifactDisposition: {
+          version: 'sast-artifact-disposition-v1',
+          claimState: 'PENDING_VALIDATION',
+          terminalScannerRunRequired: true,
+          leaseAndFencingTokenRequired: true,
+          staleWorkerCommitAllowed: false,
+          intentPersistedBeforeStorageMutation: true,
+          operationIdBinding: 'IMMUTABLE_INTENT_DIGEST',
+          sourceMissingOperationIdBehavior:
+            'PRESERVE_ABSENCE_RECEIPT_OPERATION',
+          storageReceiptReferencePrefix: 'storage-receipt://',
+          storagePortMode: 'NO_READ_SERVER_SIDE_ONLY',
+          defaultDispositionStorageProvider:
+            'FAIL_CLOSED_UNTIL_DATA_SECURITY_ADAPTER_INSTALLED',
+          acceptedRequiresExplicitAcceptanceGate: true,
+          defaultAcceptanceGate: 'FAIL_CLOSED',
+          normalizationEligibleState: 'ACCEPTED',
+          maximumRetentionSeconds: 604800,
+          retentionOrigin: 'ORIGINAL_RECEIVED_AT',
+          transportRejectedBeforeObjectHasDecision: false,
+          quarantine: {
+            encryptionContextVersion:
+              'sast-artifact-quarantine-context-v1',
+            purpose: 'SAST_ARTIFACT_FORENSIC_QUARANTINE',
+            objectPrefix:
+              'restricted/sast-artifact-quarantine/',
+            serverSideReencryptionRequired: true,
+            userAccessAllowed: false,
+            keyMaterialInDurableMetadataAllowed: false
+          },
+          objectKeyInDecisionOrAuditAllowed: false
         }
       },
       productionMockAnalysisAllowed: false,

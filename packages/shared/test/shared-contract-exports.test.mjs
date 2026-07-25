@@ -17,6 +17,10 @@ const files = {
     '../src/types/sast-artifact-validation.ts',
     import.meta.url
   ),
+  sastArtifactDisposition: new URL(
+    '../src/types/sast-artifact-disposition.ts',
+    import.meta.url
+  ),
   sastPlanning: new URL('../src/types/sast-planning.ts', import.meta.url),
   sastFetch: new URL('../src/types/sast-fetch.ts', import.meta.url),
   sastWrapper: new URL('../src/types/sast-wrapper.ts', import.meta.url),
@@ -42,6 +46,7 @@ test('shared contract modules exist and are re-exported from the package root', 
     'deployment-operations',
     'sast-runtime',
     'sast-artifact-validation',
+    'sast-artifact-disposition',
     'sast-planning',
     'sast-fetch',
     'sast-wrapper'

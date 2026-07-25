@@ -111,8 +111,8 @@ Fast and Deep lanes use separate queues and budgets but the same microVM securit
 
 ## Implemented Runtime Checkpoint
 
-T022 through T029 are implemented as the complete Phase 5 runtime boundary plus the first
-Phase 6 ingress boundary:
+T022 through T031 are implemented as the complete Phase 5 runtime boundary plus the
+ingress, validation, and final-disposition portion of Phase 6:
 
 - Token Broker verifies a signed, bounded-lifetime workload attestation against tenant,
   repository binding, scan request, attempt, workload identity, and fixed commit. A durable
@@ -212,8 +212,28 @@ Phase 6 ingress boundary:
   exact provisioner-attested metadata for the attempt and inventory digest; the production
   default provider returns no attestation and therefore never relaxes a location check.
 - T030 deliberately leaves both valid and invalid completed transports in
-  `PENDING_VALIDATION`. T031 owns the atomic final disposition and encrypted quarantine move,
-  so no artifact is normalization-eligible merely because streaming validation completed.
+  `PENDING_VALIDATION`. The T031 disposition worker claims only terminal scanner runs with a
+  database lease and opaque fencing token, revalidates the durable envelope, deterministic
+  validation digest, transport values, immutable plan binding, scanner image/wrapper/rule/
+  database/schema/normalizer/profile/preflight/workspace digests, and exit/timeout/output
+  outcome, then persists an immutable `sast-artifact-disposition-v1` intent before calling
+  storage.
+  The deterministic intent-bound operation ID makes retain/delete/server-side re-encryption
+  safe to replay across process crashes while giving a later safety supersession a distinct
+  operation. The final decision binds that operation and a bounded `storage-receipt://`
+  opaque receipt reference. Finalization rechecks the live fence and atomically
+  persists the ingestion state, scanner state, immutable decision, and bounded audit event.
+- The disposition storage port is Data/Security-owned and no-read. `ACCEPTED` retains the
+  short-lived opaque object only after an explicit acceptance-gate `ALLOW`;
+  `QUARANTINED` requires a restricted-prefix object re-encrypted with the exact
+  `sast-artifact-quarantine-context-v1` digest; expired or storage-confirmed missing objects
+  become metadata-only `REJECTED`. Retention is derived from the original receipt, capped at
+  seven days, and cannot finalize acceptance or quarantine at or after expiry. Only accepted
+  artifacts are normalization-eligible, and durable decisions/audits contain no raw payload,
+  object key, secret, or key material.
+- The T049 kill-switch engine will supply the authoritative acceptance-gate adapter. Until
+  that adapter and the production Data/Security disposition adapter are installed, both
+  defaults fail closed and valid rows remain pending rather than being implicitly accepted.
   The online `ScannerRun_runtime_metadata_v3_check` accepts legacy digest-version rows during
   rolling deployment while enforcing semantic schema versions and separate schema/normalizer
   digests for new rows, and removes v1/v2 only after v3 validation succeeds.
@@ -222,9 +242,10 @@ This checkpoint proves the provider-facing execution contract but does not claim
 provider microVM platform is live. The non-production opaque credential issuer and test
 runtime provider exist only to verify the handoff contract. Default production credential
 issuance and scanner execution both fail closed until live rollout installs provider-backed
-GitHub App/GitLab scoped minting, microVM, artifact object-store, and file-coordinate
-attestation adapters. T031 is therefore the next implementation task; live deployment
-eligibility still requires the 005 rollout and the remaining 006 gates.
+GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
+file-coordinate-attestation, and acceptance-gate adapters. T032 is therefore the next
+implementation task; live deployment eligibility still requires the 005 rollout and the
+remaining 006 gates.
 
 ## Deployment Position
 
