@@ -239,11 +239,13 @@ ingress, validation, final-disposition, and OpenGrep normalization portion of Ph
   rolling deployment while enforcing semantic schema versions and separate schema/normalizer
   digests for new rows, and removes v1/v2 only after v3 validation succeeds.
 - `opengrep-sarif-normalizer-v1` independently rebinds an unexpired T031 accepted decision,
-  validation/envelope/content digests, exact plan and OpenGrep supply-chain metadata before
-  reading a bounded stream. It accepts only the OASIS 2.1.0 schema, one `Opengrep OSS` run,
-  the exact pinned driver version, one successful notification-free invocation, unique
-  rule/result resolution, and at most one primary location. The official `%SRCROOT%`
-  OpenGrep URI base is allowed while every other indirect base remains rejected.
+  validation/envelope/content digests, immutable plan digest, canonical scan key, coordinated
+  attestation binding, and exact OpenGrep supply-chain metadata before reading a bounded
+  stream. It resolves semantic rule identity and revision only from the signed bundle manifest,
+  never from scanner-local SARIF fields. It accepts only the OASIS 2.1.0 schema, one
+  `Opengrep OSS` run, the exact pinned driver version, one successful notification-free
+  invocation, unique rule/result resolution, and at most one primary location. The official
+  `%SRCROOT%` OpenGrep URI base is allowed while every other indirect base remains rejected.
 - The adapter reuses the strict T030 token/UTF-8/depth/duplicate-key limits, fixed parser
   slicing, content hashing, byte count, and record count without materializing the raw SARIF
   or complete result objects. Raw JSON surrogate pairs are validated before token decoding.

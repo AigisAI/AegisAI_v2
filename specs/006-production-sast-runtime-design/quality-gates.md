@@ -125,6 +125,8 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   snippet/fix/code-flow/help payload fields in transient candidates.
 - 100% rejection equality for oversized/chunk-varied streams, unpaired Unicode escapes,
   pre-decision clocks, and retention expiry crossed during streaming.
+- 100% rejection before artifact reads for supplied coordinate-attestation drift, and 100%
+  semantic-rule/revision resolution from immutable bundle metadata rather than scanner IDs.
 - 100% artifact tenant, scan, scanner, commit, schema, digest, size, and count binding.
 - 100% unknown/unsafe enum, coordinate, path, encoding, and over-limit rejection.
 - 100% secret-value redaction before persistence outside the scanner artifact quarantine.

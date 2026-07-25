@@ -67,7 +67,9 @@ schema, size/count, encoding, coordinates, paths, enums, and status outside the 
 Quarantine invalid artifacts. Normalize only through versioned adapters with golden fixtures;
 emit only transient `durablePersistenceAllowed=false` candidates, and redact detected secret
 values before durable normalized storage. T032's OpenGrep adapter is scalar-streaming and is
-not wired to a production artifact reader or persistence worker ahead of T035.
+not wired to a production artifact reader or persistence worker ahead of T035. Its candidate
+batch retains immutable plan/attestation digests and resolves semantic rule identity only from
+the signed rule-bundle manifest.
 
 ### Slice 5 - Identity, Correlation, and Lifecycle
 

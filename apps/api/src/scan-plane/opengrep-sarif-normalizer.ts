@@ -7,6 +7,7 @@ import {
   SAST_ARTIFACT_VALIDATION_LIMITS,
   SAST_MAX_COORDINATE_VALUE,
   SAST_NORMALIZATION_LIMITS,
+  buildSastScanPlanDigestPreimage,
   canonicalizeOpenGrepSarifNormalizationBatch,
   canonicalizeOpenGrepSarifNormalizationRejection,
   canonicalizeSastArtifactDispositionDecision,
@@ -195,14 +196,22 @@ export class OpenGrepSarifNormalizer {
       input,
       readReferenceTime(referenceClock)
     );
-    if (binding.reasons.size > 0 || !binding.ruleBundle) {
+    if (
+      binding.reasons.size > 0 ||
+      !binding.ruleBundle ||
+      !binding.planDigest
+    ) {
       return this.reject(input.ingestionId, binding.reasons);
     }
 
     const coordinates = this.loadCoordinates(
       input.coordinateAttestation,
-      input
+      input,
+      binding.reasons
     );
+    if (binding.reasons.size > 0) {
+      return this.reject(input.ingestionId, binding.reasons);
+    }
     const stream = new OpenGrepSarifStreamSession(
       input.envelope,
       input.plan
@@ -229,6 +238,7 @@ export class OpenGrepSarifNormalizer {
       parsed,
       input,
       binding.ruleBundle,
+      binding.planDigest,
       coordinates,
       binding.reasons
     );
@@ -256,6 +266,12 @@ export class OpenGrepSarifNormalizer {
       scannerVersion: input.envelope.scannerVersion,
       scannerImageDigest: input.envelope.scannerImageDigest,
       ruleBundleDigest: binding.ruleBundle.digest,
+      planDigest: binding.planDigest,
+      canonicalScanKey: input.plan.canonicalScanKey,
+      preflightAttestationRef:
+        input.expectedBinding.preflightAttestationRef,
+      preflightInventoryDigest:
+        input.expectedBinding.preflightInventoryDigest,
       lane: input.plan.profile.lane,
       commitSha: input.plan.repositoryState.fixedCommitSha,
       envelopeDigest: input.envelopeDigest,
@@ -286,6 +302,7 @@ export class OpenGrepSarifNormalizer {
   ): {
     reasons: Set<SastNormalizationRejectionReasonCode>;
     ruleBundle: RuleBundleDescriptor | null;
+    planDigest: `sha256:${string}` | null;
     startedAtMilliseconds: number;
   } {
     const reasons = new Set<SastNormalizationRejectionReasonCode>();
@@ -296,6 +313,7 @@ export class OpenGrepSarifNormalizer {
     let envelopeDigest: `sha256:${string}` | null = null;
     let validationDigest: `sha256:${string}` | null = null;
     let decisionDigest: `sha256:${string}` | null = null;
+    let planDigest: `sha256:${string}` | null = null;
     try {
       envelopeDigest = digest(
         canonicalizeScannerArtifactEnvelope(input.envelope)
@@ -314,6 +332,7 @@ export class OpenGrepSarifNormalizer {
           )
         );
       }
+      planDigest = digest(buildSastScanPlanDigestPreimage(input.plan));
     } catch {
       // Shape and binding reasons below remain the only observable metadata.
     }
@@ -337,6 +356,7 @@ export class OpenGrepSarifNormalizer {
 
     if (
       envelopeDigest !== input.envelopeDigest ||
+      planDigest === null ||
       !isScannerArtifactEnvelopeBoundToPlan(
         input.envelope,
         input.plan,
@@ -380,6 +400,7 @@ export class OpenGrepSarifNormalizer {
     return {
       reasons,
       ruleBundle: matchingBundles[0] ?? null,
+      planDigest,
       startedAtMilliseconds
     };
   }
@@ -413,19 +434,28 @@ export class OpenGrepSarifNormalizer {
 
   private loadCoordinates(
     attestation: Readonly<SastFileCoordinateAttestation> | null,
-    input: Readonly<OpenGrepSarifNormalizationInput>
+    input: Readonly<OpenGrepSarifNormalizationInput>,
+    reasons: Set<SastNormalizationRejectionReasonCode>
   ): ReadonlyMap<string, Readonly<SastFileCoordinateMetadata>> | null {
+    if (!attestation) {
+      return null;
+    }
     if (
-      !attestation ||
       attestation.verified !== true ||
       attestation.attestationRef !==
         input.expectedBinding.preflightAttestationRef ||
       attestation.inventoryDigest !==
-        input.expectedBinding.preflightInventoryDigest ||
+        input.expectedBinding.preflightInventoryDigest
+    ) {
+      reasons.add('NORMALIZATION_PLAN_BINDING_MISMATCH');
+      return null;
+    }
+    if (
       !Array.isArray(attestation.files) ||
       attestation.files.length >
         input.plan.profile.limits.maxFileCount
     ) {
+      reasons.add('NORMALIZATION_OPENGREP_LOCATION_INVALID');
       return null;
     }
 
@@ -446,6 +476,7 @@ export class OpenGrepSarifNormalizer {
           'maxColumnByLine'
         ])
       ) {
+        reasons.add('NORMALIZATION_OPENGREP_LOCATION_INVALID');
         return null;
       }
       const file = rawFile as Record<string, unknown>;
@@ -481,6 +512,7 @@ export class OpenGrepSarifNormalizer {
             column <= SAST_MAX_COORDINATE_VALUE
         )
       ) {
+        reasons.add('NORMALIZATION_OPENGREP_LOCATION_INVALID');
         return null;
       }
       totalLines += lineCount;
@@ -498,11 +530,15 @@ export class OpenGrepSarifNormalizer {
     parsed: Readonly<ParsedOpenGrepSarif>,
     input: Readonly<OpenGrepSarifNormalizationInput>,
     ruleBundle: Readonly<RuleBundleDescriptor>,
+    planDigest: `sha256:${string}`,
     coordinates:
       | ReadonlyMap<string, Readonly<SastFileCoordinateMetadata>>
       | null,
     reasons: Set<SastNormalizationRejectionReasonCode>
   ): SastNormalizedFindingCandidate[] | null {
+    const bundleRulesById = new Map(
+      ruleBundle.rules.map((rule) => [rule.ruleId, rule] as const)
+    );
     const rulesById = new Map<string, RuleState>();
     const rulesByIndex = new Map<number, RuleState>();
     for (const rule of parsed.rules) {
@@ -510,7 +546,11 @@ export class OpenGrepSarifNormalizer {
         rule.id,
         SAST_NORMALIZATION_LIMITS.ruleIdBytes
       );
-      if (!ruleId || rulesById.has(ruleId)) {
+      if (
+        !ruleId ||
+        rulesById.has(ruleId) ||
+        !bundleRulesById.has(ruleId)
+      ) {
         reasons.add('NORMALIZATION_OPENGREP_RULE_INVALID');
         continue;
       }
@@ -530,14 +570,6 @@ export class OpenGrepSarifNormalizer {
       rulesByIndex.set(rule.index, { ...rule, id: ruleId });
     }
 
-    const ruleRevision = normalizeIdentifier(
-      ruleBundle.version,
-      SAST_NORMALIZATION_LIMITS.ruleRevisionBytes
-    );
-    if (!ruleRevision) {
-      reasons.add('NORMALIZATION_IDENTIFIER_LIMIT_EXCEEDED');
-    }
-
     const candidates: SastNormalizedFindingCandidate[] = [];
     const identityKeys = new Set<string>();
     for (const result of parsed.results) {
@@ -546,6 +578,9 @@ export class OpenGrepSarifNormalizer {
         SAST_NORMALIZATION_LIMITS.ruleIdBytes
       );
       const rule = ruleId ? rulesById.get(ruleId) : undefined;
+      const bundleRule = ruleId
+        ? bundleRulesById.get(ruleId)
+        : undefined;
       const indexedRule =
         result.ruleIndex === undefined
           ? undefined
@@ -553,9 +588,9 @@ export class OpenGrepSarifNormalizer {
       if (
         !ruleId ||
         !rule ||
+        !bundleRule ||
         (result.ruleIndex !== undefined &&
-          (!indexedRule || indexedRule.id !== ruleId)) ||
-        !ruleRevision
+          (!indexedRule || indexedRule.id !== ruleId))
       ) {
         reasons.add('NORMALIZATION_OPENGREP_RESULT_INVALID');
         continue;
@@ -633,6 +668,12 @@ export class OpenGrepSarifNormalizer {
         scanRequestId: input.envelope.scanRequestId,
         attemptId: input.envelope.attemptId,
         scannerRunId: input.envelope.scannerRunId,
+        planDigest,
+        canonicalScanKey: input.plan.canonicalScanKey,
+        preflightAttestationRef:
+          input.expectedBinding.preflightAttestationRef,
+        preflightInventoryDigest:
+          input.expectedBinding.preflightInventoryDigest,
         commitSha: input.plan.repositoryState.fixedCommitSha,
         lane: input.plan.profile.lane,
         capability: 'SAST',
@@ -644,7 +685,7 @@ export class OpenGrepSarifNormalizer {
         cveIds: identifiers.cveIds,
         location,
         identityMaterial: {
-          ruleSemanticId: ruleId,
+          ruleSemanticId: bundleRule.ruleSemanticId,
           symbolAnchor: '',
           sinkKind: '',
           structuralHash,
@@ -655,7 +696,7 @@ export class OpenGrepSarifNormalizer {
           scannerVersion: input.envelope.scannerVersion,
           scannerImageDigest: input.envelope.scannerImageDigest,
           ruleId,
-          ruleRevision,
+          ruleRevision: bundleRule.ruleRevision,
           ruleBundleDigest: ruleBundle.digest,
           artifactDigest: input.envelope.contentDigest
         },
@@ -1528,7 +1569,7 @@ function extractIdentifiers(
     } else if (cwe) {
       reasons.add('NORMALIZATION_IDENTIFIER_LIMIT_EXCEEDED');
     } else if (/^CWE-/iu.test(tag)) {
-      reasons.add('NORMALIZATION_IDENTIFIER_LIMIT_EXCEEDED');
+      reasons.add('NORMALIZATION_IDENTIFIER_INVALID');
     }
     if (
       cve &&
@@ -1539,7 +1580,7 @@ function extractIdentifiers(
     } else if (cve) {
       reasons.add('NORMALIZATION_IDENTIFIER_LIMIT_EXCEEDED');
     } else if (/^CVE-/iu.test(tag)) {
-      reasons.add('NORMALIZATION_IDENTIFIER_LIMIT_EXCEEDED');
+      reasons.add('NORMALIZATION_IDENTIFIER_INVALID');
     }
   }
   if (

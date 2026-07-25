@@ -864,7 +864,15 @@ function scanPlan(
           scanner: 'OPENGREP',
           source: 'PLATFORM_MANAGED',
           immutable: true,
-          customerExecutableConfigAllowed: false
+          customerExecutableConfigAllowed: false,
+          rules: [
+            {
+              ruleId: 'opengrep.fixture',
+              ruleRevision: '1',
+              ruleSemanticId: 'opengrep.fixture',
+              metadataDigest: digest('5')
+            }
+          ]
         },
         {
           bundleId: 'trivy-checks-v1',
@@ -879,7 +887,15 @@ function scanPlan(
           scanner: 'TRIVY',
           source: 'PLATFORM_MANAGED',
           immutable: true,
-          customerExecutableConfigAllowed: false
+          customerExecutableConfigAllowed: false,
+          rules: [
+            {
+              ruleId: 'trivy.fixture',
+              ruleRevision: '1',
+              ruleSemanticId: 'trivy.fixture',
+              metadataDigest: digest('6')
+            }
+          ]
         }
       ],
       vulnerabilityDatabase: {

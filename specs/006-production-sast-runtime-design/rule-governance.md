@@ -51,6 +51,11 @@ A signed bundle manifest contains only platform-controlled values:
 - signer identity, signature reference, and SLSA-compatible provenance reference
 - rollout policy, kill-switch namespace, and rollback target
 
+The immutable plan-visible bundle descriptor carries a bounded, code-unit-sorted,
+unique-by-`ruleId` projection of those per-rule manifest fields. Normalizers must resolve
+`ruleRevision` and `ruleSemanticId` from that signed projection; scanner output may select a
+rule but cannot author or override its platform semantic identity.
+
 The scanner wrapper verifies the manifest and member digests before execution. The result
 ingress verifies that the reported bundle digest equals the plan. A customer cannot add
 command-line flags, rule code, templates, post-processors, or executable configuration.

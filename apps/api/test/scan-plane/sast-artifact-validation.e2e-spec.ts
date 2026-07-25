@@ -309,13 +309,13 @@ describe('SAST bounded artifact validation', () => {
   });
 
   it('accepts a paired JSON Unicode surrogate escape across byte-sized chunks', async () => {
+    const source = jsonBytes(validCycloneDx()).toString('utf8');
+    expect(source).toContain('"name":"example"');
     const artifact = Buffer.from(
-      jsonBytes(validCycloneDx())
-        .toString('utf8')
-        .replace(
-          '"name":"example"',
-          '"name":"\\ud83d\\ude00"'
-        ),
+      source.replace(
+        '"name":"example"',
+        '"name":"\\ud83d\\ude00"'
+      ),
       'utf8'
     );
     const result = await validate({
@@ -852,7 +852,15 @@ function buildPlan(
     scanner: kind,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,
-    customerExecutableConfigAllowed: false as const
+    customerExecutableConfigAllowed: false as const,
+    rules: [
+      {
+        ruleId: `${kind.toLowerCase()}.fixture`,
+        ruleRevision: '1',
+        ruleSemanticId: `${kind.toLowerCase()}.fixture`,
+        metadataDigest: digest(`rule-metadata-${kind}`)
+      }
+    ]
   });
   return {
     tenantId: 'tenant-1',

@@ -512,7 +512,10 @@ The v1 schema mapping is deliberately narrower than generic SARIF:
   the envelope's pinned OpenGrep version;
 - exactly one invocation must report `executionSuccessful=true` with zero execution
   notifications; a partial/error notification rejects the entire batch;
-- result `ruleId`, and `ruleIndex` when present, must resolve to one unique driver rule;
+- result `ruleId`, and `ruleIndex` when present, must resolve to one unique driver rule and
+  one immutable rule-bundle manifest entry. The scanner-local `ruleId` remains provenance;
+  `ruleSemanticId` and `ruleRevision` are copied only from that signed manifest entry and
+  never inferred from SARIF;
 - the result `message.text` is the plain-text description; rule `shortDescription.text` is
   the title, with a bounded deterministic rule-ID fallback;
 - only zero or one primary location is accepted. OpenGrep's literal `%SRCROOT%` URI base is
@@ -521,7 +524,10 @@ The v1 schema mapping is deliberately narrower than generic SARIF:
   remains the standard exclusive end coordinate;
 - an omitted location becomes `UNKNOWN/SCANNER_LOCATION_OMITTED`; a safe but unattestable
   location becomes `UNKNOWN/LOCATION_NOT_MAPPABLE` with no retained path or coordinates;
-  multiple primary locations, unsafe bases, or invalid attested bounds reject the batch;
+  multiple primary locations, unsafe bases, or invalid attested bounds reject the batch.
+  A genuinely unavailable coordinate-attestation provider may produce the explicit unknown
+  location, but a supplied unverified, malformed, or plan-drifted attestation rejects the
+  batch before artifact bytes are read;
 - `fingerprints["matchBasedId/v1"]` is retained only as bounded T036 identity material. A
   namespaced SHA-256 projection supplies the candidate's non-authoritative `structuralHash`;
   neither value is copied into `stableFingerprint` or treated as platform authority.
@@ -546,7 +552,10 @@ than materializing the raw SARIF or a complete result object. Raw JSON Unicode e
 validated before token decoding so an unpaired surrogate cannot collapse to a replacement
 character and alter canonical identity. The adapter independently
 rehashes bytes, checks byte/record counts, deterministically sorts candidates, and binds the
-canonical batch to a SHA-256 digest. Any semantic ambiguity rejects the complete batch with
+canonical batch to a SHA-256 digest. The batch and each candidate retain the immutable
+`planDigest`, `canonicalScanKey`, `preflightAttestationRef`, and
+`preflightInventoryDigest`; those values participate in canonical batch hashing and must
+match the accepted artifact binding. Any semantic ambiguity rejects the complete batch with
 ordered bounded reason codes; rejection metadata contains no raw message, snippet, path,
 object key, or source bytes. The batch repeats the scanner kind/version/image digest and rule
 bundle digest, and every candidate repeats `scannerRunId`, so an accepted zero-finding batch
@@ -560,12 +569,17 @@ Normalized limits:
 - symbol <= 512 UTF-8 bytes
 - rule ID/revision <= 256 UTF-8 bytes each
 - scanner identity hint <= 512 UTF-8 bytes; its namespaced structural projection is SHA-256
-- maximum 128 bounded OpenGrep rule tags inspected per rule
+- maximum 128 bounded OpenGrep rule tags per rule; 129 or more rejects the complete batch,
+  with no truncation or ignored tail tags
 - maximum 25 CWE and 25 CVE identifiers per finding; each canonical identifier <= 64 UTF-8
-  bytes
+  bytes. A `CWE-` or `CVE-`-prefixed tag with malformed identifier syntax rejects as
+  `NORMALIZATION_IDENTIFIER_INVALID`, while byte/count overflow rejects as
+  `NORMALIZATION_IDENTIFIER_LIMIT_EXCEEDED`
 - a file-relative location requires the matching attested file metadata; line and column values
   are positive safe integers no greater than `2,147,483,647`, lines cannot exceed the attested
-  line count, and columns cannot exceed the attested per-line maximum
+  line count, and columns cannot exceed the attested per-line maximum. `columnStart` is
+  inclusive and SARIF `columnEnd` is exclusive. Each `maxColumnByLine` value is the legal
+  one-past-last UTF-16 boundary, so equality is valid and any larger value is rejected
 - absent file metadata never relaxes validation: adapters must emit the explicit `UNKNOWN`
   location with `SCANNER_LOCATION_OMITTED` or `LOCATION_NOT_MAPPABLE` and no path or coordinate
   fields; arbitrary fallback coordinates are rejected

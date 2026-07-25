@@ -360,10 +360,15 @@ An in-memory, non-durable T032/T033 handoff from one accepted scanner artifact.
 - `opengrep-sarif-normalizer-v1` or the explicit schema adapter version
 - bounded title/description, severity/confidence, CWE/CVE identifiers, location, and complete
   scanner/rule/artifact provenance
+- immutable `planDigest`, `canonicalScanKey`, `preflightAttestationRef`, and
+  `preflightInventoryDigest` on both the batch and every candidate; a supplied attestation
+  that does not match these bindings rejects instead of degrading to an unknown location
+- scanner-local `ruleId` as provenance plus `ruleRevision` and `ruleSemanticId` resolved only
+  from the immutable signed rule-bundle manifest
 - bounded scanner identity material for T036, including the OpenGrep `matchBasedId/v1` only
   as a non-authoritative hint
-- deterministic validation/disposition/envelope/schema/normalizer/artifact digest binding and
-  canonical batch digest
+- deterministic plan/attestation/validation/disposition/envelope/schema/normalizer/artifact
+  digest binding and canonical batch digest
 - batch-level scanner version/image and rule-bundle provenance, retained even when the accepted
   artifact has zero findings, plus candidate-level `scannerRunId`
 - `durablePersistenceAllowed=false`

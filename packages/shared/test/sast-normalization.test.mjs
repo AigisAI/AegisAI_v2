@@ -122,6 +122,10 @@ test('canonicalizes transient candidates without inventing durable finding state
     scannerVersion: core.scannerVersion,
     scanner: core.scanner,
     scannerRunId: core.scannerRunId,
+    planDigest: core.planDigest,
+    canonicalScanKey: core.canonicalScanKey,
+    preflightAttestationRef: core.preflightAttestationRef,
+    preflightInventoryDigest: core.preflightInventoryDigest,
     scope: {
       scannerRunId: core.scope.scannerRunId,
       attemptId: core.scope.attemptId,
@@ -183,6 +187,40 @@ test('shape validators preserve transient, scoped, and ordered invariants', () =
     }),
     false
   );
+  assert.equal(
+    isOpenGrepSarifNormalizationBatchShapeValid({
+      ...batch,
+      lane: { toString: () => 'FAST' }
+    }),
+    false
+  );
+  for (const malformedFinding of [
+    {
+      ...batch.findings[0],
+      severity: { toString: () => 'INFO' }
+    },
+    {
+      ...batch.findings[0],
+      confidence: { toString: () => 'UNKNOWN' }
+    },
+    {
+      ...batch.findings[0],
+      location: {
+        kind: 'UNKNOWN',
+        reasonCode: {
+          toString: () => 'SCANNER_LOCATION_OMITTED'
+        }
+      }
+    }
+  ]) {
+    assert.equal(
+      isOpenGrepSarifNormalizationBatchShapeValid({
+        ...batch,
+        findings: [malformedFinding]
+      }),
+      false
+    );
+  }
   assert.equal(
     isOpenGrepSarifNormalizationBatchShapeValid({
       ...batch,
@@ -285,6 +323,10 @@ function batchCore() {
     scannerVersion: '1.22.0',
     scannerImageDigest: DIGEST,
     ruleBundleDigest: DIGEST,
+    planDigest: DIGEST,
+    canonicalScanKey: DIGEST,
+    preflightAttestationRef: 'preflight://attempt-1',
+    preflightInventoryDigest: DIGEST,
     lane: 'FAST',
     commitSha: 'a'.repeat(40),
     envelopeDigest: DIGEST,
@@ -300,6 +342,10 @@ function batchCore() {
         scanRequestId: 'scan-1',
         attemptId: 'attempt-1',
         scannerRunId: 'scanner-run-1',
+        planDigest: DIGEST,
+        canonicalScanKey: DIGEST,
+        preflightAttestationRef: 'preflight://attempt-1',
+        preflightInventoryDigest: DIGEST,
         commitSha: 'a'.repeat(40),
         lane: 'FAST',
         capability: 'SAST',

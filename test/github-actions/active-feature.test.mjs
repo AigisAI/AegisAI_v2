@@ -208,20 +208,45 @@ test('SAST T032 OpenGrep normalization is versioned, transient, and fixture-guar
   const tasks = readNormalizedText(files.tasks);
   const quickstart = readNormalizedText(files.quickstart);
   const contract = readNormalizedText(files.contract);
+  const spec = readNormalizedText(files.spec);
+  const plan = readNormalizedText(files.plan);
+  const research = readNormalizedText(files.research);
+  const dataModel = readNormalizedText(files.dataModel);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
 
   assert.match(sharedNormalization, /opengrep-sarif-normalizer-v1/);
   assert.match(sharedNormalization, /durablePersistenceAllowed:\s*false/);
-  assert.doesNotMatch(sharedNormalization, /stableFingerprint:\s*/);
+  assert.doesNotMatch(sharedNormalization, /\bstableFingerprint\b/u);
   assert.match(sharedNormalizationTest, /without inventing durable finding state/);
   assert.match(normalizer, /class OpenGrepSarifNormalizer/);
   assert.match(normalizer, /Opengrep OSS/);
   assert.match(normalizer, /matchBasedId\/v1/);
+  assert.match(normalizer, /buildSastScanPlanDigestPreimage/);
+  assert.match(normalizer, /bundleRulesById/);
   assert.match(normalizerTest, /byte-exactly across chunking/);
   assert.match(normalizerTest, /not\.toContain\('super-secret'\)/);
+  assert.match(
+    normalizerTest,
+    /isOpenGrepSarifNormalizationBatchShapeValid/
+  );
   assert.match(fixture, /"uriBaseId": "%SRCROOT%"/);
   assert.match(tasks, /- \[x\] T032\b/);
   assert.match(quickstart, /T033 Trivy JSON normalization is/);
+  assert.match(quickstart, /immutable plan digest/);
   assert.match(contract, /OpenGrep SARIF adapter v1/);
+  assert.match(contract, /129 or more rejects the complete batch/);
+  assert.match(spec, /signed\s+bundle metadata rather than scanner-local identifiers/);
+  assert.match(plan, /signed rule-bundle manifest/);
+  assert.match(research, /signed bundle\s+manifest projection/);
+  assert.match(dataModel, /immutable `planDigest`/);
+  assert.match(threatModel, /Rule identity forgery/);
+  assert.match(qualityGates, /semantic-rule\/revision resolution/);
+  assert.match(
+    ruleGovernance,
+    /normalizers must resolve\s+`ruleRevision`/i
+  );
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

@@ -157,7 +157,9 @@ incomplete, stale, quarantined, or security-blocked scan.
   scanner/rule/artifact provenance, stable fingerprint, and evidence references.
 - **FR-031**: Normalization MUST use explicit per-schema adapters with golden fixtures.
   Adapter output before T035 redaction and T036 fingerprinting MUST be an in-memory,
-  non-durable candidate with no evidence, lifecycle, policy, or AI authority.
+  non-durable candidate with no evidence, lifecycle, policy, or AI authority. It MUST retain
+  immutable plan/attestation bindings and MUST resolve semantic rule identity from signed
+  bundle metadata rather than scanner-local identifiers.
 - **FR-032**: Unknown enum values, invalid coordinates, overlong strings, unsafe encodings,
   and excessive nesting MUST fail closed.
 

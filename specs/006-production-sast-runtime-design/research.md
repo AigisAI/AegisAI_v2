@@ -173,7 +173,9 @@ pinned OpenGrep producer: one OASIS 2.1.0 run, `Opengrep OSS` plus exact semanti
 successful notification-free invocation, rule-descriptor severity/tags, result text,
 `matchBasedId/v1`, and zero or one `%SRCROOT%` primary location. It streams required scalar
 fields, discards snippets/fixes/code flows/help markup, and emits a transient non-durable
-candidate for T035/T036.
+candidate for T035/T036. The candidate is bound to the immutable plan and coordinated
+attestation digests, while semantic rule identity/revision comes only from the signed bundle
+manifest projection.
 
 **Rationale**: A generic SARIF consumer would silently accept ambiguous extension components,
 rule indirection, multiple runs, partial execution, or scanner-specific semantics that the

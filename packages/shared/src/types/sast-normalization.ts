@@ -45,6 +45,7 @@ export const SAST_NORMALIZATION_REJECTION_REASON_CODES = [
   'NORMALIZATION_OPENGREP_LOCATION_INVALID',
   'NORMALIZATION_TEXT_INVALID',
   'NORMALIZATION_FIELD_LIMIT_EXCEEDED',
+  'NORMALIZATION_IDENTIFIER_INVALID',
   'NORMALIZATION_IDENTIFIER_LIMIT_EXCEEDED'
 ] as const;
 export type SastNormalizationRejectionReasonCode =
@@ -79,6 +80,10 @@ export interface SastNormalizedFindingCandidate {
   scanRequestId: string;
   attemptId: string;
   scannerRunId: string;
+  planDigest: `sha256:${string}`;
+  canonicalScanKey: `sha256:${string}`;
+  preflightAttestationRef: string;
+  preflightInventoryDigest: `sha256:${string}`;
   commitSha: string;
   lane: SastScanLane;
   capability: 'SAST';
@@ -107,6 +112,10 @@ export interface OpenGrepSarifNormalizationBatch {
   scannerVersion: string;
   scannerImageDigest: `sha256:${string}`;
   ruleBundleDigest: `sha256:${string}`;
+  planDigest: `sha256:${string}`;
+  canonicalScanKey: `sha256:${string}`;
+  preflightAttestationRef: string;
+  preflightInventoryDigest: `sha256:${string}`;
   lane: SastScanLane;
   commitSha: string;
   envelopeDigest: `sha256:${string}`;
@@ -265,6 +274,10 @@ export function canonicalizeOpenGrepSarifNormalizationBatch(
     scannerVersion: batch.scannerVersion,
     scannerImageDigest: batch.scannerImageDigest,
     ruleBundleDigest: batch.ruleBundleDigest,
+    planDigest: batch.planDigest,
+    canonicalScanKey: batch.canonicalScanKey,
+    preflightAttestationRef: batch.preflightAttestationRef,
+    preflightInventoryDigest: batch.preflightInventoryDigest,
     lane: batch.lane,
     commitSha: batch.commitSha,
     envelopeDigest: batch.envelopeDigest,
@@ -307,6 +320,10 @@ export function isOpenGrepSarifNormalizationBatchShapeValid(
       'scannerVersion',
       'scannerImageDigest',
       'ruleBundleDigest',
+      'planDigest',
+      'canonicalScanKey',
+      'preflightAttestationRef',
+      'preflightInventoryDigest',
       'lane',
       'commitSha',
       'envelopeDigest',
@@ -328,13 +345,17 @@ export function isOpenGrepSarifNormalizationBatchShapeValid(
     !isBoundedReference(value.scannerRunId) ||
     value.scanner !== 'OPENGREP' ||
     !isBoundedIdentifier(value.scannerVersion, 255, false) ||
-    !['FAST', 'DEEP'].includes(String(value.lane)) ||
+    !isAllowedString(value.lane, ['FAST', 'DEEP']) ||
+    !isBoundedReference(value.preflightAttestationRef) ||
     !isCommitSha(value.commitSha) ||
     ![
       value.envelopeDigest,
       value.artifactDigest,
       value.scannerImageDigest,
       value.ruleBundleDigest,
+      value.planDigest,
+      value.canonicalScanKey,
+      value.preflightInventoryDigest,
       value.schemaBundleDigest,
       value.normalizerBundleDigest,
       value.validationResultDigest,
@@ -357,6 +378,12 @@ export function isOpenGrepSarifNormalizationBatchShapeValid(
       finding.scanRequestId === scope.scanRequestId &&
       finding.attemptId === scope.attemptId &&
       finding.scannerRunId === value.scannerRunId &&
+      finding.planDigest === value.planDigest &&
+      finding.canonicalScanKey === value.canonicalScanKey &&
+      finding.preflightAttestationRef ===
+        value.preflightAttestationRef &&
+      finding.preflightInventoryDigest ===
+        value.preflightInventoryDigest &&
       finding.commitSha === value.commitSha &&
       finding.lane === value.lane &&
       finding.provenance.scanner === value.scanner &&
@@ -414,6 +441,10 @@ function canonicalFindingCandidate(
     scanRequestId: finding.scanRequestId,
     attemptId: finding.attemptId,
     scannerRunId: finding.scannerRunId,
+    planDigest: finding.planDigest,
+    canonicalScanKey: finding.canonicalScanKey,
+    preflightAttestationRef: finding.preflightAttestationRef,
+    preflightInventoryDigest: finding.preflightInventoryDigest,
     commitSha: finding.commitSha,
     lane: finding.lane,
     capability: finding.capability,
@@ -482,6 +513,10 @@ function isNormalizedFindingCandidateShapeValid(
       'scanRequestId',
       'attemptId',
       'scannerRunId',
+      'planDigest',
+      'canonicalScanKey',
+      'preflightAttestationRef',
+      'preflightInventoryDigest',
       'commitSha',
       'lane',
       'capability',
@@ -504,8 +539,12 @@ function isNormalizedFindingCandidateShapeValid(
       value.attemptId,
       value.scannerRunId
     ].every(isBoundedReference) ||
+    !isSha256Digest(value.planDigest) ||
+    !isSha256Digest(value.canonicalScanKey) ||
+    !isBoundedReference(value.preflightAttestationRef) ||
+    !isSha256Digest(value.preflightInventoryDigest) ||
     !isCommitSha(value.commitSha) ||
-    !['FAST', 'DEEP'].includes(String(value.lane)) ||
+    !isAllowedString(value.lane, ['FAST', 'DEEP']) ||
     value.capability !== 'SAST' ||
     !isBoundedPlainText(value.title, SAST_NORMALIZATION_LIMITS.titleBytes, false) ||
     !isBoundedPlainText(
@@ -513,12 +552,19 @@ function isNormalizedFindingCandidateShapeValid(
       SAST_NORMALIZATION_LIMITS.descriptionBytes,
       true
     ) ||
-    !['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'].includes(
-      String(value.severity)
-    ) ||
-    !['HIGH', 'MEDIUM', 'LOW', 'UNKNOWN'].includes(
-      String(value.confidence)
-    ) ||
+    !isAllowedString(value.severity, [
+      'CRITICAL',
+      'HIGH',
+      'MEDIUM',
+      'LOW',
+      'INFO'
+    ]) ||
+    !isAllowedString(value.confidence, [
+      'HIGH',
+      'MEDIUM',
+      'LOW',
+      'UNKNOWN'
+    ]) ||
     !isOrderedIdentifierArray(
       value.cweIds,
       /^CWE-[1-9][0-9]{0,9}$/u,
@@ -547,9 +593,10 @@ function isNormalizationLocationShapeValid(
   if (value.kind === 'UNKNOWN') {
     return (
       hasOnlyKeys(value, ['kind', 'reasonCode', 'symbol']) &&
-      ['SCANNER_LOCATION_OMITTED', 'LOCATION_NOT_MAPPABLE'].includes(
-        String(value.reasonCode)
-      ) &&
+      isAllowedString(value.reasonCode, [
+        'SCANNER_LOCATION_OMITTED',
+        'LOCATION_NOT_MAPPABLE'
+      ]) &&
       isOptionalBoundedText(
         value.symbol,
         SAST_NORMALIZATION_LIMITS.symbolBytes,
@@ -745,6 +792,13 @@ function isSafeNormalizedPath(value: unknown): value is string {
 
 function isBoundedReference(value: unknown): value is string {
   return isBoundedIdentifier(value, 2048, false);
+}
+
+function isAllowedString(
+  value: unknown,
+  allowed: readonly string[]
+): value is string {
+  return typeof value === 'string' && allowed.includes(value);
 }
 
 function isOptionalBoundedText(

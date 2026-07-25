@@ -9,10 +9,12 @@ import {
   SAST_ARTIFACT_VALIDATION_VERSION,
   SAST_FORBIDDEN_CAPABILITIES,
   SAST_SCAN_PROFILES,
+  buildSastScanPlanDigestPreimage,
   canonicalizeOpenGrepSarifNormalizationBatch,
   canonicalizeSastArtifactDispositionDecision,
   canonicalizeSastArtifactValidationResult,
   canonicalizeScannerArtifactEnvelope,
+  isOpenGrepSarifNormalizationBatchShapeValid,
   type ExpectedScannerArtifactBinding,
   type SastArtifactDispositionDecision,
   type SastArtifactDispositionDecisionCore,
@@ -147,13 +149,24 @@ describe('OpenGrepSarifNormalizer', () => {
       loadJsonFixture('upstream-compatible.expected.json')
     );
     expect(first.batch.durablePersistenceAllowed).toBe(false);
+    expect(
+      isOpenGrepSarifNormalizationBatchShapeValid(first.batch)
+    ).toBe(true);
     expect(first.batch).toMatchObject({
       scannerRunId: context.input.envelope.scannerRunId,
       scanner: 'OPENGREP',
       scannerVersion: context.input.envelope.scannerVersion,
       scannerImageDigest:
         context.input.envelope.scannerImageDigest,
-      ruleBundleDigest: context.input.envelope.ruleBundleDigest
+      ruleBundleDigest: context.input.envelope.ruleBundleDigest,
+      planDigest: digest(
+        buildSastScanPlanDigestPreimage(context.input.plan)
+      ),
+      canonicalScanKey: context.input.plan.canonicalScanKey,
+      preflightAttestationRef:
+        context.input.expectedBinding.preflightAttestationRef,
+      preflightInventoryDigest:
+        context.input.expectedBinding.preflightInventoryDigest
     });
     expect(
       first.batch.findings.every(
@@ -173,11 +186,16 @@ describe('OpenGrepSarifNormalizer', () => {
     const scannerMatchBasedId =
       sqlResult?.fingerprints['matchBasedId/v1'];
     expect(sqlFinding?.identityMaterial).toMatchObject({
+      ruleSemanticId: 'java.sql-injection',
       scannerMatchBasedId,
       structuralHash: digest(
         `opengrep:matchBasedId/v1:${scannerMatchBasedId}`
       )
     });
+    expect(sqlFinding?.identityMaterial.ruleSemanticId).not.toBe(
+      sqlFinding?.provenance.ruleId
+    );
+    expect(sqlFinding?.provenance.ruleRevision).toBe('2026.07.1');
     expect(JSON.stringify(first)).not.toContain('super-secret');
     expect(first.batch.findings[0]).not.toHaveProperty(
       'stableFingerprint'
@@ -564,6 +582,36 @@ describe('OpenGrepSarifNormalizer', () => {
     });
   });
 
+  it('rejects coordinate attestation drift before reading the artifact', async () => {
+    const fixture = loadSarifFixture(
+      'upstream-compatible.sarif.json'
+    );
+    const context = buildContext(fixture);
+    let bodyRead = false;
+    async function* forbiddenBody(): AsyncGenerator<Uint8Array> {
+      bodyRead = true;
+      yield context.artifact;
+    }
+
+    const result = await normalizeAt(
+      normalizer,
+      {
+        ...context.input,
+        coordinateAttestation: {
+          ...coordinateAttestation(),
+          inventoryDigest: digest('foreign-inventory')
+        }
+      },
+      forbiddenBody()
+    );
+
+    expect(bodyRead).toBe(false);
+    expect(result).toMatchObject({
+      outcome: 'REJECTED',
+      reasonCodes: ['NORMALIZATION_PLAN_BINDING_MISMATCH']
+    });
+  });
+
   it('rejects scanner output with execution notifications or a missing match identity hint', async () => {
     const notified = loadSarifFixture(
       'upstream-compatible.sarif.json'
@@ -668,6 +716,20 @@ describe('OpenGrepSarifNormalizer', () => {
     expect(oversizedIdentifierResult).toMatchObject({
       outcome: 'REJECTED',
       reasonCodes: ['NORMALIZATION_IDENTIFIER_LIMIT_EXCEEDED']
+    });
+
+    const malformedIdentifier = loadSarifFixture(
+      'upstream-compatible.sarif.json'
+    );
+    malformedIdentifier.runs[0].tool.driver.rules[0]!
+      .properties.tags = ['CWE-not-a-number'];
+    const malformedIdentifierResult = await normalizeFixture(
+      normalizer,
+      malformedIdentifier
+    );
+    expect(malformedIdentifierResult).toMatchObject({
+      outcome: 'REJECTED',
+      reasonCodes: ['NORMALIZATION_IDENTIFIER_INVALID']
     });
   });
 });
@@ -887,7 +949,31 @@ function buildPlan(): SastScanPlan {
     scanner: kind,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,
-    customerExecutableConfigAllowed: false as const
+    customerExecutableConfigAllowed: false as const,
+    rules:
+      kind === 'OPENGREP'
+        ? [
+            {
+              ruleId: 'rules.null-deref',
+              ruleRevision: '2026.07.3',
+              ruleSemanticId: 'java.null-dereference',
+              metadataDigest: digest('metadata-null-dereference')
+            },
+            {
+              ruleId: 'rules.sql-injection',
+              ruleRevision: '2026.07.1',
+              ruleSemanticId: 'java.sql-injection',
+              metadataDigest: digest('metadata-sql-injection')
+            }
+          ]
+        : [
+            {
+              ruleId: 'trivy.fixture',
+              ruleRevision: '2026.07.0',
+              ruleSemanticId: 'trivy.fixture',
+              metadataDigest: digest('metadata-trivy')
+            }
+          ]
   });
   return {
     tenantId: 'tenant-1',
