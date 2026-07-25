@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
   SAST_ARTIFACT_SCHEMA_VERSIONS,
+  SAST_ARTIFACT_VALIDATION_LIMITS,
   SAST_FORBIDDEN_CAPABILITIES,
   SAST_SCAN_PROFILES,
   canonicalizeScannerArtifactEnvelope,
@@ -142,6 +143,7 @@ describe('SAST bounded artifact validation', () => {
       artifact: Buffer.from(
         '{"bomFormat":"CycloneDX","bomFormat":"CycloneDX","specVersion":"1.6","version":1,"components":[]}'
       ),
+      recordCount: 0,
       reason: 'ARTIFACT_JSON_DUPLICATE_KEY'
     },
     {
@@ -149,6 +151,7 @@ describe('SAST bounded artifact validation', () => {
       artifact: Buffer.from(
         '{"bomFormat":"CycloneDX","specVersion":"1.6","version":1,"components":['
       ),
+      recordCount: 0,
       reason: 'ARTIFACT_JSON_MALFORMED'
     },
     {
@@ -156,6 +159,7 @@ describe('SAST bounded artifact validation', () => {
       artifact: Buffer.from(
         `${'['.repeat(65)}null${']'.repeat(65)}`
       ),
+      recordCount: 0,
       reason: 'ARTIFACT_JSON_DEPTH_LIMIT_EXCEEDED'
     },
     {
@@ -168,6 +172,7 @@ describe('SAST bounded artifact validation', () => {
           ])
         )
       ),
+      recordCount: 0,
       reason: 'ARTIFACT_JSON_KEY_COUNT_LIMIT_EXCEEDED'
     },
     {
@@ -180,6 +185,7 @@ describe('SAST bounded artifact validation', () => {
           { type: 'library', name: 'x'.repeat(4097) }
         ]
       }),
+      recordCount: 0,
       reason: 'ARTIFACT_JSON_STRING_LIMIT_EXCEEDED'
     },
     {
@@ -189,6 +195,7 @@ describe('SAST bounded artifact validation', () => {
           129
         )},"components":[]}`
       ),
+      recordCount: 0,
       reason: 'ARTIFACT_JSON_NUMBER_LIMIT_EXCEEDED'
     },
     {
@@ -200,6 +207,7 @@ describe('SAST bounded artifact validation', () => {
         components: [],
         unexpected: true
       }),
+      recordCount: 0,
       reason: 'ARTIFACT_SCHEMA_UNKNOWN_FIELD'
     },
     {
@@ -217,7 +225,7 @@ describe('SAST bounded artifact validation', () => {
     const result = await validate({
       schema: 'CYCLONEDX_JSON',
       artifact: fixture.artifact,
-      recordCount: fixture.recordCount ?? 0,
+      recordCount: fixture.recordCount,
       attestation: null,
       chunkSizes: [7]
     });
@@ -466,6 +474,38 @@ describe('SAST bounded artifact validation', () => {
     });
 
     expect(result.validation.reasonCodes).toContain(fixture.reason);
+  });
+
+  it('rejects an oversized attestation before scanning its column array', async () => {
+    const lineCount =
+      SAST_ARTIFACT_VALIDATION_LIMITS.maximumCoordinateAttestationLines + 1;
+    const maxColumnByLine = new Array<number>(lineCount);
+    Object.defineProperty(maxColumnByLine, 0, {
+      get: () => {
+        throw new Error('oversized column array must not be scanned');
+      }
+    });
+    const result = await validate({
+      schema: 'OPENGREP_SARIF',
+      artifact: jsonBytes(validSarif()),
+      recordCount: 1,
+      attestation: {
+        attestationRef: 'preflight://attempt-1',
+        inventoryDigest: digest('inventory'),
+        verified: true,
+        files: [
+          {
+            normalizedPath: 'src/Café.java',
+            lineCount,
+            maxColumnByLine
+          }
+        ]
+      }
+    });
+
+    expect(result.validation.reasonCodes).toContain(
+      'ARTIFACT_COORDINATE_ATTESTATION_MISSING'
+    );
   });
 
   it('produces the same validation digest for every transport chunking', async () => {

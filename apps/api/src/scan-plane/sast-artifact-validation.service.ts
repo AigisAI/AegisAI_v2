@@ -2,7 +2,7 @@ import type {
   ExpectedScannerArtifactBinding,
   ScannerArtifactEnvelope
 } from '@aegisai/shared';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import type { SastArtifactIngressExpectedBinding } from './sast-artifact-ingress.store';
 import {
@@ -19,6 +19,8 @@ export interface CreateSastArtifactValidationSessionInput {
 
 @Injectable()
 export class SastArtifactValidationService {
+  private readonly logger = new Logger(SastArtifactValidationService.name);
+
   constructor(
     private readonly coordinateAttestations:
       SastFileCoordinateAttestationProvider
@@ -65,6 +67,9 @@ export class SastArtifactValidationService {
           expected.preflightInventoryDigest
       });
     } catch {
+      this.logger.warn(
+        'Coordinate attestation provider call failed; validation remains fail closed.'
+      );
       // A missing or unavailable attestation never relaxes coordinate checks.
       return null;
     }

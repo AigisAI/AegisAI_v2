@@ -637,39 +637,41 @@ export class SastArtifactStreamValidationSession {
       const foldedPath = normalizedPath
         ?.toLocaleLowerCase('en-US')
         .normalize('NFC');
+      const lineCount = file.lineCount;
       if (
         !normalizedPath ||
         normalizedPath !== file.normalizedPath ||
         !foldedPath ||
         foldedPaths.has(foldedPath) ||
-        typeof file.lineCount !== 'number' ||
-        !Number.isSafeInteger(file.lineCount) ||
-        file.lineCount <= 0 ||
-        file.lineCount > SAST_MAX_COORDINATE_VALUE ||
+        typeof lineCount !== 'number' ||
+        !Number.isSafeInteger(lineCount) ||
+        lineCount <= 0 ||
+        lineCount > SAST_MAX_COORDINATE_VALUE ||
+        lineCount >
+          SAST_ARTIFACT_VALIDATION_LIMITS.maximumCoordinateAttestationLines -
+            totalLineCount ||
+        coordinates.has(normalizedPath)
+      ) {
+        return null;
+      }
+      if (
         !Array.isArray(file.maxColumnByLine) ||
-        file.maxColumnByLine.length !== file.lineCount ||
+        file.maxColumnByLine.length !== lineCount ||
         !file.maxColumnByLine.every(
           (column: unknown) =>
             typeof column === 'number' &&
             Number.isSafeInteger(column) &&
             column > 0 &&
             column <= SAST_MAX_COORDINATE_VALUE
-        ) ||
-        coordinates.has(normalizedPath)
+        )
       ) {
         return null;
       }
-      totalLineCount += file.lineCount;
-      if (
-        totalLineCount >
-        SAST_ARTIFACT_VALIDATION_LIMITS.maximumCoordinateAttestationLines
-      ) {
-        return null;
-      }
+      totalLineCount += lineCount;
       foldedPaths.add(foldedPath);
       coordinates.set(normalizedPath, {
         normalizedPath,
-        lineCount: file.lineCount,
+        lineCount,
         maxColumnByLine: file.maxColumnByLine
       });
     }
