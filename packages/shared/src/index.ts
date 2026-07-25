@@ -13,6 +13,7 @@ export * from './types/deployment-operations';
 export * from './types/sast-runtime';
 export * from './types/sast-artifact-validation';
 export * from './types/sast-artifact-disposition';
+export * from './types/sast-normalization';
 export * from './types/sast-planning';
 export * from './types/sast-fetch';
 export * from './types/sast-wrapper';

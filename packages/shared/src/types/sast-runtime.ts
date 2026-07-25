@@ -91,6 +91,7 @@ export const RULE_BUNDLE_STATES = [
   'RETIRED'
 ] as const;
 export type RuleBundleState = (typeof RULE_BUNDLE_STATES)[number];
+export const SAST_RULE_BUNDLE_MAX_RULES = 25000;
 
 export const SAST_FAILURE_CLASSES = [
   'RETRYABLE_INFRASTRUCTURE',
@@ -356,6 +357,13 @@ export const SAST_APPROVED_PROFILE_DIGESTS: Readonly<
   COMMON_DEEP_V1: 'sha256:2751b8dcd7b4ca7a44fba24a940800c557a03279efc47ba6cf67d6c1151cc8e9'
 });
 
+export interface RuleBundleRuleDescriptor {
+  ruleId: string;
+  ruleRevision: string;
+  ruleSemanticId: string;
+  metadataDigest: `sha256:${string}`;
+}
+
 export interface RuleBundleDescriptor {
   bundleId: string;
   version: string;
@@ -370,6 +378,7 @@ export interface RuleBundleDescriptor {
   source: 'PLATFORM_MANAGED';
   immutable: true;
   customerExecutableConfigAllowed: false;
+  rules: RuleBundleRuleDescriptor[];
 }
 
 export interface SignedSastArtifactDescriptor {
@@ -505,6 +514,11 @@ export type SastUnknownLocationReason = (typeof SAST_UNKNOWN_LOCATION_REASONS)[n
 export interface SastFileCoordinateMetadata {
   normalizedPath: string;
   lineCount: number;
+  /**
+   * Maximum legal SARIF column boundary for each line. The value is the
+   * one-past-last UTF-16 code-unit boundary, so an exclusive endColumn may
+   * equal it but may not exceed it.
+   */
   maxColumnByLine: readonly number[];
 }
 
@@ -800,6 +814,9 @@ export function isSignedSastArtifactDescriptorValid(
 }
 
 export function isRuleBundleDescriptorValid(bundle: RuleBundleDescriptor): boolean {
+  const rules = Array.isArray(bundle.rules) ? bundle.rules : [];
+  const ruleIds = rules.map((rule) => rule.ruleId);
+
   return (
     isNonBlank(bundle.bundleId) &&
     isNonBlank(bundle.version) &&
@@ -813,7 +830,20 @@ export function isRuleBundleDescriptorValid(bundle: RuleBundleDescriptor): boole
     isNonBlank(bundle.provenanceRef) &&
     isNonBlank(bundle.compatibilityRef) &&
     isNonBlank(bundle.rolloutPolicyRef) &&
-    isNonBlank(bundle.killSwitchRef)
+    isNonBlank(bundle.killSwitchRef) &&
+    rules.length > 0 &&
+    rules.length <= SAST_RULE_BUNDLE_MAX_RULES &&
+    hasUniqueValues(ruleIds) &&
+    rules.every(
+      (rule, index) =>
+        isBoundedIngressText(rule.ruleId, 256) &&
+        isBoundedIngressText(rule.ruleRevision, 256) &&
+        isBoundedIngressText(rule.ruleSemanticId, 256) &&
+        isSha256Digest(rule.metadataDigest) &&
+        (index === 0 ||
+          (rules[index - 1] as RuleBundleRuleDescriptor).ruleId <
+            rule.ruleId)
+    )
   );
 }
 

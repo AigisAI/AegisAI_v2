@@ -46,7 +46,15 @@ const ruleBundle = (scanner: 'OPENGREP' | 'TRIVY', character: string) => ({
   scanner,
   source: 'PLATFORM_MANAGED' as const,
   immutable: true as const,
-  customerExecutableConfigAllowed: false as const
+  customerExecutableConfigAllowed: false as const,
+  rules: [
+    {
+      ruleId: `${scanner.toLowerCase()}.fixture`,
+      ruleRevision: '1.0.0',
+      ruleSemanticId: `${scanner.toLowerCase()}.fixture`,
+      metadataDigest: digest(character)
+    }
+  ]
 });
 
 const scannerRuntime = (

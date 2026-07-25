@@ -57,7 +57,15 @@ const ruleBundle = (scanner, character, state = 'ACTIVE') => ({
   scanner,
   source: 'PLATFORM_MANAGED',
   immutable: true,
-  customerExecutableConfigAllowed: false
+  customerExecutableConfigAllowed: false,
+  rules: [
+    {
+      ruleId: `${scanner.toLowerCase()}.fixture`,
+      ruleRevision: '1.0.0',
+      ruleSemanticId: `${scanner.toLowerCase()}.fixture`,
+      metadataDigest: digest(character)
+    }
+  ]
 });
 
 const scannerRuntime = (scanner, character, wrapperCharacter) => ({
@@ -207,6 +215,40 @@ const buildPromotionEvidence = () => ({
   securityApprovalRef: 'approval://security',
   platformApprovalRef: 'approval://platform',
   rollbackRef: 'rollback://rules-0'
+});
+
+test('rule bundle descriptors bind unique immutable rule identity metadata', () => {
+  const bundle = ruleBundle('OPENGREP', '7');
+  assert.equal(runtime.isRuleBundleDescriptorValid(bundle), true);
+  assert.equal(
+    runtime.isRuleBundleDescriptorValid({
+      ...bundle,
+      rules: [...bundle.rules, { ...bundle.rules[0] }]
+    }),
+    false
+  );
+  assert.equal(
+    runtime.isRuleBundleDescriptorValid({
+      ...bundle,
+      rules: [
+        {
+          ...bundle.rules[0],
+          ruleSemanticId: ''
+        }
+      ]
+    }),
+    false
+  );
+  assert.equal(
+    runtime.isRuleBundleDescriptorValid({
+      ...bundle,
+      rules: [
+        { ...bundle.rules[0], ruleId: 'z-rule' },
+        { ...bundle.rules[0], ruleId: 'a-rule' }
+      ]
+    }),
+    false
+  );
 });
 
 test('built-in SAST profiles are immutable and satisfy the complete profile validator', () => {

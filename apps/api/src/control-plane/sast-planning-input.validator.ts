@@ -176,23 +176,40 @@ function hasScannerSetShape(value: unknown): boolean {
   }
 
   return (
-    scannerSet.ruleBundles.every((bundle) =>
-      hasOnlyKeys(bundle, [
-        'bundleId',
-        'version',
-        'state',
-        'digest',
-        'signatureRef',
-        'provenanceRef',
-        'compatibilityRef',
-        'rolloutPolicyRef',
-        'killSwitchRef',
-        'scanner',
-        'source',
-        'immutable',
-        'customerExecutableConfigAllowed'
-      ])
-    ) &&
+    scannerSet.ruleBundles.every((bundle) => {
+      if (
+        !hasOnlyKeys(bundle, [
+          'bundleId',
+          'version',
+          'state',
+          'digest',
+          'signatureRef',
+          'provenanceRef',
+          'compatibilityRef',
+          'rolloutPolicyRef',
+          'killSwitchRef',
+          'scanner',
+          'source',
+          'immutable',
+          'customerExecutableConfigAllowed',
+          'rules'
+        ])
+      ) {
+        return false;
+      }
+      const rules = (bundle as Record<string, unknown>).rules;
+      return (
+        Array.isArray(rules) &&
+        rules.every((rule) =>
+          hasOnlyKeys(rule, [
+            'ruleId',
+            'ruleRevision',
+            'ruleSemanticId',
+            'metadataDigest'
+          ])
+        )
+      );
+    }) &&
     hasOnlyKeys(scannerSet.vulnerabilityDatabase, [
       'digest',
       'signatureRef',

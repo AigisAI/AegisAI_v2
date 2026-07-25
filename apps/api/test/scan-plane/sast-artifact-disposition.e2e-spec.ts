@@ -853,7 +853,15 @@ function buildPlan(): SastScanPlan {
     scanner: kind,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,
-    customerExecutableConfigAllowed: false as const
+    customerExecutableConfigAllowed: false as const,
+    rules: [
+      {
+        ruleId: `${kind.toLowerCase()}.fixture`,
+        ruleRevision: '1',
+        ruleSemanticId: `${kind.toLowerCase()}.fixture`,
+        metadataDigest: digest(`rule-metadata-${kind}`)
+      }
+    ]
   });
   return {
     tenantId: 'tenant-1',

@@ -7,6 +7,10 @@
 - Completed microVM/runtime boundaries: `004-production-runtime-infrastructure`
 - Completed deployment-operation boundaries: `005-production-deployment-operations`
 - OpenGrep upstream: <https://github.com/opengrep/opengrep>
+- OpenGrep SARIF producer pinned for the T032 golden mapping:
+  <https://github.com/opengrep/opengrep/blob/1bef4ea4ff3264754132eec823b5b1d8cde3e4ee/src/osemgrep/reporting/Sarif_output.ml>
+- OASIS SARIF 2.1.0:
+  <https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/sarif-v2.1.0-os.html>
 - Trivy filesystem scanning: <https://trivy.dev/docs/latest/target/filesystem/>
 - Trivy vulnerability scanning: <https://trivy.dev/docs/latest/scanner/vulnerability/>
 - Trivy misconfiguration scanning: <https://trivy.dev/docs/latest/scanner/misconfiguration/>
@@ -161,3 +165,24 @@ production configuration.
 
 **Rejected**: Running legacy and production paths indefinitely behind undocumented feature
 flags.
+
+## Decision 14: Normalize the Pinned OpenGrep SARIF Producer, Not Generic SARIF
+
+**Decision**: `opengrep-sarif-normalizer-v1` supports the exact safe subset emitted by the
+pinned OpenGrep producer: one OASIS 2.1.0 run, `Opengrep OSS` plus exact semantic version,
+successful notification-free invocation, rule-descriptor severity/tags, result text,
+`matchBasedId/v1`, and zero or one `%SRCROOT%` primary location. It streams required scalar
+fields, discards snippets/fixes/code flows/help markup, and emits a transient non-durable
+candidate for T035/T036. The candidate is bound to the immutable plan and coordinated
+attestation digests, while semantic rule identity/revision comes only from the signed bundle
+manifest projection.
+
+**Rationale**: A generic SARIF consumer would silently accept ambiguous extension components,
+rule indirection, multiple runs, partial execution, or scanner-specific semantics that the
+platform has not versioned. OpenGrep's producer also places result records before its rule
+descriptors, so scalar streaming plus bounded rule/result maps preserves low memory use
+without trusting document order.
+
+**Rejected**: Materializing and deserializing the whole artifact, accepting any SARIF
+producer that claims OpenGrep provenance, treating the scanner fingerprint as the platform
+stable fingerprint, or persisting pre-redaction candidates.

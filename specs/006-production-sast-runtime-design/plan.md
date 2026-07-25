@@ -65,7 +65,11 @@ network enrichment. Capture exit/resource/provenance metadata and destroy the mi
 Use per-scan write-only result ingress. Revalidate workload identity, plan binding, digests,
 schema, size/count, encoding, coordinates, paths, enums, and status outside the sandbox.
 Quarantine invalid artifacts. Normalize only through versioned adapters with golden fixtures;
-redact detected secret values before durable normalized storage.
+emit only transient `durablePersistenceAllowed=false` candidates, and redact detected secret
+values before durable normalized storage. T032's OpenGrep adapter is scalar-streaming and is
+not wired to a production artifact reader or persistence worker ahead of T035. Its candidate
+batch retains immutable plan/attestation digests and resolves semantic rule identity only from
+the signed rule-bundle manifest.
 
 ### Slice 5 - Identity, Correlation, and Lifecycle
 
@@ -97,6 +101,7 @@ gates. Produce a machine-readable go/no-go record. Hand live cluster/microVM rol
 - `SastScanProfile` and `ScannerSetDescriptor`
 - `SastScanPlan` and canonical scan key
 - `ScannerArtifactEnvelope` and result-ingress decision
+- `SastNormalizedFindingCandidate` and `opengrep-sarif-normalizer-v1`
 - `NormalizedSastFinding`, provenance, occurrence, and correlation
 - `ScannerCoverageRecord` and `SastCoverageDecision`
 - `SastEvidencePolicy` and evidence pack reference

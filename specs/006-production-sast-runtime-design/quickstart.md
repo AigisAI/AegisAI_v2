@@ -111,8 +111,8 @@ Fast and Deep lanes use separate queues and budgets but the same microVM securit
 
 ## Implemented Runtime Checkpoint
 
-T022 through T031 are implemented as the complete Phase 5 runtime boundary plus the
-ingress, validation, and final-disposition portion of Phase 6:
+T022 through T032 are implemented as the complete Phase 5 runtime boundary plus the
+ingress, validation, final-disposition, and OpenGrep normalization portion of Phase 6:
 
 - Token Broker verifies a signed, bounded-lifetime workload attestation against tenant,
   repository binding, scan request, attempt, workload identity, and fixed commit. A durable
@@ -196,8 +196,9 @@ ingress, validation, and final-disposition portion of Phase 6:
   Data/Security Plane adapter is installed; raw object keys never enter user-facing responses.
 - The T030 validator tees each newly reserved artifact through a strict UTF-8 and bounded
   streaming JSON parser while the immutable object write proceeds. Parser slices are aligned to
-  global byte offsets, so valid and invalid results are invariant to transport chunking. It independently binds the
-  semantic OpenGrep SARIF 2.1.0, Trivy JSON v2, or CycloneDX 1.6 schema plus scanner-set,
+  global byte offsets, so valid and invalid results are invariant to transport chunking. It
+  independently binds the semantic OpenGrep SARIF 2.1.0, Trivy JSON v2, or CycloneDX 1.6 schema
+  plus scanner-set,
   schema-bundle, normalizer-bundle, rule, and Trivy database digests together with the exact
   scanner and canonical artifact reference. The transport and validator independently recompute
   content digest and byte count, and the validator recomputes schema-specific record count; it
@@ -237,15 +238,34 @@ ingress, validation, and final-disposition portion of Phase 6:
   The online `ScannerRun_runtime_metadata_v3_check` accepts legacy digest-version rows during
   rolling deployment while enforcing semantic schema versions and separate schema/normalizer
   digests for new rows, and removes v1/v2 only after v3 validation succeeds.
+- `opengrep-sarif-normalizer-v1` independently rebinds an unexpired T031 accepted decision,
+  validation/envelope/content digests, immutable plan digest, canonical scan key, coordinated
+  attestation binding, and exact OpenGrep supply-chain metadata before reading a bounded
+  stream. It resolves semantic rule identity and revision only from the signed bundle manifest,
+  never from scanner-local SARIF fields. It accepts only the OASIS 2.1.0 schema, one
+  `Opengrep OSS` run, the exact pinned driver version, one successful notification-free
+  invocation, unique rule/result resolution, and at most one primary location. The official
+  `%SRCROOT%` OpenGrep URI base is allowed while every other indirect base remains rejected.
+- The adapter reuses the strict T030 token/UTF-8/depth/duplicate-key limits, fixed parser
+  slicing, content hashing, byte count, and record count without materializing the raw SARIF
+  or complete result objects. Raw JSON surrogate pairs are validated before token decoding.
+  Snippets, code flows, fixes, help Markdown, and raw properties are discarded. Golden fixtures
+  prove chunk-invariant ordering, literal markup handling, severity/confidence/CWE/CVE mapping,
+  attested location rebinding, retention-clock enforcement, and bounded rejection.
+- T032 produces only canonical, digest-bound `SastNormalizedFindingCandidate` batches with
+  `durablePersistenceAllowed=false`. OpenGrep `matchBasedId/v1` remains a non-authoritative
+  T036 identity hint; the candidate has no stable fingerprint, evidence reference, status,
+  policy authority, user route, or AI path. T035 redaction and T036 fingerprinting remain
+  mandatory before durable normalized finding persistence.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
 runtime provider exist only to verify the handoff contract. Default production credential
 issuance and scanner execution both fail closed until live rollout installs provider-backed
 GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
-file-coordinate-attestation, and acceptance-gate adapters. T032 is therefore the next
-implementation task; live deployment eligibility still requires the 005 rollout and the
-remaining 006 gates.
+file-coordinate-attestation, and acceptance-gate adapters. T033 Trivy JSON normalization is
+therefore the next implementation task; live deployment eligibility still requires the 005
+rollout and the remaining 006 gates.
 
 ## Deployment Position
 

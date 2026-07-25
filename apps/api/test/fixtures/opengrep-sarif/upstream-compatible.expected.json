@@ -1,0 +1,40 @@
+[
+  {
+    "ruleId": "rules.null-deref",
+    "title": "Possible null dereference",
+    "description": "A nullable value is dereferenced",
+    "severity": "MEDIUM",
+    "confidence": "UNKNOWN",
+    "cweIds": [],
+    "cveIds": [],
+    "location": {
+      "kind": "UNKNOWN",
+      "reasonCode": "SCANNER_LOCATION_OMITTED"
+    },
+    "notes": [
+      "UNKNOWN_CONFIDENCE"
+    ]
+  },
+  {
+    "ruleId": "rules.sql-injection",
+    "title": "SQL injection",
+    "description": "<b>Do not render</b> [details](https://example.invalid)",
+    "severity": "CRITICAL",
+    "confidence": "HIGH",
+    "cweIds": [
+      "CWE-89"
+    ],
+    "cveIds": [
+      "CVE-2026-12345"
+    ],
+    "location": {
+      "kind": "FILE",
+      "normalizedPath": "src/Café.java",
+      "lineStart": 4,
+      "lineEnd": 4,
+      "columnStart": 9,
+      "columnEnd": 28
+    },
+    "notes": []
+  }
+]

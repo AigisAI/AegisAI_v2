@@ -43,6 +43,12 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Scanner exfiltration | Compromised scanner calls external endpoint | No public egress; pre-mirrored assets; DNS/HTTP deny | Egress-deny telemetry; security alert |
 | Result forgery | Sandbox submits another tenant/scan result | mTLS identity bound to attempt; per-scan ingress; scope and digest validation | Reject/quarantine and kill sandbox |
 | Artifact parser bomb | Deep nesting, oversized strings/counts | Streaming byte cap, depth/record/string limits, strict schema | Quarantine; parser-reject metric |
+| Normalizer semantic confusion | Foreign/multi-run SARIF, duplicate rules, ambiguous locations, partial invocation | Exact versioned OpenGrep subset, accepted-decision rebinding, whole-batch fail closed | Ordered bounded rejection; normalizer kill switch |
+| Rule identity forgery | Scanner-local rule ID is presented as a platform semantic identity | Resolve semantic ID/revision only from unique signed bundle-manifest metadata; bind plan digest in every candidate | Golden mismatched-ID corpus; whole-batch rejection |
+| Coordinate-attestation downgrade | Supplied unverified or drifted attestation is treated as unavailable metadata | Distinguish provider absence from supplied drift; reject drift before artifact reads | Negative binding corpus; zero body-read assertion |
+| Raw SARIF retention | Snippets, fixes, code flows, or help content are copied into findings | Scalar-only streaming projection; transient candidates; T035 persistence gate | Golden privacy corpus; zero raw-payload audit/API assertions |
+| Canonical Unicode collapse | An escaped unpaired surrogate is decoded to a replacement character before hashing | Validate raw JSON escape pairs before token decoding; NFC plus scalar-value checks | One-byte-chunk paired/unpaired surrogate corpus |
+| Retention clock rollback | A caller supplies a past payload timestamp to normalize an expired accepted object | Adapter-owned default clock checked before and after streaming; trusted test/task clock seam only; require monotonic time at or after disposition | Expiry, stream-crossing, and pre-decision clock tests |
 | Stored XSS | Rule message/path/package contains markup | Treat all strings as text; output encoding; sanitized Markdown only | Stored-XSS corpus; presentation CSP |
 | Secret leakage | Secret finding includes detected value | Scanner and platform redaction; fingerprints; no raw value in finding/audit/evidence | Secret-leak gate must remain zero |
 | Cross-tenant object access | Object key or query omits tenant | Tenant/scan prefix, encryption context, tenant predicate, purpose-bound reads | Negative tests and access audit |
@@ -108,6 +114,8 @@ The following must always remain true:
 - oversized files, excessive file count/depth, sparse files, inode exhaustion
 - archive and compression bombs even though expansion is disabled
 - malformed SARIF, Trivy JSON, CycloneDX JSON, deep nesting, duplicate keys, invalid UTF-8
+- foreign/multi-run OpenGrep SARIF, notification-bearing invocation, duplicate/missing rule
+  descriptors, multiple primary locations, invalid `%SRCROOT%`, and content rebinding
 - malicious filenames, package names, symbols, rule messages, HTML, Markdown, and ANSI codes
 - known token formats and high-entropy secret fixtures
 - scanner crash/timeout/output bomb/truncation and result replay
