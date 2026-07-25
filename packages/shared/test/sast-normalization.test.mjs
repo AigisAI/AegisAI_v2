@@ -30,6 +30,11 @@ test('pins the OpenGrep adapter version and normalized field limits', () => {
     ruleRevisionBytes: 256,
     scannerIdentityHintBytes: 512,
     vulnerabilityIdentifierBytes: 64,
+    vulnerabilityIdBytes: 256,
+    packageNameBytes: 512,
+    packageVersionBytes: 512,
+    packageTypeBytes: 128,
+    trivyCategoryBytes: 128,
     maximumRuleTags: 128,
     maximumCweIds: 25,
     maximumCveIds: 25

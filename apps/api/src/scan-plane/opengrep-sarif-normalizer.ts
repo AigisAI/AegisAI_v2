@@ -23,6 +23,7 @@ import {
   orderSastNormalizationNotes,
   orderSastNormalizationRejectionReasons,
   type ExpectedScannerArtifactBinding,
+  type OpenGrepNormalizedFindingCandidate,
   type OpenGrepSarifNormalizationBatchCore,
   type OpenGrepSarifNormalizationRejectionCore,
   type OpenGrepSarifNormalizationResult,
@@ -34,7 +35,6 @@ import {
   type SastFindingLocation,
   type SastNormalizationNoteCode,
   type SastNormalizationRejectionReasonCode,
-  type SastNormalizedFindingCandidate,
   type SastScanPlan,
   type ScannerArtifactEnvelope
 } from '@aegisai/shared';
@@ -535,7 +535,7 @@ export class OpenGrepSarifNormalizer {
       | ReadonlyMap<string, Readonly<SastFileCoordinateMetadata>>
       | null,
     reasons: Set<SastNormalizationRejectionReasonCode>
-  ): SastNormalizedFindingCandidate[] | null {
+  ): OpenGrepNormalizedFindingCandidate[] | null {
     const bundleRulesById = new Map(
       ruleBundle.rules.map((rule) => [rule.ruleId, rule] as const)
     );
@@ -570,7 +570,7 @@ export class OpenGrepSarifNormalizer {
       rulesByIndex.set(rule.index, { ...rule, id: ruleId });
     }
 
-    const candidates: SastNormalizedFindingCandidate[] = [];
+    const candidates: OpenGrepNormalizedFindingCandidate[] = [];
     const identityKeys = new Set<string>();
     for (const result of parsed.results) {
       const ruleId = normalizeIdentifier(
@@ -1494,7 +1494,7 @@ function mapSeverity(
   securitySeverity: string | number | undefined
 ):
   | {
-      value: SastNormalizedFindingCandidate['severity'];
+      value: OpenGrepNormalizedFindingCandidate['severity'];
       unknown: boolean;
     }
   | null {
@@ -1536,7 +1536,7 @@ function mapConfidence(
   tags: readonly string[],
   reasons: Set<SastNormalizationRejectionReasonCode>
 ):
-  | { value: SastNormalizedFindingCandidate['confidence'] }
+  | { value: OpenGrepNormalizedFindingCandidate['confidence'] }
   | null {
   const values = new Set<'HIGH' | 'MEDIUM' | 'LOW'>();
   for (const tag of tags) {

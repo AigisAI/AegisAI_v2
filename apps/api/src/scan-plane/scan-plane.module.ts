@@ -70,6 +70,7 @@ import {
   NodeCredentialTmpfsVerifier
 } from './credential-tmpfs-verifier.service';
 import { OpenGrepSarifNormalizer } from './opengrep-sarif-normalizer';
+import { TrivyJsonNormalizer } from './trivy-json-normalizer';
 
 @Module({
   imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
@@ -85,6 +86,7 @@ import { OpenGrepSarifNormalizer } from './opengrep-sarif-normalizer';
     SastArtifactIngressService,
     SastArtifactValidationService,
     OpenGrepSarifNormalizer,
+    TrivyJsonNormalizer,
     SastArtifactDispositionService,
     SastArtifactDispositionTask,
     PrismaSastArtifactDispositionStore,
@@ -159,7 +161,8 @@ import { OpenGrepSarifNormalizer } from './opengrep-sarif-normalizer';
     RepositoryPreflightService,
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
-    OpenGrepSarifNormalizer
+    OpenGrepSarifNormalizer,
+    TrivyJsonNormalizer
   ]
 })
 export class ScanPlaneModule {}

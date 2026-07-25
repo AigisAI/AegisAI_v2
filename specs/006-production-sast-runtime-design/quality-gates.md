@@ -123,6 +123,19 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
 - 100% deterministic normalized output for repeated identical plan/artifact inputs.
 - 100% OpenGrep golden-fixture equality across transport chunk boundaries, with zero raw
   snippet/fix/code-flow/help payload fields in transient candidates.
+- 100% Trivy golden-fixture equality across transport chunk boundaries for direct and
+  `ExperimentalModifiedFindings` dependency/secret/IaC records, including exact record recount,
+  deterministic ordering, zero-finding provenance, and canonical batch digest.
+- 100% supported Trivy modified records remain normalized with
+  `platformPolicyAuthority=false`; unknown status/type and unsupported license capabilities
+  reject the complete batch, and scanner disposition never changes severity or policy state.
+- 100% Trivy dependency semantic identity/revision resolves from the pinned vulnerability
+  database while secret/IaC identity/revision resolves from the signed checks manifest.
+- Exactly zero scanner `Title`, `Description`, `Message`, secret `Match`/`Code`,
+  modified-finding `Statement`/`Source`, trace, or rendered-cause values may occur in transient
+  candidates, identity/batch/rejection digests, logs, audit, evidence, or AI payloads.
+- 100% Trivy dependency findings without package-file coordinates use
+  `UNKNOWN/SCANNER_LOCATION_OMITTED`; no adapter may invent a fallback line.
 - 100% rejection equality for oversized/chunk-varied streams, unpaired Unicode escapes,
   pre-decision clocks, and retention expiry crossed during streaming.
 - 100% rejection before artifact reads for supplied coordinate-attestation drift, and 100%

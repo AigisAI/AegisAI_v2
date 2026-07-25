@@ -1,0 +1,24 @@
+{
+  "SchemaVersion": 2,
+  "CreatedAt": "2026-07-26T12:00:00.000Z",
+  "ArtifactName": "/workspace/repository",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "package-lock.json",
+      "Class": "lang-pkgs",
+      "Type": "npm",
+      "ExperimentalModifiedFindings": [
+        {
+          "Type": "license",
+          "Status": "ignored",
+          "Statement": "attempted capability expansion",
+          "Source": "./customer-controlled.trivyignore",
+          "Finding": {
+            "Name": "GPL-3.0"
+          }
+        }
+      ]
+    }
+  ]
+}

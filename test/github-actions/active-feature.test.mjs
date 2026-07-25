@@ -27,6 +27,8 @@ const files = {
   sharedSastPlanningTest: new URL('../../packages/shared/test/sast-planning.test.mjs', import.meta.url),
   sharedSastNormalization: new URL('../../packages/shared/src/types/sast-normalization.ts', import.meta.url),
   sharedSastNormalizationTest: new URL('../../packages/shared/test/sast-normalization.test.mjs', import.meta.url),
+  sharedSastTrivyNormalization: new URL('../../packages/shared/src/types/sast-trivy-normalization.ts', import.meta.url),
+  sharedSastTrivyNormalizationTest: new URL('../../packages/shared/test/sast-trivy-normalization.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -34,6 +36,11 @@ const files = {
   apiOpenGrepNormalizer: new URL('../../apps/api/src/scan-plane/opengrep-sarif-normalizer.ts', import.meta.url),
   apiOpenGrepNormalizerTest: new URL('../../apps/api/test/scan-plane/opengrep-sarif-normalizer.e2e-spec.ts', import.meta.url),
   openGrepGoldenFixture: new URL('../../apps/api/test/fixtures/opengrep-sarif/upstream-compatible.sarif.json', import.meta.url),
+  apiTrivyNormalizer: new URL('../../apps/api/src/scan-plane/trivy-json-normalizer.ts', import.meta.url),
+  apiTrivyNormalizerTest: new URL('../../apps/api/test/scan-plane/trivy-json-normalizer.e2e-spec.ts', import.meta.url),
+  trivyGoldenFixture: new URL('../../apps/api/test/fixtures/trivy-json/upstream-compatible.trivy.json', import.meta.url),
+  trivyExpectedFixture: new URL('../../apps/api/test/fixtures/trivy-json/upstream-compatible.expected.json', import.meta.url),
+  trivyMaliciousFixture: new URL('../../apps/api/test/fixtures/trivy-json/malicious-modified-license.trivy.json', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
   completedDeploymentChecklist: new URL('../../specs/005-production-deployment-operations/checklists/requirements.md', import.meta.url),
@@ -233,11 +240,14 @@ test('SAST T032 OpenGrep normalization is versioned, transient, and fixture-guar
   );
   assert.match(fixture, /"uriBaseId": "%SRCROOT%"/);
   assert.match(tasks, /- \[x\] T032\b/);
-  assert.match(quickstart, /T033 Trivy JSON normalization is/);
+  assert.match(quickstart, /T032 produces only canonical/);
   assert.match(quickstart, /immutable plan digest/);
   assert.match(contract, /OpenGrep SARIF adapter v1/);
   assert.match(contract, /129 or more rejects the complete batch/);
-  assert.match(spec, /signed\s+bundle metadata rather than scanner-local identifiers/);
+  assert.match(
+    spec,
+    /OpenGrep, Trivy secret, and Trivy IaC semantic identity\s+MUST resolve from signed bundle metadata/
+  );
   assert.match(plan, /signed rule-bundle manifest/);
   assert.match(research, /signed bundle\s+manifest projection/);
   assert.match(dataModel, /immutable `planDigest`/);
@@ -247,6 +257,77 @@ test('SAST T032 OpenGrep normalization is versioned, transient, and fixture-guar
     ruleGovernance,
     /normalizers must resolve\s+`ruleRevision`/i
   );
+});
+
+test('SAST T033 Trivy normalization is capability-safe, non-authoritative, and fixture-guarded', () => {
+  const sharedNormalization = readNormalizedText(files.sharedSastNormalization);
+  const sharedTrivyNormalization = readNormalizedText(
+    files.sharedSastTrivyNormalization
+  );
+  const sharedTrivyNormalizationTest = readNormalizedText(
+    files.sharedSastTrivyNormalizationTest
+  );
+  const normalizer = readNormalizedText(files.apiTrivyNormalizer);
+  const normalizerTest = readNormalizedText(files.apiTrivyNormalizerTest);
+  const fixture = readNormalizedText(files.trivyGoldenFixture);
+  const expected = readNormalizedText(files.trivyExpectedFixture);
+  const maliciousFixture = readNormalizedText(files.trivyMaliciousFixture);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const spec = readNormalizedText(files.spec);
+  const plan = readNormalizedText(files.plan);
+  const research = readNormalizedText(files.research);
+  const dataModel = readNormalizedText(files.dataModel);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(sharedTrivyNormalization, /trivy-json-normalizer-v1/);
+  assert.match(
+    sharedTrivyNormalization,
+    /vulnerabilityDatabaseDigest/
+  );
+  assert.match(sharedTrivyNormalization, /durablePersistenceAllowed:\s*false/);
+  assert.match(sharedNormalization, /platformPolicyAuthority:\s*false/);
+  assert.match(sharedNormalization, /secretPayloadDiscarded:\s*true/);
+  assert.match(sharedNormalization, /VULNERABILITY_DATABASE/);
+  assert.match(
+    sharedTrivyNormalizationTest,
+    /denies scanner policy authority/
+  );
+  assert.match(normalizer, /class TrivyJsonNormalizer/);
+  assert.match(normalizer, /ExperimentalModifiedFindings/);
+  assert.match(normalizer, /platformPolicyAuthority:\s*false/);
+  assert.match(normalizer, /SCANNER_LOCATION_OMITTED/);
+  assert.match(
+    normalizerTest,
+    /normalizes vulnerability, IaC, direct secret, and modified secret records byte-exactly across chunking/
+  );
+  assert.match(
+    normalizerTest,
+    /retains modified scanner status only as non-authoritative provenance/
+  );
+  assert.match(
+    normalizerTest,
+    /expect\(serialized\)\.not\.toContain\(forbidden\)/
+  );
+  assert.match(normalizerTest, /AKIA_SYNTHETIC_NEVER_COPY/);
+  assert.match(fixture, /"ExperimentalModifiedFindings"/);
+  assert.match(expected, /"platformPolicyAuthority": false/);
+  assert.match(maliciousFixture, /"Type": "license"/);
+  assert.match(tasks, /- \[x\] T033\b/);
+  assert.match(
+    quickstart,
+    /T034 CycloneDX SBOM validation and\s+inventory ingestion is therefore the next implementation task/
+  );
+  assert.match(contract, /Trivy JSON adapter v1/);
+  assert.match(contract, /secret `Match`, `Code`/);
+  assert.match(spec, /FR-031a/);
+  assert.match(plan, /scanner disposition remains non-authoritative/);
+  assert.match(research, /Normalize the Pinned Trivy JSON Producer/);
+  assert.match(dataModel, /`scannerDisposition` with `DIRECT\|MODIFIED`/);
+  assert.match(threatModel, /Trivy disposition smuggling/);
+  assert.match(qualityGates, /Trivy golden-fixture equality/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

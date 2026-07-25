@@ -69,7 +69,11 @@ emit only transient `durablePersistenceAllowed=false` candidates, and redact det
 values before durable normalized storage. T032's OpenGrep adapter is scalar-streaming and is
 not wired to a production artifact reader or persistence worker ahead of T035. Its candidate
 batch retains immutable plan/attestation digests and resolves semantic rule identity only from
-the signed rule-bundle manifest.
+the signed rule-bundle manifest. T033's Trivy adapter applies the same transient boundary to
+dependency, secret, and IaC records, including supported `ExperimentalModifiedFindings`.
+Dependency authority is database-derived; secret/IaC authority is checks-manifest-derived;
+scanner disposition remains non-authoritative, and raw secret/context/prose fields are
+discarded before candidate construction.
 
 ### Slice 5 - Identity, Correlation, and Lifecycle
 
@@ -101,7 +105,8 @@ gates. Produce a machine-readable go/no-go record. Hand live cluster/microVM rol
 - `SastScanProfile` and `ScannerSetDescriptor`
 - `SastScanPlan` and canonical scan key
 - `ScannerArtifactEnvelope` and result-ingress decision
-- `SastNormalizedFindingCandidate` and `opengrep-sarif-normalizer-v1`
+- `SastNormalizedFindingCandidate`, `opengrep-sarif-normalizer-v1`, and
+  `trivy-json-normalizer-v1`
 - `NormalizedSastFinding`, provenance, occurrence, and correlation
 - `ScannerCoverageRecord` and `SastCoverageDecision`
 - `SastEvidencePolicy` and evidence pack reference

@@ -15,6 +15,16 @@
 - Trivy vulnerability scanning: <https://trivy.dev/docs/latest/scanner/vulnerability/>
 - Trivy misconfiguration scanning: <https://trivy.dev/docs/latest/scanner/misconfiguration/>
 - Trivy secret scanning: <https://trivy.dev/docs/latest/guide/scanner/secret/>
+- Trivy JSON producer pinned for the T033 golden mapping at v0.66.0 commit
+  `7bcb181268893fdd69ef4582588c040bb1036c33`:
+  [report model](https://github.com/aquasecurity/trivy/blob/7bcb181268893fdd69ef4582588c040bb1036c33/pkg/types/report.go),
+  [modified-finding model](https://github.com/aquasecurity/trivy/blob/7bcb181268893fdd69ef4582588c040bb1036c33/pkg/types/finding.go),
+  [vulnerability model](https://github.com/aquasecurity/trivy/blob/7bcb181268893fdd69ef4582588c040bb1036c33/pkg/types/vulnerability.go),
+  [misconfiguration model](https://github.com/aquasecurity/trivy/blob/7bcb181268893fdd69ef4582588c040bb1036c33/pkg/types/misconfiguration.go),
+  [secret model](https://github.com/aquasecurity/trivy/blob/7bcb181268893fdd69ef4582588c040bb1036c33/pkg/types/secret.go),
+  and [JSON writer](https://github.com/aquasecurity/trivy/blob/7bcb181268893fdd69ef4582588c040bb1036c33/pkg/report/json.go)
+- Trivy DB status/type dependency pinned by that release at commit
+  [`c7c831e2254d`](https://github.com/aquasecurity/trivy-db/tree/c7c831e2254d)
 - Syft upstream and output formats: <https://github.com/anchore/syft>
 
 Upstream commands and schemas change independently of AegisAI. Scanner wrappers therefore
@@ -186,3 +196,32 @@ without trusting document order.
 **Rejected**: Materializing and deserializing the whole artifact, accepting any SARIF
 producer that claims OpenGrep provenance, treating the scanner fingerprint as the platform
 stable fingerprint, or persisting pre-redaction candidates.
+
+## Decision 15: Normalize the Pinned Trivy JSON Producer Without Trusting Scanner Suppression
+
+**Decision**: `trivy-json-normalizer-v1` supports only the JSON v2 result subset emitted by
+the pinned Trivy 0.66.0 filesystem wrapper for vulnerability, secret, and failed
+misconfiguration records. It streams bounded scalar fields, independently rehashes and
+recounts direct plus `ExperimentalModifiedFindings` records, and emits only transient
+non-durable candidates. Modified-finding status is preserved with
+`platformPolicyAuthority=false`; modified records remain findings and cannot become AegisAI
+waivers, suppressions, lifecycle states, severity overrides, or policy decisions.
+
+Dependency semantic identity and revision come from the validated advisory ID and pinned
+vulnerability database. Secret and IaC semantic identity/revision come only from the signed
+checks-bundle manifest. The adapter generates safe deterministic title/description text and
+discards Trivy `Title`, `Description`, `Message`, secret `Match`/`Code`, modified-finding
+`Statement`/`Source`, traces, rendered causes, and other raw scanner context. Package findings
+remain explicitly location-unknown because the fixed wrapper does not enable package-file line
+coordinates.
+
+**Rationale**: Trivy's modified-finding envelope represents scanner/external disposition, not
+platform policy authority, and `--show-suppressed` deliberately includes it in the producer
+output. Trivy secret `Code` can contain neighboring unredacted secrets even when the primary
+match is masked. Capability-specific authority and scalar discard therefore prevent both
+suppression smuggling and secret-context leakage while preserving deterministic provenance.
+
+**Rejected**: Deserializing the full report, accepting license or unknown modified-finding
+types, dropping modified findings, treating scanner status as policy, copying scanner prose
+into candidates, hashing detected secret content, inventing dependency line coordinates, or
+using the checks bundle as the dependency advisory authority.

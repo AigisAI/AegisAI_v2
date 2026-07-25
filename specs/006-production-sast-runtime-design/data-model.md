@@ -357,26 +357,40 @@ An in-memory, non-durable T032/T033 handoff from one accepted scanner artifact.
 
 - immutable tenant, repository binding, scan request, attempt, scanner run, fixed commit, and
   lane attribution
-- `opengrep-sarif-normalizer-v1` or the explicit schema adapter version
+- exact `opengrep-sarif-normalizer-v1` or `trivy-json-normalizer-v1` adapter version
 - bounded title/description, severity/confidence, CWE/CVE identifiers, location, and complete
   scanner/rule/artifact provenance
 - immutable `planDigest`, `canonicalScanKey`, `preflightAttestationRef`, and
   `preflightInventoryDigest` on both the batch and every candidate; a supplied attestation
   that does not match these bindings rejects instead of degrading to an unknown location
-- scanner-local `ruleId` as provenance plus `ruleRevision` and `ruleSemanticId` resolved only
-  from the immutable signed rule-bundle manifest
+- scanner-local `ruleId` as provenance. OpenGrep, Trivy secret, and Trivy IaC
+  `ruleRevision`/`ruleSemanticId` resolve only from the immutable signed rule-bundle manifest;
+  Trivy dependency identity instead resolves from the pinned vulnerability ID and database
+  version, with `ruleSource=VULNERABILITY_DATABASE`
 - bounded scanner identity material for T036, including the OpenGrep `matchBasedId/v1` only
-  as a non-authoritative hint
+  as a non-authoritative hint and namespaced opaque Trivy structural hashes that never contain
+  detected secret values
+- capability-discriminated Trivy details: package/advisory state for
+  `DEPENDENCY_VULNERABILITY`, category plus explicit payload-discard booleans for
+  `SECRET_DETECTION`, or check type/AVD ID/failing result for `IAC_MISCONFIGURATION`
+- Trivy `scannerDisposition` with `DIRECT|MODIFIED`, the validated scanner status, and
+  `platformPolicyAuthority=false`; it is provenance and never a platform waiver, suppression,
+  lifecycle state, severity override, or policy decision
+- exact Trivy vulnerability-database digest alongside scanner image, checks bundle, artifact,
+  schema, and normalizer provenance
 - deterministic plan/attestation/validation/disposition/envelope/schema/normalizer/artifact
   digest binding and canonical batch digest
 - batch-level scanner version/image and rule-bundle provenance, retained even when the accepted
   artifact has zero findings, plus candidate-level `scannerRunId`
 - `durablePersistenceAllowed=false`
 
-The candidate intentionally has no stable fingerprint, evidence reference, finding status, or
-policy authority. Raw snippets, fixes, code flows, help Markdown, and scanner payload
-substructures are never fields. T035 must redact candidates before durable storage and T036
-must construct the final entity below.
+The candidate intentionally has no stable fingerprint, evidence reference, platform finding
+status, or policy authority. Raw snippets, fixes, code flows, help Markdown, Trivy
+title/description/message, secret match/code/context, modified-finding statement/source,
+misconfiguration traces/rendered causes, and scanner payload substructures are never fields.
+Dependency locations remain explicitly unknown when the fixed Trivy wrapper omits package
+coordinates; no fallback line is invented. T035 must redact candidates before durable storage
+and T036 must construct the final entity below.
 
 ### NormalizedSastFinding
 

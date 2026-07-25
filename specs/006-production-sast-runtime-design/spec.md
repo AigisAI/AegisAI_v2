@@ -158,8 +158,14 @@ incomplete, stale, quarantined, or security-blocked scan.
 - **FR-031**: Normalization MUST use explicit per-schema adapters with golden fixtures.
   Adapter output before T035 redaction and T036 fingerprinting MUST be an in-memory,
   non-durable candidate with no evidence, lifecycle, policy, or AI authority. It MUST retain
-  immutable plan/attestation bindings and MUST resolve semantic rule identity from signed
-  bundle metadata rather than scanner-local identifiers.
+  immutable plan/attestation bindings. OpenGrep, Trivy secret, and Trivy IaC semantic identity
+  MUST resolve from signed bundle metadata; Trivy dependency identity MUST resolve from the
+  pinned vulnerability ID/database rather than scanner-local prose or checks metadata.
+- **FR-031a**: Trivy direct and supported modified dependency/secret/IaC records MUST be
+  normalized without granting scanner disposition platform suppression, waiver, lifecycle,
+  severity, or policy authority. Raw secret match/code/context, scanner prose, and
+  misconfiguration trace/rendered-cause values MUST be discarded before candidate
+  construction.
 - **FR-032**: Unknown enum values, invalid coordinates, overlong strings, unsafe encodings,
   and excessive nesting MUST fail closed.
 
