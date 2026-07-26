@@ -44,6 +44,7 @@ const files = {
   trivyExpectedFixture: new URL('../../apps/api/test/fixtures/trivy-json/upstream-compatible.expected.json', import.meta.url),
   trivyMaliciousFixture: new URL('../../apps/api/test/fixtures/trivy-json/malicious-modified-license.trivy.json', import.meta.url),
   apiSyftCycloneDxIngestor: new URL('../../apps/api/src/scan-plane/syft-cyclonedx-inventory-ingestor.ts', import.meta.url),
+  apiSpdxLicenseList: new URL('../../apps/api/src/scan-plane/spdx-license-list-3.28.ts', import.meta.url),
   apiSyftCycloneDxIngestorTest: new URL('../../apps/api/test/scan-plane/syft-cyclonedx-inventory-ingestor.e2e-spec.ts', import.meta.url),
   syftCycloneDxGoldenFixture: new URL('../../apps/api/test/fixtures/syft-cyclonedx/upstream-compatible.cdx.json', import.meta.url),
   syftCycloneDxExpectedFixture: new URL('../../apps/api/test/fixtures/syft-cyclonedx/upstream-compatible.expected.json', import.meta.url),
@@ -344,6 +345,9 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
     files.sharedSastSbomInventoryTest
   );
   const ingestor = readNormalizedText(files.apiSyftCycloneDxIngestor);
+  const spdxLicenseList = readNormalizedText(
+    files.apiSpdxLicenseList
+  );
   const ingestorTest = readNormalizedText(
     files.apiSyftCycloneDxIngestorTest
   );
@@ -375,7 +379,18 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
   );
   assert.match(ingestor, /class SyftCycloneDxInventoryIngestor/);
   assert.match(ingestor, /SastNormalizationJsonStreamSession/);
-  assert.match(ingestor, /SYFT_PURL_TYPES_WITH_LEAF_COMPONENT_NAME/);
+  assert.match(
+    spdxLicenseList,
+    /SPDX_LICENSE_LIST_VERSION = '3\.28\.0'/
+  );
+  assert.match(
+    spdxLicenseList,
+    /SPDX_LICENSE_IDENTIFIER_COUNT = 727/
+  );
+  assert.match(
+    spdxLicenseList,
+    /SPDX_LICENSE_EXCEPTION_IDENTIFIER_COUNT = 84/
+  );
   assert.match(
     ingestorTest,
     /inventory byte-exactly across chunking/
@@ -383,6 +398,18 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
   assert.match(
     ingestorTest,
     /rejects an unreviewed Syft producer upgrade before reading artifact bytes/
+  );
+  assert.match(
+    ingestorTest,
+    /component and scoped PURL name mismatch/
+  );
+  assert.match(
+    ingestorTest,
+    /validates and canonicalizes SPDX 3\.28\.0 expression/
+  );
+  assert.match(
+    ingestorTest,
+    /NIST CPE 2\.3 quoted punctuation and language tags/
   );
   assert.match(ingestorTest, /expect\(serialized\)\.not\.toContain\(forbidden\)/);
   assert.match(fixture, /"version": "1\.44\.0"/);

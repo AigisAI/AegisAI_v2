@@ -154,8 +154,10 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   references and the serial number may appear only as SHA-256 digests where contracted.
 - 100% complete-batch rejection for CycloneDX schema/tool/version/source drift,
   metadata-tool count smuggling, vulnerability/VEX/nested/file extensions, malformed or
-  duplicate BOM references, malformed PURL/CPE/SWID/license/hash identities, dangling/duplicate/self/
-  non-canonical dependencies, resource bombs, and pre/post-stream retention drift.
+  duplicate BOM references, malformed PURL/SWID/hash identities, incomplete or illegally
+  quoted CPE 2.3 fields, invented SPDX 3.28.0 license IDs/exceptions, invalid SPDX 2.3
+  expressions, dangling/duplicate/self/non-canonical dependencies, resource bombs, and
+  pre/post-stream retention drift.
 - 100% CycloneDX authority assertions:
   `mayCreateFindings=false`, `mayEvaluateVulnerabilities=false`,
   `policyAuthority=false`, `aiPayloadEligible=false`, and

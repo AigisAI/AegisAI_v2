@@ -303,14 +303,16 @@ portion of Phase 6:
   image/wrapper/schema/normalizer metadata before reading. It accepts only the pinned Syft
   v1.44.0 CycloneDX JSON 1.6 directory producer: one exact tool component, the
   wrapper-owned source path, package/application/model and operating-system components,
-  Syft provenance properties, canonical PURL/BOM-reference relations, bounded licenses,
-  and sorted dependency nodes/edges.
+  Syft provenance properties, canonical PURL/BOM-reference relations, complete NIST CPE 2.3
+  formatted-string validation, SPDX 2.3 expressions resolved against Syft's pinned License
+  List 3.28.0, bounded declared licenses, and sorted dependency nodes/edges.
 - T034 uses the shared fixed-slice streaming core and never materializes the raw BOM. It
   independently rehashes/recounts, handles legitimate URL-empty Java `build-meta` digest
   references, de-duplicates repeated license identities after discarding their URLs, and
   rejects foreign producer/schema fields, file/nested/vulnerability extensions, malformed
-  identities/licenses/hashes, dangling/duplicate/self/non-canonical dependencies, resource
-  bombs, and retention drift.
+  identities, invented SPDX IDs/exceptions, malformed CPE quoting/language fields, invalid
+  licenses/hashes, dangling/duplicate/self/non-canonical dependencies, resource bombs, and
+  retention drift.
 - The canonical CycloneDX inventory is transient with
   `durablePersistenceAllowed=false`. Raw BOM references and the serial number are retained
   only as SHA-256 digests; raw properties, source locations, license text/URLs, prose,

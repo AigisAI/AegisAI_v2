@@ -306,19 +306,20 @@ export function canonicalizeSyftCycloneDxInventoryBatch(
         batch.statistics.discardedProseFieldCount
     },
     authority: {
-      capability: 'SBOM',
-      mayCreateFindings: false,
-      mayEvaluateVulnerabilities: false,
-      policyAuthority: false,
-      aiPayloadEligible: false
+      capability: batch.authority.capability,
+      mayCreateFindings: batch.authority.mayCreateFindings,
+      mayEvaluateVulnerabilities:
+        batch.authority.mayEvaluateVulnerabilities,
+      policyAuthority: batch.authority.policyAuthority,
+      aiPayloadEligible: batch.authority.aiPayloadEligible
     },
     dataHandling: {
-      rawArtifactEmbedded: false,
-      rawPropertiesStored: false,
-      sourceLocationsStored: false,
-      rawLicenseTextStored: false
+      rawArtifactEmbedded: batch.dataHandling.rawArtifactEmbedded,
+      rawPropertiesStored: batch.dataHandling.rawPropertiesStored,
+      sourceLocationsStored: batch.dataHandling.sourceLocationsStored,
+      rawLicenseTextStored: batch.dataHandling.rawLicenseTextStored
     },
-    durablePersistenceAllowed: false
+    durablePersistenceAllowed: batch.durablePersistenceAllowed
   });
 }
 

@@ -353,7 +353,7 @@ default reconciliation poll is 10 seconds and uses a stage/deadline index plus b
 | Dependency vulnerability | Trivy | All profiles | Normalized finding |
 | Secret detection | Trivy | All profiles | Redacted normalized finding |
 | IaC misconfiguration | Trivy | Deep; changed IaC in Fast | Normalized finding |
-| Source SBOM | Syft | Deep profiles | Transient inventory; raw CycloneDX reference <= 7 days |
+| Source SBOM | Syft | Deep profiles | Transient inventory only; raw SBOM object/artifact expires in <= 7 days and retained BOM references are SHA-256 digests only |
 
 Rules that duplicate another scanner's authoritative capability are disabled by default.
 If retained as supporting evidence, they cannot independently create or block a finding.
@@ -695,14 +695,21 @@ The accepted producer subset is pinned to Syft v1.44.0 directory output and Cycl
   A canonical PURL requires a BOM reference equal to that PURL plus exactly one 16-hex
   `package-id` qualifier and its component name follows Syft's ecosystem-specific namespace
   inclusion rule; a package without a PURL uses the 16-hex Syft package ID directly;
-- license choices are bounded SPDX IDs, expressions, or declared names. Raw attached text is
+- license choices are bounded SPDX IDs, expressions, or declared names. SPDX ID fields resolve
+  case-insensitively to the canonical 727 identifiers in Syft's pinned SPDX License List
+  3.28.0. Expressions follow SPDX 2.3 grammar, canonicalize listed license and exception IDs,
+  permit `LicenseRef`/`DocumentRef` only where the expression grammar allows them, and accept
+  `WITH` only with one of the pinned 84 SPDX exception identifiers. Raw attached text is
   rejected because the wrapper forces `SYFT_LICENSE_CONTENT=none`; URLs are validated and
   discarded. Syft's URL-only fallback, which duplicates the URL into `license.name`, is
   discarded as one choice rather than allowing the URL through the name field. Repeated
   normalized identities from multiple producer URLs become one deterministic license value;
+- retained CPEs must satisfy the complete NISTIR 7695 CPE 2.3 formatted-string ABNF: exact
+  field count, `a|h|o|*|-` part, non-empty attribute values, valid quoting and boundary
+  wildcards, and the defined language-tag form;
 - dependency nodes and each non-empty `dependsOn` list must be producer-sorted, unique,
-  non-self, and reference accepted components. Every retained edge is translated to canonical
-  component IDs and sorted independently of document chunking;
+  non-self-referential, and reference accepted components. Every retained edge is translated
+  to canonical component IDs and sorted independently of document chunking;
 - Syft properties, source-location properties, component prose, license URLs, and external
   references are structurally bounded and counted but never copied. Legitimate Java
   URL-empty `build-meta` references require a supported MD5/SHA-1/SHA-256 digest.
@@ -711,11 +718,12 @@ The accepted producer subset is pinned to Syft v1.44.0 directory output and Cycl
   batch.
 
 Inventory limits are fail-closed and never truncate: at most the profile
-`maxArtifactRecords` and global 250,000 components, dependency nodes, and edges; 64 licenses,
-256 properties, and 64 external references per component; and 16 hashes per external
-reference. Names/groups/versions/license values are at most 512 UTF-8 bytes, PURLs and BOM
-references 2,048 bytes, and CPEs 1,024 bytes. Raw property values, URLs, comments, and other
-discarded fields remain subject to the shared 4,096-byte token ceiling.
+`maxArtifactRecords`, plus separate global maxima of 250,000 components, 250,000 dependency
+nodes, and 250,000 dependency edges; 64 licenses, 256 properties, and 64 external references
+per component; and 16 hashes per external reference. Names/groups/versions/license values are
+at most 512 UTF-8 bytes, PURLs and BOM references 2,048 bytes, and CPEs 1,024 bytes. Raw
+property values, URLs, comments, and other discarded fields remain subject to the shared
+4,096-byte token ceiling.
 
 Parsing uses the same fatal UTF-8, raw-token, duplicate-key, depth, globally aligned
 4,096-byte slice, independent SHA-256, byte, and record-count implementation as the finding

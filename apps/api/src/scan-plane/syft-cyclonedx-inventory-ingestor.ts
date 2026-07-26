@@ -44,6 +44,11 @@ import {
   type JsonPrimitive
 } from './sast-artifact-stream-validator';
 import {
+  canonicalizeSpdxLicenseExceptionIdentifier,
+  canonicalizeSpdxLicenseExpressionIdentifier,
+  canonicalizeSpdxLicenseIdentifier
+} from './spdx-license-list-3.28';
+import {
   digest,
   hasUnsafeControls,
   omitDecisionDigest,
@@ -907,6 +912,7 @@ class SyftCycloneDxCollector implements
     if (!allowed || !allowed.has(key)) {
       this.reasonForPath(objectPath);
     }
+    const objectPathKey = keyForPath(objectPath);
 
     if (objectPath.length === 0) this.rootKeys.add(key);
     else if (matches(objectPath, ['metadata'])) {
@@ -919,20 +925,15 @@ class SyftCycloneDxCollector implements
       this.sourceComponentKeys.add(key);
     }
 
-    this.components.get(keyForPath(objectPath))?.keys.add(key);
-    this.properties.get(keyForPath(objectPath))?.keys.add(key);
-    this.licenseChoices.get(keyForPath(objectPath))?.keys.add(key);
-    this.licenses.get(keyForPath(objectPath))?.keys.add(key);
-    this.externalReferences
-      .get(keyForPath(objectPath))
-      ?.keys.add(key);
-    this.hashes.get(keyForPath(objectPath))?.keys.add(key);
-    this.dependencies.get(keyForPath(objectPath))?.keys.add(key);
+    this.components.get(objectPathKey)?.keys.add(key);
+    this.properties.get(objectPathKey)?.keys.add(key);
+    this.licenseChoices.get(objectPathKey)?.keys.add(key);
+    this.licenses.get(objectPathKey)?.keys.add(key);
+    this.externalReferences.get(objectPathKey)?.keys.add(key);
+    this.hashes.get(objectPathKey)?.keys.add(key);
+    this.dependencies.get(objectPathKey)?.keys.add(key);
 
-    if (
-      matches(objectPath.slice(-1), ['swid']) &&
-      this.componentFor(objectPath)
-    ) {
+    if (matches(objectPath.slice(-1), ['swid'])) {
       this.componentFor(objectPath)?.swidKeys.add(key);
     }
   }
@@ -1448,8 +1449,9 @@ class SyftCycloneDxCollector implements
       return;
     }
     if (field === 'id') {
-      if (!isValidSpdxIdentifier(value)) this.licenseInvalid();
-      else license.id = value;
+      const identifier = canonicalizeSpdxLicenseIdentifier(value);
+      if (!identifier) this.licenseInvalid();
+      else license.id = identifier;
     } else if (field === 'name') {
       license.name = value;
     } else if (field === 'url') {
@@ -2270,29 +2272,108 @@ function isValidCpe(value: string): boolean {
   ) {
     return false;
   }
-  let separators = 0;
-  let escaped = false;
-  for (const character of value) {
-    if (escaped) {
-      escaped = false;
+  const fields = splitCpeFormattedString(value);
+  if (
+    !fields ||
+    fields.length !== 13 ||
+    fields[0] !== 'cpe' ||
+    fields[1] !== '2.3' ||
+    !/^(?:a|h|o|\*|-)$/u.test(fields[2] as string)
+  ) {
+    return false;
+  }
+  for (let index = 3; index < fields.length; index += 1) {
+    const field = fields[index] as string;
+    if (
+      index === 8
+        ? !isValidCpeLanguage(field)
+        : !isValidCpeAttributeValue(field)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function splitCpeFormattedString(value: string): string[] | null {
+  const fields: string[] = [];
+  let field = '';
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index] as string;
+    if (character === '\\') {
+      const quoted = value[index + 1];
+      if (!quoted) return null;
+      field += character + quoted;
+      index += 1;
+    } else if (character === ':') {
+      fields.push(field);
+      field = '';
+    } else {
+      field += character;
+    }
+  }
+  fields.push(field);
+  return fields;
+}
+
+function isValidCpeLanguage(value: string): boolean {
+  return (
+    value === '*' ||
+    value === '-' ||
+    /^[A-Za-z]{2,3}(?:-(?:[A-Za-z]{2}|[0-9]{3}))?$/u.test(value)
+  );
+}
+
+function isValidCpeAttributeValue(value: string): boolean {
+  if (value === '*' || value === '-') return true;
+  if (value.length === 0) return false;
+
+  let index = 0;
+  if (value[index] === '*') {
+    index += 1;
+  } else {
+    while (value[index] === '?') index += 1;
+  }
+
+  let coreCharacters = 0;
+  while (index < value.length) {
+    const character = value[index] as string;
+    if (/^[A-Za-z0-9._-]$/u.test(character)) {
+      coreCharacters += 1;
+      index += 1;
       continue;
     }
     if (character === '\\') {
-      escaped = true;
+      const quoted = value[index + 1];
+      if (!quoted || !isValidCpeQuotedCharacter(quoted)) {
+        return false;
+      }
+      coreCharacters += 1;
+      index += 2;
       continue;
     }
-    if (character === ':') separators += 1;
+    break;
   }
-  return !escaped && separators === 12;
+  if (coreCharacters === 0) return false;
+  if (index === value.length) return true;
+  if (value[index] === '*') return index + 1 === value.length;
+  if (value[index] !== '?') return false;
+  while (value[index] === '?') index += 1;
+  return index === value.length;
 }
 
-function isValidSpdxIdentifier(value: string): boolean {
+function isValidCpeQuotedCharacter(value: string): boolean {
   return (
-    /^(?:[A-Za-z0-9][A-Za-z0-9.-]*\+?|LicenseRef-[A-Za-z0-9.-]+|DocumentRef-[A-Za-z0-9.-]+:LicenseRef-[A-Za-z0-9.-]+)$/u.test(
-      value
-    ) &&
-    utf8Bytes(value) <=
-      SYFT_CYCLONEDX_INVENTORY_LIMITS.licenseValueBytes
+    value === '\\' ||
+    value === '*' ||
+    value === '?' ||
+    /^[!"#$%&'()+,/:;<=>@[\]^`{|}~]$/u.test(value)
+  );
+}
+
+function isSpdxLicenseReference(value: string): boolean {
+  return /^(?:DocumentRef-[A-Za-z0-9.-]+:)?LicenseRef-[A-Za-z0-9.-]+$/u.test(
+    value
   );
 }
 
@@ -2309,47 +2390,51 @@ function canonicalizeSpdxExpression(
   ) {
     return null;
   }
-  const tokens =
-    value.match(
-      /\(|\)|AND|OR|WITH|DocumentRef-[A-Za-z0-9.-]+:LicenseRef-[A-Za-z0-9.-]+|LicenseRef-[A-Za-z0-9.-]+|[A-Za-z0-9][A-Za-z0-9.-]*\+?/gu
-    ) ?? [];
   const normalizedTokenSpacing = value
     .replace(/([()])/gu, ' $1 ')
     .trim()
     .replace(/\s+/gu, ' ');
-  if (tokens.join(' ') !== normalizedTokenSpacing) {
-    return null;
-  }
+  const tokens =
+    normalizedTokenSpacing.length === 0
+      ? []
+      : normalizedTokenSpacing.split(' ');
   let index = 0;
-  const parsePrimary = (): boolean => {
+  const parseSimple = (): boolean => {
     const token = tokens[index];
-    if (token === '(') {
-      index += 1;
-      if (!parseOr() || tokens[index] !== ')') return false;
-      index += 1;
-      return true;
-    }
     if (
       !token ||
       token === ')' ||
       token === 'AND' ||
       token === 'OR' ||
-      token === 'WITH' ||
-      !isValidSpdxIdentifier(token)
+      token === 'WITH'
     ) {
       return false;
+    }
+    if (!isSpdxLicenseReference(token)) {
+      const identifier =
+        canonicalizeSpdxLicenseExpressionIdentifier(token);
+      if (!identifier) return false;
+      tokens[index] = identifier;
     }
     index += 1;
     return true;
   };
   const parseWith = (): boolean => {
-    if (!parsePrimary()) return false;
+    if (tokens[index] === '(') {
+      index += 1;
+      if (!parseOr() || tokens[index] !== ')') return false;
+      index += 1;
+      return true;
+    }
+    if (!parseSimple()) return false;
     if (tokens[index] === 'WITH') {
       index += 1;
       const exception = tokens[index];
-      if (!exception || !isValidSpdxIdentifier(exception)) {
-        return false;
-      }
+      if (!exception) return false;
+      const canonicalException =
+        canonicalizeSpdxLicenseExceptionIdentifier(exception);
+      if (!canonicalException) return false;
+      tokens[index] = canonicalException;
       index += 1;
     }
     return true;

@@ -32,6 +32,11 @@
   and [license encoder](https://github.com/anchore/syft/blob/8cb78ce40ced6a731fb83f2a491a67444f541bf1/syft/format/internal/cyclonedxutil/helpers/licenses.go)
 - CycloneDX 1.6 JSON schema pinned at commit
   [`8a27bfd1be5b`](https://github.com/CycloneDX/specification/blob/8a27bfd1be5be0dcb2c208a34d2f4fa0b6d75bd7/schema/bom-1.6.schema.json)
+- SPDX License List JSON pinned at official release
+  [`v3.28.0`](https://github.com/spdx/license-list-data/tree/v3.28.0/json), matching
+  [Syft v1.44.0's generated list version](https://github.com/anchore/syft/blob/8cb78ce40ced6a731fb83f2a491a67444f541bf1/internal/spdxlicense/license_list.go)
+- CPE validation follows the complete formatted-string ABNF in
+  [NISTIR 7695 section 6.2.1](https://doi.org/10.6028/NIST.IR.7695)
 
 Upstream commands and schemas change independently of AegisAI. Scanner wrappers therefore
 own exact CLI flags while AegisAI contracts pin scanner image digest, wrapper version,
@@ -241,7 +246,8 @@ directory subset emitted by pinned Syft v1.44.0. It verifies the exact schema UR
 `anchore/syft` tool component and version, the wrapper-owned source component/path, package
 and operating-system component identities, Syft provenance properties, canonical package
 URL/BOM-reference/name relationships (including Syft's ecosystem-specific namespace rule),
-bounded licenses, and a canonical dependency graph. It
+NIST CPE 2.3 formatted strings, SPDX 2.3 expressions bound to the pinned 3.28.0 license and
+exception lists, bounded declared licenses, and a canonical dependency graph. It
 reuses the shared scalar-streaming parser, independently rehashes and recounts the artifact,
 and rechecks T031 retention after streaming.
 
@@ -263,4 +269,5 @@ output while preventing generic extension smuggling and long-lived path/prose le
 
 **Rejected**: Generic CycloneDX deserialization, counting the metadata tool as inventory,
 retaining raw BOM references or Syft properties, treating an SBOM as vulnerability evidence,
-granting it policy/AI authority, or persisting the pre-gate inventory.
+accepting separator-count-only CPEs or regex-shaped invented SPDX IDs/exceptions, granting it
+policy/AI authority, or persisting the pre-gate inventory.

@@ -96,6 +96,18 @@ test('pins a canonical transient Syft CycloneDX inventory contract', () => {
   assert.match(canonical, /"capability":"SBOM"/u);
   assert.match(canonical, /"mayCreateFindings":false/u);
   assert.match(canonical, /"sourceLocationsStored":false/u);
+  const nonCanonicalAuthority = structuredClone(core);
+  nonCanonicalAuthority.authority.mayCreateFindings = true;
+  nonCanonicalAuthority.dataHandling.sourceLocationsStored = true;
+  nonCanonicalAuthority.durablePersistenceAllowed = true;
+  const nonCanonicalPreimage =
+    canonicalizeSyftCycloneDxInventoryBatch(nonCanonicalAuthority);
+  assert.match(nonCanonicalPreimage, /"mayCreateFindings":true/u);
+  assert.match(nonCanonicalPreimage, /"sourceLocationsStored":true/u);
+  assert.match(
+    nonCanonicalPreimage,
+    /"durablePersistenceAllowed":true/u
+  );
   assert.doesNotMatch(
     canonical,
     /stableFingerprint|severity|evidencePackIds|artifactRef/u

@@ -364,7 +364,9 @@ An in-memory, non-durable T034 handoff from one accepted Syft artifact. It is se
   generated timestamp, and SHA-256 document serial-number digest
 - deterministically ordered package/application/model/operating-system components with
   versioned SHA-256 `componentId`, SHA-256 producer-BOM-reference digest, bounded
-  group/name/version, canonical PURL/CPE, and sorted de-duplicated license identities
+  group/name/version, canonical PURL, NISTIR 7695 CPE 2.3 formatted strings, and sorted
+  de-duplicated license identities whose SPDX IDs and exceptions resolve to Syft's pinned
+  SPDX License List 3.28.0
 - deterministically ordered dependency edges that reference only component IDs, never raw BOM
   references
 - observed component/dependency counts plus counts for discarded properties, source-location

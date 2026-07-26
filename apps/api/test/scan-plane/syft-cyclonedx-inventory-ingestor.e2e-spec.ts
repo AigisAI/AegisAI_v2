@@ -450,6 +450,78 @@ describe('SyftCycloneDxInventoryIngestor', () => {
         'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
     },
     {
+      name: 'CPE with an invalid part',
+      mutate(fixture: FixtureCycloneDx) {
+        fixture.components[0]!.cpe =
+          'cpe:2.3:z:example:package-a:1.2.3:*:*:*:*:*:*:*';
+      },
+      reason:
+        'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
+    },
+    {
+      name: 'CPE with an empty attribute',
+      mutate(fixture: FixtureCycloneDx) {
+        fixture.components[0]!.cpe =
+          'cpe:2.3:a::package-a:1.2.3:*:*:*:*:*:*:*';
+      },
+      reason:
+        'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
+    },
+    {
+      name: 'CPE with unquoted punctuation',
+      mutate(fixture: FixtureCycloneDx) {
+        fixture.components[0]!.cpe =
+          'cpe:2.3:a:exam!ple:package-a:1.2.3:*:*:*:*:*:*:*';
+      },
+      reason:
+        'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
+    },
+    {
+      name: 'CPE with a malformed language',
+      mutate(fixture: FixtureCycloneDx) {
+        fixture.components[0]!.cpe =
+          'cpe:2.3:a:example:package-a:1.2.3:*:*:english:*:*:*:*';
+      },
+      reason:
+        'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
+    },
+    {
+      name: 'CPE with a missing field',
+      mutate(fixture: FixtureCycloneDx) {
+        fixture.components[0]!.cpe =
+          'cpe:2.3:a:example:package-a:1.2.3:*:*:*:*:*:*';
+      },
+      reason:
+        'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
+    },
+    {
+      name: 'CPE with an embedded wildcard',
+      mutate(fixture: FixtureCycloneDx) {
+        fixture.components[0]!.cpe =
+          'cpe:2.3:a:example:pack*age:1.2.3:*:*:*:*:*:*:*';
+      },
+      reason:
+        'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
+    },
+    {
+      name: 'CPE with a quoted unreserved character',
+      mutate(fixture: FixtureCycloneDx) {
+        fixture.components[0]!.cpe =
+          'cpe:2.3:a:example:package\\-a:1.2.3:*:*:*:*:*:*:*';
+      },
+      reason:
+        'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
+    },
+    {
+      name: 'CPE with a dangling quote',
+      mutate(fixture: FixtureCycloneDx) {
+        fixture.components[0]!.cpe =
+          'cpe:2.3:a:example:package-a:1.2.3:*:*:*:*:*:*:\\';
+      },
+      reason:
+        'NORMALIZATION_CYCLONEDX_COMPONENT_IDENTITY_INVALID'
+    },
+    {
       name: 'file component forbidden by wrapper profile',
       mutate(fixture: FixtureCycloneDx) {
         fixture.components[0]!.type = 'file';
@@ -582,6 +654,80 @@ describe('SyftCycloneDxInventoryIngestor', () => {
           >;
         licenses[0]!.expression = 'MIT OR OR Apache-2.0';
       }
+    },
+    {
+      name: 'invented SPDX license ID',
+      mutate(fixture: FixtureCycloneDx) {
+        const licenses =
+          fixture.components[0]!.licenses as Array<{
+            license: Record<string, unknown>;
+          }>;
+        licenses[0]!.license.id = 'Not-A-Real-SPDX-License';
+      }
+    },
+    {
+      name: 'LicenseRef in a CycloneDX SPDX ID field',
+      mutate(fixture: FixtureCycloneDx) {
+        const licenses =
+          fixture.components[0]!.licenses as Array<{
+            license: Record<string, unknown>;
+          }>;
+        licenses[0]!.license.id = 'LicenseRef-Aegis-Custom';
+      }
+    },
+    {
+      name: 'invented SPDX expression license',
+      mutate(fixture: FixtureCycloneDx) {
+        const licenses =
+          fixture.components[1]!.licenses as Array<
+            Record<string, unknown>
+          >;
+        licenses[0]!.expression =
+          'MIT OR Not-A-Real-SPDX-License';
+      }
+    },
+    {
+      name: 'invented SPDX license exception',
+      mutate(fixture: FixtureCycloneDx) {
+        const licenses =
+          fixture.components[1]!.licenses as Array<
+            Record<string, unknown>
+          >;
+        licenses[0]!.expression =
+          'GPL-2.0-only WITH Not-A-Real-Exception';
+      }
+    },
+    {
+      name: 'SPDX exception used as a license',
+      mutate(fixture: FixtureCycloneDx) {
+        const licenses =
+          fixture.components[1]!.licenses as Array<
+            Record<string, unknown>
+          >;
+        licenses[0]!.expression = 'Classpath-exception-2.0';
+      }
+    },
+    {
+      name: 'SPDX WITH applied to a parenthesized expression',
+      mutate(fixture: FixtureCycloneDx) {
+        const licenses =
+          fixture.components[1]!.licenses as Array<
+            Record<string, unknown>
+          >;
+        licenses[0]!.expression =
+          '(GPL-2.0-only) WITH Classpath-exception-2.0';
+      }
+    },
+    {
+      name: 'malformed SPDX LicenseRef',
+      mutate(fixture: FixtureCycloneDx) {
+        const licenses =
+          fixture.components[1]!.licenses as Array<
+            Record<string, unknown>
+          >;
+        licenses[0]!.expression =
+          'LicenseRef-Aegis_Custom OR MIT';
+      }
     }
   ])('rejects $name without exposing license payloads', async (testCase) => {
     const fixture = loadCycloneDxFixture();
@@ -644,6 +790,84 @@ describe('SyftCycloneDxInventoryIngestor', () => {
         value: 'MIT OR Apache-2.0'
       }
     ]);
+  });
+
+  it('canonicalizes case-insensitive SPDX ID fields to License List 3.28.0', async () => {
+    const fixture = loadCycloneDxFixture();
+    const licenses =
+      fixture.components[0]!.licenses as Array<{
+        license: Record<string, unknown>;
+      }>;
+    licenses[0]!.license.id = 'apache-2.0';
+
+    const result = await ingestFixture(ingestor, fixture);
+    expect(result.outcome).toBe('INGESTED');
+    if (result.outcome !== 'INGESTED') return;
+    expect(
+      result.batch.components.find(
+        (component) => component.name === 'package-a'
+      )?.licenses
+    ).toEqual([{ kind: 'SPDX_ID', value: 'Apache-2.0' }]);
+  });
+
+  it.each([
+    {
+      expression:
+        'gpl-2.0-only  WITH classpath-exception-2.0',
+      expected:
+        'GPL-2.0-only WITH Classpath-exception-2.0'
+    },
+    {
+      expression: 'LicenseRef-Aegis-Custom OR mit',
+      expected: 'LicenseRef-Aegis-Custom OR MIT'
+    },
+    {
+      expression:
+        'DocumentRef-upstream.1:LicenseRef-Custom-2 AND apache-2.0',
+      expected:
+        'DocumentRef-upstream.1:LicenseRef-Custom-2 AND Apache-2.0'
+    }
+  ])(
+    'validates and canonicalizes SPDX 3.28.0 expression $expression',
+    async ({ expression, expected }) => {
+      const fixture = loadCycloneDxFixture();
+      const licenses =
+        fixture.components[1]!.licenses as Array<
+          Record<string, unknown>
+        >;
+      licenses[0]!.expression = expression;
+
+      const result = await ingestFixture(ingestor, fixture);
+      expect(result.outcome).toBe('INGESTED');
+      if (result.outcome !== 'INGESTED') return;
+      expect(
+        result.batch.components.find(
+          (component) => component.name === '@scope/package-b'
+        )?.licenses
+      ).toEqual([
+        {
+          kind: 'SPDX_EXPRESSION',
+          value: expected
+        }
+      ]);
+    }
+  );
+
+  it('accepts NIST CPE 2.3 quoted punctuation and language tags', async () => {
+    const fixture = loadCycloneDxFixture();
+    fixture.components[0]!.cpe =
+      'cpe:2.3:a:?example?:package\\:a:1.2.3:*:*:en-US:*:*:*:*';
+
+    const result = await ingestFixture(ingestor, fixture);
+    expect(result.outcome).toBe('INGESTED');
+    if (result.outcome !== 'INGESTED') return;
+    expect(
+      result.batch.components.find(
+        (component) => component.name === 'package-a'
+      )?.cpe
+    ).toBe(
+      'cpe:2.3:a:?example?:package\\:a:1.2.3:*:*:en-US:*:*:*:*'
+    );
   });
 
   it('discards Syft URL-only license fallback without retaining the duplicated name', async () => {

@@ -135,9 +135,11 @@ The following must always remain true:
   `Statement`/`Source`, and untrusted misconfiguration message/trace/rendered-cause fields
 - CycloneDX schema/tool/version/source-component rebinding, metadata-tool component
   count smuggling, vulnerability/VEX and nested/file component extensions, duplicate or
-  mismatched PURL/BOM references, malformed CPE/SWID/license/hash structures, URL-empty Java
-  `build-meta` references, repeated license identities from multiple URLs, dangling/
-  duplicate/self/non-canonical dependency edges, and zero-component inventories
+  mismatched PURL/BOM references, invalid CPE part/field/quoting/wildcard/language forms,
+  invented SPDX IDs or exceptions, malformed SPDX expressions and LicenseRefs, malformed
+  SWID/hash structures, URL-empty Java `build-meta` references, repeated license identities
+  from multiple URLs, dangling/duplicate/self/non-canonical dependency edges, and
+  zero-component inventories
 - CycloneDX properties and source-location paths, attached license text, URLs, prose, external
   references, and serial/BOM-reference sentinels that must be absent or SHA-256-only in the
   transient inventory and every rejection/log/audit/AI surface
