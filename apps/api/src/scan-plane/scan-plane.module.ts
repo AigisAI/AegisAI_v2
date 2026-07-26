@@ -71,6 +71,7 @@ import {
 } from './credential-tmpfs-verifier.service';
 import { OpenGrepSarifNormalizer } from './opengrep-sarif-normalizer';
 import { TrivyJsonNormalizer } from './trivy-json-normalizer';
+import { SyftCycloneDxInventoryIngestor } from './syft-cyclonedx-inventory-ingestor';
 
 @Module({
   imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
@@ -87,6 +88,7 @@ import { TrivyJsonNormalizer } from './trivy-json-normalizer';
     SastArtifactValidationService,
     OpenGrepSarifNormalizer,
     TrivyJsonNormalizer,
+    SyftCycloneDxInventoryIngestor,
     SastArtifactDispositionService,
     SastArtifactDispositionTask,
     PrismaSastArtifactDispositionStore,
@@ -162,7 +164,8 @@ import { TrivyJsonNormalizer } from './trivy-json-normalizer';
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
     OpenGrepSarifNormalizer,
-    TrivyJsonNormalizer
+    TrivyJsonNormalizer,
+    SyftCycloneDxInventoryIngestor
   ]
 })
 export class ScanPlaneModule {}

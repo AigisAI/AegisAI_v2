@@ -111,13 +111,17 @@ Fast and Deep lanes use separate queues and budgets but the same microVM securit
 
 ## Implemented Runtime Checkpoint
 
-T022 through T033 are implemented as the complete Phase 5 runtime boundary plus the
-ingress, validation, final-disposition, OpenGrep normalization, and Trivy normalization
+T022 through T034 are implemented as the complete Phase 5 runtime boundary plus the
+ingress, validation, final-disposition, OpenGrep normalization, Trivy normalization, and
+Syft CycloneDX inventory-ingestion
 portion of Phase 6:
 
-- OpenGrep and Trivy adapters share one fail-closed implementation of retention clocks,
-  coordinate attestations, safe text/identifier bounds, and canonical digest primitives;
-  T034 must extend this support instead of cloning security-critical validation logic.
+- OpenGrep, Trivy, and Syft adapters share one fail-closed scalar-streaming implementation
+  for fixed parser slicing, fatal UTF-8, raw token/depth/duplicate-key bounds, content
+  hashing, byte/record recount, and canonical rejection behavior. Finding adapters also
+  share retention clocks, coordinate attestations, safe text/identifier bounds, and digest
+  primitives; Syft shares the applicable retention and digest gates without inventing file
+  coordinates.
 - Token Broker verifies a signed, bounded-lifetime workload attestation against tenant,
   repository binding, scan request, attempt, workload identity, and fixed commit. A durable
   tenant/attempt-unique lease prevents replay while persisting only a SHA-256 credential fingerprint
@@ -142,15 +146,16 @@ portion of Phase 6:
 - The scanner wrapper accepts only an immutable `SastScanPlan`, attempt binding, preflight
   binding, and a short-lived sandbox attestation that signs the complete plan digest, attempt
   identifier, attempt number, and cumulative deadline. It
-  generates fixed shell-less OpenGrep SARIF, Trivy JSON offline, and Syft CycloneDX commands
+  generates fixed shell-less OpenGrep SARIF, Trivy JSON offline, and Syft
+  `cyclonedx-json@1.6` commands
   against `/workspace/repository` for Deep or the platform-owned,
   inventory-digest-bound `/workspace/selected/<digest>` projection for Fast, with output
   under `/workspace/output`; caller paths, commands, flags, environment maps, plugins, and
   executable configuration are not request fields. Processes
   start in the private output directory. OpenGrep repository ignore/`nosem`, Trivy repository
-  config/ignore files, and Syft repository config/archive expansion, remote enrichment, and
-  external package-tool execution are disabled; only wrapper/rule-digest-bound platform
-  configuration is loaded.
+  config/ignore files, and Syft repository config/archive expansion, remote enrichment,
+  file metadata, raw license content, and external package-tool execution are disabled;
+  only wrapper/rule-digest-bound platform configuration is loaded.
 - Immediately before each scanner launch, the installed provider must read the exact
   read-only repository mount, attest the exact scanner input, and return a content-bound
   manifest. Fast requires `PATH_ALLOWLIST` plus a read-only selected projection containing no
@@ -205,7 +210,9 @@ portion of Phase 6:
   plus scanner-set,
   schema-bundle, normalizer-bundle, rule, and Trivy database digests together with the exact
   scanner and canonical artifact reference. The transport and validator independently recompute
-  content digest and byte count, and the validator recomputes schema-specific record count; it
+  content digest and byte count, and the validator recomputes schema-specific record count;
+  CycloneDX counting includes root/nested inventory components but excludes
+  `metadata.tools.components`. It
   rejects duplicate keys, excessive depth/tokens/key size/object-key count/string/number size, unknown boundary fields
   or enums, missing required tool/message structures, unsafe paths, path collisions,
   and invalid coordinates. SARIF URI paths are decoded only from canonical uppercase
@@ -291,14 +298,35 @@ portion of Phase 6:
   attestation/retention rebinding, and fail-closed malformed streams.
   Its canonical Trivy candidate batches remain transient with
   `durablePersistenceAllowed=false`; T035 redaction and T036 fingerprinting are still mandatory.
+- `syft-cyclonedx-inventory-ingestor-v1` independently rebinds the unexpired T031 accepted
+  decision, validation/envelope/content/disposition digests, immutable plan and exact Syft
+  image/wrapper/schema/normalizer metadata before reading. It accepts only the pinned Syft
+  v1.44.0 CycloneDX JSON 1.6 directory producer: one exact tool component, the
+  wrapper-owned source path, package/application/model and operating-system components,
+  Syft provenance properties, canonical PURL/BOM-reference relations, complete NIST CPE 2.3
+  formatted-string validation, SPDX 2.3 expressions resolved against Syft's pinned License
+  List 3.28.0, bounded declared licenses, and sorted dependency nodes/edges.
+- T034 uses the shared fixed-slice streaming core and never materializes the raw BOM. It
+  independently rehashes/recounts, handles legitimate URL-empty Java `build-meta` digest
+  references, de-duplicates repeated license identities after discarding their URLs, and
+  rejects foreign producer/schema fields, file/nested/vulnerability extensions, malformed
+  identities, invented SPDX IDs/exceptions, malformed CPE quoting/language fields, invalid
+  licenses/hashes, dangling/duplicate/self/non-canonical dependencies, resource bombs, and
+  retention drift.
+- The canonical CycloneDX inventory is transient with
+  `durablePersistenceAllowed=false`. Raw BOM references and the serial number are retained
+  only as SHA-256 digests; raw properties, source locations, license text/URLs, prose,
+  external references, and raw artifact bytes are absent. Authority is explicitly SBOM-only:
+  no finding creation, vulnerability decision, policy authority, durable persistence, or AI
+  payload eligibility.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
 runtime provider exist only to verify the handoff contract. Default production credential
 issuance and scanner execution both fail closed until live rollout installs provider-backed
 GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
-file-coordinate-attestation, and acceptance-gate adapters. T034 CycloneDX SBOM validation and
-inventory ingestion is therefore the next implementation task; live deployment eligibility
+file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction is therefore
+the next implementation task; live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
 ## Deployment Position

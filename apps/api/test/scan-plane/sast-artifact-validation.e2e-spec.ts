@@ -65,6 +65,47 @@ describe('SAST bounded artifact validation', () => {
     }
   );
 
+  it('counts root and nested CycloneDX inventory components but excludes metadata tools', async () => {
+    const artifact = validCycloneDx();
+    Object.assign(artifact, {
+      metadata: {
+        tools: {
+          components: [
+            {
+              type: 'application',
+              name: 'syft',
+              version: '1.44.0'
+            }
+          ]
+        }
+      }
+    });
+    (
+      artifact.components[0] as Record<string, unknown>
+    ).components = [
+      {
+        type: 'library',
+        name: 'nested-example',
+        version: '2.0.0'
+      }
+    ];
+
+    const result = await validate({
+      schema: 'CYCLONEDX_JSON',
+      artifact: jsonBytes(artifact),
+      recordCount: 2,
+      attestation: null,
+      chunkSizes: [1, 4095, 3]
+    });
+
+    expect(result.validation).toMatchObject({
+      outcome: 'PASSED',
+      statistics: {
+        observedRecordCount: 2
+      }
+    });
+  });
+
   it.each([
     {
       schema: 'OPENGREP_SARIF' as const,

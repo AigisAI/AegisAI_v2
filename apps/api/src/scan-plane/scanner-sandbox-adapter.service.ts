@@ -229,7 +229,7 @@ export class ScannerSandboxAdapterService {
       '--config',
       `${wrapperAssetRoot}/config.yaml`,
       '--output',
-      `cyclonedx-json=${outputPath}`
+      `cyclonedx-json@1.6=${outputPath}`
     ]);
   }
 
@@ -252,6 +252,7 @@ export class ScannerSandboxAdapterService {
       SYFT_JAVASCRIPT_SEARCH_REMOTE_LICENSES: 'false',
       SYFT_LICENSE_CONTENT: 'none',
       SYFT_LOG_QUIET: 'true',
+      SYFT_FILE_METADATA_SELECTION: 'none',
       SYFT_PACKAGE_SEARCH_INDEXED_ARCHIVES: 'false',
       SYFT_PACKAGE_SEARCH_UNINDEXED_ARCHIVES: 'false',
       SYFT_PARALLELISM: '1',

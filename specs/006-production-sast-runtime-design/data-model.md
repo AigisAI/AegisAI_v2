@@ -351,6 +351,40 @@ missing objects become metadata-only `REJECTED` rows. Malformed validation metad
 plan rebinding failures, unsuccessful scanner state, failed validation, and explicit acceptance
 denial become `QUARANTINED` with a restricted-prefix object and exact encryption-context digest.
 
+### SyftCycloneDxInventoryBatch
+
+An in-memory, non-durable T034 handoff from one accepted Syft artifact. It is separate from
+`SastNormalizedFindingCandidate`.
+
+- exact `syft-cyclonedx-inventory-ingestor-v1`, CycloneDX JSON `1.6`, pinned Syft version,
+  image/wrapper, schema/normalizer bundle, immutable plan, canonical scan, preflight,
+  validation, disposition, envelope, artifact, tenant/repository/scan/attempt/scanner, lane,
+  and fixed-commit provenance
+- validated producer metadata: exact schema URI, BOM version, `anchore/syft` tool identity,
+  generated timestamp, and SHA-256 document serial-number digest
+- deterministically ordered package/application/model/operating-system components with
+  versioned SHA-256 `componentId`, SHA-256 producer-BOM-reference digest, bounded
+  group/name/version, canonical PURL, NISTIR 7695 CPE 2.3 formatted strings, and sorted
+  de-duplicated license identities whose SPDX IDs and exceptions resolve to Syft's pinned
+  SPDX License List 3.28.0
+- deterministically ordered dependency edges that reference only component IDs, never raw BOM
+  references
+- observed component/dependency counts plus counts for discarded properties, source-location
+  properties, external references, license URLs, and prose fields
+- `dataHandling={rawArtifactEmbedded:false,rawPropertiesStored:false,
+  sourceLocationsStored:false,rawLicenseTextStored:false}`
+- `authority={capability:"SBOM",mayCreateFindings:false,
+  mayEvaluateVulnerabilities:false,policyAuthority:false,aiPayloadEligible:false}`
+- `retentionExpiresAt` inherited from the accepted T031 decision,
+  `durablePersistenceAllowed=false`, and a canonical batch digest
+
+The batch never contains raw artifact bytes, object keys, raw properties, source paths, raw
+BOM references, raw license text, license URLs, prose, external-reference payloads, findings,
+severity, stable fingerprints, evidence references, policy state, or AI content. The raw SBOM
+remains only in the short-lived Data/Security Plane object governed by the T031 receipt-based
+retention deadline of at most seven days. A future durable inventory store requires its own
+explicit data-handling and retention gate; T034 does not authorize one.
+
 ### SastNormalizedFindingCandidate
 
 An in-memory, non-durable T032/T033 handoff from one accepted scanner artifact.

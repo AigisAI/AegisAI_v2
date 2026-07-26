@@ -73,7 +73,11 @@ the signed rule-bundle manifest. T033's Trivy adapter applies the same transient
 dependency, secret, and IaC records, including supported `ExperimentalModifiedFindings`.
 Dependency authority is database-derived; secret/IaC authority is checks-manifest-derived;
 scanner disposition remains non-authoritative, and raw secret/context/prose fields are
-discarded before candidate construction.
+discarded before candidate construction. T034's Syft adapter pins the v1.44.0 directory
+producer and CycloneDX JSON 1.6 schema, shares the same bounded scalar-streaming core, and
+emits only a transient SBOM inventory with hashed producer references. Raw properties,
+source locations, license text, prose, external references, and the raw artifact are excluded;
+the inventory has no finding, vulnerability, policy, persistence, or AI authority.
 
 ### Slice 5 - Identity, Correlation, and Lifecycle
 

@@ -29,6 +29,8 @@ const files = {
   sharedSastNormalizationTest: new URL('../../packages/shared/test/sast-normalization.test.mjs', import.meta.url),
   sharedSastTrivyNormalization: new URL('../../packages/shared/src/types/sast-trivy-normalization.ts', import.meta.url),
   sharedSastTrivyNormalizationTest: new URL('../../packages/shared/test/sast-trivy-normalization.test.mjs', import.meta.url),
+  sharedSastSbomInventory: new URL('../../packages/shared/src/types/sast-sbom-inventory.ts', import.meta.url),
+  sharedSastSbomInventoryTest: new URL('../../packages/shared/test/sast-sbom-inventory.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -41,6 +43,11 @@ const files = {
   trivyGoldenFixture: new URL('../../apps/api/test/fixtures/trivy-json/upstream-compatible.trivy.json', import.meta.url),
   trivyExpectedFixture: new URL('../../apps/api/test/fixtures/trivy-json/upstream-compatible.expected.json', import.meta.url),
   trivyMaliciousFixture: new URL('../../apps/api/test/fixtures/trivy-json/malicious-modified-license.trivy.json', import.meta.url),
+  apiSyftCycloneDxIngestor: new URL('../../apps/api/src/scan-plane/syft-cyclonedx-inventory-ingestor.ts', import.meta.url),
+  apiSpdxLicenseList: new URL('../../apps/api/src/scan-plane/spdx-license-list-3.28.ts', import.meta.url),
+  apiSyftCycloneDxIngestorTest: new URL('../../apps/api/test/scan-plane/syft-cyclonedx-inventory-ingestor.e2e-spec.ts', import.meta.url),
+  syftCycloneDxGoldenFixture: new URL('../../apps/api/test/fixtures/syft-cyclonedx/upstream-compatible.cdx.json', import.meta.url),
+  syftCycloneDxExpectedFixture: new URL('../../apps/api/test/fixtures/syft-cyclonedx/upstream-compatible.expected.json', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
   completedDeploymentChecklist: new URL('../../specs/005-production-deployment-operations/checklists/requirements.md', import.meta.url),
@@ -318,7 +325,7 @@ test('SAST T033 Trivy normalization is capability-safe, non-authoritative, and f
   assert.match(tasks, /- \[x\] T033\b/);
   assert.match(
     quickstart,
-    /T034 CycloneDX SBOM validation and\s+inventory ingestion is therefore the next implementation task/
+    /T033 golden and malicious fixtures prove chunk-invariant/
   );
   assert.match(contract, /Trivy JSON adapter v1/);
   assert.match(contract, /secret `Match`, `Code`/);
@@ -328,6 +335,103 @@ test('SAST T033 Trivy normalization is capability-safe, non-authoritative, and f
   assert.match(dataModel, /`scannerDisposition` with `DIRECT\|MODIFIED`/);
   assert.match(threatModel, /Trivy disposition smuggling/);
   assert.match(qualityGates, /Trivy golden-fixture equality/);
+});
+
+test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixture-guarded', () => {
+  const sharedInventory = readNormalizedText(
+    files.sharedSastSbomInventory
+  );
+  const sharedInventoryTest = readNormalizedText(
+    files.sharedSastSbomInventoryTest
+  );
+  const ingestor = readNormalizedText(files.apiSyftCycloneDxIngestor);
+  const spdxLicenseList = readNormalizedText(
+    files.apiSpdxLicenseList
+  );
+  const ingestorTest = readNormalizedText(
+    files.apiSyftCycloneDxIngestorTest
+  );
+  const fixture = readNormalizedText(files.syftCycloneDxGoldenFixture);
+  const expected = readNormalizedText(
+    files.syftCycloneDxExpectedFixture
+  );
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const spec = readNormalizedText(files.spec);
+  const plan = readNormalizedText(files.plan);
+  const research = readNormalizedText(files.research);
+  const dataModel = readNormalizedText(files.dataModel);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(
+    sharedInventory,
+    /syft-cyclonedx-inventory-ingestor-v1/
+  );
+  assert.match(sharedInventory, /SYFT_CYCLONEDX_PRODUCER_VERSION = '1\.44\.0'/);
+  assert.match(sharedInventory, /mayCreateFindings:\s*false/);
+  assert.match(sharedInventory, /aiPayloadEligible:\s*false/);
+  assert.match(sharedInventory, /durablePersistenceAllowed:\s*false/);
+  assert.match(
+    sharedInventoryTest,
+    /canonical transient Syft CycloneDX inventory contract/
+  );
+  assert.match(ingestor, /class SyftCycloneDxInventoryIngestor/);
+  assert.match(ingestor, /SastNormalizationJsonStreamSession/);
+  assert.match(
+    spdxLicenseList,
+    /SPDX_LICENSE_LIST_VERSION = '3\.28\.0'/
+  );
+  assert.match(
+    spdxLicenseList,
+    /SPDX_LICENSE_IDENTIFIER_COUNT = 727/
+  );
+  assert.match(
+    spdxLicenseList,
+    /SPDX_LICENSE_EXCEPTION_IDENTIFIER_COUNT = 84/
+  );
+  assert.match(
+    ingestorTest,
+    /inventory byte-exactly across chunking/
+  );
+  assert.match(
+    ingestorTest,
+    /rejects an unreviewed Syft producer upgrade before reading artifact bytes/
+  );
+  assert.match(
+    ingestorTest,
+    /component and scoped PURL name mismatch/
+  );
+  assert.match(
+    ingestorTest,
+    /validates and canonicalizes SPDX 3\.28\.0 expression/
+  );
+  assert.match(
+    ingestorTest,
+    /NIST CPE 2\.3 quoted punctuation and language tags/
+  );
+  assert.match(ingestorTest, /expect\(serialized\)\.not\.toContain\(forbidden\)/);
+  assert.match(fixture, /"version": "1\.44\.0"/);
+  assert.match(fixture, /"type": "build-meta"/);
+  assert.match(fixture, /"type": "vcs"/);
+  assert.match(expected, /"rawPropertiesStored": false/);
+  assert.match(expected, /"sourceLocationsStored": false/);
+  assert.match(tasks, /- \[x\] T034\b/);
+  assert.match(
+    quickstart,
+    /T035 secret redaction is therefore\s+the next implementation task/
+  );
+  assert.match(contract, /Syft CycloneDX inventory adapter v1/);
+  assert.match(spec, /FR-031b/);
+  assert.match(plan, /T034's Syft adapter pins the v1\.44\.0/);
+  assert.match(
+    research,
+    /Ingest the Pinned Syft Directory Producer, Not Generic CycloneDX/
+  );
+  assert.match(dataModel, /SyftCycloneDxInventoryBatch/);
+  assert.match(threatModel, /CycloneDX inventory cannot smuggle finding/);
+  assert.match(qualityGates, /Syft v1\.44\.0 CycloneDX JSON 1\.6/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

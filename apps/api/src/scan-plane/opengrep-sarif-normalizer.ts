@@ -1,10 +1,6 @@
-import { createHash } from 'node:crypto';
-import { TextDecoder } from 'node:util';
-
 import {
   OPENGREP_SARIF_NORMALIZER_VERSION,
   SAST_ARTIFACT_SCHEMA_VERSIONS,
-  SAST_ARTIFACT_VALIDATION_LIMITS,
   SAST_NORMALIZATION_LIMITS,
   buildSastScanPlanDigestPreimage,
   canonicalizeOpenGrepSarifNormalizationBatch,
@@ -28,7 +24,6 @@ import {
   type OpenGrepSarifNormalizationResult,
   type RuleBundleDescriptor,
   type SastArtifactDispositionDecision,
-  type SastArtifactValidationReasonCode,
   type SastArtifactValidationResult,
   type SastFileCoordinateMetadata,
   type SastFindingLocation,
@@ -38,14 +33,10 @@ import {
   type ScannerArtifactEnvelope
 } from '@aegisai/shared';
 import { Injectable } from '@nestjs/common';
-import { Tokenizer } from '@streamparser/json';
 
 import {
-  BoundedJsonStructureTracker,
-  RawJsonTokenLimiter,
   decodeSarifArtifactUri,
   normalizeArtifactPath,
-  type ArtifactValidationCallbacks,
   type ContainerKind,
   type JsonPath,
   type JsonPrimitive
@@ -62,6 +53,8 @@ import {
   omitDecisionDigest,
   omitResultDigest,
   readReferenceTime,
+  SastNormalizationJsonStreamSession,
+  type SastNormalizationJsonCollector,
   utf8Bytes,
   validateSastNormalizationReferenceTime
 } from './sast-normalization-support';
@@ -215,9 +208,16 @@ export class OpenGrepSarifNormalizer {
     if (binding.reasons.size > 0) {
       return this.reject(input.ingestionId, binding.reasons);
     }
-    const stream = new OpenGrepSarifStreamSession(
+    const stream = new SastNormalizationJsonStreamSession(
       input.envelope,
-      input.plan
+      input.plan.profile.limits.maxArtifactBytes,
+      (reasons) =>
+        new OpenGrepSarifCollector(
+          input.plan.profile.limits.maxArtifactRecords,
+          input.plan.profile.limits.maxFindings,
+          input.envelope.scannerVersion,
+          reasons
+        )
     );
     const parsed = await stream.parse(artifact);
     for (const reason of stream.reasons) binding.reasons.add(reason);
@@ -639,190 +639,8 @@ export class OpenGrepSarifNormalizer {
   }
 }
 
-class OpenGrepSarifStreamSession {
-  readonly reasons =
-    new Set<SastNormalizationRejectionReasonCode>();
-  private readonly contentHash = createHash('sha256');
-  private readonly decoder = new TextDecoder('utf-8', { fatal: true });
-  private readonly tokenizer = new Tokenizer({
-    emitPartialTokens: false
-  });
-  private readonly parserReasons =
-    new Set<SastArtifactValidationReasonCode>();
-  private readonly rawLimiter = new RawJsonTokenLimiter();
-  private readonly collector: OpenGrepSarifCollector;
-  private readonly structure: BoundedJsonStructureTracker;
-  private readonly pending = Buffer.alloc(
-    SAST_ARTIFACT_VALIDATION_LIMITS.parserSliceBytes
-  );
-  private pendingLength = 0;
-  private observedByteSize = 0;
-  private parsingActive = true;
-  private decoderActive = true;
-  private readonly maximumArtifactBytes: number;
-
-  constructor(
-    private readonly envelope: Readonly<ScannerArtifactEnvelope>,
-    plan: Readonly<SastScanPlan>
-  ) {
-    this.maximumArtifactBytes =
-      plan.profile.limits.maxArtifactBytes;
-    this.collector = new OpenGrepSarifCollector(
-      plan.profile.limits.maxArtifactRecords,
-      plan.profile.limits.maxFindings,
-      this.reasons
-    );
-    this.structure = new BoundedJsonStructureTracker(
-      this.collector,
-      this.parserReasons
-    );
-    this.tokenizer.onToken = (token) => this.structure.accept(token);
-    this.tokenizer.onError = () => {
-      this.failParsing();
-    };
-  }
-
-  async parse(
-    artifact: AsyncIterable<Uint8Array>
-  ): Promise<ParsedOpenGrepSarif | null> {
-    const hardByteLimit = Math.min(
-      this.envelope.byteSize,
-      this.maximumArtifactBytes
-    );
-    try {
-      for await (const chunk of artifact) {
-        const bytes = Buffer.from(chunk);
-        if (bytes.byteLength === 0) continue;
-        const remaining =
-          hardByteLimit + 1 - this.observedByteSize;
-        const observed = bytes.subarray(
-          0,
-          Math.max(0, Math.min(bytes.byteLength, remaining))
-        );
-        this.contentHash.update(observed);
-        this.observedByteSize += observed.byteLength;
-        if (this.observedByteSize > hardByteLimit) {
-          this.reasons.add('NORMALIZATION_BYTE_SIZE_MISMATCH');
-          this.parsingActive = false;
-          this.pendingLength = 0;
-          this.decoderActive = false;
-          break;
-        }
-        this.validateEncoding(observed);
-        this.acceptBytes(observed);
-      }
-    } catch {
-      this.failParsing();
-      this.decoderActive = false;
-    }
-
-    this.finishParser();
-    const contentDigest =
-      `sha256:${this.contentHash.digest('hex')}` as const;
-    if (contentDigest !== this.envelope.contentDigest) {
-      this.reasons.add('NORMALIZATION_CONTENT_DIGEST_MISMATCH');
-    }
-    if (this.observedByteSize !== this.envelope.byteSize) {
-      this.reasons.add('NORMALIZATION_BYTE_SIZE_MISMATCH');
-    }
-    if (
-      !this.reasons.has('NORMALIZATION_BYTE_SIZE_MISMATCH') &&
-      !this.reasons.has('NORMALIZATION_ARTIFACT_STREAM_INVALID') &&
-      this.collector.resultCount !== this.envelope.recordCount
-    ) {
-      this.reasons.add('NORMALIZATION_VALIDATION_BINDING_MISMATCH');
-    }
-    if (this.reasons.size > 0) return null;
-    return this.collector.finish(this.envelope);
-  }
-
-  private validateEncoding(bytes: Buffer): void {
-    if (!this.decoderActive) return;
-    try {
-      this.decoder.decode(bytes, { stream: true });
-    } catch {
-      this.decoderActive = false;
-      this.reasons.add('NORMALIZATION_ARTIFACT_STREAM_INVALID');
-    }
-  }
-
-  private acceptBytes(bytes: Buffer): void {
-    if (!this.parsingActive) return;
-    const sliceBytes =
-      SAST_ARTIFACT_VALIDATION_LIMITS.parserSliceBytes;
-    let offset = 0;
-    if (this.pendingLength > 0) {
-      const take = Math.min(
-        sliceBytes - this.pendingLength,
-        bytes.byteLength
-      );
-      bytes.copy(this.pending, this.pendingLength, 0, take);
-      this.pendingLength += take;
-      offset = take;
-      if (this.pendingLength === sliceBytes) {
-        this.pendingLength = 0;
-        this.processSlice(this.pending);
-      }
-    }
-    while (
-      this.parsingActive &&
-      offset + sliceBytes <= bytes.byteLength
-    ) {
-      this.processSlice(
-        bytes.subarray(offset, offset + sliceBytes)
-      );
-      offset += sliceBytes;
-    }
-    if (this.parsingActive && offset < bytes.byteLength) {
-      bytes.copy(this.pending, 0, offset);
-      this.pendingLength = bytes.byteLength - offset;
-    }
-  }
-
-  private processSlice(bytes: Buffer): void {
-    try {
-      this.rawLimiter.write(bytes);
-      this.tokenizer.write(bytes);
-    } catch {
-      this.failParsing();
-    }
-  }
-
-  private finishParser(): void {
-    if (this.decoderActive) {
-      try {
-        this.decoder.decode();
-      } catch {
-        this.reasons.add('NORMALIZATION_ARTIFACT_STREAM_INVALID');
-      }
-    }
-    if (this.parsingActive && this.pendingLength > 0) {
-      const length = this.pendingLength;
-      this.pendingLength = 0;
-      this.processSlice(this.pending.subarray(0, length));
-    }
-    if (!this.parsingActive) return;
-    try {
-      this.rawLimiter.end();
-      this.tokenizer.end();
-      this.structure.finish();
-      if (this.parserReasons.size > 0) {
-        this.reasons.add('NORMALIZATION_ARTIFACT_STREAM_INVALID');
-      }
-    } catch {
-      this.failParsing();
-    }
-  }
-
-  private failParsing(): void {
-    this.parsingActive = false;
-    this.pendingLength = 0;
-    this.reasons.add('NORMALIZATION_ARTIFACT_STREAM_INVALID');
-  }
-}
-
 class OpenGrepSarifCollector
-  implements ArtifactValidationCallbacks
+  implements SastNormalizationJsonCollector<ParsedOpenGrepSarif>
 {
   private rootKind?: ContainerKind;
   private schema?: string;
@@ -842,9 +660,14 @@ class OpenGrepSarifCollector
   constructor(
     private readonly maximumRules: number,
     private readonly maximumResults: number,
+    private readonly scannerVersion: string,
     private readonly reasons:
       Set<SastNormalizationRejectionReasonCode>
   ) {}
+
+  get recordCount(): number {
+    return this.resultCount;
+  }
 
   onContainer(path: JsonPath, kind: ContainerKind): void {
     if (path.length === 0) {
@@ -1077,9 +900,7 @@ class OpenGrepSarifCollector
     }
   }
 
-  finish(
-    envelope: Readonly<ScannerArtifactEnvelope>
-  ): ParsedOpenGrepSarif | null {
+  finish(): ParsedOpenGrepSarif | null {
     if (
       this.rootKind !== 'OBJECT' ||
       !this.runsSeen ||
@@ -1095,7 +916,7 @@ class OpenGrepSarifCollector
     }
     if (
       this.driverName !== OPENGREP_DRIVER_NAME ||
-      this.driverVersion !== envelope.scannerVersion
+      this.driverVersion !== this.scannerVersion
     ) {
       this.driverInvalid();
     }

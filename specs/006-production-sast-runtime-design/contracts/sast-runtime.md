@@ -314,9 +314,10 @@ inventory-digest-bound selected projection:
   prevent repository `trivy.yaml`/`.trivyignore` files or the tool's five-minute default from
   changing coverage.
 - Syft: `dir:<read-only-repository> --config <pinned-wrapper-config>
-  --output cyclonedx-json=<private-output>` with update, archive expansion, repository config
-  discovery, Maven/local-cache enrichment, remote-license lookup, and external Go
-  package-tool execution disabled by platform-owned environment.
+  --output cyclonedx-json@1.6=<private-output>` with update, archive expansion, repository
+  config discovery, Maven/local-cache enrichment, remote-license lookup, external Go
+  package-tool execution, file metadata (`SYFT_FILE_METADATA_SELECTION=none`), and raw
+  license content (`SYFT_LICENSE_CONTENT=none`) disabled by platform-owned environment.
 
 Only scanners required by the immutable profile are launched. Before every launch, the
 provider-facing runtime re-manifests the exact mount and verifies the original signed
@@ -352,7 +353,7 @@ default reconciliation poll is 10 seconds and uses a stage/deadline index plus b
 | Dependency vulnerability | Trivy | All profiles | Normalized finding |
 | Secret detection | Trivy | All profiles | Redacted normalized finding |
 | IaC misconfiguration | Trivy | Deep; changed IaC in Fast | Normalized finding |
-| Source SBOM | Syft | Deep profiles | CycloneDX JSON reference |
+| Source SBOM | Syft | Deep profiles | Transient inventory only; raw SBOM object/artifact expires in <= 7 days and retained BOM references are SHA-256 digests only |
 
 Rules that duplicate another scanner's authoritative capability are disabled by default.
 If retained as supporting evidence, they cannot independently create or block a finding.
@@ -421,8 +422,10 @@ Schema-specific streaming inspection enforces root, run/result, finding, and com
 container types; required tool/message structures; pinned enum/version sets; and explicit
 unknown-field sets at security-relevant boundaries. The immutable binding includes the exact
 scanner-run scanner and canonical result-ingress artifact reference in addition to attempt,
-identity, inventory, profile, source, and supply-chain digests. It counts SARIF results, Trivy vulnerabilities/
-misconfigurations/secrets, and nested CycloneDX components independently of the envelope.
+identity, inventory, profile, source, and supply-chain digests. It counts SARIF results,
+Trivy vulnerabilities/misconfigurations/secrets, and root/nested CycloneDX inventory
+components independently of the envelope; `metadata.tools.components` is producer metadata
+and never contributes to inventory record count.
 The transport observer and validator independently recompute content SHA-256 and bytes and
 must agree with one another and the envelope; records are independently counted and checked
 against the envelope and immutable profile limits. OpenGrep and Trivy records are additionally capped by the smaller
@@ -491,6 +494,9 @@ is not a `NormalizedSastFinding`: it has no platform stable fingerprint, evidenc
 or finding lifecycle status and carries `durablePersistenceAllowed=false`. T035 must redact
 the transient candidate before any durable storage, log, audit, dashboard, or evidence path;
 T036 then computes the platform fingerprint and constructs the final normalized finding.
+T034 emits a separate transient `SyftCycloneDxInventoryBatch`, not a finding candidate. It
+has SBOM inventory authority only and is not eligible for finding, policy, AI, or durable
+persistence paths.
 
 ### OpenGrep SARIF adapter v1
 
@@ -662,6 +668,87 @@ findings. A zero-finding artifact still emits the full scanner, rule bundle, vul
 database, schema, normalizer, plan, attestation, validation, disposition, envelope, and
 artifact provenance. Canonical candidate ordering and the batch digest are byte-identical
 across transport chunk boundaries.
+
+### Syft CycloneDX inventory adapter v1
+
+`syft-cyclonedx-inventory-ingestor-v1` accepts only an unexpired T031 `ACCEPTED` decision
+whose ingestion, validation, disposition, envelope, content, immutable plan, canonical scan,
+preflight, profile, Syft image/wrapper, schema-bundle, and normalizer-bundle bindings all
+match. It performs those checks before reading bytes and re-evaluates retention after
+streaming. The adapter has no route, general object-store read capability, finding
+persistence path, policy hook, or AI handoff.
+
+The accepted producer subset is pinned to Syft v1.44.0 directory output and CycloneDX JSON
+1.6:
+
+- root `$schema`, `bomFormat`, `specVersion`, serial UUID, BOM version, metadata, components,
+  and optional dependencies must match the exact bounded structure;
+- metadata contains exactly one `application/anchore/syft/<pinned-version>` tool component
+  and one `file` source component whose name is the wrapper-owned Deep repository path or
+  inventory-digest-bound Fast projection. The 16-hex source BOM reference is validated and
+  not retained;
+- package components may be `library`, `application`, or `machine-learning-model`;
+  operating-system components use the Syft `os:<name>@<version>` and SWID relationship.
+  File components are rejected because the wrapper forces
+  `SYFT_FILE_METADATA_SELECTION=none`;
+- every package requires unique `syft:package:foundBy` and `syft:package:type` properties.
+  A canonical PURL requires a BOM reference equal to that PURL plus exactly one 16-hex
+  `package-id` qualifier and its component name follows Syft's ecosystem-specific namespace
+  inclusion rule; a package without a PURL uses the 16-hex Syft package ID directly;
+- license choices are bounded SPDX IDs, expressions, or declared names. SPDX ID fields resolve
+  case-insensitively to the canonical 727 identifiers in Syft's pinned SPDX License List
+  3.28.0. Expressions follow SPDX 2.3 grammar, canonicalize listed license and exception IDs,
+  permit `LicenseRef`/`DocumentRef` only where the expression grammar allows them, and accept
+  `WITH` only with one of the pinned 84 SPDX exception identifiers. Raw attached text is
+  rejected because the wrapper forces `SYFT_LICENSE_CONTENT=none`; URLs are validated and
+  discarded. Syft's URL-only fallback, which duplicates the URL into `license.name`, is
+  discarded as one choice rather than allowing the URL through the name field. Repeated
+  normalized identities from multiple producer URLs become one deterministic license value;
+- retained CPEs must satisfy the complete NISTIR 7695 CPE 2.3 formatted-string ABNF: exact
+  field count, `a|h|o|*|-` part, non-empty attribute values, valid quoting and boundary
+  wildcards, and the defined language-tag form;
+- dependency nodes and each non-empty `dependsOn` list must be producer-sorted, unique,
+  non-self-referential, and reference accepted components. Every retained edge is translated
+  to canonical component IDs and sorted independently of document chunking;
+- Syft properties, source-location properties, component prose, license URLs, and external
+  references are structurally bounded and counted but never copied. Legitimate Java
+  URL-empty `build-meta` references require a supported MD5/SHA-1/SHA-256 digest.
+  Vulnerability/VEX fields, nested components, file components, foreign tools/schemas,
+  malformed PURL/CPE/license/hash data, and dangling or duplicate edges reject the complete
+  batch.
+
+Inventory limits are fail-closed and never truncate: at most the profile
+`maxArtifactRecords`, plus separate global maxima of 250,000 components, 250,000 dependency
+nodes, and 250,000 dependency edges; 64 licenses, 256 properties, and 64 external references
+per component; and 16 hashes per external reference. Names/groups/versions/license values are
+at most 512 UTF-8 bytes, PURLs and BOM references 2,048 bytes, and CPEs 1,024 bytes. Raw
+property values, URLs, comments, and other discarded fields remain subject to the shared
+4,096-byte token ceiling.
+
+Parsing uses the same fatal UTF-8, raw-token, duplicate-key, depth, globally aligned
+4,096-byte slice, independent SHA-256, byte, and record-count implementation as the finding
+adapters. CycloneDX record count is the inventory component count and excludes
+`metadata.tools.components`. A zero-component SBOM still returns complete producer and
+supply-chain provenance.
+
+The output is deterministically ordered and digest-bound. Component IDs use a versioned,
+length-prefixed SHA-256 identity; raw producer BOM references and the document serial number
+are represented only by SHA-256 digests. The batch contains package/OS identity, bounded
+license identities, dependency edges, discard statistics, exact plan/artifact/disposition
+provenance, `durablePersistenceAllowed=false`, and these fixed authority values:
+
+```text
+capability=SBOM
+mayCreateFindings=false
+mayEvaluateVulnerabilities=false
+policyAuthority=false
+aiPayloadEligible=false
+```
+
+Raw artifact bytes, raw properties, source paths, raw license text, prose, external-reference
+payloads, findings, severity, stable fingerprints, evidence references, and object keys are
+not batch fields. The accepted raw SBOM remains only in the Data/Security Plane under the
+T031 retention deadline, which is derived from receipt time and capped at seven days.
 
 ## Stable Fingerprint Contract
 

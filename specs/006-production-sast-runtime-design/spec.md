@@ -166,6 +166,13 @@ incomplete, stale, quarantined, or security-blocked scan.
   severity, or policy authority. Raw secret match/code/context, scanner prose, and
   misconfiguration trace/rendered-cause values MUST be discarded before candidate
   construction.
+- **FR-031b**: Syft CycloneDX ingestion MUST accept only the pinned directory-producer subset,
+  rebind the exact accepted artifact and immutable plan before and after scalar streaming,
+  and emit a deterministic transient inventory. Raw BOM references MUST be retained only as
+  digests; raw properties, source locations, license text, prose, external references, and
+  artifact bytes MUST NOT enter the inventory. SBOM inventory MUST NOT create findings,
+  evaluate vulnerabilities, influence policy, enter AI payloads, or become durably
+  persisted before a later explicit data-handling gate.
 - **FR-032**: Unknown enum values, invalid coordinates, overlong strings, unsafe encodings,
   and excessive nesting MUST fail closed.
 

@@ -25,7 +25,18 @@
   and [JSON writer](https://github.com/aquasecurity/trivy/blob/7bcb181268893fdd69ef4582588c040bb1036c33/pkg/report/json.go)
 - Trivy DB status/type dependency pinned by that release at commit
   [`c7c831e2254d`](https://github.com/aquasecurity/trivy-db/tree/c7c831e2254d)
-- Syft upstream and output formats: <https://github.com/anchore/syft>
+- Syft v1.44.0 producer pinned at signed commit
+  [`8cb78ce40ced`](https://github.com/anchore/syft/tree/8cb78ce40ced6a731fb83f2a491a67444f541bf1):
+  [CycloneDX model encoder](https://github.com/anchore/syft/blob/8cb78ce40ced6a731fb83f2a491a67444f541bf1/syft/format/common/cyclonedxhelpers/to_format_model.go),
+  [component/BOM-reference encoder](https://github.com/anchore/syft/blob/8cb78ce40ced6a731fb83f2a491a67444f541bf1/syft/format/internal/cyclonedxutil/helpers/component.go),
+  and [license encoder](https://github.com/anchore/syft/blob/8cb78ce40ced6a731fb83f2a491a67444f541bf1/syft/format/internal/cyclonedxutil/helpers/licenses.go)
+- CycloneDX 1.6 JSON schema pinned at commit
+  [`8a27bfd1be5b`](https://github.com/CycloneDX/specification/blob/8a27bfd1be5be0dcb2c208a34d2f4fa0b6d75bd7/schema/bom-1.6.schema.json)
+- SPDX License List JSON pinned at official release
+  [`v3.28.0`](https://github.com/spdx/license-list-data/tree/v3.28.0/json), matching
+  [Syft v1.44.0's generated list version](https://github.com/anchore/syft/blob/8cb78ce40ced6a731fb83f2a491a67444f541bf1/internal/spdxlicense/license_list.go)
+- CPE validation follows the complete formatted-string ABNF in
+  [NISTIR 7695 section 6.2.1](https://doi.org/10.6028/NIST.IR.7695)
 
 Upstream commands and schemas change independently of AegisAI. Scanner wrappers therefore
 own exact CLI flags while AegisAI contracts pin scanner image digest, wrapper version,
@@ -143,12 +154,14 @@ categories/rules and adds waiver or suppression metadata without editing the bun
 ## Decision 11: Pre-Mirror Trivy Data and Pin SBOM Format
 
 **Decision**: Trivy vulnerability/check databases are mirrored and promoted outside the
-scan path. Scans use a pinned digest and offline behavior. Syft emits a pinned internal raw
-schema and a CycloneDX JSON SBOM reference.
+scan path. Scans use a pinned digest and offline behavior. Syft v1.44.0 emits explicitly
+versioned `cyclonedx-json@1.6`; the wrapper disables file metadata and license content, and
+the accepted raw SBOM remains a short-lived Data/Security object capped at seven days.
 
 **Rationale**: Trivy normally maintains external databases and checks bundles; uncontrolled
 runtime updates would break reproducibility and egress isolation. Syft supports multiple
-formats, so the selected durable format must be explicit.
+formats and optional raw file/license payloads, so the exact schema and privacy-affecting
+producer settings must be explicit.
 
 **Rejected**: Allowing each sandbox to download the latest database or choose its own SBOM
 format.
@@ -225,3 +238,36 @@ suppression smuggling and secret-context leakage while preserving deterministic 
 types, dropping modified findings, treating scanner status as policy, copying scanner prose
 into candidates, hashing detected secret content, inventing dependency line coordinates, or
 using the checks bundle as the dependency advisory authority.
+
+## Decision 16: Ingest the Pinned Syft Directory Producer, Not Generic CycloneDX
+
+**Decision**: `syft-cyclonedx-inventory-ingestor-v1` accepts only the CycloneDX JSON 1.6
+directory subset emitted by pinned Syft v1.44.0. It verifies the exact schema URI, one
+`anchore/syft` tool component and version, the wrapper-owned source component/path, package
+and operating-system component identities, Syft provenance properties, canonical package
+URL/BOM-reference/name relationships (including Syft's ecosystem-specific namespace rule),
+NIST CPE 2.3 formatted strings, SPDX 2.3 expressions bound to the pinned 3.28.0 license and
+exception lists, bounded declared licenses, and a canonical dependency graph. It
+reuses the shared scalar-streaming parser, independently rehashes and recounts the artifact,
+and rechecks T031 retention after streaming.
+
+The output is a deterministic transient inventory with
+`durablePersistenceAllowed=false`. Raw BOM references and the document serial number become
+SHA-256 digests. Raw Syft properties and source paths, file components, raw license text,
+license URLs, prose, external references, nested components, vulnerability/VEX extensions,
+and artifact bytes are excluded. Repeated license identities caused by multiple producer
+URLs are de-duplicated after every URL has been structurally validated and discarded; the
+Syft URL-only fallback is dropped when the same URL is copied into `license.name`.
+The inventory explicitly has SBOM capability only and cannot create findings, evaluate
+vulnerabilities, influence policy, or enter an AI payload.
+
+**Rationale**: CycloneDX 1.6 also represents VEX, vulnerability, cryptographic, nested, file,
+and other structures that AegisAI has not admitted. Syft embeds repository locations and
+package metadata in properties and may encode Java archive digests as URL-empty
+`build-meta` external references. Producer-specific validation preserves legitimate pinned
+output while preventing generic extension smuggling and long-lived path/prose leakage.
+
+**Rejected**: Generic CycloneDX deserialization, counting the metadata tool as inventory,
+retaining raw BOM references or Syft properties, treating an SBOM as vulnerability evidence,
+accepting separator-count-only CPEs or regex-shaped invented SPDX IDs/exceptions, granting it
+policy/AI authority, or persisting the pre-gate inventory.

@@ -114,6 +114,9 @@ The following must always remain true:
     identity digest, rejection, log, audit, evidence, or AI payload.
 11. A normalizer accepts only the authoritative capability families and exact producer schema
     pinned by its immutable plan.
+12. CycloneDX inventory cannot smuggle finding, vulnerability, policy, durable-persistence,
+    or AI authority; producer BOM references, properties, source paths, license text, prose,
+    and external-reference payloads never cross the transient inventory boundary.
 
 ## Required Security Test Corpus
 
@@ -130,6 +133,16 @@ The following must always remain true:
   identities, package/database/check-bundle rebinding, and omitted dependency coordinates
 - Trivy secret fixtures with sentinel values in `Match`, neighboring `Code`, modified-finding
   `Statement`/`Source`, and untrusted misconfiguration message/trace/rendered-cause fields
+- CycloneDX schema/tool/version/source-component rebinding, metadata-tool component
+  count smuggling, vulnerability/VEX and nested/file component extensions, duplicate or
+  mismatched PURL/BOM references, invalid CPE part/field/quoting/wildcard/language forms,
+  invented SPDX IDs or exceptions, malformed SPDX expressions and LicenseRefs, malformed
+  SWID/hash structures, URL-empty Java `build-meta` references, repeated license identities
+  from multiple URLs, dangling/duplicate/self/non-canonical dependency edges, and
+  zero-component inventories
+- CycloneDX properties and source-location paths, attached license text, URLs, prose, external
+  references, and serial/BOM-reference sentinels that must be absent or SHA-256-only in the
+  transient inventory and every rejection/log/audit/AI surface
 - malicious filenames, package names, symbols, rule messages, HTML, Markdown, and ANSI codes
 - known token formats and high-entropy secret fixtures
 - scanner crash/timeout/output bomb/truncation and result replay
