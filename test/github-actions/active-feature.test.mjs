@@ -485,6 +485,16 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
   assert.match(service, /SECRET_REDACTION_IDENTITY_FIELD_BLOCKED/);
   assert.match(service, /mergeSpans/);
   assert.match(service, /shannonEntropy/);
+  assert.match(service, /async redact\(/);
+  assert.match(service, /protected async yieldEventLoop/);
+  assert.match(service, /await this\.yieldEventLoop\(\)/);
+  assert.match(service, /await yieldToEventLoop\(\)/);
+  assert.match(service, /hasInspectionWorkWithinLimit/);
+  assert.match(
+    sharedRedaction,
+    /maximumInspectedCodeUnits:\s*8_000_000/
+  );
+  assert.match(sharedRedaction, /canonicalDigestMatches/);
   assert.doesNotMatch(service, /\bLogger\b|\bconsole\./u);
   assert.match(
     serviceTest,
@@ -499,10 +509,13 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
     /expect\(serialized\)\.not\.toContain\(secret\)/
   );
 
-  const exportsBlock =
-    scanPlaneModule.match(
-      /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
-    )?.[1] ?? '';
+  const exportsBlock = scanPlaneModule.match(
+    /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
+  )?.[1];
+  assert.ok(
+    exportsBlock,
+    'Expected to locate the ScanPlaneModule exports array'
+  );
   assert.match(exportsBlock, /SastSecretRedactionService/);
   assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
   assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
@@ -522,6 +535,21 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
     qualityGates,
     /Exactly zero matched values, matched-value digests/
   );
+  const canonicalIdentityRejection =
+    /scanner\s+version\/match\s+identity,[\s\S]{0,200}rule\s+provenance\s+identifier\/revision,[\s\S]{0,250}secret\s+category,[\s\S]{0,120}IaC\s+check\s+type\/AVD\s+identity/;
+  for (const document of [
+    contract,
+    spec,
+    plan,
+    research,
+    dataModel,
+    threatModel,
+    qualityGates,
+    quickstart
+  ]) {
+    assert.match(document, canonicalIdentityRejection);
+  }
+  assert.doesNotMatch(dataModel, /\bdurable handoff\b/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

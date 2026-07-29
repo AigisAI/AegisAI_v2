@@ -38,7 +38,7 @@ const REGISTERED_SECRET = 'platform-runtime-secret-0123456789';
 describe('SastSecretRedactionService', () => {
   const service = new SastSecretRedactionService();
 
-  it('redacts the known-format, entropy, and registered-value corpus deterministically', () => {
+  it('redacts the known-format, entropy, and registered-value corpus deterministically', async () => {
     const secrets = {
       aws: 'AKIAIOSFODNN7EXAMPLE',
       github: `github_pat_${'A'.repeat(30)}`,
@@ -53,6 +53,8 @@ describe('SastSecretRedactionService', () => {
       assignment: 'password=synthetic-password-value',
       entropy: 'aB3dE5fG7hJ9kL2mN4pQ6rS8tU0vW1xY',
       hexadecimalEntropy: '0123456789abcdef'.repeat(2),
+      digestShapedSecret:
+        `sha256:${'fedcba9876543210'.repeat(4)}`,
       privateKey:
         '-----BEGIN PRIVATE KEY-----\nSYNTHETICNOTAREALKEY1234567890\n-----END PRIVATE KEY-----'
     };
@@ -74,14 +76,17 @@ describe('SastSecretRedactionService', () => {
       platformSecretValues: [REGISTERED_SECRET]
     };
 
-    const first = service.redact(input, fixedClock);
-    const second = service.redact(input, fixedClock);
+    const first = await service.redact(input, fixedClock);
+    const second = await service.redact(input, fixedClock);
     expect(first).toEqual(second);
     expect(first.outcome).toBe('REDACTED');
     if (first.outcome !== 'REDACTED') return;
 
     expect(
-      isSastSecretRedactionBatchShapeValid(first.batch)
+      isSastSecretRedactionBatchShapeValid(
+        first.batch,
+        digest
+      )
     ).toBe(true);
     expect(first.batch.version).toBe(
       SAST_SECRET_REDACTION_VERSION
@@ -147,18 +152,18 @@ describe('SastSecretRedactionService', () => {
       )
     ).toBe(decisionDigest);
     expect(
-      toSastSecretRedactionAuditMetadata(first)
+      toSastSecretRedactionAuditMetadata(first, digest)
     ).not.toHaveProperty('findings');
   });
 
-  it('redacts supported Trivy candidates without granting durable or policy authority', () => {
+  it('redacts supported Trivy candidates without granting durable or policy authority', async () => {
     const disposition = acceptedDisposition();
     const secret = `github_pat_${'J'.repeat(30)}`;
     const batch = trivyBatch(disposition, {
       description: `Potential credential ${secret} was reported.`
     });
 
-    const result = service.redact(
+    const result = await service.redact(
       { batch, disposition },
       fixedClock
     );
@@ -185,13 +190,13 @@ describe('SastSecretRedactionService', () => {
     expect(JSON.stringify(result)).not.toContain(secret);
   });
 
-  it('merges overlapping detector matches into one fixed replacement', () => {
+  it('merges overlapping detector matches into one fixed replacement', async () => {
     const disposition = acceptedDisposition();
     const secret = 'registered-password-1234567890';
     const batch = openGrepBatch(disposition, {
       description: `password=${secret}`
     });
-    const result = service.redact(
+    const result = await service.redact(
       {
         batch,
         disposition,
@@ -212,14 +217,39 @@ describe('SastSecretRedactionService', () => {
     ]);
   });
 
-  it('is invariant to registered-value ordering and redacts NFC Unicode values', () => {
+  it('redacts prefixed and quoted low-entropy secret assignments', async () => {
+    const disposition = acceptedDisposition();
+    const batch = openGrepBatch(disposition, {
+      description:
+        `DB_PASSWORD="hunter2"; "password": "swordfish"; config.client_secret: "abc"; serialized {${String.raw`\"password\": \"lowpass\"`}}`
+    });
+    const result = await service.redact(
+      { batch, disposition },
+      fixedClock
+    );
+
+    expect(result.outcome).toBe('REDACTED');
+    if (result.outcome !== 'REDACTED') return;
+    expect(result.batch.findings[0]?.description).toBe(
+      `${SAST_SECRET_REDACTION_TOKEN}; ${SAST_SECRET_REDACTION_TOKEN}; ${SAST_SECRET_REDACTION_TOKEN}; serialized {${SAST_SECRET_REDACTION_TOKEN}}`
+    );
+    expect(
+      result.batch.findings[0]?.redaction.detectorKinds
+    ).toEqual(['SECRET_ASSIGNMENT']);
+    expect(JSON.stringify(result)).not.toContain('hunter2');
+    expect(JSON.stringify(result)).not.toContain('swordfish');
+    expect(JSON.stringify(result)).not.toContain('"abc"');
+    expect(JSON.stringify(result)).not.toContain('lowpass');
+  });
+
+  it('is invariant to registered-value ordering and redacts NFC Unicode values', async () => {
     const disposition = acceptedDisposition();
     const firstSecret = '플랫폼-비밀값-0123456789';
     const secondSecret = 'second-platform-secret-9876543210';
     const batch = openGrepBatch(disposition, {
       description: `${firstSecret} and ${secondSecret}`
     });
-    const first = service.redact(
+    const first = await service.redact(
       {
         batch,
         disposition,
@@ -227,7 +257,7 @@ describe('SastSecretRedactionService', () => {
       },
       fixedClock
     );
-    const second = service.redact(
+    const second = await service.redact(
       {
         batch,
         disposition,
@@ -242,14 +272,14 @@ describe('SastSecretRedactionService', () => {
     expect(JSON.stringify(first)).not.toContain(secondSecret);
   });
 
-  it('redacts an entire registered value when its shorter suffix matches first', () => {
+  it('redacts an entire registered value when its shorter suffix matches first', async () => {
     const disposition = acceptedDisposition();
     const shorterSecret = '12345678';
     const longerSecret = 'xx12345678yy';
     const batch = openGrepBatch(disposition, {
       description: longerSecret
     });
-    const result = service.redact(
+    const result = await service.redact(
       {
         batch,
         disposition,
@@ -266,7 +296,7 @@ describe('SastSecretRedactionService', () => {
     expect(JSON.stringify(result)).not.toContain(longerSecret);
   });
 
-  it('fails closed when an identity-bearing field contains a secret', () => {
+  it('fails closed when an identity-bearing field contains a secret', async () => {
     const disposition = acceptedDisposition();
     const batch = openGrepBatch(disposition, {
       identityMaterial: {
@@ -274,7 +304,7 @@ describe('SastSecretRedactionService', () => {
         symbolAnchor: REGISTERED_SECRET
       }
     });
-    const result = service.redact(
+    const result = await service.redact(
       {
         batch,
         disposition,
@@ -298,7 +328,7 @@ describe('SastSecretRedactionService', () => {
     expect(serialized).not.toContain(batch.artifactDigest);
   });
 
-  it('rejects an unregistered high-entropy scanner identity instead of hashing it', () => {
+  it('rejects an unregistered high-entropy scanner identity instead of hashing it', async () => {
     const disposition = acceptedDisposition();
     const highEntropyIdentity =
       'aB3dE5fG7hJ9kL2mN4pQ6rS8tU0vW1xY';
@@ -309,7 +339,7 @@ describe('SastSecretRedactionService', () => {
         structuralHash: digest(highEntropyIdentity)
       }
     });
-    const result = service.redact(
+    const result = await service.redact(
       { batch, disposition },
       fixedClock
     );
@@ -325,13 +355,39 @@ describe('SastSecretRedactionService', () => {
     );
   });
 
-  it('rejects a forged reserved marker before it can claim redaction', () => {
+  it('rejects low-entropy credential syntax in opaque identity fields', async () => {
+    const disposition = acceptedDisposition();
+    const credentialIdentity = 'DB_PASSWORD="hunter2"';
+    const batch = openGrepBatch(disposition, {
+      identityMaterial: {
+        ...openGrepFinding().identityMaterial,
+        scannerMatchBasedId: credentialIdentity
+      }
+    });
+    const result = await service.redact(
+      { batch, disposition },
+      fixedClock
+    );
+
+    expect(result).toMatchObject({
+      outcome: 'REJECTED',
+      reasonCodes: [
+        'SECRET_REDACTION_IDENTITY_FIELD_BLOCKED'
+      ]
+    });
+    expect(JSON.stringify(result)).not.toContain(
+      credentialIdentity
+    );
+    expect(JSON.stringify(result)).not.toContain('hunter2');
+  });
+
+  it('rejects a forged reserved marker before it can claim redaction', async () => {
     const disposition = acceptedDisposition();
     const batch = openGrepBatch(disposition, {
       description: `forged ${SAST_SECRET_REDACTION_TOKEN}`
     });
     expect(
-      service.redact({ batch, disposition }, fixedClock)
+      await service.redact({ batch, disposition }, fixedClock)
     ).toMatchObject({
       outcome: 'REJECTED',
       reasonCodes: [
@@ -340,7 +396,7 @@ describe('SastSecretRedactionService', () => {
     });
   });
 
-  it('rejects source digest tamper and invalid registered-secret sets with bounded metadata', () => {
+  it('rejects source digest tamper and invalid registered-secret sets with bounded metadata', async () => {
     const disposition = acceptedDisposition();
     const batch = openGrepBatch(disposition);
     const tampered = {
@@ -348,7 +404,7 @@ describe('SastSecretRedactionService', () => {
       batchDigest: digest('tampered')
     };
     expect(
-      service.redact(
+      await service.redact(
         {
           batch: tampered,
           disposition
@@ -362,7 +418,7 @@ describe('SastSecretRedactionService', () => {
       ]
     });
     expect(
-      service.redact(
+      await service.redact(
         {
           batch: {
             ...batch,
@@ -374,6 +430,29 @@ describe('SastSecretRedactionService', () => {
               },
               () => batch.findings[0]
             )
+          },
+          disposition
+        },
+        fixedClock
+      )
+    ).toMatchObject({
+      outcome: 'REJECTED',
+      reasonCodes: ['SECRET_REDACTION_INPUT_INVALID']
+    });
+    expect(
+      await service.redact(
+        {
+          batch: {
+            ...batch,
+            findings: [
+              {
+                ...batch.findings[0],
+                description: 'x'.repeat(
+                  SAST_SECRET_REDACTION_LIMITS
+                    .maximumInspectedCodeUnits + 1
+                )
+              }
+            ]
           },
           disposition
         },
@@ -397,7 +476,7 @@ describe('SastSecretRedactionService', () => {
       )
     ]) {
       expect(
-        service.redact(
+        await service.redact(
           {
             batch,
             disposition,
@@ -414,7 +493,7 @@ describe('SastSecretRedactionService', () => {
     }
   });
 
-  it('revalidates the accepted disposition and retention on both sides of redaction', () => {
+  it('revalidates the accepted disposition and retention on both sides of redaction', async () => {
     const disposition = acceptedDisposition();
     const batch = openGrepBatch(disposition);
     const tamperedDisposition = {
@@ -422,7 +501,7 @@ describe('SastSecretRedactionService', () => {
       storageReceiptDigest: digest('tampered-receipt')
     };
     expect(
-      service.redact(
+      await service.redact(
         {
           batch,
           disposition: tamperedDisposition
@@ -441,7 +520,7 @@ describe('SastSecretRedactionService', () => {
       new Date(RETENTION_EXPIRES_AT)
     ];
     expect(
-      service.redact(
+      await service.redact(
         { batch, disposition },
         () => times.shift() as Date
       )
@@ -453,10 +532,10 @@ describe('SastSecretRedactionService', () => {
     });
   });
 
-  it('emits a deterministic fully bound zero-finding redaction batch', () => {
+  it('emits a deterministic fully bound zero-finding redaction batch', async () => {
     const disposition = acceptedDisposition();
     const batch = openGrepBatch(disposition, undefined, []);
-    const result = service.redact(
+    const result = await service.redact(
       { batch, disposition },
       fixedClock
     );
@@ -473,12 +552,71 @@ describe('SastSecretRedactionService', () => {
       replacementCount: 0,
       detectorKinds: []
     });
-    expect(isSastSecretRedactionBatchShapeValid(result.batch)).toBe(
-      true
-    );
+    expect(
+      isSastSecretRedactionBatchShapeValid(
+        result.batch,
+        digest
+      )
+    ).toBe(true);
   });
 
-  it('does not classify the pinned OpenGrep matchBasedId hex form as a secret', () => {
+  it('yields to the event loop at candidate and code-unit chunk bounds', async () => {
+    const disposition = acceptedDisposition();
+    const findings = Array.from({ length: 65 }, (_, index) => {
+      const finding = openGrepFinding();
+      const line = index + 1;
+      return {
+        ...finding,
+        location: {
+          ...finding.location,
+          lineStart: line,
+          lineEnd: line
+        },
+        identityMaterial: {
+          ...finding.identityMaterial,
+          scannerMatchBasedId:
+            `rules.secret:match-${index
+              .toString()
+              .padStart(3, '0')}`
+        }
+      } as OpenGrepNormalizedFindingCandidate;
+    });
+    const batch = openGrepBatch(
+      disposition,
+      undefined,
+      findings
+    );
+    const yieldingService =
+      new YieldObservingSastSecretRedactionService();
+    const result = await yieldingService.redact(
+      { batch, disposition },
+      fixedClock
+    );
+
+    expect(result.outcome).toBe('REDACTED');
+    expect(yieldingService.yieldCount).toBe(1);
+    if (result.outcome !== 'REDACTED') return;
+    expect(result.batch.findings).toHaveLength(65);
+
+    const wideBatch = openGrepBatch(
+      disposition,
+      undefined,
+      findings.slice(0, 10).map((finding) => ({
+        ...finding,
+        description: 'x'.repeat(3_500)
+      }))
+    );
+    yieldingService.yieldCount = 0;
+    const wideResult = await yieldingService.redact(
+      { batch: wideBatch, disposition },
+      fixedClock
+    );
+
+    expect(wideResult.outcome).toBe('REDACTED');
+    expect(yieldingService.yieldCount).toBe(1);
+  });
+
+  it('does not classify the pinned OpenGrep matchBasedId hex form as a secret', async () => {
     const disposition = acceptedDisposition();
     const scannerMatchBasedId = `${'0123456789abcdef'.repeat(
       8
@@ -490,7 +628,7 @@ describe('SastSecretRedactionService', () => {
         structuralHash: digest(scannerMatchBasedId)
       }
     });
-    const result = service.redact(
+    const result = await service.redact(
       { batch, disposition },
       fixedClock
     );
@@ -503,7 +641,7 @@ describe('SastSecretRedactionService', () => {
     ).toBe(scannerMatchBasedId);
   });
 
-  it('rejects secret-bearing batch bindings even when there are no findings', () => {
+  it('rejects secret-bearing batch bindings even when there are no findings', async () => {
     const disposition = acceptedDisposition();
     const original = openGrepBatch(
       disposition,
@@ -526,7 +664,7 @@ describe('SastSecretRedactionService', () => {
       )
     };
 
-    const result = service.redact(
+    const result = await service.redact(
       {
         batch,
         disposition,
@@ -545,6 +683,14 @@ describe('SastSecretRedactionService', () => {
     );
   });
 });
+
+class YieldObservingSastSecretRedactionService extends SastSecretRedactionService {
+  yieldCount = 0;
+
+  protected override async yieldEventLoop(): Promise<void> {
+    this.yieldCount += 1;
+  }
+}
 
 function openGrepBatch(
   disposition: Readonly<SastArtifactDispositionDecision>,

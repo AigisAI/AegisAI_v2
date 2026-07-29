@@ -759,15 +759,17 @@ digest and independently verifies the exact T031 decision shape/digest, `ACCEPTE
 disposition, `normalizationEligible=true`, ingestion and validation-result binding, and
 candidate-carried disposition digest. Its private default wall clock must be at or after
 `decidedAt` and before `retentionExpiresAt`; the same monotonic check runs after the complete
-pass. A caller-provided clock is a trusted test/task seam only.
+pass. A caller-provided clock is a trusted test/task seam only; production uses the private
+wall clock and the service's internal `setImmediate`-backed yield.
 
 The detector policy is versioned with this gate:
 
 - at most 64 unique NFC platform values, each 8-4,096 UTF-8 bytes and at most 65,536 bytes
   total, may be supplied as caller-owned transient values;
 - private-key blocks, authorization credentials, URL user information, documented AWS,
-  GitHub, GitLab, Slack, Google, Stripe, and SendGrid formats, JWTs, contextual secret
-  assignments, and bounded high-entropy tokens are detected;
+  GitHub, GitLab, Slack, Google, Stripe, and SendGrid formats, JWTs, prefixed/quoted
+  low-entropy and contextual secret assignments, and bounded high-entropy tokens are
+  detected;
 - pattern evaluation is linear over already-bounded candidate scalars. Detector order is
   canonical, and overlapping or directly adjacent spans merge before replacement;
 - the sole replacement is the fixed ASCII `[REDACTED]` marker. It reveals no original
@@ -777,12 +779,19 @@ The detector policy is versioned with this gate:
 
 Only `title`, `description`, and optional `location.symbol` are display-redactable.
 Ingestion/scope/preflight bindings are inspected even for a zero-finding batch. A match in
-one of those bindings or in normalized path, rule semantic identity, symbol anchor, sink
-kind, scanner identity hint, rule provenance, dependency package/version, secret category,
-or IaC check identity rejects the complete batch with
+one of those bindings or in normalized path, semantic rule identity, symbol anchor, sink
+kind, scanner version/match identity, rule provenance identifier/revision, dependency
+vulnerability/package/type/installed/fixed-version identity, secret category, or IaC check
+type/AVD identity rejects the complete batch with
 `SECRET_REDACTION_IDENTITY_FIELD_BLOCKED`. The gate does not replace an identity field,
 silently drop the candidate, hash the match, or use line coordinates to invent a
 replacement identity.
+
+The async gate rejects a batch above 8,000,000 inspected UTF-16 code units. It yields before
+the next candidate when either 64 candidates or 32,768 code units have been processed in the
+current chunk. Candidate, batch, rejection, and audit validation requires the trusted
+canonical SHA-256 digester and recomputes the sanitized preimage; digest syntax alone is not
+integrity.
 
 Success returns only a fresh, ordered `SastSecretRedactionBatch`. Each finding carries an
 ordered `SastFindingSecretRedaction` decision and a
@@ -804,7 +813,7 @@ durablePersistenceAllowed=false
 
 The output and bounded audit projection never carry a matched value, match length,
 matched-value digest, input object, input candidate-batch digest, or rejected binding.
-Rejections contain only the exact version, globally ordered coarse reason codes, the four
+Rejections contain only the exact version, globally ordered coarse reason codes, the three
 negative storage assertions, and a digest over those safe fields. The source artifact digest
 may remain normal accepted-artifact provenance only on success; it is absent from rejection.
 

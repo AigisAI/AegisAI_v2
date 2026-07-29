@@ -327,9 +327,16 @@ portion of Phase 6:
 - The T035 detector combines transient registered platform values with bounded private-key,
   authorization/URL credential, documented provider-token, JWT, contextual assignment, and
   high-entropy detection. Overlapping spans become the one fixed `[REDACTED]` marker only in
-  title, description, and optional symbol display fields. A forged marker or any match in
-  path/rule/package/version/anchor/sink/scanner identity rejects the whole batch rather than
-  creating a secret-derived fingerprint input.
+  title, description, and optional symbol display fields. A forged marker or any match in a
+  normalized path, semantic rule identity, symbol anchor, sink kind, scanner version/match
+  identity, rule provenance identifier/revision, dependency
+  vulnerability/package/type/installed/fixed-version identity, secret category, or IaC check
+  type/AVD identity rejects the whole batch rather than creating a secret-derived fingerprint
+  input.
+- The async gate rejects more than 8,000,000 inspected UTF-16 code units and yields before the
+  next candidate whenever the 64-candidate or 32,768-code-unit chunk boundary is reached.
+  Receiving code must supply the trusted SHA-256 canonical digester so candidate, batch, and
+  rejection validators recompute their preimages instead of format-checking digests only.
 - Successful T035 output is a fresh canonical `SastSecretRedactionBatch` with per-finding
   sanitized-only decisions, safe aggregate counts, no raw or matched value, no matched-value
   hash, and no pre-redaction candidate digest. Its audit helper exposes metadata only.

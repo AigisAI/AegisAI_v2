@@ -178,10 +178,15 @@ incomplete, stale, quarantined, or security-blocked scan.
   window before and after redaction. Display-only title, description, and optional symbol
   values MUST replace detected platform values, private keys, credentials, supported
   provider tokens, secret assignments, JWTs, and high-entropy tokens with one fixed marker.
-  A detected value in a batch binding, path, semantic identity, scanner identity hint,
-  rule/package/version, symbol anchor, or sink kind MUST reject the complete batch rather
-  than create a secret-derived fingerprint input. Successful output MUST be a fresh,
-  deterministic, still non-durable candidate batch with explicit redaction decisions.
+  A detected value in a batch binding or normalized path, semantic rule identity, symbol
+  anchor, sink kind, scanner version/match identity, rule provenance identifier/revision,
+  dependency vulnerability/package/type/installed/fixed-version identity, secret category,
+  or IaC check type/AVD identity MUST reject the complete batch rather than create a
+  secret-derived fingerprint input. The gate MUST reject more than 8,000,000 inspected
+  UTF-16 code units and yield between bounded chunks of at most 64 candidates or 32,768
+  inspected code units. Successful output MUST be a fresh, deterministic, still non-durable
+  candidate batch with explicit redaction decisions whose canonical digests are recomputed
+  at every receiving trust boundary.
   Matched values, value lengths, matched-value digests, raw candidates, and the
   pre-redaction candidate-batch digest MUST NOT enter output, rejection, log, audit,
   dashboard, evidence, policy, or AI payloads.

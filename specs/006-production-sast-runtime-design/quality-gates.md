@@ -171,11 +171,16 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
 - 100% `sast-secret-redaction-v1` determinism for repeated inputs, platform-value ordering,
   detector overlap/adjacency, empty batches, and OpenGrep/Trivy source adapters.
 - 100% known-format, registered platform-value, private-key, authorization/URL credential,
-  JWT, assignment, and admitted high-entropy corpus removal from display fields using the
-  one fixed marker, with zero matched value or length disclosure.
+  JWT, prefixed/quoted low-entropy assignment, and admitted high-entropy corpus removal from
+  display fields using the one fixed marker, with zero matched value or length disclosure.
 - 100% complete-batch rejection when any detected value occurs in ingestion/scope/preflight
-  bindings, path, semantic rule, scanner hint, rule/package/version, anchor, sink, category,
-  or check identity; no secret-derived replacement identity or digest may be constructed.
+  bindings or in normalized path, semantic rule identity, symbol anchor, sink kind, scanner
+  version/match identity, rule provenance identifier/revision, dependency
+  vulnerability/package/type/installed/fixed-version identity, secret category, or IaC check
+  type/AVD identity; no secret-derived replacement identity or digest may be constructed.
+- 100% rejection above 8,000,000 inspected UTF-16 code units, event-loop yielding before the
+  next candidate at the 64-candidate or 32,768-code-unit chunk boundary, and canonical digest
+  recomputation for every candidate, batch, rejection, and audit projection.
 - Exactly zero matched values, matched-value digests, raw candidates, pre-redaction
   candidate-batch digests, or rejected bindings in redaction result, log, audit, dashboard,
   evidence, policy, or AI surfaces. A rejection also contains no accepted-artifact digest;

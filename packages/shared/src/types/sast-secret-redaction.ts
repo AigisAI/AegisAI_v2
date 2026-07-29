@@ -33,12 +33,34 @@ export const SAST_SECRET_REDACTION_TOKEN = '[REDACTED]' as const;
 
 export const SAST_SECRET_REDACTION_LIMITS = Object.freeze({
   maximumCandidates: 25_000,
+  maximumInspectedCodeUnits: 8_000_000,
+  yieldCandidateInterval: 64,
+  yieldCodeUnitInterval: 32_768,
   maximumPlatformSecretValues: 64,
   maximumPlatformSecretValueBytes: 4_096,
   maximumPlatformSecretValueTotalBytes: 65_536
 });
 
-export const SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELD_COUNT = 8;
+export const SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELDS =
+  Object.freeze([
+    'INGESTION_ID',
+    'TENANT_ID',
+    'REPOSITORY_BINDING_ID',
+    'SCAN_REQUEST_ID',
+    'ATTEMPT_ID',
+    'SCANNER_RUN_ID',
+    'SCANNER_VERSION',
+    'PREFLIGHT_ATTESTATION_REF'
+  ] as const);
+export type SastSecretRedactionBatchInspectedField =
+  (typeof SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELDS)[number];
+
+export const SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELD_COUNT =
+  SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELDS.length;
+
+export type SastSecretRedactionCanonicalDigester = (
+  canonicalValue: string
+) => `sha256:${string}`;
 
 /**
  * Order is part of every redaction decision digest.
@@ -315,7 +337,7 @@ export function canonicalizeSastSecretRedactionBatch(
     scannerVersion: batch.scannerVersion,
     scannerImageDigest: batch.scannerImageDigest,
     ruleBundleDigest: batch.ruleBundleDigest,
-    ...(batch.vulnerabilityDatabaseDigest
+    ...('vulnerabilityDatabaseDigest' in batch
       ? {
           vulnerabilityDatabaseDigest:
             batch.vulnerabilityDatabaseDigest
@@ -372,7 +394,8 @@ export function canonicalizeSastSecretRedactionRejection(
 }
 
 export function isSastSecretRedactionBatchShapeValid(
-  value: unknown
+  value: unknown,
+  digestCanonical: SastSecretRedactionCanonicalDigester
 ): value is SastSecretRedactionBatch {
   if (!isRecord(value)) return false;
   const isTrivy = value.scanner === 'TRIVY';
@@ -470,7 +493,10 @@ export function isSastSecretRedactionBatchShapeValid(
   if (
     !findings.every(
       (finding) =>
-        isSastSecretRedactedFindingCandidateShapeValid(finding) &&
+        isSastSecretRedactedFindingCandidateShapeValid(
+          finding,
+          digestCanonical
+        ) &&
         finding.tenantId === scope.tenantId &&
         finding.repositoryBindingId === scope.repositoryBindingId &&
         finding.scanRequestId === scope.scanRequestId &&
@@ -538,6 +564,9 @@ export function isSastSecretRedactionBatchShapeValid(
   const detectorKinds = orderSastSecretDetectorKinds(
     findings.flatMap((finding) => finding.redaction.detectorKinds)
   );
+  const typedBatch =
+    value as unknown as SastSecretRedactionBatch;
+  const { batchDigest, ...batchCore } = typedBatch;
   return (
     summary.candidateCount === findings.length &&
     summary.batchInspectedFieldCount ===
@@ -548,12 +577,18 @@ export function isSastSecretRedactionBatchShapeValid(
     summary.redactedCandidateCount === redactedCandidateCount &&
     summary.redactedFieldCount === redactedFieldCount &&
     summary.replacementCount === replacementCount &&
-    arraysEqual(summary.detectorKinds, detectorKinds)
+    arraysEqual(summary.detectorKinds, detectorKinds) &&
+    canonicalDigestMatches(
+      digestCanonical,
+      canonicalizeSastSecretRedactionBatch(batchCore),
+      batchDigest
+    )
   );
 }
 
 export function isSastSecretRedactedFindingCandidateShapeValid(
-  value: unknown
+  value: unknown,
+  digestCanonical: SastSecretRedactionCanonicalDigester
 ): value is SastSecretRedactedFindingCandidate {
   if (
     !isRecord(value) ||
@@ -588,6 +623,16 @@ export function isSastSecretRedactedFindingCandidateShapeValid(
   );
   const redaction =
     value.redaction as unknown as SastFindingSecretRedaction;
+  const {
+    decisionDigest,
+    decisionRef: _decisionRef,
+    ...redactionCore
+  } = redaction;
+  void _decisionRef;
+  const decisionCore = {
+    ...base,
+    redaction: redactionCore
+  } as SastSecretRedactedFindingCandidateCore;
   return (
     arraysEqual(redaction.redactedFields, actualFields) &&
     redaction.replacementCount === replacementCount &&
@@ -595,15 +640,22 @@ export function isSastSecretRedactedFindingCandidateShapeValid(
       ? redaction.detectorKinds.length === 0 &&
         redaction.redactedFields.length === 0
       : redaction.detectorKinds.length > 0 &&
-        redaction.redactedFields.length > 0)
+        redaction.redactedFields.length > 0) &&
+    canonicalDigestMatches(
+      digestCanonical,
+      canonicalizeSastSecretRedactionDecision(decisionCore),
+      decisionDigest
+    )
   );
 }
 
 export function isSastSecretRedactionRejectionShapeValid(
-  value: unknown
+  value: unknown,
+  digestCanonical: SastSecretRedactionCanonicalDigester
 ): value is SastSecretRedactionRejection {
-  return (
-    isRecord(value) &&
+  if (
+    !(
+      isRecord(value) &&
     hasExactKeys(value, [
       'version',
       'outcome',
@@ -624,13 +676,30 @@ export function isSastSecretRedactionRejectionShapeValid(
     value.matchedValueDigestsStored === false &&
     value.sourceCandidateDigestStored === false &&
     isSha256Digest(value.rejectionDigest)
+    )
+  ) {
+    return false;
+  }
+  const typedRejection =
+    value as unknown as SastSecretRedactionRejection;
+  const { rejectionDigest, ...rejectionCore } = typedRejection;
+  return canonicalDigestMatches(
+    digestCanonical,
+    canonicalizeSastSecretRedactionRejection(rejectionCore),
+    rejectionDigest
   );
 }
 
 export function toSastSecretRedactionAuditMetadata(
-  result: unknown
+  result: unknown,
+  digestCanonical: SastSecretRedactionCanonicalDigester
 ): SastSecretRedactionAuditMetadata {
-  if (isSastSecretRedactionRejectionShapeValid(result)) {
+  if (
+    isSastSecretRedactionRejectionShapeValid(
+      result,
+      digestCanonical
+    )
+  ) {
     return {
       version: result.version,
       outcome: result.outcome,
@@ -642,7 +711,10 @@ export function toSastSecretRedactionAuditMetadata(
     !isRecord(result) ||
     !hasExactKeys(result, ['outcome', 'batch']) ||
     result.outcome !== 'REDACTED' ||
-    !isSastSecretRedactionBatchShapeValid(result.batch)
+    !isSastSecretRedactionBatchShapeValid(
+      result.batch,
+      digestCanonical
+    )
   ) {
     throw new TypeError(
       'SAST secret-redaction result is invalid.'
@@ -816,4 +888,16 @@ function arraysEqual(
     left.length === right.length &&
     left.every((value, index) => value === right[index])
   );
+}
+
+function canonicalDigestMatches(
+  digestCanonical: SastSecretRedactionCanonicalDigester,
+  canonicalValue: string,
+  expectedDigest: string
+): boolean {
+  try {
+    return digestCanonical(canonicalValue) === expectedDigest;
+  } catch {
+    return false;
+  }
 }

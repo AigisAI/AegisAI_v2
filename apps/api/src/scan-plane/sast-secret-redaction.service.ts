@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
+import { setImmediate as yieldToEventLoop } from 'node:timers/promises';
 import { TextEncoder } from 'node:util';
 
 import { Injectable } from '@nestjs/common';
 import {
+  SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELDS,
   SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELD_COUNT,
   SAST_SECRET_REDACTION_LIMITS,
   SAST_SECRET_REDACTION_TOKEN,
@@ -27,6 +29,7 @@ import {
   type SastArtifactDispositionDecision,
   type SastNormalizedFindingCandidate,
   type SastSecretDetectorKind,
+  type SastSecretRedactionBatchInspectedField,
   type SastSecretRedactableField,
   type SastSecretRedactedFindingCandidate,
   type SastSecretRedactedFindingCandidateCore,
@@ -60,13 +63,11 @@ const KNOWN_SECRET_PATTERNS: readonly SecretPattern[] = [
   },
   {
     kind: 'AUTHORIZATION_CREDENTIAL',
-    contextual: true,
     expression:
       /\b(?:authorization|proxy-authorization)\s*[:=]\s*(?:bearer|basic)\s+[A-Za-z0-9+/_=.-]{4,2048}/giu
   },
   {
     kind: 'URL_CREDENTIAL',
-    contextual: true,
     expression:
       /\b[a-z][a-z0-9+.-]{1,15}:\/\/[^\s/@:]{1,256}:[^\s/@]{1,512}@/giu
   },
@@ -110,9 +111,19 @@ const KNOWN_SECRET_PATTERNS: readonly SecretPattern[] = [
   },
   {
     kind: 'SECRET_ASSIGNMENT',
+    expression:
+      /(?:\\"(?:[\p{L}\p{N}]{1,64}[-_.]){0,8}(?:access[-_ ]?key|api[-_ ]?key|client[-_ ]?secret|passwd|password|private[-_ ]?key|pwd|secret|session[-_ ]?token|token)\\"\s*:\s*\\"[^"\r\n]{1,512}\\"|\\'(?:[\p{L}\p{N}]{1,64}[-_.]){0,8}(?:access[-_ ]?key|api[-_ ]?key|client[-_ ]?secret|passwd|password|private[-_ ]?key|pwd|secret|session[-_ ]?token|token)\\'\s*:\s*\\'[^'\r\n]{1,512}\\')/giu
+  },
+  {
+    kind: 'SECRET_ASSIGNMENT',
+    expression:
+      /(?:(?<![\p{L}\p{N}])["'](?:[\p{L}\p{N}]{1,64}[-_.]){0,8}(?:access[-_ ]?key|api[-_ ]?key|client[-_ ]?secret|passwd|password|private[-_ ]?key|pwd|secret|session[-_ ]?token|token)["']\s*:\s*(?:"[^"\r\n]{1,512}"|'[^'\r\n]{1,512}'|[^\s,;]{4,512})|(?<![\p{L}\p{N}])["']?(?:[\p{L}\p{N}]{1,64}[-_.]){0,8}(?:access[-_ ]?key|api[-_ ]?key|client[-_ ]?secret|passwd|password|private[-_ ]?key|pwd|secret|session[-_ ]?token|token)["']?\s*(?:=>|=)\s*(?:"[^"\r\n]{1,512}"|'[^'\r\n]{1,512}'|[^\s,;]{4,512})|(?<![\p{L}\p{N}])(?:[\p{L}\p{N}]{1,64}[-_.]){0,8}(?:access[-_ ]?key|api[-_ ]?key|client[-_ ]?secret|passwd|password|private[-_ ]?key|pwd|secret|session[-_ ]?token|token)\s*:\s*(?:"[^"\r\n]{1,512}"|'[^'\r\n]{1,512}'))/giu
+  },
+  {
+    kind: 'SECRET_ASSIGNMENT',
     contextual: true,
     expression:
-      /\b(?:access[-_ ]?key|api[-_ ]?key|client[-_ ]?secret|passwd|password|private[-_ ]?key|pwd|secret|session[-_ ]?token|token)\b\s*(?:=>|=|:)\s*(?:"[^"\r\n]{1,512}"|'[^'\r\n]{1,512}'|[^\s,;]{4,512})/giu
+      /(?<![\p{L}\p{N}])(?:[\p{L}\p{N}]{1,64}[-_.]){0,8}(?:access[-_ ]?key|api[-_ ]?key|client[-_ ]?secret|passwd|password|private[-_ ]?key|pwd|secret|session[-_ ]?token|token)\s*:\s*[^\s"'`,;]{4,512}/giu
   }
 ];
 
@@ -166,11 +177,17 @@ export interface SastSecretRedactionInput {
 
 @Injectable()
 export class SastSecretRedactionService {
-  redact(
+  async redact(
     input: Readonly<SastSecretRedactionInput>,
     clock: () => Date = () => new Date()
-  ): SastSecretRedactionResult {
-    if (!hasCandidateCountWithinLimit(input?.batch)) {
+  ): Promise<SastSecretRedactionResult> {
+    // Apply shallow count and text-work bounds before the exact source
+    // validator traverses and canonicalizes every candidate. The exact
+    // post-classification checks remain defensive trust-boundary checks.
+    if (
+      !hasCandidateCountWithinLimit(input?.batch) ||
+      !hasInspectionWorkWithinLimit(input?.batch)
+    ) {
       return this.reject(['SECRET_REDACTION_INPUT_INVALID']);
     }
     const source = classifySourceBatch(input?.batch);
@@ -221,10 +238,21 @@ export class SastSecretRedactionService {
         'SECRET_REDACTION_PLATFORM_VALUES_INVALID'
       ]);
     }
+    const bindingFields = batchBindingFields(source.batch);
+    let inspectedCodeUnits = bindingFields.reduce(
+      (total, field) => total + field.length,
+      0
+    );
+    if (
+      inspectedCodeUnits >
+      SAST_SECRET_REDACTION_LIMITS.maximumInspectedCodeUnits
+    ) {
+      return this.reject(['SECRET_REDACTION_INPUT_INVALID']);
+    }
     const platformMatcher =
       new PlatformSecretMatcher(platformSecrets);
     if (
-      batchBindingFields(source.batch).some(
+      bindingFields.some(
         (field) =>
           inspectSecrets(
             field,
@@ -242,7 +270,41 @@ export class SastSecretRedactionService {
 
     const findings: SastSecretRedactedFindingCandidate[] = [];
     let inspectedFieldCount = 0;
-    for (const finding of source.batch.findings) {
+    let codeUnitsSinceYield = inspectedCodeUnits;
+    for (
+      let index = 0;
+      index < source.batch.findings.length;
+      index += 1
+    ) {
+      const finding = source.batch.findings[index] as
+        SastNormalizedFindingCandidate;
+      const candidateCodeUnits =
+        candidateInspectionCodeUnits(finding);
+      if (
+        candidateCodeUnits >
+        SAST_SECRET_REDACTION_LIMITS
+          .maximumInspectedCodeUnits -
+          inspectedCodeUnits
+      ) {
+        return this.reject(['SECRET_REDACTION_INPUT_INVALID']);
+      }
+      const candidateIntervalReached =
+        index %
+          SAST_SECRET_REDACTION_LIMITS
+            .yieldCandidateInterval ===
+        0;
+      const codeUnitIntervalReached =
+        codeUnitsSinceYield + candidateCodeUnits >
+        SAST_SECRET_REDACTION_LIMITS.yieldCodeUnitInterval;
+      if (
+        index > 0 &&
+        (candidateIntervalReached || codeUnitIntervalReached)
+      ) {
+        await this.yieldEventLoop();
+        codeUnitsSinceYield = 0;
+      }
+      inspectedCodeUnits += candidateCodeUnits;
+      codeUnitsSinceYield += candidateCodeUnits;
       const redacted = redactCandidate(
         finding,
         platformMatcher
@@ -367,13 +429,17 @@ export class SastSecretRedactionService {
         canonicalizeSastSecretRedactionBatch(batchCore)
       )
     };
-    if (!isSastSecretRedactionBatchShapeValid(batch)) {
+    if (!isSastSecretRedactionBatchShapeValid(batch, digest)) {
       return this.reject(['SECRET_REDACTION_OUTPUT_INVALID']);
     }
     return {
       outcome: 'REDACTED',
       batch
     };
+  }
+
+  protected async yieldEventLoop(): Promise<void> {
+    await yieldToEventLoop();
   }
 
   private reject(
@@ -429,6 +495,101 @@ function hasCandidateCountWithinLimit(value: unknown): boolean {
   );
 }
 
+function hasInspectionWorkWithinLimit(value: unknown): boolean {
+  try {
+    if (!isUnknownRecord(value)) return true;
+    const findings = value.findings;
+    if (!Array.isArray(findings)) return true;
+    const scope = isUnknownRecord(value.scope)
+      ? value.scope
+      : {};
+    let total = sumStringLengths([
+      value.ingestionId,
+      scope.tenantId,
+      scope.repositoryBindingId,
+      scope.scanRequestId,
+      scope.attemptId,
+      scope.scannerRunId,
+      value.scannerVersion,
+      value.preflightAttestationRef
+    ]);
+    if (
+      total >
+      SAST_SECRET_REDACTION_LIMITS.maximumInspectedCodeUnits
+    ) {
+      return false;
+    }
+    for (const finding of findings) {
+      if (!isUnknownRecord(finding)) continue;
+      const location = isUnknownRecord(finding.location)
+        ? finding.location
+        : {};
+      const identity = isUnknownRecord(
+        finding.identityMaterial
+      )
+        ? finding.identityMaterial
+        : {};
+      const provenance = isUnknownRecord(finding.provenance)
+        ? finding.provenance
+        : {};
+      const trivy = isUnknownRecord(finding.trivy)
+        ? finding.trivy
+        : {};
+      const next = sumStringLengths([
+        finding.title,
+        finding.description,
+        location.symbol,
+        location.normalizedPath,
+        identity.ruleSemanticId,
+        identity.symbolAnchor,
+        identity.sinkKind,
+        identity.scannerMatchBasedId,
+        provenance.scannerVersion,
+        provenance.ruleId,
+        provenance.ruleRevision,
+        trivy.vulnerabilityId,
+        trivy.packageName,
+        trivy.packageType,
+        trivy.installedVersion,
+        trivy.fixedVersion,
+        trivy.category,
+        trivy.checkType,
+        trivy.avdId
+      ]);
+      if (
+        next >
+        SAST_SECRET_REDACTION_LIMITS
+          .maximumInspectedCodeUnits -
+          total
+      ) {
+        return false;
+      }
+      total += next;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isUnknownRecord(
+  value: unknown
+): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value)
+  );
+}
+
+function sumStringLengths(values: readonly unknown[]): number {
+  return values.reduce<number>(
+    (total, value) =>
+      total + (typeof value === 'string' ? value.length : 0),
+    0
+  );
+}
+
 function isSourceBatchDigestValid(source: ClassifiedSource): boolean {
   if (source.kind === 'OPENGREP') {
     const { batchDigest, ...core } = source.batch;
@@ -473,16 +634,24 @@ function validateDisposition(
 function batchBindingFields(
   batch: Readonly<SastSecretRedactionSourceBatch>
 ): readonly string[] {
-  return [
-    batch.ingestionId,
-    batch.scope.tenantId,
-    batch.scope.repositoryBindingId,
-    batch.scope.scanRequestId,
-    batch.scope.attemptId,
-    batch.scope.scannerRunId,
-    batch.scannerVersion,
-    batch.preflightAttestationRef
-  ];
+  const values: Record<
+    SastSecretRedactionBatchInspectedField,
+    string
+  > = {
+    INGESTION_ID: batch.ingestionId,
+    TENANT_ID: batch.scope.tenantId,
+    REPOSITORY_BINDING_ID:
+      batch.scope.repositoryBindingId,
+    SCAN_REQUEST_ID: batch.scope.scanRequestId,
+    ATTEMPT_ID: batch.scope.attemptId,
+    SCANNER_RUN_ID: batch.scope.scannerRunId,
+    SCANNER_VERSION: batch.scannerVersion,
+    PREFLIGHT_ATTESTATION_REF:
+      batch.preflightAttestationRef
+  };
+  return SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELDS.map(
+    (field) => values[field]
+  );
 }
 
 function normalizePlatformSecretValues(
@@ -530,6 +699,19 @@ function normalizePlatformSecretValues(
     (left, right) =>
       right.length - left.length ||
       compareCodeUnits(left, right)
+  );
+}
+
+function candidateInspectionCodeUnits(
+  candidate: Readonly<SastNormalizedFindingCandidate>
+): number {
+  const displayCodeUnits =
+    candidate.title.length +
+    candidate.description.length +
+    (candidate.location.symbol?.length ?? 0);
+  return identityBearingFields(candidate).reduce(
+    (total, field) => total + field.value.length,
+    displayCodeUnits
   );
 }
 
@@ -658,7 +840,12 @@ function redactCandidate(
         )}`
     }
   } as SastSecretRedactedFindingCandidate;
-  if (!isSastSecretRedactedFindingCandidateShapeValid(redacted)) {
+  if (
+    !isSastSecretRedactedFindingCandidateShapeValid(
+      redacted,
+      digest
+    )
+  ) {
     return {
       inspectedFieldCount,
       rejectionReason: 'SECRET_REDACTION_OUTPUT_INVALID'

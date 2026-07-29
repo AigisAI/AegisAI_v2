@@ -442,7 +442,8 @@ A fresh, in-memory, non-durable T035 handoff produced only from one canonical T0
 - the active T031 `retentionExpiresAt`, revalidated at or after disposition time before and
   after the pass
 - a fresh ordered copy of each candidate with sanitized title, description, and optional
-  location symbol; no object from the input candidate graph is returned as the durable handoff
+  location symbol; no object from the input candidate graph is returned as the non-durable
+  handoff
 - per-candidate `SastFindingSecretRedaction`: exact version, fixed `[REDACTED]` marker,
   inspected-field count, ordered redacted fields, merged replacement count, ordered detector
   categories, and a decision reference/digest computed only from sanitized content and safe
@@ -454,15 +455,23 @@ A fresh, in-memory, non-durable T035 handoff produced only from one canonical T0
   `matchedValueDigestStored=false`, `rawCandidateStored=false`,
   `sourceCandidateDigestStored=false`, and `durablePersistenceAllowed=false`
 - a canonical SHA-256 batch digest whose preimage contains only the fresh sanitized batch
+- an 8,000,000 inspected UTF-16 code-unit work ceiling and cooperative async chunk boundaries
+  of 64 candidates or 32,768 code units; overflow rejects the complete batch without payload
 
 Registered platform values are transient caller-owned inputs and never output fields. Known
 provider/private-key/authentication/URL/JWT/assignment/high-entropy matches may be replaced
-only in display fields. A match in ingestion/scope/preflight bindings, normalized path,
-semantic rule, symbol anchor, sink kind, scanner identity hint, rule revision, package name or
-version, category, or check identity rejects the complete batch. The rejection contains only
+only in display fields. A match in ingestion/scope/preflight bindings or in normalized path,
+semantic rule identity, symbol anchor, sink kind, scanner version/match identity, rule
+provenance identifier/revision, dependency vulnerability/package/type/installed/fixed-version
+identity, secret category, or IaC check type/AVD identity rejects the complete batch. The
+rejection contains only
 ordered coarse reason codes, negative storage assertions, and a digest over those safe
 values. It omits the ingestion/scope values, matched field/type/value/length, matched-value
 hash, artifact digest, and pre-redaction batch digest.
+
+Candidate, batch, and rejection validators require a trusted canonical SHA-256 digester and
+recompute every T035 decision preimage. A digest that is merely well-formed but does not bind
+the sanitized object is invalid and cannot enter T036.
 
 The pre-redaction source batch may be used only inside this gate. OpenGrep and Trivy
 normalizers are no longer exported from `ScanPlaneModule`; downstream code receives the

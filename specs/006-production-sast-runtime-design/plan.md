@@ -82,8 +82,13 @@ the inventory has no finding, vulnerability, policy, persistence, or AI authorit
 `sast-secret-redaction-v1` gate verifies canonical OpenGrep/Trivy batch and accepted
 disposition digests, rechecks retention on both sides, and scans both non-empty candidates
 and zero-finding batch bindings. It replaces only display text with a fixed marker; a match
-in any future identity field rejects the entire batch. Its fresh output exposes safe counts
-and sanitized-only decision digests, never matched values, matched-value hashes, or the
+in normalized path, semantic rule identity, symbol anchor, sink kind, scanner version/match
+identity, rule provenance identifier/revision, dependency
+vulnerability/package/type/installed/fixed-version identity, secret category, or IaC check
+type/AVD identity rejects the entire batch. The async gate has an 8,000,000 inspected
+UTF-16 code-unit ceiling, yields at bounded 64-candidate/32,768-code-unit chunks, and requires
+trusted canonical SHA-256 recomputation at receiving boundaries. Its fresh output exposes
+safe counts and sanitized-only decision digests, never matched values, matched-value hashes, or the
 source-candidate digest, and remains non-durable until T036.
 
 ### Slice 5 - Identity, Correlation, and Lifecycle

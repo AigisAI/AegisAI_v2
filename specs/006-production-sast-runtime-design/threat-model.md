@@ -152,9 +152,15 @@ The following must always remain true:
 - registered platform values, private-key blocks, authorization/URL credentials, documented
   provider prefixes, JWTs, contextual assignments, overlapping/adjacent spans, Unicode text,
   forged markers, invalid/duplicate/over-limit value sets, and detector-order permutations
-- secrets in normalized paths, semantic IDs, scanner hints, rule/package/version/anchor/sink
-  identity, and zero-finding ingestion/scope/preflight bindings; every rejection surface must
-  omit the value, length, matched-value hash, source-candidate digest, and rejected binding
+- secrets in normalized path, semantic rule identity, symbol anchor, sink kind, scanner
+  version/match identity, rule provenance identifier/revision, dependency
+  vulnerability/package/type/installed/fixed-version identity, secret category, IaC check
+  type/AVD identity, and zero-finding ingestion/scope/preflight bindings; every rejection
+  surface must omit the value, length, matched-value hash, source-candidate digest, and
+  rejected binding
+- event-loop starvation or CPU amplification from maximum-size candidate batches; reject
+  above 8,000,000 inspected UTF-16 code units and yield at the 64-candidate or
+  32,768-code-unit chunk boundary
 - scanner crash/timeout/output bomb/truncation and result replay
 - signed-envelope tenant/scan/commit/digest tampering
 - cross-tenant object and query access
