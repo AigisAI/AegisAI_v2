@@ -173,6 +173,23 @@ incomplete, stale, quarantined, or security-blocked scan.
   artifact bytes MUST NOT enter the inventory. SBOM inventory MUST NOT create findings,
   evaluate vulnerabilities, influence policy, enter AI payloads, or become durably
   persisted before a later explicit data-handling gate.
+- **FR-031c**: `sast-secret-redaction-v1` MUST revalidate the exact canonical T032/T033
+  batch digest, accepted T031 disposition digest, validation binding, and active retention
+  window before and after redaction. Display-only title, description, and optional symbol
+  values MUST replace detected platform values, private keys, credentials, supported
+  provider tokens, secret assignments, JWTs, and high-entropy tokens with one fixed marker.
+  A detected value in a batch binding or normalized path, semantic rule identity, symbol
+  anchor, sink kind, scanner version/match identity, rule provenance identifier/revision,
+  dependency vulnerability/package/type/installed/fixed-version identity, secret category,
+  or IaC check type/AVD identity MUST reject the complete batch rather than create a
+  secret-derived fingerprint input. The gate MUST reject more than 8,000,000 inspected
+  UTF-16 code units and yield between bounded chunks of at most 64 candidates or 32,768
+  inspected code units. Successful output MUST be a fresh, deterministic, still non-durable
+  candidate batch with explicit redaction decisions whose canonical digests are recomputed
+  at every receiving trust boundary.
+  Matched values, value lengths, matched-value digests, raw candidates, and the
+  pre-redaction candidate-batch digest MUST NOT enter output, rejection, log, audit,
+  dashboard, evidence, policy, or AI payloads.
 - **FR-032**: Unknown enum values, invalid coordinates, overlong strings, unsafe encodings,
   and excessive nesting MUST fail closed.
 
@@ -273,6 +290,8 @@ security and capacity approval and may force `RESTRICTED` isolation.
 - Scanner responsibility is unambiguous and test-enforced.
 - Every implementation input and output is represented by a shared contract without source
   content or credential-value fields.
+- Every pre-fingerprint finding candidate passes the versioned redaction gate, while a
+  secret-bearing identity field fails closed without a matched-value or pre-redaction digest.
 - Rule promotion and production readiness have measurable fail-closed gates.
 - Stable identity behavior is independent of line, branch, and commit changes.
 - Coverage and failure matrices cannot authorize external publication when incomplete.

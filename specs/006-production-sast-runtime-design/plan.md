@@ -67,7 +67,8 @@ schema, size/count, encoding, coordinates, paths, enums, and status outside the 
 Quarantine invalid artifacts. Normalize only through versioned adapters with golden fixtures;
 emit only transient `durablePersistenceAllowed=false` candidates, and redact detected secret
 values before durable normalized storage. T032's OpenGrep adapter is scalar-streaming and is
-not wired to a production artifact reader or persistence worker ahead of T035. Its candidate
+not wired to a production artifact reader or persistence worker; the T035 component remains
+an internal handoff until Data/Security orchestration and T036 exist. Its candidate
 batch retains immutable plan/attestation digests and resolves semantic rule identity only from
 the signed rule-bundle manifest. T033's Trivy adapter applies the same transient boundary to
 dependency, secret, and IaC records, including supported `ExperimentalModifiedFindings`.
@@ -77,7 +78,18 @@ discarded before candidate construction. T034's Syft adapter pins the v1.44.0 di
 producer and CycloneDX JSON 1.6 schema, shares the same bounded scalar-streaming core, and
 emits only a transient SBOM inventory with hashed producer references. Raw properties,
 source locations, license text, prose, external references, and the raw artifact are excluded;
-the inventory has no finding, vulnerability, policy, persistence, or AI authority.
+the inventory has no finding, vulnerability, policy, persistence, or AI authority. T035's
+`sast-secret-redaction-v1` gate verifies canonical OpenGrep/Trivy batch and accepted
+disposition digests, rechecks retention on both sides, and scans both non-empty candidates
+and zero-finding batch bindings. It replaces only display text with a fixed marker; a match
+in normalized path, semantic rule identity, symbol anchor, sink kind, scanner version/match
+identity, rule provenance identifier/revision, dependency
+vulnerability/package/type/installed/fixed-version identity, secret category, or IaC check
+type/AVD identity rejects the entire batch. The async gate has an 8,000,000 inspected
+UTF-16 code-unit ceiling, yields at bounded 64-candidate/32,768-code-unit chunks, and requires
+trusted canonical SHA-256 recomputation at receiving boundaries. Its fresh output exposes
+safe counts and sanitized-only decision digests, never matched values, matched-value hashes, or the
+source-candidate digest, and remains non-durable until T036.
 
 ### Slice 5 - Identity, Correlation, and Lifecycle
 
@@ -111,6 +123,7 @@ gates. Produce a machine-readable go/no-go record. Hand live cluster/microVM rol
 - `ScannerArtifactEnvelope` and result-ingress decision
 - `SastNormalizedFindingCandidate`, `opengrep-sarif-normalizer-v1`, and
   `trivy-json-normalizer-v1`
+- `SastSecretRedactionBatch`, `sast-secret-redaction-v1`, and bounded audit projection
 - `NormalizedSastFinding`, provenance, occurrence, and correlation
 - `ScannerCoverageRecord` and `SastCoverageDecision`
 - `SastEvidencePolicy` and evidence pack reference

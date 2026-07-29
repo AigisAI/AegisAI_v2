@@ -47,6 +47,10 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Rule identity forgery | Scanner-local rule ID is presented as a platform semantic identity | Resolve semantic ID/revision only from unique signed bundle-manifest metadata; bind plan digest in every candidate | Golden mismatched-ID corpus; whole-batch rejection |
 | Coordinate-attestation downgrade | Supplied unverified or drifted attestation is treated as unavailable metadata | Distinguish provider absence from supplied drift; reject drift before artifact reads | Negative binding corpus; zero body-read assertion |
 | Raw SARIF retention | Snippets, fixes, code flows, or help content are copied into findings | Scalar-only streaming projection; transient candidates; T035 persistence gate | Golden privacy corpus; zero raw-payload audit/API assertions |
+| Candidate display secret smuggling | OpenGrep message, title, or symbol interpolates a repository/platform secret after raw snippets were discarded | Versioned provider/generic/exact-value redaction; one fixed marker; fresh output only | Known-format, entropy, registered-value, Unicode, overlap, and zero-leak serialization corpus |
+| Identity redaction collision | Secret in path/rule/package/anchor is replaced and distinct findings collapse to one fingerprint | Reject the complete batch; never hash or replace an identity-bearing match | Identity-field corpus; zero secret-derived decision/fingerprint preimages |
+| Redaction oracle | Rejection, match length/type, source-candidate digest, or matched-value hash allows correlation or guessing | Coarse ordered reasons and negative-storage assertions only; no rejected binding/artifact/source digest | Byte-level rejection/audit allowlist and sentinel non-occurrence tests |
+| Redaction marker forgery | Scanner text includes `[REDACTED]` and falsely claims platform processing | Reserved input marker rejects before decision construction | Forged-marker corpus and exact decision-shape validation |
 | Trivy disposition smuggling | `ExperimentalModifiedFindings` status is treated as a platform waiver, suppression, or lifecycle decision | Normalize supported modified records; preserve status only with `platformPolicyAuthority=false`; reject unknown type/status | Direct/modified golden parity and unsupported-license/status corpus |
 | Trivy capability forgery | Scanner-local metadata changes dependency, secret, or IaC semantic authority | DB-derived dependency identity; signed checks-manifest identity for secret/IaC; exact capability/result class allowlist | Cross-capability/rule/database mismatch corpus; whole-batch rejection |
 | Trivy secret-context leakage | Masked `Match` is accepted while nearby `Code`, `Statement`, or `Source` contains the secret | Never collect raw secret/context scalar values; emit deterministic platform text and explicit discard flags | Sentinel secret corpus; zero occurrence in candidates/digests/rejections |
@@ -54,7 +58,7 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Canonical Unicode collapse | An escaped unpaired surrogate is decoded to a replacement character before hashing | Validate raw JSON escape pairs before token decoding; NFC plus scalar-value checks | One-byte-chunk paired/unpaired surrogate corpus |
 | Retention clock rollback | A caller supplies a past payload timestamp to normalize an expired accepted object | Adapter-owned default clock checked before and after streaming; trusted test/task clock seam only; require monotonic time at or after disposition | Expiry, stream-crossing, and pre-decision clock tests |
 | Stored XSS | Rule message/path/package contains markup | Treat all strings as text; output encoding; sanitized Markdown only | Stored-XSS corpus; presentation CSP |
-| Secret leakage | Secret finding includes detected value | Scanner and platform redaction; fingerprints; no raw value in finding/audit/evidence | Secret-leak gate must remain zero |
+| Secret leakage | Finding or zero-finding binding includes a detected/platform secret | Scanner discard plus T035 display redaction, batch-binding inspection, identity fail-close, and T042 evidence re-redaction | Secret-leak gate must remain zero |
 | Cross-tenant object access | Object key or query omits tenant | Tenant/scan prefix, encryption context, tenant predicate, purpose-bound reads | Negative tests and access audit |
 | Cache poisoning | Customer content enters shared cache | Shared cache only for signed public tool/rule/database assets | Cache inventory and digest monitoring |
 | Rule supply-chain attack | Malicious rule or database promoted | Signed digest, provenance, two-person security approval, corpus gates, canary | Automatic rollback/kill switch |
@@ -145,6 +149,18 @@ The following must always remain true:
   transient inventory and every rejection/log/audit/AI surface
 - malicious filenames, package names, symbols, rule messages, HTML, Markdown, and ANSI codes
 - known token formats and high-entropy secret fixtures
+- registered platform values, private-key blocks, authorization/URL credentials, documented
+  provider prefixes, JWTs, contextual assignments, overlapping/adjacent spans, Unicode text,
+  forged markers, invalid/duplicate/over-limit value sets, and detector-order permutations
+- secrets in normalized path, semantic rule identity, symbol anchor, sink kind, scanner
+  version/match identity, rule provenance identifier/revision, dependency
+  vulnerability/package/type/installed/fixed-version identity, secret category, IaC check
+  type/AVD identity, and zero-finding ingestion/scope/preflight bindings; every rejection
+  surface must omit the value, length, matched-value hash, source-candidate digest, and
+  rejected binding
+- event-loop starvation or CPU amplification from maximum-size candidate batches; reject
+  above 8,000,000 inspected UTF-16 code units and yield at the 64-candidate or
+  32,768-code-unit chunk boundary
 - scanner crash/timeout/output bomb/truncation and result replay
 - signed-envelope tenant/scan/commit/digest tampering
 - cross-tenant object and query access

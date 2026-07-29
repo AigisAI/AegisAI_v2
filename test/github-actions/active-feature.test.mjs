@@ -31,6 +31,8 @@ const files = {
   sharedSastTrivyNormalizationTest: new URL('../../packages/shared/test/sast-trivy-normalization.test.mjs', import.meta.url),
   sharedSastSbomInventory: new URL('../../packages/shared/src/types/sast-sbom-inventory.ts', import.meta.url),
   sharedSastSbomInventoryTest: new URL('../../packages/shared/test/sast-sbom-inventory.test.mjs', import.meta.url),
+  sharedSastSecretRedaction: new URL('../../packages/shared/src/types/sast-secret-redaction.ts', import.meta.url),
+  sharedSastSecretRedactionTest: new URL('../../packages/shared/test/sast-secret-redaction.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -48,6 +50,9 @@ const files = {
   apiSyftCycloneDxIngestorTest: new URL('../../apps/api/test/scan-plane/syft-cyclonedx-inventory-ingestor.e2e-spec.ts', import.meta.url),
   syftCycloneDxGoldenFixture: new URL('../../apps/api/test/fixtures/syft-cyclonedx/upstream-compatible.cdx.json', import.meta.url),
   syftCycloneDxExpectedFixture: new URL('../../apps/api/test/fixtures/syft-cyclonedx/upstream-compatible.expected.json', import.meta.url),
+  apiSastSecretRedaction: new URL('../../apps/api/src/scan-plane/sast-secret-redaction.service.ts', import.meta.url),
+  apiSastSecretRedactionTest: new URL('../../apps/api/test/scan-plane/sast-secret-redaction.e2e-spec.ts', import.meta.url),
+  apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
   completedDeploymentChecklist: new URL('../../specs/005-production-deployment-operations/checklists/requirements.md', import.meta.url),
@@ -420,7 +425,7 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
   assert.match(tasks, /- \[x\] T034\b/);
   assert.match(
     quickstart,
-    /T035 secret redaction is therefore\s+the next implementation task/
+    /T035 secret redaction is complete/
   );
   assert.match(contract, /Syft CycloneDX inventory adapter v1/);
   assert.match(spec, /FR-031b/);
@@ -432,6 +437,119 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
   assert.match(dataModel, /SyftCycloneDxInventoryBatch/);
   assert.match(threatModel, /CycloneDX inventory cannot smuggle finding/);
   assert.match(qualityGates, /Syft v1\.44\.0 CycloneDX JSON 1\.6/);
+});
+
+test('SAST T035 secret redaction is deterministic, fail-closed, and still non-durable', () => {
+  const sharedRedaction = readNormalizedText(
+    files.sharedSastSecretRedaction
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const sharedRedactionTest = readNormalizedText(
+    files.sharedSastSecretRedactionTest
+  );
+  const service = readNormalizedText(files.apiSastSecretRedaction);
+  const serviceTest = readNormalizedText(
+    files.apiSastSecretRedactionTest
+  );
+  const scanPlaneModule = readNormalizedText(files.apiScanPlaneModule);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const spec = readNormalizedText(files.spec);
+  const plan = readNormalizedText(files.plan);
+  const research = readNormalizedText(files.research);
+  const dataModel = readNormalizedText(files.dataModel);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(
+    sharedRedaction,
+    /SAST_SECRET_REDACTION_VERSION\s*=[\s\S]*'sast-secret-redaction-v1'/
+  );
+  assert.match(
+    sharedIndex,
+    /export \* from '.\/types\/sast-secret-redaction';/
+  );
+  assert.match(
+    sharedRedaction,
+    /SAST_SECRET_REDACTION_TOKEN\s*=\s*'\[REDACTED\]'/
+  );
+  assert.match(sharedRedaction, /matchedValueDigestStored:\s*false/);
+  assert.match(sharedRedaction, /sourceCandidateDigestStored:\s*false/);
+  assert.match(sharedRedaction, /durablePersistenceAllowed:\s*false/);
+  assert.match(
+    sharedRedactionTest,
+    /canonical transient redacted-candidate batch/
+  );
+  assert.match(service, /class SastSecretRedactionService/);
+  assert.match(service, /SECRET_REDACTION_IDENTITY_FIELD_BLOCKED/);
+  assert.match(service, /mergeSpans/);
+  assert.match(service, /shannonEntropy/);
+  assert.match(service, /async redact\(/);
+  assert.match(service, /protected async yieldEventLoop/);
+  assert.match(service, /await this\.yieldEventLoop\(\)/);
+  assert.match(service, /await yieldToEventLoop\(\)/);
+  assert.match(service, /hasInspectionWorkWithinLimit/);
+  assert.match(
+    sharedRedaction,
+    /maximumInspectedCodeUnits:\s*8_000_000/
+  );
+  assert.match(sharedRedaction, /canonicalDigestMatches/);
+  assert.doesNotMatch(service, /\bLogger\b|\bconsole\./u);
+  assert.match(
+    serviceTest,
+    /known-format, entropy, and registered-value corpus/
+  );
+  assert.match(
+    serviceTest,
+    /rejects secret-bearing batch bindings even when there are no findings/
+  );
+  assert.match(
+    serviceTest,
+    /expect\(serialized\)\.not\.toContain\(secret\)/
+  );
+
+  const exportsBlock = scanPlaneModule.match(
+    /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
+  )?.[1];
+  assert.ok(
+    exportsBlock,
+    'Expected to locate the ScanPlaneModule exports array'
+  );
+  assert.match(exportsBlock, /SastSecretRedactionService/);
+  assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
+  assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
+
+  assert.match(tasks, /- \[x\] T035\b/);
+  assert.match(quickstart, /T036 `sast-fingerprint-v1` identity construction/);
+  assert.match(contract, /Secret redaction gate v1/);
+  assert.match(spec, /FR-031c/);
+  assert.match(plan, /`sast-secret-redaction-v1` gate/);
+  assert.match(
+    research,
+    /Redact Display Text and Reject Secret-Bearing Identity/
+  );
+  assert.match(dataModel, /SastSecretRedactionBatch/);
+  assert.match(threatModel, /Identity redaction collision/);
+  assert.match(
+    qualityGates,
+    /Exactly zero matched values, matched-value digests/
+  );
+  const canonicalIdentityRejection =
+    /scanner\s+version\/match\s+identity,[\s\S]{0,200}rule\s+provenance\s+identifier\/revision,[\s\S]{0,250}secret\s+category,[\s\S]{0,120}IaC\s+check\s+type\/AVD\s+identity/;
+  for (const document of [
+    contract,
+    spec,
+    plan,
+    research,
+    dataModel,
+    threatModel,
+    qualityGates,
+    quickstart
+  ]) {
+    assert.match(document, canonicalIdentityRejection);
+  }
+  assert.doesNotMatch(dataModel, /\bdurable handoff\b/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {
