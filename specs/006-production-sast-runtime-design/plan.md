@@ -68,7 +68,7 @@ Quarantine invalid artifacts. Normalize only through versioned adapters with gol
 emit only transient `durablePersistenceAllowed=false` candidates, and redact detected secret
 values before durable normalized storage. T032's OpenGrep adapter is scalar-streaming and is
 not wired to a production artifact reader or persistence worker; the T035 component remains
-an internal handoff until Data/Security orchestration and T036 exist. Its candidate
+an internal handoff consumed only by T036 until Data/Security orchestration exists. Its candidate
 batch retains immutable plan/attestation digests and resolves semantic rule identity only from
 the signed rule-bundle manifest. T033's Trivy adapter applies the same transient boundary to
 dependency, secret, and IaC records, including supported `ExperimentalModifiedFindings`.
@@ -89,13 +89,20 @@ type/AVD identity rejects the entire batch. The async gate has an 8,000,000 insp
 UTF-16 code-unit ceiling, yields at bounded 64-candidate/32,768-code-unit chunks, and requires
 trusted canonical SHA-256 recomputation at receiving boundaries. Its fresh output exposes
 safe counts and sanitized-only decision digests, never matched values, matched-value hashes, or the
-source-candidate digest, and remains non-durable until T036.
+source-candidate digest, and remains non-durable until T036 verifies it.
 
 ### Slice 5 - Identity, Correlation, and Lifecycle
 
-Compute `sast-fingerprint-v1`, preserve all scanner provenance, correlate only compatible
-authoritative capabilities, and represent occurrences separately from stable findings. Mark
-fixed/reopened only from later complete, non-stale comparable scans.
+T036 now recomputes the exact T035 handoff and sanitized decisions, projects the seven
+canonical identity fields with NFC and UTF-8 byte-length framing, and computes
+`sast-fingerprint-v1`. It maps `UNKNOWN` to the explicit empty path, preserves OpenGrep/Trivy
+provenance in a fresh persistence-eligible handoff, allows byte-identical repeated
+observations, and rejects digest collisions, forged inputs, clock rollback, expiry, and
+over-limit batches. It exports no occurrence, lifecycle, correlation, coverage, evidence,
+policy, publication, or AI authority. T037 next represents occurrences separately from
+stable findings and implements exact lineage, rename, fixed, and reopen behavior; subsequent
+work correlates only compatible authoritative capabilities and marks fixed/reopened only from
+later complete, non-stale comparable scans.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

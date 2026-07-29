@@ -475,10 +475,44 @@ the sanitized object is invalid and cannot enter T036.
 
 The pre-redaction source batch may be used only inside this gate. OpenGrep and Trivy
 normalizers are no longer exported from `ScanPlaneModule`; downstream code receives the
-redaction service boundary. The successful output still has no platform fingerprint,
-evidence, finding lifecycle, policy, dashboard, or AI authority. T036 must validate this
-batch, compute `sast-fingerprint-v1`, and construct the final entity below before durable
-normalized finding persistence.
+redaction service only through the internal T036 consumer. The successful output still has no
+platform fingerprint, evidence, finding lifecycle, policy, dashboard, or AI authority.
+
+### SastFingerprintedFindingBatch
+
+The fresh canonical T036 handoff and first object eligible for durable normalized-finding
+persistence:
+
+- exact `sast-finding-identity-v1`, source `sast-secret-redaction-v1`, source adapter/schema,
+  immutable tenant/repository/scan/attempt/scanner scope, fixed commit, plan/attestation,
+  artifact/disposition/validation, scanner image, rule bundle, and optional Trivy database
+  provenance
+- the exact verified T035 batch digest and a fresh ordered copy of every sanitized candidate;
+  no T035 object reference is reused
+- one `SastFindingFingerprintDecision` per candidate containing the seven canonical identity
+  components, `sast-fingerprint-v1`, stable SHA-256 fingerprint, source redaction-decision
+  digest, safe decision digest/reference, and explicit false assertions for coordinate,
+  scanner-match, and preimage authority/storage
+- `UNKNOWN` locations project to `normalizedPath=""`; provider-availability reason and
+  coordinates never become stable identity, while a valid `FILE` location retains its
+  normalized path
+- aggregate finding, distinct-fingerprint, and repeated-observation counts; repeated
+  byte-identical preimages remain separate candidates for T037 occurrence construction
+- a transient collision check that rejects the complete batch when one digest maps to
+  different preimages
+- the inherited active retention deadline checked before and after the pass, a 25,000-finding
+  ceiling, and a cooperative event-loop yield every 64 findings
+- canonical decision and batch SHA-256 digests recomputed by validators, with no source
+  candidate, fingerprint preimage, raw payload, or secret in rejection/audit projections
+- `durablePersistenceAllowed=true` and
+  `normalizedFindingPersistenceEligible=true`
+
+Persistence eligibility grants no downstream authority. `occurrenceAuthority`,
+`lifecycleAuthority`, `correlationAuthority`, `coverageAuthority`, `evidenceAuthority`,
+`policyAuthority`, `publicationAuthority`, and `aiPayloadEligible` remain false. T037 must
+turn this batch into stable rows and occurrences before the final entity below gains
+lifecycle state; later coverage, evidence, policy, publication, and AI gates remain mandatory.
+`ScanPlaneModule` exports only the T036 identity service to the next internal stage.
 
 ### NormalizedSastFinding
 
