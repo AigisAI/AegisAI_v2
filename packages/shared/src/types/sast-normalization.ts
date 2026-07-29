@@ -170,8 +170,9 @@ export interface TrivyFindingProvenance
 }
 
 /**
- * T032/T033 adapters return transient candidates. T035 must redact them and
- * T036 must compute the platform fingerprint before durable finding storage.
+ * T032/T033 adapters return transient candidates. T035 accepts them only
+ * through the redaction gate, and T036 must compute the platform fingerprint
+ * before durable finding storage.
  */
 interface SastNormalizedFindingCandidateBase {
   tenantId: string;

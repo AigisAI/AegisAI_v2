@@ -272,8 +272,9 @@ portion of Phase 6:
   immutable plan, coordinated attestation, validation/envelope/content/disposition digests,
   exact Trivy 0.66.0 scanner/image/wrapper/schema/normalizer/checks-bundle metadata, and pinned
   vulnerability-database digest/version before reading a bounded stream. The adapter has no
-  route or general object-store capability and remains unwired until the later
-  Data/Security-owned redaction/persistence worker exists.
+  route or general object-store capability. T035 is the implemented in-memory redaction
+  boundary, but artifact reading and durable flow remain unwired until the later
+  Data/Security-owned orchestration and T036 persistence worker exist.
 - The Trivy adapter accepts only JSON v2 dependency, secret, and failed IaC result classes.
   It streams bounded scalars through globally aligned parser slices, independently rehashes
   bytes and recounts direct plus `ExperimentalModifiedFindings`, and never materializes the
@@ -319,14 +320,33 @@ portion of Phase 6:
   external references, and raw artifact bytes are absent. Authority is explicitly SBOM-only:
   no finding creation, vulnerability decision, policy authority, durable persistence, or AI
   payload eligibility.
+- `sast-secret-redaction-v1` now verifies the exact OpenGrep/Trivy canonical batch digest,
+  T031 accepted disposition/validation binding, and active retention window before and after
+  processing. It inspects the eight ingestion/scope/preflight binding fields even for an
+  empty batch and rejects binding drift without copying the rejected values.
+- The T035 detector combines transient registered platform values with bounded private-key,
+  authorization/URL credential, documented provider-token, JWT, contextual assignment, and
+  high-entropy detection. Overlapping spans become the one fixed `[REDACTED]` marker only in
+  title, description, and optional symbol display fields. A forged marker or any match in
+  path/rule/package/version/anchor/sink/scanner identity rejects the whole batch rather than
+  creating a secret-derived fingerprint input.
+- Successful T035 output is a fresh canonical `SastSecretRedactionBatch` with per-finding
+  sanitized-only decisions, safe aggregate counts, no raw or matched value, no matched-value
+  hash, and no pre-redaction candidate digest. Its audit helper exposes metadata only.
+  `secretRedactionApplied=true` does not grant persistence:
+  `durablePersistenceAllowed=false` remains fixed until T036.
+- `ScanPlaneModule` no longer exports the raw OpenGrep or Trivy normalizer providers; internal
+  consumers receive the T035 redaction boundary. There is still no user route, evidence,
+  policy, AI, or durable-finding path.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
 runtime provider exist only to verify the handoff contract. Default production credential
 issuance and scanner execution both fail closed until live rollout installs provider-backed
 GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
-file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction is therefore
-the next implementation task; live deployment eligibility
+file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction is complete;
+T036 `sast-fingerprint-v1` identity construction is therefore the next implementation task.
+Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
 ## Deployment Position

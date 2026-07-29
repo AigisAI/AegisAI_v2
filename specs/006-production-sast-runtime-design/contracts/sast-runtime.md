@@ -491,7 +491,7 @@ The sandbox never has direct Prisma, findings, policy, comment, or AI access.
 Each supported artifact schema has one explicit adapter version. T032 and T033 adapters emit
 transient `SastNormalizedFindingCandidate` values and cannot change policy state. A candidate
 is not a `NormalizedSastFinding`: it has no platform stable fingerprint, evidence reference,
-or finding lifecycle status and carries `durablePersistenceAllowed=false`. T035 must redact
+or finding lifecycle status and carries `durablePersistenceAllowed=false`. T035 redacts
 the transient candidate before any durable storage, log, audit, dashboard, or evidence path;
 T036 then computes the platform fingerprint and constructs the final normalized finding.
 T034 emits a separate transient `SyftCycloneDxInventoryBatch`, not a finding candidate. It
@@ -508,8 +508,9 @@ Retention is evaluated before and after streaming against the adapter's own defa
 an alternate clock exists only as an explicit trusted test/task seam and is never read from
 artifact or envelope payload.
 The adapter does not expose a route and does not gain a general object-store read capability.
-Its bounded stream is supplied only by the later Data/Security-owned redaction/persistence
-worker; the default runtime remains unwired and fail closed until that worker exists.
+Its bounded stream is supplied only by the later Data/Security-owned
+normalization/redaction/fingerprinting worker. The T035 redaction component exists, but the
+default runtime remains unwired and fail closed until that worker and T036 exist.
 
 The v1 schema mapping is deliberately narrower than generic SARIF:
 
@@ -749,6 +750,70 @@ Raw artifact bytes, raw properties, source paths, raw license text, prose, exter
 payloads, findings, severity, stable fingerprints, evidence references, and object keys are
 not batch fields. The accepted raw SBOM remains only in the Data/Security Plane under the
 T031 retention deadline, which is derived from receipt time and capped at seven days.
+
+### Secret redaction gate v1
+
+`sast-secret-redaction-v1` accepts only an exact shape-valid OpenGrep or Trivy candidate
+batch. Before reading candidate text it recomputes the adapter-specific canonical batch
+digest and independently verifies the exact T031 decision shape/digest, `ACCEPTED`
+disposition, `normalizationEligible=true`, ingestion and validation-result binding, and
+candidate-carried disposition digest. Its private default wall clock must be at or after
+`decidedAt` and before `retentionExpiresAt`; the same monotonic check runs after the complete
+pass. A caller-provided clock is a trusted test/task seam only.
+
+The detector policy is versioned with this gate:
+
+- at most 64 unique NFC platform values, each 8-4,096 UTF-8 bytes and at most 65,536 bytes
+  total, may be supplied as caller-owned transient values;
+- private-key blocks, authorization credentials, URL user information, documented AWS,
+  GitHub, GitLab, Slack, Google, Stripe, and SendGrid formats, JWTs, contextual secret
+  assignments, and bounded high-entropy tokens are detected;
+- pattern evaluation is linear over already-bounded candidate scalars. Detector order is
+  canonical, and overlapping or directly adjacent spans merge before replacement;
+- the sole replacement is the fixed ASCII `[REDACTED]` marker. It reveals no original
+  length, digest, provider account, or validity signal;
+- a source candidate containing the reserved marker is rejected so scanner content cannot
+  forge `secretRedactionApplied=true`.
+
+Only `title`, `description`, and optional `location.symbol` are display-redactable.
+Ingestion/scope/preflight bindings are inspected even for a zero-finding batch. A match in
+one of those bindings or in normalized path, rule semantic identity, symbol anchor, sink
+kind, scanner identity hint, rule provenance, dependency package/version, secret category,
+or IaC check identity rejects the complete batch with
+`SECRET_REDACTION_IDENTITY_FIELD_BLOCKED`. The gate does not replace an identity field,
+silently drop the candidate, hash the match, or use line coordinates to invent a
+replacement identity.
+
+Success returns only a fresh, ordered `SastSecretRedactionBatch`. Each finding carries an
+ordered `SastFindingSecretRedaction` decision and a
+`redaction://sast-secret-redaction-v1/<safe-decision-digest>` reference. The decision digest
+preimage contains the sanitized candidate plus version, fixed token, safe counts, ordered
+redacted-field names, and ordered detector categories. Batch counts include the eight
+binding fields plus all finding fields, so a zero-finding batch still proves binding
+inspection. Its canonical batch digest contains only fresh sanitized output. These
+invariants are literal:
+
+```text
+secretRedactionApplied=true
+secretValueStored=false
+matchedValueDigestStored=false
+rawCandidateStored=false
+sourceCandidateDigestStored=false
+durablePersistenceAllowed=false
+```
+
+The output and bounded audit projection never carry a matched value, match length,
+matched-value digest, input object, input candidate-batch digest, or rejected binding.
+Rejections contain only the exact version, globally ordered coarse reason codes, the four
+negative storage assertions, and a digest over those safe fields. The source artifact digest
+may remain normal accepted-artifact provenance only on success; it is absent from rejection.
+
+`ScanPlaneModule` does not export the raw OpenGrep or Trivy normalizer providers after T035.
+It exports the redaction gate for the next internal stage. This limits normal Nest module
+consumers to the sanitized handoff but does not authorize a user route, log sink, audit of
+candidate text, evidence construction, policy evaluation, AI call, or persistence. T036
+must verify this batch, compute the platform fingerprint from secret-free identity material,
+and construct the first durable normalized finding.
 
 ## Stable Fingerprint Contract
 

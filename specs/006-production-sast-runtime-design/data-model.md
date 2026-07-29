@@ -428,8 +428,48 @@ title/description/message, secret match/code/context, modified-finding statement
 misconfiguration traces/rendered causes, and scanner payload substructures are never fields.
 Dependency locations remain explicitly unknown when the fixed Trivy wrapper omits package
 coordinates; no fallback line is invented. Exact-coordinate secret/IaC duplicates that cannot
-be distinguished without coordinate-derived identity are rejected as ambiguous. T035 must
-redact candidates before durable storage and T036 must construct the final entity below.
+be distinguished without coordinate-derived identity are rejected as ambiguous. This is the
+pre-redaction T035 input and cannot be logged, audited, persisted, exposed, or used as evidence.
+
+### SastSecretRedactionBatch
+
+A fresh, in-memory, non-durable T035 handoff produced only from one canonical T032/T033 batch:
+
+- exact `sast-secret-redaction-v1`, source adapter/schema, ingestion and immutable
+  tenant/repository/scan/attempt/scanner scope, scanner/rule/artifact, plan/canonical scan,
+  preflight, validation, disposition, envelope, schema/normalizer, lane, and fixed-commit
+  provenance
+- the active T031 `retentionExpiresAt`, revalidated at or after disposition time before and
+  after the pass
+- a fresh ordered copy of each candidate with sanitized title, description, and optional
+  location symbol; no object from the input candidate graph is returned as the durable handoff
+- per-candidate `SastFindingSecretRedaction`: exact version, fixed `[REDACTED]` marker,
+  inspected-field count, ordered redacted fields, merged replacement count, ordered detector
+  categories, and a decision reference/digest computed only from sanitized content and safe
+  metadata
+- batch summary counts covering the eight scope/binding fields even when there are zero
+  findings, plus all inspected candidate fields, redacted candidates/fields, replacements,
+  and ordered detector categories
+- invariants `secretRedactionApplied=true`, `secretValueStored=false`,
+  `matchedValueDigestStored=false`, `rawCandidateStored=false`,
+  `sourceCandidateDigestStored=false`, and `durablePersistenceAllowed=false`
+- a canonical SHA-256 batch digest whose preimage contains only the fresh sanitized batch
+
+Registered platform values are transient caller-owned inputs and never output fields. Known
+provider/private-key/authentication/URL/JWT/assignment/high-entropy matches may be replaced
+only in display fields. A match in ingestion/scope/preflight bindings, normalized path,
+semantic rule, symbol anchor, sink kind, scanner identity hint, rule revision, package name or
+version, category, or check identity rejects the complete batch. The rejection contains only
+ordered coarse reason codes, negative storage assertions, and a digest over those safe
+values. It omits the ingestion/scope values, matched field/type/value/length, matched-value
+hash, artifact digest, and pre-redaction batch digest.
+
+The pre-redaction source batch may be used only inside this gate. OpenGrep and Trivy
+normalizers are no longer exported from `ScanPlaneModule`; downstream code receives the
+redaction service boundary. The successful output still has no platform fingerprint,
+evidence, finding lifecycle, policy, dashboard, or AI authority. T036 must validate this
+batch, compute `sast-fingerprint-v1`, and construct the final entity below before durable
+normalized finding persistence.
 
 ### NormalizedSastFinding
 

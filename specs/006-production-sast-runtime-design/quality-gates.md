@@ -168,7 +168,23 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   semantic-rule/revision resolution from immutable bundle metadata rather than scanner IDs.
 - 100% artifact tenant, scan, scanner, commit, schema, digest, size, and count binding.
 - 100% unknown/unsafe enum, coordinate, path, encoding, and over-limit rejection.
-- 100% secret-value redaction before persistence outside the scanner artifact quarantine.
+- 100% `sast-secret-redaction-v1` determinism for repeated inputs, platform-value ordering,
+  detector overlap/adjacency, empty batches, and OpenGrep/Trivy source adapters.
+- 100% known-format, registered platform-value, private-key, authorization/URL credential,
+  JWT, assignment, and admitted high-entropy corpus removal from display fields using the
+  one fixed marker, with zero matched value or length disclosure.
+- 100% complete-batch rejection when any detected value occurs in ingestion/scope/preflight
+  bindings, path, semantic rule, scanner hint, rule/package/version, anchor, sink, category,
+  or check identity; no secret-derived replacement identity or digest may be constructed.
+- Exactly zero matched values, matched-value digests, raw candidates, pre-redaction
+  candidate-batch digests, or rejected bindings in redaction result, log, audit, dashboard,
+  evidence, policy, or AI surfaces. A rejection also contains no accepted-artifact digest;
+  success may retain only the pre-existing accepted-artifact provenance digest.
+- 100% canonical source-batch and accepted-disposition digest verification plus pre/post-pass
+  active-retention checks; malformed, forged-marker, invalid platform-set, clock rollback,
+  and expiry-crossing cases fail closed.
+- 100% secret-value redaction before persistence outside the scanner artifact quarantine;
+  T035 success remains `durablePersistenceAllowed=false` until T036 fingerprinting.
 - 100% fingerprint stability for line/branch/commit-only changes.
 - 100% provenance preservation during correlation; no lower-severity result may hide a
   higher-severity authoritative result.

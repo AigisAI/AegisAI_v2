@@ -271,3 +271,47 @@ output while preventing generic extension smuggling and long-lived path/prose le
 retaining raw BOM references or Syft properties, treating an SBOM as vulnerability evidence,
 accepting separator-count-only CPEs or regex-shaped invented SPDX IDs/exceptions, granting it
 policy/AI authority, or persisting the pre-gate inventory.
+
+## Decision 17: Redact Display Text and Reject Secret-Bearing Identity
+
+**Decision**: `sast-secret-redaction-v1` is the only exported Scan Plane handoff for
+T032/T033 candidate batches. It first verifies the exact canonical source-batch digest and
+the still-active T031 accepted disposition. It performs deterministic, bounded span
+detection over registered platform values, private-key blocks, authorization and URL
+credentials, provider token formats, JWTs, secret assignments, and high-entropy tokens.
+Overlapping and adjacent matches become one fixed `[REDACTED]` marker, so output reveals
+neither matched value nor its length.
+
+Only title, description, and optional location symbol are redactable display fields. A
+detected value in scope/preflight bindings, normalized path, semantic rule identity,
+symbol anchor, sink kind, scanner identity hint, rule provenance, or Trivy package/check
+identity rejects the whole batch. This avoids resolving collisions by hashing or otherwise
+retaining a secret-derived identity preimage. The output is a fresh
+`SastSecretRedactionBatch` with per-finding decisions, ordered safe detector categories,
+sanitized-only digests, no source-candidate digest, and
+`durablePersistenceAllowed=false`. T036 remains the sole next step allowed to construct a
+stable fingerprint.
+
+The detector families follow the provider/generic distinction documented by
+[GitHub supported secret-scanning patterns](https://docs.github.com/en/code-security/reference/secret-security/supported-secret-scanning-patterns),
+the current [GitLab token-prefix registry](https://docs.gitlab.com/security/tokens/), and
+the documented AWS `AKIA`/`ASIA` access-key identifiers in
+[AWS IAM identifiers](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html).
+The decision to exclude the values themselves, rather than log a correlation hash, follows
+the [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html)
+guidance for access tokens, passwords, connection strings, encryption keys, and primary
+secrets. These sources were reviewed on 2026-07-26. Runtime patterns are the code-reviewed
+v1 snapshot and never update themselves from the network; source changes require corpus
+review and a new redaction contract version.
+
+**Rationale**: Scanner rule messages may interpolate repository values even after snippets
+and Trivy secret context are structurally discarded. Redacting only evidence is therefore
+too late. Conversely, replacing identity-bearing values with one marker can collapse
+distinct findings, while hashing the value would retain a secret-derived correlation
+oracle. Display redaction plus identity rejection preserves both confidentiality and future
+fingerprint integrity.
+
+**Rejected**: Logging or persisting the pre-redaction batch digest, hashing matched values,
+revealing provider/match detail in a rejection, masking only Trivy secret findings, silently
+dropping a secret-bearing candidate, replacing identity fields and guessing a new identity,
+trusting a forged `[REDACTED]` marker, or checking retention only before the pass.
