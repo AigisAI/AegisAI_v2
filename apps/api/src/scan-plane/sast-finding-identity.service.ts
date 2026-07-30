@@ -40,7 +40,7 @@ export class SastFindingIdentityService {
     input: Readonly<SastFindingIdentityInput>,
     clock: () => Date = () => new Date()
   ): Promise<SastFindingIdentityResult> {
-    if (!hasFindingCountWithinLimit(input?.batch)) {
+    if (!isNotOverFindingLimit(input?.batch)) {
       return this.reject(['FINDING_IDENTITY_INPUT_INVALID']);
     }
     if (
@@ -280,7 +280,7 @@ export class SastFindingIdentityService {
   }
 }
 
-function hasFindingCountWithinLimit(value: unknown): boolean {
+function isNotOverFindingLimit(value: unknown): boolean {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return true;
   }

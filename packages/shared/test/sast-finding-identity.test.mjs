@@ -158,9 +158,12 @@ test('projects UNKNOWN location to an explicit empty path and rejects forged bin
     input.normalizedPath,
     SAST_FINDING_UNKNOWN_NORMALIZED_PATH
   );
-  assert.match(
+  assert.equal(
     buildFindingFingerprintPreimage(input),
-    /0:/u
+    'sast-fingerprint-v1\0' +
+      '12:repository-14:SAST27:javascript.hardcoded-secret' +
+      '0:0:0:71:sha256:' +
+      'a'.repeat(64)
   );
 
   const sourceBatch = redactedBatch([unknownSource]);

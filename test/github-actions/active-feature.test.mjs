@@ -84,6 +84,20 @@ const assertChecklistComplete = (contents) => {
   assert.deepEqual(openItems, []);
 };
 
+const assertScanPlaneExports = (scanPlaneModule) => {
+  const exportsBlock = scanPlaneModule.match(
+    /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
+  )?.[1];
+  assert.ok(
+    exportsBlock,
+    'Expected to locate the ScanPlaneModule exports array'
+  );
+  assert.match(exportsBlock, /SastFindingIdentityService/);
+  assert.doesNotMatch(exportsBlock, /SastSecretRedactionService/);
+  assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
+  assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
+};
+
 test('production SAST runtime design is the active feature package', () => {
   for (const [name, fileUrl] of Object.entries(files)) {
     assert.equal(existsSync(fileUrl), true, `Expected ${name} file to exist at ${fileUrl.pathname}`);
@@ -513,17 +527,7 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
     /expect\(serialized\)\.not\.toContain\(secret\)/
   );
 
-  const exportsBlock = scanPlaneModule.match(
-    /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
-  )?.[1];
-  assert.ok(
-    exportsBlock,
-    'Expected to locate the ScanPlaneModule exports array'
-  );
-  assert.match(exportsBlock, /SastFindingIdentityService/);
-  assert.doesNotMatch(exportsBlock, /SastSecretRedactionService/);
-  assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
-  assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
+  assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T035\b/);
   assert.match(quickstart, /T035 secret redaction is complete/);
@@ -583,15 +587,15 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
 
   assert.match(
     sharedIdentity,
-    /SAST_FINDING_IDENTITY_VERSION\s*=[\s\S]*'sast-finding-identity-v1'/
+    /SAST_FINDING_IDENTITY_VERSION\s*=[^;]*'sast-finding-identity-v1'/
   );
   assert.match(
     sharedRuntime,
-    /SAST_FINDING_FINGERPRINT_VERSION\s*=[\s\S]*'sast-fingerprint-v1'/
+    /SAST_FINDING_FINGERPRINT_VERSION\s*=[^;]*'sast-fingerprint-v1'/
   );
   assert.match(
     sharedRuntime,
-    /SAST_FINDING_FINGERPRINT_FIELDS\s*=[\s\S]*repositoryBindingId[\s\S]*capability[\s\S]*ruleSemanticId[\s\S]*normalizedPath[\s\S]*symbolAnchor[\s\S]*sinkKind[\s\S]*structuralHash/
+    /SAST_FINDING_FINGERPRINT_FIELDS\s*=[^;]*repositoryBindingId[^;]*capability[^;]*ruleSemanticId[^;]*normalizedPath[^;]*symbolAnchor[^;]*sinkKind[^;]*structuralHash[^;]*;/
   );
   assert.match(
     sharedIndex,
@@ -643,17 +647,7 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
     /handles an empty batch deterministically and yields during bounded large batches/
   );
 
-  const exportsBlock = scanPlaneModule.match(
-    /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
-  )?.[1];
-  assert.ok(
-    exportsBlock,
-    'Expected to locate the ScanPlaneModule exports array'
-  );
-  assert.match(exportsBlock, /SastFindingIdentityService/);
-  assert.doesNotMatch(exportsBlock, /SastSecretRedactionService/);
-  assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
-  assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
+  assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T036\b/);
   assert.match(

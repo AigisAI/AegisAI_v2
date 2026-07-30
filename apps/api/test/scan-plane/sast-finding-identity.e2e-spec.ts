@@ -466,29 +466,38 @@ describe('SastFindingIdentityService', () => {
 
     const observingService =
       new YieldObservingSastFindingIdentityService();
-    const findings = Array.from({ length: 65 }, (_, index) =>
-      redactedFinding({
-        title: `${SAST_SECRET_REDACTION_TOKEN} exposure ${index}`,
-        location: {
-          kind: 'FILE',
-          normalizedPath: `src/file-${index
-            .toString()
-            .padStart(3, '0')}.ts`,
-          lineStart: 1,
-          lineEnd: 1
-        },
-        identityMaterial: {
-          ...redactedFinding().identityMaterial,
-          scannerMatchBasedId: `rules.secret:match-${index}`
-        }
-      })
+    const findingCount =
+      SAST_FINDING_IDENTITY_LIMITS.yieldFindingInterval + 1;
+    const findings = Array.from(
+      { length: findingCount },
+      (_, index) =>
+        redactedFinding({
+          title: `${SAST_SECRET_REDACTION_TOKEN} exposure ${index}`,
+          location: {
+            kind: 'FILE',
+            normalizedPath: `src/file-${index
+              .toString()
+              .padStart(3, '0')}.ts`,
+            lineStart: 1,
+            lineEnd: 1
+          },
+          identityMaterial: {
+            ...redactedFinding().identityMaterial,
+            scannerMatchBasedId: `rules.secret:match-${index}`
+          }
+        })
     );
     const result = await observingService.construct(
       { batch: redactedBatch(findings) },
       fixedClock
     );
     expect(result.outcome).toBe('FINGERPRINTED');
-    expect(observingService.yieldCount).toBe(1);
+    expect(observingService.yieldCount).toBe(
+      Math.floor(
+        (findings.length - 1) /
+          SAST_FINDING_IDENTITY_LIMITS.yieldFindingInterval
+      )
+    );
   });
 });
 

@@ -1,4 +1,5 @@
 import {
+  SAST_FINDING_FINGERPRINT_FIELDS,
   SAST_FINDING_FINGERPRINT_VERSION,
   buildFindingFingerprintPreimage,
   type FindingFingerprintInput
@@ -51,15 +52,13 @@ export type SastFindingFingerprintDigester = (
   fingerprintPreimage: string
 ) => `sha256:${string}`;
 
-export interface SastFindingFingerprintDecision {
+type SastFindingFingerprintComponents = Pick<
+  FindingFingerprintInput,
+  (typeof SAST_FINDING_FINGERPRINT_FIELDS)[number]
+>;
+
+export type SastFindingFingerprintDecision = SastFindingFingerprintComponents & {
   version: typeof SAST_FINDING_FINGERPRINT_VERSION;
-  repositoryBindingId: string;
-  capability: FindingFingerprintInput['capability'];
-  ruleSemanticId: string;
-  normalizedPath: string;
-  symbolAnchor: string;
-  sinkKind: string;
-  structuralHash: string;
   stableFingerprint: `sha256:${string}`;
   sourceRedactionDecisionDigest: `sha256:${string}`;
   unstableCoordinatesIncluded: false;
@@ -67,7 +66,19 @@ export interface SastFindingFingerprintDecision {
   fingerprintPreimageStored: false;
   decisionDigest: `sha256:${string}`;
   decisionRef: string;
-}
+};
+
+const SAST_FINDING_FINGERPRINT_DECISION_KEYS = Object.freeze([
+  'version',
+  ...SAST_FINDING_FINGERPRINT_FIELDS,
+  'stableFingerprint',
+  'sourceRedactionDecisionDigest',
+  'unstableCoordinatesIncluded',
+  'scannerMatchIdentityAuthoritative',
+  'fingerprintPreimageStored',
+  'decisionDigest',
+  'decisionRef'
+] as const);
 
 export type SastFindingFingerprintDecisionCore = Omit<
   SastFindingFingerprintDecision,
@@ -229,15 +240,16 @@ export function stripSastFindingFingerprint(
 export function canonicalizeSastFindingFingerprintDecision(
   decision: Readonly<SastFindingFingerprintDecisionCore>
 ): string {
+  const fingerprintComponents = Object.fromEntries(
+    SAST_FINDING_FINGERPRINT_FIELDS.map((field) => [
+      field,
+      decision[field]
+    ])
+  ) as SastFindingFingerprintComponents;
+
   return JSON.stringify({
     version: decision.version,
-    repositoryBindingId: decision.repositoryBindingId,
-    capability: decision.capability,
-    ruleSemanticId: decision.ruleSemanticId,
-    normalizedPath: decision.normalizedPath,
-    symbolAnchor: decision.symbolAnchor,
-    sinkKind: decision.sinkKind,
-    structuralHash: decision.structuralHash,
+    ...fingerprintComponents,
     stableFingerprint: decision.stableFingerprint,
     sourceRedactionDecisionDigest:
       decision.sourceRedactionDecisionDigest,
@@ -611,23 +623,10 @@ function isSastFindingFingerprintDecisionValid(
   digestFingerprint: SastFindingFingerprintDigester
 ): boolean {
   if (
-    !hasExactKeys(value, [
-      'version',
-      'repositoryBindingId',
-      'capability',
-      'ruleSemanticId',
-      'normalizedPath',
-      'symbolAnchor',
-      'sinkKind',
-      'structuralHash',
-      'stableFingerprint',
-      'sourceRedactionDecisionDigest',
-      'unstableCoordinatesIncluded',
-      'scannerMatchIdentityAuthoritative',
-      'fingerprintPreimageStored',
-      'decisionDigest',
-      'decisionRef'
-    ]) ||
+    !hasExactKeys(
+      value,
+      SAST_FINDING_FINGERPRINT_DECISION_KEYS
+    ) ||
     value.version !== SAST_FINDING_FINGERPRINT_VERSION ||
     !isSha256Digest(value.stableFingerprint) ||
     !isSha256Digest(value.sourceRedactionDecisionDigest) ||
@@ -644,13 +643,9 @@ function isSastFindingFingerprintDecisionValid(
   }
   const expected = toSastFindingFingerprintInput(source);
   if (
-    value.repositoryBindingId !== expected.repositoryBindingId ||
-    value.capability !== expected.capability ||
-    value.ruleSemanticId !== expected.ruleSemanticId ||
-    value.normalizedPath !== expected.normalizedPath ||
-    value.symbolAnchor !== expected.symbolAnchor ||
-    value.sinkKind !== expected.sinkKind ||
-    value.structuralHash !== expected.structuralHash ||
+    SAST_FINDING_FINGERPRINT_FIELDS.some(
+      (field) => value[field] !== expected[field]
+    ) ||
     value.sourceRedactionDecisionDigest !==
       source.redaction.decisionDigest ||
     !canonicalDigestMatches(
