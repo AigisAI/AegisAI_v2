@@ -207,6 +207,32 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   digests, or secrets in identity rejection/audit output.
 - T036 success alone sets normalized-finding persistence eligibility; occurrence, lifecycle,
   correlation, coverage, evidence, policy, publication, and AI authority remain false.
+- 100% `sast-finding-lineage-v1` revalidation of the complete T036 handoff and durable
+  tenant/repository/scan/scanner-run/fixed-commit/target/profile/artifact/schema/normalizer/
+  rule/database/preflight bindings before persistence.
+- 100% one-to-one preservation of producer ordinals as immutable occurrences, including
+  byte-identical repeated fingerprints; no repeated observation may be silently collapsed.
+- 100% source-batch replay equality across the canonical observation batch and complete
+  ordered occurrence ledger. Missing, extra, changed, reordered, malformed, or cross-scope
+  rows reject without partial writes.
+- 100% rename continuity only for verified canonical fixed-commit/fixed-target one-to-one
+  attestations with an existing unambiguous predecessor alias. Rename-back retains lineage;
+  fuzzy, chained, cyclic, ambiguous, missing-predecessor, unavailable, or AI claims grant no
+  continuity.
+- 100% target-context isolation and append-only lifecycle revision order for `CREATED`,
+  `RENAMED`, `FIXED`, and `REOPENED`; legacy policy/triage status remains unchanged.
+- Exactly zero `FIXED` or `REOPENED` mutations unless an injected T039-compatible gate
+  verifies a strictly newer `COMPLETE`, `stale=false`, `comparable=true` decision and exact
+  expected-digest equality to every durable current-scan T037 observation batch, including
+  zero-finding batches.
+- 100% fail-closed behavior for partial, pending, failed, stale, incomparable, missing,
+  extra, out-of-order, tampered, or unavailable coverage decisions, plus serializable
+  lineage/lifecycle writes with no cross-tenant leakage under concurrency.
+- T037 authority assertions remain exact:
+  `coverageCalculationAuthority=false`, `correlationAuthority=false`,
+  `policyAuthority=false`, `publicationAuthority=false`, and
+  `aiPayloadEligible=false`; only `SastFindingLineageService` crosses the Scan Plane module
+  boundary for T038.
 - 100% provenance preservation during correlation; no lower-severity result may hide a
   higher-severity authoritative result.
 - 100% complete-coverage requirement before external comment/block, AI advisory, or fixed

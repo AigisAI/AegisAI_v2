@@ -59,6 +59,10 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Stable fingerprint binding forgery | A digest-shaped T035 handoff, fingerprint decision, or T036 batch is accepted without binding the sanitized object | Trusted canonical SHA-256 recomputation at every receiving boundary; exact source-decision and source-batch binding | Tampered source/decision/batch corpus; syntax-only digest rejection |
 | Stable fingerprint collision | Distinct canonical identities are collapsed under one digest and one finding silently wins | Transient digest-to-preimage map; allow only byte-identical repetition; reject the complete batch on mismatch | Forced-digester collision corpus; zero candidate/preimage rejection leakage |
 | Unknown-location identity smuggling | Provider reason, coordinates, or an invented fallback path makes unavailable locations drift across runtimes | Fixed empty normalized-path component under length-prefixed framing; reason and coordinates excluded | Both UNKNOWN reasons produce one identity; forged path binding rejected |
+| Finding-ledger replay forgery | A retry changes, omits, adds, reorders, or cross-scopes an occurrence while reusing a valid source-batch identity | Revalidate every durable T036/plan/artifact binding; unique source identity; exact canonical batch and complete ordered occurrence-ledger equality | Replay/tamper/cross-tenant corpus; reject the whole transaction with zero source data in output |
+| Rename alias poisoning | An untrusted diff, fuzzy match, chain, cycle, missing predecessor, or AI claim joins unrelated findings | Canonical signed fixed-commit/fixed-target one-to-one attestation; exact predecessor alias; immutable old and new aliases; unavailable verifier fails closed | Rename, rename-back, ambiguous, missing-predecessor, chain/cycle, and unverified-attestation fixtures |
+| Incomplete-batch false fix | A scanner failure or omitted zero-finding batch is presented as complete absence and resolves an open lineage | T037 never calculates coverage; T039-compatible gate must verify `COMPLETE`, non-stale, comparable, and exact equality to every durable T037 batch including zero-finding batches | Partial/stale/missing/extra/zero-batch tests; lifecycle mutation count remains zero |
+| Lifecycle context bleed or race | One target resolves another target, or concurrent/out-of-order reconciliations overwrite a newer state | Canonical tenant/repository/target context key; monotonic reconciliation sequence; append-only events; serializable transaction and bounded retry | Cross-context, reopen, stale-sequence, and serialization-race corpus |
 | Retention clock rollback | A caller supplies a past payload timestamp to normalize an expired accepted object | Adapter-owned default clock checked before and after streaming; trusted test/task clock seam only; require monotonic time at or after disposition | Expiry, stream-crossing, and pre-decision clock tests |
 | Stored XSS | Rule message/path/package contains markup | Treat all strings as text; output encoding; sanitized Markdown only | Stored-XSS corpus; presentation CSP |
 | Secret leakage | Finding or zero-finding binding includes a detected/platform secret | Scanner discard plus T035 display redaction, batch-binding inspection, identity fail-close, and T042 evidence re-redaction | Secret-leak gate must remain zero |
@@ -124,6 +128,11 @@ The following must always remain true:
 12. CycloneDX inventory cannot smuggle finding, vulnerability, policy, durable-persistence,
     or AI authority; producer BOM references, properties, source paths, license text, prose,
     and external-reference payloads never cross the transient inventory boundary.
+13. Repeated fingerprint observations remain distinct immutable occurrences, and replay
+    succeeds only for the exact complete ordered ledger in the same tenant/repository scope.
+14. A lineage can change target lifecycle only from a verified newer complete coverage
+    decision over the exact durable observation-batch set; T037 cannot calculate that
+    decision or infer absence from missing data.
 
 ## Required Security Test Corpus
 
@@ -168,5 +177,13 @@ The following must always remain true:
 - signed-envelope tenant/scan/commit/digest tampering
 - cross-tenant object and query access
 - stale commit, force-push, and duplicate delivery
+- repeated fingerprints, exact replay, missing/extra/reordered occurrence rows, cross-tenant
+  source-identity reuse, concurrent lineage creation, and serialization retry exhaustion
+- verified rename and rename-back, missing predecessor aliases, duplicate/ambiguous mappings,
+  chains/cycles, wrong fixed commit/target/profile/context, invalid signature/provenance, and
+  unavailable rename verification
+- isolated target contexts plus created/fixed/reopened event revision sequences; partial,
+  pending, failed, stale, incomparable, missing/extra/out-of-order coverage and omitted or
+  forged zero-finding batches must produce exactly zero lifecycle mutations
 - prompt-injection strings in reduced evidence
 - sandbox escape and prohibited egress regression suites

@@ -74,6 +74,23 @@ import { TrivyJsonNormalizer } from './trivy-json-normalizer';
 import { SyftCycloneDxInventoryIngestor } from './syft-cyclonedx-inventory-ingestor';
 import { SastSecretRedactionService } from './sast-secret-redaction.service';
 import { SastFindingIdentityService } from './sast-finding-identity.service';
+import {
+  PrismaSastFindingLineageStore
+} from './prisma-sast-finding-lineage.store';
+import {
+  SastFindingLineageStore
+} from './sast-finding-lineage.store';
+import {
+  SastFindingLineageService
+} from './sast-finding-lineage.service';
+import {
+  SastFindingRenameAttestationVerifier,
+  UnavailableSastFindingRenameAttestationVerifier
+} from './sast-finding-rename-attestation.verifier';
+import {
+  SastFindingLifecycleCoverageGate,
+  UnavailableSastFindingLifecycleCoverageGate
+} from './sast-finding-lifecycle-coverage.gate';
 
 @Module({
   imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
@@ -93,6 +110,24 @@ import { SastFindingIdentityService } from './sast-finding-identity.service';
     SyftCycloneDxInventoryIngestor,
     SastSecretRedactionService,
     SastFindingIdentityService,
+    SastFindingLineageService,
+    PrismaSastFindingLineageStore,
+    {
+      provide: SastFindingLineageStore,
+      useExisting: PrismaSastFindingLineageStore
+    },
+    UnavailableSastFindingRenameAttestationVerifier,
+    {
+      provide: SastFindingRenameAttestationVerifier,
+      useExisting:
+        UnavailableSastFindingRenameAttestationVerifier
+    },
+    UnavailableSastFindingLifecycleCoverageGate,
+    {
+      provide: SastFindingLifecycleCoverageGate,
+      useExisting:
+        UnavailableSastFindingLifecycleCoverageGate
+    },
     SastArtifactDispositionService,
     SastArtifactDispositionTask,
     PrismaSastArtifactDispositionStore,
@@ -168,7 +203,7 @@ import { SastFindingIdentityService } from './sast-finding-identity.service';
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
     SyftCycloneDxInventoryIngestor,
-    SastFindingIdentityService
+    SastFindingLineageService
   ]
 })
 export class ScanPlaneModule {}

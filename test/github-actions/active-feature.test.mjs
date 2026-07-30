@@ -35,6 +35,8 @@ const files = {
   sharedSastSecretRedactionTest: new URL('../../packages/shared/test/sast-secret-redaction.test.mjs', import.meta.url),
   sharedSastFindingIdentity: new URL('../../packages/shared/src/types/sast-finding-identity.ts', import.meta.url),
   sharedSastFindingIdentityTest: new URL('../../packages/shared/test/sast-finding-identity.test.mjs', import.meta.url),
+  sharedSastFindingLineage: new URL('../../packages/shared/src/types/sast-finding-lineage.ts', import.meta.url),
+  sharedSastFindingLineageTest: new URL('../../packages/shared/test/sast-finding-lineage.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -56,6 +58,14 @@ const files = {
   apiSastSecretRedactionTest: new URL('../../apps/api/test/scan-plane/sast-secret-redaction.e2e-spec.ts', import.meta.url),
   apiSastFindingIdentity: new URL('../../apps/api/src/scan-plane/sast-finding-identity.service.ts', import.meta.url),
   apiSastFindingIdentityTest: new URL('../../apps/api/test/scan-plane/sast-finding-identity.e2e-spec.ts', import.meta.url),
+  apiSastFindingLineage: new URL('../../apps/api/src/scan-plane/sast-finding-lineage.service.ts', import.meta.url),
+  apiSastFindingLineageStore: new URL('../../apps/api/src/scan-plane/prisma-sast-finding-lineage.store.ts', import.meta.url),
+  apiSastFindingRenameVerifier: new URL('../../apps/api/src/scan-plane/sast-finding-rename-attestation.verifier.ts', import.meta.url),
+  apiSastFindingCoverageGate: new URL('../../apps/api/src/scan-plane/sast-finding-lifecycle-coverage.gate.ts', import.meta.url),
+  apiSastFindingLineageTest: new URL('../../apps/api/test/scan-plane/sast-finding-lineage.e2e-spec.ts', import.meta.url),
+  apiSastFindingLineagePersistenceTest: new URL('../../apps/api/test/scan-plane/sast-finding-lineage-persistence.e2e-spec.ts', import.meta.url),
+  apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
+  apiSastFindingLineageMigration: new URL('../../apps/api/prisma/migrations/20260730160000_sast_finding_lineage_lifecycle/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -92,7 +102,8 @@ const assertScanPlaneExports = (scanPlaneModule) => {
     exportsBlock,
     'Expected to locate the ScanPlaneModule exports array'
   );
-  assert.match(exportsBlock, /SastFindingIdentityService/);
+  assert.match(exportsBlock, /SastFindingLineageService/);
+  assert.doesNotMatch(exportsBlock, /SastFindingIdentityService/);
   assert.doesNotMatch(exportsBlock, /SastSecretRedactionService/);
   assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
   assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
@@ -443,7 +454,7 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
   assert.match(tasks, /- \[x\] T034\b/);
   assert.match(
     quickstart,
-    /T035 secret redaction is complete/
+    /T035 secret redaction,[\s\S]{0,180}T037 occurrence\/exact-lineage lifecycle[\s\S]{0,80}complete/
   );
   assert.match(contract, /Syft CycloneDX inventory adapter v1/);
   assert.match(spec, /FR-031b/);
@@ -530,7 +541,10 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
   assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T035\b/);
-  assert.match(quickstart, /T035 secret redaction is complete/);
+  assert.match(
+    quickstart,
+    /T035 secret redaction,[\s\S]{0,180}T037 occurrence\/exact-lineage lifecycle[\s\S]{0,80}complete/
+  );
   assert.match(contract, /Secret redaction gate v1/);
   assert.match(spec, /FR-031c/);
   assert.match(plan, /`sast-secret-redaction-v1` gate/);
@@ -652,7 +666,7 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
   assert.match(tasks, /- \[x\] T036\b/);
   assert.match(
     quickstart,
-    /T037 occurrence and exact[\s\S]*next implementation task/
+    /T037 occurrence\/exact-lineage lifecycle[\s\S]{0,120}complete; T038[\s\S]{0,120}next[\s\S]{0,40}task/
   );
   assert.match(contract, /Finding identity construction gate v1/);
   assert.match(spec, /FR-034a/);
@@ -666,6 +680,176 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
   assert.match(
     qualityGates,
     /100% `sast-finding-identity-v1` source-batch/
+  );
+});
+
+test('SAST T037 persists complete occurrence lineage and fail-closed lifecycle transitions', () => {
+  const sharedLineage = readNormalizedText(
+    files.sharedSastFindingLineage
+  );
+  const sharedLineageTest = readNormalizedText(
+    files.sharedSastFindingLineageTest
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiSastFindingLineage);
+  const store = readNormalizedText(
+    files.apiSastFindingLineageStore
+  );
+  const verifier = readNormalizedText(
+    files.apiSastFindingRenameVerifier
+  );
+  const coverageGate = readNormalizedText(
+    files.apiSastFindingCoverageGate
+  );
+  const serviceTest = readNormalizedText(
+    files.apiSastFindingLineageTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiSastFindingLineagePersistenceTest
+  );
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(
+    files.apiSastFindingLineageMigration
+  );
+  const scanPlaneModule = readNormalizedText(
+    files.apiScanPlaneModule
+  );
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const plan = readNormalizedText(files.plan);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(
+    sharedLineage,
+    /SAST_FINDING_LINEAGE_VERSION\s*=[^;]*'sast-finding-lineage-v1'/
+  );
+  assert.match(
+    sharedLineage,
+    /SAST_FINDING_RENAME_ATTESTATION_VERSION\s*=[^;]*'sast-finding-rename-attestation-v1'/
+  );
+  assert.match(
+    sharedLineage,
+    /SAST_FINDING_LIFECYCLE_COVERAGE_VERSION\s*=[^;]*'sast-finding-lifecycle-coverage-v1'/
+  );
+  assert.match(sharedLineage, /maximumFindings:\s*25_000/);
+  assert.match(
+    sharedLineage,
+    /coverageCalculationAuthority:\s*false/
+  );
+  assert.match(sharedLineage, /policyAuthority:\s*false/);
+  assert.match(sharedLineage, /publicationAuthority:\s*false/);
+  assert.match(sharedLineage, /aiPayloadEligible:\s*false/);
+  assert.match(
+    sharedIndex,
+    /export \* from '.\/types\/sast-finding-lineage';/
+  );
+  assert.match(
+    sharedLineageTest,
+    /one-to-one, sorted, fixed-commit rename attestation/
+  );
+  assert.match(
+    sharedLineageTest,
+    /binds reconciliation transition counts/
+  );
+
+  assert.match(service, /class SastFindingLineageService/);
+  assert.match(
+    service,
+    /isSastFingerprintedFindingBatchShapeValid/
+  );
+  assert.match(
+    service,
+    /isSastFindingLifecycleContextInputValid/
+  );
+  assert.doesNotMatch(service, /\bLogger\b|\bconsole\./u);
+  assert.doesNotMatch(service, /@Controller|@(Get|Post|Put|Patch|Delete)\(/u);
+  assert.match(
+    verifier,
+    /UnavailableSastFindingRenameAttestationVerifier/
+  );
+  assert.match(verifier, /return 'UNAVAILABLE'/);
+  assert.match(
+    coverageGate,
+    /UnavailableSastFindingLifecycleCoverageGate/
+  );
+  assert.match(coverageGate, /return 'UNAVAILABLE'/);
+
+  assert.match(
+    store,
+    /Prisma\.TransactionIsolationLevel\.Serializable/
+  );
+  assert.match(store, /SERIALIZABLE_ATTEMPTS = 3/);
+  assert.match(
+    store,
+    /SERIALIZABLE_TIMEOUT_MILLISECONDS = 120_000/
+  );
+  assert.match(store, /canonicalizeSastFingerprintedFinding/);
+  assert.match(store, /SAST_SCANNER_RESPONSIBILITIES/);
+  assert.match(
+    serviceTest,
+    /rejects a non-canonical durable target context/
+  );
+  assert.match(
+    persistenceTest,
+    /separates global identity, ordered occurrences, target lifecycle, and append-only events/
+  );
+
+  for (const model of [
+    'SastFindingLineage',
+    'SastFindingIdentityAlias',
+    'SastFindingObservationBatch',
+    'SastFindingOccurrence',
+    'SastFindingLifecycleState',
+    'SastFindingLifecycleReconciliation',
+    'SastFindingLifecycleEvent'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(
+      migration,
+      new RegExp(`CREATE TABLE "${model}"`)
+    );
+  }
+  assert.match(
+    migration,
+    /SastFindingLifecycleEvent_observation_scope_fkey/
+  );
+  assert.match(
+    migration,
+    /SastFindingLifecycleEvent_reconciliation_scope_fkey/
+  );
+  assertScanPlaneExports(scanPlaneModule);
+
+  assert.match(tasks, /- \[x\] T037\b/);
+  assert.match(
+    quickstart,
+    /T038 authority-aware cross-tool correlation is therefore the next/
+  );
+  assert.match(contract, /Finding lineage and lifecycle gate v1/);
+  assert.match(dataModel, /SastFindingLifecycleReconciliation/);
+  assert.match(
+    plan,
+    /T037 now revalidates that complete handoff/
+  );
+  assert.match(spec, /FR-035a/);
+  assert.match(spec, /FR-037a/);
+  assert.match(
+    research,
+    /Decision 19: Separate Exact Lineage, Ordered Occurrences, and Target Lifecycle/
+  );
+  assert.match(threatModel, /Finding-ledger replay forgery/);
+  assert.match(threatModel, /Incomplete-batch false fix/);
+  assert.match(
+    qualityGates,
+    /100% `sast-finding-lineage-v1` revalidation/
+  );
+  assert.match(
+    qualityGates,
+    /including\s+zero-finding batches/
   );
 });
 

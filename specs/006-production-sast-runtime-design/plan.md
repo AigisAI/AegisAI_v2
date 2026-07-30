@@ -99,10 +99,15 @@ canonical identity fields with NFC and UTF-8 byte-length framing, and computes
 provenance in a fresh persistence-eligible handoff, allows byte-identical repeated
 observations, and rejects digest collisions, forged inputs, clock rollback, expiry, and
 over-limit batches. It exports no occurrence, lifecycle, correlation, coverage, evidence,
-policy, publication, or AI authority. T037 next represents occurrences separately from
-stable findings and implements exact lineage, rename, fixed, and reopen behavior; subsequent
-work correlates only compatible authoritative capabilities and marks fixed/reopened only from
-later complete, non-stale comparable scans.
+policy, publication, or AI authority. T037 now revalidates that complete handoff against
+durable scan state, persists one repository-scoped lineage plus every ordered occurrence,
+and keeps lifecycle state separate per target ref. Exact aliases update one lineage; a
+path-only alias is added only from a verified fixed-commit, one-to-one rename attestation.
+Append-only `CREATED`, `RENAMED`, `FIXED`, and `REOPENED` events are serialized with the
+observation/reconciliation ledger. Fixed/reopened transitions consume, but never calculate,
+a T039-owned complete, non-stale, comparable coverage decision and verify its exact
+observation-batch set. T038 next correlates only compatible authoritative capabilities;
+coverage, policy, publication, evidence, and AI authority remain in later gates.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

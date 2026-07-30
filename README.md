@@ -68,8 +68,9 @@ Start from its
 | Legacy MVP | Historical baseline in [`001-aegisai-mvp-foundation`](./specs/001-aegisai-mvp-foundation/) and [`spec 2.2.md`](./spec%202.2.md) |
 
 The 006 package makes the SAST runtime implementation-ready before provider execution:
-fixed-commit isolated scans, hostile-input validation, deterministic normalization and
-finding identity, fail-closed coverage, reduced evidence, and measurable rule/runtime gates.
+fixed-commit isolated scans, hostile-input validation, deterministic normalization,
+repository-scoped finding lineage with target-scoped lifecycle history, fail-closed coverage,
+reduced evidence, and measurable rule/runtime gates.
 The 005 baseline still governs the later live Kubernetes and provider-specific microVM
 rollout; production credentials and live provider execution remain deferred.
 
