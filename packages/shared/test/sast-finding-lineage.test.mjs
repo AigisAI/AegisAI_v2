@@ -11,16 +11,20 @@ import {
   buildFindingFingerprintPreimage,
   buildSastFindingLifecycleContextPreimage,
   buildSastFindingLineageKeyPreimage,
+  buildSastFindingRenameCandidate,
   canonicalizeSastFindingLifecycleCoverageDecision,
   canonicalizeSastFindingLifecycleReconciliationResult,
+  canonicalizeSastFindingLineageObservationResult,
   canonicalizeSastFindingLineageRejection,
   canonicalizeSastFindingRenameAttestation,
   isSastFindingLifecycleCoverageDecisionShapeValid,
   isSastFindingLifecycleContextInputValid,
   isSastFindingLifecycleReconciliationResultShapeValid,
+  isSastFindingLineageObservationResultShapeValid,
   isSastFindingLineageRejectionShapeValid,
   isSastFindingRenameAttestationShapeValid,
   orderSastFindingLineageRejectionReasons,
+  orderSastFindingRenameCandidates,
   projectRenamedSastFindingFingerprintInput
 } from '../dist/index.js';
 
@@ -126,32 +130,37 @@ test('validates a one-to-one, sorted, fixed-commit rename attestation', () => {
     ),
     true
   );
-  assert.equal(
-    isSastFindingRenameAttestationShapeValid(
-      {
-        ...attestation,
-        entries: [...attestation.entries].reverse()
-      },
-      digest
-    ),
-    false
-  );
-  assert.equal(
-    isSastFindingRenameAttestationShapeValid(
-      {
-        ...attestation,
-        entries: [
-          ...attestation.entries,
-          {
-            fromNormalizedPath: 'src/legacy.java',
-            toNormalizedPath: 'src/renamed/A.java'
-          }
-        ]
-      },
-      digest
-    ),
-    false
-  );
+  for (const invalidCore of [
+    {
+      ...core,
+      entries: [...core.entries].reverse()
+    },
+    {
+      ...core,
+      entries: [
+        ...core.entries,
+        {
+          fromNormalizedPath: 'src/legacy.java',
+          toNormalizedPath: 'src/renamed/A.java'
+        }
+      ]
+    }
+  ]) {
+    assert.equal(
+      isSastFindingRenameAttestationShapeValid(
+        {
+          ...invalidCore,
+          attestationDigest: digest(
+            canonicalizeSastFindingRenameAttestation(
+              invalidCore
+            )
+          )
+        },
+        digest
+      ),
+      false
+    );
+  }
 });
 
 test('accepts a later canonical rename-back as a new fixed-commit attestation', () => {
@@ -245,6 +254,44 @@ test('reconstructs only the path component for trusted rename lookup', () => {
       )
     )
   );
+
+  const candidate = buildSastFindingRenameCandidate(
+    {
+      capability: 'SAST',
+      fingerprint: current
+    },
+    {
+      fromNormalizedPath: 'src/original/A.java',
+      toNormalizedPath: current.normalizedPath
+    },
+    digest
+  );
+  assert.deepEqual(candidate, {
+    capability: 'SAST',
+    currentStableFingerprint: OTHER_DIGEST,
+    previousStableFingerprint: digest(
+      buildFindingFingerprintPreimage(predecessor)
+    ),
+    fromNormalizedPath: 'src/original/A.java',
+    toNormalizedPath: 'src/renamed/A.java'
+  });
+  assert.deepEqual(
+    orderSastFindingRenameCandidates([
+      candidate,
+      {
+        ...candidate,
+        currentStableFingerprint: DIGEST
+      },
+      candidate
+    ]),
+    [
+      {
+        ...candidate,
+        currentStableFingerprint: DIGEST
+      },
+      candidate
+    ]
+  );
 });
 
 test('accepts only complete non-stale comparable lifecycle authority', () => {
@@ -260,20 +307,20 @@ test('accepts only complete non-stale comparable lifecycle authority', () => {
     isSastFindingLifecycleCoverageDecisionShapeValid(decision, digest),
     true
   );
-  for (const mutation of [
-    { ...decision, state: 'PARTIAL' },
-    { ...decision, stale: true },
-    { ...decision, comparable: false },
-    { ...decision, sequence: 0 },
+  for (const invalidCore of [
+    { ...core, state: 'PARTIAL' },
+    { ...core, stale: true },
+    { ...core, comparable: false },
+    { ...core, sequence: 0 },
     {
-      ...decision,
+      ...core,
       eligibleLineageIds: [
-        decision.eligibleLineageIds[0],
-        decision.eligibleLineageIds[0]
+        core.eligibleLineageIds[0],
+        core.eligibleLineageIds[0]
       ]
     },
     {
-      ...decision,
+      ...core,
       expectedObservationBatchDigests: [
         OTHER_DIGEST,
         DIGEST
@@ -282,7 +329,14 @@ test('accepts only complete non-stale comparable lifecycle authority', () => {
   ]) {
     assert.equal(
       isSastFindingLifecycleCoverageDecisionShapeValid(
-        mutation,
+        {
+          ...invalidCore,
+          decisionDigest: digest(
+            canonicalizeSastFindingLifecycleCoverageDecision(
+              invalidCore
+            )
+          )
+        },
         digest
       ),
       false
@@ -347,9 +401,74 @@ test('orders bounded zero-payload lineage rejection metadata', () => {
     isSastFindingLineageRejectionShapeValid(rejection, digest),
     true
   );
+  for (const reasonCodes of [
+    [
+      'FINDING_LINEAGE_INPUT_INVALID',
+      'FINDING_LINEAGE_INPUT_INVALID'
+    ],
+    ['FINDING_LINEAGE_UNKNOWN'],
+    Array.from(
+      {
+        length:
+          SAST_FINDING_LINEAGE_REJECTION_REASON_CODES.length +
+          1
+      },
+      () => 'FINDING_LINEAGE_INPUT_INVALID'
+    )
+  ]) {
+    const invalidCore = {
+      ...core,
+      reasonCodes
+    };
+    assert.equal(
+      isSastFindingLineageRejectionShapeValid(
+        {
+          ...invalidCore,
+          rejectionDigest: digest(
+            canonicalizeSastFindingLineageRejection(invalidCore)
+          )
+        },
+        digest
+      ),
+      false
+    );
+  }
   assert.doesNotMatch(
     JSON.stringify(rejection),
     /repository|scan-1|src\/|fingerprint|artifact|secret-value/u
+  );
+});
+
+test('requires every observed occurrence set to resolve a lineage', () => {
+  const core = {
+    version: SAST_FINDING_LINEAGE_VERSION,
+    outcome: 'OBSERVED',
+    operation: 'OBSERVE',
+    observationBatchId:
+      `finding-observation://${'1'.repeat(64)}`,
+    sourceIdentityBatchDigest: DIGEST,
+    lifecycleContextKey: CONTEXT_KEY,
+    findingCount: 5,
+    occurrenceCount: 5,
+    distinctFingerprintCount: 0,
+    createdLineageCount: 0,
+    exactMatchCount: 0,
+    renamedMatchCount: 0,
+    replayed: false,
+    observedAt: '2026-07-30T02:07:00.000Z',
+    authority: lineageAuthority()
+  };
+  assert.equal(
+    isSastFindingLineageObservationResultShapeValid(
+      {
+        ...core,
+        resultDigest: digest(
+          canonicalizeSastFindingLineageObservationResult(core)
+        )
+      },
+      digest
+    ),
+    false
   );
 });
 
@@ -371,18 +490,7 @@ test('binds reconciliation transition counts to the observed set', () => {
     unchangedFixedCount: 1,
     replayed: false,
     reconciledAt: '2026-07-30T02:07:00.000Z',
-    authority: {
-      normalizedFindingPersistenceAuthority: true,
-      occurrenceAuthority: true,
-      lifecycleAuthority: true,
-      renameAuthority: true,
-      correlationAuthority: false,
-      coverageCalculationAuthority: false,
-      evidenceAuthority: false,
-      policyAuthority: false,
-      publicationAuthority: false,
-      aiPayloadEligible: false
-    }
+    authority: lineageAuthority()
   };
   const result = {
     ...core,
@@ -506,6 +614,21 @@ function coverageDecisionCore() {
     sourceCoverageDecisionRef: 'coverage://scan-1/decision',
     completedAt: '2026-07-30T02:05:00.000Z',
     decidedAt: '2026-07-30T02:06:00.000Z'
+  };
+}
+
+function lineageAuthority() {
+  return {
+    normalizedFindingPersistenceAuthority: true,
+    occurrenceAuthority: true,
+    lifecycleAuthority: true,
+    renameAuthority: true,
+    correlationAuthority: false,
+    coverageCalculationAuthority: false,
+    evidenceAuthority: false,
+    policyAuthority: false,
+    publicationAuthority: false,
+    aiPayloadEligible: false
   };
 }
 

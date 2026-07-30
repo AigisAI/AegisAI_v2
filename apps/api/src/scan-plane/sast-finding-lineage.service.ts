@@ -5,8 +5,8 @@ import { Injectable } from '@nestjs/common';
 import {
   SAST_FINDING_LINEAGE_LIMITS,
   SAST_FINDING_LINEAGE_VERSION,
-  buildFindingFingerprintPreimage,
   buildSastFindingLifecycleContextPreimage,
+  buildSastFindingRenameCandidate,
   canonicalizeSastFindingLifecycleReconciliationResult,
   canonicalizeSastFindingLineageObservationResult,
   canonicalizeSastFindingLineageRejection,
@@ -17,7 +17,7 @@ import {
   isSastFindingRenameAttestationShapeValid,
   isSastFingerprintedFindingBatchShapeValid,
   orderSastFindingLineageRejectionReasons,
-  projectRenamedSastFindingFingerprintInput,
+  orderSastFindingRenameCandidates,
   sastFindingLineageAuthority,
   type SastFindingLifecycleCoverageDecision,
   type SastFindingLifecycleReconciliationOutcome,
@@ -31,6 +31,7 @@ import {
   type SastFindingLineageRejectionCore,
   type SastFindingLineageRejectionReasonCode,
   type SastFindingRenameAttestation,
+  type SastFindingRenameCandidate,
   type SastFingerprintedFindingBatch
 } from '@aegisai/shared';
 
@@ -44,8 +45,7 @@ import {
   SastFindingLineageRenameAmbiguousError,
   SastFindingLineageReplayConflictError,
   SastFindingLineageStore,
-  type SastFindingLineageScanContext,
-  type SastFindingRenameCandidate
+  type SastFindingLineageScanContext
 } from './sast-finding-lineage.store';
 import {
   SastFindingRenameAttestationVerifier
@@ -100,7 +100,10 @@ export class SastFindingLineageService {
     const batch = input.batch;
     const firstReferenceTime = readReferenceTime(clock);
     const retentionExpiresAt = Date.parse(batch.retentionExpiresAt);
-    if (!Number.isFinite(firstReferenceTime)) {
+    if (
+      !Number.isFinite(firstReferenceTime) ||
+      !Number.isFinite(retentionExpiresAt)
+    ) {
       return this.reject('OBSERVE', [
         'FINDING_LINEAGE_RETENTION_INVALID'
       ]);
@@ -112,7 +115,6 @@ export class SastFindingLineageService {
     }
 
     try {
-      await this.yieldForFindingBatch(batch.findings.length);
       const context = await this.store.loadObservationContext(
         batch.scope
       );
@@ -155,6 +157,12 @@ export class SastFindingLineageService {
           return renameResult.rejection;
         }
         renameCandidates = renameResult.candidates;
+      } else if (
+        !(await this.revalidateDistinctFingerprintCount(batch))
+      ) {
+        return this.reject('OBSERVE', [
+          'FINDING_LINEAGE_INPUT_INVALID'
+        ]);
       }
 
       const secondReferenceTime = readReferenceTime(clock);
@@ -436,46 +444,58 @@ export class SastFindingLineageService {
         entry
       ])
     );
-    const candidates = new Map<
-      string,
-      SastFindingRenameCandidate
-    >();
+    const candidates: SastFindingRenameCandidate[] = [];
+    const identityKeys = new Set<string>();
     for (let index = 0; index < batch.findings.length; index += 1) {
+      if (
+        index > 0 &&
+        index %
+          SAST_FINDING_LINEAGE_LIMITS.yieldFindingInterval ===
+          0
+      ) {
+        await this.yieldEventLoop();
+      }
       const finding = batch.findings[index];
-      if (!finding) continue;
+      if (!finding) {
+        return {
+          rejection: this.reject('OBSERVE', [
+            'FINDING_LINEAGE_INPUT_INVALID'
+          ])
+        };
+      }
+      identityKeys.add(
+        `${finding.capability}\0${finding.fingerprint.stableFingerprint}`
+      );
       const entry = entryByTargetPath.get(
         finding.fingerprint.normalizedPath
       );
       if (!entry) continue;
-      const previousStableFingerprint = digest(
-        buildFindingFingerprintPreimage(
-          projectRenamedSastFindingFingerprintInput(
-            finding.fingerprint,
-            entry.fromNormalizedPath
-          )
-        )
+      const candidate = buildSastFindingRenameCandidate(
+        finding,
+        entry,
+        digest
       );
-      const key = `${finding.capability}\0${finding.fingerprint.stableFingerprint}`;
-      candidates.set(key, {
-        capability: finding.capability,
-        currentStableFingerprint:
-          finding.fingerprint.stableFingerprint,
-        previousStableFingerprint,
-        fromNormalizedPath: entry.fromNormalizedPath,
-        toNormalizedPath: entry.toNormalizedPath
-      });
-    }
-    const orderedCandidates = [...candidates.values()].sort((left, right) =>
-        JSON.stringify([
-          left.capability,
-          left.currentStableFingerprint
-        ]).localeCompare(
-          JSON.stringify([
-            right.capability,
-            right.currentStableFingerprint
+      if (!candidate) {
+        return {
+          rejection: this.reject('OBSERVE', [
+            'FINDING_LINEAGE_RENAME_ATTESTATION_INVALID'
           ])
-        )
-      );
+        };
+      }
+      candidates.push(candidate);
+    }
+    if (
+      identityKeys.size !==
+      batch.identity.distinctFingerprintCount
+    ) {
+      return {
+        rejection: this.reject('OBSERVE', [
+          'FINDING_LINEAGE_INPUT_INVALID'
+        ])
+      };
+    }
+    const orderedCandidates =
+      orderSastFindingRenameCandidates(candidates);
     if (orderedCandidates.length === 0) {
       return {
         rejection: this.reject('OBSERVE', [
@@ -510,18 +530,29 @@ export class SastFindingLineageService {
     };
   }
 
-  private async yieldForFindingBatch(
-    findingCount: number
-  ): Promise<void> {
-    for (
-      let index =
-        SAST_FINDING_LINEAGE_LIMITS.yieldFindingInterval;
-      index < findingCount;
-      index +=
-        SAST_FINDING_LINEAGE_LIMITS.yieldFindingInterval
-    ) {
-      await this.yieldEventLoop();
+  private async revalidateDistinctFingerprintCount(
+    batch: Readonly<SastFingerprintedFindingBatch>
+  ): Promise<boolean> {
+    const identities = new Set<string>();
+    for (let index = 0; index < batch.findings.length; index += 1) {
+      if (
+        index > 0 &&
+        index %
+          SAST_FINDING_LINEAGE_LIMITS.yieldFindingInterval ===
+          0
+      ) {
+        await this.yieldEventLoop();
+      }
+      const finding = batch.findings[index];
+      if (!finding) return false;
+      identities.add(
+        `${finding.capability}\0${finding.fingerprint.stableFingerprint}`
+      );
     }
+    return (
+      identities.size ===
+      batch.identity.distinctFingerprintCount
+    );
   }
 }
 

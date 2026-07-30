@@ -1,11 +1,11 @@
 import type {
-  SastCapability,
   SastFindingLifecycleCoverageDecision,
   SastFindingRenameAttestation,
   SastFindingLineageObservationResult,
   SastFindingLifecycleReconciliationResult,
   SastFingerprintedFinding,
   SastFingerprintedFindingBatch,
+  SastFindingRenameCandidate,
   SastProfileId,
   SastScanLane,
   SastScannerKind
@@ -61,14 +61,6 @@ export interface SastFindingReconciliationScanContext {
   planDigest: `sha256:${string}`;
   profileId: SastProfileId;
   profileDigest: `sha256:${string}`;
-}
-
-export interface SastFindingRenameCandidate {
-  capability: Exclude<SastCapability, 'SBOM'>;
-  currentStableFingerprint: `sha256:${string}`;
-  previousStableFingerprint: `sha256:${string}`;
-  fromNormalizedPath: string;
-  toNormalizedPath: string;
 }
 
 export interface PersistSastFindingObservationInput {

@@ -506,6 +506,74 @@ describe('SastFindingLineageService', () => {
     ).resolves.toMatchObject({ outcome: 'OBSERVED' });
     expect(service.yieldCount).toBe(1);
   });
+
+  it('yields at finding boundaries while deriving rename candidates', async () => {
+    const findings = Array.from({ length: 65 }, (_, index) => {
+      const suffix = index.toString().padStart(2, '0');
+      return {
+        location: {
+          kind: 'FILE' as const,
+          normalizedPath: `src/config-${suffix}.ts`,
+          lineStart: 1,
+          lineEnd: 1
+        }
+      };
+    });
+    const batch = await fingerprintedFindingBatch(findings);
+    const context = lineageObservationContext(batch);
+    const store = observationStore(context, {
+      findingCount: 65,
+      occurrenceCount: 65,
+      distinctFingerprintCount: 65,
+      createdLineageCount: 0,
+      exactMatchCount: 0,
+      renamedMatchCount: 65
+    });
+    const service =
+      new YieldObservingSastFindingLineageService(
+        store,
+        {
+          verify: jest.fn().mockResolvedValue('VERIFIED')
+        } as unknown as SastFindingRenameAttestationVerifier,
+        {
+          verify: jest.fn().mockResolvedValue('UNAVAILABLE')
+        } as unknown as SastFindingLifecycleCoverageGate
+      );
+    const attestation = renameAttestation(context, {
+      entries: findings.map((finding, index) => {
+        const suffix = index.toString().padStart(2, '0');
+        return {
+          fromNormalizedPath: `legacy/config-${suffix}.ts`,
+          toNormalizedPath:
+            finding.location.normalizedPath
+        };
+      })
+    });
+
+    await expect(
+      service.observe(
+        {
+          batch,
+          renameAttestation: attestation
+        },
+        lineageFixtureClock
+      )
+    ).resolves.toMatchObject({
+      outcome: 'OBSERVED',
+      renamedMatchCount: 65
+    });
+    expect(service.yieldCount).toBe(1);
+    expect(store.observe).toHaveBeenCalledWith(
+      expect.objectContaining({
+        renameCandidates: expect.arrayContaining([
+          expect.objectContaining({
+            fromNormalizedPath: 'legacy/config-64.ts',
+            toNormalizedPath: 'src/config-64.ts'
+          })
+        ])
+      })
+    );
+  });
 });
 
 class YieldObservingSastFindingLineageService

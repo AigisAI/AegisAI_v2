@@ -2,12 +2,14 @@ import {
   SAST_CAPABILITIES,
   SAST_FINDING_FINGERPRINT_VERSION,
   SAST_PROFILE_IDS,
+  buildFindingFingerprintPreimage,
   type FindingFingerprintInput,
   type SastCapability,
   type SastProfileId
 } from './sast-runtime';
 import type {
-  SastFindingFingerprintDecision
+  SastFindingFingerprintDecision,
+  SastFingerprintedFinding
 } from './sast-finding-identity';
 import {
   hasExactKeys,
@@ -91,6 +93,14 @@ export interface SastFindingLineageKeyInput {
 }
 
 export interface SastFindingRenameEntry {
+  fromNormalizedPath: string;
+  toNormalizedPath: string;
+}
+
+export interface SastFindingRenameCandidate {
+  capability: Exclude<SastCapability, 'SBOM'>;
+  currentStableFingerprint: `sha256:${string}`;
+  previousStableFingerprint: `sha256:${string}`;
   fromNormalizedPath: string;
   toNormalizedPath: string;
 }
@@ -355,6 +365,54 @@ export function projectRenamedSastFindingFingerprintInput(
     sinkKind: decision.sinkKind.normalize('NFC'),
     structuralHash: decision.structuralHash.normalize('NFC')
   };
+}
+
+export function buildSastFindingRenameCandidate(
+  finding: Readonly<SastFingerprintedFinding>,
+  entry: Readonly<SastFindingRenameEntry>,
+  digestFingerprint: SastFindingLineageCanonicalDigester
+): SastFindingRenameCandidate | null {
+  if (
+    finding.fingerprint.normalizedPath !==
+    entry.toNormalizedPath
+  ) {
+    return null;
+  }
+  return {
+    capability: finding.capability,
+    currentStableFingerprint:
+      finding.fingerprint.stableFingerprint,
+    previousStableFingerprint: digestFingerprint(
+      buildFindingFingerprintPreimage(
+        projectRenamedSastFindingFingerprintInput(
+          finding.fingerprint,
+          entry.fromNormalizedPath
+        )
+      )
+    ),
+    fromNormalizedPath: entry.fromNormalizedPath,
+    toNormalizedPath: entry.toNormalizedPath
+  };
+}
+
+export function orderSastFindingRenameCandidates(
+  candidates: Iterable<Readonly<SastFindingRenameCandidate>>
+): SastFindingRenameCandidate[] {
+  const unique = new Map<string, SastFindingRenameCandidate>();
+  for (const candidate of candidates) {
+    unique.set(renameCandidateKey(candidate), {
+      ...candidate
+    });
+  }
+  return [...unique.values()].sort((left, right) => {
+    const leftKey = renameCandidateKey(left);
+    const rightKey = renameCandidateKey(right);
+    return leftKey < rightKey
+      ? -1
+      : leftKey > rightKey
+        ? 1
+        : 0;
+  });
 }
 
 export function canonicalizeSastFindingRenameAttestation(
@@ -718,6 +776,8 @@ export function isSastFindingLineageObservationResultShapeValid(
     value.occurrenceCount !== value.findingCount ||
     !isNonNegativeSafeInteger(value.distinctFingerprintCount) ||
     value.distinctFingerprintCount > value.findingCount ||
+    (value.findingCount > 0 &&
+      value.distinctFingerprintCount === 0) ||
     !isNonNegativeSafeInteger(value.createdLineageCount) ||
     !isNonNegativeSafeInteger(value.exactMatchCount) ||
     !isNonNegativeSafeInteger(value.renamedMatchCount) ||
@@ -847,6 +907,8 @@ export function isSastFindingLineageRejectionShapeValid(
     !isLineageOperation(value.operation) ||
     !Array.isArray(value.reasonCodes) ||
     value.reasonCodes.length === 0 ||
+    value.reasonCodes.length >
+      SAST_FINDING_LINEAGE_REJECTION_REASON_CODES.length ||
     value.sourceBatchDigestStored !== false ||
     value.sourceFindingStored !== false ||
     value.renamePathsStored !== false ||
@@ -858,18 +920,13 @@ export function isSastFindingLineageRejectionShapeValid(
   }
   const reasonCodes =
     value.reasonCodes as SastFindingLineageRejectionReasonCode[];
+  const orderedReasonCodes =
+    orderSastFindingLineageRejectionReasons(reasonCodes);
   if (
-    !reasonCodes.every((reason) =>
-      SAST_FINDING_LINEAGE_REJECTION_REASON_CODES.includes(
-        reason
-      )
-    ) ||
+    reasonCodes.length !== orderedReasonCodes.length ||
     reasonCodes.some(
       (reason, index) =>
-        reason !==
-        orderSastFindingLineageRejectionReasons(reasonCodes)[
-          index
-        ]
+        reason !== orderedReasonCodes[index]
     )
   ) {
     return false;
@@ -1105,6 +1162,12 @@ function isFindingLineageId(value: unknown): value is string {
     typeof value === 'string' &&
     /^finding-lineage:\/\/[a-f0-9]{64}$/u.test(value)
   );
+}
+
+function renameCandidateKey(
+  candidate: Readonly<SastFindingRenameCandidate>
+): string {
+  return `${candidate.capability}\0${candidate.currentStableFingerprint}`;
 }
 
 function isObservationBatchId(value: unknown): value is string {

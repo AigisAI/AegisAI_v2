@@ -237,6 +237,18 @@ describe('PrismaSastFindingLineageStore', () => {
       ]
     });
     expect(
+      transaction.sastFindingLineage.findMany
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tenantId: context.scope.tenantId,
+          repositoryBindingId:
+            context.scope.repositoryBindingId,
+          id: expect.any(Object)
+        })
+      })
+    );
+    expect(
       transaction.normalizedFinding.createMany
     ).toHaveBeenCalledWith({
       data: expect.arrayContaining([
@@ -730,6 +742,19 @@ describe('PrismaSastFindingLineageStore', () => {
           coverageDecision: decision
         })
       });
+      expect(
+        transaction.sastFindingLifecycleReconciliation.findFirst
+      ).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          where: expect.objectContaining({
+            tenantId: decision.tenantId,
+            repositoryBindingId:
+              decision.repositoryBindingId,
+            OR: expect.any(Array)
+          })
+        })
+      );
     }
   );
 

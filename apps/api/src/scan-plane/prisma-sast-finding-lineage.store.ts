@@ -9,7 +9,7 @@ import {
   SAST_PROFILE_IDS,
   SAST_SCAN_LANES,
   SAST_SCANNER_RESPONSIBILITIES,
-  buildFindingFingerprintPreimage,
+  buildSastFindingRenameCandidate,
   buildSastFindingLifecycleContextPreimage,
   buildSastFindingLineageKeyPreimage,
   buildSastScanPlanDigestPreimage,
@@ -20,9 +20,10 @@ import {
   isSastFingerprintedFindingShapeValid,
   isSastFingerprintedFindingBatchShapeValid,
   isSastScanPlanValid,
-  projectRenamedSastFindingFingerprintInput,
+  orderSastFindingRenameCandidates,
   type SastCapability,
   type SastFindingLifecycleStatus,
+  type SastFindingRenameCandidate,
   type SastFingerprintedFinding,
   type SastScanPlan
 } from '@aegisai/shared';
@@ -41,8 +42,7 @@ import {
   type PersistedSastFindingReconciliation,
   type SastFindingLineageObservationScope,
   type SastFindingLineageScanContext,
-  type SastFindingReconciliationScanContext,
-  type SastFindingRenameCandidate
+  type SastFindingReconciliationScanContext
 } from './sast-finding-lineage.store';
 
 const SERIALIZABLE_ATTEMPTS = 3;
@@ -636,6 +636,8 @@ export class PrismaSastFindingLineageStore
         ? []
         : await transaction.sastFindingLineage.findMany({
             where: {
+              tenantId: scope.tenantId,
+              repositoryBindingId: scope.repositoryBindingId,
               id: {
                 in: resolved.map(
                   (identity) => identity.lineageId
@@ -1074,6 +1076,9 @@ export class PrismaSastFindingLineageStore
       await transaction.sastFindingLifecycleReconciliation.findFirst(
         {
           where: {
+            tenantId: decision.tenantId,
+            repositoryBindingId:
+              decision.repositoryBindingId,
             OR: [
               { id: input.reconciliationId },
               {
@@ -1081,9 +1086,6 @@ export class PrismaSastFindingLineageStore
                   decision.decisionDigest
               },
               {
-                tenantId: decision.tenantId,
-                repositoryBindingId:
-                  decision.repositoryBindingId,
                 lifecycleContextKey:
                   decision.lifecycleContextKey,
                 sequence: decision.sequence
@@ -1964,43 +1966,28 @@ function isObservationPersistenceInputValid(
   ) {
     return false;
   }
-  const entries = new Map(
+  const entriesByTargetPath = new Map(
     attestation.entries.map((entry) => [
       entry.toNormalizedPath,
       entry
     ])
   );
-  const expected = new Map<
-    string,
-    SastFindingRenameCandidate
-  >();
+  const derivedCandidates: SastFindingRenameCandidate[] = [];
   for (const finding of input.batch.findings) {
-    const entry = entries.get(
+    const entry = entriesByTargetPath.get(
       finding.fingerprint.normalizedPath
     );
     if (!entry) continue;
-    const key = identityKey(
-      finding.capability,
-      finding.fingerprint.stableFingerprint
+    const candidate = buildSastFindingRenameCandidate(
+      finding,
+      entry,
+      digest
     );
-    expected.set(key, {
-      capability: finding.capability,
-      currentStableFingerprint:
-        finding.fingerprint.stableFingerprint,
-      previousStableFingerprint: digest(
-        buildFindingFingerprintPreimage(
-          projectRenamedSastFindingFingerprintInput(
-            finding.fingerprint,
-            entry.fromNormalizedPath
-          )
-        )
-      ),
-      fromNormalizedPath: entry.fromNormalizedPath,
-      toNormalizedPath: entry.toNormalizedPath
-    });
+    if (!candidate) return false;
+    derivedCandidates.push(candidate);
   }
-  const expectedCandidates = [...expected.values()].sort(
-    compareRenameCandidates
+  const expectedCandidates = orderSastFindingRenameCandidates(
+    derivedCandidates
   );
   return (
     expectedCandidates.length > 0 &&
@@ -2085,21 +2072,6 @@ function observationBatchMatchesContext(
       context.source.dispositionDecisionDigest &&
     batch.retentionExpiresAt ===
       context.source.retentionExpiresAt
-  );
-}
-
-function compareRenameCandidates(
-  left: Readonly<SastFindingRenameCandidate>,
-  right: Readonly<SastFindingRenameCandidate>
-): number {
-  return JSON.stringify([
-    left.capability,
-    left.currentStableFingerprint
-  ]).localeCompare(
-    JSON.stringify([
-      right.capability,
-      right.currentStableFingerprint
-    ])
   );
 }
 
