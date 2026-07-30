@@ -1191,15 +1191,12 @@ export class PrismaSastFindingLineageStore
           tenantId: decision.tenantId,
           repositoryBindingId: decision.repositoryBindingId,
           scanRequestId: decision.scanRequestId,
-          attemptId: decision.attemptId,
-          lifecycleContextKey:
-            decision.lifecycleContextKey,
-          profileId: decision.profileId,
-          profileDigest: decision.profileDigest
+          attemptId: decision.attemptId
         },
         select: {
           id: true,
           sourceIdentityBatchDigest: true,
+          lifecycleContextKey: true,
           capabilities: true,
           scanner: true,
           targetRef: true,
@@ -1221,6 +1218,8 @@ export class PrismaSastFindingLineageStore
         return true;
       }
       return (
+        batch.lifecycleContextKey !==
+          decision.lifecycleContextKey ||
         batch.targetRef !== input.context.targetRef ||
         batch.commitSha !== decision.commitSha ||
         batch.lane !== input.context.lane ||
@@ -1505,7 +1504,9 @@ export class PrismaSastFindingLineageStore
       select: {
         scanner: true,
         scannerVersion: true,
+        wrapperDigest: true,
         scannerImageDigest: true,
+        scannerSetDigest: true,
         ruleBundleDigest: true,
         databaseDigest: true,
         schemaBundleDigest: true,
@@ -1514,6 +1515,7 @@ export class PrismaSastFindingLineageStore
         profileDigest: true,
         preflightAttestationRef: true,
         preflightInventoryDigest: true,
+        scannerWorkspaceInventoryDigest: true,
         artifactSchema: true,
         artifactSchemaVersion: true,
         scanRequest: {
@@ -1577,10 +1579,13 @@ export class PrismaSastFindingLineageStore
       ingestion.retentionExpiresAt.getTime() !==
         disposition.retentionExpiresAt.getTime() ||
       !isDigest(row.scannerImageDigest) ||
+      !isDigest(row.wrapperDigest) ||
+      !isDigest(row.scannerSetDigest) ||
       !isDigest(row.schemaBundleDigest) ||
       !isDigest(row.normalizerBundleDigest) ||
       !isDigest(row.profileDigest) ||
       !isDigest(row.preflightInventoryDigest) ||
+      !isDigest(row.scannerWorkspaceInventoryDigest) ||
       !isDigest(ingestion.envelopeDigest) ||
       !isDigest(ingestion.observedContentDigest) ||
       !isDigest(disposition.validationResultDigest) ||
@@ -1624,7 +1629,10 @@ export class PrismaSastFindingLineageStore
         )
       ) ||
       row.scannerVersion !== scannerRuntime.version ||
+      row.wrapperDigest !== scannerRuntime.wrapper.digest ||
       row.scannerImageDigest !== scannerRuntime.digest ||
+      row.scannerSetDigest !==
+        plan.scannerSet.scannerSetDigest ||
       row.ruleBundleDigest !== expectedRuleBundle.digest ||
       (findingScanner === 'TRIVY'
         ? row.databaseDigest !==
@@ -1637,6 +1645,8 @@ export class PrismaSastFindingLineageStore
       row.preflightAttestationRef !==
         plan.repositoryState.attestationRef ||
       row.preflightInventoryDigest !==
+        plan.repositoryState.inventoryDigest ||
+      row.scannerWorkspaceInventoryDigest !==
         plan.repositoryState.inventoryDigest ||
       row.artifactSchema !== expectedArtifactSchema ||
       row.artifactSchemaVersion !==

@@ -6,6 +6,7 @@ import {
   SAST_FORBIDDEN_CAPABILITIES,
   SAST_SCAN_PROFILES,
   buildFindingFingerprintPreimage,
+  buildSastFindingLifecycleContextPreimage,
   isSastScanPlanValid,
   projectRenamedSastFindingFingerprintInput,
   type SastScanPlan
@@ -122,6 +123,46 @@ describe('PrismaSastFindingLineageStore', () => {
       })
     ).resolves.toBeNull();
   });
+
+  it.each([
+    'wrapperDigest',
+    'scannerSetDigest',
+    'scannerWorkspaceInventoryDigest'
+  ] as const)(
+    'rejects durable %s drift from the immutable plan',
+    async (field) => {
+      const plan = durablePlan();
+      const scannerRun = {
+        findFirst: jest.fn().mockResolvedValue(
+          durableObservationRow(
+            plan,
+            new Date('2026-08-01T00:00:00.000Z'),
+            {
+              [field]: batchIndependentDigest(
+                `tampered-${field}`
+              )
+            }
+          )
+        )
+      };
+      const store = new PrismaSastFindingLineageStore(
+        {
+          scannerRun
+        } as unknown as PrismaService
+      );
+
+      await expect(
+        store.loadObservationContext({
+          tenantId: plan.tenantId,
+          repositoryBindingId:
+            plan.repositoryState.repositoryBindingId,
+          scanRequestId: plan.scanRequestId,
+          attemptId: 'attempt-1',
+          scannerRunId: 'scanner-run-1'
+        })
+      ).resolves.toBeNull();
+    }
+  );
 
   it('creates one lineage while retaining every repeated occurrence in a serializable transaction', async () => {
     const batch = await fingerprintedFindingBatch([
@@ -832,6 +873,72 @@ describe('PrismaSastFindingLineageStore', () => {
       transaction.sastFindingLifecycleState.updateMany
     ).not.toHaveBeenCalled();
   });
+
+  it('rejects a mismatched-context batch even when every current-attempt digest is declared', async () => {
+    const validDigest =
+      lifecycleCoverageDecision()
+        .expectedObservationBatchDigests[0];
+    const extraDigest = batchIndependentDigest(
+      'mismatched-context-batch'
+    );
+    const decision = lifecycleCoverageDecision({
+      expectedObservationBatchDigests: [
+        validDigest,
+        extraDigest
+      ].sort()
+    });
+    const context = reconciliationContext();
+    const transaction = reconciliationTransaction({
+      decision,
+      status: 'OPEN',
+      observedRows: [],
+      observationDigest: validDigest,
+      additionalBatches: [
+        {
+          ...reconciliationBatch(
+            context,
+            extraDigest,
+            []
+          ),
+          lifecycleContextKey:
+            batchIndependentDigest('other-target-context')
+        }
+      ]
+    });
+    const prisma = serializablePrisma(transaction);
+    const store = new PrismaSastFindingLineageStore(
+      prisma as unknown as PrismaService
+    );
+    mockReconciliationContext(store, context);
+
+    await expect(
+      store.reconcile({
+        reconciliationId:
+          `finding-reconciliation://${'e'.repeat(64)}`,
+        reconciledAt: LINEAGE_FIXTURE_TIME,
+        decision,
+        context
+      })
+    ).rejects.toBeInstanceOf(
+      SastFindingLineageObservationIncompleteError
+    );
+    expect(
+      transaction.sastFindingObservationBatch.findMany
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          tenantId: decision.tenantId,
+          repositoryBindingId:
+            decision.repositoryBindingId,
+          scanRequestId: decision.scanRequestId,
+          attemptId: decision.attemptId
+        }
+      })
+    );
+    expect(
+      transaction.sastFindingLifecycleState.updateMany
+    ).not.toHaveBeenCalled();
+  });
 });
 
 function observationTransaction(options: {
@@ -999,6 +1106,14 @@ function reconciliationBatch(
       sourceIdentityBatchDigest
     ),
     sourceIdentityBatchDigest,
+    lifecycleContextKey: batchIndependentDigest(
+      buildSastFindingLifecycleContextPreimage({
+        tenantId: context.tenantId,
+        repositoryBindingId:
+          context.repositoryBindingId,
+        targetRef: context.targetRef
+      })
+    ),
     capabilities,
     scanner: 'OPENGREP',
     targetRef: context.targetRef,
@@ -1140,8 +1255,12 @@ function durableObservationRow(
     scanner: 'OPENGREP',
     scannerVersion:
       plan.scannerSet.scanners.OPENGREP.version,
+    wrapperDigest:
+      plan.scannerSet.scanners.OPENGREP.wrapper.digest,
     scannerImageDigest:
       plan.scannerSet.scanners.OPENGREP.digest,
+    scannerSetDigest:
+      plan.scannerSet.scannerSetDigest,
     ruleBundleDigest:
       plan.scannerSet.ruleBundles.find(
         (bundle) => bundle.scanner === 'OPENGREP'
@@ -1156,6 +1275,8 @@ function durableObservationRow(
     preflightAttestationRef:
       plan.repositoryState.attestationRef,
     preflightInventoryDigest:
+      plan.repositoryState.inventoryDigest,
+    scannerWorkspaceInventoryDigest:
       plan.repositoryState.inventoryDigest,
     artifactSchema: 'OPENGREP_SARIF',
     artifactSchemaVersion: '2.1.0',
