@@ -241,7 +241,7 @@ export function fixtureDigest(
 function redactedFinding(
   overrides: Partial<OpenGrepRedactedFinding>
 ): OpenGrepRedactedFinding {
-  const finding = {
+  const baseFinding = {
     tenantId: 'tenant-1',
     repositoryBindingId: 'repository-1',
     scanRequestId: 'scan-1',
@@ -298,9 +298,12 @@ function redactedFinding(
       decisionRef:
         `redaction://${SAST_SECRET_REDACTION_VERSION}/${'a'.repeat(64)}`
     },
-    durablePersistenceAllowed: false,
+    durablePersistenceAllowed: false
+  } satisfies OpenGrepRedactedFinding;
+  const finding: OpenGrepRedactedFinding = {
+    ...baseFinding,
     ...overrides
-  } as OpenGrepRedactedFinding;
+  };
   const {
     decisionDigest: _decisionDigest,
     decisionRef: _decisionRef,

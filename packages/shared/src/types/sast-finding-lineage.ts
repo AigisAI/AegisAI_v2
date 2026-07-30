@@ -294,6 +294,7 @@ const FINDING_CAPABILITIES = SAST_CAPABILITIES.filter(
   (capability): capability is Exclude<SastCapability, 'SBOM'> =>
     capability !== 'SBOM'
 );
+const UTF8_ENCODER = new TextEncoder();
 
 const AUTHORITY: Readonly<SastFindingLineageAuthority> =
   Object.freeze({
@@ -1018,18 +1019,7 @@ export function sastFindingLineageAuthority(): SastFindingLineageAuthority {
 }
 
 function canonicalAuthority(): SastFindingLineageAuthority {
-  return {
-    normalizedFindingPersistenceAuthority: true,
-    occurrenceAuthority: true,
-    lifecycleAuthority: true,
-    renameAuthority: true,
-    correlationAuthority: false,
-    coverageCalculationAuthority: false,
-    evidenceAuthority: false,
-    policyAuthority: false,
-    publicationAuthority: false,
-    aiPayloadEligible: false
-  };
+  return { ...AUTHORITY };
 }
 
 function isAuthorityValid(value: unknown): boolean {
@@ -1217,7 +1207,7 @@ function encodeCanonicalField(value: string): string {
 }
 
 function utf8ByteLength(value: string): number {
-  return new TextEncoder().encode(value).byteLength;
+  return UTF8_ENCODER.encode(value).byteLength;
 }
 
 function hasControlCharacters(value: string): boolean {

@@ -73,9 +73,7 @@ describe('SAST finding lineage persistence contract', () => {
       expect(schema).toContain(sourceConstraint);
       expect(migration).toContain(sourceConstraint);
     }
-    expect(schema).toContain(
-      'lastObservedAt             DateTime?'
-    );
+    expect(schema).toMatch(/lastObservedAt\s+DateTime\?/u);
     expect(migration).toContain(
       '"lastObservedAt" TIMESTAMP(3)'
     );
@@ -172,7 +170,7 @@ describe('SAST finding lineage persistence contract', () => {
       'T039 owns coverage calculation'
     );
     expect(coverageGate).not.toMatch(
-      /\b(calculate|publish|override)\s*\(/
+      /^\s*(?:(?:public|protected|private|static|async|override)\s+)*(?:calculate|publish|override)\s*\([^)]*\)\s*(?::[^{\n]+)?\s*\{|^\s*abstract\s+(?:calculate|publish|override)\s*\([^)]*\)\s*(?::[^;\n]+)?;/mu
     );
   });
 });

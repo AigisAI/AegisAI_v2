@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
+import { setTimeout as wait } from 'node:timers/promises';
 
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -48,6 +49,8 @@ import {
 const SERIALIZABLE_ATTEMPTS = 3;
 const SERIALIZABLE_MAX_WAIT_MILLISECONDS = 5_000;
 const SERIALIZABLE_TIMEOUT_MILLISECONDS = 120_000;
+const SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS = 10;
+const SERIALIZABLE_RETRY_MAX_DELAY_MILLISECONDS = 100;
 const CREATE_MANY_CHUNK_SIZE = 250;
 const READ_MANY_CHUNK_SIZE = 10_000;
 const FINDING_CAPABILITIES = [
@@ -1798,6 +1801,9 @@ export class PrismaSastFindingLineageStore
       } catch (error) {
         lastError = error;
         if (!isRetryableTransactionError(error)) throw error;
+        if (attempt + 1 < SERIALIZABLE_ATTEMPTS) {
+          await wait(serializableRetryDelay(attempt));
+        }
       }
     }
     throw lastError;
@@ -2428,15 +2434,15 @@ function isPlanBoundToScanRequest(
 function authoritativeScannerCapabilities(
   scanner: string
 ): FindingCapability[] {
-  if (scanner === 'OPENGREP') return ['SAST'];
-  if (scanner === 'TRIVY') {
-    return [
-      'DEPENDENCY_VULNERABILITY',
-      'SECRET_DETECTION',
-      'IAC_MISCONFIGURATION'
-    ];
+  if (!isFindingScannerKind(scanner)) {
+    throw new SastFindingLineageDurableScopeError();
   }
-  throw new SastFindingLineageDurableScopeError();
+  const authoritativeCapabilities =
+    SAST_SCANNER_RESPONSIBILITIES[scanner]
+      .authoritativeCapabilities as readonly string[];
+  return FINDING_CAPABILITIES.filter((capability) =>
+    authoritativeCapabilities.includes(capability)
+  );
 }
 
 function readCapabilities(
@@ -2557,14 +2563,76 @@ function sameObservationContext(
   left: Readonly<SastFindingLineageScanContext>,
   right: Readonly<SastFindingLineageScanContext>
 ): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
+  return (
+    sameObjectKeys(left, right) &&
+    sameObjectKeys(left.scope, right.scope) &&
+    sameObjectKeys(left.source, right.source) &&
+    left.scope.tenantId === right.scope.tenantId &&
+    left.scope.repositoryBindingId ===
+      right.scope.repositoryBindingId &&
+    left.scope.scanRequestId === right.scope.scanRequestId &&
+    left.scope.attemptId === right.scope.attemptId &&
+    left.scope.scannerRunId === right.scope.scannerRunId &&
+    left.targetRef === right.targetRef &&
+    left.lane === right.lane &&
+    left.commitSha === right.commitSha &&
+    left.canonicalScanKey === right.canonicalScanKey &&
+    left.planDigest === right.planDigest &&
+    left.profileId === right.profileId &&
+    left.profileDigest === right.profileDigest &&
+    left.scanner === right.scanner &&
+    left.source.ingestionId === right.source.ingestionId &&
+    left.source.scannerVersion ===
+      right.source.scannerVersion &&
+    left.source.scannerImageDigest ===
+      right.source.scannerImageDigest &&
+    left.source.ruleBundleDigest ===
+      right.source.ruleBundleDigest &&
+    left.source.vulnerabilityDatabaseDigest ===
+      right.source.vulnerabilityDatabaseDigest &&
+    left.source.schemaBundleDigest ===
+      right.source.schemaBundleDigest &&
+    left.source.normalizerBundleDigest ===
+      right.source.normalizerBundleDigest &&
+    left.source.preflightAttestationRef ===
+      right.source.preflightAttestationRef &&
+    left.source.preflightInventoryDigest ===
+      right.source.preflightInventoryDigest &&
+    left.source.artifactSchema ===
+      right.source.artifactSchema &&
+    left.source.artifactSchemaVersion ===
+      right.source.artifactSchemaVersion &&
+    left.source.envelopeDigest ===
+      right.source.envelopeDigest &&
+    left.source.artifactDigest ===
+      right.source.artifactDigest &&
+    left.source.validationResultDigest ===
+      right.source.validationResultDigest &&
+    left.source.dispositionDecisionDigest ===
+      right.source.dispositionDecisionDigest &&
+    left.source.retentionExpiresAt ===
+      right.source.retentionExpiresAt
+  );
 }
 
 function sameReconciliationContext(
   left: Readonly<SastFindingReconciliationScanContext>,
   right: Readonly<SastFindingReconciliationScanContext>
 ): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
+  return (
+    sameObjectKeys(left, right) &&
+    left.tenantId === right.tenantId &&
+    left.repositoryBindingId === right.repositoryBindingId &&
+    left.scanRequestId === right.scanRequestId &&
+    left.attemptId === right.attemptId &&
+    left.targetRef === right.targetRef &&
+    left.lane === right.lane &&
+    left.commitSha === right.commitSha &&
+    left.canonicalScanKey === right.canonicalScanKey &&
+    left.planDigest === right.planDigest &&
+    left.profileId === right.profileId &&
+    left.profileDigest === right.profileDigest
+  );
 }
 
 function sameStringArray(
@@ -2577,6 +2645,19 @@ function sameStringArray(
   );
 }
 
+function sameObjectKeys(
+  left: Readonly<object>,
+  right: Readonly<object>
+): boolean {
+  const leftKeys = Object.keys(left);
+  return (
+    leftKeys.length === Object.keys(right).length &&
+    leftKeys.every((key) =>
+      Object.prototype.hasOwnProperty.call(right, key)
+    )
+  );
+}
+
 function chunks<T>(
   values: readonly T[],
   size: number
@@ -2586,6 +2667,15 @@ function chunks<T>(
     result.push(values.slice(index, index + size));
   }
   return result;
+}
+
+function serializableRetryDelay(attempt: number): number {
+  const ceiling = Math.min(
+    SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS *
+      2 ** attempt,
+    SERIALIZABLE_RETRY_MAX_DELAY_MILLISECONDS
+  );
+  return randomInt(1, ceiling + 1);
 }
 
 function isRetryableTransactionError(error: unknown): boolean {

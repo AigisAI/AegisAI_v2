@@ -25,7 +25,8 @@ import {
   isSastFindingRenameAttestationShapeValid,
   orderSastFindingLineageRejectionReasons,
   orderSastFindingRenameCandidates,
-  projectRenamedSastFindingFingerprintInput
+  projectRenamedSastFindingFingerprintInput,
+  toSastFindingLineageAuditMetadata
 } from '../dist/index.js';
 
 const DIGEST = `sha256:${'a'.repeat(64)}`;
@@ -439,7 +440,7 @@ test('orders bounded zero-payload lineage rejection metadata', () => {
   );
 });
 
-test('requires every observed occurrence set to resolve a lineage', () => {
+test('validates observation result algebra and projects only audit metadata', () => {
   const core = {
     version: SAST_FINDING_LINEAGE_VERSION,
     outcome: 'OBSERVED',
@@ -450,25 +451,141 @@ test('requires every observed occurrence set to resolve a lineage', () => {
     lifecycleContextKey: CONTEXT_KEY,
     findingCount: 5,
     occurrenceCount: 5,
-    distinctFingerprintCount: 0,
-    createdLineageCount: 0,
-    exactMatchCount: 0,
+    distinctFingerprintCount: 2,
+    createdLineageCount: 1,
+    exactMatchCount: 1,
     renamedMatchCount: 0,
     replayed: false,
     observedAt: '2026-07-30T02:07:00.000Z',
     authority: lineageAuthority()
   };
+  const result = {
+    ...core,
+    resultDigest: digest(
+      canonicalizeSastFindingLineageObservationResult(core)
+    )
+  };
   assert.equal(
     isSastFindingLineageObservationResultShapeValid(
-      {
-        ...core,
-        resultDigest: digest(
-          canonicalizeSastFindingLineageObservationResult(core)
+      result,
+      digest
+    ),
+    true
+  );
+  assert.deepEqual(
+    toSastFindingLineageAuditMetadata(result, digest),
+    {
+      version: SAST_FINDING_LINEAGE_VERSION,
+      outcome: 'OBSERVED',
+      operation: 'OBSERVE',
+      resultDigest: result.resultDigest,
+      observationBatchId: result.observationBatchId,
+      findingCount: 5,
+      occurrenceCount: 5,
+      distinctFingerprintCount: 2,
+      createdLineageCount: 1,
+      exactMatchCount: 1,
+      renamedMatchCount: 0,
+      replayed: false
+    }
+  );
+  for (const invalidCore of [
+    {
+      ...core,
+      occurrenceCount: 4
+    },
+    {
+      ...core,
+      distinctFingerprintCount: 0,
+      createdLineageCount: 0,
+      exactMatchCount: 0
+    },
+    {
+      ...core,
+      createdLineageCount: 0
+    },
+    {
+      ...core,
+      authority: {
+        ...core.authority,
+        policyAuthority: true
+      }
+    }
+  ]) {
+    const invalidResult = {
+      ...invalidCore,
+      resultDigest: digest(
+        canonicalizeSastFindingLineageObservationResult(
+          invalidCore
         )
+      )
+    };
+    assert.equal(
+      isSastFindingLineageObservationResultShapeValid(
+        invalidResult,
+        digest
+      ),
+      false
+    );
+    assert.throws(
+      () =>
+        toSastFindingLineageAuditMetadata(
+          invalidResult,
+          digest
+        ),
+      TypeError
+    );
+  }
+});
+
+test('rejects invalid audit outcome dispatch', () => {
+  const core = {
+    version: SAST_FINDING_LINEAGE_VERSION,
+    outcome: 'REJECTED',
+    operation: 'OBSERVE',
+    reasonCodes: ['FINDING_LINEAGE_INPUT_INVALID'],
+    sourceBatchDigestStored: false,
+    sourceFindingStored: false,
+    renamePathsStored: false,
+    eligibleLineageIdsStored: false,
+    secretValueStored: false
+  };
+  const rejection = {
+    ...core,
+    rejectionDigest: digest(
+      canonicalizeSastFindingLineageRejection(core)
+    )
+  };
+  assert.deepEqual(
+    toSastFindingLineageAuditMetadata(rejection, digest),
+    {
+      version: SAST_FINDING_LINEAGE_VERSION,
+      outcome: 'REJECTED',
+      operation: 'OBSERVE',
+      reasonCodes: ['FINDING_LINEAGE_INPUT_INVALID'],
+      rejectionDigest: rejection.rejectionDigest
+    }
+  );
+  assert.equal(
+    isSastFindingLineageRejectionShapeValid(
+      {
+        ...rejection,
+        outcome: 'INVALID'
       },
       digest
     ),
     false
+  );
+  assert.throws(
+    () =>
+      toSastFindingLineageAuditMetadata(
+        {
+          ...rejection,
+          outcome: 'INVALID'
+        },
+        digest
+      ),
+    TypeError
   );
 });
 

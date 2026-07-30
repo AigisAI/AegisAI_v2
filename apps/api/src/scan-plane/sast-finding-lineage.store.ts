@@ -1,9 +1,6 @@
 import type {
   SastFindingLifecycleCoverageDecision,
   SastFindingRenameAttestation,
-  SastFindingLineageObservationResult,
-  SastFindingLifecycleReconciliationResult,
-  SastFingerprintedFinding,
   SastFingerprintedFindingBatch,
   SastFindingRenameCandidate,
   SastProfileId,
@@ -165,10 +162,3 @@ export abstract class SastFindingLineageStore {
     input: Readonly<PersistSastFindingReconciliationInput>
   ): Promise<PersistedSastFindingReconciliation>;
 }
-
-export type DurableSastFingerprintedFinding =
-  SastFingerprintedFinding;
-export type DurableSastFindingObservationResult =
-  SastFindingLineageObservationResult;
-export type DurableSastFindingReconciliationResult =
-  SastFindingLifecycleReconciliationResult;

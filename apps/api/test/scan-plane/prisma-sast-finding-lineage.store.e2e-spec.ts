@@ -27,6 +27,7 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 import {
   LINEAGE_FIXTURE_TIME,
   fingerprintedFindingBatch,
+  fixtureDigest as batchIndependentDigest,
   lifecycleCoverageDecision,
   lineageContextKey,
   lineageObservationContext,
@@ -205,7 +206,7 @@ describe('PrismaSastFindingLineageStore', () => {
       lifecycleContextKey: lineageContextKey(context),
       observedAt: LINEAGE_FIXTURE_TIME,
       batch,
-      context,
+      context: reorderObservationContext(context),
       renameCandidates: []
     });
 
@@ -262,9 +263,12 @@ describe('PrismaSastFindingLineageStore', () => {
         })
       ])
     });
+    expect(
+      transaction.sastFindingOccurrence.createMany
+    ).toHaveBeenCalledTimes(1);
     const occurrenceRows =
-      transaction.sastFindingOccurrence.createMany.mock
-        .calls[0]?.[0].data as Array<{
+      (transaction.sastFindingOccurrence.createMany.mock
+        .calls[0]?.[0]?.data ?? []) as Array<{
           lineageId: string;
           ordinal: number;
         }>;
@@ -705,7 +709,7 @@ describe('PrismaSastFindingLineageStore', () => {
           `finding-reconciliation://${'3'.repeat(64)}`,
         reconciledAt: LINEAGE_FIXTURE_TIME,
         decision,
-        context
+        context: reorderReconciliationContext(context)
       });
 
       expect(result[countField]).toBe(1);
@@ -732,7 +736,12 @@ describe('PrismaSastFindingLineageStore', () => {
           })
         ]
       });
-      expect('normalizedFinding' in transaction).toBe(false);
+      expect(
+        transaction.normalizedFinding.updateMany
+      ).not.toHaveBeenCalled();
+      expect(
+        transaction.normalizedFinding.createMany
+      ).not.toHaveBeenCalled();
       expect(
         transaction.sastFindingLifecycleReconciliation.create
       ).toHaveBeenCalledWith({
@@ -1097,6 +1106,10 @@ function reconciliationTransaction(input: {
         }))
       )
     },
+    normalizedFinding: {
+      updateMany: jest.fn(),
+      createMany: jest.fn()
+    },
     sastFindingLifecycleState: {
       findMany: jest.fn().mockResolvedValue([
         {
@@ -1238,6 +1251,66 @@ function mockObservationContext(
     .mockResolvedValue(context);
 }
 
+function reorderObservationContext(
+  context: Readonly<SastFindingLineageScanContext>
+): SastFindingLineageScanContext {
+  return {
+    source: {
+      retentionExpiresAt:
+        context.source.retentionExpiresAt,
+      dispositionDecisionDigest:
+        context.source.dispositionDecisionDigest,
+      validationResultDigest:
+        context.source.validationResultDigest,
+      artifactDigest: context.source.artifactDigest,
+      envelopeDigest: context.source.envelopeDigest,
+      artifactSchemaVersion:
+        context.source.artifactSchemaVersion,
+      artifactSchema: context.source.artifactSchema,
+      preflightInventoryDigest:
+        context.source.preflightInventoryDigest,
+      preflightAttestationRef:
+        context.source.preflightAttestationRef,
+      normalizerBundleDigest:
+        context.source.normalizerBundleDigest,
+      schemaBundleDigest:
+        context.source.schemaBundleDigest,
+      ...(context.source.vulnerabilityDatabaseDigest
+        ? {
+            vulnerabilityDatabaseDigest:
+              context.source.vulnerabilityDatabaseDigest
+          }
+        : {}),
+      ...(context.source.ruleBundleDigest
+        ? {
+            ruleBundleDigest:
+              context.source.ruleBundleDigest
+          }
+        : {}),
+      scannerImageDigest:
+        context.source.scannerImageDigest,
+      scannerVersion: context.source.scannerVersion,
+      ingestionId: context.source.ingestionId
+    },
+    scanner: context.scanner,
+    profileDigest: context.profileDigest,
+    profileId: context.profileId,
+    planDigest: context.planDigest,
+    canonicalScanKey: context.canonicalScanKey,
+    commitSha: context.commitSha,
+    lane: context.lane,
+    targetRef: context.targetRef,
+    scope: {
+      scannerRunId: context.scope.scannerRunId,
+      attemptId: context.scope.attemptId,
+      scanRequestId: context.scope.scanRequestId,
+      repositoryBindingId:
+        context.scope.repositoryBindingId,
+      tenantId: context.scope.tenantId
+    }
+  };
+}
+
 function mockReconciliationContext(
   store: PrismaSastFindingLineageStore,
   context: SastFindingReconciliationScanContext
@@ -1254,12 +1327,22 @@ function mockReconciliationContext(
     .mockResolvedValue(context);
 }
 
-function batchIndependentDigest(
-  value: string
-): `sha256:${string}` {
-  return `sha256:${createHash('sha256')
-    .update(value, 'utf8')
-    .digest('hex')}`;
+function reorderReconciliationContext(
+  context: Readonly<SastFindingReconciliationScanContext>
+): SastFindingReconciliationScanContext {
+  return {
+    profileDigest: context.profileDigest,
+    profileId: context.profileId,
+    planDigest: context.planDigest,
+    canonicalScanKey: context.canonicalScanKey,
+    commitSha: context.commitSha,
+    lane: context.lane,
+    targetRef: context.targetRef,
+    attemptId: context.attemptId,
+    scanRequestId: context.scanRequestId,
+    repositoryBindingId: context.repositoryBindingId,
+    tenantId: context.tenantId
+  };
 }
 
 function deterministicTestId(
