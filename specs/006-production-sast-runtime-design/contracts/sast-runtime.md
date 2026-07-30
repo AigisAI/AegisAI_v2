@@ -493,7 +493,9 @@ transient `SastNormalizedFindingCandidate` values and cannot change policy state
 is not a `NormalizedSastFinding`: it has no platform stable fingerprint, evidence reference,
 or finding lifecycle status and carries `durablePersistenceAllowed=false`. T035 redacts
 the transient candidate before any durable storage, log, audit, dashboard, or evidence path;
-T036 then computes the platform fingerprint and constructs the final normalized finding.
+T036 then computes the platform fingerprint and constructs the first persistence-eligible
+normalized-finding handoff. T037 and later gates still own occurrences, lifecycle, correlation,
+coverage, evidence, policy, publication, and AI eligibility.
 T034 emits a separate transient `SyftCycloneDxInventoryBatch`, not a finding candidate. It
 has SBOM inventory authority only and is not eligible for finding, policy, AI, or durable
 persistence paths.
@@ -509,8 +511,9 @@ an alternate clock exists only as an explicit trusted test/task seam and is neve
 artifact or envelope payload.
 The adapter does not expose a route and does not gain a general object-store read capability.
 Its bounded stream is supplied only by the later Data/Security-owned
-normalization/redaction/fingerprinting worker. The T035 redaction component exists, but the
-default runtime remains unwired and fail closed until that worker and T036 exist.
+normalization/redaction/fingerprinting worker. The T035 and T036 components exist, but the
+default runtime remains unwired and fail closed until that Data/Security worker installs the
+artifact reader and durable persistence boundary.
 
 The v1 schema mapping is deliberately narrower than generic SARIF:
 
@@ -818,11 +821,11 @@ negative storage assertions, and a digest over those safe fields. The source art
 may remain normal accepted-artifact provenance only on success; it is absent from rejection.
 
 `ScanPlaneModule` does not export the raw OpenGrep or Trivy normalizer providers after T035.
-It exports the redaction gate for the next internal stage. This limits normal Nest module
-consumers to the sanitized handoff but does not authorize a user route, log sink, audit of
-candidate text, evidence construction, policy evaluation, AI call, or persistence. T036
-must verify this batch, compute the platform fingerprint from secret-free identity material,
-and construct the first durable normalized finding.
+The redaction gate remains internal and is consumed by T036. `ScanPlaneModule` exports only
+the identity service to the next internal stage. This limits normal Nest module consumers to
+the fingerprinted handoff but does not authorize a user route, log sink, audit of candidate
+text, evidence construction, lifecycle transition, policy evaluation, publication, AI call,
+or database write.
 
 ## Stable Fingerprint Contract
 
@@ -869,6 +872,60 @@ digest after NFC normalization.
 
 If a rule changes semantic meaning, it receives a new `ruleSemanticId` even when its
 scanner-local rule ID stays unchanged.
+
+### Finding identity construction gate v1
+
+`sast-finding-identity-v1` accepts exactly one complete `SastSecretRedactionBatch`; it has no
+raw adapter, artifact-reader, object-store, route, log, evidence, policy, or AI input. Before
+constructing identity it recomputes the complete T035 source batch and every sanitized
+redaction decision with the trusted canonical SHA-256 implementation. It rejects more than
+25,000 findings, a malformed or forged handoff, a non-monotonic clock, and a retention window
+that is invalid or reaches expiry before or during construction. The async pass yields before
+finding 65 and every subsequent 64-finding boundary.
+
+Each finding projects the seven canonical fields above from the verified sanitized candidate.
+A `FILE` location contributes its canonical normalized path. An `UNKNOWN` location contributes
+the explicit empty string; its reason, coordinates, scanner match identifier, and any invented
+fallback path are excluded. The UTF-8 length prefix makes that empty component unambiguous.
+The resulting `SastFindingFingerprintDecision` binds:
+
+- exact `sast-fingerprint-v1`, all seven projected fields, and the lowercase SHA-256 stable
+  fingerprint
+- the exact T035 sanitized redaction-decision digest
+- `unstableCoordinatesIncluded=false`,
+  `scannerMatchIdentityAuthoritative=false`, and `fingerprintPreimageStored=false`
+- a canonical decision digest and
+  `fingerprint://sast-fingerprint-v1/<safe-decision-digest>` reference
+
+Repeated observations with the same fingerprint and byte-identical preimage remain separate
+ordered findings for T037 occurrence construction. If one fingerprint is observed with two
+different preimages, the whole batch fails closed with
+`FINDING_IDENTITY_FINGERPRINT_COLLISION`; no first-writer or scanner-local identity wins.
+The collision map is transient and neither a fingerprint preimage nor a source candidate is
+stored or returned.
+
+Success is a fresh canonical `SastFingerprintedFindingBatch` that preserves the complete
+sanitized T035 candidate and scanner/rule/artifact provenance, binds the T035 batch digest,
+adds safe distinct/repeated counts, and sets `durablePersistenceAllowed=true`. This is the
+first normalized-finding persistence-eligible handoff, not a lifecycle or publication
+decision. Until T037 and later gates consume it, the following authority flags remain false:
+
+```text
+occurrenceAuthority
+lifecycleAuthority
+correlationAuthority
+coverageAuthority
+evidenceAuthority
+policyAuthority
+publicationAuthority
+aiPayloadEligible
+```
+
+Rejections expose only the version, globally ordered coarse reason codes, four negative
+storage assertions, and their canonical digest. They omit the T035 batch digest, artifact
+digest, candidate, fingerprint, fingerprint preimage, and secret value. `ScanPlaneModule`
+exports only `SastFindingIdentityService` to the next internal stage; T035 redaction and both
+raw normalizers remain internal providers.
 
 ## Correlation Contract
 

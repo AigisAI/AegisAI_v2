@@ -266,15 +266,15 @@ portion of Phase 6:
 - T032 produces only canonical, digest-bound `SastNormalizedFindingCandidate` batches with
   `durablePersistenceAllowed=false`. OpenGrep `matchBasedId/v1` remains a non-authoritative
   T036 identity hint; the candidate has no stable fingerprint, evidence reference, status,
-  policy authority, user route, or AI path. T035 redaction and T036 fingerprinting remain
-  mandatory before durable normalized finding persistence.
+  policy authority, user route, or AI path. The implemented T035 redaction and T036
+  fingerprinting gates remain mandatory before normalized-finding persistence eligibility.
 - `trivy-json-normalizer-v1` independently rebinds the unexpired T031 accepted decision,
   immutable plan, coordinated attestation, validation/envelope/content/disposition digests,
   exact Trivy 0.66.0 scanner/image/wrapper/schema/normalizer/checks-bundle metadata, and pinned
   vulnerability-database digest/version before reading a bounded stream. The adapter has no
   route or general object-store capability. T035 is the implemented in-memory redaction
-  boundary, but artifact reading and durable flow remain unwired until the later
-  Data/Security-owned orchestration and T036 persistence worker exist.
+  boundary consumed by T036, but artifact reading and the durable database flow remain
+  unwired until the later Data/Security-owned orchestration and persistence worker exist.
 - The Trivy adapter accepts only JSON v2 dependency, secret, and failed IaC result classes.
   It streams bounded scalars through globally aligned parser slices, independently rehashes
   bytes and recounts direct plus `ExperimentalModifiedFindings`, and never materializes the
@@ -298,7 +298,8 @@ portion of Phase 6:
   identity rejection, line-shift identity invariance, occurrence distinction,
   attestation/retention rebinding, and fail-closed malformed streams.
   Its canonical Trivy candidate batches remain transient with
-  `durablePersistenceAllowed=false`; T035 redaction and T036 fingerprinting are still mandatory.
+  `durablePersistenceAllowed=false`; the implemented T035 redaction and T036 fingerprinting
+  gates are still mandatory consumers.
 - `syft-cyclonedx-inventory-ingestor-v1` independently rebinds the unexpired T031 accepted
   decision, validation/envelope/content/disposition digests, immutable plan and exact Syft
   image/wrapper/schema/normalizer metadata before reading. It accepts only the pinned Syft
@@ -342,9 +343,26 @@ portion of Phase 6:
   hash, and no pre-redaction candidate digest. Its audit helper exposes metadata only.
   `secretRedactionApplied=true` does not grant persistence:
   `durablePersistenceAllowed=false` remains fixed until T036.
-- `ScanPlaneModule` no longer exports the raw OpenGrep or Trivy normalizer providers; internal
-  consumers receive the T035 redaction boundary. There is still no user route, evidence,
-  policy, AI, or durable-finding path.
+- `sast-finding-identity-v1` now accepts only that complete T035 handoff, recomputes its batch
+  and every sanitized decision digest, checks retention before and after construction, rejects
+  more than 25,000 findings, and cooperatively yields at each 64-finding boundary.
+- T036 projects repository binding, capability, semantic rule identity, normalized path,
+  symbol anchor, sink kind, and structural hash in the published order. Every string is NFC
+  normalized and framed by its decimal UTF-8 byte length under `sast-fingerprint-v1`.
+  `UNKNOWN` contributes the explicit empty path; reason, coordinates, commit, scanner
+  `matchBasedId`, display text, and severity remain outside stable identity.
+- A repeated byte-identical preimage remains a separate observation for T037. One digest
+  associated with different preimages rejects the complete batch. Rejection and audit output
+  carry no source candidate, fingerprint preimage, rejected T035 batch/artifact digest, or
+  secret value.
+- Successful T036 output is a fresh canonical `SastFingerprintedFindingBatch`. It preserves
+  sanitized OpenGrep/Trivy provenance, binds the source redaction batch and decisions, records
+  exact distinct/repeated counts, and sets normalized-finding persistence eligibility with
+  `durablePersistenceAllowed=true`. Occurrence, lifecycle, correlation, coverage, evidence,
+  policy, publication, and AI authority all remain false until T037 and later gates.
+- `ScanPlaneModule` exports only the T036 identity service to the next internal stage. T035
+  redaction and raw OpenGrep/Trivy normalizers remain internal providers. There is still no
+  user route, artifact reader, database writer, evidence, policy, publication, or AI path.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -352,7 +370,8 @@ runtime provider exist only to verify the handoff contract. Default production c
 issuance and scanner execution both fail closed until live rollout installs provider-backed
 GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
 file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction is complete;
-T036 `sast-fingerprint-v1` identity construction is therefore the next implementation task.
+T036 `sast-fingerprint-v1` identity construction is also complete; T037 occurrence and exact
+lineage lifecycle construction is therefore the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

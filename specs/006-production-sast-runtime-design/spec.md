@@ -198,6 +198,19 @@ incomplete, stale, quarantined, or security-blocked scan.
 - **FR-033**: Stable finding identity MUST exclude branch, commit SHA, and line numbers.
 - **FR-034**: Identity MUST include repository binding, capability family, semantic rule
   identity, normalized path, symbol anchor, sink kind, and structural hash.
+- **FR-034a**: `sast-finding-identity-v1` MUST recompute the complete canonical T035 handoff,
+  normalize every fingerprint component to NFC, encode the seven ordered fields with UTF-8
+  byte-length prefixes, and produce the lowercase SHA-256 `sast-fingerprint-v1` digest.
+  `UNKNOWN` locations MUST contribute the explicit empty path component; location reason,
+  coordinates, scanner match identity, commit, display text, and severity MUST NOT enter the
+  fingerprint. Repeated byte-identical preimages MAY remain separate observations, while one
+  digest associated with different preimages MUST reject the complete batch. The gate MUST
+  reject more than 25,000 findings, clock rollback, and expiry reached before or during the
+  pass, and MUST yield between 64-finding chunks. Success MUST be a fresh canonical,
+  persistence-eligible handoff that preserves sanitized provenance but grants no occurrence,
+  lifecycle, correlation, coverage, evidence, policy, publication, or AI authority.
+  Rejection and audit projections MUST NOT expose a source candidate, fingerprint preimage,
+  rejected T035 batch digest, artifact digest, or secret value.
 - **FR-035**: Exact fingerprint matches MUST update one finding lineage rather than create
   duplicate findings.
 - **FR-036**: Cross-tool correlation MUST preserve every provenance record and MUST NOT

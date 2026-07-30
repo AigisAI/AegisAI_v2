@@ -190,7 +190,23 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   and expiry-crossing cases fail closed.
 - 100% secret-value redaction before persistence outside the scanner artifact quarantine;
   T035 success remains `durablePersistenceAllowed=false` until T036 fingerprinting.
-- 100% fingerprint stability for line/branch/commit-only changes.
+- 100% `sast-finding-identity-v1` source-batch and source-decision digest recomputation,
+  deterministic fresh output, OpenGrep/Trivy provenance preservation, and byte-exact
+  interoperability with the published NFC/UTF-8 test vector.
+- 100% fingerprint stability for line/column, branch/target, commit, scanner-match identity,
+  display text, severity, and confidence-only changes; 100% fingerprint change when any of
+  the seven canonical identity components changes.
+- 100% `UNKNOWN` location projection to the empty length-prefixed path component with no
+  reason code, coordinate, or invented path in stable identity.
+- 100% complete-batch rejection for malformed/forged T035 handoffs, more than 25,000
+  findings, non-monotonic clocks, retention expiry reached before or during construction,
+  and one stable digest observed with different preimages. Byte-identical repeated preimages
+  remain separate observations with exact distinct/repeated counts.
+- Event-loop yielding before finding 65 and each subsequent 64-finding chunk. Exactly zero
+  fingerprint preimages, rejected source candidates, rejected T035 batch digests, artifact
+  digests, or secrets in identity rejection/audit output.
+- T036 success alone sets normalized-finding persistence eligibility; occurrence, lifecycle,
+  correlation, coverage, evidence, policy, publication, and AI authority remain false.
 - 100% provenance preservation during correlation; no lower-severity result may hide a
   higher-severity authoritative result.
 - 100% complete-coverage requirement before external comment/block, AI advisory, or fixed

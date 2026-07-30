@@ -178,10 +178,13 @@ test('scanner artifacts carry bounded provenance metadata instead of raw reposit
 
 test('finding fingerprints exclude unstable line, branch, and commit coordinates', () => {
   const contract = readContract();
+  const fingerprintFields = contract
+    .split('export const SAST_FINDING_FINGERPRINT_FIELDS')[1]
+    .split('export const SAST_MAX_COORDINATE_VALUE')[0];
   const fingerprintFunction = contract.split('export function buildFindingFingerprintPreimage')[1]
     .split('export function evaluateSastCoverage')[0];
 
-  for (const stableField of [
+  const stableFields = [
     'repositoryBindingId',
     'capability',
     'ruleSemanticId',
@@ -189,14 +192,20 @@ test('finding fingerprints exclude unstable line, branch, and commit coordinates
     'symbolAnchor',
     'sinkKind',
     'structuralHash'
-  ]) {
-    assert.match(fingerprintFunction, new RegExp(`input\\.${stableField}\\b`));
+  ];
+  let priorFieldIndex = -1;
+  for (const stableField of stableFields) {
+    const fieldIndex = fingerprintFields.indexOf(`'${stableField}'`);
+    assert.ok(fieldIndex > priorFieldIndex, `${stableField} must retain canonical field order`);
+    priorFieldIndex = fieldIndex;
   }
 
   for (const unstableField of ['lineStart', 'lineEnd', 'commitSha', 'targetRef', 'branch']) {
-    assert.doesNotMatch(fingerprintFunction, new RegExp(`input\\.${unstableField}\\b`));
+    assert.doesNotMatch(fingerprintFields, new RegExp(`'${unstableField}'`));
   }
-  assert.match(fingerprintFunction, /sast-fingerprint-v1\\0/);
+  assert.match(contract, /SAST_FINDING_FINGERPRINT_VERSION\s*=\s*[\r\n\s]*'sast-fingerprint-v1'/);
+  assert.match(fingerprintFunction, /SAST_FINDING_FINGERPRINT_FIELDS\.map/);
+  assert.match(fingerprintFunction, /SAST_FINDING_FINGERPRINT_VERSION/);
   assert.match(contract, /function encodeFingerprintField/);
   assert.match(contract, /new TextEncoder\(\)\.encode\(normalized\)\.byteLength/);
 });

@@ -73,6 +73,7 @@ import { OpenGrepSarifNormalizer } from './opengrep-sarif-normalizer';
 import { TrivyJsonNormalizer } from './trivy-json-normalizer';
 import { SyftCycloneDxInventoryIngestor } from './syft-cyclonedx-inventory-ingestor';
 import { SastSecretRedactionService } from './sast-secret-redaction.service';
+import { SastFindingIdentityService } from './sast-finding-identity.service';
 
 @Module({
   imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
@@ -91,6 +92,7 @@ import { SastSecretRedactionService } from './sast-secret-redaction.service';
     TrivyJsonNormalizer,
     SyftCycloneDxInventoryIngestor,
     SastSecretRedactionService,
+    SastFindingIdentityService,
     SastArtifactDispositionService,
     SastArtifactDispositionTask,
     PrismaSastArtifactDispositionStore,
@@ -166,7 +168,7 @@ import { SastSecretRedactionService } from './sast-secret-redaction.service';
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
     SyftCycloneDxInventoryIngestor,
-    SastSecretRedactionService
+    SastFindingIdentityService
   ]
 })
 export class ScanPlaneModule {}

@@ -503,6 +503,19 @@ export interface FindingFingerprintInput {
   structuralHash: string;
 }
 
+export const SAST_FINDING_FINGERPRINT_VERSION =
+  'sast-fingerprint-v1' as const;
+
+export const SAST_FINDING_FINGERPRINT_FIELDS = Object.freeze([
+  'repositoryBindingId',
+  'capability',
+  'ruleSemanticId',
+  'normalizedPath',
+  'symbolAnchor',
+  'sinkKind',
+  'structuralHash'
+] as const satisfies readonly (keyof FindingFingerprintInput)[]);
+
 export const SAST_MAX_COORDINATE_VALUE = 2147483647;
 
 export const SAST_UNKNOWN_LOCATION_REASONS = [
@@ -1279,17 +1292,13 @@ export function isScannerArtifactEligibleForNormalization(
 }
 
 export function buildFindingFingerprintPreimage(input: FindingFingerprintInput): string {
-  const fields = [
-    input.repositoryBindingId,
-    input.capability,
-    input.ruleSemanticId,
-    input.normalizedPath,
-    input.symbolAnchor,
-    input.sinkKind,
-    input.structuralHash
-  ];
+  const fields = SAST_FINDING_FINGERPRINT_FIELDS.map(
+    (field) => input[field]
+  );
 
-  return `sast-fingerprint-v1\0${fields.map(encodeFingerprintField).join('')}`;
+  return `${SAST_FINDING_FINGERPRINT_VERSION}\0${fields
+    .map(encodeFingerprintField)
+    .join('')}`;
 }
 
 export function isSastFindingLocationValid(

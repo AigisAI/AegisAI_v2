@@ -291,8 +291,8 @@ resolving collisions by hashing or otherwise retaining a secret-derived identity
 The output is a fresh
 `SastSecretRedactionBatch` with per-finding decisions, ordered safe detector categories,
 sanitized-only digests, no source-candidate digest, and
-`durablePersistenceAllowed=false`. T036 remains the sole next step allowed to construct a
-stable fingerprint.
+`durablePersistenceAllowed=false`. T036 is the sole consumer allowed to construct a stable
+fingerprint from this handoff.
 
 The implementation is asynchronous and cooperatively yields between bounded chunks rather
 than scanning 25,000 candidates in one event-loop turn. An 8,000,000 inspected UTF-16
@@ -329,3 +329,33 @@ fingerprint integrity.
 revealing provider/match detail in a rejection, masking only Trivy secret findings, silently
 dropping a secret-bearing candidate, replacing identity fields and guessing a new identity,
 trusting a forged `[REDACTED]` marker, or checking retention only before the pass.
+
+## Decision 18: Construct Stable Identity Only from the Verified Sanitized Handoff
+
+**Decision**: `sast-finding-identity-v1` accepts only a complete canonical T035
+`SastSecretRedactionBatch`. It independently recomputes the source batch and sanitized
+decision digests, projects the seven ordered stable fields, applies Unicode NFC and UTF-8
+byte-length framing, and computes `sast-fingerprint-v1`. An `UNKNOWN` location contributes
+the explicit zero-byte path component rather than a reason code or invented path. The pass
+is capped at 25,000 findings, yields every 64 findings, and checks a monotonic active
+retention window before and after processing.
+
+The service keeps a transient digest-to-preimage map. Repeated observations are valid only
+when the preimage is byte-identical. A digest reused for a different preimage rejects the
+whole batch, including under the forced-collision test seam. Success returns a fresh
+`SastFingerprintedFindingBatch` and is the first normalized-finding persistence-eligible
+handoff. It deliberately grants no occurrence, lifecycle, correlation, coverage, evidence,
+policy, publication, or AI authority; T037 and later gates own those decisions.
+
+**Rationale**: A fingerprint that is deterministic but not rebound to T035 can preserve a
+forged sanitized candidate. Including line, commit, scanner match IDs, or availability
+reasons creates ordinary-edit churn or provider-dependent identities. Silently accepting a
+hash collision would merge distinct security findings. Exact source recomputation, a
+versioned byte contract, and a whole-batch collision response make the first durable boundary
+reproducible without promoting it into lifecycle or policy authority.
+
+**Rejected**: Fingerprinting pre-redaction candidates, trusting digest syntax, using locale or
+runtime-native string length, inventing a path for `UNKNOWN`, persisting fingerprint
+preimages, de-duplicating repeated observations inside T036, first-writer collision handling,
+using scanner `matchBasedId` as platform identity, or allowing T036 output directly into
+evidence, policy, publication, or AI flows.

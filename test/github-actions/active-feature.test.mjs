@@ -33,6 +33,8 @@ const files = {
   sharedSastSbomInventoryTest: new URL('../../packages/shared/test/sast-sbom-inventory.test.mjs', import.meta.url),
   sharedSastSecretRedaction: new URL('../../packages/shared/src/types/sast-secret-redaction.ts', import.meta.url),
   sharedSastSecretRedactionTest: new URL('../../packages/shared/test/sast-secret-redaction.test.mjs', import.meta.url),
+  sharedSastFindingIdentity: new URL('../../packages/shared/src/types/sast-finding-identity.ts', import.meta.url),
+  sharedSastFindingIdentityTest: new URL('../../packages/shared/test/sast-finding-identity.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -52,6 +54,8 @@ const files = {
   syftCycloneDxExpectedFixture: new URL('../../apps/api/test/fixtures/syft-cyclonedx/upstream-compatible.expected.json', import.meta.url),
   apiSastSecretRedaction: new URL('../../apps/api/src/scan-plane/sast-secret-redaction.service.ts', import.meta.url),
   apiSastSecretRedactionTest: new URL('../../apps/api/test/scan-plane/sast-secret-redaction.e2e-spec.ts', import.meta.url),
+  apiSastFindingIdentity: new URL('../../apps/api/src/scan-plane/sast-finding-identity.service.ts', import.meta.url),
+  apiSastFindingIdentityTest: new URL('../../apps/api/test/scan-plane/sast-finding-identity.e2e-spec.ts', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -78,6 +82,20 @@ const assertNoOpenItemsBeforeDeferred = (contents) => {
 const assertChecklistComplete = (contents) => {
   const openItems = contents.split('\n').filter((line) => /^- \[ \]/.test(line));
   assert.deepEqual(openItems, []);
+};
+
+const assertScanPlaneExports = (scanPlaneModule) => {
+  const exportsBlock = scanPlaneModule.match(
+    /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
+  )?.[1];
+  assert.ok(
+    exportsBlock,
+    'Expected to locate the ScanPlaneModule exports array'
+  );
+  assert.match(exportsBlock, /SastFindingIdentityService/);
+  assert.doesNotMatch(exportsBlock, /SastSecretRedactionService/);
+  assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
+  assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
 };
 
 test('production SAST runtime design is the active feature package', () => {
@@ -509,19 +527,10 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
     /expect\(serialized\)\.not\.toContain\(secret\)/
   );
 
-  const exportsBlock = scanPlaneModule.match(
-    /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
-  )?.[1];
-  assert.ok(
-    exportsBlock,
-    'Expected to locate the ScanPlaneModule exports array'
-  );
-  assert.match(exportsBlock, /SastSecretRedactionService/);
-  assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
-  assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
+  assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T035\b/);
-  assert.match(quickstart, /T036 `sast-fingerprint-v1` identity construction/);
+  assert.match(quickstart, /T035 secret redaction is complete/);
   assert.match(contract, /Secret redaction gate v1/);
   assert.match(spec, /FR-031c/);
   assert.match(plan, /`sast-secret-redaction-v1` gate/);
@@ -549,7 +558,115 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
   ]) {
     assert.match(document, canonicalIdentityRejection);
   }
-  assert.doesNotMatch(dataModel, /\bdurable handoff\b/);
+  assert.match(dataModel, /SastSecretRedactionBatch/);
+});
+
+test('SAST T036 constructs byte-exact stable identity and no downstream authority', () => {
+  const sharedIdentity = readNormalizedText(
+    files.sharedSastFindingIdentity
+  );
+  const sharedIdentityTest = readNormalizedText(
+    files.sharedSastFindingIdentityTest
+  );
+  const sharedRuntime = readNormalizedText(files.sharedSastRuntime);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiSastFindingIdentity);
+  const serviceTest = readNormalizedText(
+    files.apiSastFindingIdentityTest
+  );
+  const scanPlaneModule = readNormalizedText(files.apiScanPlaneModule);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const spec = readNormalizedText(files.spec);
+  const plan = readNormalizedText(files.plan);
+  const research = readNormalizedText(files.research);
+  const dataModel = readNormalizedText(files.dataModel);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(
+    sharedIdentity,
+    /SAST_FINDING_IDENTITY_VERSION\s*=[^;]*'sast-finding-identity-v1'/
+  );
+  assert.match(
+    sharedRuntime,
+    /SAST_FINDING_FINGERPRINT_VERSION\s*=[^;]*'sast-fingerprint-v1'/
+  );
+  assert.match(
+    sharedRuntime,
+    /SAST_FINDING_FINGERPRINT_FIELDS\s*=[^;]*repositoryBindingId[^;]*capability[^;]*ruleSemanticId[^;]*normalizedPath[^;]*symbolAnchor[^;]*sinkKind[^;]*structuralHash[^;]*;/
+  );
+  assert.match(
+    sharedIndex,
+    /export \* from '.\/types\/sast-finding-identity';/
+  );
+  assert.match(
+    sharedIdentity,
+    /SAST_FINDING_UNKNOWN_NORMALIZED_PATH\s*=\s*''/
+  );
+  assert.match(sharedIdentity, /maximumFindings:\s*25_000/);
+  assert.match(sharedIdentity, /yieldFindingInterval:\s*64/);
+  assert.match(sharedIdentity, /normalizedFindingPersistenceEligible:\s*true/);
+  assert.match(sharedIdentity, /occurrenceAuthority:\s*false/);
+  assert.match(sharedIdentity, /publicationAuthority:\s*false/);
+  assert.match(sharedIdentity, /aiPayloadEligible:\s*false/);
+  assert.match(sharedIdentity, /fingerprintPreimageStored:\s*false/);
+  assert.match(sharedIdentity, /durablePersistenceAllowed:\s*true/);
+  assert.match(sharedIdentityTest, /byte-exact sast-fingerprint-v1 field contract/);
+  assert.match(
+    sharedIdentityTest,
+    /projects UNKNOWN location to an explicit empty path/
+  );
+
+  assert.match(service, /class SastFindingIdentityService/);
+  assert.match(service, /async construct\(/);
+  assert.match(
+    service,
+    /isSastSecretRedactionBatchShapeValid\(input\?\.batch,\s*digest\)/
+  );
+  assert.match(service, /FINDING_IDENTITY_FINGERPRINT_COLLISION/);
+  assert.match(service, /secondReferenceTime < firstReferenceTime/);
+  assert.match(service, /await this\.yieldEventLoop\(\)/);
+  assert.match(service, /await yieldToEventLoop\(\)/);
+  assert.doesNotMatch(service, /\bLogger\b|\bconsole\./u);
+  assert.match(
+    serviceTest,
+    /excludes unstable observation and display fields from stable identity/
+  );
+  assert.match(
+    serviceTest,
+    /preserves Trivy capability and database provenance/
+  );
+  assert.match(
+    serviceTest,
+    /rejects a digest collision across different preimages/
+  );
+  assert.match(
+    serviceTest,
+    /handles an empty batch deterministically and yields during bounded large batches/
+  );
+
+  assertScanPlaneExports(scanPlaneModule);
+
+  assert.match(tasks, /- \[x\] T036\b/);
+  assert.match(
+    quickstart,
+    /T037 occurrence and exact[\s\S]*next implementation task/
+  );
+  assert.match(contract, /Finding identity construction gate v1/);
+  assert.match(spec, /FR-034a/);
+  assert.match(plan, /T036 now recomputes the exact T035 handoff/);
+  assert.match(
+    research,
+    /Decision 18: Construct Stable Identity Only from the Verified Sanitized Handoff/
+  );
+  assert.match(dataModel, /SastFingerprintedFindingBatch/);
+  assert.match(threatModel, /Stable fingerprint collision/);
+  assert.match(
+    qualityGates,
+    /100% `sast-finding-identity-v1` source-batch/
+  );
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {
