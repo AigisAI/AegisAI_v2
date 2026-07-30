@@ -56,7 +56,7 @@
 ## Phase 7: Finding Identity and Coverage
 
 - [x] T036 Implement `sast-fingerprint-v1` with Unicode/path canonicalization
-- [ ] T037 Implement occurrences, exact lineage updates, rename handling, and fixed/reopen rules
+- [x] T037 Implement occurrences, exact lineage updates, rename handling, and fixed/reopen rules
 - [ ] T038 Implement authority-aware cross-tool correlation with full provenance preservation
 - [ ] T039 Persist scanner/capability coverage and apply fail-closed external publication
 - [ ] T040 Implement stale-scan denial and bounded infrastructure-only retries

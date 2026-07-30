@@ -359,3 +359,41 @@ runtime-native string length, inventing a path for `UNKNOWN`, persisting fingerp
 preimages, de-duplicating repeated observations inside T036, first-writer collision handling,
 using scanner `matchBasedId` as platform identity, or allowing T036 output directly into
 evidence, policy, publication, or AI flows.
+
+## Decision 19: Separate Exact Lineage, Ordered Occurrences, and Target Lifecycle
+
+**Decision**: `sast-finding-lineage-v1` independently revalidates the complete T036 handoff
+against immutable scan state, then persists one global repository/capability/fingerprint
+lineage and one immutable occurrence for every producer ordinal. Repeated identical
+fingerprints deliberately remain separate occurrences. Source-batch replay is idempotent
+only when the canonical batch and its complete ordered occurrence ledger match exactly.
+All lineage, alias, occurrence, lifecycle, reconciliation, event, and audit changes run in
+one serializable transaction with bounded acquisition, execution, and retry limits.
+
+Exact fingerprints are the default continuity mechanism. A path change can retain continuity
+only when a canonical, signed, fixed-commit, fixed-target, one-to-one
+`sast-finding-rename-attestation-v1` is verified and its predecessor alias already resolves
+unambiguously. Both aliases remain durable, which supports a later rename-back without
+rewriting history. Missing predecessor aliases, ambiguous mappings, chains, cycles, and
+fuzzy or AI similarity provide no rename authority.
+
+Lifecycle state is separate per canonical tenant/repository/target context and separate from
+policy or triage status. T037 consumes but never calculates a T039-owned
+`sast-finding-lifecycle-coverage-v1` decision. `FIXED` and `REOPENED` are permitted only for a
+strictly newer, complete, non-stale, comparable decision whose expected batch digests equal
+the entire durable T037 observation-batch set for the current scan, including explicit
+zero-finding batches. The default rename verifier and coverage gate are unavailable and
+therefore fail closed. T037 grants no correlation, coverage-calculation, evidence, policy,
+publication, or AI authority.
+
+**Rationale**: Stable identity, observation multiplicity, and target lifecycle answer three
+different questions. Collapsing them loses provenance, allows one branch to resolve another,
+or turns missing scanner output into a false fix. Exact ledger replay and external coverage
+authority make retries deterministic while keeping lifecycle transitions auditable and
+forward-compatible with T038 correlation and T039 coverage.
+
+**Rejected**: De-duplicating repeated fingerprints, deriving lineage from line or scanner
+match IDs, repository-global lifecycle status, mutating legacy policy/triage state, accepting
+partial or stale coverage, inferring completeness from the batches that happened to arrive,
+omitting zero-finding batches, calculating coverage inside T037, last-writer-wins lifecycle
+updates, deleting old aliases, or letting fuzzy/AI matching merge or resolve findings.

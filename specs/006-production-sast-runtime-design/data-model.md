@@ -512,36 +512,96 @@ Persistence eligibility grants no downstream authority. `occurrenceAuthority`,
 `policyAuthority`, `publicationAuthority`, and `aiPayloadEligible` remain false. T037 must
 turn this batch into stable rows and occurrences before the final entity below gains
 lifecycle state; later coverage, evidence, policy, publication, and AI gates remain mandatory.
-`ScanPlaneModule` exports only the T036 identity service to the next internal stage.
+Once T037 is installed, `ScanPlaneModule` exports only the lineage service to T038; T036
+identity construction remains internal.
 
-### NormalizedSastFinding
+### SastFindingLineage
 
-- immutable `tenantId`, `repositoryBindingId`, `scanRequestId`, `attemptId`, and `commitSha`
-  attribution
-- lane and capability family
-- stable fingerprint
-- title, bounded description, severity, and confidence
-- CWE/CVE identifiers
-- normalized location and symbol anchor
-- scanner/rule/artifact provenance
-- evidence references
-- current lifecycle status
+One durable platform identity scoped by tenant, repository binding, capability, and
+fingerprint version:
 
-Raw descriptions and snippets are never treated as trusted markup.
+- deterministic `finding-lineage://<sha256>` ID from the framed lineage-key preimage
+- first stable fingerprint plus immutable `sast-fingerprint-v1`
+- first and last observed timestamps
+- one-to-many exact identity aliases, occurrences, target-context states, and events
+
+The lineage is not a policy decision, correlation group, evidence record, or AI object.
+Different capabilities never share a lineage.
+
+### SastFindingIdentityAlias
+
+- tenant/repository/capability/fingerprint-version/stable-fingerprint unique key
+- canonical normalized path and owning lineage
+- optional verified rename-attestation digest only for a newly added path alias
+- old aliases remain immutable so historical exact observations retain continuity
+
+An exact current alias remains authoritative for lineage ownership. When a verified rename
+predecessor resolves to that same lineage, the observation is still classified `RENAMED` and
+emits the next event even if the current alias was retained from older history, as in a
+rename-back. Conflicting current/predecessor aliases, multiple current identities resolving
+to one lineage, path chains/cycles, and unverified/future/non-durable rename claims reject
+the complete observation.
+
+### SastFindingObservationBatch
+
+- deterministic ID and unique tenant/source T036 batch digest plus tenant/scanner-run fence
+- immutable tenant/repository/scan/attempt/scanner scope, target ref, fixed commit, lane,
+  profile, plan/canonical key, and accepted-artifact provenance
+- canonical observed-finding capability set (empty for zero findings), optional verified
+  rename-attestation digest, exact finding and
+  distinct-identity counts, and created/exact/renamed classification counts
+- observed timestamp
+
+A replay returns the original ledger only when every binding and every ordered persisted
+occurrence agree. A changed, missing, extra, or malformed row on the same scanner run is a
+conflict.
 
 ### FindingOccurrence
 
-One observation of a stable finding in a scan.
+Every ordered T036 finding becomes one occurrence, including byte-identical repeated
+fingerprints:
 
-- `findingId`
-- `scanRequestId`
-- `scannerRunId`
-- commit and target context
-- current line/column coordinates
-- artifact digest
-- observed timestamp
+- deterministic occurrence ID and unique `(observationBatchId, ordinal)`
+- lineage and normalized-finding IDs
+- immutable tenant/repository/scan/attempt/scanner attribution
+- capability, fingerprint version/value/decision digest
+- the sanitized T036 finding object, current location/coordinates, and observed timestamp
 
-Occurrences provide history without changing stable identity.
+The companion legacy `NormalizedFinding` row receives nullable T037 identity metadata for a
+rolling migration. Its `status` remains policy/triage state and is never used as the lifecycle
+authority. Raw descriptions and snippets are never treated as trusted markup.
+
+### SastFindingLifecycleState
+
+- deterministic state ID unique by tenant, repository, lifecycle-context key, and lineage
+- lifecycle context key derived from tenant, repository binding, and NFC target ref
+- independent `OPEN | FIXED`, monotonic revision, last observation binding, and last applied
+  reconciliation sequence
+- fixed/reopened timestamps
+
+Observing a lineage updates observation metadata but never reopens a fixed state.
+The lifecycle-context reconciliation sequence is globally contiguous. A state that is newly
+created or newly eligible after an earlier reconciliation may advance from any non-future
+state sequence to the current global sequence; a state fence ahead of the previous global
+sequence rejects.
+
+### SastFindingLifecycleReconciliation
+
+- deterministic ID and unique coverage-decision digest
+- strict unique `(tenant, repository, lifecycleContextKey, sequence)`
+- complete T039 decision, current scan/attempt/profile binding, exact eligible and observed
+  counts, and transition counts
+- reconciled timestamp
+
+The expected observation-batch digest list must equal every durable T037 batch for the current
+scan, including zero-finding batches. Every observed complete-capability lineage must be
+eligible, and every eligible lineage must exist in the same target context.
+
+### SastFindingLifecycleEvent
+
+Append-only `CREATED | RENAMED | FIXED | REOPENED` with unique state revision, exact source
+observation or reconciliation ID, previous/next lifecycle state, and occurred timestamp.
+Only `FIXED` and `REOPENED` change lifecycle status.
 
 ### FindingCorrelation
 
@@ -665,12 +725,16 @@ SUSPENDED --rollback--> ROLLED_BACK
 The two incoming edges are `CANARY -> SUSPENDED` and `ACTIVE -> SUSPENDED`; the single recovery
 edge is `SUSPENDED -> ROLLED_BACK`.
 
-### Finding
+### Finding lifecycle
 
 ```text
-OPEN -> WAIVED | SUPPRESSED | FIXED
-FIXED -> OPEN only when a later complete scan observes the same stable fingerprint
+OPEN --verified complete absence--> FIXED
+FIXED --verified complete observation--> OPEN
 ```
+
+Waived, suppressed, accepted, and rejected remain separate policy/triage states. A lifecycle
+transition requires a later complete, non-stale, comparable T039 decision with exact durable
+observation coverage; a finding observation alone cannot transition state.
 
 ## Retention
 
@@ -689,8 +753,14 @@ FIXED -> OPEN only when a later complete scan observes the same stable fingerpri
 - Unique attempt by `(scanRequestId, attemptNumber)`.
 - Unique scanner run by `(attemptId, scanner, wrapperVersion)`.
 - Unique artifact by `(scannerRunId, contentDigest)`.
-- Unique durable finding by `(tenantId, repositoryBindingId, stableFingerprint)`.
-- Unique occurrence by `(findingId, scanRequestId, scannerRunId, artifactDigest)`.
+- Unique identity alias by
+  `(tenantId, repositoryBindingId, capability, fingerprintVersion, stableFingerprint)`.
+- Unique occurrence by `(observationBatchId, ordinal)` and one normalized-finding extension
+  per occurrence.
+- Unique lifecycle state by
+  `(tenantId, repositoryBindingId, lifecycleContextKey, lineageId)`.
+- Unique reconciliation by coverage-decision digest and by lifecycle-context sequence.
+- Unique append-only event by `(lifecycleStateId, revision)`.
 - Tenant-first indexes on every queryable entity.
 - Expiry indexes on raw artifacts, evidence, quarantine, and AI payload metadata.
 - Check constraints require non-negative counts, including zero findings, symlinks, archives,

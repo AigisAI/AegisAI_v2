@@ -68,6 +68,24 @@ const indexes = [
     unique: false,
     create:
       'CREATE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactIngestion_disposition_claim_idx" ON "SastArtifactIngestion"("dispositionNextAttemptAt", "dispositionLeaseExpiresAt", "receivedAt") WHERE "status" = \'PENDING_VALIDATION\''
+  },
+  {
+    name: 'NormalizedFinding_sast_occurrence_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "NormalizedFinding_sast_occurrence_scope_key" ON "NormalizedFinding"("id", "tenantId", "scanRequestId", "scannerRunId")'
+  },
+  {
+    name: 'NormalizedFinding_sastLineageId_idx',
+    unique: false,
+    create:
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS "NormalizedFinding_sastLineageId_idx" ON "NormalizedFinding"("sastLineageId")'
+  },
+  {
+    name: 'NormalizedFinding_sastObservationBatchId_idx',
+    unique: false,
+    create:
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS "NormalizedFinding_sastObservationBatchId_idx" ON "NormalizedFinding"("sastObservationBatchId")'
   }
 ];
 
@@ -502,6 +520,45 @@ const constraints = [
           AND "dispositionLastErrorCode" IS NULL
         ),
         false
+      )
+    )`
+  },
+  {
+    table: 'SastFindingObservationBatch',
+    name: 'SastFindingObservationBatch_scanner_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("scannerRunId", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId") REFERENCES "ScannerRun"("id", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastFindingOccurrence',
+    name: 'SastFindingOccurrence_normalized_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("normalizedFindingId", "tenantId", "scanRequestId", "scannerRunId") REFERENCES "NormalizedFinding"("id", "tenantId", "scanRequestId", "scannerRunId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'NormalizedFinding',
+    name: 'NormalizedFinding_sast_metadata_check',
+    type: 'c',
+    definition: `CHECK (
+      (
+        "sastCapability" IS NULL
+        AND "sastFingerprintVersion" IS NULL
+        AND "sastStableFingerprint" IS NULL
+        AND "sastFingerprintDecisionDigest" IS NULL
+        AND "sastLineageId" IS NULL
+        AND "sastObservationBatchId" IS NULL
+        AND "sastOccurrenceOrdinal" IS NULL
+      )
+      OR (
+        "sastCapability" IS NOT NULL
+        AND "sastFingerprintVersion" = 'sast-fingerprint-v1'
+        AND "sastStableFingerprint" ~ '^sha256:[a-f0-9]{64}$'
+        AND "sastFingerprintDecisionDigest" ~ '^sha256:[a-f0-9]{64}$'
+        AND "sastLineageId" ~ '^finding-lineage://[a-f0-9]{64}$'
+        AND "sastObservationBatchId" ~ '^finding-observation://[a-f0-9]{64}$'
+        AND "sastOccurrenceOrdinal" BETWEEN 0 AND 24999
       )
     )`
   }

@@ -153,6 +153,25 @@ enum NormalizedFindingStatus {
   FIXED
 }
 
+enum SastFindingCapability {
+  SAST
+  SECRET_DETECTION
+  DEPENDENCY_VULNERABILITY
+  IAC_MISCONFIGURATION
+}
+
+enum SastFindingLifecycleStatus {
+  OPEN
+  FIXED
+}
+
+enum SastFindingLifecycleEventKind {
+  CREATED
+  RENAMED
+  FIXED
+  REOPENED
+}
+
 enum EvidenceClassification {
   SHORT_LIVED_EVIDENCE
 }
@@ -309,21 +328,28 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  integrations           ScmIntegration[]
-  repositoryBindings     RepositoryBinding[]
-  scanRequests           ScanRequest[]
-  scannerRuns            ScannerRun[]
-  normalizedFindings     NormalizedFinding[]
-  evidencePacks          EvidencePack[]
-  policyDecisions        PolicyDecision[]
-  aiAdvisoryMetadata     AiAdvisoryMetadata[]
-  waivers                Waiver[]
-  suppressions           Suppression[]
-  auditEvents            AuditEvent[]
-  sastCredentialLeases   SastRepositoryCredentialLease[]
-  sastScanAttempts       SastScanAttempt[]
-  sastArtifactIngestions SastArtifactIngestion[]
-  users                  User[]
+  integrations               ScmIntegration[]
+  repositoryBindings         RepositoryBinding[]
+  scanRequests               ScanRequest[]
+  scannerRuns                ScannerRun[]
+  normalizedFindings         NormalizedFinding[]
+  evidencePacks              EvidencePack[]
+  policyDecisions            PolicyDecision[]
+  aiAdvisoryMetadata         AiAdvisoryMetadata[]
+  waivers                    Waiver[]
+  suppressions               Suppression[]
+  auditEvents                AuditEvent[]
+  sastCredentialLeases       SastRepositoryCredentialLease[]
+  sastScanAttempts           SastScanAttempt[]
+  sastArtifactIngestions     SastArtifactIngestion[]
+  sastFindingLineages        SastFindingLineage[]
+  sastFindingAliases         SastFindingIdentityAlias[]
+  sastFindingBatches         SastFindingObservationBatch[]
+  sastFindingOccurrences     SastFindingOccurrence[]
+  sastFindingStates          SastFindingLifecycleState[]
+  sastFindingReconciliations SastFindingLifecycleReconciliation[]
+  sastFindingEvents          SastFindingLifecycleEvent[]
+  users                      User[]
 }
 
 model ScmIntegration {
@@ -359,12 +385,19 @@ model RepositoryBinding {
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
 
-  tenant                 Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration            ScmIntegration                  @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
-  scanRequests           ScanRequest[]
-  sastCredentialLeases   SastRepositoryCredentialLease[]
-  sastScanAttempts       SastScanAttempt[]
-  sastArtifactIngestions SastArtifactIngestion[]
+  tenant                     Tenant                               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration                ScmIntegration                       @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
+  scanRequests               ScanRequest[]
+  sastCredentialLeases       SastRepositoryCredentialLease[]
+  sastScanAttempts           SastScanAttempt[]
+  sastArtifactIngestions     SastArtifactIngestion[]
+  sastFindingLineages        SastFindingLineage[]
+  sastFindingAliases         SastFindingIdentityAlias[]
+  sastFindingBatches         SastFindingObservationBatch[]
+  sastFindingOccurrences     SastFindingOccurrence[]
+  sastFindingStates          SastFindingLifecycleState[]
+  sastFindingReconciliations SastFindingLifecycleReconciliation[]
+  sastFindingEvents          SastFindingLifecycleEvent[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
@@ -391,19 +424,21 @@ model ScanRequest {
   completedAt         DateTime?
   updatedAt           DateTime               @updatedAt
 
-  tenant                 Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding      RepositoryBinding               @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
-  scannerRuns            ScannerRun[]
-  findings               NormalizedFinding[]
-  evidencePacks          EvidencePack[]
-  policyDecisions        PolicyDecision[]
-  aiAdvisoryMetadata     AiAdvisoryMetadata[]
-  suppressions           Suppression[]
-  auditEvents            AuditEvent[]
-  sastQueueReservation   SastQueueReservation?
-  sastCredentialLeases   SastRepositoryCredentialLease[]
-  sastScanAttempts       SastScanAttempt[]
-  sastArtifactIngestions SastArtifactIngestion[]
+  tenant                     Tenant                               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding          RepositoryBinding                    @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
+  scannerRuns                ScannerRun[]
+  findings                   NormalizedFinding[]
+  evidencePacks              EvidencePack[]
+  policyDecisions            PolicyDecision[]
+  aiAdvisoryMetadata         AiAdvisoryMetadata[]
+  suppressions               Suppression[]
+  auditEvents                AuditEvent[]
+  sastQueueReservation       SastQueueReservation?
+  sastCredentialLeases       SastRepositoryCredentialLease[]
+  sastScanAttempts           SastScanAttempt[]
+  sastArtifactIngestions     SastArtifactIngestion[]
+  sastFindingBatches         SastFindingObservationBatch[]
+  sastFindingReconciliations SastFindingLifecycleReconciliation[]
 
   @@unique([id, tenantId, repositoryBindingId])
   @@index([tenantId])
@@ -476,13 +511,15 @@ model SastScanAttempt {
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
-  tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding  RepositoryBinding       @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastScanAttempt_repository_scope_fkey")
-  scanRequest        ScanRequest             @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastScanAttempt_scan_scope_fkey")
-  scannerRuns        ScannerRun[]
-  artifactIngestions SastArtifactIngestion[]
-  auditEvents        AuditEvent[]            @relation("SastScanAttemptAuditEvents")
-  finalAuditEvent    AuditEvent?             @relation("SastScanAttemptFinalAuditEvent", fields: [finalAuditEventId, id, tenantId], references: [id, attemptId, tenantId], onDelete: NoAction, onUpdate: NoAction, map: "SastScanAttempt_finalAuditEventId_fkey")
+  tenant                     Tenant                               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding          RepositoryBinding                    @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastScanAttempt_repository_scope_fkey")
+  scanRequest                ScanRequest                          @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastScanAttempt_scan_scope_fkey")
+  scannerRuns                ScannerRun[]
+  artifactIngestions         SastArtifactIngestion[]
+  sastFindingBatches         SastFindingObservationBatch[]
+  sastFindingReconciliations SastFindingLifecycleReconciliation[]
+  auditEvents                AuditEvent[]                         @relation("SastScanAttemptAuditEvents")
+  finalAuditEvent            AuditEvent?                          @relation("SastScanAttemptFinalAuditEvent", fields: [finalAuditEventId, id, tenantId], references: [id, attemptId, tenantId], onDelete: NoAction, onUpdate: NoAction, map: "SastScanAttempt_finalAuditEventId_fkey")
 
   @@unique([scanRequestId, attemptNumber])
   @@unique([id, tenantId], map: "SastScanAttempt_id_tenantId_key")
@@ -612,13 +649,14 @@ model ScannerRun {
   completedAt                     DateTime?
   updatedAt                       DateTime         @updatedAt
 
-  tenant            Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  scanRequest       ScanRequest            @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
-  attempt           SastScanAttempt?       @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "ScannerRun_attempt_scope_fkey")
-  findings          NormalizedFinding[]
+  tenant             Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest        ScanRequest                   @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  attempt            SastScanAttempt?              @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "ScannerRun_attempt_scope_fkey")
+  findings           NormalizedFinding[]
+  sastFindingBatches SastFindingObservationBatch[]
   // The mapped ingress scope index and relation FK are installed by the mandatory,
   // blocking prisma:online-schema step before new-version traffic is admitted.
-  artifactIngestion SastArtifactIngestion?
+  artifactIngestion  SastArtifactIngestion?
 
   @@unique([attemptId, scanner])
   @@unique([id, attemptId, tenantId, repositoryBindingId, scanRequestId], map: "ScannerRun_ingress_scope_key")
@@ -721,32 +759,258 @@ model SastArtifactDispositionDecision {
 }
 
 model NormalizedFinding {
-  id                String                  @id @default(uuid())
-  tenantId          String
-  scanRequestId     String
-  scannerRunId      String
-  title             String
-  severity          Severity
-  scannerProvenance ScannerKind
-  filePath          String
-  lineStart         Int
-  lineEnd           Int?
-  status            NormalizedFindingStatus @default(OPEN)
-  metadata          Json?
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
+  id                            String                  @id @default(uuid())
+  tenantId                      String
+  scanRequestId                 String
+  scannerRunId                  String
+  title                         String
+  severity                      Severity
+  scannerProvenance             ScannerKind
+  filePath                      String?
+  lineStart                     Int?
+  lineEnd                       Int?
+  status                        NormalizedFindingStatus @default(OPEN)
+  metadata                      Json?
+  sastCapability                SastFindingCapability?
+  sastFingerprintVersion        String?
+  sastStableFingerprint         String?
+  sastFingerprintDecisionDigest String?
+  sastLineageId                 String?
+  sastObservationBatchId        String?
+  sastOccurrenceOrdinal         Int?
+  createdAt                     DateTime                @default(now())
+  updatedAt                     DateTime                @updatedAt
 
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  scanRequest     ScanRequest      @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
-  scannerRun      ScannerRun       @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
+  tenant          Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest     ScanRequest            @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  scannerRun      ScannerRun             @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
   policyDecisions PolicyDecision[]
   suppressions    Suppression[]
+  sastOccurrence  SastFindingOccurrence?
 
+  // Installed concurrently by the mandatory online-schema step so legacy
+  // rows remain deployable while T037 metadata is introduced.
+  @@unique([id, tenantId, scanRequestId, scannerRunId], map: "NormalizedFinding_sast_occurrence_scope_key")
   @@index([tenantId])
   @@index([scanRequestId])
   @@index([scannerRunId])
   @@index([severity])
   @@index([status])
+  @@index([sastLineageId], map: "NormalizedFinding_sastLineageId_idx")
+  @@index([sastObservationBatchId], map: "NormalizedFinding_sastObservationBatchId_idx")
+}
+
+model SastFindingLineage {
+  id                     String                @id
+  tenantId               String
+  repositoryBindingId    String
+  capability             SastFindingCapability
+  fingerprintVersion     String
+  firstStableFingerprint String
+  firstObservedAt        DateTime
+  lastObservedAt         DateTime
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  tenant            Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding           @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingLineage_repository_scope_fkey")
+  aliases           SastFindingIdentityAlias[]
+  occurrences       SastFindingOccurrence[]
+  lifecycleStates   SastFindingLifecycleState[]
+  lifecycleEvents   SastFindingLifecycleEvent[]
+
+  @@unique([id, tenantId, repositoryBindingId], map: "SastFindingLineage_scope_key")
+  @@unique([id, tenantId, repositoryBindingId, capability, fingerprintVersion], map: "SastFindingLineage_identity_scope_key")
+  @@index([tenantId, repositoryBindingId, capability])
+  @@index([lastObservedAt])
+}
+
+model SastFindingIdentityAlias {
+  id                      String                @id
+  tenantId                String
+  repositoryBindingId     String
+  lineageId               String
+  capability              SastFindingCapability
+  fingerprintVersion      String
+  stableFingerprint       String
+  normalizedPath          String
+  renameAttestationDigest String?
+  createdAt               DateTime              @default(now())
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding  @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingIdentityAlias_repository_scope_fkey")
+  lineage           SastFindingLineage @relation(fields: [lineageId, tenantId, repositoryBindingId, capability, fingerprintVersion], references: [id, tenantId, repositoryBindingId, capability, fingerprintVersion], onDelete: Cascade, map: "SastFindingIdentityAlias_lineage_scope_fkey")
+
+  @@unique([tenantId, repositoryBindingId, capability, fingerprintVersion, stableFingerprint], map: "SastFindingIdentityAlias_fingerprint_key")
+  @@index([lineageId])
+  @@index([renameAttestationDigest])
+}
+
+model SastFindingObservationBatch {
+  id                        String      @id
+  tenantId                  String
+  repositoryBindingId       String
+  scanRequestId             String
+  attemptId                 String
+  scannerRunId              String
+  lifecycleContextKey       String
+  targetRef                 String
+  commitSha                 String
+  lane                      ScanLane
+  scanner                   ScannerKind
+  capabilities              Json
+  profileId                 String
+  profileDigest             String
+  canonicalScanKey          String
+  planDigest                String
+  sourceIdentityBatchDigest String
+  renameAttestationDigest   String?
+  findingCount              Int
+  distinctFingerprintCount  Int
+  createdLineageCount       Int
+  exactMatchCount           Int
+  renamedMatchCount         Int
+  observedAt                DateTime
+  createdAt                 DateTime    @default(now())
+
+  tenant            Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding           @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingObservationBatch_repository_scope_fkey")
+  scanRequest       ScanRequest                 @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastFindingObservationBatch_scan_scope_fkey")
+  attempt           SastScanAttempt             @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastFindingObservationBatch_attempt_scope_fkey")
+  scannerRun        ScannerRun                  @relation(fields: [scannerRunId, attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, attemptId, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastFindingObservationBatch_scanner_scope_fkey")
+  occurrences       SastFindingOccurrence[]
+  lifecycleEvents   SastFindingLifecycleEvent[]
+
+  @@unique([tenantId, sourceIdentityBatchDigest], map: "SastFindingObservationBatch_source_digest_key")
+  @@unique([tenantId, scannerRunId], map: "SastFindingObservationBatch_scanner_run_key")
+  @@unique([id, tenantId, repositoryBindingId, lifecycleContextKey], map: "SastFindingObservationBatch_event_scope_key")
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], map: "SastFindingObservationBatch_scope_key")
+  @@index([tenantId, repositoryBindingId, lifecycleContextKey, observedAt])
+  @@index([scanRequestId])
+}
+
+model SastFindingOccurrence {
+  id                        String                @id
+  tenantId                  String
+  repositoryBindingId       String
+  scanRequestId             String
+  attemptId                 String
+  scannerRunId              String
+  observationBatchId        String
+  lineageId                 String
+  normalizedFindingId       String                @unique
+  ordinal                   Int
+  capability                SastFindingCapability
+  fingerprintVersion        String
+  stableFingerprint         String
+  fingerprintDecisionDigest String
+  sourceFinding             Json
+  observedAt                DateTime
+  createdAt                 DateTime              @default(now())
+
+  tenant            Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding           @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingOccurrence_repository_scope_fkey")
+  observationBatch  SastFindingObservationBatch @relation(fields: [observationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], onDelete: Cascade, map: "SastFindingOccurrence_batch_scope_fkey")
+  lineage           SastFindingLineage          @relation(fields: [lineageId, tenantId, repositoryBindingId, capability, fingerprintVersion], references: [id, tenantId, repositoryBindingId, capability, fingerprintVersion], onDelete: Cascade, map: "SastFindingOccurrence_lineage_scope_fkey")
+  normalizedFinding NormalizedFinding           @relation(fields: [normalizedFindingId, tenantId, scanRequestId, scannerRunId], references: [id, tenantId, scanRequestId, scannerRunId], onDelete: Cascade, map: "SastFindingOccurrence_normalized_scope_fkey")
+
+  @@unique([observationBatchId, ordinal], map: "SastFindingOccurrence_batch_ordinal_key")
+  @@unique([normalizedFindingId, tenantId, scanRequestId, scannerRunId], map: "SastFindingOccurrence_normalized_scope_key")
+  @@index([tenantId, repositoryBindingId, lineageId, observedAt])
+  @@index([scanRequestId, capability])
+}
+
+model SastFindingLifecycleState {
+  id                         String                     @id
+  tenantId                   String
+  repositoryBindingId        String
+  lineageId                  String
+  lifecycleContextKey        String
+  targetRef                  String
+  status                     SastFindingLifecycleStatus @default(OPEN)
+  revision                   Int                        @default(1)
+  lastObservedBatchId        String?
+  lastObservedScanRequestId  String?
+  lastObservedCommitSha      String?
+  lastObservedAt             DateTime?
+  lastReconciliationSequence Int                        @default(0)
+  fixedAt                    DateTime?
+  reopenedAt                 DateTime?
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+
+  tenant            Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding           @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingLifecycleState_repository_scope_fkey")
+  lineage           SastFindingLineage          @relation(fields: [lineageId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastFindingLifecycleState_lineage_scope_fkey")
+  events            SastFindingLifecycleEvent[]
+
+  @@unique([tenantId, repositoryBindingId, lifecycleContextKey, lineageId], map: "SastFindingLifecycleState_context_lineage_key")
+  @@unique([id, tenantId, repositoryBindingId, lineageId, lifecycleContextKey], map: "SastFindingLifecycleState_scope_key")
+  @@index([tenantId, repositoryBindingId, lifecycleContextKey, status])
+}
+
+model SastFindingLifecycleReconciliation {
+  id                     String   @id
+  tenantId               String
+  repositoryBindingId    String
+  scanRequestId          String
+  attemptId              String
+  lifecycleContextKey    String
+  sequence               Int
+  profileId              String
+  profileDigest          String
+  coverageDecision       Json
+  coverageDecisionDigest String
+  eligibleLineageCount   Int
+  observedLineageCount   Int
+  fixedCount             Int
+  reopenedCount          Int
+  unchangedOpenCount     Int
+  unchangedFixedCount    Int
+  reconciledAt           DateTime
+  createdAt              DateTime @default(now())
+
+  tenant            Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding           @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingLifecycleReconciliation_repository_scope_fkey")
+  scanRequest       ScanRequest                 @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastFindingLifecycleReconciliation_scan_scope_fkey")
+  attempt           SastScanAttempt             @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastFindingLifecycleReconciliation_attempt_scope_fkey")
+  lifecycleEvents   SastFindingLifecycleEvent[]
+
+  @@unique([coverageDecisionDigest], map: "SastFindingLifecycleReconciliation_decision_digest_key")
+  @@unique([id, tenantId, repositoryBindingId, lifecycleContextKey], map: "SastFindingLifecycleReconciliation_event_scope_key")
+  @@unique([tenantId, repositoryBindingId, lifecycleContextKey, sequence], map: "SastFindingLifecycleReconciliation_context_sequence_key")
+  @@index([scanRequestId])
+  @@index([reconciledAt])
+}
+
+model SastFindingLifecycleEvent {
+  id                      String                        @id
+  tenantId                String
+  repositoryBindingId     String
+  lineageId               String
+  lifecycleStateId        String
+  lifecycleContextKey     String
+  kind                    SastFindingLifecycleEventKind
+  previousStatus          SastFindingLifecycleStatus?
+  nextStatus              SastFindingLifecycleStatus
+  revision                Int
+  observationBatchId      String?
+  reconciliationId        String?
+  renameAttestationDigest String?
+  occurredAt              DateTime
+  createdAt               DateTime                      @default(now())
+
+  tenant            Tenant                              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding                   @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingLifecycleEvent_repository_scope_fkey")
+  lineage           SastFindingLineage                  @relation(fields: [lineageId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastFindingLifecycleEvent_lineage_scope_fkey")
+  lifecycleState    SastFindingLifecycleState           @relation(fields: [lifecycleStateId, tenantId, repositoryBindingId, lineageId, lifecycleContextKey], references: [id, tenantId, repositoryBindingId, lineageId, lifecycleContextKey], onDelete: Cascade, map: "SastFindingLifecycleEvent_state_scope_fkey")
+  observationBatch  SastFindingObservationBatch?        @relation(fields: [observationBatchId, tenantId, repositoryBindingId, lifecycleContextKey], references: [id, tenantId, repositoryBindingId, lifecycleContextKey], onDelete: Cascade, map: "SastFindingLifecycleEvent_observation_scope_fkey")
+  reconciliation    SastFindingLifecycleReconciliation? @relation(fields: [reconciliationId, tenantId, repositoryBindingId, lifecycleContextKey], references: [id, tenantId, repositoryBindingId, lifecycleContextKey], onDelete: Cascade, map: "SastFindingLifecycleEvent_reconciliation_scope_fkey")
+
+  @@unique([lifecycleStateId, revision], map: "SastFindingLifecycleEvent_state_revision_key")
+  @@index([tenantId, repositoryBindingId, lifecycleContextKey, occurredAt])
+  @@index([observationBatchId])
+  @@index([reconciliationId])
 }
 
 model EvidencePack {

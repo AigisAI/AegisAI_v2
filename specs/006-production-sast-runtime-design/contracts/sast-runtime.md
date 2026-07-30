@@ -923,9 +923,79 @@ aiPayloadEligible
 
 Rejections expose only the version, globally ordered coarse reason codes, four negative
 storage assertions, and their canonical digest. They omit the T035 batch digest, artifact
-digest, candidate, fingerprint, fingerprint preimage, and secret value. `ScanPlaneModule`
-exports only `SastFindingIdentityService` to the next internal stage; T035 redaction and both
-raw normalizers remain internal providers.
+digest, candidate, fingerprint, fingerprint preimage, and secret value. T036 remains an
+internal provider once T037 is present; T035 redaction and both raw normalizers also remain
+internal.
+
+### Finding lineage and lifecycle gate v1
+
+`sast-finding-lineage-v1` accepts exactly one complete
+`SastFingerprintedFindingBatch`. It recomputes the T036 batch and every fingerprint decision,
+checks the active retention window before and after asynchronous authority work, and reloads
+the accepted artifact, completed scanner run, immutable plan, fixed commit, target ref,
+profile, scanner/schema/normalizer/rule/database provenance, and all T030/T031 digests from
+durable state. Any mismatch rejects before persistence.
+
+The gate derives:
+
+- `sast-finding-lifecycle-context-v1` from NFC/UTF-8-length-framed tenant, repository binding,
+  and target ref
+- a `finding-lineage://<sha256>` identity from tenant, repository, capability,
+  `sast-fingerprint-v1`, and stable fingerprint
+- a deterministic observation batch, one normalized row, and one occurrence per producer
+  ordinal; repeated fingerprints never collapse occurrences
+
+Exact alias lookup creates no new lineage. Observation batches are fenced by source identity
+digest and scanner run; replay rechecks every immutable batch field and every ordered
+occurrence, while any changed, missing, extra, or malformed row is a conflict. All lineage,
+alias, occurrence, lifecycle, reconciliation, event, and audit writes use one serializable
+transaction with a 5-second acquisition wait, 120-second transaction deadline, and at most
+three serialization/unique-race attempts.
+
+Path continuity is optional and fail-closed. `sast-finding-rename-attestation-v1` requires a
+sorted non-empty one-to-one set of safe canonical `from`/`to` paths, distinct fixed commits
+and scan requests, exact target/profile/context binding, issued time, signature, provenance,
+and canonical digest. Paths cannot duplicate, chain, or cycle. An injected verifier must
+return `VERIFIED`; the default returns `UNAVAILABLE`. T037 changes only the path component of
+the verified current fingerprint input to look up the predecessor. It retains both aliases
+only when the predecessor resolves unambiguously and the durable predecessor scan exists.
+No fuzzy title, coordinate, rule, severity, scanner-local match, or AI similarity can rename
+a lineage. A verified rename-back reuses the retained exact alias but is still classified as
+`RENAMED` and appends a new event; it never inserts a duplicate alias or rewrites history.
+
+Lifecycle state is unique per lineage and lifecycle context and is separate from the legacy
+normalized-finding policy/triage status. Observation creates `OPEN` and appends `CREATED`;
+trusted alias continuity appends `RENAMED`. Observing a previously fixed lineage records the
+occurrence but does not reopen it.
+
+`sast-finding-lifecycle-coverage-v1` is an input owned by T039. T037 has
+`coverageCalculationAuthority=false` and accepts the decision only when its injected gate
+verifies exact `state=COMPLETE`, `stale=false`, and `comparable=true`. Before applying it,
+T037 verifies:
+
+- the current durable in-flight/terminal scan context plus the previous completed scan, same
+  target context, fixed commits, plan, profile, and strict monotonic reconciliation sequence
+- sorted unique eligible lineage IDs scoped to complete capability families
+- exact equality between expected batch digests and every durable T037 observation batch for
+  the current scan, including zero-finding batches
+- every relevant observed lineage is eligible and every eligible lineage already has state
+  in that target context
+
+An `OPEN` eligible lineage absent from the verified observation set becomes `FIXED`; a
+`FIXED` eligible lineage present becomes `OPEN` with `REOPENED`. Unchanged states only advance
+the reconciliation fence. Transitions append immutable events with the next state revision.
+Partial, stale, incomparable, missing, extra, out-of-order, unavailable, or malformed
+coverage cannot change lifecycle.
+The lifecycle-context sequence is globally contiguous. A newly created or newly eligible
+state may catch up from an earlier non-future state fence during the current verified
+reconciliation, while any state fence ahead of the previous global sequence rejects.
+
+Successful observation authority is limited to normalized-finding persistence, occurrences,
+exact/verified-rename lineage, and lifecycle recording. Correlation, coverage calculation,
+evidence, policy, publication, and AI eligibility remain false. Rejections expose only the
+operation, ordered coarse codes, five negative storage assertions, and rejection digest; they
+never echo source batch/finding data, rename paths, eligible lineage IDs, or secrets.
+`ScanPlaneModule` exports only `SastFindingLineageService` to T038.
 
 ## Correlation Contract
 

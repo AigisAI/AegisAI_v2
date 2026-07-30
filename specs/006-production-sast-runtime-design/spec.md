@@ -213,10 +213,33 @@ incomplete, stale, quarantined, or security-blocked scan.
   rejected T035 batch digest, artifact digest, or secret value.
 - **FR-035**: Exact fingerprint matches MUST update one finding lineage rather than create
   duplicate findings.
+- **FR-035a**: `sast-finding-lineage-v1` MUST independently revalidate the complete T036
+  handoff and every durable tenant, repository, scan, scanner-run, fixed-commit, target,
+  profile, artifact, schema, normalizer, rule, database, and preflight binding before one
+  serializable write. One repository/capability/fingerprint-version/fingerprint tuple MUST
+  identify one lineage, while every ordered producer observation, including byte-identical
+  repeated fingerprints, MUST create its own immutable occurrence and provenance row.
+  Replaying one source batch is idempotent only when the complete observation-batch record
+  and its entire ordered occurrence ledger are byte-for-byte canonical matches; missing,
+  extra, changed, malformed, or cross-scope rows MUST reject.
+- **FR-035b**: Path continuity MUST be granted only by a verified, canonical, fixed-commit,
+  fixed-target, one-to-one `sast-finding-rename-attestation-v1`. The predecessor alias MUST
+  already resolve to exactly one lineage and both old and new aliases MUST remain durable.
+  Missing, ambiguous, chained, cyclic, fuzzy, coordinate-, title-, severity-, scanner-ID-,
+  or AI-derived rename claims MUST reject or create no continuity authority.
 - **FR-036**: Cross-tool correlation MUST preserve every provenance record and MUST NOT
   collapse distinct capability families into one authoritative finding.
 - **FR-037**: A finding MAY transition to fixed only after a complete later scan of the
   relevant profile no longer reports it.
+- **FR-037a**: Lifecycle state MUST be unique per lineage and canonical tenant/repository/
+  target context, separate from policy and triage status, and backed by append-only
+  `CREATED`, `RENAMED`, `FIXED`, and `REOPENED` events. T037 MUST NOT calculate coverage.
+  It MAY apply `FIXED` or `REOPENED` only after an injected T039-compatible gate verifies a
+  strictly newer `sast-finding-lifecycle-coverage-v1` decision with `COMPLETE`,
+  `stale=false`, `comparable=true`, and exact equality to every durable T037 observation
+  batch for the current scan, including zero-finding batches. Missing, partial, pending,
+  failed, stale, incomparable, out-of-order, or scope-mismatched decisions MUST leave
+  lifecycle state unchanged.
 - **FR-038**: Stale scans MUST NOT resolve findings or publish external results.
 
 ### Coverage, Failure, and Publication

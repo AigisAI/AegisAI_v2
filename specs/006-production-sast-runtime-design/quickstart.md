@@ -360,18 +360,48 @@ portion of Phase 6:
   exact distinct/repeated counts, and sets normalized-finding persistence eligibility with
   `durablePersistenceAllowed=true`. Occurrence, lifecycle, correlation, coverage, evidence,
   policy, publication, and AI authority all remain false until T037 and later gates.
-- `ScanPlaneModule` exports only the T036 identity service to the next internal stage. T035
-  redaction and raw OpenGrep/Trivy normalizers remain internal providers. There is still no
-  user route, artifact reader, database writer, evidence, policy, publication, or AI path.
+- `sast-finding-lineage-v1` now revalidates that complete T036 handoff and the active
+  accepted-artifact, scanner-run, immutable-plan, fixed-commit, profile, digest, and retention
+  scope before a serializable write. One repository/capability/fingerprint-version lineage is
+  created or reused, while every producer-ordered finding becomes its own immutable
+  occurrence and legacy normalized-finding row. Batch/scanner-run replay is idempotent only
+  when the full ledger agrees; changed or incomplete replay fails closed.
+- Lifecycle context is the SHA-256 of tenant, repository binding, and NFC target ref. Its
+  `OPEN|FIXED` state and monotonic revision are separate from
+  `NormalizedFinding.status`, which remains policy/triage state. `CREATED`, `RENAMED`,
+  `FIXED`, and `REOPENED` are append-only events; observing a fixed lineage alone never
+  reopens it.
+- Rename continuity accepts only a canonical, signed/provenance-backed, fixed-commit,
+  one-to-one attestation verified by an injected authority. T037 reconstructs the predecessor
+  fingerprint by changing the normalized path component only, retains old and new aliases,
+  and rejects alias collisions, chains/cycles, ambiguous lineages, future attestations, and
+  missing durable predecessor scans. The production default verifier is unavailable and
+  therefore fail-closed.
+- Fixed/reopened reconciliation accepts only an injected T039 coverage decision with exact
+  `COMPLETE`, `stale=false`, and `comparable=true`. It rechecks the current/previous durable
+  scan contexts, strict sequence, eligible lineage scope, capabilities, and the exact sorted
+  observation-batch digest set before transitions. Partial, stale, incomparable, omitted,
+  out-of-order, or unavailable coverage cannot mutate lifecycle state. T037 consumes this
+  authority but has `coverageCalculationAuthority=false`.
+- The Prisma rollout adds nullable T037 metadata to legacy `NormalizedFinding`, creates
+  tenant-scoped lineage, alias, batch, occurrence, target-state, reconciliation, and event
+  tables, and installs existing-table indexes/checks plus composite foreign keys through the
+  mandatory online-schema step. All writes run at serializable isolation with a five-second
+  acquisition wait, 120-second transaction deadline, and at most three bounded retries.
+- `ScanPlaneModule` exports only the T037 lineage service to the next internal stage. T036
+  identity construction, T035 redaction, and raw OpenGrep/Trivy normalizers remain internal
+  providers. There is still no user route, artifact reader, evidence, correlation, coverage
+  calculation, policy, publication, or AI path.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
 runtime provider exist only to verify the handoff contract. Default production credential
 issuance and scanner execution both fail closed until live rollout installs provider-backed
 GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
-file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction is complete;
-T036 `sast-fingerprint-v1` identity construction is also complete; T037 occurrence and exact
-lineage lifecycle construction is therefore the next implementation task.
+file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction, T036
+`sast-fingerprint-v1` identity construction, and T037 occurrence/exact-lineage lifecycle
+construction are complete; T038 authority-aware cross-tool correlation is therefore the next
+implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
