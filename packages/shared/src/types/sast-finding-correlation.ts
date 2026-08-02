@@ -945,18 +945,21 @@ function isSortedUniqueDigestArray(value: unknown[]): boolean {
   );
 }
 
+const CORRELATION_ID_PATTERNS = Object.freeze({
+  'finding-observation': /^finding-observation:\/\/[a-f0-9]{64}$/u,
+  'finding-occurrence': /^finding-occurrence:\/\/[a-f0-9]{64}$/u,
+  'finding-lineage': /^finding-lineage:\/\/[a-f0-9]{64}$/u,
+  'normalized-finding': /^normalized-finding:\/\/[a-f0-9]{64}$/u,
+  'finding-correlation': /^finding-correlation:\/\/[a-f0-9]{64}$/u
+});
+
 function isCorrelationId(
   value: unknown,
-  prefix:
-    | 'finding-observation'
-    | 'finding-occurrence'
-    | 'finding-lineage'
-    | 'normalized-finding'
-    | 'finding-correlation'
+  prefix: keyof typeof CORRELATION_ID_PATTERNS
 ): value is string {
   return (
     typeof value === 'string' &&
-    new RegExp(`^${prefix}://[a-f0-9]{64}$`, 'u').test(value)
+    CORRELATION_ID_PATTERNS[prefix].test(value)
   );
 }
 

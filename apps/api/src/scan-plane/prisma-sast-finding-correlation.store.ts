@@ -208,10 +208,7 @@ export class PrismaSastFindingCorrelationStore
   async loadContext(
     observationBatchIds: readonly string[]
   ): Promise<SastFindingCorrelationContext | null> {
-    return this.readContext(
-      this.prisma as unknown as CorrelationReader,
-      observationBatchIds
-    );
+    return this.readContext(this.prisma, observationBatchIds);
   }
 
   async correlate(
@@ -573,7 +570,8 @@ export class PrismaSastFindingCorrelationStore
         orderBy: [
           { observationBatchId: 'asc' },
           { ordinal: 'asc' }
-        ]
+        ],
+        take: expectedOccurrenceCount + 1
       });
     if (occurrenceRows.length !== expectedOccurrenceCount) {
       throw new SastFindingCorrelationOccurrenceError();

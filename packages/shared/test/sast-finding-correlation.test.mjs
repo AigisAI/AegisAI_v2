@@ -113,8 +113,7 @@ test('validates provenance-preserving edges that cannot merge or inherit severit
     isSastFindingCorrelationEdgeShapeValid(
       {
         ...edge,
-        safety: { ...edge.safety, severityInheritanceAllowed: true },
-        edgeDigest: digest('forged')
+        safety: { ...edge.safety, severityInheritanceAllowed: true }
       },
       digest
     ),

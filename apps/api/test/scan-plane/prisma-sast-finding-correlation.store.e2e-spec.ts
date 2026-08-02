@@ -1,7 +1,9 @@
 import { Prisma } from '@prisma/client';
 import {
+  buildSastScanPlanDigestPreimage,
   canonicalizeSastFindingCorrelationEdge,
-  canonicalizeSastFindingCorrelationProvenance
+  canonicalizeSastFindingCorrelationProvenance,
+  type SastScanPlan
 } from '@aegisai/shared';
 
 import {
@@ -23,8 +25,83 @@ import {
   correlationFixtureClock
 } from '../support/sast-finding-correlation-fixtures';
 import { fixtureDigest } from '../support/sast-finding-lineage-fixtures';
+import { durableSastScanPlan } from '../support/sast-scan-plan-fixtures';
 
 describe('PrismaSastFindingCorrelationStore', () => {
+  it('loads the complete durable context through the real authority readers', async () => {
+    const plan = durableSastScanPlan();
+    const planDigest = fixtureDigest(
+      buildSastScanPlanDigestPreimage(plan)
+    );
+    const fixture = await correlationFixture({ planDigest });
+    const reader = correlationReader(fixture.context, plan);
+    const store = new PrismaSastFindingCorrelationStore(
+      reader as unknown as PrismaService
+    );
+
+    await expect(
+      store.loadContext(
+        fixture.context.sources.map(
+          (source) => source.observationBatchId
+        )
+      )
+    ).resolves.toEqual(fixture.context);
+    expect(
+      reader.sastFindingOccurrence.findMany
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: fixture.context.occurrences.length + 1
+      })
+    );
+  });
+
+  it('rejects a durable context change during the serializable re-read', async () => {
+    const plan = durableSastScanPlan();
+    const planDigest = fixtureDigest(
+      buildSastScanPlanDigestPreimage(plan)
+    );
+    const fixture = await correlationFixture({ planDigest });
+    const reader = correlationReader(fixture.context, plan);
+    const transaction = durableCorrelationTransaction(
+      fixture.context,
+      plan,
+      { observedAtOffsetMilliseconds: 1 }
+    );
+    const prisma = {
+      ...reader,
+      $transaction: jest.fn(
+        async (
+          operation: (
+            client: typeof transaction
+          ) => Promise<unknown>
+        ) => operation(transaction)
+      )
+    };
+    const store = new PrismaSastFindingCorrelationStore(
+      prisma as unknown as PrismaService
+    );
+
+    const initialContext = await store.loadContext(
+      fixture.context.sources.map(
+        (source) => source.observationBatchId
+      )
+    );
+    expect(initialContext).toEqual(fixture.context);
+    if (!initialContext) {
+      throw new Error('Missing initial durable correlation context.');
+    }
+    const input = await buildPersistenceInput({
+      observations: fixture.observations,
+      context: initialContext
+    });
+    await expect(store.correlate(input)).rejects.toBeInstanceOf(
+      SastFindingCorrelationDurableScopeError
+    );
+    expect(
+      transaction.sastFindingCorrelationBatch.create
+    ).not.toHaveBeenCalled();
+  });
+
   it('writes the complete source, edge, and two-sided provenance ledger in one serializable transaction', async () => {
     const fixture = await correlationFixture({
       repeatedOpenGrep: true,
@@ -293,6 +370,115 @@ function correlationTransaction() {
     },
     auditEvent: {
       create: jest.fn().mockResolvedValue({ id: 'audit-1' })
+    }
+  };
+}
+
+function correlationReader(
+  context: Readonly<SastFindingCorrelationContext>,
+  plan: Readonly<SastScanPlan>,
+  options: { observedAtOffsetMilliseconds?: number } = {}
+) {
+  const offset = options.observedAtOffsetMilliseconds ?? 0;
+  const observedAtByBatch = new Map(
+    context.sources.map((source) => [
+      source.observationBatchId,
+      new Date(Date.parse(source.observedAt) + offset)
+    ])
+  );
+  const observationRows = context.sources.map((source) => ({
+    id: source.observationBatchId,
+    tenantId: context.scope.tenantId,
+    repositoryBindingId: context.scope.repositoryBindingId,
+    scanRequestId: context.scope.scanRequestId,
+    attemptId: context.scope.attemptId,
+    scannerRunId: source.scannerRunId,
+    lifecycleContextKey: context.scope.lifecycleContextKey,
+    targetRef: context.scope.targetRef,
+    commitSha: context.scope.commitSha,
+    lane: context.scope.lane,
+    scanner: source.scanner,
+    capabilities: [...source.capabilities],
+    profileId: context.scope.profileId,
+    profileDigest: context.scope.profileDigest,
+    canonicalScanKey: context.scope.canonicalScanKey,
+    planDigest: context.scope.planDigest,
+    sourceIdentityBatchDigest: source.sourceIdentityBatchDigest,
+    findingCount: source.findingCount,
+    observedAt: observedAtByBatch.get(source.observationBatchId)
+  }));
+  const occurrenceRows = context.occurrences.map((occurrence) => {
+    const observedAt = observedAtByBatch.get(
+      occurrence.observationBatchId
+    );
+    if (!observedAt) {
+      throw new Error('Missing durable correlation source fixture.');
+    }
+    const finding = occurrence.sourceFinding;
+    return {
+      id: occurrence.id,
+      tenantId: context.scope.tenantId,
+      repositoryBindingId: context.scope.repositoryBindingId,
+      scanRequestId: context.scope.scanRequestId,
+      attemptId: context.scope.attemptId,
+      scannerRunId: occurrence.scannerRunId,
+      observationBatchId: occurrence.observationBatchId,
+      lineageId: occurrence.lineageId,
+      normalizedFindingId: occurrence.normalizedFindingId,
+      ordinal: occurrence.ordinal,
+      capability: finding.capability,
+      fingerprintVersion: finding.fingerprint.version,
+      stableFingerprint: finding.fingerprint.stableFingerprint,
+      fingerprintDecisionDigest: finding.fingerprint.decisionDigest,
+      sourceFinding: finding,
+      observedAt
+    };
+  });
+  return {
+    sastFindingObservationBatch: {
+      findMany: jest.fn(
+        async (input: { select?: Record<string, unknown> }) =>
+          input.select?.id === true &&
+          Object.keys(input.select).length === 1
+            ? context.sources.map((source) => ({
+                id: source.observationBatchId
+              }))
+            : observationRows
+      )
+    },
+    sastFindingOccurrence: {
+      findMany: jest.fn().mockResolvedValue(occurrenceRows)
+    },
+    sastFindingCorrelationBatch: {
+      findFirst: jest.fn().mockResolvedValue(null)
+    },
+    sastScanAttempt: {
+      findFirst: jest.fn().mockResolvedValue({
+        scanRequest: {
+          lane: context.scope.lane,
+          targetRef: context.scope.targetRef,
+          commitSha: context.scope.commitSha,
+          canonicalKey: context.scope.canonicalScanKey,
+          sastQueueReservation: { immutablePlan: plan }
+        }
+      })
+    }
+  };
+}
+
+function durableCorrelationTransaction(
+  context: Readonly<SastFindingCorrelationContext>,
+  plan: Readonly<SastScanPlan>,
+  options: { observedAtOffsetMilliseconds?: number } = {}
+) {
+  const writes = correlationTransaction();
+  const reader = correlationReader(context, plan, options);
+  return {
+    ...writes,
+    ...reader,
+    sastFindingCorrelationBatch: {
+      ...writes.sastFindingCorrelationBatch,
+      ...reader.sastFindingCorrelationBatch
     }
   };
 }

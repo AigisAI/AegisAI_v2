@@ -1,3 +1,10 @@
+-- Applying this migration alone does not create the occurrence-scope foreign
+-- keys. Run apps/api/scripts/apply-online-sast-runtime-schema.mjs afterward to
+-- create "SastFindingOccurrence_correlation_scope_key" plus
+-- "SastFindingCorrelationEdge_source_occurrence_scope_fkey",
+-- "SastFindingCorrelationEdge_target_occurrence_scope_fkey", and
+-- "SastFindingCorrelationProvenance_occurrence_scope_fkey".
+
 CREATE TYPE "SastFindingCorrelationKind" AS ENUM (
   'EXACT_FINGERPRINT',
   'SAME_DEPENDENCY_CVE',

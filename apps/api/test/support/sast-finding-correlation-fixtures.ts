@@ -1,7 +1,9 @@
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
+  SAST_CAPABILITIES,
   SAST_FINDING_CORRELATION_SOURCE_VERSION,
   SAST_FINDING_LINEAGE_VERSION,
+  SAST_SCAN_PROFILES,
   SAST_SECRET_REDACTION_BATCH_INSPECTED_FIELD_COUNT,
   SAST_SECRET_REDACTION_TOKEN,
   SAST_SECRET_REDACTION_VERSION,
@@ -14,6 +16,7 @@ import {
   type SastFindingLineageObservationResult,
   type SastFindingLineageObservationResultCore,
   type SastFingerprintedFindingBatch,
+  type SastCapability,
   type SastSecretRedactedFindingCandidate,
   type SastSecretRedactionBatch,
   type SastSecretRedactionBatchCore
@@ -36,6 +39,12 @@ type TrivyDependencyRedactedFinding = Extract<
   { capability: 'DEPENDENCY_VULNERABILITY' }
 >;
 
+type FindingCapability = Exclude<SastCapability, 'SBOM'>;
+
+const FINDING_CAPABILITY_ORDER = SAST_CAPABILITIES.filter(
+  (capability): capability is FindingCapability => capability !== 'SBOM'
+);
+
 export const CORRELATION_CONTEXT_KEY = fixtureDigest(
   'correlation-context'
 );
@@ -45,6 +54,7 @@ export async function correlationFixture(options: {
   repeatedOpenGrep?: boolean;
   crossToolCve?: boolean;
   supportingOpenGrep?: boolean;
+  planDigest?: `sha256:${string}`;
 } = {}): Promise<{
   observations: SastFindingLineageObservationResult[];
   context: SastFindingCorrelationContext;
@@ -54,11 +64,21 @@ export async function correlationFixture(options: {
   const openGrep = await fingerprintedFindingBatch(
     options.repeatedOpenGrep
       ? [
-          { lane, cveIds, severity: 'CRITICAL' },
+          {
+            lane,
+            cveIds,
+            severity: 'CRITICAL',
+            ...(options.planDigest
+              ? { planDigest: options.planDigest }
+              : {})
+          },
           {
             lane,
             cveIds,
             severity: 'LOW',
+            ...(options.planDigest
+              ? { planDigest: options.planDigest }
+              : {}),
             location: {
               kind: 'FILE',
               normalizedPath: 'src/config.ts',
@@ -74,11 +94,25 @@ export async function correlationFixture(options: {
             }
           }
         ]
-      : [{ lane, cveIds, severity: 'CRITICAL' }]
+      : [
+          {
+            lane,
+            cveIds,
+            severity: 'CRITICAL',
+            ...(options.planDigest
+              ? { planDigest: options.planDigest }
+              : {})
+          }
+        ]
   );
   const batches: SastFingerprintedFindingBatch[] = [openGrep];
   if (options.crossToolCve) {
-    batches.push(await fingerprintedTrivyDependencyBatch(lane));
+    batches.push(
+      await fingerprintedTrivyDependencyBatch(
+        lane,
+        options.planDigest
+      )
+    );
   }
 
   const sources: SastFindingCorrelationSourceBindingCore[] = [];
@@ -166,17 +200,12 @@ export async function correlationFixture(options: {
         profileId,
         profileDigest: SAST_APPROVED_PROFILE_DIGESTS[profileId]
       },
-      requiredCapabilities: options.supportingOpenGrep
-        ? [
-            'DEPENDENCY_VULNERABILITY',
-            'SECRET_DETECTION',
-            'IAC_MISCONFIGURATION'
-          ]
-        : [
-            'SAST',
-            'DEPENDENCY_VULNERABILITY',
-            'SECRET_DETECTION'
-          ],
+      requiredCapabilities: SAST_SCAN_PROFILES[
+        profileId
+      ].requiredCapabilities.filter(
+        (capability): capability is FindingCapability =>
+          capability !== 'SBOM'
+      ),
       sources,
       occurrences
     }
@@ -188,9 +217,10 @@ export function correlationFixtureClock(): Date {
 }
 
 async function fingerprintedTrivyDependencyBatch(
-  lane: 'FAST' | 'DEEP'
+  lane: 'FAST' | 'DEEP',
+  planDigest?: `sha256:${string}`
 ): Promise<SastFingerprintedFindingBatch> {
-  const source = trivyDependencyRedactedBatch(lane);
+  const source = trivyDependencyRedactedBatch(lane, planDigest);
   const result = await new SastFindingIdentityService().construct(
     { batch: source },
     () => new Date(LINEAGE_FIXTURE_TIME)
@@ -202,9 +232,10 @@ async function fingerprintedTrivyDependencyBatch(
 }
 
 function trivyDependencyRedactedBatch(
-  lane: 'FAST' | 'DEEP'
+  lane: 'FAST' | 'DEEP',
+  planDigest?: `sha256:${string}`
 ): SastSecretRedactionBatch {
-  const finding = trivyDependencyRedactedFinding(lane);
+  const finding = trivyDependencyRedactedFinding(lane, planDigest);
   const core: SastSecretRedactionBatchCore = {
     version: SAST_SECRET_REDACTION_VERSION,
     outcome: 'REDACTED',
@@ -269,7 +300,8 @@ function trivyDependencyRedactedBatch(
 }
 
 function trivyDependencyRedactedFinding(
-  lane: 'FAST' | 'DEEP'
+  lane: 'FAST' | 'DEEP',
+  planDigest?: `sha256:${string}`
 ): TrivyDependencyRedactedFinding {
   const vulnerabilityDatabaseDigest = fixtureDigest(
     'vulnerability-database'
@@ -280,7 +312,7 @@ function trivyDependencyRedactedFinding(
     scanRequestId: 'scan-1',
     attemptId: 'attempt-1',
     scannerRunId: 'scanner-run-trivy-1',
-    planDigest: fixtureDigest('fixture'),
+    planDigest: planDigest ?? fixtureDigest('fixture'),
     canonicalScanKey: fixtureDigest('fixture'),
     preflightAttestationRef: 'preflight://attempt-1',
     preflightInventoryDigest: fixtureDigest('fixture'),
@@ -405,11 +437,14 @@ function correlationId(prefix: string, value: number): string {
 }
 
 function capabilityOrder(left: string, right: string): number {
-  const order = [
-    'SAST',
-    'DEPENDENCY_VULNERABILITY',
-    'SECRET_DETECTION',
-    'IAC_MISCONFIGURATION'
-  ];
-  return order.indexOf(left) - order.indexOf(right);
+  const leftIndex = FINDING_CAPABILITY_ORDER.indexOf(
+    left as FindingCapability
+  );
+  const rightIndex = FINDING_CAPABILITY_ORDER.indexOf(
+    right as FindingCapability
+  );
+  if (leftIndex < 0 || rightIndex < 0) {
+    throw new Error('Unknown correlation fixture capability.');
+  }
+  return leftIndex - rightIndex;
 }

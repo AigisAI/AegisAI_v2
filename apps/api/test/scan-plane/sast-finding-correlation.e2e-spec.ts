@@ -1,10 +1,12 @@
 import {
+  SAST_FINDING_CORRELATION_LIMITS,
   SAST_FINDING_LINEAGE_VERSION,
   canonicalizeSastFindingLineageObservationResult,
   isSastFindingCorrelationResultShapeValid,
   type SastFindingLineageObservationResult,
   type SastFindingLineageObservationResultCore
 } from '@aegisai/shared';
+import { Logger } from '@nestjs/common';
 
 import { SastFindingCorrelationService } from '../../src/scan-plane/sast-finding-correlation.service';
 import {
@@ -261,6 +263,36 @@ describe('SastFindingCorrelationService', () => {
     expect(store.correlate).not.toHaveBeenCalled();
   });
 
+  it('logs a generic diagnostic for an unexpected persistence failure', async () => {
+    const fixture = await correlationFixture();
+    const store = correlationStore(fixture.context);
+    const sensitiveMarker = 'tenant-sensitive-marker';
+    (store.correlate as jest.Mock).mockRejectedValueOnce(
+      new Error(sensitiveMarker)
+    );
+    const loggerError = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
+    const service = new SastFindingCorrelationService(store);
+
+    const result = await service.correlate(
+      { observations: fixture.observations },
+      correlationFixtureClock
+    );
+
+    expect(result).toMatchObject({
+      outcome: 'REJECTED',
+      reasonCodes: ['FINDING_CORRELATION_PERSISTENCE_FAILED']
+    });
+    expect(loggerError).toHaveBeenCalledWith(
+      'Unexpected finding-correlation failure.'
+    );
+    expect(JSON.stringify(loggerError.mock.calls)).not.toContain(
+      sensitiveMarker
+    );
+    loggerError.mockRestore();
+  });
+
   it('keeps replay identity independent from the T037 replay flag and result digest', async () => {
     const fixture = await correlationFixture();
     const store = correlationStore(fixture.context);
@@ -306,7 +338,7 @@ describe('SastFindingCorrelationService', () => {
     );
   });
 
-  it('yields across preparation, grouping, and edge construction before occurrence 65', async () => {
+  it('yields across preparation, grouping, and edge construction after one configured interval', async () => {
     const fixture = await correlationFixture();
     const firstOccurrence = fixture.context.occurrences[0];
     const firstSource = fixture.context.sources[0];
@@ -314,23 +346,35 @@ describe('SastFindingCorrelationService', () => {
     if (!firstOccurrence || !firstSource || !firstObservation) {
       throw new Error('Missing bounded correlation fixture.');
     }
-    const occurrences = Array.from({ length: 65 }, (_, ordinal) => ({
-      ...firstOccurrence,
-      id: testId('finding-occurrence', ordinal + 1),
-      normalizedFindingId: testId('normalized-finding', ordinal + 1),
-      ordinal
-    }));
+    const occurrenceCount =
+      SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval + 1;
+    const occurrences = Array.from(
+      { length: occurrenceCount },
+      (_, ordinal) => ({
+        ...firstOccurrence,
+        id: testId('finding-occurrence', ordinal + 1),
+        normalizedFindingId: testId(
+          'normalized-finding',
+          ordinal + 1
+        ),
+        ordinal
+      })
+    );
     const context: SastFindingCorrelationContext = {
       ...fixture.context,
       sources: [
-        { ...firstSource, findingCount: 65, occurrenceCount: 65 }
+        {
+          ...firstSource,
+          findingCount: occurrenceCount,
+          occurrenceCount
+        }
       ],
       occurrences
     };
     const observations = [
       rebuildObservation(firstObservation, {
-        findingCount: 65,
-        occurrenceCount: 65
+        findingCount: occurrenceCount,
+        occurrenceCount
       })
     ];
     const store = correlationStore(context);
@@ -340,8 +384,9 @@ describe('SastFindingCorrelationService', () => {
       service.correlate({ observations }, correlationFixtureClock)
     ).resolves.toMatchObject({
       outcome: 'CORRELATED',
-      occurrenceCount: 65,
-      exactFingerprintCount: 64
+      occurrenceCount,
+      exactFingerprintCount:
+        SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval
     });
     expect(service.yieldCount).toBe(3);
   });
