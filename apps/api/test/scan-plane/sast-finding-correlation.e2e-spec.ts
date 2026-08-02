@@ -6,7 +6,6 @@ import {
   type SastFindingLineageObservationResult,
   type SastFindingLineageObservationResultCore
 } from '@aegisai/shared';
-import { Logger } from '@nestjs/common';
 
 import { SastFindingCorrelationService } from '../../src/scan-plane/sast-finding-correlation.service';
 import {
@@ -261,36 +260,6 @@ describe('SastFindingCorrelationService', () => {
       reasonCodes: ['FINDING_CORRELATION_INPUT_INVALID']
     });
     expect(store.correlate).not.toHaveBeenCalled();
-  });
-
-  it('logs a generic diagnostic for an unexpected persistence failure', async () => {
-    const fixture = await correlationFixture();
-    const store = correlationStore(fixture.context);
-    const sensitiveMarker = 'tenant-sensitive-marker';
-    (store.correlate as jest.Mock).mockRejectedValueOnce(
-      new Error(sensitiveMarker)
-    );
-    const loggerError = jest
-      .spyOn(Logger.prototype, 'error')
-      .mockImplementation();
-    const service = new SastFindingCorrelationService(store);
-
-    const result = await service.correlate(
-      { observations: fixture.observations },
-      correlationFixtureClock
-    );
-
-    expect(result).toMatchObject({
-      outcome: 'REJECTED',
-      reasonCodes: ['FINDING_CORRELATION_PERSISTENCE_FAILED']
-    });
-    expect(loggerError).toHaveBeenCalledWith(
-      'Unexpected finding-correlation failure.'
-    );
-    expect(JSON.stringify(loggerError.mock.calls)).not.toContain(
-      sensitiveMarker
-    );
-    loggerError.mockRestore();
   });
 
   it('keeps replay identity independent from the T037 replay flag and result digest', async () => {

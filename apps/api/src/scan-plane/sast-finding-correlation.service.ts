@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { setImmediate as yieldToEventLoop } from 'node:timers/promises';
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
   SAST_FINDING_CORRELATION_LIMITS,
@@ -100,10 +100,6 @@ const KIND_PRIORITY: Readonly<Record<SastFindingCorrelationKind, number>> =
 
 @Injectable()
 export class SastFindingCorrelationService {
-  private readonly logger = new Logger(
-    SastFindingCorrelationService.name
-  );
-
   constructor(private readonly store: SastFindingCorrelationStore) {}
 
   async correlate(
@@ -324,11 +320,7 @@ export class SastFindingCorrelationService {
       }
       return result;
     } catch (error) {
-      const reason = mapStoreError(error);
-      if (reason === 'FINDING_CORRELATION_PERSISTENCE_FAILED') {
-        this.logger.error('Unexpected finding-correlation failure.');
-      }
-      return this.reject([reason]);
+      return this.reject([mapStoreError(error)]);
     }
   }
 
