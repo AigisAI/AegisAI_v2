@@ -233,7 +233,7 @@ export class SastFindingCorrelationService {
       }
 
       const prepared = await this.prepareOccurrences(context);
-      const edges = this.buildEdges(
+      const edges = await this.buildEdges(
         correlationBatchId,
         correlatedAt,
         prepared
@@ -398,17 +398,27 @@ export class SastFindingCorrelationService {
     return prepared;
   }
 
-  private buildEdges(
+  private async buildEdges(
     correlationBatchId: string,
     correlatedAt: string,
     occurrences: readonly Readonly<PreparedOccurrence>[]
-  ): PersistSastFindingCorrelationEdge[] {
+  ): Promise<PersistSastFindingCorrelationEdge[]> {
     const edgeByPair = new Map<string, MutableEdge>();
     const exactGroups = new Map<string, CorrelationGroup>();
     const dependencyGroups = new Map<string, CorrelationGroup>();
     const overlapGroups = new Map<string, CorrelationGroup>();
 
-    for (const occurrence of occurrences) {
+    for (let index = 0; index < occurrences.length; index += 1) {
+      if (
+        index > 0 &&
+        index %
+          SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval ===
+          0
+      ) {
+        await this.yieldEventLoop();
+      }
+      const occurrence = occurrences[index];
+      if (!occurrence) throw new SastFindingCorrelationOccurrenceError();
       const exactComponents = [
         occurrence.finding.capability,
         occurrence.occurrence.lineageId,
@@ -490,22 +500,56 @@ export class SastFindingCorrelationService {
       }
     }
 
+    let processedGroupCount = 0;
     for (const group of exactGroups.values()) {
-      connectStar(
+      if (
+        processedGroupCount > 0 &&
+        processedGroupCount %
+          SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval ===
+          0
+      ) {
+        await this.yieldEventLoop();
+      }
+      processedGroupCount += 1;
+      await connectStar(
         group,
         'EXACT_FINGERPRINT',
-        edgeByPair
+        edgeByPair,
+        () => this.yieldEventLoop()
       );
     }
     for (const group of dependencyGroups.values()) {
-      connectStar(
+      if (
+        processedGroupCount > 0 &&
+        processedGroupCount %
+          SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval ===
+          0
+      ) {
+        await this.yieldEventLoop();
+      }
+      processedGroupCount += 1;
+      await connectStar(
         group,
         'SAME_DEPENDENCY_CVE',
-        edgeByPair
+        edgeByPair,
+        () => this.yieldEventLoop()
       );
     }
     for (const group of overlapGroups.values()) {
-      connectAcrossCapabilities(group, edgeByPair);
+      if (
+        processedGroupCount > 0 &&
+        processedGroupCount %
+          SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval ===
+          0
+      ) {
+        await this.yieldEventLoop();
+      }
+      processedGroupCount += 1;
+      await connectAcrossCapabilities(
+        group,
+        edgeByPair,
+        () => this.yieldEventLoop()
+      );
     }
 
     if (
@@ -514,8 +558,7 @@ export class SastFindingCorrelationService {
     ) {
       throw new CorrelationEdgeLimitError();
     }
-    return [...edgeByPair.values()]
-      .sort((left, right) => {
+    const orderedEdges = [...edgeByPair.values()].sort((left, right) => {
         const sourceOrder = compareStrings(
           left.source.occurrence.id,
           right.source.occurrence.id
@@ -526,48 +569,60 @@ export class SastFindingCorrelationService {
               left.target.occurrence.id,
               right.target.occurrence.id
             );
-      })
-      .map((edge) => {
-        const sourceProvenance = buildProvenance(
-          edge.source,
-          'SOURCE'
-        );
-        const targetProvenance = buildProvenance(
-          edge.target,
-          'TARGET'
-        );
-        const decision = buildEdgeDecision(
-          correlationBatchId,
-          correlatedAt,
-          edge.kind,
-          edge.source.occurrence.id,
-          edge.target.occurrence.id,
-          [...edge.basisDigests].sort(compareStrings),
-          sourceProvenance.provenanceDigest,
-          targetProvenance.provenanceDigest
-        );
-        if (
-          !isSastFindingCorrelationProvenanceShapeValid(
-            sourceProvenance,
-            digest
-          ) ||
-          !isSastFindingCorrelationProvenanceShapeValid(
-            targetProvenance,
-            digest
-          ) ||
-          !isSastFindingCorrelationEdgeShapeValid(
-            decision,
-            digest
-          )
-        ) {
-          throw new SastFindingCorrelationOccurrenceError();
-        }
-        return {
-          decision,
-          sourceProvenance,
-          targetProvenance
-        };
       });
+    const persistedEdges: PersistSastFindingCorrelationEdge[] = [];
+    for (let index = 0; index < orderedEdges.length; index += 1) {
+      if (
+        index > 0 &&
+        index %
+          SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval ===
+          0
+      ) {
+        await this.yieldEventLoop();
+      }
+      const edge = orderedEdges[index];
+      if (!edge) throw new SastFindingCorrelationOccurrenceError();
+      const sourceProvenance = buildProvenance(
+        edge.source,
+        'SOURCE'
+      );
+      const targetProvenance = buildProvenance(
+        edge.target,
+        'TARGET'
+      );
+      const decision = buildEdgeDecision(
+        correlationBatchId,
+        correlatedAt,
+        edge.kind,
+        edge.source.occurrence.id,
+        edge.target.occurrence.id,
+        [...edge.basisDigests].sort(compareStrings),
+        sourceProvenance.provenanceDigest,
+        targetProvenance.provenanceDigest
+      );
+      if (
+        !isSastFindingCorrelationProvenanceShapeValid(
+          sourceProvenance,
+          digest
+        ) ||
+        !isSastFindingCorrelationProvenanceShapeValid(
+          targetProvenance,
+          digest
+        ) ||
+        !isSastFindingCorrelationEdgeShapeValid(
+          decision,
+          digest
+        )
+      ) {
+        throw new SastFindingCorrelationOccurrenceError();
+      }
+      persistedEdges.push({
+        decision,
+        sourceProvenance,
+        targetProvenance
+      });
+    }
+    return persistedEdges;
   }
 
   private reject(
@@ -739,20 +794,28 @@ function addToGroup(
   });
 }
 
-function connectStar(
+async function connectStar(
   group: Readonly<CorrelationGroup>,
   kind: Extract<
     SastFindingCorrelationKind,
     'EXACT_FINGERPRINT' | 'SAME_DEPENDENCY_CVE'
   >,
-  edges: Map<string, MutableEdge>
-): void {
+  edges: Map<string, MutableEdge>,
+  yieldEventLoop: () => Promise<void>
+): Promise<void> {
   const occurrences = [...group.occurrences].sort((left, right) =>
     compareStrings(left.occurrence.id, right.occurrence.id)
   );
   const anchor = occurrences[0];
   if (!anchor) return;
   for (let index = 1; index < occurrences.length; index += 1) {
+    if (
+      index %
+        SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval ===
+      0
+    ) {
+      await yieldEventLoop();
+    }
     const candidate = occurrences[index];
     if (candidate) {
       addEdge(edges, anchor, candidate, kind, group.basisDigest);
@@ -760,10 +823,11 @@ function connectStar(
   }
 }
 
-function connectAcrossCapabilities(
+async function connectAcrossCapabilities(
   group: Readonly<CorrelationGroup>,
-  edges: Map<string, MutableEdge>
-): void {
+  edges: Map<string, MutableEdge>,
+  yieldEventLoop: () => Promise<void>
+): Promise<void> {
   const byCapability = new Map<string, PreparedOccurrence[]>();
   for (const occurrence of group.occurrences) {
     const values = byCapability.get(occurrence.finding.capability) ?? [];
@@ -782,7 +846,17 @@ function connectAcrossCapabilities(
   const secondRepresentative = second?.[0];
   if (!firstRepresentative || !secondRepresentative) return;
 
+  let processedOccurrenceCount = 0;
   for (const occurrence of first) {
+    if (
+      processedOccurrenceCount > 0 &&
+      processedOccurrenceCount %
+        SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval ===
+        0
+    ) {
+      await yieldEventLoop();
+    }
+    processedOccurrenceCount += 1;
     addAuthorityEdge(
       edges,
       occurrence,
@@ -792,6 +866,15 @@ function connectAcrossCapabilities(
   }
   for (const capability of capabilities.slice(1)) {
     for (const occurrence of byCapability.get(capability) ?? []) {
+      if (
+        processedOccurrenceCount > 0 &&
+        processedOccurrenceCount %
+          SAST_FINDING_CORRELATION_LIMITS.yieldOccurrenceInterval ===
+          0
+      ) {
+        await yieldEventLoop();
+      }
+      processedOccurrenceCount += 1;
       if (
         capability === capabilities[1] &&
         occurrence.occurrence.id ===

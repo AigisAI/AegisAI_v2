@@ -306,7 +306,7 @@ describe('SastFindingCorrelationService', () => {
     );
   });
 
-  it('yields before occurrence 65 while retaining deterministic bounded output', async () => {
+  it('yields across preparation, grouping, and edge construction before occurrence 65', async () => {
     const fixture = await correlationFixture();
     const firstOccurrence = fixture.context.occurrences[0];
     const firstSource = fixture.context.sources[0];
@@ -343,7 +343,7 @@ describe('SastFindingCorrelationService', () => {
       occurrenceCount: 65,
       exactFingerprintCount: 64
     });
-    expect(service.yieldCount).toBe(1);
+    expect(service.yieldCount).toBe(3);
   });
 });
 
