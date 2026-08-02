@@ -150,15 +150,15 @@ describe('SAST finding lineage persistence contract', () => {
     );
   });
 
-  it('keeps T037 internal after T038 and leaves rename/coverage authority unavailable by default', () => {
+  it('keeps T037 internal after T039 and binds coverage consumption to the fail-closed gate', () => {
     expect(module).toContain(
       'UnavailableSastFindingRenameAttestationVerifier'
     );
-    expect(module).toContain(
-      'UnavailableSastFindingLifecycleCoverageGate'
+    expect(module).toMatch(
+      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastScanCoverageService/
     );
     expect(module).toMatch(
-      /exports:\s*\[[\s\S]*SastFindingCorrelationService[\s\S]*\]/
+      /exports:\s*\[[\s\S]*SastScanCoverageService[\s\S]*\]/
     );
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ??
@@ -168,6 +168,9 @@ describe('SAST finding lineage persistence contract', () => {
     );
     expect(exportsBlock).not.toContain(
       'SastFindingLineageService'
+    );
+    expect(exportsBlock).not.toContain(
+      'SastFindingCorrelationService'
     );
     expect(coverageGate).toContain(
       'T039 owns coverage calculation'

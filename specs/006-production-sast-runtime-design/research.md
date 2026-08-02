@@ -425,3 +425,24 @@ caller supplies, all-pairs comparison, merging capability lineages, severity win
 path/title/coordinate/scanner-ID/fuzzy/AI matching, dependency correlation without installed
 version or ecosystem, storing raw match material, and allowing correlation to imply fixed,
 coverage, evidence, policy, publication, or AI authority.
+
+## Decision 21: Persist Coverage from Durable Authority and Deny Publication Until Freshness Exists
+
+**Decision**: `sast-scan-coverage-v1` accepts only the canonical T038 correlation handoff and
+independently reloads the immutable plan, current attempt, complete source set, scanner runs,
+artifact envelopes, and final dispositions. The approved profile and scanner responsibility
+matrix derive every required/optional scanner and capability. One serializable transaction
+stores three canonical scanner records, one attempt-scoped coverage decision, and one
+fail-closed external-publication decision. Exact replay is the only idempotent replay.
+
+**Rationale**: A successful process exit, caller-provided capability list, or correlation
+edge cannot prove that every required scanner ran against the same fixed commit and produced
+an accepted artifact. Durable rebinding prevents optional output, zero-finding omission, or
+artifact drift from laundering incomplete coverage. T039 intentionally records latest-target
+authority as unavailable and stale/comparability as unknown; therefore even complete coverage
+cannot publish, invoke AI, or mutate finding lifecycle before T040.
+
+**Rejected**: Caller-supplied scanner/capability/stale flags, treating process success as
+artifact acceptance, allowing optional scanners to replace required owners, synthesizing a
+Syft finding source, last-writer-wins replay, per-replica coverage cache, publishing directly
+from T039, or inferring latest-target freshness from the scanned commit alone.

@@ -93,12 +93,20 @@ import {
   SastFindingCorrelationService
 } from './sast-finding-correlation.service';
 import {
+  PrismaSastScanCoverageStore
+} from './prisma-sast-scan-coverage.store';
+import {
+  SastScanCoverageStore
+} from './sast-scan-coverage.store';
+import {
+  SastScanCoverageService
+} from './sast-scan-coverage.service';
+import {
   SastFindingRenameAttestationVerifier,
   UnavailableSastFindingRenameAttestationVerifier
 } from './sast-finding-rename-attestation.verifier';
 import {
-  SastFindingLifecycleCoverageGate,
-  UnavailableSastFindingLifecycleCoverageGate
+  SastFindingLifecycleCoverageGate
 } from './sast-finding-lifecycle-coverage.gate';
 
 @Module({
@@ -121,6 +129,7 @@ import {
     SastFindingIdentityService,
     SastFindingLineageService,
     SastFindingCorrelationService,
+    SastScanCoverageService,
     PrismaSastFindingLineageStore,
     {
       provide: SastFindingLineageStore,
@@ -131,17 +140,20 @@ import {
       provide: SastFindingCorrelationStore,
       useExisting: PrismaSastFindingCorrelationStore
     },
+    PrismaSastScanCoverageStore,
+    {
+      provide: SastScanCoverageStore,
+      useExisting: PrismaSastScanCoverageStore
+    },
     UnavailableSastFindingRenameAttestationVerifier,
     {
       provide: SastFindingRenameAttestationVerifier,
       useExisting:
         UnavailableSastFindingRenameAttestationVerifier
     },
-    UnavailableSastFindingLifecycleCoverageGate,
     {
       provide: SastFindingLifecycleCoverageGate,
-      useExisting:
-        UnavailableSastFindingLifecycleCoverageGate
+      useExisting: SastScanCoverageService
     },
     SastArtifactDispositionService,
     SastArtifactDispositionTask,
@@ -217,8 +229,7 @@ import {
     RepositoryPreflightService,
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
-    SyftCycloneDxInventoryIngestor,
-    SastFindingCorrelationService
+    SastScanCoverageService
   ]
 })
 export class ScanPlaneModule {}

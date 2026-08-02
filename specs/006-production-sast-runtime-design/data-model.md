@@ -512,9 +512,10 @@ Persistence eligibility grants no downstream authority. `occurrenceAuthority`,
 `policyAuthority`, `publicationAuthority`, and `aiPayloadEligible` remain false. T037 must
 turn this batch into stable rows and occurrences before the final entity below gains
 lifecycle state; later coverage, evidence, policy, publication, and AI gates remain mandatory.
-At the T037 checkpoint `ScanPlaneModule` exported only the lineage service to T038. With T038
-installed, identity and lineage construction remain internal and only the correlation service
-crosses the module boundary to T039.
+At the T037 checkpoint `ScanPlaneModule` exported only the lineage service to T038. T038 then
+exported correlation to T039. With T039 installed, identity, lineage, correlation, and raw
+normalization remain internal and only the coverage service crosses the module boundary to
+T040.
 
 ### SastFindingLineage
 
@@ -647,27 +648,43 @@ artifact, and optional vulnerability-database binding. Composite occurrence fore
 prevent cross-tenant or cross-attempt edges. Correlation never copies raw artifacts or secret
 values and never becomes lifecycle, coverage, evidence, policy, publication, or AI state.
 
-### ScannerCoverageRecord
+### SastScannerCoverageRecord
 
-- scan and scanner identifiers
-- required marker
-- capability set
-- scanner/rule/schema versions
-- execution status
-- `artifactAccepted`; `SUCCEEDED` without an accepted, digest-bound artifact is incomplete
-- output digest
-- reason code
+- deterministic `sast-scanner-coverage://<sha256>` ID and one unique scanner row per coverage
+  decision, including an explicit `NOT_STARTED` row for an absent optional scanner
+- composite tenant/repository/scan/attempt binding to the coverage decision, scanner run,
+  artifact ingestion/final disposition, and T038 correlation source when applicable
+- platform-derived required marker, scanner-owned capability set, profile-required capability
+  subset, and achieved capability set; optional output cannot replace a required owner
+- exact scanner/image/wrapper/rule/database/schema/normalizer provenance plus artifact envelope,
+  content, disposition, and source-binding digests
+- execution status, accepted/normalization-eligible booleans, explicit finding-observation
+  requirement/closure, ordered reason codes, canonical record object, and record digest
 
-### SastCoverageDecision
+### SastScanCoverageDecision
 
-- `PENDING | COMPLETE | PARTIAL | FAILED`
-- missing and failed required scanners
-- achieved and missing capabilities
-- `duplicateScanners`; any duplicate authoritative scanner record is a security failure
-- stale/security-blocked markers
-- external publication and AI advisory eligibility
-- reason codes
-- decision timestamp and policy version
+- deterministic `sast-coverage://<sha256>` ID and unique tenant/repository/scan/attempt plus
+  one-to-one T038 correlation-batch binding
+- fixed target, commit, lane, approved profile/digest, canonical scan key, plan/scanner-set,
+  lifecycle context, and correlation source-set digest
+- `PENDING | COMPLETE | PARTIAL | FAILED`, exact required/optional/missing/pending/failed/
+  duplicate scanner lists, achieved/missing capability lists, and optional incomplete scanners
+- digest of the canonical three-record set, ordered reason codes, decision timestamp and digest
+- authority object with only `coverageCalculationAuthority=true`; scanner execution, artifact
+  acceptance, correlation, lifecycle, evidence, policy, publication, and AI authority false
+
+### SastExternalPublicationDecision
+
+- deterministic `sast-publication://<sha256>` ID and one-to-one composite coverage binding
+- T039 invariant false external comment, blocking status, AI advisory, and lifecycle mutation
+- latest-target authority `UNAVAILABLE`, stale status `UNKNOWN`, and comparability `UNKNOWN`
+  until T040 installs its independent comparison gate
+- ordered denial reasons, canonical decision object, timestamp, and unique digest
+
+All three structures are created atomically in a bounded serializable transaction. Exact
+replay returns the existing ledger; changed, missing, extra, reordered, cross-scope, or late
+durable state rejects without partial writes. T039 cannot synthesize a lifecycle-compatible
+`stale=false`/`comparable=true` projection from complete coverage alone.
 
 ### EvidenceFragment
 

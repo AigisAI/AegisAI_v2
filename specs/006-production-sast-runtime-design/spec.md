@@ -258,6 +258,20 @@ incomplete, stale, quarantined, or security-blocked scan.
 
 - **FR-039**: Coverage MUST be `COMPLETE`, `PARTIAL`, `PENDING`, or `FAILED` with explicit
   missing/failed scanner and reason codes.
+- **FR-039a**: `sast-scan-coverage-v1` MUST reload the immutable plan, current attempt,
+  complete T038 source set, every selected scanner run, artifact envelope, and final
+  disposition. Required/optional scanners and capabilities MUST be derived from the approved
+  platform profile and scanner responsibility matrix; the caller MUST NOT supply coverage,
+  stale, publication, lifecycle, or AI authority.
+- **FR-039b**: One bounded serializable transaction MUST persist exactly one attempt-scoped
+  coverage decision, one canonical record for each platform scanner (including absent
+  optional scanners), and one `sast-external-publication-v1` decision. Byte-identical replay,
+  including a serialization race, MAY return the existing ledger without duplicate rows;
+  changed, missing, extra, reordered, cross-scope, or late durable state MUST reject
+  atomically.
+- **FR-039c**: Until T040 proves the latest target, freshness, and comparability, every T039
+  publication decision MUST set external comment, blocking status, AI advisory, and lifecycle
+  mutation authority to false even when scanner/capability coverage is `COMPLETE`.
 - **FR-040**: Required scanner failure, timeout, absence, invalid output, or quarantine MUST
   prevent complete coverage.
 - **FR-041**: Partial, stale, failed, quarantined, or security-blocked scans MUST NOT publish

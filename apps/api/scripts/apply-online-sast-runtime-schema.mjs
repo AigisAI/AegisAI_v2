@@ -92,6 +92,18 @@ const indexes = [
     unique: true,
     create:
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastFindingOccurrence_correlation_scope_key" ON "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")'
+  },
+  {
+    name: 'SastArtifactDispositionDecision_coverage_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactDispositionDecision_coverage_scope_key" ON "SastArtifactDispositionDecision"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId")'
+  },
+  {
+    name: 'SastFindingCorrelationSource_coverage_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastFindingCorrelationSource_coverage_scope_key" ON "SastFindingCorrelationSource"("id", "correlationBatchId")'
   }
 ];
 
@@ -563,6 +575,34 @@ const constraints = [
     type: 'f',
     definition:
       'FOREIGN KEY ("occurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastScannerCoverageRecord',
+    name: 'SastScannerCoverageRecord_scanner_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("scannerRunId", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId") REFERENCES "ScannerRun"("id", "attemptId", "tenantId", "repositoryBindingId", "scanRequestId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastScannerCoverageRecord',
+    name: 'SastScannerCoverageRecord_ingestion_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("artifactIngestionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") REFERENCES "SastArtifactIngestion"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastScannerCoverageRecord',
+    name: 'SastScannerCoverageRecord_disposition_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("dispositionDecisionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") REFERENCES "SastArtifactDispositionDecision"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastScannerCoverageRecord',
+    name: 'SastScannerCoverageRecord_source_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("correlationSourceId", "correlationBatchId") REFERENCES "SastFindingCorrelationSource"("id", "correlationBatchId") ON DELETE CASCADE ON UPDATE CASCADE'
   },
   {
     table: 'NormalizedFinding',
