@@ -343,6 +343,37 @@ describe('PrismaSastFindingLineageStore', () => {
     }
   );
 
+  it('fails closed when the correlation fence delegate is unavailable', async () => {
+    const batch = await fingerprintedFindingBatch();
+    const context = lineageObservationContext(batch);
+    const transaction = {
+      ...observationTransaction(),
+      sastFindingCorrelationBatch: undefined
+    };
+    const prisma = serializablePrisma(transaction);
+    const store = new PrismaSastFindingLineageStore(
+      prisma as unknown as PrismaService
+    );
+    mockObservationContext(store, context);
+
+    await expect(
+      store.observe({
+        observationBatchId:
+          `finding-observation://${'d'.repeat(64)}`,
+        lifecycleContextKey: lineageContextKey(context),
+        observedAt: LINEAGE_FIXTURE_TIME,
+        batch,
+        context,
+        renameCandidates: []
+      })
+    ).rejects.toBeInstanceOf(
+      SastFindingLineageReplayConflictError
+    );
+    expect(
+      transaction.sastFindingObservationBatch.create
+    ).not.toHaveBeenCalled();
+  });
+
   it('rejects a verified rename claim when no durable predecessor alias exists', async () => {
     const batch = await fingerprintedFindingBatch();
     const context = lineageObservationContext(batch);
@@ -994,6 +1025,9 @@ function observationTransaction(options: {
         options.existingBatch ?? null
       ),
       create: jest.fn().mockResolvedValue({ id: 'batch-1' })
+    },
+    sastFindingCorrelationBatch: {
+      findFirst: jest.fn().mockResolvedValue(null)
     },
     sastFindingIdentityAlias: {
       findMany: jest.fn().mockResolvedValue(

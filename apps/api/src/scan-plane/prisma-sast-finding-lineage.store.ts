@@ -245,9 +245,11 @@ export class PrismaSastFindingLineageStore
     // appended after correlation has bound the complete source set.
     const correlationDelegate =
       transaction.sastFindingCorrelationBatch;
+    if (!correlationDelegate) {
+      throw new SastFindingLineageReplayConflictError();
+    }
     if (
-      correlationDelegate &&
-      (await correlationDelegate.findFirst({
+      await correlationDelegate.findFirst({
         where: {
           tenantId: input.context.scope.tenantId,
           repositoryBindingId:
@@ -257,7 +259,7 @@ export class PrismaSastFindingLineageStore
           lifecycleContextKey: input.lifecycleContextKey
         },
         select: { id: true }
-      }))
+      })
     ) {
       throw new SastFindingLineageReplayConflictError();
     }
