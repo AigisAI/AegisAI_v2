@@ -240,6 +240,27 @@ export class PrismaSastFindingLineageStore
         identities
       );
     }
+    // T038 closes the current attempt's durable observation set. Existing
+    // T037 batches remain replayable, but a late scanner batch cannot be
+    // appended after correlation has bound the complete source set.
+    const correlationDelegate =
+      transaction.sastFindingCorrelationBatch;
+    if (
+      correlationDelegate &&
+      (await correlationDelegate.findFirst({
+        where: {
+          tenantId: input.context.scope.tenantId,
+          repositoryBindingId:
+            input.context.scope.repositoryBindingId,
+          scanRequestId: input.context.scope.scanRequestId,
+          attemptId: input.context.scope.attemptId,
+          lifecycleContextKey: input.lifecycleContextKey
+        },
+        select: { id: true }
+      }))
+    ) {
+      throw new SastFindingLineageReplayConflictError();
+    }
 
     const resolved = await this.resolveIdentities(
       transaction,

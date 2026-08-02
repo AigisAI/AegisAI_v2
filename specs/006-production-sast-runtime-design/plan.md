@@ -106,8 +106,11 @@ path-only alias is added only from a verified fixed-commit, one-to-one rename at
 Append-only `CREATED`, `RENAMED`, `FIXED`, and `REOPENED` events are serialized with the
 observation/reconciliation ledger. Fixed/reopened transitions consume, but never calculate,
 a T039-owned complete, non-stale, comparable coverage decision and verify its exact
-observation-batch set. T038 next correlates only compatible authoritative capabilities;
-coverage, policy, publication, evidence, and AI authority remain in later gates.
+observation-batch set. T038 now closes that complete durable source set, applies the scanner
+responsibility/profile authority matrix, and stores bounded deterministic correlation edges
+with both occurrence provenance records. It never merges capability families or inherits
+severity, lifecycle, coverage, policy, publication, evidence, or AI authority. T039 coverage
+and external-publication denial is the next gate.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

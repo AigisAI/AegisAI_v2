@@ -86,6 +86,12 @@ const indexes = [
     unique: false,
     create:
       'CREATE INDEX CONCURRENTLY IF NOT EXISTS "NormalizedFinding_sastObservationBatchId_idx" ON "NormalizedFinding"("sastObservationBatchId")'
+  },
+  {
+    name: 'SastFindingOccurrence_correlation_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastFindingOccurrence_correlation_scope_key" ON "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")'
   }
 ];
 
@@ -536,6 +542,27 @@ const constraints = [
     type: 'f',
     definition:
       'FOREIGN KEY ("normalizedFindingId", "tenantId", "scanRequestId", "scannerRunId") REFERENCES "NormalizedFinding"("id", "tenantId", "scanRequestId", "scannerRunId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastFindingCorrelationEdge',
+    name: 'SastFindingCorrelationEdge_source_occurrence_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("sourceOccurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastFindingCorrelationEdge',
+    name: 'SastFindingCorrelationEdge_target_occurrence_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("targetOccurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastFindingCorrelationProvenance',
+    name: 'SastFindingCorrelationProvenance_occurrence_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("occurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") ON DELETE CASCADE ON UPDATE CASCADE'
   },
   {
     table: 'NormalizedFinding',

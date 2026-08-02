@@ -84,6 +84,15 @@ import {
   SastFindingLineageService
 } from './sast-finding-lineage.service';
 import {
+  PrismaSastFindingCorrelationStore
+} from './prisma-sast-finding-correlation.store';
+import {
+  SastFindingCorrelationStore
+} from './sast-finding-correlation.store';
+import {
+  SastFindingCorrelationService
+} from './sast-finding-correlation.service';
+import {
   SastFindingRenameAttestationVerifier,
   UnavailableSastFindingRenameAttestationVerifier
 } from './sast-finding-rename-attestation.verifier';
@@ -111,10 +120,16 @@ import {
     SastSecretRedactionService,
     SastFindingIdentityService,
     SastFindingLineageService,
+    SastFindingCorrelationService,
     PrismaSastFindingLineageStore,
     {
       provide: SastFindingLineageStore,
       useExisting: PrismaSastFindingLineageStore
+    },
+    PrismaSastFindingCorrelationStore,
+    {
+      provide: SastFindingCorrelationStore,
+      useExisting: PrismaSastFindingCorrelationStore
     },
     UnavailableSastFindingRenameAttestationVerifier,
     {
@@ -203,7 +218,7 @@ import {
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
     SyftCycloneDxInventoryIngestor,
-    SastFindingLineageService
+    SastFindingCorrelationService
   ]
 })
 export class ScanPlaneModule {}

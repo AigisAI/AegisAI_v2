@@ -388,9 +388,30 @@ portion of Phase 6:
   tables, and installs existing-table indexes/checks plus composite foreign keys through the
   mandatory online-schema step. All writes run at serializable isolation with a five-second
   acquisition wait, 120-second transaction deadline, and at most three bounded retries.
-- `ScanPlaneModule` exports only the T037 lineage service to the next internal stage. T036
-  identity construction, T035 redaction, and raw OpenGrep/Trivy normalizers remain internal
-  providers. There is still no user route, artifact reader, evidence, correlation, coverage
+- T038 accepts every canonical T037 observation result for one attempt, including explicit
+  zero-finding batches. It verifies each result digest, then reloads and requires exact
+  equality with the complete durable observation-batch and occurrence set. Its replay key is
+  derived from durable source bindings rather than T037's result digest, because the valid
+  T037 `replayed` flag intentionally changes that digest.
+- `sast-finding-correlation-v1` derives only deterministic `EXACT_FINGERPRINT`,
+  `SAME_DEPENDENCY_CVE`, `SUPPORTING_EVIDENCE`, and `POSSIBLE_OVERLAP` edges. Dependency
+  equality requires the NFC ecosystem/package/installed-version/CVE tuple. Cross-capability
+  CVE and same-file CWE overlap uses the scanner responsibility matrix and active profile:
+  required capabilities are authoritative, while optional capability output is
+  `SUPPORTING_ONLY`. No path-only, fuzzy, title, severity, scanner-local, or AI match is
+  accepted.
+- Every edge keeps both immutable occurrence references and two complete provenance rows.
+  `findingMergeAllowed`, severity/lifecycle/policy/coverage inheritance, evidence, publication,
+  and AI authority remain false. A Critical authoritative result therefore cannot be hidden
+  by a lower-severity correlated result, and `POSSIBLE_OVERLAP` remains display-only.
+- The Prisma rollout creates correlation batch, source, edge, and provenance tables. One
+  serializable write revalidates the closed T037 source set, stores at most 100,000
+  deterministic star edges, and retries serialization/unique races at most three times.
+  The mandatory online-schema step installs composite occurrence-scope foreign keys, and a
+  completed correlation batch fences late T037 additions while preserving exact T037 replay.
+- `ScanPlaneModule` now exports only the T038 correlation service to T039. T037 lineage,
+  T036 identity construction, T035 redaction, and raw OpenGrep/Trivy normalizers remain
+  internal providers. There is still no user route, artifact reader, evidence, coverage
   calculation, policy, publication, or AI path.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
@@ -399,9 +420,9 @@ runtime provider exist only to verify the handoff contract. Default production c
 issuance and scanner execution both fail closed until live rollout installs provider-backed
 GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
 file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction, T036
-`sast-fingerprint-v1` identity construction, and T037 occurrence/exact-lineage lifecycle
-construction are complete; T038 authority-aware cross-tool correlation is therefore the next
-implementation task.
+`sast-fingerprint-v1` identity construction, T037 occurrence/exact-lineage lifecycle, and
+T038 authority-aware cross-tool correlation are complete; T039 fail-closed scanner and
+capability coverage is therefore the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

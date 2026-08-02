@@ -37,6 +37,8 @@ const files = {
   sharedSastFindingIdentityTest: new URL('../../packages/shared/test/sast-finding-identity.test.mjs', import.meta.url),
   sharedSastFindingLineage: new URL('../../packages/shared/src/types/sast-finding-lineage.ts', import.meta.url),
   sharedSastFindingLineageTest: new URL('../../packages/shared/test/sast-finding-lineage.test.mjs', import.meta.url),
+  sharedSastFindingCorrelation: new URL('../../packages/shared/src/types/sast-finding-correlation.ts', import.meta.url),
+  sharedSastFindingCorrelationTest: new URL('../../packages/shared/test/sast-finding-correlation.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -64,8 +66,13 @@ const files = {
   apiSastFindingCoverageGate: new URL('../../apps/api/src/scan-plane/sast-finding-lifecycle-coverage.gate.ts', import.meta.url),
   apiSastFindingLineageTest: new URL('../../apps/api/test/scan-plane/sast-finding-lineage.e2e-spec.ts', import.meta.url),
   apiSastFindingLineagePersistenceTest: new URL('../../apps/api/test/scan-plane/sast-finding-lineage-persistence.e2e-spec.ts', import.meta.url),
+  apiSastFindingCorrelation: new URL('../../apps/api/src/scan-plane/sast-finding-correlation.service.ts', import.meta.url),
+  apiSastFindingCorrelationStore: new URL('../../apps/api/src/scan-plane/prisma-sast-finding-correlation.store.ts', import.meta.url),
+  apiSastFindingCorrelationTest: new URL('../../apps/api/test/scan-plane/sast-finding-correlation.e2e-spec.ts', import.meta.url),
+  apiSastFindingCorrelationPersistenceTest: new URL('../../apps/api/test/scan-plane/sast-finding-correlation-persistence.e2e-spec.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
   apiSastFindingLineageMigration: new URL('../../apps/api/prisma/migrations/20260730160000_sast_finding_lineage_lifecycle/migration.sql', import.meta.url),
+  apiSastFindingCorrelationMigration: new URL('../../apps/api/prisma/migrations/20260802120000_sast_finding_correlation/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -102,7 +109,8 @@ const assertScanPlaneExports = (scanPlaneModule) => {
     exportsBlock,
     'Expected to locate the ScanPlaneModule exports array'
   );
-  assert.match(exportsBlock, /SastFindingLineageService/);
+  assert.match(exportsBlock, /SastFindingCorrelationService/);
+  assert.doesNotMatch(exportsBlock, /SastFindingLineageService/);
   assert.doesNotMatch(exportsBlock, /SastFindingIdentityService/);
   assert.doesNotMatch(exportsBlock, /SastSecretRedactionService/);
   assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
@@ -666,7 +674,7 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
   assert.match(tasks, /- \[x\] T036\b/);
   assert.match(
     quickstart,
-    /T037 occurrence\/exact-lineage lifecycle[\s\S]{0,120}complete; T038[\s\S]{0,120}next[\s\S]{0,40}task/
+    /T038 authority-aware cross-tool correlation[\s\S]{0,80}complete; T039[\s\S]{0,120}next implementation task/
   );
   assert.match(contract, /Finding identity construction gate v1/);
   assert.match(spec, /FR-034a/);
@@ -827,7 +835,7 @@ test('SAST T037 persists complete occurrence lineage and fail-closed lifecycle t
   assert.match(tasks, /- \[x\] T037\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation is therefore the next/
+    /T038 authority-aware cross-tool correlation[\s\S]{0,80}complete; T039/
   );
   assert.match(contract, /Finding lineage and lifecycle gate v1/);
   assert.match(dataModel, /SastFindingLifecycleReconciliation/);
@@ -850,6 +858,135 @@ test('SAST T037 persists complete occurrence lineage and fail-closed lifecycle t
   assert.match(
     qualityGates,
     /including\s+zero-finding batches/
+  );
+});
+
+test('SAST T038 correlates by scanner authority while preserving every provenance record', () => {
+  const sharedCorrelation = readNormalizedText(
+    files.sharedSastFindingCorrelation
+  );
+  const sharedCorrelationTest = readNormalizedText(
+    files.sharedSastFindingCorrelationTest
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiSastFindingCorrelation);
+  const store = readNormalizedText(
+    files.apiSastFindingCorrelationStore
+  );
+  const serviceTest = readNormalizedText(
+    files.apiSastFindingCorrelationTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiSastFindingCorrelationPersistenceTest
+  );
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(
+    files.apiSastFindingCorrelationMigration
+  );
+  const scanPlaneModule = readNormalizedText(
+    files.apiScanPlaneModule
+  );
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const plan = readNormalizedText(files.plan);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(
+    sharedCorrelation,
+    /SAST_FINDING_CORRELATION_VERSION\s*=[^;]*'sast-finding-correlation-v1'/
+  );
+  assert.match(sharedCorrelation, /maximumOccurrences:\s*25_000/);
+  assert.match(sharedCorrelation, /maximumEdges:\s*100_000/);
+  assert.match(sharedCorrelation, /EXACT_FINGERPRINT/);
+  assert.match(sharedCorrelation, /SAME_DEPENDENCY_CVE/);
+  assert.match(sharedCorrelation, /SUPPORTING_EVIDENCE/);
+  assert.match(sharedCorrelation, /POSSIBLE_OVERLAP/);
+  assert.match(sharedCorrelation, /findingMergeAllowed:\s*false/);
+  assert.match(sharedCorrelation, /severityAuthority:\s*false/);
+  assert.match(sharedCorrelation, /publicationAuthority:\s*false/);
+  assert.match(sharedCorrelation, /aiPayloadEligible:\s*false/);
+  assert.match(
+    sharedIndex,
+    /export \* from '.\/types\/sast-finding-correlation';/
+  );
+  assert.match(
+    sharedCorrelationTest,
+    /complete durable T037 source set independently from replay result digests/
+  );
+  assert.match(
+    sharedCorrelationTest,
+    /cannot merge or inherit severity/
+  );
+
+  assert.match(service, /class SastFindingCorrelationService/);
+  assert.match(service, /SAST_SCANNER_RESPONSIBILITIES/);
+  assert.match(service, /yieldOccurrenceInterval/);
+  assert.match(service, /connectStar/);
+  assert.match(service, /connectAcrossCapabilities/);
+  assert.doesNotMatch(service, /\bLogger\b|\bconsole\./u);
+  assert.doesNotMatch(
+    service,
+    /@Controller|@(Get|Post|Put|Patch|Delete)\(/u
+  );
+  assert.match(
+    serviceTest,
+    /keeps two authoritative capability families as display-only possible overlap/
+  );
+  assert.match(
+    serviceTest,
+    /optional-profile scanner output only as supporting evidence/
+  );
+  assert.match(
+    serviceTest,
+    /replay identity independent from the T037 replay flag/
+  );
+
+  assert.match(
+    store,
+    /Prisma\.TransactionIsolationLevel\.Serializable/
+  );
+  assert.match(store, /allBatches\.length !== orderedIds\.length/);
+  assert.match(store, /replayCorrelation/);
+  assert.match(
+    persistenceTest,
+    /closed source set, non-collapsing edges, and two-sided provenance/
+  );
+  for (const model of [
+    'SastFindingCorrelationBatch',
+    'SastFindingCorrelationSource',
+    'SastFindingCorrelationEdge',
+    'SastFindingCorrelationProvenance'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(
+      migration,
+      new RegExp(`CREATE TABLE "${model}"`)
+    );
+  }
+  assertScanPlaneExports(scanPlaneModule);
+
+  assert.match(tasks, /- \[x\] T038\b/);
+  assert.match(
+    quickstart,
+    /T039 fail-closed scanner and[\s\S]{0,80}capability coverage[\s\S]{0,100}next implementation task/
+  );
+  assert.match(contract, /Finding correlation gate v1/);
+  assert.match(dataModel, /SastFindingCorrelationProvenance/);
+  assert.match(plan, /T038 now closes that complete durable source set/);
+  assert.match(spec, /FR-036a/);
+  assert.match(
+    research,
+    /Decision 20: Correlate by Authority Without Collapsing Capability Families/
+  );
+  assert.match(threatModel, /Correlation source-set truncation/);
+  assert.match(
+    qualityGates,
+    /100% exact equality between supplied canonical T037 results/
   );
 });
 

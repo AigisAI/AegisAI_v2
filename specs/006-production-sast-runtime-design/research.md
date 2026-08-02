@@ -397,3 +397,31 @@ match IDs, repository-global lifecycle status, mutating legacy policy/triage sta
 partial or stale coverage, inferring completeness from the batches that happened to arrive,
 omitting zero-finding batches, calculating coverage inside T037, last-writer-wins lifecycle
 updates, deleting old aliases, or letting fuzzy/AI matching merge or resolve findings.
+
+## Decision 20: Correlate by Authority Without Collapsing Capability Families
+
+**Decision**: `sast-finding-correlation-v1` verifies every canonical T037 observation result,
+then reloads the complete durable observation and ordered-occurrence set for the attempt. Its
+source identity is a digest of immutable durable bindings, not the T037 result digest whose
+valid replay flag changes. A serializable transaction rechecks that no zero/nonzero batch was
+omitted or added before storing one batch, every source, bounded deterministic edges, two
+provenance rows per edge, and one audit event. The resulting batch fences late T037 writes.
+
+Scanner responsibility and the active profile jointly define authority. A scanner-owned,
+required capability is authoritative; optional capability output is supporting only.
+Repeated exact lineages use `EXACT_FINGERPRINT`. Dependency equality requires the canonical
+ecosystem, package, installed version, and CVE tuple. Cross-capability canonical CVE and
+same-file CWE can produce `SUPPORTING_EVIDENCE` or display-only `POSSIBLE_OVERLAP`. Groups use
+deterministic star connections instead of quadratic all-pairs expansion.
+
+**Rationale**: Correlation answers whether independently retained occurrences are related; it
+does not answer which capability, severity, lifecycle, coverage, or policy result wins. Two
+provenance rows and invariant no-inheritance flags keep a lower-severity or optional result
+from hiding a Critical authoritative finding, while complete-set binding makes retries and
+concurrent scanner completion deterministic.
+
+**Rejected**: Reusing a T037 result digest as replay identity, accepting only the batches a
+caller supplies, all-pairs comparison, merging capability lineages, severity winner-takes-all,
+path/title/coordinate/scanner-ID/fuzzy/AI matching, dependency correlation without installed
+version or ecosystem, storing raw match material, and allowing correlation to imply fixed,
+coverage, evidence, policy, publication, or AI authority.

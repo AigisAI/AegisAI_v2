@@ -19,6 +19,7 @@ export * from './types/sast-sbom-inventory';
 export * from './types/sast-secret-redaction';
 export * from './types/sast-finding-identity';
 export * from './types/sast-finding-lineage';
+export * from './types/sast-finding-correlation';
 export * from './types/sast-planning';
 export * from './types/sast-fetch';
 export * from './types/sast-wrapper';

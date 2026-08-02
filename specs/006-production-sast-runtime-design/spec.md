@@ -229,6 +229,18 @@ incomplete, stale, quarantined, or security-blocked scan.
   or AI-derived rename claims MUST reject or create no continuity authority.
 - **FR-036**: Cross-tool correlation MUST preserve every provenance record and MUST NOT
   collapse distinct capability families into one authoritative finding.
+- **FR-036a**: `sast-finding-correlation-v1` MUST revalidate every supplied T037 result and
+  require exact equality with all durable current-attempt observation batches and ordered
+  occurrences, including zero-finding batches, before one serializable write. Replay identity
+  MUST use canonical durable source bindings and MUST NOT depend on T037's mutable replay flag.
+- **FR-036b**: Correlation MUST use only exact fingerprint, canonical dependency
+  ecosystem/package/installed-version/CVE, cross-capability CVE, or same-file CWE rules.
+  Scanner responsibility plus required-versus-optional profile capability MUST distinguish
+  authoritative from supporting evidence. Fuzzy, path-only, title, severity, scanner-local,
+  and AI similarity MUST grant no correlation authority.
+- **FR-036c**: Every correlation edge MUST keep both immutable occurrence and provenance
+  references. No edge may merge findings or inherit severity, lifecycle, coverage, evidence,
+  policy, publication, or AI authority; `POSSIBLE_OVERLAP` MUST remain display-only.
 - **FR-037**: A finding MAY transition to fixed only after a complete later scan of the
   relevant profile no longer reports it.
 - **FR-037a**: Lifecycle state MUST be unique per lineage and canonical tenant/repository/
