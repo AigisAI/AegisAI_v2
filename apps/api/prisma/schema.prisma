@@ -172,6 +172,23 @@ enum SastFindingLifecycleEventKind {
   REOPENED
 }
 
+enum SastFindingCorrelationKind {
+  EXACT_FINGERPRINT
+  SAME_DEPENDENCY_CVE
+  SUPPORTING_EVIDENCE
+  POSSIBLE_OVERLAP
+}
+
+enum SastFindingCorrelationAuthorityLevel {
+  AUTHORITATIVE
+  SUPPORTING_ONLY
+}
+
+enum SastFindingCorrelationProvenanceSide {
+  SOURCE
+  TARGET
+}
+
 enum EvidenceClassification {
   SHORT_LIVED_EVIDENCE
 }
@@ -349,6 +366,7 @@ model Tenant {
   sastFindingStates          SastFindingLifecycleState[]
   sastFindingReconciliations SastFindingLifecycleReconciliation[]
   sastFindingEvents          SastFindingLifecycleEvent[]
+  sastFindingCorrelations    SastFindingCorrelationBatch[]
   users                      User[]
 }
 
@@ -398,6 +416,7 @@ model RepositoryBinding {
   sastFindingStates          SastFindingLifecycleState[]
   sastFindingReconciliations SastFindingLifecycleReconciliation[]
   sastFindingEvents          SastFindingLifecycleEvent[]
+  sastFindingCorrelations    SastFindingCorrelationBatch[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
@@ -439,6 +458,7 @@ model ScanRequest {
   sastArtifactIngestions     SastArtifactIngestion[]
   sastFindingBatches         SastFindingObservationBatch[]
   sastFindingReconciliations SastFindingLifecycleReconciliation[]
+  sastFindingCorrelations    SastFindingCorrelationBatch[]
 
   @@unique([id, tenantId, repositoryBindingId])
   @@index([tenantId])
@@ -518,6 +538,7 @@ model SastScanAttempt {
   artifactIngestions         SastArtifactIngestion[]
   sastFindingBatches         SastFindingObservationBatch[]
   sastFindingReconciliations SastFindingLifecycleReconciliation[]
+  sastFindingCorrelations    SastFindingCorrelationBatch[]
   auditEvents                AuditEvent[]                         @relation("SastScanAttemptAuditEvents")
   finalAuditEvent            AuditEvent?                          @relation("SastScanAttemptFinalAuditEvent", fields: [finalAuditEventId, id, tenantId], references: [id, attemptId, tenantId], onDelete: NoAction, onUpdate: NoAction, map: "SastScanAttempt_finalAuditEventId_fkey")
 
@@ -873,13 +894,14 @@ model SastFindingObservationBatch {
   observedAt                DateTime
   createdAt                 DateTime    @default(now())
 
-  tenant            Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding RepositoryBinding           @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingObservationBatch_repository_scope_fkey")
-  scanRequest       ScanRequest                 @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastFindingObservationBatch_scan_scope_fkey")
-  attempt           SastScanAttempt             @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastFindingObservationBatch_attempt_scope_fkey")
-  scannerRun        ScannerRun                  @relation(fields: [scannerRunId, attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, attemptId, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastFindingObservationBatch_scanner_scope_fkey")
-  occurrences       SastFindingOccurrence[]
-  lifecycleEvents   SastFindingLifecycleEvent[]
+  tenant             Tenant                         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding  RepositoryBinding              @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingObservationBatch_repository_scope_fkey")
+  scanRequest        ScanRequest                    @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastFindingObservationBatch_scan_scope_fkey")
+  attempt            SastScanAttempt                @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastFindingObservationBatch_attempt_scope_fkey")
+  scannerRun         ScannerRun                     @relation(fields: [scannerRunId, attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, attemptId, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastFindingObservationBatch_scanner_scope_fkey")
+  occurrences        SastFindingOccurrence[]
+  lifecycleEvents    SastFindingLifecycleEvent[]
+  correlationSources SastFindingCorrelationSource[]
 
   @@unique([tenantId, sourceIdentityBatchDigest], map: "SastFindingObservationBatch_source_digest_key")
   @@unique([tenantId, scannerRunId], map: "SastFindingObservationBatch_scanner_run_key")
@@ -908,14 +930,20 @@ model SastFindingOccurrence {
   observedAt                DateTime
   createdAt                 DateTime              @default(now())
 
-  tenant            Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding RepositoryBinding           @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingOccurrence_repository_scope_fkey")
-  observationBatch  SastFindingObservationBatch @relation(fields: [observationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], onDelete: Cascade, map: "SastFindingOccurrence_batch_scope_fkey")
-  lineage           SastFindingLineage          @relation(fields: [lineageId, tenantId, repositoryBindingId, capability, fingerprintVersion], references: [id, tenantId, repositoryBindingId, capability, fingerprintVersion], onDelete: Cascade, map: "SastFindingOccurrence_lineage_scope_fkey")
-  normalizedFinding NormalizedFinding           @relation(fields: [normalizedFindingId, tenantId, scanRequestId, scannerRunId], references: [id, tenantId, scanRequestId, scannerRunId], onDelete: Cascade, map: "SastFindingOccurrence_normalized_scope_fkey")
+  tenant                 Tenant                             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding      RepositoryBinding                  @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingOccurrence_repository_scope_fkey")
+  observationBatch       SastFindingObservationBatch        @relation(fields: [observationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], onDelete: Cascade, map: "SastFindingOccurrence_batch_scope_fkey")
+  lineage                SastFindingLineage                 @relation(fields: [lineageId, tenantId, repositoryBindingId, capability, fingerprintVersion], references: [id, tenantId, repositoryBindingId, capability, fingerprintVersion], onDelete: Cascade, map: "SastFindingOccurrence_lineage_scope_fkey")
+  normalizedFinding      NormalizedFinding                  @relation(fields: [normalizedFindingId, tenantId, scanRequestId, scannerRunId], references: [id, tenantId, scanRequestId, scannerRunId], onDelete: Cascade, map: "SastFindingOccurrence_normalized_scope_fkey")
+  sourceCorrelationEdges SastFindingCorrelationEdge[]       @relation("SastFindingCorrelationSourceOccurrence")
+  targetCorrelationEdges SastFindingCorrelationEdge[]       @relation("SastFindingCorrelationTargetOccurrence")
+  correlationProvenances SastFindingCorrelationProvenance[]
 
   @@unique([observationBatchId, ordinal], map: "SastFindingOccurrence_batch_ordinal_key")
   @@unique([normalizedFindingId, tenantId, scanRequestId, scannerRunId], map: "SastFindingOccurrence_normalized_scope_key")
+  // Installed concurrently by the mandatory online-schema step before the
+  // composite correlation provenance foreign keys are validated.
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastFindingOccurrence_correlation_scope_key")
   @@index([tenantId, repositoryBindingId, lineageId, observedAt])
   @@index([scanRequestId, capability])
 }
@@ -1011,6 +1039,142 @@ model SastFindingLifecycleEvent {
   @@index([tenantId, repositoryBindingId, lifecycleContextKey, occurredAt])
   @@index([observationBatchId])
   @@index([reconciliationId])
+}
+
+model SastFindingCorrelationBatch {
+  id                      String   @id
+  tenantId                String
+  repositoryBindingId     String
+  scanRequestId           String
+  attemptId               String
+  lifecycleContextKey     String
+  targetRef               String
+  commitSha               String
+  lane                    ScanLane
+  profileId               String
+  profileDigest           String
+  canonicalScanKey        String
+  planDigest              String
+  sourceSetDigest         String
+  sourceBatchCount        Int
+  occurrenceCount         Int
+  edgeCount               Int
+  exactFingerprintCount   Int
+  sameDependencyCveCount  Int
+  supportingEvidenceCount Int
+  possibleOverlapCount    Int
+  correlatedAt            DateTime
+  createdAt               DateTime @default(now())
+
+  tenant            Tenant                         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding              @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastFindingCorrelationBatch_repository_scope_fkey")
+  scanRequest       ScanRequest                    @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastFindingCorrelationBatch_scan_scope_fkey")
+  attempt           SastScanAttempt                @relation(fields: [attemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Cascade, map: "SastFindingCorrelationBatch_attempt_scope_fkey")
+  sources           SastFindingCorrelationSource[]
+  edges             SastFindingCorrelationEdge[]
+
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastFindingCorrelationBatch_scope_key")
+  @@unique([tenantId, repositoryBindingId, scanRequestId, attemptId, lifecycleContextKey], map: "SastFindingCorrelationBatch_attempt_context_key")
+  @@unique([tenantId, sourceSetDigest], map: "SastFindingCorrelationBatch_source_set_key")
+  @@index([tenantId, repositoryBindingId, lifecycleContextKey, correlatedAt], map: "SastFindingCorrelationBatch_context_correlated_idx")
+}
+
+model SastFindingCorrelationSource {
+  id                        String      @id
+  correlationBatchId        String
+  tenantId                  String
+  repositoryBindingId       String
+  scanRequestId             String
+  attemptId                 String
+  observationBatchId        String
+  scannerRunId              String
+  scanner                   ScannerKind
+  capabilities              Json
+  sourceIdentityBatchDigest String
+  sourceBindingDigest       String
+  lifecycleContextKey       String
+  findingCount              Int
+  occurrenceCount           Int
+  observedAt                DateTime
+  createdAt                 DateTime    @default(now())
+
+  correlationBatch SastFindingCorrelationBatch @relation(fields: [correlationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastFindingCorrelationSource_batch_scope_fkey")
+  observationBatch SastFindingObservationBatch @relation(fields: [observationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId, scannerRunId], onDelete: Cascade, map: "SastFindingCorrelationSource_observation_scope_fkey")
+
+  @@unique([correlationBatchId, observationBatchId], map: "SastFindingCorrelationSource_batch_observation_key")
+  @@unique([tenantId, sourceBindingDigest], map: "SastFindingCorrelationSource_binding_key")
+  @@index([observationBatchId])
+}
+
+model SastFindingCorrelationEdge {
+  id                     String                     @id
+  correlationBatchId     String
+  tenantId               String
+  repositoryBindingId    String
+  scanRequestId          String
+  attemptId              String
+  kind                   SastFindingCorrelationKind
+  sourceOccurrenceId     String
+  targetOccurrenceId     String
+  basisDigests           Json
+  confidenceBasisPoints  Int
+  sourceProvenanceDigest String
+  targetProvenanceDigest String
+  safety                 Json
+  decidedAt              DateTime
+  edgeDigest             String                     @unique
+  createdAt              DateTime                   @default(now())
+
+  correlationBatch SastFindingCorrelationBatch        @relation(fields: [correlationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastFindingCorrelationEdge_batch_scope_fkey")
+  sourceOccurrence SastFindingOccurrence              @relation("SastFindingCorrelationSourceOccurrence", fields: [sourceOccurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastFindingCorrelationEdge_source_occurrence_scope_fkey")
+  targetOccurrence SastFindingOccurrence              @relation("SastFindingCorrelationTargetOccurrence", fields: [targetOccurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastFindingCorrelationEdge_target_occurrence_scope_fkey")
+  provenances      SastFindingCorrelationProvenance[]
+
+  @@unique([correlationBatchId, sourceOccurrenceId, targetOccurrenceId], map: "SastFindingCorrelationEdge_pair_key")
+  @@unique([id, correlationBatchId], map: "SastFindingCorrelationEdge_batch_edge_key")
+  @@index([tenantId, repositoryBindingId, scanRequestId, kind], map: "SastFindingCorrelationEdge_scope_kind_idx")
+  @@index([sourceOccurrenceId], map: "SastFindingCorrelationEdge_sourceOccurrenceId_idx")
+  @@index([targetOccurrenceId], map: "SastFindingCorrelationEdge_targetOccurrenceId_idx")
+}
+
+model SastFindingCorrelationProvenance {
+  id                          String                               @id
+  correlationEdgeId           String
+  correlationBatchId          String
+  tenantId                    String
+  repositoryBindingId         String
+  scanRequestId               String
+  attemptId                   String
+  side                        SastFindingCorrelationProvenanceSide
+  occurrenceId                String
+  observationBatchId          String
+  lineageId                   String
+  normalizedFindingId         String
+  scannerRunId                String
+  scanner                     ScannerKind
+  capability                  SastFindingCapability
+  authorityLevel              SastFindingCorrelationAuthorityLevel
+  severity                    Severity
+  fingerprintVersion          String
+  stableFingerprint           String
+  fingerprintDecisionDigest   String
+  sourceFindingDigest         String
+  scannerVersion              String
+  scannerImageDigest          String
+  ruleId                      String
+  ruleRevision                String
+  ruleBundleDigest            String
+  artifactDigest              String
+  vulnerabilityDatabaseDigest String?
+  provenanceDigest            String
+  createdAt                   DateTime                             @default(now())
+
+  correlationEdge SastFindingCorrelationEdge @relation(fields: [correlationEdgeId, correlationBatchId], references: [id, correlationBatchId], onDelete: Cascade, map: "SastFindingCorrelationProvenance_edge_scope_fkey")
+  occurrence      SastFindingOccurrence      @relation(fields: [occurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastFindingCorrelationProvenance_occurrence_scope_fkey")
+
+  @@unique([correlationEdgeId, side], map: "SastFindingCorrelationProvenance_edge_side_key")
+  @@index([occurrenceId], map: "SastFindingCorrelationProvenance_occurrenceId_idx")
+  @@index([provenanceDigest], map: "SastFindingCorrelationProvenance_provenanceDigest_idx")
 }
 
 model EvidencePack {

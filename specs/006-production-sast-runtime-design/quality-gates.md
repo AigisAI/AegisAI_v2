@@ -235,6 +235,29 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   boundary for T038.
 - 100% provenance preservation during correlation; no lower-severity result may hide a
   higher-severity authoritative result.
+- 100% exact equality between supplied canonical T037 results and every durable current-attempt
+  observation batch and ordered occurrence, including zero-finding batches. T037 replay-flag
+  changes produce the same correlation batch/source-set identity.
+- 100% scanner-owner and active-profile authority classification: required capability output
+  is `AUTHORITATIVE`, optional capability output is `SUPPORTING_ONLY`, and foreign capability
+  claims reject the complete transaction.
+- Exact correlation only for repeated lineage fingerprints; dependency correlation only for
+  exact NFC ecosystem/package/installed-version/canonical-CVE tuples; cross-capability overlap
+  only for canonical CVE or same-file canonical CWE. Path/title/coordinate/severity/
+  scanner-ID/fuzzy/AI-only matches produce zero edges.
+- Exactly two durable provenance rows per edge and invariant false finding-merge,
+  severity/lifecycle/coverage/policy inheritance. Mixed Critical/Low fixtures retain both
+  immutable occurrences and both severities.
+- No quadratic correlation pass: at most 25,000 occurrences and 100,000 canonical star edges,
+  event-loop yield before occurrence 65 and each subsequent 64-occurrence chunk, plus bounded
+  chunked persistence and whole-operation edge-limit rejection.
+- Serializable complete-ledger replay equality across source bindings, edges, match-basis
+  digests, safety flags, and both provenance rows; missing, extra, changed, late, or cross-scope
+  rows reject with no partial writes.
+- T038 authority assertions remain exact: `correlationAuthority=true` and provenance
+  preservation true, while severity, lifecycle, coverage calculation, evidence, policy,
+  publication, and AI authority remain false. Only `SastFindingCorrelationService` crosses
+  the Scan Plane module boundary for T039.
 - 100% complete-coverage requirement before external comment/block, AI advisory, or fixed
   transition.
 

@@ -512,8 +512,9 @@ Persistence eligibility grants no downstream authority. `occurrenceAuthority`,
 `policyAuthority`, `publicationAuthority`, and `aiPayloadEligible` remain false. T037 must
 turn this batch into stable rows and occurrences before the final entity below gains
 lifecycle state; later coverage, evidence, policy, publication, and AI gates remain mandatory.
-Once T037 is installed, `ScanPlaneModule` exports only the lineage service to T038; T036
-identity construction remains internal.
+At the T037 checkpoint `ScanPlaneModule` exported only the lineage service to T038. With T038
+installed, identity and lineage construction remain internal and only the correlation service
+crosses the module boundary to T039.
 
 ### SastFindingLineage
 
@@ -603,16 +604,48 @@ Append-only `CREATED | RENAMED | FIXED | REOPENED` with unique state revision, e
 observation or reconciliation ID, previous/next lifecycle state, and occurred timestamp.
 Only `FIXED` and `REOPENED` change lifecycle status.
 
-### FindingCorrelation
+### SastFindingCorrelationBatch
 
-- source and target finding/occurrence IDs
+- deterministic `finding-correlation://<sha256>` ID from the complete durable source set and
+  tenant/repository/scan/attempt/target/profile/plan binding
+- one unique current-attempt lifecycle-context fence and replay-independent source-set digest
+- exact source-batch, occurrence, total-edge, and per-kind counts
+- correlation decision timestamp
+
+Creating this batch closes the attempt's T037 observation set. An already-persisted T037
+batch remains exactly replayable, but a new late batch conflicts rather than silently changing
+the source set.
+
+### SastFindingCorrelationSource
+
+- one row for every T037 observation batch, including zero-finding batches
+- scanner/run and canonical capability list, T036 source-batch digest, finding/occurrence
+  counts, lifecycle context, and observed time
+- deterministic source-binding digest that intentionally excludes the T037 result digest and
+  its replay flag
+
+### SastFindingCorrelationEdge
+
+- canonical source and target occurrence IDs with one unique ordered pair per batch
 - `EXACT_FINGERPRINT | SAME_DEPENDENCY_CVE | SUPPORTING_EVIDENCE | POSSIBLE_OVERLAP`
-- deterministic correlation version
-- confidence
-- preserved provenance references
-- decision timestamp
+- sorted unique hashed match bases, fixed confidence, decision timestamp, and edge digest
+- immutable safety object with finding merge and severity/lifecycle/coverage/policy
+  inheritance disabled
 
+Exact and dependency groups use deterministic star edges, while cross-capability identifier
+groups connect each occurrence to a representative from another capability. This retains
+reachability without quadratic all-pairs expansion. Stronger exact/dependency decisions win
+when several bases identify the same pair, while every basis digest remains attached.
 `POSSIBLE_OVERLAP` never merges authoritative findings automatically.
+
+### SastFindingCorrelationProvenance
+
+Exactly two rows per edge, one `SOURCE` and one `TARGET`, retain the occurrence, observation,
+lineage, normalized-finding, scanner-run, scanner/capability authority level, severity,
+fingerprint decision, sanitized source-finding digest, scanner/image, rule/revision/bundle,
+artifact, and optional vulnerability-database binding. Composite occurrence foreign keys
+prevent cross-tenant or cross-attempt edges. Correlation never copies raw artifacts or secret
+values and never becomes lifecycle, coverage, evidence, policy, publication, or AI state.
 
 ### ScannerCoverageRecord
 

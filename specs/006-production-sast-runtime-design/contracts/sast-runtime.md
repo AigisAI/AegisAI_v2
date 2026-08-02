@@ -821,11 +821,11 @@ negative storage assertions, and a digest over those safe fields. The source art
 may remain normal accepted-artifact provenance only on success; it is absent from rejection.
 
 `ScanPlaneModule` does not export the raw OpenGrep or Trivy normalizer providers after T035.
-The redaction gate remains internal and is consumed by T036. `ScanPlaneModule` exports only
-the identity service to the next internal stage. This limits normal Nest module consumers to
-the fingerprinted handoff but does not authorize a user route, log sink, audit of candidate
-text, evidence construction, lifecycle transition, policy evaluation, publication, AI call,
-or database write.
+The redaction gate remains internal and is consumed by T036. At the T035 checkpoint only the
+identity service crossed the next-stage boundary; after T037/T038 installation those earlier
+providers remain internal and only the correlation service is exported. No checkpoint
+authorizes a user route, log sink, audit of candidate text, evidence construction, policy
+evaluation, publication, or AI call.
 
 ## Stable Fingerprint Contract
 
@@ -995,20 +995,52 @@ exact/verified-rename lineage, and lifecycle recording. Correlation, coverage ca
 evidence, policy, publication, and AI eligibility remain false. Rejections expose only the
 operation, ordered coarse codes, five negative storage assertions, and rejection digest; they
 never echo source batch/finding data, rename paths, eligible lineage IDs, or secrets.
-`ScanPlaneModule` exports only `SastFindingLineageService` to T038.
+T037 remains an internal provider after T038 is installed.
 
-## Correlation Contract
+### Finding correlation gate v1
+
+`sast-finding-correlation-v1` accepts a non-empty, bounded set of canonical T037 observation
+results for one target context and attempt. It verifies each result digest, sorts unique
+observation IDs, reloads every durable observation batch and ordered occurrence, and requires
+the requested set to equal the complete durable set, including zero-finding batches. The
+source-set digest binds canonical durable batch IDs, T036 batch digests, scanner/run and
+capability attribution, lifecycle context, counts, and observed times. It deliberately omits
+the T037 result digest because a valid replay changes only that result's `replayed` field and
+digest.
 
 Correlation is deterministic and versioned:
 
-- `EXACT_FINGERPRINT`: one durable finding, new occurrence.
-- `SAME_DEPENDENCY_CVE`: dependency findings may group by ecosystem, normalized package,
-  resolved version, and CVE while preserving every manifest location.
-- `SUPPORTING_EVIDENCE`: a non-authoritative overlap can support but not replace a finding.
-- `POSSIBLE_OVERLAP`: display grouping only; no automatic merge or policy inheritance.
+- `EXACT_FINGERPRINT`: repeated occurrences in one exact lineage; a sorted star preserves
+  every occurrence without an all-pairs expansion.
+- `SAME_DEPENDENCY_CVE`: exact NFC ecosystem, package, installed version, and canonical CVE;
+  distinct lineages and all source provenance remain intact.
+- `SUPPORTING_EVIDENCE`: cross-capability CVE or same-file CWE overlap where exactly one side
+  is optional-profile `SUPPORTING_ONLY`; it can support but never replace a required,
+  scanner-owned authoritative finding.
+- `POSSIBLE_OVERLAP`: compatible cross-capability identifier overlap between equal authority
+  levels; display grouping only, with no automatic merge or inheritance.
+
+Only the configured scanner owner may contribute a capability. A profile-required capability
+is `AUTHORITATIVE`; a scanner-owned but optional capability is `SUPPORTING_ONLY`. Matching by
+path alone, title, coordinates, severity, scanner match ID, substring, fuzzy text, or AI is
+forbidden. CVE comparison is canonical, while CWE overlap additionally requires the same NFC
+file path.
+
+Each edge has canonical source/target occurrence ordering, sorted unique hashed bases, fixed
+confidence, a decision digest, and two separately persisted provenance rows. Provenance binds
+the observation, lineage, normalized finding, scanner run, capability/authority, severity,
+fingerprint decision, sanitized source-finding digest, scanner/image, rule/revision/bundle,
+artifact, and Trivy database when present. Safety flags are invariant:
+`findingMergeAllowed=false`, severity/lifecycle/policy/coverage inheritance false, and
+`occurrenceProvenancePreserved=true`.
 
 Source SAST, secret, dependency, and IaC findings remain distinct capability families even
-when they refer to the same file.
+when they refer to the same file. A serializable transaction persists the correlation batch,
+complete source set, bounded edges, both provenance rows, and audit event. Exact replay checks
+the whole ledger; changed or late sources conflict. Rejections expose only ordered coarse
+codes and negative storage assertions. Correlation grants no severity, lifecycle,
+coverage-calculation, evidence, policy, publication, or AI authority. `ScanPlaneModule`
+exports only `SastFindingCorrelationService` to T039.
 
 ## Coverage Contract
 
