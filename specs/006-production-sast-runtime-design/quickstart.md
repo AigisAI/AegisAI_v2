@@ -409,10 +409,32 @@ portion of Phase 6:
   deterministic star edges, and retries serialization/unique races at most three times.
   The mandatory online-schema step installs composite occurrence-scope foreign keys, and a
   completed correlation batch fences late T037 additions while preserving exact T037 replay.
-- `ScanPlaneModule` now exports only the T038 correlation service to T039. T037 lineage,
-  T036 identity construction, T035 redaction, and raw OpenGrep/Trivy normalizers remain
-  internal providers. There is still no user route, artifact reader, evidence, coverage
-  calculation, policy, publication, or AI path.
+- T039 accepts only the canonical T038 result reference, then reloads immutable plan,
+  current attempt, every scanner run, artifact envelope/final disposition, and the complete
+  correlation source set. `sast-scan-coverage-v1` derives required/optional scanners and
+  capabilities exclusively from the platform profile and scanner-responsibility matrix.
+- A required scanner contributes coverage only after terminal success, exact pinned
+  scanner/image/wrapper/rule/database/schema/normalizer provenance, an accepted and
+  normalization-eligible artifact, and (for finding scanners) a valid T038 zero/nonzero
+  observation source. Missing, pending, failed, quarantined, killed, foreign, or tampered
+  state remains explicit and cannot be replaced by optional output.
+- `PENDING` is returned as a canonical non-persisted result with zero ledger writes, allowing
+  required scanners to advance before reevaluation. Terminal coverage, all three scanner
+  records, and `sast-external-publication-v1` are written in one bounded serializable
+  transaction. Exact replay returns the existing decision; changed, reordered, cross-scope,
+  or late durable state conflicts without partial rows.
+- The mandatory online-schema step creates the two new existing-table composite indexes
+  concurrently, then installs and validates scanner-run, ingestion, disposition, and source
+  scope foreign keys without putting an online-index dependency in the transactional Prisma
+  migration.
+- Even `COMPLETE` coverage stores external comment, blocking status, AI advisory, and
+  lifecycle mutation as false. T040 has not yet established latest-target freshness or
+  comparability, so authority remains `UNAVAILABLE`/`UNKNOWN` and the T037 consumer rejects
+  fixed/reopened transitions.
+- `ScanPlaneModule` now exports only the T039 coverage service to T040. T038 correlation,
+  T037 lineage, T036 identity construction, T035 redaction, and raw OpenGrep/Trivy/Syft
+  normalization remain internal providers. There is still no user route, artifact reader,
+  SCM writer, evidence, policy, publication, or AI path.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -421,8 +443,9 @@ issuance and scanner execution both fail closed until live rollout installs prov
 GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
 file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction, T036
 `sast-fingerprint-v1` identity construction, T037 occurrence/exact-lineage lifecycle, and
-T038 authority-aware cross-tool correlation are complete; T039 fail-closed scanner and
-capability coverage is therefore the next implementation task.
+T038 authority-aware cross-tool correlation and T039 fail-closed scanner/capability coverage
+are complete; T040 stale-scan denial and bounded infrastructure-only retry is therefore the
+next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

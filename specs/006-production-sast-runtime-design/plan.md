@@ -109,8 +109,12 @@ a T039-owned complete, non-stale, comparable coverage decision and verify its ex
 observation-batch set. T038 now closes that complete durable source set, applies the scanner
 responsibility/profile authority matrix, and stores bounded deterministic correlation edges
 with both occurrence provenance records. It never merges capability families or inherits
-severity, lifecycle, coverage, policy, publication, evidence, or AI authority. T039 coverage
-and external-publication denial is the next gate.
+severity, lifecycle, coverage, policy, publication, evidence, or AI authority. T039 now
+rebinds that T038 batch to immutable plan, scanner-run, artifact-ingestion/disposition, and
+scanner-responsibility state. It stores canonical scanner records plus a coverage decision
+in one serializable transaction and persists zero publication authority even when coverage
+is complete. Only `SastScanCoverageService` crosses the module boundary; T040 freshness,
+comparability, and retry policy is the next gate.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 
