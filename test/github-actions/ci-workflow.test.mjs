@@ -16,9 +16,14 @@ test('ci workflow exists and runs the expected workspace verification commands',
   assert.match(workflow, /actions\/checkout@v4/);
   assert.match(workflow, /pnpm\/action-setup@v4/);
   assert.match(workflow, /actions\/setup-node@v4/);
+  assert.match(workflow, /actions\/setup-python@v5/);
   assert.match(workflow, /corepack pnpm install --frozen-lockfile/);
+  assert.match(workflow, /python -m pip install .*--requirement ontology\/requirements\.txt/);
+  assert.match(workflow, /python -m pip check/);
+  assert.match(workflow, /docker compose -f ontology\/docker-compose\.yml config --quiet/);
   assert.match(workflow, /corepack pnpm lint/);
   assert.match(workflow, /corepack pnpm test/);
+  assert.match(workflow, /python -m unittest discover -s ontology\/tests -p 'test_\*\.py'/);
   assert.match(workflow, /corepack pnpm typecheck/);
   assert.match(workflow, /corepack pnpm build/);
   assert.match(workflow, /postgres:16-alpine/);
