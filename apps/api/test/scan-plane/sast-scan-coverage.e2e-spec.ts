@@ -273,6 +273,12 @@ describe('SastScanCoverageService', () => {
     const fixture = coverageFixture('JAVA_DEEP_V1');
     fixture.context.correlation.exactFingerprintCount = -1;
     fixture.context.correlation.possibleOverlapCount = 1;
+    expect(
+      fixture.context.correlation.exactFingerprintCount +
+        fixture.context.correlation.sameDependencyCveCount +
+        fixture.context.correlation.supportingEvidenceCount +
+        fixture.context.correlation.possibleOverlapCount
+    ).toBe(fixture.context.correlation.edgeCount);
 
     const result = await new SastScanCoverageService(
       new MemoryCoverageStore(fixture.context)
