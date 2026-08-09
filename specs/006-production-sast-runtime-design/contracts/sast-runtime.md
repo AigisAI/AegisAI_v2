@@ -1039,23 +1039,47 @@ when they refer to the same file. A serializable transaction persists the correl
 complete source set, bounded edges, both provenance rows, and audit event. Exact replay checks
 the whole ledger; changed or late sources conflict. Rejections expose only ordered coarse
 codes and negative storage assertions. Correlation grants no severity, lifecycle,
-coverage-calculation, evidence, policy, publication, or AI authority. `ScanPlaneModule`
-exports only `SastFindingCorrelationService` to T039.
+coverage-calculation, evidence, policy, publication, or AI authority. After T039 installation
+the correlation service is internal and only `SastScanCoverageService` crosses the Scan Plane
+module boundary to T040.
 
 ## Coverage Contract
 
-Coverage is evaluated after all required scanner runs reach terminal states.
+### Scan coverage gate v1
+
+`sast-scan-coverage-v1` accepts only a canonical T038 result. It reloads and re-hashes the
+immutable plan, attempt, correlation sources (including zero-finding sources), scanner runs,
+artifact envelopes, and final dispositions. Profile scanner/capability requirements are
+platform-owned. Finding-producing scanners require a matching T038 source; Syft proves SBOM
+coverage through its accepted CycloneDX artifact without inventing a finding source.
+
+Coverage can be evaluated while required runs are pending, but a capability is achieved only
+when its owning required scanner is terminally successful, its pinned provenance matches, and
+its artifact is accepted and normalization-eligible. A `PENDING` result is canonical but
+explicitly non-persisted and must be reevaluated after durable scanner state advances; this
+prevents a unique attempt ledger from freezing before a terminal decision exists.
 
 | Condition | Coverage | Comment/block | AI |
 | --- | --- | --- | --- |
-| Every required scanner accepted | `COMPLETE` | Policy may allow | Profile/policy may allow |
+| Every required scanner accepted | `COMPLETE` | Deny until T040 | Deny until T040 |
 | Required scanner absent/failed/timed out | `PARTIAL` | Deny | Deny |
 | Required scanner still pending/running | `PENDING` | Deny | Deny |
 | Quarantine, identity/digest mismatch, sandbox kill | `FAILED` | Deny | Deny |
-| Complete but stale commit | `COMPLETE + stale` | Deny | Deny |
+| Complete; latest-target authority unavailable | `COMPLETE` | Deny | Deny |
 
-Optional scanner failure does not reduce required coverage but is visible. A scanner marked
-required by tenant policy becomes required before execution and affects the canonical key.
+Optional scanner failure does not reduce required coverage but is visible and cannot replace
+an authoritative required capability. Quarantine, kill, provenance/artifact digest mismatch,
+or an invalid T038 source set security-blocks the decision even when it affects optional
+output. For a terminal evaluation, one serializable write persists all canonical scanner records, coverage, and
+`sast-external-publication-v1`; exact replay is idempotent and all changed/cross-scope replay
+conflicts. The artifact-ingestion foreign key is restrictive: an ingress abort must fail if an
+immutable coverage record references that ingestion, so cleanup cannot cascade-delete part of
+the coverage ledger while leaving its decision digest behind.
+
+T039 does not accept a caller-supplied `stale=false` or `comparable=true`. Its publication
+row is a database-enforced zero-authority decision with latest-target authority
+`UNAVAILABLE`, stale/comparability `UNKNOWN`, and comment/block/AI/lifecycle booleans false.
+T040 must replace that missing authority before any external or lifecycle action can proceed.
 
 ## Failure Contract
 

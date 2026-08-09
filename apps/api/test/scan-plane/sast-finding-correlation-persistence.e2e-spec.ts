@@ -96,7 +96,7 @@ describe('SAST finding correlation persistence contract', () => {
     );
   });
 
-  it('fences late T037 batches and exports only the T038 gate to T039', () => {
+  it('fences late T037 batches and keeps the T038 gate internal after T039', () => {
     expect(lineageStore).toContain(
       'transaction.sastFindingCorrelationBatch'
     );
@@ -105,7 +105,8 @@ describe('SAST finding correlation persistence contract', () => {
     );
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ?? '';
-    expect(exportsBlock).toContain(
+    expect(exportsBlock).toContain('SastScanCoverageService');
+    expect(exportsBlock).not.toContain(
       'SastFindingCorrelationService'
     );
     expect(exportsBlock).not.toContain(

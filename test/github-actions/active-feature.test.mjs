@@ -39,6 +39,8 @@ const files = {
   sharedSastFindingLineageTest: new URL('../../packages/shared/test/sast-finding-lineage.test.mjs', import.meta.url),
   sharedSastFindingCorrelation: new URL('../../packages/shared/src/types/sast-finding-correlation.ts', import.meta.url),
   sharedSastFindingCorrelationTest: new URL('../../packages/shared/test/sast-finding-correlation.test.mjs', import.meta.url),
+  sharedSastScanCoverage: new URL('../../packages/shared/src/types/sast-scan-coverage.ts', import.meta.url),
+  sharedSastScanCoverageTest: new URL('../../packages/shared/test/sast-scan-coverage.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -70,9 +72,16 @@ const files = {
   apiSastFindingCorrelationStore: new URL('../../apps/api/src/scan-plane/prisma-sast-finding-correlation.store.ts', import.meta.url),
   apiSastFindingCorrelationTest: new URL('../../apps/api/test/scan-plane/sast-finding-correlation.e2e-spec.ts', import.meta.url),
   apiSastFindingCorrelationPersistenceTest: new URL('../../apps/api/test/scan-plane/sast-finding-correlation-persistence.e2e-spec.ts', import.meta.url),
+  apiSastScanCoverage: new URL('../../apps/api/src/scan-plane/sast-scan-coverage.service.ts', import.meta.url),
+  apiSastScanCoverageStore: new URL('../../apps/api/src/scan-plane/prisma-sast-scan-coverage.store.ts', import.meta.url),
+  apiSastScanCoverageTest: new URL('../../apps/api/test/scan-plane/sast-scan-coverage.e2e-spec.ts', import.meta.url),
+  apiSastScanCoveragePrismaTest: new URL('../../apps/api/test/scan-plane/prisma-sast-scan-coverage.store.e2e-spec.ts', import.meta.url),
+  apiSastScanCoveragePersistenceTest: new URL('../../apps/api/test/scan-plane/sast-scan-coverage-persistence.e2e-spec.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
+  apiOnlineSastRuntimeSchema: new URL('../../apps/api/scripts/apply-online-sast-runtime-schema.mjs', import.meta.url),
   apiSastFindingLineageMigration: new URL('../../apps/api/prisma/migrations/20260730160000_sast_finding_lineage_lifecycle/migration.sql', import.meta.url),
   apiSastFindingCorrelationMigration: new URL('../../apps/api/prisma/migrations/20260802120000_sast_finding_correlation/migration.sql', import.meta.url),
+  apiSastScanCoverageMigration: new URL('../../apps/api/prisma/migrations/20260802150000_sast_scan_coverage/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -109,12 +118,14 @@ const assertScanPlaneExports = (scanPlaneModule) => {
     exportsBlock,
     'Expected to locate the ScanPlaneModule exports array'
   );
-  assert.match(exportsBlock, /SastFindingCorrelationService/);
+  assert.match(exportsBlock, /SastScanCoverageService/);
+  assert.doesNotMatch(exportsBlock, /SastFindingCorrelationService/);
   assert.doesNotMatch(exportsBlock, /SastFindingLineageService/);
   assert.doesNotMatch(exportsBlock, /SastFindingIdentityService/);
   assert.doesNotMatch(exportsBlock, /SastSecretRedactionService/);
   assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
   assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
+  assert.doesNotMatch(exportsBlock, /SyftCycloneDxInventoryIngestor/);
 };
 
 test('production SAST runtime design is the active feature package', () => {
@@ -462,7 +473,7 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
   assert.match(tasks, /- \[x\] T034\b/);
   assert.match(
     quickstart,
-    /T035 secret redaction,[\s\S]{0,180}T037 occurrence\/exact-lineage lifecycle[\s\S]{0,80}complete/
+    /T035 secret redaction,[\s\S]{0,180}T037 occurrence\/exact-lineage lifecycle[\s\S]{0,200}complete/
   );
   assert.match(contract, /Syft CycloneDX inventory adapter v1/);
   assert.match(spec, /FR-031b/);
@@ -551,7 +562,7 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
   assert.match(tasks, /- \[x\] T035\b/);
   assert.match(
     quickstart,
-    /T035 secret redaction,[\s\S]{0,180}T037 occurrence\/exact-lineage lifecycle[\s\S]{0,80}complete/
+    /T035 secret redaction,[\s\S]{0,180}T037 occurrence\/exact-lineage lifecycle[\s\S]{0,200}complete/
   );
   assert.match(contract, /Secret redaction gate v1/);
   assert.match(spec, /FR-031c/);
@@ -674,7 +685,7 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
   assert.match(tasks, /- \[x\] T036\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation[\s\S]{0,80}complete; T039[\s\S]{0,120}next implementation task/
+    /T038 authority-aware cross-tool correlation[\s\S]{0,180}are complete; T040/
   );
   assert.match(contract, /Finding identity construction gate v1/);
   assert.match(spec, /FR-034a/);
@@ -835,7 +846,7 @@ test('SAST T037 persists complete occurrence lineage and fail-closed lifecycle t
   assert.match(tasks, /- \[x\] T037\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation[\s\S]{0,80}complete; T039/
+    /T038 authority-aware cross-tool correlation[\s\S]{0,180}are complete; T040/
   );
   assert.match(contract, /Finding lineage and lifecycle gate v1/);
   assert.match(dataModel, /SastFindingLifecycleReconciliation/);
@@ -973,7 +984,7 @@ test('SAST T038 correlates by scanner authority while preserving every provenanc
   assert.match(tasks, /- \[x\] T038\b/);
   assert.match(
     quickstart,
-    /T039 fail-closed scanner and[\s\S]{0,80}capability coverage[\s\S]{0,100}next implementation task/
+    /T039 fail-closed scanner\/capability coverage[\s\S]{0,80}are complete; T040[\s\S]{0,120}next implementation task/
   );
   assert.match(contract, /Finding correlation gate v1/);
   assert.match(dataModel, /SastFindingCorrelationProvenance/);
@@ -988,6 +999,180 @@ test('SAST T038 correlates by scanner authority while preserving every provenanc
     qualityGates,
     /100% exact equality between supplied canonical T037 results/
   );
+});
+
+test('SAST T039 persists durable coverage and fail-closes every publication authority', () => {
+  const sharedCoverage = readNormalizedText(
+    files.sharedSastScanCoverage
+  );
+  const sharedCoverageTest = readNormalizedText(
+    files.sharedSastScanCoverageTest
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiSastScanCoverage);
+  const store = readNormalizedText(files.apiSastScanCoverageStore);
+  const serviceTest = readNormalizedText(
+    files.apiSastScanCoverageTest
+  );
+  const prismaTest = readNormalizedText(
+    files.apiSastScanCoveragePrismaTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiSastScanCoveragePersistenceTest
+  );
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(
+    files.apiSastScanCoverageMigration
+  );
+  const onlineSchema = readNormalizedText(
+    files.apiOnlineSastRuntimeSchema
+  );
+  const scanPlaneModule = readNormalizedText(
+    files.apiScanPlaneModule
+  );
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const plan = readNormalizedText(files.plan);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(
+    sharedCoverage,
+    /SAST_SCAN_COVERAGE_VERSION\s*=[^;]*'sast-scan-coverage-v1'/
+  );
+  assert.match(
+    sharedCoverage,
+    /SAST_SCANNER_COVERAGE_VERSION\s*=[^;]*'sast-scanner-coverage-v1'/
+  );
+  assert.match(
+    sharedCoverage,
+    /SAST_EXTERNAL_PUBLICATION_DECISION_VERSION\s*=[^;]*'sast-external-publication-v1'/
+  );
+  assert.match(
+    sharedCoverage,
+    /coverageCalculationAuthority:\s*true/
+  );
+  assert.match(sharedCoverage, /publicationAuthority:\s*false/);
+  assert.match(sharedCoverage, /aiPayloadEligible:\s*false/);
+  assert.match(sharedCoverage, /externalCommentAllowed:\s*false/);
+  assert.match(sharedCoverage, /blockingStatusAllowed:\s*false/);
+  assert.match(sharedCoverage, /lifecycleMutationAllowed:\s*false/);
+  assert.match(
+    sharedIndex,
+    /export \* from '.\/types\/sast-scan-coverage';/
+  );
+  assert.match(
+    sharedCoverageTest,
+    /absent optional scanner visible without lowering required coverage/
+  );
+  assert.match(
+    sharedCoverageTest,
+    /fail-closing every external publication authority/
+  );
+
+  assert.match(service, /class SastScanCoverageService/);
+  assert.match(service, /isSastFindingCorrelationResultShapeValid/);
+  assert.match(service, /evaluateSastScanCoverageRecords/);
+  assert.match(
+    service,
+    /buildFailClosedSastExternalPublicationDecision/
+  );
+  assert.doesNotMatch(service, /\bLogger\b|\bconsole\./u);
+  assert.doesNotMatch(
+    service,
+    /@Controller|@(Get|Post|Put|Patch|Delete)\(/u
+  );
+  assert.match(
+    serviceTest,
+    /complete Java Deep coverage while denying every publication authority/
+  );
+  assert.match(serviceTest, /running required scanner pending without publishing/);
+  assert.match(serviceTest, /expect\(result\.persisted\)\.toBe\(false\)/);
+  assert.match(
+    serviceTest,
+    /lifecycle authority denied even when the canonical T039 source matches/
+  );
+  assert.match(serviceTest, /timed-out required scanner as terminal partial coverage/);
+  assert.match(serviceTest, /rejects duplicate or foreign durable scanner rows/);
+  assert.match(serviceTest, /rejects individually invalid durable correlation counters/);
+
+  assert.match(
+    store,
+    /Prisma\.TransactionIsolationLevel\.Serializable/
+  );
+  assert.match(store, /SERIALIZABLE_ATTEMPTS = 3/);
+  assert.match(store, /buildSastScanPlanDigestPreimage/);
+  assert.match(store, /isScannerArtifactEnvelopeBoundToPlan/);
+  assert.match(
+    store,
+    /canonicalizeSastArtifactDispositionDecision/
+  );
+  assert.match(store, /replayCoverage/);
+  assert.match(
+    prismaTest,
+    /zero-publication authority atomically/
+  );
+  assert.match(prismaTest, /rejects late durable-state drift/);
+  assert.match(
+    persistenceTest,
+    /zero external publication a database invariant/
+  );
+
+  for (const model of [
+    'SastScanCoverageDecision',
+    'SastScannerCoverageRecord',
+    'SastExternalPublicationDecision'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(migration, new RegExp(`CREATE TABLE "${model}"`));
+  }
+  for (const constraint of [
+    'scanner_scope_fkey',
+    'ingestion_scope_fkey',
+    'disposition_scope_fkey',
+    'source_scope_fkey'
+  ]) {
+    assert.match(
+      onlineSchema,
+      new RegExp(`SastScannerCoverageRecord_${constraint}`)
+    );
+  }
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactDispositionDecision_coverage_scope_key"/
+  );
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastFindingCorrelationSource_coverage_scope_key"/
+  );
+  assert.match(onlineSchema, /ADD CONSTRAINT[\s\S]{0,160}NOT VALID/);
+  assert.match(onlineSchema, /VALIDATE CONSTRAINT/);
+  assert.match(
+    onlineSchema,
+    /SastScannerCoverageRecord_ingestion_scope_fkey[\s\S]{0,500}ON DELETE RESTRICT ON UPDATE CASCADE/
+  );
+  assertScanPlaneExports(scanPlaneModule);
+
+  assert.match(tasks, /- \[x\] T039\b/);
+  assert.match(
+    quickstart,
+    /T039 fail-closed scanner\/capability coverage[\s\S]{0,80}are complete; T040[\s\S]{0,120}next implementation task/
+  );
+  assert.match(contract, /Scan coverage gate v1/);
+  assert.match(dataModel, /SastExternalPublicationDecision/);
+  assert.match(plan, /T039 now[\s\S]{0,80}immutable plan/);
+  assert.match(spec, /FR-039a/);
+  assert.match(
+    research,
+    /Decision 21: Persist Coverage from Durable Authority and Deny Publication Until Freshness Exists/
+  );
+  assert.match(threatModel, /Coverage authority injection/);
+  assert.match(threatModel, /Premature complete publication/);
+  assert.match(qualityGates, /100% T039 zero-publication invariant/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

@@ -9,6 +9,7 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 import { PrismaSastArtifactIngressStore } from '../../src/scan-plane/prisma-sast-artifact-ingress.store';
 import {
   SastArtifactIngressReplayConflictError,
+  SastArtifactIngressStateConflictError,
   type SastArtifactIngressExpectedBinding
 } from '../../src/scan-plane/sast-artifact-ingress.store';
 
@@ -233,6 +234,61 @@ describe('PrismaSastArtifactIngressStore', () => {
         now: '2026-07-24T18:00:02.000Z'
       })
     ).rejects.toBeInstanceOf(SastArtifactIngressReplayConflictError);
+  });
+
+  it('refuses to abort an ingress referenced by immutable coverage', async () => {
+    const transaction = {
+      sastArtifactIngestion: {
+        findUnique: jest.fn().mockResolvedValue({
+          tenantId: 'tenant-1',
+          repositoryBindingId: 'repository-1',
+          scanRequestId: 'scan-1',
+          attemptId: 'attempt-1',
+          scannerRunId: 'scanner-run-1',
+          status: 'RECEIVING'
+        }),
+        delete: jest.fn()
+      },
+      sastScannerCoverageRecord: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'coverage-record-1' })
+      },
+      auditEvent: {
+        create: jest.fn()
+      }
+    };
+    const prisma = {
+      $transaction: jest.fn(
+        async (
+          operation: (client: typeof transaction) => Promise<unknown>
+        ) => operation(transaction)
+      )
+    };
+    const store = new PrismaSastArtifactIngressStore(
+      prisma as unknown as PrismaService
+    );
+
+    await expect(
+      store.abort({
+        ingestionId: 'ingestion-1',
+        reasonCode: 'OBJECT_PERSISTENCE_FAILED',
+        occurredAt: '2026-08-02T13:00:00.000Z'
+      })
+    ).rejects.toBeInstanceOf(SastArtifactIngressStateConflictError);
+    expect(
+      transaction.sastScannerCoverageRecord.findFirst
+    ).toHaveBeenCalledWith({
+      where: {
+        artifactIngestionId: 'ingestion-1',
+        tenantId: 'tenant-1',
+        repositoryBindingId: 'repository-1',
+        scanRequestId: 'scan-1',
+        attemptId: 'attempt-1',
+        scannerRunId: 'scanner-run-1'
+      },
+      select: { id: true }
+    });
+    expect(transaction.sastArtifactIngestion.delete).not.toHaveBeenCalled();
+    expect(transaction.auditEvent.create).not.toHaveBeenCalled();
   });
 });
 

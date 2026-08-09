@@ -256,10 +256,21 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   rows reject with no partial writes.
 - T038 authority assertions remain exact: `correlationAuthority=true` and provenance
   preservation true, while severity, lifecycle, coverage calculation, evidence, policy,
-  publication, and AI authority remain false. Only `SastFindingCorrelationService` crosses
-  the Scan Plane module boundary for T039.
-- 100% complete-coverage requirement before external comment/block, AI advisory, or fixed
-  transition.
+  publication, and AI authority remain false. T038 is internal after T039 installation.
+- 100% exact durable rebinding for `sast-scan-coverage-v1`: immutable plan/profile/scanner
+  set, every scanner run, accepted artifact/final disposition, and the complete zero/nonzero
+  T038 source set must match before a capability is achieved.
+- Fast/Deep/Common, optional absence/failure, pending/partial/failed/quarantined/killed,
+  provenance/artifact/source tamper, exact replay, changed/reordered/cross-scope replay, and
+  serialization-race fixtures pass with no duplicate or partial coverage rows.
+- 100% pending non-freeze invariant: a `PENDING` evaluation is marked non-persisted, performs
+  zero coverage-ledger writes, and can be reevaluated after a required scanner becomes terminal.
+- 100% T039 zero-publication invariant: even complete coverage has false comment/block/AI/
+  lifecycle flags while latest-target authority is unavailable and stale/comparability are
+  unknown. Only `SastScanCoverageService` crosses the Scan Plane boundary to T040.
+- The T039 caller records a structured rejection counter keyed by the coarse reason code;
+  `SCAN_COVERAGE_PERSISTENCE_FAILED` is alerted separately from expected durable-scope,
+  scanner-set, source-set, input, and replay rejections without logging sensitive context.
 
 ## Canary and Continuous Production Gates
 
