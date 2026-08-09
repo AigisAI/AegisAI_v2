@@ -16,6 +16,8 @@ Control, Scan, AI, and Data/Security plane boundaries.
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
+- Issue #276 is explicitly reclassified by `spec.md` as a local-only Neo4j/MITRE CWE
+  dev/demo bootstrap; it does not replace this package or advance T040.
 - `005-production-deployment-operations` remains the completed deployment-operations
   baseline.
 - `004-production-runtime-infrastructure` remains the completed runtime-infrastructure

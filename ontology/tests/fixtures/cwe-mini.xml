@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Weakness_Catalog xmlns="http://cwe.mitre.org/cwe-7"
+                  Name="CWE"
+                  Version="4.17"
+                  Date="2026-01-01">
+  <Weaknesses>
+    <Weakness ID="89" Name="SQL Injection" Abstraction="Base" Status="Stable">
+      <Description>
+        The product constructs all or part of an SQL command using externally-influenced input.
+      </Description>
+      <Likelihood_Of_Exploit>High</Likelihood_Of_Exploit>
+      <Related_Weaknesses>
+        <Related_Weakness Nature="ChildOf" CWE_ID="943" View_ID="1000" />
+        <Related_Weakness Nature="PeerOf" CWE_ID="943" View_ID="1000" />
+      </Related_Weaknesses>
+      <Potential_Mitigations>
+        <Mitigation>
+          <Phase>Implementation</Phase>
+          <Description>Use a parameterized interface.</Description>
+        </Mitigation>
+        <Mitigation>
+          <Phase>Architecture and Design</Phase>
+          <Phase>Implementation</Phase>
+          <Description>Apply an enforcement layer.</Description>
+        </Mitigation>
+      </Potential_Mitigations>
+    </Weakness>
+    <Weakness ID="943" Name="Improper Neutralization of Special Elements in Data Query Logic"
+              Abstraction="Class" Status="Stable">
+      <Description>Special elements in a data query are not neutralized correctly.</Description>
+      <Likelihood_Of_Exploit>Medium</Likelihood_Of_Exploit>
+    </Weakness>
+  </Weaknesses>
+</Weakness_Catalog>

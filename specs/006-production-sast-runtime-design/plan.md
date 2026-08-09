@@ -11,6 +11,11 @@ The first delivery is design and contract enforcement. It does not claim that a 
 microVM platform is live. Provider-specific deployment execution remains governed by
 `005-production-deployment-operations`.
 
+Issue #276 is an explicitly reclassified adjacent bootstrap, not a new production slice.
+Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
+AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
+that bootstrap does not change the next formal 006 task: T040.
+
 ## Target Boundaries
 
 - `packages/shared`: scanner/profile/plan/artifact/finding/coverage/evidence/rule contracts
