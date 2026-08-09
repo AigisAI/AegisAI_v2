@@ -390,6 +390,7 @@ export class PrismaSastArtifactIngressStore
         where: { id: input.ingestionId },
         select: {
           tenantId: true,
+          repositoryBindingId: true,
           scanRequestId: true,
           attemptId: true,
           scannerRunId: true,
@@ -398,6 +399,22 @@ export class PrismaSastArtifactIngressStore
       });
       if (!ingestion || ingestion.status !== 'RECEIVING') {
         return;
+      }
+
+      const immutableCoverageRecord =
+        await transaction.sastScannerCoverageRecord.findFirst({
+          where: {
+            artifactIngestionId: input.ingestionId,
+            tenantId: ingestion.tenantId,
+            repositoryBindingId: ingestion.repositoryBindingId,
+            scanRequestId: ingestion.scanRequestId,
+            attemptId: ingestion.attemptId,
+            scannerRunId: ingestion.scannerRunId
+          },
+          select: { id: true }
+        });
+      if (immutableCoverageRecord) {
+        throw new SastArtifactIngressStateConflictError();
       }
 
       await transaction.sastArtifactIngestion.delete({

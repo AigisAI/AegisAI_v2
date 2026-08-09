@@ -1090,10 +1090,15 @@ test('SAST T039 persists durable coverage and fail-closes every publication auth
     serviceTest,
     /complete Java Deep coverage while denying every publication authority/
   );
+  assert.match(serviceTest, /running required scanner pending without publishing/);
+  assert.match(serviceTest, /expect\(result\.persisted\)\.toBe\(false\)/);
   assert.match(
     serviceTest,
     /lifecycle authority denied even when the canonical T039 source matches/
   );
+  assert.match(serviceTest, /timed-out required scanner as terminal partial coverage/);
+  assert.match(serviceTest, /rejects duplicate or foreign durable scanner rows/);
+  assert.match(serviceTest, /rejects individually invalid durable correlation counters/);
 
   assert.match(
     store,
@@ -1136,6 +1141,20 @@ test('SAST T039 persists durable coverage and fail-closes every publication auth
       new RegExp(`SastScannerCoverageRecord_${constraint}`)
     );
   }
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastArtifactDispositionDecision_coverage_scope_key"/
+  );
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastFindingCorrelationSource_coverage_scope_key"/
+  );
+  assert.match(onlineSchema, /ADD CONSTRAINT[\s\S]{0,160}NOT VALID/);
+  assert.match(onlineSchema, /VALIDATE CONSTRAINT/);
+  assert.match(
+    onlineSchema,
+    /SastScannerCoverageRecord_ingestion_scope_fkey[\s\S]{0,500}ON DELETE RESTRICT ON UPDATE CASCADE/
+  );
   assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T039\b/);

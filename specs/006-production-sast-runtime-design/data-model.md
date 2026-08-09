@@ -654,6 +654,8 @@ values and never becomes lifecycle, coverage, evidence, policy, publication, or 
   decision, including an explicit `NOT_STARTED` row for an absent optional scanner
 - composite tenant/repository/scan/attempt binding to the coverage decision, scanner run,
   artifact ingestion/final disposition, and T038 correlation source when applicable
+- restrictive artifact-ingestion deletion plus an abort-path dependency check; immutable
+  coverage rows cannot be cascade-deleted independently of their decision ledger
 - platform-derived required marker, scanner-owned capability set, profile-required capability
   subset, and achieved capability set; optional output cannot replace a required owner
 - exact scanner/image/wrapper/rule/database/schema/normalizer provenance plus artifact envelope,
@@ -681,7 +683,10 @@ values and never becomes lifecycle, coverage, evidence, policy, publication, or 
   until T040 installs its independent comparison gate
 - ordered denial reasons, canonical decision object, timestamp, and unique digest
 
-All three structures are created atomically in a bounded serializable transaction. Exact
+`PENDING` is returned as a canonical non-durable evaluation and is never inserted into these
+tables, so later terminal scanner state can be reevaluated without mutating an immutable
+attempt ledger. For a terminal evaluation, all three structures are created atomically in a
+bounded serializable transaction. Exact
 replay returns the existing ledger; changed, missing, extra, reordered, cross-scope, or late
 durable state rejects without partial writes. T039 cannot synthesize a lifecycle-compatible
 `stale=false`/`comparable=true` projection from complete coverage alone.

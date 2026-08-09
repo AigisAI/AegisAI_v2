@@ -36,6 +36,7 @@ describe('SastScanCoverageService', () => {
     expect(result.outcome).toBe('EVALUATED');
     if (result.outcome !== 'EVALUATED') return;
     expect(result.decision.state).toBe('COMPLETE');
+    expect(result.persisted).toBe(true);
     expect(result.decision.achievedRequiredCapabilities).toEqual([
       'SAST',
       'DEPENDENCY_VULNERABILITY',
@@ -119,15 +120,20 @@ describe('SastScanCoverageService', () => {
     const fixture = coverageFixture('JAVA_DEEP_V1', {
       scannerStatus: { SYFT: 'RUNNING' }
     });
-    const result = await new SastScanCoverageService(
-      new MemoryCoverageStore(fixture.context)
-    ).evaluate({ correlation: fixture.correlation }, coverageClock);
+    const store = new MemoryCoverageStore(fixture.context);
+    const result = await new SastScanCoverageService(store).evaluate(
+      { correlation: fixture.correlation },
+      coverageClock
+    );
 
     expect(result.outcome).toBe('EVALUATED');
     if (result.outcome !== 'EVALUATED') return;
     expect(result.decision.state).toBe('PENDING');
+    expect(result.persisted).toBe(false);
+    expect(result.replayed).toBe(false);
     expect(result.decision.pendingRequiredScanners).toEqual(['SYFT']);
     expect(result.publication.externalCommentAllowed).toBe(false);
+    expect(store.persistCount).toBe(0);
   });
 
   it('fails coverage on quarantine or a tampered T038 source closure', async () => {
@@ -199,17 +205,99 @@ describe('SastScanCoverageService', () => {
     }
   });
 
+  it('treats a timed-out required scanner as terminal partial coverage', async () => {
+    const fixture = coverageFixture('JAVA_DEEP_V1', {
+      scannerStatus: { SYFT: 'TIMED_OUT' }
+    });
+    const result = await new SastScanCoverageService(
+      new MemoryCoverageStore(fixture.context)
+    ).evaluate({ correlation: fixture.correlation }, coverageClock);
+
+    expect(result.outcome).toBe('EVALUATED');
+    if (result.outcome !== 'EVALUATED') return;
+    expect(result.decision.state).toBe('PARTIAL');
+    expect(result.decision.failedRequiredScanners).toEqual(['SYFT']);
+    expect(
+      result.records.find((record) => record.scanner === 'SYFT')
+        ?.reasonCodes
+    ).toContain('SCANNER_TIMED_OUT');
+    expect(result.publication.externalCommentAllowed).toBe(false);
+  });
+
+  it('rejects duplicate or foreign durable scanner rows', async () => {
+    const duplicateFixture = coverageFixture('JAVA_DEEP_V1');
+    const duplicateContext: SastScanCoverageContext = {
+      ...duplicateFixture.context,
+      scanners: [
+        ...duplicateFixture.context.scanners,
+        duplicateFixture.context.scanners[0]!
+      ]
+    };
+    const foreignFixture = coverageFixture('JAVA_DEEP_V1');
+    const foreignContext: SastScanCoverageContext = {
+      ...foreignFixture.context,
+      scanners: foreignFixture.context.scanners.map((scanner, index) =>
+        index === 0
+          ? ({
+              ...scanner,
+              scanner: 'MOCK'
+            } as unknown as SastScannerCoverageDurableEvidence)
+          : scanner
+      )
+    };
+
+    const duplicateResult = await new SastScanCoverageService(
+      new MemoryCoverageStore(duplicateContext)
+    ).evaluate(
+      { correlation: duplicateFixture.correlation },
+      coverageClock
+    );
+    const foreignResult = await new SastScanCoverageService(
+      new MemoryCoverageStore(foreignContext)
+    ).evaluate(
+      { correlation: foreignFixture.correlation },
+      coverageClock
+    );
+
+    expect(duplicateResult).toMatchObject({
+      outcome: 'REJECTED',
+      reasonCodes: ['SCAN_COVERAGE_SCANNER_SET_INVALID']
+    });
+    expect(foreignResult).toMatchObject({
+      outcome: 'REJECTED',
+      reasonCodes: ['SCAN_COVERAGE_SCANNER_SET_INVALID']
+    });
+  });
+
+  it('rejects individually invalid durable correlation counters', async () => {
+    const fixture = coverageFixture('JAVA_DEEP_V1');
+    fixture.context.correlation.exactFingerprintCount = -1;
+    fixture.context.correlation.possibleOverlapCount = 1;
+
+    const result = await new SastScanCoverageService(
+      new MemoryCoverageStore(fixture.context)
+    ).evaluate({ correlation: fixture.correlation }, coverageClock);
+
+    expect(result).toMatchObject({
+      outcome: 'REJECTED',
+      reasonCodes: ['SCAN_COVERAGE_DURABLE_SCOPE_INVALID']
+    });
+  });
+
   it('rejects a changed T038 handoff before opening persistence', async () => {
     const fixture = coverageFixture('JAVA_DEEP_V1');
     const store = new MemoryCoverageStore(fixture.context);
     const service = new SastScanCoverageService(store);
 
-    const result = await service.evaluate({
-      correlation: {
-        ...fixture.correlation,
-        sourceSetDigest: digest('changed-source-set')
-      }
-    });
+    const result = await service.evaluate(
+      {
+        correlation: {
+          ...fixture.correlation,
+          sourceSetDigest: digest('changed-source-set')
+        }
+      },
+      coverageClock
+    );
 
     expect(result).toMatchObject({
       outcome: 'REJECTED',

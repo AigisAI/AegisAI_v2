@@ -157,12 +157,10 @@ describe('SAST finding lineage persistence contract', () => {
     expect(module).toMatch(
       /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastScanCoverageService/
     );
-    expect(module).toMatch(
-      /exports:\s*\[[\s\S]*SastScanCoverageService[\s\S]*\]/
-    );
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ??
       '';
+    expect(exportsBlock).toContain('SastScanCoverageService');
     expect(exportsBlock).not.toContain(
       'SastFindingIdentityService'
     );

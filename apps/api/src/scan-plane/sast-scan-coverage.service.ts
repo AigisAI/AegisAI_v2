@@ -189,6 +189,16 @@ export class SastScanCoverageService
           digestCanonical: digest
         });
 
+      if (decision.state === 'PENDING') {
+        return this.buildResult(
+          records,
+          decision,
+          publication,
+          false,
+          false
+        );
+      }
+
       const persisted = await this.store.persist({
         context,
         records,
@@ -207,26 +217,13 @@ export class SastScanCoverageService
           'SCAN_COVERAGE_PERSISTENCE_FAILED'
         ]);
       }
-      const resultCore: SastScanCoverageResultCore = {
-        version: SAST_SCAN_COVERAGE_VERSION,
-        outcome: 'EVALUATED',
+      return this.buildResult(
         records,
         decision,
         publication,
-        replayed: persisted.replayed
-      };
-      const result: SastScanCoverageResult = {
-        ...resultCore,
-        resultDigest: digest(
-          canonicalizeSastScanCoverageResult(resultCore)
-        )
-      };
-      if (!isSastScanCoverageResultShapeValid(result, digest)) {
-        return this.reject([
-          'SCAN_COVERAGE_PERSISTENCE_FAILED'
-        ]);
-      }
-      return result;
+        true,
+        persisted.replayed
+      );
     } catch (error) {
       return this.reject([mapStoreError(error)]);
     }
@@ -273,6 +270,35 @@ export class SastScanCoverageService
         canonicalizeSastScanCoverageRejection(core)
       )
     };
+  }
+
+  private buildResult(
+    records: SastScannerCoverageRecord[],
+    decision: SastScanCoverageDecision,
+    publication: ReturnType<
+      typeof buildFailClosedSastExternalPublicationDecision
+    >,
+    persisted: boolean,
+    replayed: boolean
+  ): SastScanCoverageOutcome {
+    const core: SastScanCoverageResultCore = {
+      version: SAST_SCAN_COVERAGE_VERSION,
+      outcome: 'EVALUATED',
+      records,
+      decision,
+      publication,
+      persisted,
+      replayed
+    };
+    const result: SastScanCoverageResult = {
+      ...core,
+      resultDigest: digest(
+        canonicalizeSastScanCoverageResult(core)
+      )
+    };
+    return isSastScanCoverageResultShapeValid(result, digest)
+      ? result
+      : this.reject(['SCAN_COVERAGE_PERSISTENCE_FAILED']);
   }
 }
 
@@ -470,15 +496,14 @@ function scannerEvidenceReasons(
 function finalizeRecord(
   core: SastScannerCoverageRecordCore
 ): SastScannerCoverageRecord {
+  const reasonCodes = orderSastScannerCoverageReasons(core.reasonCodes);
   return {
     ...core,
-    reasonCodes: orderSastScannerCoverageReasons(core.reasonCodes),
+    reasonCodes,
     recordDigest: digest(
       canonicalizeSastScannerCoverageRecord({
         ...core,
-        reasonCodes: orderSastScannerCoverageReasons(
-          core.reasonCodes
-        )
+        reasonCodes
       })
     )
   };
@@ -506,6 +531,12 @@ function isContextScopeValid(
     context.correlation.occurrenceCount >= 0 &&
     Number.isInteger(context.correlation.edgeCount) &&
     context.correlation.edgeCount >= 0 &&
+    [
+      context.correlation.exactFingerprintCount,
+      context.correlation.sameDependencyCveCount,
+      context.correlation.supportingEvidenceCount,
+      context.correlation.possibleOverlapCount
+    ].every((count) => Number.isInteger(count) && count >= 0) &&
     context.correlation.exactFingerprintCount +
       context.correlation.sameDependencyCveCount +
       context.correlation.supportingEvidenceCount +

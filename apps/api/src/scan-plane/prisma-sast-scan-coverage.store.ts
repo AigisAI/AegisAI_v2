@@ -332,7 +332,7 @@ export class PrismaSastScanCoverageStore
       input.context.scope.correlationBatchId
     );
     if (!current || !sameDurableContext(current, input.context)) {
-      throw new SastScanCoverageDurableScopeError();
+      throw new SastScanCoverageDurableScopeError('CONTEXT_DRIFT');
     }
     const scope = current.scope;
     const existing =
@@ -493,7 +493,9 @@ export class PrismaSastScanCoverageStore
     correlationBatchId: string
   ): Promise<SastScanCoverageContext | null> {
     if (!/^finding-correlation:\/\/[a-f0-9]{64}$/u.test(correlationBatchId)) {
-      throw new SastScanCoverageDurableScopeError();
+      throw new SastScanCoverageDurableScopeError(
+        'CORRELATION_ID_INVALID'
+      );
     }
     const correlation =
       await reader.sastFindingCorrelationBatch.findUnique({
@@ -540,7 +542,9 @@ export class PrismaSastScanCoverageStore
       attempt?.scanRequest.sastQueueReservation?.immutablePlan
     );
     if (!attempt || !plan || !planMatchesCorrelation(plan, correlation, attempt)) {
-      throw new SastScanCoverageDurableScopeError();
+      throw new SastScanCoverageDurableScopeError(
+        'PLAN_SCOPE_INVALID'
+      );
     }
 
     const scannerRuns = await reader.scannerRun.findMany({
@@ -972,6 +976,7 @@ function validatePersistenceInput(
   input: Readonly<PersistSastScanCoverageInput>
 ): void {
   if (
+    input.decision.state === 'PENDING' ||
     !isSastScanCoverageDecisionShapeValid(input.decision, digest) ||
     !isSastExternalPublicationDecisionShapeValid(
       input.publication,
@@ -1002,7 +1007,7 @@ function validatePersistenceInput(
       input.context.scope.correlationBatchId ||
     !recordsMatchContext(input)
   ) {
-    throw new SastScanCoverageDurableScopeError();
+    throw new SastScanCoverageDurableScopeError('RECORD_SET_INVALID');
   }
   const evaluation = evaluateSastScanCoverageRecords({
     profileId: input.decision.scope.profileId,
@@ -1048,7 +1053,9 @@ function validatePersistenceInput(
     input.publication.lifecycleMutationAllowed !== false ||
     stableJson(input.publication) !== stableJson(expectedPublication)
   ) {
-    throw new SastScanCoverageDurableScopeError();
+    throw new SastScanCoverageDurableScopeError(
+      'PUBLICATION_PROJECTION_INVALID'
+    );
   }
 }
 
@@ -1388,6 +1395,11 @@ function mapScannerStatus(
       return 'KILLED';
     case 'SKIPPED':
       return 'SKIPPED_BY_POLICY';
+    default: {
+      const unsupportedStatus: never = status;
+      void unsupportedStatus;
+      throw new SastScanCoverageScannerSetError();
+    }
   }
 }
 

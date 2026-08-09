@@ -9,11 +9,13 @@ import {
   buildSastScanCoverageRecordsPreimage,
   canonicalizeSastScanCoverageDecision,
   canonicalizeSastScanCoverageRejection,
+  canonicalizeSastScanCoverageResult,
   canonicalizeSastScannerCoverageRecord,
   evaluateSastScanCoverageRecords,
   isSastExternalPublicationDecisionShapeValid,
   isSastScanCoverageDecisionShapeValid,
   isSastScanCoverageRejectionShapeValid,
+  isSastScanCoverageResultShapeValid,
   isSastScannerCoverageRecordShapeValid,
   sastScanCoverageAuthority,
   toSastScanCoverageAuditMetadata
@@ -217,6 +219,38 @@ test('persists complete coverage while fail-closing every external publication a
       'LATEST_TARGET_AUTHORITY_UNAVAILABLE'
     ),
     true
+  );
+  const resultCore = {
+    version: SAST_SCAN_COVERAGE_VERSION,
+    outcome: 'EVALUATED',
+    records,
+    decision,
+    publication,
+    persisted: true,
+    replayed: false
+  };
+  const result = {
+    ...resultCore,
+    resultDigest: digest(
+      canonicalizeSastScanCoverageResult(resultCore)
+    )
+  };
+  assert.equal(
+    isSastScanCoverageResultShapeValid(result, digest),
+    true
+  );
+  const transientCore = { ...resultCore, persisted: false };
+  assert.equal(
+    isSastScanCoverageResultShapeValid(
+      {
+        ...transientCore,
+        resultDigest: digest(
+          canonicalizeSastScanCoverageResult(transientCore)
+        )
+      },
+      digest
+    ),
+    false
   );
 });
 

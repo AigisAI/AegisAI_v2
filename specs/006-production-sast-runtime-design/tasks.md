@@ -59,7 +59,7 @@
 - [x] T037 Implement occurrences, exact lineage updates, rename handling, and fixed/reopen rules
 - [x] T038 Implement authority-aware cross-tool correlation with full provenance preservation
 - [x] T039 Persist scanner/capability coverage and apply fail-closed external publication
-- [ ] T040 Implement stale-scan denial and bounded infrastructure-only retries
+- [ ] T040 Implement stale-scan denial and bounded infrastructure-only retries; drop and replace `SastExternalPublicationDecision_contract_check` before accepting independently validated freshness and comparability authority rows
 
 ## Phase 8: Evidence, Policy, and AI Boundary
 

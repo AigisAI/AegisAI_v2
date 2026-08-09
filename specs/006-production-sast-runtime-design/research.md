@@ -433,7 +433,9 @@ independently reloads the immutable plan, current attempt, complete source set, 
 artifact envelopes, and final dispositions. The approved profile and scanner responsibility
 matrix derive every required/optional scanner and capability. One serializable transaction
 stores three canonical scanner records, one attempt-scoped coverage decision, and one
-fail-closed external-publication decision. Exact replay is the only idempotent replay.
+fail-closed external-publication decision only after evaluation is terminal. A canonical
+`PENDING` result remains non-durable and is reevaluated as scanner state advances. Exact replay
+is the only idempotent replay.
 
 **Rationale**: A successful process exit, caller-provided capability list, or correlation
 edge cannot prove that every required scanner ran against the same fixed commit and produced

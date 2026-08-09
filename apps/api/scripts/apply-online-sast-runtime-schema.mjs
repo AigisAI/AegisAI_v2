@@ -588,7 +588,7 @@ const constraints = [
     name: 'SastScannerCoverageRecord_ingestion_scope_fkey',
     type: 'f',
     definition:
-      'FOREIGN KEY ("artifactIngestionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") REFERENCES "SastArtifactIngestion"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") ON DELETE CASCADE ON UPDATE CASCADE'
+      'FOREIGN KEY ("artifactIngestionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") REFERENCES "SastArtifactIngestion"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "scannerRunId") ON DELETE RESTRICT ON UPDATE CASCADE'
   },
   {
     table: 'SastScannerCoverageRecord',

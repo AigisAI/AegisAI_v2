@@ -33,6 +33,12 @@ describe('SAST scan coverage persistence contract', () => {
     expect(onlineSchema).toContain(
       'SastScannerCoverageRecord_ingestion_scope_fkey'
     );
+    expect(schema).toMatch(
+      /artifactIngestion\s+SastArtifactIngestion\?[\s\S]{0,300}onDelete: Restrict[\s\S]{0,150}SastScannerCoverageRecord_ingestion_scope_fkey/
+    );
+    expect(onlineSchema).toMatch(
+      /SastScannerCoverageRecord_ingestion_scope_fkey[\s\S]{0,500}ON DELETE RESTRICT ON UPDATE CASCADE/
+    );
     expect(onlineSchema).toContain(
       'SastScannerCoverageRecord_disposition_scope_fkey'
     );
@@ -94,6 +100,7 @@ describe('SAST scan coverage persistence contract', () => {
     expect(store).toContain('sameDurableContext');
     expect(store).toContain('replayCoverage');
     expect(store).toContain('recordsMatchContext');
+    expect(store).toContain("input.decision.state === 'PENDING'");
     expect(store).toContain(
       'buildSastFindingCorrelationSourceSetPreimage'
     );
@@ -101,9 +108,7 @@ describe('SAST scan coverage persistence contract', () => {
     expect(store).toContain(
       'canonicalizeSastArtifactDispositionDecision'
     );
-    expect(store).toContain(
-      'dispositionRow.repositoryBindingId === row.repositoryBindingId'
-    );
+    expect(store).toContain('verifyLifecycleSource');
     expect(store).toContain(
       'buildFailClosedSastExternalPublicationDecision'
     );
@@ -130,9 +135,8 @@ describe('SAST scan coverage persistence contract', () => {
       /@Controller|@(Get|Post|Put|Patch|Delete)\(/u
     );
     expect(service).not.toMatch(/SCM_WRITE|commentWrite|statusWrite/u);
-    expect(service).toContain(
-      "return 'REJECTED';"
-    );
+    expect(service).toContain('verifyLifecycleSource');
+    expect(service).toContain('T040');
   });
 });
 

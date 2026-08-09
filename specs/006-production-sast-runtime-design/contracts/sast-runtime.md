@@ -1055,7 +1055,9 @@ coverage through its accepted CycloneDX artifact without inventing a finding sou
 
 Coverage can be evaluated while required runs are pending, but a capability is achieved only
 when its owning required scanner is terminally successful, its pinned provenance matches, and
-its artifact is accepted and normalization-eligible.
+its artifact is accepted and normalization-eligible. A `PENDING` result is canonical but
+explicitly non-persisted and must be reevaluated after durable scanner state advances; this
+prevents a unique attempt ledger from freezing before a terminal decision exists.
 
 | Condition | Coverage | Comment/block | AI |
 | --- | --- | --- | --- |
@@ -1068,9 +1070,11 @@ its artifact is accepted and normalization-eligible.
 Optional scanner failure does not reduce required coverage but is visible and cannot replace
 an authoritative required capability. Quarantine, kill, provenance/artifact digest mismatch,
 or an invalid T038 source set security-blocks the decision even when it affects optional
-output. One serializable write persists all canonical scanner records, coverage, and
+output. For a terminal evaluation, one serializable write persists all canonical scanner records, coverage, and
 `sast-external-publication-v1`; exact replay is idempotent and all changed/cross-scope replay
-conflicts.
+conflicts. The artifact-ingestion foreign key is restrictive: an ingress abort must fail if an
+immutable coverage record references that ingestion, so cleanup cannot cascade-delete part of
+the coverage ledger while leaving its decision digest behind.
 
 T039 does not accept a caller-supplied `stale=false` or `comparable=true`. Its publication
 row is a database-enforced zero-authority decision with latest-target authority

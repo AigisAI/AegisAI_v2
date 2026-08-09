@@ -14,7 +14,6 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 import { PrismaSastScanCoverageStore } from '../../src/scan-plane/prisma-sast-scan-coverage.store';
 import { SastScanCoverageService } from '../../src/scan-plane/sast-scan-coverage.service';
 import {
-  SastScanCoverageDurableScopeError,
   SastScanCoverageStore,
   type PersistSastScanCoverageInput,
   type SastScanCoverageContext,
@@ -97,7 +96,14 @@ describe('PrismaSastScanCoverageStore', () => {
     const prisma = {
       $transaction: jest
         .fn()
-        .mockRejectedValueOnce(retry)
+        .mockImplementationOnce(
+          async (
+            operation: (client: typeof transaction) => Promise<unknown>
+          ) => {
+            await operation(transaction);
+            throw retry;
+          }
+        )
         .mockImplementation(
           async (
             operation: (client: typeof transaction) => Promise<unknown>
@@ -113,7 +119,7 @@ describe('PrismaSastScanCoverageStore', () => {
       replayed: false
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
-    expect(read).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledTimes(2);
   });
 
   it('rejects late durable-state drift before any coverage row is written', async () => {
@@ -132,9 +138,10 @@ describe('PrismaSastScanCoverageStore', () => {
       )
     });
 
-    await expect(store.persist(fixture.input)).rejects.toBeInstanceOf(
-      SastScanCoverageDurableScopeError
-    );
+    await expect(store.persist(fixture.input)).rejects.toMatchObject({
+      name: 'SastScanCoverageDurableScopeError',
+      reason: 'CONTEXT_DRIFT'
+    });
     expect(
       transaction.sastScanCoverageDecision.create
     ).not.toHaveBeenCalled();
@@ -179,8 +186,27 @@ describe('PrismaSastScanCoverageStore', () => {
         ...fixture.input,
         records: [...fixture.input.records].reverse()
       })
-    ).rejects.toBeInstanceOf(SastScanCoverageDurableScopeError);
+    ).rejects.toMatchObject({
+      name: 'SastScanCoverageDurableScopeError',
+      reason: 'RECORD_SET_INVALID'
+    });
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('refuses to persist a nonterminal pending snapshot', async () => {
+    const fixture = await persistenceFixture();
+    const pending = await pendingPersistenceFixture();
+    const prisma = serializablePrisma(coverageTransaction());
+    const store = new PrismaSastScanCoverageStore(
+      prisma as unknown as PrismaService
+    );
+
+    await expect(store.persist(pending)).rejects.toMatchObject({
+      name: 'SastScanCoverageDurableScopeError',
+      reason: 'RECORD_SET_INVALID'
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(fixture.input.decision.state).toBe('COMPLETE');
   });
 
   it('rejects a publication projection that omits a mandatory fail-closed reason', async () => {
@@ -209,7 +235,10 @@ describe('PrismaSastScanCoverageStore', () => {
         ...fixture.input,
         publication: changedPublication
       })
-    ).rejects.toBeInstanceOf(SastScanCoverageDurableScopeError);
+    ).rejects.toMatchObject({
+      name: 'SastScanCoverageDurableScopeError',
+      reason: 'PUBLICATION_PROJECTION_INVALID'
+    });
     expect(prisma.$transaction).not.toHaveBeenCalled();
     void _decisionDigest;
   });
@@ -258,6 +287,43 @@ async function persistenceFixture(): Promise<{
     throw new Error('Coverage persistence fixture was rejected.');
   }
   return { context, input: handoff.persisted };
+}
+
+async function pendingPersistenceFixture(): Promise<PersistSastScanCoverageInput> {
+  const context = coverageContext();
+  context.scanners = context.scanners.map((scanner) =>
+    scanner.scanner === 'TRIVY'
+      ? {
+          ...scanner,
+          executionStatus: 'RUNNING',
+          artifactIngestionId: null,
+          artifactEnvelopeDigest: null,
+          artifactDigest: null,
+          dispositionDecisionId: null,
+          dispositionDecisionDigest: null,
+          artifactAccepted: false,
+          normalizationEligible: false,
+          correlationSourceId: null,
+          observationBatchId: null,
+          correlationSourceBindingDigest: null,
+          correlationSourceValid: false
+        }
+      : scanner
+  );
+  const handoff = new HandoffCoverageStore(context);
+  const result = await new SastScanCoverageService(handoff).evaluate(
+    { correlation: correlationResult(context) },
+    () => new Date('2026-08-02T13:00:00.000Z')
+  );
+  if (result.outcome !== 'EVALUATED' || result.decision.state !== 'PENDING') {
+    throw new Error('Pending coverage fixture was rejected.');
+  }
+  return {
+    context,
+    records: result.records,
+    decision: result.decision,
+    publication: result.publication
+  };
 }
 
 function coverageContext(): SastScanCoverageContext {
@@ -374,7 +440,9 @@ function coverageTransaction(existing: unknown = null) {
       create: jest.fn().mockResolvedValue({ id: 'coverage-1' })
     },
     sastScannerCoverageRecord: {
-      createMany: jest.fn().mockResolvedValue({ count: 3 })
+      createMany: jest.fn().mockImplementation(
+        async ({ data }: { data: unknown[] }) => ({ count: data.length })
+      )
     },
     sastExternalPublicationDecision: {
       create: jest.fn().mockResolvedValue({ id: 'publication-1' })

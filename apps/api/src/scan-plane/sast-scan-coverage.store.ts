@@ -86,8 +86,15 @@ export type SastScanCoverageLifecycleSourceVerification =
   | 'MATCHED'
   | 'REJECTED';
 
+export type SastScanCoverageDurableScopeReason =
+  | 'CONTEXT_DRIFT'
+  | 'CORRELATION_ID_INVALID'
+  | 'PLAN_SCOPE_INVALID'
+  | 'RECORD_SET_INVALID'
+  | 'PUBLICATION_PROJECTION_INVALID';
+
 export class SastScanCoverageDurableScopeError extends Error {
-  constructor() {
+  constructor(readonly reason: SastScanCoverageDurableScopeReason) {
     super('The durable SAST scan-coverage scope is invalid.');
     this.name = 'SastScanCoverageDurableScopeError';
   }

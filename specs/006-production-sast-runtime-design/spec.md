@@ -264,8 +264,10 @@ incomplete, stale, quarantined, or security-blocked scan.
   platform profile and scanner responsibility matrix; the caller MUST NOT supply coverage,
   stale, publication, lifecycle, or AI authority.
 - **FR-039b**: One bounded serializable transaction MUST persist exactly one attempt-scoped
-  coverage decision, one canonical record for each platform scanner (including absent
-  optional scanners), and one `sast-external-publication-v1` decision. Byte-identical replay,
+  terminal coverage decision, one canonical record for each platform scanner (including
+  absent optional scanners), and one `sast-external-publication-v1` decision. A `PENDING`
+  evaluation MUST remain explicitly non-durable and be reevaluated after scanner state
+  advances. Byte-identical terminal replay,
   including a serialization race, MAY return the existing ledger without duplicate rows;
   changed, missing, extra, reordered, cross-scope, or late durable state MUST reject
   atomically.

@@ -219,6 +219,7 @@ export interface SastScanCoverageResult {
   records: SastScannerCoverageRecord[];
   decision: SastScanCoverageDecision;
   publication: SastExternalPublicationDecision;
+  persisted: boolean;
   replayed: boolean;
   resultDigest: `sha256:${string}`;
 }
@@ -258,6 +259,7 @@ export type SastScanCoverageAuditMetadata =
       state: SastCoverageState;
       decisionDigest: `sha256:${string}`;
       publicationDecisionDigest: `sha256:${string}`;
+      persisted: boolean;
       replayed: boolean;
     }
   | {
@@ -872,6 +874,7 @@ export function isSastScanCoverageResultShapeValid(
       'records',
       'decision',
       'publication',
+      'persisted',
       'replayed',
       'resultDigest'
     ]) ||
@@ -894,6 +897,7 @@ export function isSastScanCoverageResultShapeValid(
       value.publication,
       digestCanonical
     ) ||
+    typeof value.persisted !== 'boolean' ||
     typeof value.replayed !== 'boolean' ||
     !isSha256Digest(value.resultDigest)
   ) {
@@ -913,7 +917,9 @@ export function isSastScanCoverageResultShapeValid(
     result.publication.coverageDecisionDigest !==
       result.decision.decisionDigest ||
     result.publication.coverageState !== result.decision.state ||
-    result.publication.decidedAt !== result.decision.decidedAt
+    result.publication.decidedAt !== result.decision.decidedAt ||
+    result.persisted !== (result.decision.state !== 'PENDING') ||
+    (!result.persisted && result.replayed)
   ) {
     return false;
   }
@@ -1023,6 +1029,7 @@ export function toSastScanCoverageAuditMetadata(
       state: outcome.decision.state,
       decisionDigest: outcome.decision.decisionDigest,
       publicationDecisionDigest: outcome.publication.decisionDigest,
+      persisted: outcome.persisted,
       replayed: outcome.replayed
     };
   }
@@ -1170,10 +1177,25 @@ function isNullableCoverageId(
   return value === null || isCoverageId(value, prefix);
 }
 
-function isCoverageId(value: unknown, prefix: string): value is string {
+const COVERAGE_ID_PATTERNS = {
+  'finding-correlation': /^finding-correlation:\/\/[a-f0-9]{64}$/u,
+  'finding-observation': /^finding-observation:\/\/[a-f0-9]{64}$/u,
+  'sast-coverage': /^sast-coverage:\/\/[a-f0-9]{64}$/u,
+  'sast-publication': /^sast-publication:\/\/[a-f0-9]{64}$/u,
+  'sast-scanner-coverage': /^sast-scanner-coverage:\/\/[a-f0-9]{64}$/u
+} as const;
+
+type CoverageIdPrefix = keyof typeof COVERAGE_ID_PATTERNS;
+
+function isCoverageId(
+  value: unknown,
+  prefix: string
+): value is string {
+  const pattern = COVERAGE_ID_PATTERNS[prefix as CoverageIdPrefix];
   return (
     typeof value === 'string' &&
-    new RegExp(`^${prefix}:\\/\\/[a-f0-9]{64}$`, 'u').test(value)
+    pattern !== undefined &&
+    pattern.test(value)
   );
 }
 

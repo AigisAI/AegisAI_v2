@@ -418,9 +418,11 @@ portion of Phase 6:
   normalization-eligible artifact, and (for finding scanners) a valid T038 zero/nonzero
   observation source. Missing, pending, failed, quarantined, killed, foreign, or tampered
   state remains explicit and cannot be replaced by optional output.
-- Coverage, all three scanner records, and `sast-external-publication-v1` are written in one
-  bounded serializable transaction. Exact replay returns the existing decision; changed,
-  reordered, cross-scope, or late durable state conflicts without partial rows.
+- `PENDING` is returned as a canonical non-persisted result with zero ledger writes, allowing
+  required scanners to advance before reevaluation. Terminal coverage, all three scanner
+  records, and `sast-external-publication-v1` are written in one bounded serializable
+  transaction. Exact replay returns the existing decision; changed, reordered, cross-scope,
+  or late durable state conflicts without partial rows.
 - The mandatory online-schema step creates the two new existing-table composite indexes
   concurrently, then installs and validates scanner-run, ingestion, disposition, and source
   scope foreign keys without putting an online-index dependency in the transactional Prisma
