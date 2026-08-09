@@ -44,6 +44,22 @@ coverage, failure semantics, quality gates, and legacy-path retirement.
 - Provider credential storage or live production infrastructure execution in this slice
 - Language-specific SAST profiles beyond Java v1
 
+### Explicitly Reclassified Adjacent Bootstrap: Issue #276
+
+Issue #276 is approved as a narrower, local development bootstrap alongside this active
+milestone. The reclassification permits only a self-hosted Neo4j dev/demo stack, bounded
+ingestion of the public MITRE CWE catalog, deterministic CWE hierarchy and mitigation
+records, and the tests and CI checks required to validate that bootstrap. It does not
+replace `006-production-sast-runtime-design`, advance or satisfy T040, or make Neo4j part of
+the production runtime.
+
+The bootstrap MUST NOT receive Scan Plane, AI Plane, policy, finding, evidence,
+publication, SCM, or tenant authority. It MUST NOT expose a production route or GraphRAG
+consumer, process repository content or scanner artifacts, store provider credentials, or
+become a live deployment dependency. Any OWASP mapping, scanner-rule mapping, vector
+index, GraphRAG retrieval, or production integration requires a later explicit feature
+specification and threat review.
+
 ## Terminology
 
 - **SAST**: source-code vulnerability detection. OpenGrep is the v1 authoritative engine.

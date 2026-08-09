@@ -9,6 +9,7 @@ import re
 import stat
 import sys
 import zipfile
+import zlib
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Sequence, TypedDict
@@ -27,6 +28,8 @@ CWE_ID_PATTERN = re.compile(r"^(?:CWE-)?([1-9][0-9]{0,6})$")
 CATALOG_VERSION_PATTERN = re.compile(r"^[1-9][0-9]*(?:\.[0-9]+){1,2}$")
 CATALOG_DATE_PATTERN = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 RELATIONSHIP_TYPES = {"ChildOf": "CHILD_OF", "PeerOf": "PEER_OF"}
+IMPORT_OWNER = "aegisai-cwe-importer-v1"
+XML_DECLARATION_PATTERN = re.compile(r"<!\s*(?:DOCTYPE|ENTITY)\b")
 
 
 class CatalogError(ValueError):
@@ -68,6 +71,7 @@ class ParsedCatalog:
     cwes: tuple[CweRow, ...]
     relations: tuple[RelationRow, ...]
     mitigations: tuple[MitigationRow, ...]
+    is_full_catalog: bool
 
     @property
     def child_of_count(self) -> int:
@@ -157,9 +161,11 @@ def download_archive(
             allow_redirects=True,
         ) as response:
             response.raise_for_status()
-            final_url = urlparse(response.url)
-            if final_url.scheme != "https":
-                raise CatalogError("CWE archive redirect must remain on HTTPS")
+            redirect_chain = [*getattr(response, "history", ()), response]
+            for redirect_response in redirect_chain:
+                redirect_url = urlparse(redirect_response.url)
+                if redirect_url.scheme != "https" or not redirect_url.hostname:
+                    raise CatalogError("CWE archive redirect must remain on HTTPS")
 
             content_length = response.headers.get("Content-Length")
             if content_length is not None:
@@ -230,7 +236,7 @@ def extract_catalog_xml(
             if len(xml_bytes) != info.file_size or len(xml_bytes) > max_xml_bytes:
                 raise CatalogError("CWE XML size does not match bounded archive metadata")
             return xml_bytes, archive_sha256
-    except zipfile.BadZipFile as exc:
+    except (zipfile.BadZipFile, zlib.error, EOFError) as exc:
         raise CatalogError("CWE source is not a valid ZIP archive") from exc
 
 
@@ -242,7 +248,11 @@ def parse_catalog(
 ) -> ParsedCatalog:
     if len(xml_bytes) <= 0 or len(xml_bytes) > MAX_XML_BYTES:
         raise CatalogError("CWE XML size is outside the allowed range")
-    if b"<!DOCTYPE" in xml_bytes or b"<!ENTITY" in xml_bytes:
+    try:
+        decoded_xml = xml_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise CatalogError("CWE XML must use UTF-8 encoding") from exc
+    if XML_DECLARATION_PATTERN.search(decoded_xml):
         raise CatalogError("DTD and entity declarations are not allowed")
     if SHA256_PATTERN.fullmatch(source_sha256) is None:
         raise CatalogError("source SHA-256 is invalid")
@@ -259,6 +269,8 @@ def parse_catalog(
         root = etree.fromstring(xml_bytes, parser=parser)
     except (etree.XMLSyntaxError, ValueError) as exc:
         raise CatalogError("CWE XML is malformed") from exc
+    if root.getroottree().docinfo.doctype:
+        raise CatalogError("DTD and entity declarations are not allowed")
 
     root_name = etree.QName(root)
     namespace = root_name.namespace or ""
@@ -363,6 +375,7 @@ def parse_catalog(
         cwes=tuple(cwes),
         relations=relations,
         mitigations=mitigations,
+        is_full_catalog=selected_ids is None,
     )
 
 
@@ -370,7 +383,7 @@ def _consume(result: Any) -> None:
     result.consume()
 
 
-def load_catalog(
+def _load_catalog(
     catalog: ParsedCatalog,
     *,
     uri: str,
@@ -419,18 +432,39 @@ def load_catalog(
                             c.description = row.description,
                             c.catalogVersion = row.catalogVersion,
                             c.catalogDate = row.catalogDate,
-                            c.sourceSha256 = row.sourceSha256
+                            c.sourceSha256 = row.sourceSha256,
+                            c.managedBy = $managed_by
                         """,
                         rows=list(catalog.cwes),
+                        managed_by=IMPORT_OWNER,
                     )
                 )
-                _consume(
-                    tx.run(
-                        """
+                if catalog.is_full_catalog:
+                    _consume(
+                        tx.run(
+                            """
+                            MATCH (c:CWE {managedBy: $managed_by})
+                            WHERE NOT (c.id IN $ids)
+                            DETACH DELETE c
+                            """,
+                            ids=cwe_ids,
+                            managed_by=IMPORT_OWNER,
+                        )
+                    )
+                    relationship_cleanup = """
                         MATCH (c:CWE)-[r:CHILD_OF|PEER_OF|MITIGATED_BY]->()
                         WHERE c.id IN $ids
                         DELETE r
-                        """,
+                        """
+                else:
+                    relationship_cleanup = """
+                        MATCH (c:CWE)-[r:MITIGATED_BY]->()
+                        WHERE c.id IN $ids
+                        DELETE r
+                    """
+                _consume(
+                    tx.run(
+                        relationship_cleanup,
                         ids=cwe_ids,
                     )
                 )
@@ -460,13 +494,43 @@ def load_catalog(
                         UNWIND $rows AS row
                         MATCH (c:CWE {id: row.cwe})
                         MERGE (m:Mitigation {id: row.id})
-                        SET m.phases = row.phases,
+                        SET m.cwe = row.cwe,
+                            m.phases = row.phases,
                             m.description = row.description,
                             m.catalogVersion = row.catalogVersion,
-                            m.sourceSha256 = row.sourceSha256
+                            m.sourceSha256 = row.sourceSha256,
+                            m.managedBy = $managed_by
                         MERGE (c)-[:MITIGATED_BY]->(m)
                         """,
                         rows=list(catalog.mitigations),
+                        managed_by=IMPORT_OWNER,
+                    )
+                )
+                if catalog.is_full_catalog:
+                    mitigation_cleanup = """
+                        MATCH (m:Mitigation {managedBy: $managed_by})
+                        WHERE NOT EXISTS {
+                            MATCH (:CWE)-[:MITIGATED_BY]->(m)
+                        }
+                        DELETE m
+                    """
+                    mitigation_cleanup_parameters = {"managed_by": IMPORT_OWNER}
+                else:
+                    mitigation_cleanup = """
+                        MATCH (m:Mitigation {managedBy: $managed_by})
+                        WHERE m.cwe IN $ids AND NOT EXISTS {
+                            MATCH (:CWE)-[:MITIGATED_BY]->(m)
+                        }
+                        DELETE m
+                    """
+                    mitigation_cleanup_parameters = {
+                        "ids": cwe_ids,
+                        "managed_by": IMPORT_OWNER,
+                    }
+                _consume(
+                    tx.run(
+                        mitigation_cleanup,
+                        **mitigation_cleanup_parameters,
                     )
                 )
 
@@ -502,17 +566,60 @@ def load_catalog(
                     ids=cwe_ids,
                 ).single(strict=True)["count"],
             }
+            if catalog.is_full_catalog:
+                persisted["managedCweCount"] = session.run(
+                    "MATCH (c:CWE {managedBy: $managed_by}) "
+                    "RETURN count(c) AS count",
+                    managed_by=IMPORT_OWNER,
+                ).single(strict=True)["count"]
+                persisted["managedMitigationCount"] = session.run(
+                    "MATCH (m:Mitigation {managedBy: $managed_by}) "
+                    "RETURN count(m) AS count",
+                    managed_by=IMPORT_OWNER,
+                ).single(strict=True)["count"]
     finally:
         driver.close()
 
     expected = catalog.summary()
-    for key in ("cweCount", "childOfCount", "peerOfCount", "mitigationCount"):
-        if persisted[key] != expected[key]:
+    expected_counts = {
+        key: expected[key]
+        for key in ("cweCount", "childOfCount", "peerOfCount", "mitigationCount")
+    }
+    if catalog.is_full_catalog:
+        expected_counts["managedCweCount"] = expected["cweCount"]
+        expected_counts["managedMitigationCount"] = expected["mitigationCount"]
+    for key, expected_count in expected_counts.items():
+        if persisted[key] != expected_count:
             raise CatalogError(
                 f"Neo4j verification failed for {key}: "
-                f"expected {expected[key]}, observed {persisted[key]}"
+                f"expected {expected_count}, observed {persisted[key]}"
             )
     return persisted
+
+
+def load_catalog(
+    catalog: ParsedCatalog,
+    *,
+    uri: str,
+    user: str,
+    password: str,
+    database: str,
+) -> dict[str, Any]:
+    if not password:
+        raise CatalogError("NEO4J_PASSWORD is required")
+
+    from neo4j.exceptions import DriverError, Neo4jError
+
+    try:
+        return _load_catalog(
+            catalog,
+            uri=uri,
+            user=user,
+            password=password,
+            database=database,
+        )
+    except (DriverError, Neo4jError) as exc:
+        raise CatalogError(f"Neo4j import failed ({type(exc).__name__})") from exc
 
 
 def _positive_count(value: str) -> int:
@@ -575,10 +682,10 @@ def run(argv: Sequence[str] | None = None) -> int:
 
     expected_sha256 = _validate_expected_sha256(args.sha256)
     if args.xml is not None:
+        if expected_sha256 is not None:
+            parser.error("--sha256 applies to ZIP input and cannot be used with --xml")
         xml_bytes = _read_bounded_file(args.xml, MAX_XML_BYTES)
         source_sha256 = hashlib.sha256(xml_bytes).hexdigest()
-        if expected_sha256 is not None:
-            raise CatalogError("--sha256 applies to ZIP input and cannot be used with --xml")
     else:
         if args.archive is not None:
             archive_bytes = _read_bounded_file(args.archive, MAX_ARCHIVE_BYTES)

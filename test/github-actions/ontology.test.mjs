@@ -8,6 +8,18 @@ const files = {
   loader: new URL('../../ontology/load_cwe.py', import.meta.url),
   readme: new URL('../../ontology/README.md', import.meta.url),
   requirements: new URL('../../ontology/requirements.txt', import.meta.url),
+  activeSpec: new URL(
+    '../../specs/006-production-sast-runtime-design/spec.md',
+    import.meta.url
+  ),
+  activePlan: new URL(
+    '../../specs/006-production-sast-runtime-design/plan.md',
+    import.meta.url
+  ),
+  activeTasks: new URL(
+    '../../specs/006-production-sast-runtime-design/tasks.md',
+    import.meta.url
+  ),
   tests: new URL('../../ontology/tests/test_load_cwe.py', import.meta.url),
   workflow: new URL('../../.github/workflows/ci.yml', import.meta.url)
 };
@@ -26,6 +38,8 @@ test('ontology bootstrap is credential-safe and localhost-only by default', () =
   assert.match(compose, /127\.0\.0\.1:\$\{NEO4J_HTTP_PORT:-7474\}:7474/);
   assert.match(compose, /127\.0\.0\.1:\$\{NEO4J_BOLT_PORT:-7687\}:7687/);
   assert.match(compose, /NEO4J_PASSWORD:\?Set NEO4J_PASSWORD/);
+  assert.match(compose, /NEO4J_USERNAME=neo4j NEO4J_PASSWORD=/);
+  assert.doesNotMatch(compose, /cypher-shell[^\n]*\s-p\s/);
   assert.match(compose, /no-new-privileges:true/);
   assert.doesNotMatch(compose, /aegisai123/);
   assert.match(envExample, /^NEO4J_PASSWORD=\s*$/m);
@@ -44,11 +58,31 @@ test('ontology importer applies bounded hostile-input validation', () => {
   assert.match(loader, /no_network=True/);
   assert.match(loader, /load_dtd=False/);
   assert.match(loader, /DTD and entity declarations are not allowed/);
+  assert.match(loader, /decode\("utf-8-sig"\)/);
+  assert.match(loader, /getattr\(response, "history"/);
+  assert.match(loader, /zlib\.error/);
   assert.match(loader, /expected_sha256/);
   assert.match(loader, /session\.execute_write\(write_catalog\)/);
+  assert.match(loader, /managedBy/);
+  assert.match(loader, /DETACH DELETE c/);
+  assert.match(loader, /m\.cwe = row\.cwe/);
   assert.match(loader, /--dry-run/);
   assert.match(readme, /dev\/demo data bootstrap only/);
   assert.match(readme, /does not replace[\s\S]*006-production-sast-runtime-design/);
+});
+
+test('active 006 spec explicitly reclassifies only the bounded issue 276 bootstrap', () => {
+  const spec = read(files.activeSpec);
+  const plan = read(files.activePlan);
+  const tasks = read(files.activeTasks);
+
+  assert.match(spec, /Explicitly Reclassified Adjacent Bootstrap: Issue #276/);
+  assert.match(spec, /MUST NOT receive Scan Plane, AI Plane, policy/);
+  assert.match(spec, /does not[\s\S]*advance or satisfy T040/);
+  assert.match(plan, /Issue #276 is an explicitly reclassified adjacent bootstrap/);
+  assert.match(plan, /does not change the next formal 006 task: T040/);
+  assert.match(tasks, /Approved Adjacent Bootstrap \(Does Not Advance 006\)/);
+  assert.match(tasks, /Keep T040 as the next formal active-milestone task/);
 });
 
 test('CI installs and exercises the ontology importer', () => {

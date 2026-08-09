@@ -61,6 +61,12 @@
 - [x] T039 Persist scanner/capability coverage and apply fail-closed external publication
 - [ ] T040 Implement stale-scan denial and bounded infrastructure-only retries; drop and replace `SastExternalPublicationDecision_contract_check` before accepting independently validated freshness and comparability authority rows
 
+## Approved Adjacent Bootstrap (Does Not Advance 006)
+
+- [x] A001 Reclassify issue #276 as a local-only Neo4j/MITRE CWE dev/demo bootstrap with no production, Scan Plane, AI Plane, policy, finding, evidence, publication, SCM, or tenant authority
+- [x] A002 Add bounded deterministic CWE ingestion, importer-owned snapshot reconciliation, and hostile archive/XML regression tests under `ontology/`
+- [x] A003 Keep T040 as the next formal active-milestone task
+
 ## Phase 8: Evidence, Policy, and AI Boundary
 
 - [ ] T041 Build bounded accepted-finding evidence with reconstruction-risk checks
