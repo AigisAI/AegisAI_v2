@@ -69,7 +69,9 @@ CREATE TABLE "SastEvidenceBuildDecision" (
         AND "selectedFragmentCount" > 0
         AND "reconstructionStatus" = 'SAFE'
         AND jsonb_array_length("reasonCodes") = 0
+        AND "evidencePackId" IS NOT NULL
         AND "evidencePackId" ~ '^sast-evidence-pack://[a-f0-9]{64}$'
+        AND "evidencePackDigest" IS NOT NULL
         AND "evidencePackDigest" ~ '^sha256:[a-f0-9]{64}$'
         AND ("authority"->>'evidenceConstructionAuthority')::boolean IS TRUE
       )

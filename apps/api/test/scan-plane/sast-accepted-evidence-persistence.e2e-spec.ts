@@ -75,6 +75,12 @@ describe('SAST accepted-finding evidence persistence contract', () => {
     expect(migration).toContain(
       '("authority"->>\'dashboardAccessAllowed\')::boolean IS FALSE'
     );
+    expect(migration).toContain(
+      '"evidencePackId" IS NOT NULL'
+    );
+    expect(migration).toContain(
+      '"evidencePackDigest" IS NOT NULL'
+    );
     expect(migration).toContain('"dashboardSafe" = false');
     expect(migration).toContain('"aiSafe" = false');
     expect(migration).toContain(
