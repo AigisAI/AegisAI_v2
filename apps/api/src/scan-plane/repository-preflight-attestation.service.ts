@@ -5,6 +5,9 @@ import type { SastPreflightDecision } from '@aegisai/shared';
 
 import { ConfigService } from '../config/config.service';
 
+const MAX_PREFLIGHT_ATTESTATION_CLOCK_SKEW_MS = 5_000;
+const MAX_PREFLIGHT_ATTESTATION_AGE_MS = 60_000;
+
 export interface RepositoryPreflightAttestationClaims {
   attemptId: string;
   fixedCommitSha: string;
@@ -32,7 +35,8 @@ export class RepositoryPreflightAttestationService {
 
   verify(
     attestationRef: string,
-    expected: Omit<RepositoryPreflightAttestationClaims, 'issuedAt'>
+    expected: Omit<RepositoryPreflightAttestationClaims, 'issuedAt'>,
+    now = new Date()
   ): boolean {
     const prefix = 'attestation://sast-preflight/v1/';
     if (
@@ -59,9 +63,13 @@ export class RepositoryPreflightAttestationService {
       const claims = JSON.parse(
         Buffer.from(payload, 'base64url').toString('utf8')
       ) as RepositoryPreflightAttestationClaims;
+      const issuedAt = Date.parse(claims.issuedAt);
       return (
         this.canonical(claims) === Buffer.from(payload, 'base64url').toString('utf8') &&
-        Number.isFinite(Date.parse(claims.issuedAt)) &&
+        Number.isFinite(issuedAt) &&
+        issuedAt <=
+          now.getTime() + MAX_PREFLIGHT_ATTESTATION_CLOCK_SKEW_MS &&
+        issuedAt >= now.getTime() - MAX_PREFLIGHT_ATTESTATION_AGE_MS &&
         claims.attemptId === expected.attemptId &&
         claims.fixedCommitSha === expected.fixedCommitSha &&
         claims.pathPolicyVersion === expected.pathPolicyVersion &&

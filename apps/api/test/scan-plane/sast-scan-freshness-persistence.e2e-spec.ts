@@ -37,10 +37,16 @@ describe('SAST scan freshness and retry persistence contract', () => {
     expect(migration).toContain(
       'SastScanFreshnessDecision_coverage_scope_fkey'
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       'SastScanCoverageDecision_comparison_scope_key'
     );
-    expect(migration).toMatch(
+    expect(onlineSchema).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastScanCoverageDecision_comparison_scope_key"'
+    );
+    expect(migration).not.toContain(
+      'CREATE UNIQUE INDEX "SastScanCoverageDecision_comparison_scope_key"'
+    );
+    expect(onlineSchema).toMatch(
       /FOREIGN KEY \("previousCoverageDecisionId", "tenantId", "repositoryBindingId", "previousScanRequestId"\)/u
     );
     expect(migration).toContain(
@@ -58,26 +64,41 @@ describe('SAST scan freshness and retry persistence contract', () => {
     expect(migration).toContain(
       'SastScanAttempt_retryDecisionId_fkey'
     );
+    expect(migration).toMatch(
+      /SastScanAttempt_retryDecisionId_fkey[\s\S]{0,220}NOT VALID/u
+    );
+    expect(onlineSchema).toContain(
+      'SastScanAttempt_retryDecisionId_key'
+    );
+    expect(onlineSchema).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastScanAttempt_retryDecisionId_key"'
+    );
+    expect(onlineSchema).toContain(
+      'SastScanAttempt_retryDecisionId_fkey'
+    );
+    expect(migration).toMatch(
+      /SastScanAttempt_retry_authority_check[\s\S]{0,260}NOT VALID/u
+    );
   });
 
   it('replaces the T039 permanent check while preserving its immutable source row', () => {
     expect(migration).toContain(
-      'DROP CONSTRAINT "SastExternalPublicationDecision_contract_check"'
-    );
-    expect(migration).toContain(
       'SastExternalPublicationDecision_t039_source_check'
     );
-    expect(migration).toContain(
+    expect(migration).toMatch(
+      /SastExternalPublicationDecision_t039_source_check[\s\S]{0,500}NOT VALID/u
+    );
+    expect(migration).not.toContain(
       'VALIDATE CONSTRAINT "SastExternalPublicationDecision_t039_source_check"'
     );
-    expect(
-      migration.indexOf(
-        'VALIDATE CONSTRAINT "SastExternalPublicationDecision_t039_source_check"'
-      )
-    ).toBeLessThan(
-      migration.indexOf(
-        'DROP CONSTRAINT "SastExternalPublicationDecision_contract_check"'
-      )
+    expect(migration).not.toContain(
+      'DROP CONSTRAINT "SastExternalPublicationDecision_contract_check"'
+    );
+    expect(onlineSchema).toContain(
+      "replacement: 'SastExternalPublicationDecision_t039_source_check'"
+    );
+    expect(onlineSchema).toContain(
+      "name: 'SastExternalPublicationDecision_contract_check'"
     );
     expect(migration).toContain(
       'SastScanFreshnessDecision_contract_check'
@@ -104,6 +125,13 @@ describe('SAST scan freshness and retry persistence contract', () => {
     expect(store).toContain('coverageLedgerMatchesDecision');
     expect(store).toContain('buildSastScanCoverageRecordsPreimage');
     expect(store).toContain('verifyLifecycleSource');
+    expect(store).toContain(
+      'scanRequestId: { not: row.scanRequestId }'
+    );
+    expect(store).toContain(
+      'profileId: { in: compatibleProfileIds }'
+    );
+    expect(store).toContain('Denials are immutable audit evidence');
     expect(store).toContain("state: 'COMPLETE'");
     expect(store).toContain("staleStatus: 'FRESH'");
     expect(store).toContain("comparabilityStatus: 'COMPARABLE'");
@@ -122,6 +150,10 @@ describe('SAST scan freshness and retry persistence contract', () => {
     expect(runtimeStore).toContain('retryDecisionId: retryDecision?.id');
     expect(runtime).toContain('preflight: request.preflight');
     expect(runtime).toContain('verifyPreflight(request)');
+    expect(runtime).toContain('startedAt = admission.startedAt');
+    expect(service).toContain(
+      'startedAt: context.existingDecision.decidedAt'
+    );
     expect(attestation).toContain('effectivePreflight');
     expect(attestation).toContain('binding.attemptNumber === 1');
     expect(attestation).toMatch(

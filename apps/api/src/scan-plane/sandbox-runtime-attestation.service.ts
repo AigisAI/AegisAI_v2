@@ -46,7 +46,6 @@ export class SandboxRuntimeAttestationService {
     now = new Date(),
     ttlSeconds = MAX_SAST_SANDBOX_ATTESTATION_TTL_SECONDS
   ): SastSandboxRuntimeAttestation {
-    const preflight = this.effectivePreflight(binding);
     if (
       !Number.isSafeInteger(ttlSeconds) ||
       ttlSeconds < 1 ||
@@ -54,10 +53,13 @@ export class SandboxRuntimeAttestationService {
       !Number.isSafeInteger(binding.attemptNumber) ||
       binding.attemptNumber < 1 ||
       binding.attemptNumber > 2 ||
-      !preflight ||
       !isSastScanPlanValid(binding.plan) ||
       !isSastSandboxRuntimePolicyValid(binding.policy, binding.plan)
     ) {
+      throw new Error('Sandbox runtime attestation binding is invalid.');
+    }
+    const preflight = this.effectivePreflight(binding);
+    if (!preflight) {
       throw new Error('Sandbox runtime attestation binding is invalid.');
     }
 

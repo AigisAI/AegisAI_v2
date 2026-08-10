@@ -422,6 +422,9 @@ export class PrismaSastScanFreshnessStore
         };
       }
       const decision = input.decision;
+      // Denials are immutable audit evidence and intentionally consume this
+      // scan/attempt slot. Recovery requires a new scan request; a later
+      // mutable-authority snapshot must never rewrite an earlier denial.
       await transaction.sastScanRetryDecision.create({
         data: {
           id: decision.retryDecisionId,
@@ -501,6 +504,22 @@ export class PrismaSastScanFreshnessStore
     const requiredCapabilities = SAST_CAPABILITIES.filter((capability) =>
       profile.requiredCapabilities.includes(capability)
     );
+    const profileFamily = sastProfileFamily(
+      row.profileId as SastProfileId
+    );
+    const compatibleProfileIds = (
+      Object.keys(SAST_SCAN_PROFILES) as SastProfileId[]
+    ).filter((profileId) => {
+      const candidate = SAST_SCAN_PROFILES[profileId];
+      const candidateCapabilities = SAST_CAPABILITIES.filter(
+        (capability) =>
+          candidate.requiredCapabilities.includes(capability)
+      );
+      return (
+        sastProfileFamily(profileId) === profileFamily &&
+        sameCapabilities(candidateCapabilities, requiredCapabilities)
+      );
+    });
     const scope: SastScanFreshnessScope = {
       tenantId: row.tenantId,
       repositoryBindingId: row.repositoryBindingId,
@@ -519,14 +538,14 @@ export class PrismaSastScanFreshnessStore
       planDigest: row.planDigest as `sha256:${string}`,
       profileId: row.profileId as SastProfileId,
       profileDigest: row.profileDigest as `sha256:${string}`,
-      profileFamily: sastProfileFamily(row.profileId as SastProfileId),
+      profileFamily,
       requiredCapabilities,
       fingerprintVersion: SAST_FINDING_FINGERPRINT_VERSION,
       lifecycleEligibilityScope: lifecycleEligibilityScope({
         tenantId: row.tenantId,
         repositoryBindingId: row.repositoryBindingId,
         targetRef: row.targetRef,
-        profileFamily: sastProfileFamily(row.profileId as SastProfileId),
+        profileFamily,
         requiredCapabilities
       })
     };
@@ -537,6 +556,8 @@ export class PrismaSastScanFreshnessStore
         targetRef: row.targetRef,
         state: 'COMPLETE',
         id: { not: row.id },
+        scanRequestId: { not: row.scanRequestId },
+        profileId: { in: compatibleProfileIds },
         decidedAt: { lt: row.decidedAt },
         scanRequest: {
           completedAt: { not: null, lt: row.decidedAt }
@@ -984,6 +1005,16 @@ function lifecycleEligibilityScope(input: {
       SAST_FINDING_FINGERPRINT_VERSION,
       ...input.requiredCapabilities
     ].join('\0')
+  );
+}
+
+function sameCapabilities(
+  left: readonly SastCapability[],
+  right: readonly SastCapability[]
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((capability, index) => capability === right[index])
   );
 }
 

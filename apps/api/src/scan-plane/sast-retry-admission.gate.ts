@@ -3,8 +3,13 @@ import type {
 } from '@aegisai/shared';
 
 export type SastRetryAdmissionVerification =
-  | 'AUTHORIZED'
-  | 'REJECTED';
+  | {
+      outcome: 'AUTHORIZED';
+      startedAt: string;
+    }
+  | {
+      outcome: 'REJECTED';
+    };
 
 export abstract class SastRetryAdmissionGate {
   abstract authorize(
@@ -16,6 +21,6 @@ export abstract class SastRetryAdmissionGate {
 export class UnavailableSastRetryAdmissionGate
   extends SastRetryAdmissionGate {
   async authorize(): Promise<SastRetryAdmissionVerification> {
-    return 'REJECTED';
+    return { outcome: 'REJECTED' };
   }
 }

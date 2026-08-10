@@ -430,17 +430,21 @@ portion of Phase 6:
   scope foreign keys without putting an online-index dependency in the transactional Prisma
   migration.
 - The immutable T039 source row still stores external comment, blocking status, AI advisory,
-  and lifecycle mutation as false. T040 drops the old permanent constraint name and replaces
-  it with a T039-source constraint plus independent `sast-scan-freshness-v1` authority rows;
-  it never rewrites or weakens exact T039 replay.
+  and lifecycle mutation as false. T040 adds its replacement constraint `NOT VALID`; the
+  mandatory online-schema step validates it before dropping the old permanent constraint,
+  builds the populated coverage-comparison and attempt retry-decision indexes concurrently,
+  and then installs or validates their dependent foreign keys. Independent
+  `sast-scan-freshness-v1` rows never rewrite or weaken exact T039 replay.
 - T040 rebinds tenant, repository, provider, target, fixed commit, scan, attempt, approved
   profile/plan, canonical scan key, required capability set, `sast-fingerprint-v1`, and a
   canonical lifecycle-eligibility scope. A provider-authoritative, monotonic target-head
   observation must match the fixed commit exactly. The default observer is unavailable, so
   deployments without a read-only provider adapter remain fail closed.
-- Comparability requires the immediately preceding completed `COMPLETE` coverage source in
-  the same tenant/repository/target, a supported profile family, the exact required capability
-  set, fingerprint version, and lifecycle-eligibility scope. Only `VERIFIED` + `FRESH` +
+- Comparability selects the newest completed `COMPLETE` coverage source from a different scan
+  request in the same tenant/repository/target with a compatible profile family and exact
+  required capability set; a current-scan attempt or incompatible profile cannot mask an older
+  valid predecessor. Fingerprint version and lifecycle-eligibility scope also match. Only
+  `VERIFIED` + `FRESH` +
   `COMPARABLE` marks comment/block eligibility and lets the T037 gate verify lifecycle input.
   The T037 consumer performs another provider-head read and rejects if the target advanced
   after the stored decision. This is eligibility only: T040 creates no SCM write, publisher
@@ -452,8 +456,11 @@ portion of Phase 6:
   canonical scan identity and plan digest, and requires a new attempt, sandbox, and workload
   identity. Attempt three, cleanup failure, capacity/input/scanner/security failure, missing
   audit, unavailable safety authority, or changed scanner set is denied.
-  Attempt two refreshes its signed attempt-scoped preflight and sandbox attestations while
-  retaining the original fixed commit, inventory digest, canonical key, and immutable plan.
+  Attempt two refreshes its signed, at-most-60-second-old attempt-scoped preflight and sandbox
+  attestations while retaining the original fixed commit, inventory digest, canonical key,
+  and immutable plan. Exact allowed replay reuses the persisted decision time for attempt
+  creation; denied evidence permanently consumes that scan/attempt slot and recovery starts a
+  new scan request.
 - `ScanPlaneModule` now exports only `SastScanFreshnessService` as the sequential T040 handoff
   to T041. T039 coverage, T038 correlation, T037 lineage, T036 identity construction, T035
   redaction, and raw OpenGrep/Trivy/Syft normalization remain internal providers. There is

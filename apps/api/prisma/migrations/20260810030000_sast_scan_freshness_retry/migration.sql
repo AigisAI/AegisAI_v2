@@ -1,6 +1,6 @@
--- T039 remains an immutable zero-authority source ledger. Install and validate
--- the replacement before dropping the old name so rolling deploys never have
--- an unguarded write window.
+-- T039 remains an immutable zero-authority source ledger. Install the
+-- replacement without scanning the populated table; prisma:online-schema
+-- validates it before dropping the old name, so there is no unguarded window.
 ALTER TABLE "SastExternalPublicationDecision"
   ADD CONSTRAINT "SastExternalPublicationDecision_t039_source_check" CHECK (
     "externalCommentAllowed" = false
@@ -11,12 +11,6 @@ ALTER TABLE "SastExternalPublicationDecision"
     AND "staleStatus" = 'UNKNOWN'
     AND "comparabilityStatus" = 'UNKNOWN'
   ) NOT VALID;
-
-ALTER TABLE "SastExternalPublicationDecision"
-  VALIDATE CONSTRAINT "SastExternalPublicationDecision_t039_source_check";
-
-ALTER TABLE "SastExternalPublicationDecision"
-  DROP CONSTRAINT "SastExternalPublicationDecision_contract_check";
 
 CREATE TABLE "SastLatestTargetObservation" (
   "id" TEXT NOT NULL,
@@ -231,8 +225,6 @@ CREATE INDEX "SastLatestTargetObservation_latest_idx"
 
 CREATE UNIQUE INDEX "SastScanFreshnessDecision_coverageDecisionId_key"
   ON "SastScanFreshnessDecision"("coverageDecisionId");
-CREATE UNIQUE INDEX "SastScanCoverageDecision_comparison_scope_key"
-  ON "SastScanCoverageDecision"("id", "tenantId", "repositoryBindingId", "scanRequestId");
 CREATE UNIQUE INDEX "SastScanFreshnessDecision_decisionDigest_key"
   ON "SastScanFreshnessDecision"("decisionDigest");
 CREATE UNIQUE INDEX "SastScanFreshnessDecision_scope_key"
@@ -264,8 +256,9 @@ CREATE INDEX "SastScanRetryDecision_previousAttemptId_idx"
   ON "SastScanRetryDecision"("previousAttemptId");
 CREATE INDEX "SastScanRetryDecision_previousFinalAuditEventId_idx"
   ON "SastScanRetryDecision"("previousFinalAuditEventId");
-CREATE UNIQUE INDEX "SastScanAttempt_retryDecisionId_key"
-  ON "SastScanAttempt"("retryDecisionId");
+
+-- Unique indexes added to the populated coverage and attempt tables are built
+-- concurrently by the mandatory prisma:online-schema deployment step.
 
 ALTER TABLE "SastLatestTargetObservation"
   ADD CONSTRAINT "SastLatestTargetObservation_tenantId_fkey"
@@ -297,11 +290,6 @@ ALTER TABLE "SastScanFreshnessDecision"
   REFERENCES "SastScanCoverageDecision"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")
   ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "SastScanFreshnessDecision"
-  ADD CONSTRAINT "SastScanFreshnessDecision_previous_coverage_fkey"
-  FOREIGN KEY ("previousCoverageDecisionId", "tenantId", "repositoryBindingId", "previousScanRequestId")
-  REFERENCES "SastScanCoverageDecision"("id", "tenantId", "repositoryBindingId", "scanRequestId")
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "SastScanFreshnessDecision"
   ADD CONSTRAINT "SastScanFreshnessDecision_observation_scope_fkey"
   FOREIGN KEY ("observationId", "tenantId", "repositoryBindingId", "provider", "targetRef")
   REFERENCES "SastLatestTargetObservation"("id", "tenantId", "repositoryBindingId", "provider", "targetRef")
@@ -326,11 +314,11 @@ ALTER TABLE "SastScanRetryDecision"
   FOREIGN KEY ("previousAttemptId", "tenantId", "repositoryBindingId", "scanRequestId")
   REFERENCES "SastScanAttempt"("id", "tenantId", "repositoryBindingId", "scanRequestId")
   ON DELETE RESTRICT ON UPDATE CASCADE;
--- The final-audit scope FK depends on the concurrently installed
--- AuditEvent_final_attempt_scope_key and is added and validated by the
--- mandatory prisma:online-schema deployment step.
+-- The previous-coverage and final-audit scope FKs depend on concurrently
+-- installed referenced indexes and are added and validated by the mandatory
+-- prisma:online-schema deployment step.
 
 ALTER TABLE "SastScanAttempt"
   ADD CONSTRAINT "SastScanAttempt_retryDecisionId_fkey"
   FOREIGN KEY ("retryDecisionId") REFERENCES "SastScanRetryDecision"("id")
-  ON DELETE NO ACTION ON UPDATE NO ACTION;
+  ON DELETE NO ACTION ON UPDATE NO ACTION NOT VALID;

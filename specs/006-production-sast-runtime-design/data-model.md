@@ -722,11 +722,14 @@ durable state rejects without partial writes. T039 cannot synthesize a lifecycle
 - allow only from attempt one to attempt two for `RETRYABLE_INFRASTRUCTURE`, with a new
   attempt/sandbox/workload identity and clear, available mutable runtime safety authority
 - attempt two stores the decision foreign key; denied decisions remain durable audit evidence
-  and can never admit a sandbox
+  and permanently consume that scan/attempt slot, so they can never admit a sandbox
+- an exact allowed replay carries forward the persisted decision timestamp into attempt
+  creation rather than generating a conflicting second timestamp
 
 T040 creates these ledgers in bounded serializable transactions with exact replay. It drops
-the former permanent external-publication constraint name, reinstalls the immutable T039
-source invariant, and grants effective eligibility only from the independent freshness row.
+the former permanent external-publication constraint name only after the online-schema step
+validates the replacement invariant, builds populated-table indexes concurrently, and validates
+their dependent foreign keys. Effective eligibility comes only from the independent freshness row.
 `SastScanFreshnessService` is the only sequential Scan Plane handoff to T041.
 
 ### EvidenceFragment

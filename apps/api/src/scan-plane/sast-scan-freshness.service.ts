@@ -176,27 +176,31 @@ export class SastScanFreshnessService
 
   async authorize(
     request: Readonly<SastScannerWrapperExecutionRequest>,
-    decidedAt: string
+    proposedStartedAt: string
   ): Promise<SastRetryAdmissionVerification> {
     if (
       request.attemptNumber !== 2 ||
-      !isCanonicalTimestamp(decidedAt) ||
+      !isCanonicalTimestamp(proposedStartedAt) ||
       !isSastScannerWrapperExecutionRequestValid(request)
     ) {
-      return 'REJECTED';
+      return { outcome: 'REJECTED' };
     }
     try {
       const context = await this.store.loadRetryContext(request);
-      if (!context) return 'REJECTED';
+      if (!context) return { outcome: 'REJECTED' };
       if (context.existingDecision) {
         return isSastScanRetryDecisionShapeValid(
           context.existingDecision,
           digest
         ) &&
           context.existingDecision.retryAllowed &&
-          context.existingDecision.decidedAt === decidedAt
-          ? 'AUTHORIZED'
-          : 'REJECTED';
+          Date.parse(context.existingDecision.decidedAt) <=
+            Date.parse(proposedStartedAt)
+          ? {
+              outcome: 'AUTHORIZED',
+              startedAt: context.existingDecision.decidedAt
+            }
+          : { outcome: 'REJECTED' };
       }
       const authority = await this.retryRuntime
         .verify(context.evaluation.scope)
@@ -216,11 +220,11 @@ export class SastScanFreshnessService
           `${evaluation.scope.scanRequestId}\0${evaluation.scope.requestedAttemptId}`
         ),
         evaluation,
-        decidedAt,
+        decidedAt: proposedStartedAt,
         digestCanonical: digest
       });
       if (!isSastScanRetryDecisionShapeValid(decision, digest)) {
-        return 'REJECTED';
+        return { outcome: 'REJECTED' };
       }
       const persisted = await this.store.persistRetryDecision({
         context,
@@ -230,10 +234,10 @@ export class SastScanFreshnessService
         persisted.decisionDigest === decision.decisionDigest &&
         persisted.retryAllowed &&
         decision.retryAllowed
-        ? 'AUTHORIZED'
-        : 'REJECTED';
+        ? { outcome: 'AUTHORIZED', startedAt: decision.decidedAt }
+        : { outcome: 'REJECTED' };
     } catch {
-      return 'REJECTED';
+      return { outcome: 'REJECTED' };
     }
   }
 

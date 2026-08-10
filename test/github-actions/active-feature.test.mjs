@@ -1203,8 +1203,16 @@ test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () =
     );
   }
   assert.match(
-    freshnessMigration,
-    /DROP CONSTRAINT "SastExternalPublicationDecision_contract_check"/
+    onlineSchema,
+    /SastExternalPublicationDecision_contract_check[\s\S]{0,160}SastExternalPublicationDecision_t039_source_check/
+  );
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastScanCoverageDecision_comparison_scope_key"/
+  );
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastScanAttempt_retryDecisionId_key"/
   );
   for (const constraint of [
     'scanner_scope_fkey',

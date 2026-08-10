@@ -169,7 +169,7 @@ describe('SastScanFreshnessService', () => {
     expect(store.lifecycleDecision).toBeUndefined();
   });
 
-  it('rejects a same-sequence lifecycle observation replay', async () => {
+  it('rejects a rolled-back lifecycle observation sequence', async () => {
     const store = new MemoryFreshnessStore(freshnessContext());
     store.lifecycleVerification = 'MATCHED';
     const decision = lifecycleDecision();

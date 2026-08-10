@@ -275,13 +275,17 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   verification require exact durable T039 `COMPLETE`, a provider-authoritative monotonic head
   equal to the fixed commit, and an exact prior-scan tenant/repository/target/profile-family/
   capability/fingerprint/lifecycle-scope comparison. Every unavailable, invalid, stale, or
-  incomparable fixture produces zero authority and zero publication attempts.
+  incomparable fixture produces zero authority and zero publication attempts. Current-scan
+  attempt rows and incompatible profiles cannot mask the newest older compatible source.
 - 100% T040 retry-fence invariant: only attempt one `FAILED` with
   `RETRYABLE_INFRASTRUCTURE`, retry eligibility, completion, exact final audit, unchanged and
   available scanner set, clear kill-switch authority, and fresh attempt/sandbox/workload
-  identities may admit attempt two. Attempt three and every other failure class produce zero
-  sandbox admissions. `SastScanFreshnessService` is the only sequential Scan Plane handoff to
-  T041.
+  identities plus a signed, attempt-bound preflight no more than 60 seconds old may admit
+  attempt two. Exact allowed replay reuses the persisted authorization timestamp after an
+  interrupted attempt insert; denied decisions remain permanent audit evidence. Attempt three
+  and every other failure class produce zero sandbox admissions. Populated-table indexes are
+  built concurrently before dependent foreign-key validation. `SastScanFreshnessService` is
+  the only sequential Scan Plane handoff to T041.
 
 ## Canary and Continuous Production Gates
 

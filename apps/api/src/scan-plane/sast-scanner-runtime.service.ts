@@ -90,18 +90,21 @@ export class SastScannerRuntimeService {
       );
     }
 
-    const startedAt = new Date().toISOString();
+    let startedAt = new Date().toISOString();
     const attemptDeadlineAt =
       request.sandboxAttestation.claims.attemptDeadlineAt;
-    if (
-      request.attemptNumber === 2 &&
-      (await this.retryAdmission.authorize(request, startedAt)) !==
-        'AUTHORIZED'
-    ) {
-      throw securityViolation(
-        'SCAN_ATTEMPT_RETRY_NOT_ELIGIBLE',
-        'Attempt two requires a durable T040 infrastructure-only retry decision.'
+    if (request.attemptNumber === 2) {
+      const admission = await this.retryAdmission.authorize(
+        request,
+        startedAt
       );
+      if (admission.outcome !== 'AUTHORIZED') {
+        throw securityViolation(
+          'SCAN_ATTEMPT_RETRY_NOT_ELIGIBLE',
+          'Attempt two requires a durable T040 infrastructure-only retry decision.'
+        );
+      }
+      startedAt = admission.startedAt;
     }
     await this.store.beginAttempt(request, startedAt);
 

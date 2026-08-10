@@ -70,6 +70,7 @@ const repositoryEntries = [
 
 class InMemoryRuntimeStore extends SastScannerRuntimeStore {
   began = false;
+  beganAt?: string;
   stages: string[] = [];
   scannerRuns: SastScannerExecutionRecord[] = [];
   begunScannerRunIds: string[] = [];
@@ -78,8 +79,12 @@ class InMemoryRuntimeStore extends SastScannerRuntimeStore {
   finished?: FinishSastAttemptInput;
   credentialCleanupDurable = true;
 
-  beginAttempt(): Promise<void> {
+  beginAttempt(
+    _request: SastScannerWrapperExecutionRequest,
+    startedAt: string
+  ): Promise<void> {
     this.began = true;
+    this.beganAt = startedAt;
     return Promise.resolve();
   }
 
@@ -643,7 +648,11 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
   });
 
   it('uses a fresh attempt-scoped preflight and sandbox only after T040 authorization', async () => {
-    const authorize = jest.fn().mockResolvedValue('AUTHORIZED');
+    const persistedStartedAt = '2026-08-10T03:05:00.000Z';
+    const authorize = jest.fn().mockResolvedValue({
+      outcome: 'AUTHORIZED',
+      startedAt: persistedStartedAt
+    });
     const harness = buildHarness({
       retryAdmission: { authorize } as SastRetryAdmissionGate
     });
@@ -663,12 +672,16 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
       harness.request.plan.canonicalScanKey
     );
     expect(harness.store.began).toBe(true);
+    expect(harness.store.beganAt).toBe(persistedStartedAt);
   });
 
   it('rejects attempt two when it reuses the original preflight attestation', async () => {
     const harness = buildHarness({
       retryAdmission: {
-        authorize: jest.fn().mockResolvedValue('AUTHORIZED')
+        authorize: jest.fn().mockResolvedValue({
+          outcome: 'AUTHORIZED',
+          startedAt: '2026-08-10T03:05:00.000Z'
+        })
       } as SastRetryAdmissionGate
     });
     const request = retryRequest(harness);
@@ -681,7 +694,10 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
   });
 
   it('verifies the fresh attempt-two preflight before retry admission', async () => {
-    const authorize = jest.fn().mockResolvedValue('AUTHORIZED');
+    const authorize = jest.fn().mockResolvedValue({
+      outcome: 'AUTHORIZED',
+      startedAt: '2026-08-10T03:05:00.000Z'
+    });
     const harness = buildHarness({
       retryAdmission: { authorize } as SastRetryAdmissionGate
     });
@@ -707,6 +723,60 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
     expect(authorize).not.toHaveBeenCalled();
     expect(harness.store.began).toBe(false);
     expect(harness.provider.readRepositoryManifest).not.toHaveBeenCalled();
+  });
+
+  it('rejects a stale signed attempt-two preflight before retry admission', async () => {
+    const authorize = jest.fn().mockResolvedValue({
+      outcome: 'AUTHORIZED',
+      startedAt: '2026-08-10T03:05:00.000Z'
+    });
+    const harness = buildHarness({
+      retryAdmission: { authorize } as SastRetryAdmissionGate
+    });
+    const request = retryRequest(harness);
+    request.preflight = {
+      ...request.preflight,
+      attestationRef: harness.preflightAttestation.issue(
+        {
+          attemptId: request.attemptId,
+          fixedCommitSha: request.plan.repositoryState.fixedCommitSha,
+          pathPolicyVersion: request.preflight.pathPolicyVersion,
+          inventoryDigest: request.preflight.inventoryDigest,
+          decision: request.preflight.decision
+        },
+        new Date(Date.now() - 65_000)
+      )
+    };
+    request.sandboxAttestation = harness.attestation.issue({
+      plan: request.plan,
+      attemptId: request.attemptId,
+      attemptNumber: request.attemptNumber,
+      sandboxId: request.sandboxId,
+      workloadIdentityRef: request.workloadIdentityRef,
+      policy: harness.adapter.buildPolicy(request.plan),
+      preflight: request.preflight
+    });
+
+    await expect(harness.runtime.execute(request)).rejects.toMatchObject({
+      reasonCode: 'PREFLIGHT_ATTESTATION_INVALID'
+    });
+    expect(authorize).not.toHaveBeenCalled();
+    expect(harness.store.began).toBe(false);
+  });
+
+  it('reports the canonical binding error before deriving preflight from an invalid plan', () => {
+    const harness = buildHarness();
+
+    expect(() =>
+      harness.attestation.issue({
+        plan: undefined as never,
+        attemptId: harness.request.attemptId,
+        attemptNumber: harness.request.attemptNumber,
+        sandboxId: harness.request.sandboxId,
+        workloadIdentityRef: harness.request.workloadIdentityRef,
+        policy: harness.adapter.buildPolicy(harness.request.plan)
+      })
+    ).toThrow('Sandbox runtime attestation binding is invalid.');
   });
 
   it('persists the canonical infrastructure-only T040 decision before attempt two', async () => {
@@ -735,6 +805,35 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
       requestedSandboxId: 'sandbox-runtime-2',
       canonicalScanKey: request.plan.canonicalScanKey
     });
+  });
+
+  it('reuses the persisted retry timestamp when attempt creation is retried', async () => {
+    const retryStore = new MemoryRetryFreshnessStore();
+    const gate = new SastScanFreshnessService(
+      retryStore,
+      new UnavailableSastLatestTargetAuthority(),
+      new ClearRetryRuntimeAuthority()
+    );
+    const harness = buildHarness({ retryAdmission: gate });
+    const request = retryRequest(harness);
+    const beginAttempt = jest.spyOn(harness.store, 'beginAttempt');
+    beginAttempt.mockRejectedValueOnce(
+      new Error('simulated attempt persistence interruption')
+    );
+
+    await expect(harness.runtime.execute(request)).rejects.toThrow(
+      'simulated attempt persistence interruption'
+    );
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    await expect(harness.runtime.execute(request)).resolves.toMatchObject({
+      attemptNumber: 2,
+      stage: 'COMPLETED'
+    });
+
+    expect(retryStore.persistedDecision?.retryAllowed).toBe(true);
+    expect(harness.store.beganAt).toBe(
+      retryStore.persistedDecision?.decidedAt
+    );
   });
 
   it('rejects caller command fields and any egress-enabled sandbox policy', async () => {
@@ -1044,7 +1143,7 @@ class MemoryRetryFreshnessStore extends SastScanFreshnessStore {
         durableCanonicalScanKey: request.plan.canonicalScanKey,
         durablePlanDigest: planDigest
       },
-      existingDecision: null
+      existingDecision: this.persistedDecision ?? null
     };
   }
 

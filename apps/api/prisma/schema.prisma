@@ -546,6 +546,7 @@ model SastScanAttempt {
   cleanupEvidence       Json?
   cleanupEvidenceDigest String?
   finalAuditEventId     String?               @unique
+  // The unique index is installed concurrently by prisma:online-schema.
   retryDecisionId       String?               @unique
   startedAt             DateTime
   attemptDeadlineAt     DateTime
@@ -1185,6 +1186,7 @@ model SastScanCoverageDecision {
   comparisonFor       SastScanFreshnessDecision[]      @relation("SastScanFreshnessPreviousCoverage")
 
   @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanCoverageDecision_scope_key")
+  // Installed concurrently by the mandatory prisma:online-schema step.
   @@unique([id, tenantId, repositoryBindingId, scanRequestId], map: "SastScanCoverageDecision_comparison_scope_key")
   @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId, correlationBatchId], map: "SastScanCoverageDecision_record_scope_key")
   @@unique([correlationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanCoverageDecision_correlation_scope_key")

@@ -1096,17 +1096,21 @@ byte-exactly the scan's fixed commit. Missing authority is `UNAVAILABLE`/`UNKNOW
 future, rolled-back, or cross-scope observation is invalid; a different head is `STALE`.
 The default adapter is unavailable and therefore cannot authorize publication or lifecycle.
 
-Comparability requires the previous completed `COMPLETE` T039 source in the same tenant,
-repository, and target plus the exact supported profile family, required capability set,
-fingerprint version, and lifecycle-eligibility scope. Only complete coverage with
+Comparability selects the newest completed `COMPLETE` T039 source from a different scan
+request in the same tenant, repository, and target whose supported profile family and required
+capability set are compatible; an attempt-one row from the current scan and an incompatible
+profile cannot hide an older valid predecessor. Fingerprint version and lifecycle-eligibility
+scope must also match exactly. Only complete coverage with
 `VERIFIED`, `FRESH`, and `COMPARABLE` state creates comment/block eligibility and permits the
 T037 lifecycle gate to reverify its exact source. The decision keeps `aiAdvisoryAllowed=false`
 and `publicationAttempted=false`; T040 installs neither an SCM writer nor a publisher route.
 The lifecycle consumer performs another authoritative head read and rejects when the target
 has advanced since the stored decision.
-The original T039 external-publication object remains immutable for exact replay. The
-`SastExternalPublicationDecision_contract_check` migration is replaced by a named T039-source
-constraint before the independent T040 authority table is accepted.
+The original T039 external-publication object remains immutable for exact replay. The migration
+adds the named T039-source constraint `NOT VALID`; the mandatory online-schema step validates
+it and only then removes `SastExternalPublicationDecision_contract_check`. Existing-table
+comparison and retry indexes are built concurrently, and their dependent foreign keys are
+installed or validated afterward.
 
 `sast-scan-retry-decision-v1` is durable before attempt-two admission. Allow requires the
 immediately preceding attempt one to be terminal `FAILED`, classified
@@ -1114,8 +1118,12 @@ immediately preceding attempt one to be terminal `FAILED`, classified
 `sandbox.terminated` audit event. It revalidates current scanner-set availability and
 kill-switch state while preserving the original canonical scan key, immutable plan digest,
 and scanner-set digest. Attempt, sandbox, and workload identities must all be new. Attempt
-two also carries fresh attempt-scoped preflight and sandbox attestations over the unchanged
-fixed commit and inventory digest; the original canonical plan remains immutable. Attempt
+two also carries signed, attempt-bound preflight evidence issued within 60 seconds and a fresh
+sandbox attestation over the unchanged fixed commit and inventory digest; the original
+canonical plan remains immutable. An allowed decision replay reuses its original `decidedAt`
+as the attempt start timestamp so an interruption between decision persistence and attempt
+creation cannot strand attempt two. Denied rows are permanent audit evidence for that
+scan/attempt slot; reevaluation requires a new scan request. Attempt
 three, cleanup failure, capacity/input/scanner/security failure, missing audit, changed or
 unavailable scanner set, active/unavailable kill-switch authority, and identity reuse deny.
 All target, freshness, and retry ledgers use bounded serializable writes and exact replay.

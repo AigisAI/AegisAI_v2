@@ -46,7 +46,8 @@ test('grants only eligibility for independently verified fresh comparable covera
     true
   );
 
-  const { decisionDigest: _digest, ...core } = decision;
+  const core = { ...decision };
+  delete core.decisionDigest;
   const forgedCore = {
     ...core,
     observationId: null,
