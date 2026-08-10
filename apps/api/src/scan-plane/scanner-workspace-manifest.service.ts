@@ -27,27 +27,7 @@ export class ScannerWorkspaceManifestService {
     manifest: SastScannerRepositoryManifest,
     now = new Date()
   ): SastRepositoryPreflightResult {
-    if (!isSastScannerWrapperExecutionRequestValid(request)) {
-      throw securityViolation(
-        'SCANNER_PLAN_BINDING_INVALID',
-        'Scanner request is not bound to an immutable plan.'
-      );
-    }
-
-    if (
-      !this.preflightAttestation.verify(request.preflight.attestationRef, {
-        attemptId: request.attemptId,
-        fixedCommitSha: request.plan.repositoryState.fixedCommitSha,
-        pathPolicyVersion: request.preflight.pathPolicyVersion,
-        inventoryDigest: request.preflight.inventoryDigest,
-        decision: request.preflight.decision
-      })
-    ) {
-      throw securityViolation(
-        'PREFLIGHT_ATTESTATION_INVALID',
-        'Preflight attestation is missing, invalid, or stale for this attempt.'
-      );
-    }
+    this.verifyPreflight(request);
 
     const observedAt =
       typeof manifest?.observedAt === 'string'
@@ -139,6 +119,30 @@ export class ScannerWorkspaceManifestService {
     }
 
     return evaluated;
+  }
+
+  verifyPreflight(request: SastScannerWrapperExecutionRequest): void {
+    if (!isSastScannerWrapperExecutionRequestValid(request)) {
+      throw securityViolation(
+        'SCANNER_PLAN_BINDING_INVALID',
+        'Scanner request is not bound to an immutable plan.'
+      );
+    }
+
+    if (
+      !this.preflightAttestation.verify(request.preflight.attestationRef, {
+        attemptId: request.attemptId,
+        fixedCommitSha: request.plan.repositoryState.fixedCommitSha,
+        pathPolicyVersion: request.preflight.pathPolicyVersion,
+        inventoryDigest: request.preflight.inventoryDigest,
+        decision: request.preflight.decision
+      })
+    ) {
+      throw securityViolation(
+        'PREFLIGHT_ATTESTATION_INVALID',
+        'Preflight attestation is missing, invalid, or stale for this attempt.'
+      );
+    }
   }
 
   private hasOnlyKeys(value: unknown, allowedKeys: readonly string[]): boolean {

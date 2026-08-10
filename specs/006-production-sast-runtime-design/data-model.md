@@ -680,7 +680,7 @@ values and never becomes lifecycle, coverage, evidence, policy, publication, or 
 - deterministic `sast-publication://<sha256>` ID and one-to-one composite coverage binding
 - T039 invariant false external comment, blocking status, AI advisory, and lifecycle mutation
 - latest-target authority `UNAVAILABLE`, stale status `UNKNOWN`, and comparability `UNKNOWN`
-  until T040 installs its independent comparison gate
+  as the immutable T039 source projection consumed by T040
 - ordered denial reasons, canonical decision object, timestamp, and unique digest
 
 `PENDING` is returned as a canonical non-durable evaluation and is never inserted into these
@@ -690,6 +690,47 @@ bounded serializable transaction. Exact
 replay returns the existing ledger; changed, missing, extra, reordered, cross-scope, or late
 durable state rejects without partial writes. T039 cannot synthesize a lifecycle-compatible
 `stale=false`/`comparable=true` projection from complete coverage alone.
+
+### SastLatestTargetObservation
+
+- deterministic `sast-target-observation://<sha256>` ID and unique
+  tenant/repository/provider/target/sequence binding
+- provider-authoritative fixed head commit, strictly positive monotonic sequence, observer
+  reference, observed time, canonical object, and digest
+- composite repository scope foreign key and latest-target index; no credential, repository
+  content, SCM write principal, comment, status, or AI payload
+
+### SastScanFreshnessDecision
+
+- deterministic `sast-freshness://<sha256>` ID and one-to-one T039 coverage binding
+- exact tenant/repository/provider/target/fixed-commit/scan/attempt/profile/plan/canonical-key
+  rebinding plus ordered required capabilities, `sast-fingerprint-v1`, and lifecycle scope
+- optional composite target observation and previous completed coverage references whose
+  identifier/digest/commit tuples are all-null or all-present
+- `VERIFIED | UNAVAILABLE | INVALID`, `FRESH | STALE | UNKNOWN`, and
+  `COMPARABLE | INCOMPARABLE | UNKNOWN` states with ordered fail-closed reasons
+- comment/block eligibility and lifecycle mutation can be true only together for complete,
+  verified, fresh, comparable state with zero reasons; AI and publication-attempt flags are
+  database-enforced false
+
+### SastScanRetryDecision
+
+- deterministic `sast-retry://<sha256>` ID and unique requested attempt/sandbox/workload
+  identities plus one decision per scan/attempt number
+- exact original canonical scan key, plan and scanner-set digest, immediately preceding
+  attempt scope, failure/completion/final-audit binding, and current safety snapshot digests
+- allow only from attempt one to attempt two for `RETRYABLE_INFRASTRUCTURE`, with a new
+  attempt/sandbox/workload identity and clear, available mutable runtime safety authority
+- attempt two stores the decision foreign key; denied decisions remain durable audit evidence
+  and permanently consume that scan/attempt slot, so they can never admit a sandbox
+- an exact allowed replay carries forward the persisted decision timestamp into attempt
+  creation rather than generating a conflicting second timestamp
+
+T040 creates these ledgers in bounded serializable transactions with exact replay. It drops
+the former permanent external-publication constraint name only after the online-schema step
+validates the replacement invariant, builds populated-table indexes concurrently, and validates
+their dependent foreign keys. Effective eligibility comes only from the independent freshness row.
+`SastScanFreshnessService` is the only sequential Scan Plane handoff to T041.
 
 ### EvidenceFragment
 

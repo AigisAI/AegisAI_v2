@@ -102,6 +102,24 @@ import {
   SastScanCoverageService
 } from './sast-scan-coverage.service';
 import {
+  PrismaSastScanFreshnessStore
+} from './prisma-sast-scan-freshness.store';
+import {
+  SastScanFreshnessStore
+} from './sast-scan-freshness.store';
+import {
+  SastScanFreshnessService
+} from './sast-scan-freshness.service';
+import {
+  SastLatestTargetAuthority,
+  UnavailableSastLatestTargetAuthority
+} from './sast-latest-target-authority';
+import {
+  SastRetryRuntimeAuthority,
+  UnavailableSastRetryRuntimeAuthority
+} from './sast-retry-runtime-authority';
+import { SastRetryAdmissionGate } from './sast-retry-admission.gate';
+import {
   SastFindingRenameAttestationVerifier,
   UnavailableSastFindingRenameAttestationVerifier
 } from './sast-finding-rename-attestation.verifier';
@@ -130,6 +148,7 @@ import {
     SastFindingLineageService,
     SastFindingCorrelationService,
     SastScanCoverageService,
+    SastScanFreshnessService,
     PrismaSastFindingLineageStore,
     {
       provide: SastFindingLineageStore,
@@ -145,6 +164,21 @@ import {
       provide: SastScanCoverageStore,
       useExisting: PrismaSastScanCoverageStore
     },
+    PrismaSastScanFreshnessStore,
+    {
+      provide: SastScanFreshnessStore,
+      useExisting: PrismaSastScanFreshnessStore
+    },
+    UnavailableSastLatestTargetAuthority,
+    {
+      provide: SastLatestTargetAuthority,
+      useExisting: UnavailableSastLatestTargetAuthority
+    },
+    UnavailableSastRetryRuntimeAuthority,
+    {
+      provide: SastRetryRuntimeAuthority,
+      useExisting: UnavailableSastRetryRuntimeAuthority
+    },
     UnavailableSastFindingRenameAttestationVerifier,
     {
       provide: SastFindingRenameAttestationVerifier,
@@ -153,7 +187,11 @@ import {
     },
     {
       provide: SastFindingLifecycleCoverageGate,
-      useExisting: SastScanCoverageService
+      useExisting: SastScanFreshnessService
+    },
+    {
+      provide: SastRetryAdmissionGate,
+      useExisting: SastScanFreshnessService
     },
     SastArtifactDispositionService,
     SastArtifactDispositionTask,
@@ -229,7 +267,7 @@ import {
     RepositoryPreflightService,
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
-    SastScanCoverageService
+    SastScanFreshnessService
   ]
 })
 export class ScanPlaneModule {}

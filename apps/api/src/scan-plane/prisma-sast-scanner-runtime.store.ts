@@ -4,11 +4,13 @@ import {
   SAST_SANDBOX_CLEANUP_TIMEOUT_SECONDS,
   buildSastScanPlanDigestPreimage,
   isSastScanPlanValid,
+  isSastScanRetryDecisionShapeValid,
   type SastScannerExecutionRecord,
   type SastScannerInvocation,
   type SastScannerRuntimeAuditSignal,
   type SastScannerWrapperExecutionRequest,
-  type SastScanPlan
+  type SastScanPlan,
+  type SastScanRetryDecision
 } from '@aegisai/shared';
 import { Injectable } from '@nestjs/common';
 import {
@@ -138,7 +140,10 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
               attemptNumber: 'desc'
             },
             select: {
+              id: true,
               attemptNumber: true,
+              sandboxId: true,
+              workloadIdentityRef: true,
               stage: true,
               failureClass: true,
               retryEligible: true,
@@ -159,6 +164,59 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
             );
           }
 
+          const retryDecision = request.attemptNumber === 2
+            ? await transaction.sastScanRetryDecision.findUnique({
+                where: { requestedAttemptId: request.attemptId },
+                select: { id: true, decision: true }
+              })
+            : null;
+          const canonicalRetryDecision = retryDecision?.decision as unknown as
+            | SastScanRetryDecision
+            | undefined;
+          if (
+            request.attemptNumber === 2 &&
+            (!retryDecision ||
+              !canonicalRetryDecision ||
+              !isSastScanRetryDecisionShapeValid(
+                canonicalRetryDecision,
+                (value) => this.digest(value)
+              ) ||
+              !canonicalRetryDecision.retryAllowed ||
+              canonicalRetryDecision.decidedAt !== startedAt ||
+              canonicalRetryDecision.scope.tenantId !==
+                request.plan.tenantId ||
+              canonicalRetryDecision.scope.repositoryBindingId !==
+                request.plan.repositoryState.repositoryBindingId ||
+              canonicalRetryDecision.scope.scanRequestId !==
+                request.plan.scanRequestId ||
+              canonicalRetryDecision.scope.requestedAttemptId !==
+                request.attemptId ||
+              canonicalRetryDecision.scope.requestedAttemptNumber !== 2 ||
+              canonicalRetryDecision.scope.requestedSandboxId !==
+                request.sandboxId ||
+              canonicalRetryDecision.scope.requestedWorkloadIdentityRef !==
+                request.workloadIdentityRef ||
+              canonicalRetryDecision.scope.previousAttemptId !==
+                latestAttempt?.id ||
+              canonicalRetryDecision.scope.previousAttemptNumber !==
+                latestAttempt?.attemptNumber ||
+              canonicalRetryDecision.scope.previousSandboxId !==
+                latestAttempt?.sandboxId ||
+              canonicalRetryDecision.scope.previousWorkloadIdentityRef !==
+                latestAttempt?.workloadIdentityRef ||
+              canonicalRetryDecision.scope.canonicalScanKey !==
+                request.plan.canonicalScanKey ||
+              canonicalRetryDecision.scope.planDigest !==
+                this.planDigest(request.plan) ||
+              canonicalRetryDecision.scope.originalScannerSetDigest !==
+                request.plan.scannerSet.scannerSetDigest)
+          ) {
+            throw securityViolation(
+              'SCAN_ATTEMPT_RETRY_DECISION_INVALID',
+              'Attempt two is not bound to an exact durable T040 retry decision.'
+            );
+          }
+
           await transaction.sastScanAttempt.create({
             data: {
               id: request.attemptId,
@@ -171,6 +229,7 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
               workloadIdentityRef: request.workloadIdentityRef,
               stage: 'VALIDATING',
               retryEligible: false,
+              retryDecisionId: retryDecision?.id,
               startedAt: new Date(startedAt),
               attemptDeadlineAt: new Date(
                 request.sandboxAttestation.claims.attemptDeadlineAt

@@ -114,10 +114,11 @@ describe('SAST scan coverage persistence contract', () => {
     );
   });
 
-  it('exposes only the T039 handoff and opens no route or SCM writer', () => {
+  it('keeps T039 internal after exposing only the T040 sequential handoff', () => {
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ?? '';
-    expect(exportsBlock).toContain('SastScanCoverageService');
+    expect(exportsBlock).toContain('SastScanFreshnessService');
+    expect(exportsBlock).not.toContain('SastScanCoverageService');
     expect(exportsBlock).not.toContain(
       'SastFindingCorrelationService'
     );
@@ -128,7 +129,7 @@ describe('SAST scan coverage persistence contract', () => {
     expect(exportsBlock).not.toContain('TrivyJsonNormalizer');
     expect(exportsBlock).not.toContain('SyftCycloneDxInventoryIngestor');
     expect(module).toMatch(
-      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastScanCoverageService/
+      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastScanFreshnessService/
     );
     expect(service).not.toMatch(/\bLogger\b|\bconsole\./u);
     expect(service).not.toMatch(

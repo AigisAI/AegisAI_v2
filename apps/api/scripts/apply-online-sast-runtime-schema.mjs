@@ -34,6 +34,12 @@ const indexes = [
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "AuditEvent_artifact_disposition_scope_key" ON "AuditEvent"("id", "attemptId", "tenantId", "scanRequestId")'
   },
   {
+    name: 'SastScanAttempt_retryDecisionId_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastScanAttempt_retryDecisionId_key" ON "SastScanAttempt"("retryDecisionId")'
+  },
+  {
     name: 'ScannerRun_ingress_scope_key',
     unique: true,
     create:
@@ -104,10 +110,30 @@ const indexes = [
     unique: true,
     create:
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastFindingCorrelationSource_coverage_scope_key" ON "SastFindingCorrelationSource"("id", "correlationBatchId")'
+  },
+  {
+    name: 'SastScanCoverageDecision_comparison_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastScanCoverageDecision_comparison_scope_key" ON "SastScanCoverageDecision"("id", "tenantId", "repositoryBindingId", "scanRequestId")'
   }
 ];
 
 const constraints = [
+  {
+    table: 'SastExternalPublicationDecision',
+    name: 'SastExternalPublicationDecision_t039_source_check',
+    type: 'c',
+    definition: `CHECK (
+      "externalCommentAllowed" = false
+      AND "blockingStatusAllowed" = false
+      AND "aiAdvisoryAllowed" = false
+      AND "lifecycleMutationAllowed" = false
+      AND "latestTargetAuthority" = 'UNAVAILABLE'
+      AND "staleStatus" = 'UNKNOWN'
+      AND "comparabilityStatus" = 'UNKNOWN'
+    )`
+  },
   {
     table: 'ScannerRun',
     name: 'ScannerRun_attempt_scope_fkey',
@@ -244,6 +270,27 @@ const constraints = [
     type: 'f',
     definition:
       'FOREIGN KEY ("finalAuditEventId", "id", "tenantId") REFERENCES "AuditEvent"("id", "attemptId", "tenantId") ON DELETE NO ACTION ON UPDATE NO ACTION'
+  },
+  {
+    table: 'SastScanAttempt',
+    name: 'SastScanAttempt_retryDecisionId_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("retryDecisionId") REFERENCES "SastScanRetryDecision"("id") ON DELETE NO ACTION ON UPDATE NO ACTION'
+  },
+  {
+    table: 'SastScanFreshnessDecision',
+    name: 'SastScanFreshnessDecision_previous_coverage_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("previousCoverageDecisionId", "tenantId", "repositoryBindingId", "previousScanRequestId") REFERENCES "SastScanCoverageDecision"("id", "tenantId", "repositoryBindingId", "scanRequestId") ON DELETE RESTRICT ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastScanRetryDecision',
+    name: 'SastScanRetryDecision_final_audit_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("previousFinalAuditEventId", "previousAttemptId", "tenantId") REFERENCES "AuditEvent"("id", "attemptId", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE'
   },
   {
     table: 'SastArtifactIngestion',
@@ -632,6 +679,11 @@ const constraints = [
 ];
 
 const supersededConstraints = [
+  {
+    table: 'SastExternalPublicationDecision',
+    name: 'SastExternalPublicationDecision_contract_check',
+    replacement: 'SastExternalPublicationDecision_t039_source_check'
+  },
   {
     table: 'ScannerRun',
     name: 'ScannerRun_runtime_metadata_check',

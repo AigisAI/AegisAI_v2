@@ -448,3 +448,31 @@ cannot publish, invoke AI, or mutate finding lifecycle before T040.
 artifact acceptance, allowing optional scanners to replace required owners, synthesizing a
 Syft finding source, last-writer-wins replay, per-replica coverage cache, publishing directly
 from T039, or inferring latest-target freshness from the scanned commit alone.
+
+## Decision 22: Separate Latest-Target Authority from Coverage and Fence Retry Admission
+
+**Decision**: `sast-scan-freshness-v1` keeps T039 immutable and persists an independent,
+provider-scoped latest-target observation plus a one-to-one freshness/comparability decision.
+The fixed commit must equal a monotonic authoritative target head, and the prior complete scan
+must match tenant, repository, target, supported profile family, required capabilities,
+fingerprint version, and lifecycle scope. Only that exact conjunction creates external-action
+eligibility or lets the T037 gate verify lifecycle input. It still creates no SCM write and no
+AI payload.
+
+`sast-scan-retry-decision-v1` is written before attempt two. It rechecks the immediately
+preceding durable attempt-one failure/audit tuple plus mutable scanner-set and kill-switch
+authority, while preserving immutable scan intent and requiring new attempt, sandbox, and
+workload identities. The default target and mutable-runtime authorities are unavailable, so
+the repository remains fail closed until live read-only provider and T049 governance adapters
+are installed.
+
+**Rationale**: Scanner completeness cannot prove that a provider target has not advanced,
+and an old retry-eligible bit cannot prove that current runtime assets remain safe. Separate
+canonical ledgers retain exact T039 replay, make every authority boundary auditable, and let
+future publisher/evidence stages consume a narrow verified handoff.
+
+**Rejected**: Caller-supplied head/fresh/comparable flags, comparing branch names instead of
+fixed heads, assuming profile names imply compatible capabilities, mutating the T039 decision,
+retrying attempt three, retrying cleanup/input/capacity/scanner/security failure, reusing a
+sandbox identity, trusting a missing final audit event, or treating unavailable kill-switch
+authority as clear.

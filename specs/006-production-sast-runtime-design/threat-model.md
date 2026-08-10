@@ -70,7 +70,8 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Correlation replay forgery | T037 replay flag or one changed edge/provenance row changes retry identity or silently mutates the ledger | Replay-independent durable source binding plus exact source/edge/two-sided-provenance equality and deterministic digests | T037 replay-flag parity and tampered edge/provenance fixtures |
 | Coverage authority injection | A caller supplies a required-scanner/capability list or successful status that differs from the immutable profile and durable scanner run | Derive requirements from the approved profile/responsibility matrix; rebind scanner image, wrapper, rule/DB, schema, normalizer, artifact and disposition | Fast/Deep/Common, foreign/duplicate scanner, and provenance-tamper fixtures; zero caller-owned authority |
 | Coverage replay drift | A late scanner/artifact/source change reuses an earlier attempt decision or concurrent writers create divergent coverage | Attempt-unique decision, composite foreign keys, serializable re-read, canonical three-record digest, exact replay only, bounded P2034/P2002 retry | Changed/missing/extra/reordered/cross-scope/concurrent replay corpus; no partial or duplicate rows |
-| Premature complete publication | Complete scanner coverage is treated as proof that the result still matches the latest PR target | Persist `UNAVAILABLE` latest-target and `UNKNOWN` stale/comparability with database-enforced false comment/block/AI/lifecycle flags until T040 | Complete-coverage fixture still has zero publication and zero lifecycle mutations |
+| Premature complete publication | Complete scanner coverage is treated as proof that the result still matches the latest PR target | Preserve the T039 `UNAVAILABLE`/`UNKNOWN` zero-authority source; T040 independently requires a monotonic provider head equal to the fixed commit plus exact prior-scan comparability | Complete-only, unavailable, stale, non-monotonic, and incomparable fixtures have zero publication and lifecycle mutations |
+| Retry escalation or sandbox reuse | A non-infrastructure failure, missing audit, attempt three, or reused sandbox is admitted as a retry | Durable T040 decision rechecks immediate attempt-one failure/audit, scanner set, kill switches, immutable intent, and new attempt/sandbox/workload identity before attempt-two insertion | Every disallowed failure/safety state and identity-reuse fixture has zero sandbox admissions |
 | Retention clock rollback | A caller supplies a past payload timestamp to normalize an expired accepted object | Adapter-owned default clock checked before and after streaming; trusted test/task clock seam only; require monotonic time at or after disposition | Expiry, stream-crossing, and pre-decision clock tests |
 | Stored XSS | Rule message/path/package contains markup | Treat all strings as text; output encoding; sanitized Markdown only | Stored-XSS corpus; presentation CSP |
 | Secret leakage | Finding or zero-finding binding includes a detected/platform secret | Scanner discard plus T035 display redaction, batch-binding inspection, identity fail-close, and T042 evidence re-redaction | Secret-leak gate must remain zero |
@@ -141,6 +142,12 @@ The following must always remain true:
 14. A lineage can change target lifecycle only from a verified newer complete coverage
     decision over the exact durable observation-batch set; T037 cannot calculate that
     decision or infer absence from missing data.
+15. A T039-complete scan gains no external or lifecycle eligibility unless a monotonic,
+    provider-authoritative target observation proves the exact fixed commit and a durable
+    prior complete scan proves exact comparability.
+16. Attempt two cannot start without a durable infrastructure-only retry decision bound to
+    attempt-one failure/completion/final-audit state, current scanner-set and kill-switch
+    authority, and a new attempt/sandbox/workload identity; attempt three is impossible.
 
 ## Required Security Test Corpus
 
@@ -185,6 +192,12 @@ The following must always remain true:
 - signed-envelope tenant/scan/commit/digest tampering
 - cross-tenant object and query access
 - stale commit, force-push, and duplicate delivery
+- unavailable/malformed/future/non-monotonic target observations, same-sequence replay,
+  force-pushed head mismatch, cross-provider/repository/target observation reuse, missing
+  previous complete scan, profile-family/capability/fingerprint/lifecycle-scope drift
+- retry attempt three, non-infrastructure/cleanup/capacity/input/scanner/security failure,
+  false retry-eligible flag, missing/mismatched final audit, changed/unavailable scanner set,
+  active/unavailable kill-switch authority, and reused attempt/sandbox/workload identity
 - repeated fingerprints, exact replay, missing/extra/reordered occurrence rows, cross-tenant
   source-identity reuse, concurrent lineage creation, and serialization retry exhaustion
 - verified rename and rename-back, missing predecessor aliases, duplicate/ambiguous mappings,

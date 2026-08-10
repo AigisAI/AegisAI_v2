@@ -41,6 +41,8 @@ const files = {
   sharedSastFindingCorrelationTest: new URL('../../packages/shared/test/sast-finding-correlation.test.mjs', import.meta.url),
   sharedSastScanCoverage: new URL('../../packages/shared/src/types/sast-scan-coverage.ts', import.meta.url),
   sharedSastScanCoverageTest: new URL('../../packages/shared/test/sast-scan-coverage.test.mjs', import.meta.url),
+  sharedSastScanFreshness: new URL('../../packages/shared/src/types/sast-scan-freshness.ts', import.meta.url),
+  sharedSastScanFreshnessTest: new URL('../../packages/shared/test/sast-scan-freshness.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -77,11 +79,16 @@ const files = {
   apiSastScanCoverageTest: new URL('../../apps/api/test/scan-plane/sast-scan-coverage.e2e-spec.ts', import.meta.url),
   apiSastScanCoveragePrismaTest: new URL('../../apps/api/test/scan-plane/prisma-sast-scan-coverage.store.e2e-spec.ts', import.meta.url),
   apiSastScanCoveragePersistenceTest: new URL('../../apps/api/test/scan-plane/sast-scan-coverage-persistence.e2e-spec.ts', import.meta.url),
+  apiSastScanFreshness: new URL('../../apps/api/src/scan-plane/sast-scan-freshness.service.ts', import.meta.url),
+  apiSastScanFreshnessStore: new URL('../../apps/api/src/scan-plane/prisma-sast-scan-freshness.store.ts', import.meta.url),
+  apiSastScanFreshnessTest: new URL('../../apps/api/test/scan-plane/sast-scan-freshness.e2e-spec.ts', import.meta.url),
+  apiSastScanFreshnessPersistenceTest: new URL('../../apps/api/test/scan-plane/sast-scan-freshness-persistence.e2e-spec.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
   apiOnlineSastRuntimeSchema: new URL('../../apps/api/scripts/apply-online-sast-runtime-schema.mjs', import.meta.url),
   apiSastFindingLineageMigration: new URL('../../apps/api/prisma/migrations/20260730160000_sast_finding_lineage_lifecycle/migration.sql', import.meta.url),
   apiSastFindingCorrelationMigration: new URL('../../apps/api/prisma/migrations/20260802120000_sast_finding_correlation/migration.sql', import.meta.url),
   apiSastScanCoverageMigration: new URL('../../apps/api/prisma/migrations/20260802150000_sast_scan_coverage/migration.sql', import.meta.url),
+  apiSastScanFreshnessMigration: new URL('../../apps/api/prisma/migrations/20260810030000_sast_scan_freshness_retry/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -118,7 +125,8 @@ const assertScanPlaneExports = (scanPlaneModule) => {
     exportsBlock,
     'Expected to locate the ScanPlaneModule exports array'
   );
-  assert.match(exportsBlock, /SastScanCoverageService/);
+  assert.match(exportsBlock, /SastScanFreshnessService/);
+  assert.doesNotMatch(exportsBlock, /SastScanCoverageService/);
   assert.doesNotMatch(exportsBlock, /SastFindingCorrelationService/);
   assert.doesNotMatch(exportsBlock, /SastFindingLineageService/);
   assert.doesNotMatch(exportsBlock, /SastFindingIdentityService/);
@@ -685,7 +693,7 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
   assert.match(tasks, /- \[x\] T036\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation[\s\S]{0,180}are complete; T040/
+    /T038 authority-aware cross-tool correlation[\s\S]{0,260}T040 stale-scan denial[\s\S]{0,160}are complete; T041/
   );
   assert.match(contract, /Finding identity construction gate v1/);
   assert.match(spec, /FR-034a/);
@@ -846,7 +854,7 @@ test('SAST T037 persists complete occurrence lineage and fail-closed lifecycle t
   assert.match(tasks, /- \[x\] T037\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation[\s\S]{0,180}are complete; T040/
+    /T038 authority-aware cross-tool correlation[\s\S]{0,260}T040 stale-scan denial[\s\S]{0,160}are complete; T041/
   );
   assert.match(contract, /Finding lineage and lifecycle gate v1/);
   assert.match(dataModel, /SastFindingLifecycleReconciliation/);
@@ -984,7 +992,7 @@ test('SAST T038 correlates by scanner authority while preserving every provenanc
   assert.match(tasks, /- \[x\] T038\b/);
   assert.match(
     quickstart,
-    /T039 fail-closed scanner\/capability coverage[\s\S]{0,80}are complete; T040[\s\S]{0,120}next implementation task/
+    /T039 fail-closed scanner\/capability coverage[\s\S]{0,160}T040 stale-scan denial[\s\S]{0,160}are complete; T041/
   );
   assert.match(contract, /Finding correlation gate v1/);
   assert.match(dataModel, /SastFindingCorrelationProvenance/);
@@ -1001,12 +1009,18 @@ test('SAST T038 correlates by scanner authority while preserving every provenanc
   );
 });
 
-test('SAST T039 persists durable coverage and fail-closes every publication authority', () => {
+test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () => {
   const sharedCoverage = readNormalizedText(
     files.sharedSastScanCoverage
   );
   const sharedCoverageTest = readNormalizedText(
     files.sharedSastScanCoverageTest
+  );
+  const sharedFreshness = readNormalizedText(
+    files.sharedSastScanFreshness
+  );
+  const sharedFreshnessTest = readNormalizedText(
+    files.sharedSastScanFreshnessTest
   );
   const sharedIndex = readNormalizedText(files.sharedIndex);
   const service = readNormalizedText(files.apiSastScanCoverage);
@@ -1020,9 +1034,24 @@ test('SAST T039 persists durable coverage and fail-closes every publication auth
   const persistenceTest = readNormalizedText(
     files.apiSastScanCoveragePersistenceTest
   );
+  const freshnessService = readNormalizedText(
+    files.apiSastScanFreshness
+  );
+  const freshnessStore = readNormalizedText(
+    files.apiSastScanFreshnessStore
+  );
+  const freshnessTest = readNormalizedText(
+    files.apiSastScanFreshnessTest
+  );
+  const freshnessPersistenceTest = readNormalizedText(
+    files.apiSastScanFreshnessPersistenceTest
+  );
   const schema = readNormalizedText(files.apiPrismaSchema);
   const migration = readNormalizedText(
     files.apiSastScanCoverageMigration
+  );
+  const freshnessMigration = readNormalizedText(
+    files.apiSastScanFreshnessMigration
   );
   const onlineSchema = readNormalizedText(
     files.apiOnlineSastRuntimeSchema
@@ -1073,6 +1102,28 @@ test('SAST T039 persists durable coverage and fail-closes every publication auth
     sharedCoverageTest,
     /fail-closing every external publication authority/
   );
+  assert.match(
+    sharedFreshness,
+    /SAST_SCAN_FRESHNESS_VERSION\s*=[^;]*'sast-scan-freshness-v1'/
+  );
+  assert.match(
+    sharedFreshness,
+    /SAST_SCAN_RETRY_DECISION_VERSION\s*=[^;]*'sast-scan-retry-decision-v1'/
+  );
+  assert.match(sharedFreshness, /evaluateSastScanFreshness/);
+  assert.match(sharedFreshness, /evaluateSastScanRetry/);
+  assert.match(
+    sharedIndex,
+    /export \* from '.\/types\/sast-scan-freshness';/
+  );
+  assert.match(
+    sharedFreshnessTest,
+    /independently verified fresh comparable coverage/
+  );
+  assert.match(
+    sharedFreshnessTest,
+    /exactly one infrastructure-only retry with a fresh sandbox/
+  );
 
   assert.match(service, /class SastScanCoverageService/);
   assert.match(service, /isSastFindingCorrelationResultShapeValid/);
@@ -1121,6 +1172,16 @@ test('SAST T039 persists durable coverage and fail-closes every publication auth
     persistenceTest,
     /zero external publication a database invariant/
   );
+  assert.match(freshnessService, /class SastScanFreshnessService/);
+  assert.match(freshnessService, /SastLatestTargetAuthority/);
+  assert.match(freshnessService, /SastRetryRuntimeAuthority/);
+  assert.match(freshnessStore, /SERIALIZABLE_ATTEMPTS = 3/);
+  assert.match(freshnessStore, /verifyLifecycleSource/);
+  assert.match(freshnessTest, /denies a stale target head/);
+  assert.match(
+    freshnessPersistenceTest,
+    /durable allowed retry row before attempt two starts/
+  );
 
   for (const model of [
     'SastScanCoverageDecision',
@@ -1130,6 +1191,29 @@ test('SAST T039 persists durable coverage and fail-closes every publication auth
     assert.match(schema, new RegExp(`model ${model} \\{`));
     assert.match(migration, new RegExp(`CREATE TABLE "${model}"`));
   }
+  for (const model of [
+    'SastLatestTargetObservation',
+    'SastScanFreshnessDecision',
+    'SastScanRetryDecision'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(
+      freshnessMigration,
+      new RegExp(`CREATE TABLE "${model}"`)
+    );
+  }
+  assert.match(
+    onlineSchema,
+    /SastExternalPublicationDecision_contract_check[\s\S]{0,160}SastExternalPublicationDecision_t039_source_check/
+  );
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastScanCoverageDecision_comparison_scope_key"/
+  );
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastScanAttempt_retryDecisionId_key"/
+  );
   for (const constraint of [
     'scanner_scope_fkey',
     'ingestion_scope_fkey',
@@ -1158,12 +1242,16 @@ test('SAST T039 persists durable coverage and fail-closes every publication auth
   assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T039\b/);
+  assert.match(tasks, /- \[x\] T040\b/);
   assert.match(
     quickstart,
-    /T039 fail-closed scanner\/capability coverage[\s\S]{0,80}are complete; T040[\s\S]{0,120}next implementation task/
+    /T040 stale-scan denial and bounded infrastructure-only retry[\s\S]{0,160}complete[\s\S]{0,160}T041[\s\S]{0,120}next implementation task/
   );
   assert.match(contract, /Scan coverage gate v1/);
+  assert.match(contract, /Freshness and bounded retry gate v1/);
   assert.match(dataModel, /SastExternalPublicationDecision/);
+  assert.match(dataModel, /SastScanFreshnessDecision/);
+  assert.match(dataModel, /SastScanRetryDecision/);
   assert.match(plan, /T039 now[\s\S]{0,80}immutable plan/);
   assert.match(spec, /FR-039a/);
   assert.match(

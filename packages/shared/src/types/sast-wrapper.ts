@@ -443,8 +443,15 @@ export function isSastScannerWrapperExecutionRequestValid(
       request.preflight.attestationRef &&
     request.sandboxAttestation.claims.preflightInventoryDigest ===
       request.preflight.inventoryDigest &&
-    request.preflight.attestationRef ===
-      request.plan.repositoryState.attestationRef &&
+    isBoundedIdentifier(request.preflight.attestationRef, 8192) &&
+    // This is the pure shape/binding check. The runtime separately verifies
+    // the signed, attempt-bound, time-bounded repository preflight before
+    // retry admission and before any attempt row is created.
+    (request.attemptNumber === 1
+      ? request.preflight.attestationRef ===
+        request.plan.repositoryState.attestationRef
+      : request.preflight.attestationRef !==
+        request.plan.repositoryState.attestationRef) &&
     request.preflight.inventoryDigest ===
       request.plan.repositoryState.inventoryDigest &&
     (request.preflight.decision === 'ACCEPT' ||
