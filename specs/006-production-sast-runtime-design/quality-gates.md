@@ -284,8 +284,21 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   attempt two. Exact allowed replay reuses the persisted authorization timestamp after an
   interrupted attempt insert; denied decisions remain permanent audit evidence. Attempt three
   and every other failure class produce zero sandbox admissions. Populated-table indexes are
-  built concurrently before dependent foreign-key validation. `SastScanFreshnessService` is
-  the only sequential Scan Plane handoff to T041.
+  built concurrently before dependent foreign-key validation.
+- 100% T041 accepted-source invariant: every pack rebinds one exact T037 occurrence and
+  fingerprinted source finding through its T038 source, T039 `COMPLETE` coverage, and T040
+  verified/fresh/comparable decision. Missing, rejected, UNKNOWN-location, foreign,
+  cross-tenant, changed, or late durable state creates zero packs.
+- 100% T041 evidence-bound invariant: exact UTF-8 content bytes are at most 8 KiB per
+  fragment, five fragments and 32 KiB per pack, with no more than five context lines around
+  each attested anchor. Raw source and platform secret values stored across pack, decision,
+  audit, logs, dashboard, and AI surfaces equal zero.
+- 100% T041 reconstruction invariant: full-file spans, more than two fragments per file,
+  overlap, adjacency, or combined coverage at or above 2,500 basis points reject the complete
+  build. Exact replay creates no duplicate decision, pack, or fragment row.
+- T041 accepted and rejected decisions have zero dashboard/AI/policy/publication/lifecycle
+  authority. `SastAcceptedEvidenceService` is the only sequential Scan Plane handoff to T042;
+  the default source authority remains unavailable and no controller or SCM writer is added.
 
 ## Canary and Continuous Production Gates
 

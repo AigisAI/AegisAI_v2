@@ -43,6 +43,8 @@ const files = {
   sharedSastScanCoverageTest: new URL('../../packages/shared/test/sast-scan-coverage.test.mjs', import.meta.url),
   sharedSastScanFreshness: new URL('../../packages/shared/src/types/sast-scan-freshness.ts', import.meta.url),
   sharedSastScanFreshnessTest: new URL('../../packages/shared/test/sast-scan-freshness.test.mjs', import.meta.url),
+  sharedSastAcceptedEvidence: new URL('../../packages/shared/src/types/sast-accepted-evidence.ts', import.meta.url),
+  sharedSastAcceptedEvidenceTest: new URL('../../packages/shared/test/sast-accepted-evidence.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -83,12 +85,17 @@ const files = {
   apiSastScanFreshnessStore: new URL('../../apps/api/src/scan-plane/prisma-sast-scan-freshness.store.ts', import.meta.url),
   apiSastScanFreshnessTest: new URL('../../apps/api/test/scan-plane/sast-scan-freshness.e2e-spec.ts', import.meta.url),
   apiSastScanFreshnessPersistenceTest: new URL('../../apps/api/test/scan-plane/sast-scan-freshness-persistence.e2e-spec.ts', import.meta.url),
+  apiSastAcceptedEvidence: new URL('../../apps/api/src/scan-plane/sast-accepted-evidence.service.ts', import.meta.url),
+  apiSastAcceptedEvidenceStore: new URL('../../apps/api/src/scan-plane/prisma-sast-accepted-evidence.store.ts', import.meta.url),
+  apiSastAcceptedEvidenceTest: new URL('../../apps/api/test/scan-plane/sast-accepted-evidence.e2e-spec.ts', import.meta.url),
+  apiSastAcceptedEvidencePersistenceTest: new URL('../../apps/api/test/scan-plane/sast-accepted-evidence-persistence.e2e-spec.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
   apiOnlineSastRuntimeSchema: new URL('../../apps/api/scripts/apply-online-sast-runtime-schema.mjs', import.meta.url),
   apiSastFindingLineageMigration: new URL('../../apps/api/prisma/migrations/20260730160000_sast_finding_lineage_lifecycle/migration.sql', import.meta.url),
   apiSastFindingCorrelationMigration: new URL('../../apps/api/prisma/migrations/20260802120000_sast_finding_correlation/migration.sql', import.meta.url),
   apiSastScanCoverageMigration: new URL('../../apps/api/prisma/migrations/20260802150000_sast_scan_coverage/migration.sql', import.meta.url),
   apiSastScanFreshnessMigration: new URL('../../apps/api/prisma/migrations/20260810030000_sast_scan_freshness_retry/migration.sql', import.meta.url),
+  apiSastAcceptedEvidenceMigration: new URL('../../apps/api/prisma/migrations/20260810043000_sast_accepted_evidence/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -125,7 +132,8 @@ const assertScanPlaneExports = (scanPlaneModule) => {
     exportsBlock,
     'Expected to locate the ScanPlaneModule exports array'
   );
-  assert.match(exportsBlock, /SastScanFreshnessService/);
+  assert.match(exportsBlock, /SastAcceptedEvidenceService/);
+  assert.doesNotMatch(exportsBlock, /SastScanFreshnessService/);
   assert.doesNotMatch(exportsBlock, /SastScanCoverageService/);
   assert.doesNotMatch(exportsBlock, /SastFindingCorrelationService/);
   assert.doesNotMatch(exportsBlock, /SastFindingLineageService/);
@@ -481,7 +489,7 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
   assert.match(tasks, /- \[x\] T034\b/);
   assert.match(
     quickstart,
-    /T035 secret redaction,[\s\S]{0,180}T037 occurrence\/exact-lineage lifecycle[\s\S]{0,200}complete/
+    /T035 secret redaction,[\s\S]{0,720}T041 bounded[\s\S]{0,180}are complete/
   );
   assert.match(contract, /Syft CycloneDX inventory adapter v1/);
   assert.match(spec, /FR-031b/);
@@ -570,7 +578,7 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
   assert.match(tasks, /- \[x\] T035\b/);
   assert.match(
     quickstart,
-    /T035 secret redaction,[\s\S]{0,180}T037 occurrence\/exact-lineage lifecycle[\s\S]{0,200}complete/
+    /T035 secret redaction,[\s\S]{0,720}T041 bounded[\s\S]{0,180}are complete/
   );
   assert.match(contract, /Secret redaction gate v1/);
   assert.match(spec, /FR-031c/);
@@ -693,7 +701,7 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
   assert.match(tasks, /- \[x\] T036\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation[\s\S]{0,260}T040 stale-scan denial[\s\S]{0,160}are complete; T041/
+    /T038 authority-aware cross-tool correlation[\s\S]{0,320}T041 bounded[\s\S]{0,180}are complete; T042/
   );
   assert.match(contract, /Finding identity construction gate v1/);
   assert.match(spec, /FR-034a/);
@@ -854,7 +862,7 @@ test('SAST T037 persists complete occurrence lineage and fail-closed lifecycle t
   assert.match(tasks, /- \[x\] T037\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation[\s\S]{0,260}T040 stale-scan denial[\s\S]{0,160}are complete; T041/
+    /T038 authority-aware cross-tool correlation[\s\S]{0,320}T041 bounded[\s\S]{0,180}are complete; T042/
   );
   assert.match(contract, /Finding lineage and lifecycle gate v1/);
   assert.match(dataModel, /SastFindingLifecycleReconciliation/);
@@ -992,7 +1000,7 @@ test('SAST T038 correlates by scanner authority while preserving every provenanc
   assert.match(tasks, /- \[x\] T038\b/);
   assert.match(
     quickstart,
-    /T039 fail-closed scanner\/capability coverage[\s\S]{0,160}T040 stale-scan denial[\s\S]{0,160}are complete; T041/
+    /T039 fail-closed scanner\/capability coverage[\s\S]{0,220}T041 bounded[\s\S]{0,180}are complete; T042/
   );
   assert.match(contract, /Finding correlation gate v1/);
   assert.match(dataModel, /SastFindingCorrelationProvenance/);
@@ -1245,7 +1253,7 @@ test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () =
   assert.match(tasks, /- \[x\] T040\b/);
   assert.match(
     quickstart,
-    /T040 stale-scan denial and bounded infrastructure-only retry[\s\S]{0,160}complete[\s\S]{0,160}T041[\s\S]{0,120}next implementation task/
+    /T040 stale-scan denial and bounded infrastructure-only retry[\s\S]{0,160}T041 bounded[\s\S]{0,160}complete; T042[\s\S]{0,220}next implementation task/
   );
   assert.match(contract, /Scan coverage gate v1/);
   assert.match(contract, /Freshness and bounded retry gate v1/);
@@ -1261,6 +1269,145 @@ test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () =
   assert.match(threatModel, /Coverage authority injection/);
   assert.match(threatModel, /Premature complete publication/);
   assert.match(qualityGates, /100% T039 zero-publication invariant/);
+});
+
+test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruction', () => {
+  const shared = readNormalizedText(
+    files.sharedSastAcceptedEvidence
+  );
+  const sharedTest = readNormalizedText(
+    files.sharedSastAcceptedEvidenceTest
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(
+    files.apiSastAcceptedEvidence
+  );
+  const store = readNormalizedText(
+    files.apiSastAcceptedEvidenceStore
+  );
+  const serviceTest = readNormalizedText(
+    files.apiSastAcceptedEvidenceTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiSastAcceptedEvidencePersistenceTest
+  );
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(
+    files.apiSastAcceptedEvidenceMigration
+  );
+  const onlineSchema = readNormalizedText(
+    files.apiOnlineSastRuntimeSchema
+  );
+  const scanPlaneModule = readNormalizedText(
+    files.apiScanPlaneModule
+  );
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const plan = readNormalizedText(files.plan);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(
+    shared,
+    /sast-accepted-finding-evidence-v1/
+  );
+  assert.match(
+    shared,
+    /maximumReconstructedFileCoverageBasisPoints:\s*2500/
+  );
+  assert.match(shared, /maximumFragmentsPerFile:\s*2/);
+  assert.match(shared, /EVIDENCE_RECONSTRUCTION_OVERLAP/);
+  assert.match(shared, /EVIDENCE_RECONSTRUCTION_ADJACENT/);
+  assert.match(shared, /EVIDENCE_RECONSTRUCTION_COVERAGE/);
+  assert.match(shared, /dashboardAccessAllowed:\s*false/);
+  assert.match(sharedIndex, /sast-accepted-evidence/);
+  assert.match(
+    sharedTest,
+    /rejects full-file, overlapping, adjacent, and substantial reconstruction sets/
+  );
+
+  assert.match(service, /KNOWN_SECRET_PATTERNS/);
+  assert.match(service, /platformSecretValues/);
+  assert.match(service, /dashboardPayloadCreated:\s*false/);
+  assert.match(service, /aiPayloadCreated:\s*false/);
+  assert.match(service, /publicationAttempted:\s*false/);
+  assert.doesNotMatch(
+    service,
+    /@Controller|@(Get|Post|Put|Patch|Delete)\(/u
+  );
+  assert.doesNotMatch(service, /\bLogger\b|\bconsole\./u);
+  assert.match(
+    serviceTest,
+    /redacts trusted source and persists a bounded internal-only pack/
+  );
+  assert.match(
+    serviceTest,
+    /rejects full-file and overlapping reconstruction/
+  );
+  assert.match(
+    persistenceTest,
+    /rebinds the complete fresh T040 decision and accepted T037 occurrence/
+  );
+
+  assert.match(
+    store,
+    /isSastScanFreshnessDecisionShapeValid/
+  );
+  assert.match(store, /isSastFingerprintedFindingShapeValid/);
+  assert.match(
+    store,
+    /Prisma\.TransactionIsolationLevel\.Serializable/
+  );
+  assert.match(store, /replayExisting/);
+  for (const model of [
+    'SastEvidenceBuildDecision',
+    'SastAcceptedEvidencePack',
+    'SastAcceptedEvidenceFragment'
+  ]) {
+    assert.match(schema, new RegExp('model ' + model + ' \\{'));
+    assert.match(
+      migration,
+      new RegExp('CREATE TABLE "' + model + '"')
+    );
+  }
+  assert.match(
+    migration,
+    /SastEvidenceBuildDecision_freshness_scope_fkey/
+  );
+  assert.match(
+    onlineSchema,
+    /SastEvidenceBuildDecision_occurrence_scope_fkey/
+  );
+  assert.match(migration, /"dashboardSafe" = false/);
+  assert.match(migration, /"aiSafe" = false/);
+  assertScanPlaneExports(scanPlaneModule);
+
+  assert.match(tasks, /- \[x\] T041\b/);
+  assert.match(
+    quickstart,
+    /T041 bounded[\s\S]{0,180}are complete; T042[\s\S]{0,220}next implementation task/
+  );
+  assert.match(contract, /Accepted-finding evidence gate v1/);
+  assert.match(dataModel, /SastEvidenceBuildDecision/);
+  assert.match(dataModel, /SastAcceptedEvidencePack/);
+  assert.match(
+    plan,
+    /T040 and T041 independently and now proceeds to T042/
+  );
+  assert.match(spec, /FR-046a/);
+  assert.match(
+    research,
+    /Decision 23: Build Evidence from a Rebound Accepted Occurrence and Reject Reconstruction/
+  );
+  assert.match(threatModel, /Evidence source forgery/);
+  assert.match(
+    qualityGates,
+    /100% T041 reconstruction invariant/
+  );
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

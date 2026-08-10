@@ -730,27 +730,50 @@ T040 creates these ledgers in bounded serializable transactions with exact repla
 the former permanent external-publication constraint name only after the online-schema step
 validates the replacement invariant, builds populated-table indexes concurrently, and validates
 their dependent foreign keys. Effective eligibility comes only from the independent freshness row.
-`SastScanFreshnessService` is the only sequential Scan Plane handoff to T041.
+T041 consumes that row internally and `SastAcceptedEvidenceService` is the only sequential
+Scan Plane handoff to T042.
 
-### EvidenceFragment
+### SastEvidenceBuildDecision
 
-- evidence pack and finding identifiers plus `normalizedPath`
-- bounded `startLine`, `endLine`, `sourceFileLineCount`, and `byteSize`
-- `redactedContent` and its SHA-256 `contentDigest`
-- invariant `secretRedactionApplied = true` plus `redactionDecisionRef`
-- invariant `isFullFile = false`; a fragment spanning the complete source file is invalid
+- deterministic `sast-evidence-build://<sha256>` ID bound to the exact T040 freshness
+  decision, T039 coverage decision, T037 occurrence/observation/lineage, normalized finding,
+  policy version, and canonical candidate-set digest
+- `ACCEPTED | REJECTED`, canonical reason codes, selected/suppressed counts, complete
+  reconstruction decision and digest, optional pack ID/digest, bounded audit projection, and
+  decision timestamp/digest
+- only accepted decisions have `evidenceConstructionAuthority=true`; dashboard, AI, policy,
+  publication, and lifecycle mutation authority are always false
+- one exact replay key per tenant, occurrence, policy version, and candidate-set digest
 
-### SastEvidencePack
+### SastAcceptedEvidenceFragment
 
-- `evidencePackId`, tenant, repository, scan, and `findingFingerprint` attribution
+- evidence pack/build decision/candidate identifiers, deterministic ordinal and
+  `PRIMARY | RELATED` role plus `normalizedPath`
+- bounded `startLine`, `endLine`, attested anchor, `sourceFileLineCount`, and exact UTF-8
+  `byteSize`
+- `redactedContent`, raw-source and redacted-content SHA-256 digests, source attestation,
+  scanner-redaction decision, platform-redaction decision, and canonical fragment digest
+- invariants `secretRedactionApplied=true`, `rawSourceStored=false`, and
+  `isFullFile=false`; the database stores no pre-redaction source or platform secret value
+
+### SastAcceptedEvidencePack
+
+- durable Prisma `id` stores the shared-contract `evidencePackId`; tenant, repository, scan,
+  and `findingFingerprint` retain the complete attribution
 - `policyVersion`, fragments, exact `totalBytes`, and per-fragment content digests
 - `truncated` and non-negative `suppressedFragmentCount`
-- invariant `reconstructionRiskChecked = true` plus `reconstructionRiskDecisionRef`
-- `classificationDecisionRef`, `deletionScheduleRef`, `dashboardSafe`, and `aiSafe`
+- invariant `reconstructionRiskChecked = true`; durable Prisma
+  `reconstructionDecisionId` stores the shared-contract `reconstructionRiskDecisionRef`
+- T041 invariants `classificationDecisionRef=null`, `deletionScheduleRef=null`,
+  `dashboardSafe=false`, and `aiSafe=false`; T042 creates separate access and deletion
+  authority rather than mutating this pack
 - `createdAt` and `expiresAt`; retention cannot exceed the evidence policy
 
-The pack is unavailable to the dashboard when `dashboardSafe = false` and unavailable to the AI
-Plane when `aiSafe = false`. These decisions cannot be inferred from a successful scan status.
+The reconstruction decision canonicalizes intervals per normalized path. More than two
+fragments per file, overlap, adjacency, or combined coverage of at least 2,500 basis points is
+`RISK` and rejects the whole build. Full-file or context-invalid input is rejected before that
+calculation. The pack remains unavailable to the dashboard and AI Plane until T042; these
+decisions cannot be inferred from a successful scan or accepted T041 pack.
 
 ### RuleBundlePromotionEvidence
 

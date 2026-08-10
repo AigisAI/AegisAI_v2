@@ -74,7 +74,7 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Retry escalation or sandbox reuse | A non-infrastructure failure, missing audit, attempt three, or reused sandbox is admitted as a retry | Durable T040 decision rechecks immediate attempt-one failure/audit, scanner set, kill switches, immutable intent, and new attempt/sandbox/workload identity before attempt-two insertion | Every disallowed failure/safety state and identity-reuse fixture has zero sandbox admissions |
 | Retention clock rollback | A caller supplies a past payload timestamp to normalize an expired accepted object | Adapter-owned default clock checked before and after streaming; trusted test/task clock seam only; require monotonic time at or after disposition | Expiry, stream-crossing, and pre-decision clock tests |
 | Stored XSS | Rule message/path/package contains markup | Treat all strings as text; output encoding; sanitized Markdown only | Stored-XSS corpus; presentation CSP |
-| Secret leakage | Finding or zero-finding binding includes a detected/platform secret | Scanner discard plus T035 display redaction, batch-binding inspection, identity fail-close, and T042 evidence re-redaction | Secret-leak gate must remain zero |
+| Secret leakage | Finding, zero-finding binding, or source fragment includes a detected/platform secret | Scanner discard plus T035 display redaction, T041 bounded memory-only known/platform redaction, and T042 access-time re-redaction/classification | Secret-leak gate must remain zero |
 | Cross-tenant object access | Object key or query omits tenant | Tenant/scan prefix, encryption context, tenant predicate, purpose-bound reads | Negative tests and access audit |
 | Cache poisoning | Customer content enters shared cache | Shared cache only for signed public tool/rule/database assets | Cache inventory and digest monitoring |
 | Rule supply-chain attack | Malicious rule or database promoted | Signed digest, provenance, two-person security approval, corpus gates, canary | Automatic rollback/kill switch |
@@ -82,7 +82,8 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Retry replay | Same attempt/result is processed twice | Canonical scan identity, unique attempt, artifact digest idempotency | Duplicate events ignored and audited |
 | Stale publication | Old commit result comments on newer PR | Latest-context comparison before policy/comment | Target stale publication count = zero |
 | Incomplete coverage | Successful tool hides required tool failure | Explicit required coverage state | Comment/block/AI denied |
-| Evidence reconstruction | Multiple snippets rebuild source | Total/fragment/context caps and reconstruction-risk check | Evidence build reject and audit |
+| Evidence source forgery | A caller supplies a path/range, finding authority, or fragment that is not the durable accepted occurrence | Rebind exact T040/T039/T038/T037 rows and require an internal source attestation that defaults unavailable | Cross-scope, missing occurrence, changed fingerprint, path/range, and unavailable-source fixtures reject |
+| Evidence reconstruction | Multiple snippets rebuild source | 32 KiB/five-fragment/8 KiB/five-context caps; per-file maximum two; reject full-file, overlap, adjacency, or at least 25% combined line coverage | Evidence build reject and immutable audit with zero pack |
 | AI prompt injection | Evidence text instructs model | Evidence is untrusted data, bounded/redacted, no retrieval/tools/SCM | Advisory label and output schema validation |
 | Sandbox persistence | Compromise survives next scan | No worker/workspace reuse; new microVM per attempt | Destruction evidence and lag alert |
 | Operator credential leak | Deployment secrets enter repo/config | 005 reference-only credential handoff | Secret scanning and deployment audit |
@@ -148,6 +149,9 @@ The following must always remain true:
 16. Attempt two cannot start without a durable infrastructure-only retry decision bound to
     attempt-one failure/completion/final-audit state, current scanner-set and kill-switch
     authority, and a new attempt/sandbox/workload identity; attempt three is impossible.
+17. An accepted-finding evidence pack records only the durable accepted occurrence under
+    verified, fresh, and comparable authority. It contains no raw source or secret value and
+    grants no dashboard, AI, policy, publication, or lifecycle mutation authority.
 
 ## Required Security Test Corpus
 

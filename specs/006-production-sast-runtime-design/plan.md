@@ -15,7 +15,7 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040 independently and now proceeds to T041.
+T040 and T041 independently and now proceeds to T042.
 
 ## Target Boundaries
 
@@ -122,8 +122,15 @@ in one serializable transaction and persists zero publication authority even whe
 is complete. T040 now independently rebinds that immutable coverage source to a monotonic,
 provider-authoritative latest-target observation and an exact prior-scan comparison. It also
 persists a bounded attempt-two infrastructure-only retry decision before sandbox admission,
-with scanner-set and kill-switch revalidation plus new sandbox/workload identity. Only
-`SastScanFreshnessService` crosses the module boundary; T041 bounded evidence is the next gate.
+with scanner-set and kill-switch revalidation plus new sandbox/workload identity. T041 now
+rebinds that exact fresh decision to one durable accepted occurrence and its fingerprinted
+source finding before any evidence source read. The internal source authority defaults to
+unavailable; verified source is scanner-redacted and platform-redacted in memory, then a
+canonical pack is limited to 32 KiB, five fragments, 8 KiB per fragment, and five context
+lines. Full-file spans, more than two fragments per file, overlapping/adjacent intervals, or
+25% or greater per-file line coverage reject the complete build. Only
+`SastAcceptedEvidenceService` crosses the module boundary; T042 classification, expiry
+enforcement, and deletion proof are the next gate.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

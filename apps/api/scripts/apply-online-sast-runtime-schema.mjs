@@ -603,6 +603,13 @@ const constraints = [
       'FOREIGN KEY ("normalizedFindingId", "tenantId", "scanRequestId", "scannerRunId") REFERENCES "NormalizedFinding"("id", "tenantId", "scanRequestId", "scannerRunId") ON DELETE CASCADE ON UPDATE CASCADE'
   },
   {
+    table: 'SastEvidenceBuildDecision',
+    name: 'SastEvidenceBuildDecision_occurrence_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("occurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") ON DELETE CASCADE ON UPDATE CASCADE'
+  },
+  {
     table: 'SastFindingCorrelationEdge',
     name: 'SastFindingCorrelationEdge_source_occurrence_scope_fkey',
     type: 'f',
