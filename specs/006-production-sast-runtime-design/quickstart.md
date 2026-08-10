@@ -477,11 +477,14 @@ portion of Phase 6:
 - `SastEvidenceBuildDecision`, `SastAcceptedEvidencePack`, and
   `SastAcceptedEvidenceFragment` are tenant/scan/attempt scoped with exact T040 and occurrence
   composite foreign keys. Serializable re-read permits only exact replay.
-- `ScanPlaneModule` now exports only `SastAcceptedEvidenceService` as the sequential T041
-  handoff to T042. T040 freshness and all earlier coverage/correlation/lineage/identity/
-  redaction providers remain internal. T041 adds no controller, evidence access route, AI
-  payload, policy decision, publisher, or SCM writer; `dashboardSafe` and `aiSafe` remain
-  false and classification/deletion references remain null until T042.
+- Alongside the four established runtime exports (`RepositoryFetchService`,
+  `RepositoryPreflightService`, `SandboxRuntimeAttestationService`, and
+  `SastScannerRuntimeService`), `ScanPlaneModule` exports
+  `SastAcceptedEvidenceService` as the sole sequential T041 handoff to T042. T040 freshness
+  and all earlier coverage/correlation/lineage/identity/redaction providers remain internal.
+  T041 adds no controller, evidence access route, AI payload, policy decision, publisher, or
+  SCM writer; `dashboardSafe` and `aiSafe` remain false and classification/deletion
+  references remain null until T042.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test

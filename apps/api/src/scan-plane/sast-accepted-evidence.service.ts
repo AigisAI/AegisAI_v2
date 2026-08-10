@@ -25,6 +25,7 @@ import {
   type SastAcceptedEvidenceSourceResult
 } from './sast-accepted-evidence-source.authority';
 import {
+  SastAcceptedEvidencePersistenceError,
   SastAcceptedEvidenceStore,
   type SastAcceptedEvidenceContext
 } from './sast-accepted-evidence.store';
@@ -266,7 +267,12 @@ export class SastAcceptedEvidenceService {
         aiPayloadCreated: false,
         publicationAttempted: false
       };
-    } catch {
+    } catch (error) {
+      if (error instanceof SastAcceptedEvidencePersistenceError) {
+        return this.reject(
+          mapPersistenceReason(error.reason)
+        );
+      }
       return this.reject('EVIDENCE_PERSISTENCE_CONFLICT');
     }
   }
@@ -283,6 +289,19 @@ export class SastAcceptedEvidenceService {
       aiPayloadCreated: false,
       publicationAttempted: false
     };
+  }
+}
+
+function mapPersistenceReason(
+  reason: SastAcceptedEvidencePersistenceError['reason']
+): SastEvidenceReasonCode {
+  switch (reason) {
+    case 'CONTEXT_DRIFT':
+      return 'EVIDENCE_CONTEXT_UNAVAILABLE';
+    case 'OUTPUT_INVALID':
+      return 'EVIDENCE_OUTPUT_INVALID';
+    case 'REPLAY_CONFLICT':
+      return 'EVIDENCE_PERSISTENCE_CONFLICT';
   }
 }
 

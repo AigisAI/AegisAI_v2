@@ -24,6 +24,43 @@ export const SAST_EVIDENCE_BUILD_DECISION_VERSION =
 export const SAST_EVIDENCE_RECONSTRUCTION_VERSION =
   'sast-evidence-reconstruction-v1' as const;
 
+const INVALID_EVIDENCE_DECIDED_AT =
+  '1970-01-01T00:00:00.000Z' as const;
+
+const CONTRACT_ID_PATTERNS = new Map<string, RegExp>([
+  ['finding-lineage', /^finding-lineage:\/\/[a-f0-9]{64}$/u],
+  [
+    'finding-observation',
+    /^finding-observation:\/\/[a-f0-9]{64}$/u
+  ],
+  [
+    'finding-occurrence',
+    /^finding-occurrence:\/\/[a-f0-9]{64}$/u
+  ],
+  ['sast-coverage', /^sast-coverage:\/\/[a-f0-9]{64}$/u],
+  [
+    'sast-evidence-build',
+    /^sast-evidence-build:\/\/[a-f0-9]{64}$/u
+  ],
+  [
+    'sast-evidence-candidate',
+    /^sast-evidence-candidate:\/\/[a-f0-9]{64}$/u
+  ],
+  [
+    'sast-evidence-fragment',
+    /^sast-evidence-fragment:\/\/[a-f0-9]{64}$/u
+  ],
+  [
+    'sast-evidence-pack',
+    /^sast-evidence-pack:\/\/[a-f0-9]{64}$/u
+  ],
+  [
+    'sast-evidence-reconstruction',
+    /^sast-evidence-reconstruction:\/\/[a-f0-9]{64}$/u
+  ],
+  ['sast-freshness', /^sast-freshness:\/\/[a-f0-9]{64}$/u]
+]);
+
 export const SAST_ACCEPTED_EVIDENCE_POLICY =
   DEFAULT_SAST_EVIDENCE_POLICY;
 
@@ -259,9 +296,7 @@ export function canonicalizeSastEvidenceCandidateSet(
   candidates: readonly SastRedactedEvidenceCandidate[]
 ): string {
   return stableJson(
-    [...candidates]
-      .sort(compareSastEvidenceCandidates)
-      .map((candidate) => candidate)
+    [...candidates].sort(compareSastEvidenceCandidates)
   );
 }
 
@@ -328,6 +363,18 @@ export function buildSastAcceptedEvidence(input: {
   const candidateSetDigest = input.digestCanonical(
     canonicalizeSastEvidenceCandidateSet(ordered)
   );
+  if (!isCanonicalTimestamp(input.decidedAt)) {
+    return {
+      decision: buildSastEvidenceEarlyRejection({
+        scope: input.scope,
+        requestDigest: candidateSetDigest,
+        reasonCode: 'EVIDENCE_INPUT_INVALID',
+        decidedAt: INVALID_EVIDENCE_DECIDED_AT,
+        digestCanonical: input.digestCanonical
+      }),
+      pack: null
+    };
+  }
   const structuralReasons = validateCandidateSet(
     input.scope,
     ordered,
@@ -892,7 +939,9 @@ export function isSastAcceptedEvidencePackShapeValid(
 
 export function isSastEvidenceBuildDecisionShapeValid(
   value: unknown,
-  digestCanonical: SastEvidenceCanonicalDigester
+  digestCanonical: SastEvidenceCanonicalDigester,
+  policy: Readonly<SastEvidencePolicy> =
+    SAST_ACCEPTED_EVIDENCE_POLICY
 ): value is SastEvidenceBuildDecision {
   if (
     !isRecord(value) ||
@@ -932,7 +981,8 @@ export function isSastEvidenceBuildDecisionShapeValid(
     !isDecisionAuthority(value.authority) ||
     !isAuditProjection(value.audit) ||
     !isCanonicalTimestamp(value.decidedAt) ||
-    !isSha256Digest(value.decisionDigest)
+    !isSha256Digest(value.decisionDigest) ||
+    !isSastEvidencePolicySafe(policy)
   ) {
     return false;
   }
@@ -949,7 +999,7 @@ export function isSastEvidenceBuildDecisionShapeValid(
     accepted !==
       (decision.outcome === 'ACCEPTED') ||
     decision.selectedFragmentCount >
-      SAST_ACCEPTED_EVIDENCE_POLICY.maxFragmentCount ||
+      policy.maxFragmentCount ||
     decision.reconstruction.candidateSetDigest !==
       decision.candidateSetDigest ||
     decision.reconstruction.checkedAt !== decision.decidedAt ||
@@ -989,7 +1039,8 @@ export function isSastAcceptedEvidenceBuildResultShapeValid(
     !hasExactKeys(value, ['decision', 'pack']) ||
     !isSastEvidenceBuildDecisionShapeValid(
       value.decision,
-      digestCanonical
+      digestCanonical,
+      policy
     )
   ) {
     return false;
@@ -1475,10 +1526,7 @@ function hasUnique(values: readonly string[]): boolean {
 function isContractId(value: unknown, prefix: string): value is string {
   return (
     typeof value === 'string' &&
-    new RegExp(
-      '^' + prefix + '://[a-f0-9]{64}$',
-      'u'
-    ).test(value)
+    CONTRACT_ID_PATTERNS.get(prefix)?.test(value) === true
   );
 }
 

@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import {
+  SAST_ACCEPTED_EVIDENCE_LIMITS,
+  SAST_ACCEPTED_EVIDENCE_POLICY
+} from '@aegisai/shared';
+
 describe('SAST accepted-finding evidence persistence contract', () => {
   const schema = read('prisma/schema.prisma');
   const migration = read(
@@ -50,7 +55,19 @@ describe('SAST accepted-finding evidence persistence contract', () => {
       'SastEvidenceBuildDecision_replay_key'
     );
     expect(migration).toContain(
+      'SastEvidenceBuildDecision_coverageDecisionId_idx'
+    );
+    expect(migration).toContain(
       'SastAcceptedEvidencePack_expiresAt_idx'
+    );
+    expect(migration).not.toContain(
+      'SastAcceptedEvidencePack_scope_key'
+    );
+    expect(migration).not.toContain(
+      'SastAcceptedEvidencePack_decision_key'
+    );
+    expect(migration).toContain(
+      'Prisma requires this composite key'
     );
     expect(migration).not.toContain('CONCURRENTLY');
   });
@@ -64,6 +81,18 @@ describe('SAST accepted-finding evidence persistence contract', () => {
     );
     expect(migration).toContain(
       '"byteSize" BETWEEN 1 AND 8192'
+    );
+    expect(migration).toContain(
+      '"anchorStartLine" - "startLine" BETWEEN 0 AND 5'
+    );
+    expect(migration).toContain(
+      '"endLine" - "anchorEndLine" BETWEEN 0 AND 5'
+    );
+    expect(migration).toContain(
+      '"normalizedPath" = normalize("normalizedPath", NFC)'
+    );
+    expect(migration).toContain(
+      '"normalizedPath" !~ \'(^|/)\\.{1,2}(/|$)\''
     );
     expect(migration).toContain(
       'NOT ("startLine" = 1 AND "endLine" = "sourceFileLineCount")'
@@ -92,6 +121,52 @@ describe('SAST accepted-finding evidence persistence contract', () => {
     expect(migration).toContain(
       '"expiresAt" <= "createdAt" + INTERVAL \'7 days\''
     );
+  });
+
+  it('pins SQL bounds to the shared policy and prevents ledger updates', () => {
+    expect(migration).toContain(
+      'SAST_ACCEPTED_EVIDENCE_POLICY and SAST_ACCEPTED_EVIDENCE_LIMITS'
+    );
+    expect(migration).toContain(
+      '"selectedFragmentCount" BETWEEN 0 AND 5'
+    );
+    expect(migration).toContain(
+      '"totalBytes" BETWEEN 1 AND 32768'
+    );
+    expect(migration).toContain(
+      '"fragmentCount" BETWEEN 1 AND 5'
+    );
+    expect(migration).toContain(
+      '"ordinal" BETWEEN 0 AND 4'
+    );
+    expect(migration).toContain(
+      '"byteSize" BETWEEN 1 AND 8192'
+    );
+    expect(migration).toContain("INTERVAL '7 days'");
+    expect(SAST_ACCEPTED_EVIDENCE_POLICY).toMatchObject({
+      maxTotalBytes: 32768,
+      maxFragmentCount: 5,
+      maxFragmentBytes: 8192,
+      contextLinesBefore: 5,
+      contextLinesAfter: 5,
+      maxRetentionSeconds: 604800
+    });
+    expect(
+      SAST_ACCEPTED_EVIDENCE_LIMITS.maximumFragmentsPerFile
+    ).toBe(2);
+    expect(migration).toContain(
+      'CREATE FUNCTION "reject_sast_accepted_evidence_update"()'
+    );
+    for (const table of [
+      'SastEvidenceBuildDecision',
+      'SastAcceptedEvidencePack',
+      'SastAcceptedEvidenceFragment'
+    ]) {
+      expect(migration).toContain(
+        'CREATE TRIGGER "' + table + '_immutable_update"'
+      );
+      expect(migration).toContain('BEFORE UPDATE ON "' + table + '"');
+    }
   });
 
   it('rebinds the complete fresh T040 decision and accepted T037 occurrence', () => {
@@ -130,6 +205,12 @@ describe('SAST accepted-finding evidence persistence contract', () => {
       'Prisma.TransactionIsolationLevel.Serializable'
     );
     expect(store).toContain('SERIALIZABLE_ATTEMPTS = 3');
+    expect(store).toContain(
+      'SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS'
+    );
+    expect(store).toContain(
+      "modelName === 'SastEvidenceBuildDecision'"
+    );
     expect(store).toContain('replayExisting');
   });
 

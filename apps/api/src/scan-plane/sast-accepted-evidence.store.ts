@@ -27,6 +27,7 @@ export class SastAcceptedEvidencePersistenceError extends Error {
   ) {
     super('The accepted-finding evidence ledger conflicts with durable state.');
     this.name = 'SastAcceptedEvidencePersistenceError';
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 

@@ -1447,6 +1447,7 @@ model SastEvidenceBuildDecision {
   @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastEvidenceBuildDecision_scope_key")
   @@unique([tenantId, occurrenceId, policyVersion, candidateSetDigest], map: "SastEvidenceBuildDecision_replay_key")
   @@index([freshnessDecisionId], map: "SastEvidenceBuildDecision_freshnessDecisionId_idx")
+  @@index([coverageDecisionId], map: "SastEvidenceBuildDecision_coverageDecisionId_idx")
   @@index([occurrenceId], map: "SastEvidenceBuildDecision_occurrenceId_idx")
   @@index([tenantId, outcome, decidedAt], map: "SastEvidenceBuildDecision_outcome_idx")
 }
@@ -1483,8 +1484,8 @@ model SastAcceptedEvidencePack {
   buildDecision SastEvidenceBuildDecision      @relation(fields: [buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastAcceptedEvidencePack_decision_scope_fkey")
   fragments     SastAcceptedEvidenceFragment[]
 
-  @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastAcceptedEvidencePack_scope_key")
-  @@unique([id, buildDecisionId], map: "SastAcceptedEvidencePack_decision_key")
+  // Required by Prisma on the defining side of this optional one-to-one
+  // composite relation; buildDecisionId remains the database cardinality key.
   @@unique([buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastAcceptedEvidencePack_decision_scope_key")
   @@unique([id, buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastAcceptedEvidencePack_fragment_scope_key")
   @@index([tenantId, scanRequestId, createdAt], map: "SastAcceptedEvidencePack_scan_idx")

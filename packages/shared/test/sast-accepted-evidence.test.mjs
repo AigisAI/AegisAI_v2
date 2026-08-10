@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import test from 'node:test';
 
 import {
+  SAST_ACCEPTED_EVIDENCE_POLICY,
   buildSastAcceptedEvidence,
   canonicalizeSastAcceptedEvidencePack,
   canonicalizeSastEvidenceCandidate,
@@ -77,6 +78,49 @@ test('builds only bounded internal evidence with no dashboard, AI, or publicatio
     isSastAcceptedEvidencePackShapeValid(result.pack, digest),
     true
   );
+  assert.equal(
+    isSastAcceptedEvidenceBuildResultShapeValid(result, digest),
+    true
+  );
+  assert.equal(
+    isSastEvidenceBuildDecisionShapeValid(
+      result.decision,
+      digest,
+      {
+        ...SAST_ACCEPTED_EVIDENCE_POLICY,
+        maxFragmentCount: 1
+      }
+    ),
+    false
+  );
+});
+
+test('rejects a non-canonical decision timestamp without throwing', () => {
+  const scope = evidenceScope();
+  const result = buildSastAcceptedEvidence({
+    scope,
+    candidates: [
+      candidate({
+        seed: 'invalid-time-primary',
+        role: 'PRIMARY',
+        normalizedPath: scope.normalizedPath,
+        startLine: 10,
+        endLine: 12,
+        anchorStartLine: 11,
+        anchorEndLine: 11,
+        sourceFileLineCount: 100
+      })
+    ],
+    decidedAt: 'not-a-timestamp',
+    digestCanonical: digest
+  });
+
+  assert.equal(result.pack, null);
+  assert.equal(result.decision.outcome, 'REJECTED');
+  assert.deepEqual(result.decision.reasonCodes, [
+    'EVIDENCE_INPUT_INVALID'
+  ]);
+  assert.equal(result.decision.decidedAt, '1970-01-01T00:00:00.000Z');
   assert.equal(
     isSastAcceptedEvidenceBuildResultShapeValid(result, digest),
     true
@@ -185,6 +229,8 @@ test('rejects full-file, overlapping, adjacent, and substantial reconstruction s
       'EVIDENCE_RECONSTRUCTION_OVERLAP'
     )
   );
+  assert.equal(overlapping.pack, null);
+  assert.equal(overlapping.decision.reconstruction.status, 'RISK');
 
   const adjacent = buildSastAcceptedEvidence({
     scope,
@@ -209,6 +255,8 @@ test('rejects full-file, overlapping, adjacent, and substantial reconstruction s
       'EVIDENCE_RECONSTRUCTION_ADJACENT'
     )
   );
+  assert.equal(adjacent.pack, null);
+  assert.equal(adjacent.decision.reconstruction.status, 'RISK');
 
   const substantialScope = {
     ...scope,
@@ -235,6 +283,87 @@ test('rejects full-file, overlapping, adjacent, and substantial reconstruction s
   assert.ok(
     substantial.decision.reasonCodes.includes(
       'EVIDENCE_RECONSTRUCTION_COVERAGE'
+    )
+  );
+  assert.equal(substantial.pack, null);
+  assert.equal(substantial.decision.reconstruction.status, 'RISK');
+});
+
+test('rejects more than two fragments per file and an invalid primary fragment', () => {
+  const scope = evidenceScope();
+  const excessivePerFile = buildSastAcceptedEvidence({
+    scope,
+    candidates: [
+      candidate({
+        seed: 'primary-per-file',
+        role: 'PRIMARY',
+        normalizedPath: scope.normalizedPath,
+        startLine: 10,
+        endLine: 12,
+        anchorStartLine: 11,
+        anchorEndLine: 11,
+        sourceFileLineCount: 100
+      }),
+      candidate({
+        seed: 'related-per-file-1',
+        role: 'RELATED',
+        normalizedPath: scope.normalizedPath,
+        startLine: 20,
+        endLine: 22,
+        anchorStartLine: 21,
+        anchorEndLine: 21,
+        sourceFileLineCount: 100
+      }),
+      candidate({
+        seed: 'related-per-file-2',
+        role: 'RELATED',
+        normalizedPath: scope.normalizedPath,
+        startLine: 30,
+        endLine: 32,
+        anchorStartLine: 31,
+        anchorEndLine: 31,
+        sourceFileLineCount: 100
+      })
+    ],
+    decidedAt: '2026-08-10T04:40:00.000Z',
+    digestCanonical: digest
+  });
+  assert.equal(excessivePerFile.pack, null);
+  assert.equal(
+    excessivePerFile.decision.reconstruction.status,
+    'RISK'
+  );
+  assert.ok(
+    excessivePerFile.decision.reasonCodes.includes(
+      'EVIDENCE_RECONSTRUCTION_FRAGMENT_COUNT'
+    )
+  );
+
+  const invalidPrimary = buildSastAcceptedEvidence({
+    scope,
+    candidates: [
+      candidate({
+        seed: 'misbound-primary',
+        role: 'PRIMARY',
+        normalizedPath: 'src/main/java/Other.java',
+        startLine: 10,
+        endLine: 12,
+        anchorStartLine: 11,
+        anchorEndLine: 11,
+        sourceFileLineCount: 100
+      })
+    ],
+    decidedAt: '2026-08-10T04:40:00.000Z',
+    digestCanonical: digest
+  });
+  assert.equal(invalidPrimary.pack, null);
+  assert.equal(
+    invalidPrimary.decision.reconstruction.status,
+    'NOT_CHECKED'
+  );
+  assert.ok(
+    invalidPrimary.decision.reasonCodes.includes(
+      'EVIDENCE_PRIMARY_FRAGMENT_INVALID'
     )
   );
 });
@@ -287,7 +416,7 @@ test('truncates deterministically at five fragments and rejects content tamperin
     false
   );
 
-  const { packDigest, ...packCore } = result.pack;
+  const packCore = omit(result.pack, 'packDigest');
   const forgedPackCore = {
     ...packCore,
     reconstructionRiskDecisionRef: id(
@@ -306,7 +435,7 @@ test('truncates deterministically at five fragments and rejects content tamperin
     false
   );
 
-  const { decisionDigest, ...decisionCore } = result.decision;
+  const decisionCore = omit(result.decision, 'decisionDigest');
   const forgedDecisionCore = {
     ...decisionCore,
     evidencePackDigest: digest('different-pack')
@@ -416,4 +545,10 @@ function digest(value) {
 
 function hex(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+function omit(value, key) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([entryKey]) => entryKey !== key)
+  );
 }

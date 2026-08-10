@@ -12,6 +12,7 @@ import {
 } from '../../src/scan-plane/sast-accepted-evidence-source.authority';
 import { SastAcceptedEvidenceService } from '../../src/scan-plane/sast-accepted-evidence.service';
 import {
+  SastAcceptedEvidencePersistenceError,
   SastAcceptedEvidenceStore,
   type SastAcceptedEvidenceContext
 } from '../../src/scan-plane/sast-accepted-evidence.store';
@@ -201,6 +202,109 @@ describe('SastAcceptedEvidenceService', () => {
     }
   });
 
+  it('rejects adjacent, substantial-coverage, and over-cap per-file reconstruction', async () => {
+    const context = evidenceContext();
+    const adjacent = await new SastAcceptedEvidenceService(
+      new MemoryEvidenceStore(context),
+      new MemorySourceAuthority({})
+    ).build(
+      {
+        freshnessDecisionId:
+          context.scope.freshnessDecisionId,
+        occurrenceId: context.scope.occurrenceId,
+        fragments: [
+          primaryRequest(),
+          request({
+            seed: 'adjacent',
+            role: 'RELATED',
+            path: context.scope.normalizedPath,
+            startLine: 13,
+            endLine: 15
+          })
+        ]
+      },
+      () => DECIDED_AT
+    );
+    expect(adjacent.outcome).toBe('REJECTED');
+    if (adjacent.outcome === 'REJECTED') {
+      expect(adjacent.decision?.reasonCodes).toContain(
+        'EVIDENCE_RECONSTRUCTION_ADJACENT'
+      );
+      expect(adjacent.decision?.reconstruction.status).toBe(
+        'RISK'
+      );
+    }
+
+    const substantial = await new SastAcceptedEvidenceService(
+      new MemoryEvidenceStore(context),
+      new MemorySourceAuthority({ sourceFileLineCount: 20 })
+    ).build(
+      {
+        freshnessDecisionId:
+          context.scope.freshnessDecisionId,
+        occurrenceId: context.scope.occurrenceId,
+        fragments: [
+          primaryRequest(),
+          request({
+            seed: 'substantial',
+            role: 'RELATED',
+            path: context.scope.normalizedPath,
+            startLine: 1,
+            endLine: 3
+          })
+        ]
+      },
+      () => DECIDED_AT
+    );
+    expect(substantial.outcome).toBe('REJECTED');
+    if (substantial.outcome === 'REJECTED') {
+      expect(substantial.decision?.reasonCodes).toContain(
+        'EVIDENCE_RECONSTRUCTION_COVERAGE'
+      );
+      expect(substantial.decision?.reconstruction.status).toBe(
+        'RISK'
+      );
+    }
+
+    const overCap = await new SastAcceptedEvidenceService(
+      new MemoryEvidenceStore(context),
+      new MemorySourceAuthority({})
+    ).build(
+      {
+        freshnessDecisionId:
+          context.scope.freshnessDecisionId,
+        occurrenceId: context.scope.occurrenceId,
+        fragments: [
+          primaryRequest(),
+          request({
+            seed: 'per-file-1',
+            role: 'RELATED',
+            path: context.scope.normalizedPath,
+            startLine: 20,
+            endLine: 22
+          }),
+          request({
+            seed: 'per-file-2',
+            role: 'RELATED',
+            path: context.scope.normalizedPath,
+            startLine: 30,
+            endLine: 32
+          })
+        ]
+      },
+      () => DECIDED_AT
+    );
+    expect(overCap.outcome).toBe('REJECTED');
+    if (overCap.outcome === 'REJECTED') {
+      expect(overCap.decision?.reasonCodes).toContain(
+        'EVIDENCE_RECONSTRUCTION_FRAGMENT_COUNT'
+      );
+      expect(overCap.decision?.reconstruction.status).toBe(
+        'RISK'
+      );
+    }
+  });
+
   it('returns the persisted exact replay and rejects changed input at the store boundary', async () => {
     const context = evidenceContext();
     const store = new MemoryEvidenceStore(context);
@@ -308,7 +412,57 @@ describe('SastAcceptedEvidenceService', () => {
       reasonCode: 'EVIDENCE_SOURCE_INVALID'
     });
   });
+
+  it.each([
+    ['CONTEXT_DRIFT', 'EVIDENCE_CONTEXT_UNAVAILABLE'],
+    ['REPLAY_CONFLICT', 'EVIDENCE_PERSISTENCE_CONFLICT'],
+    ['OUTPUT_INVALID', 'EVIDENCE_OUTPUT_INVALID']
+  ] as const)(
+    'maps typed persistence reason %s to %s',
+    async (persistenceReason, evidenceReason) => {
+      const context = evidenceContext();
+      const result = await new SastAcceptedEvidenceService(
+        new FailingEvidenceStore(context, persistenceReason),
+        new MemorySourceAuthority({})
+      ).build(
+        {
+          freshnessDecisionId:
+            context.scope.freshnessDecisionId,
+          occurrenceId: context.scope.occurrenceId,
+          fragments: [primaryRequest()]
+        },
+        () => DECIDED_AT
+      );
+
+      expect(result).toMatchObject({
+        outcome: 'REJECTED',
+        reasonCode: evidenceReason,
+        decision: null,
+        replayed: false
+      });
+    }
+  );
 });
+
+class FailingEvidenceStore extends SastAcceptedEvidenceStore {
+  constructor(
+    private readonly context: SastAcceptedEvidenceContext,
+    private readonly reason:
+      | 'CONTEXT_DRIFT'
+      | 'REPLAY_CONFLICT'
+      | 'OUTPUT_INVALID'
+  ) {
+    super();
+  }
+
+  async loadContext() {
+    return this.context;
+  }
+
+  async persist(): Promise<never> {
+    throw new SastAcceptedEvidencePersistenceError(this.reason);
+  }
+}
 
 class MemoryEvidenceStore extends SastAcceptedEvidenceStore {
   persisted?: SastAcceptedEvidenceBuildResult;

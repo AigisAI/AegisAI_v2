@@ -1,3 +1,6 @@
+-- Numeric bounds in this migration mirror packages/shared
+-- SAST_ACCEPTED_EVIDENCE_POLICY and SAST_ACCEPTED_EVIDENCE_LIMITS.
+-- The persistence contract test pins both representations together.
 CREATE TABLE "SastEvidenceBuildDecision" (
   "id" TEXT NOT NULL,
   "freshnessDecisionId" TEXT NOT NULL,
@@ -186,8 +189,19 @@ CREATE TABLE "SastAcceptedEvidenceFragment" (
     AND "endLine" >= "startLine"
     AND "anchorStartLine" BETWEEN "startLine" AND "endLine"
     AND "anchorEndLine" BETWEEN "anchorStartLine" AND "endLine"
+    AND "anchorStartLine" - "startLine" BETWEEN 0 AND 5
+    AND "endLine" - "anchorEndLine" BETWEEN 0 AND 5
     AND "sourceFileLineCount" >= "endLine"
     AND NOT ("startLine" = 1 AND "endLine" = "sourceFileLineCount")
+    AND octet_length("normalizedPath") BETWEEN 1 AND 2048
+    AND "normalizedPath" = btrim("normalizedPath")
+    AND "normalizedPath" = normalize("normalizedPath", NFC)
+    AND left("normalizedPath", 1) <> '/'
+    AND right("normalizedPath", 1) <> '/'
+    AND position(E'\\' in "normalizedPath") = 0
+    AND "normalizedPath" NOT LIKE '%//%'
+    AND "normalizedPath" !~ '(^|/)\.{1,2}(/|$)'
+    AND "normalizedPath" !~ '[[:cntrl:]]'
     AND "byteSize" BETWEEN 1 AND 8192
     AND "sourceContentDigest" ~ '^sha256:[a-f0-9]{64}$'
     AND "contentDigest" ~ '^sha256:[a-f0-9]{64}$'
@@ -207,6 +221,8 @@ CREATE UNIQUE INDEX "SastEvidenceBuildDecision_replay_key"
   ON "SastEvidenceBuildDecision"("tenantId", "occurrenceId", "policyVersion", "candidateSetDigest");
 CREATE INDEX "SastEvidenceBuildDecision_freshnessDecisionId_idx"
   ON "SastEvidenceBuildDecision"("freshnessDecisionId");
+CREATE INDEX "SastEvidenceBuildDecision_coverageDecisionId_idx"
+  ON "SastEvidenceBuildDecision"("coverageDecisionId");
 CREATE INDEX "SastEvidenceBuildDecision_occurrenceId_idx"
   ON "SastEvidenceBuildDecision"("occurrenceId");
 CREATE INDEX "SastEvidenceBuildDecision_outcome_idx"
@@ -216,10 +232,8 @@ CREATE UNIQUE INDEX "SastAcceptedEvidencePack_buildDecisionId_key"
   ON "SastAcceptedEvidencePack"("buildDecisionId");
 CREATE UNIQUE INDEX "SastAcceptedEvidencePack_packDigest_key"
   ON "SastAcceptedEvidencePack"("packDigest");
-CREATE UNIQUE INDEX "SastAcceptedEvidencePack_scope_key"
-  ON "SastAcceptedEvidencePack"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId");
-CREATE UNIQUE INDEX "SastAcceptedEvidencePack_decision_key"
-  ON "SastAcceptedEvidencePack"("id", "buildDecisionId");
+-- Prisma requires this composite key on the defining side of the optional
+-- one-to-one relation; buildDecisionId remains the cardinality key.
 CREATE UNIQUE INDEX "SastAcceptedEvidencePack_decision_scope_key"
   ON "SastAcceptedEvidencePack"("buildDecisionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId");
 CREATE UNIQUE INDEX "SastAcceptedEvidencePack_fragment_scope_key"
@@ -263,3 +277,30 @@ ALTER TABLE "SastAcceptedEvidenceFragment"
   FOREIGN KEY ("evidencePackId", "buildDecisionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")
   REFERENCES "SastAcceptedEvidencePack"("id", "buildDecisionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")
   ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE FUNCTION "reject_sast_accepted_evidence_update"()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog
+AS $$
+BEGIN
+  RAISE EXCEPTION 'accepted-finding evidence ledgers are immutable'
+    USING ERRCODE = '55000';
+  RETURN OLD;
+END;
+$$;
+
+CREATE TRIGGER "SastEvidenceBuildDecision_immutable_update"
+  BEFORE UPDATE ON "SastEvidenceBuildDecision"
+  FOR EACH ROW
+  EXECUTE FUNCTION "reject_sast_accepted_evidence_update"();
+
+CREATE TRIGGER "SastAcceptedEvidencePack_immutable_update"
+  BEFORE UPDATE ON "SastAcceptedEvidencePack"
+  FOR EACH ROW
+  EXECUTE FUNCTION "reject_sast_accepted_evidence_update"();
+
+CREATE TRIGGER "SastAcceptedEvidenceFragment_immutable_update"
+  BEFORE UPDATE ON "SastAcceptedEvidenceFragment"
+  FOR EACH ROW
+  EXECUTE FUNCTION "reject_sast_accepted_evidence_update"();

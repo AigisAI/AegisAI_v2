@@ -149,6 +149,9 @@ The following must always remain true:
 16. Attempt two cannot start without a durable infrastructure-only retry decision bound to
     attempt-one failure/completion/final-audit state, current scanner-set and kill-switch
     authority, and a new attempt/sandbox/workload identity; attempt three is impossible.
+17. An accepted-finding evidence pack records only the durable accepted occurrence under
+    verified, fresh, and comparable authority. It contains no raw source or secret value and
+    grants no dashboard, AI, policy, publication, or lifecycle mutation authority.
 
 ## Required Security Test Corpus
 

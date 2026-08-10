@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import {
   SAST_ACCEPTED_EVIDENCE_POLICY,
@@ -27,6 +28,7 @@ import {
 
 const EVIDENCE_POLICY_VERSION = 'sast-evidence-policy-v1';
 const SERIALIZABLE_ATTEMPTS = 3;
+const SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS = 10;
 const SERIALIZABLE_MAX_WAIT_MILLISECONDS = 5_000;
 const SERIALIZABLE_TIMEOUT_MILLISECONDS = 120_000;
 
@@ -369,6 +371,9 @@ export class PrismaSastAcceptedEvidenceStore
         ) {
           throw error;
         }
+        await delay(
+          SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS * attempt
+        );
       }
     }
     throw lastError;
@@ -751,10 +756,27 @@ function withoutKeys<
 }
 
 function isRetryableTransactionError(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    (error.code === 'P2034' || error.code === 'P2002')
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+  if (error.code === 'P2034') return true;
+  if (error.code !== 'P2002') return false;
+  const modelName = error.meta?.modelName;
+  if (modelName === 'SastEvidenceBuildDecision') return true;
+  const target = error.meta?.target;
+  if (typeof target === 'string') {
+    return target.includes('SastEvidenceBuildDecision');
+  }
+  if (!Array.isArray(target)) return false;
+  const fields = target.filter(
+    (value): value is string => typeof value === 'string'
   );
+  return [
+    'tenantId',
+    'occurrenceId',
+    'policyVersion',
+    'candidateSetDigest'
+  ].every((field) => fields.includes(field));
 }
 
 function json(value: unknown): Prisma.InputJsonValue {

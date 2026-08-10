@@ -758,10 +758,12 @@ Scan Plane handoff to T042.
 
 ### SastAcceptedEvidencePack
 
-- `evidencePackId`, tenant, repository, scan, and `findingFingerprint` attribution
+- durable Prisma `id` stores the shared-contract `evidencePackId`; tenant, repository, scan,
+  and `findingFingerprint` retain the complete attribution
 - `policyVersion`, fragments, exact `totalBytes`, and per-fragment content digests
 - `truncated` and non-negative `suppressedFragmentCount`
-- invariant `reconstructionRiskChecked = true` plus `reconstructionRiskDecisionRef`
+- invariant `reconstructionRiskChecked = true`; durable Prisma
+  `reconstructionDecisionId` stores the shared-contract `reconstructionRiskDecisionRef`
 - T041 invariants `classificationDecisionRef=null`, `deletionScheduleRef=null`,
   `dashboardSafe=false`, and `aiSafe=false`; T042 creates separate access and deletion
   authority rather than mutating this pack
