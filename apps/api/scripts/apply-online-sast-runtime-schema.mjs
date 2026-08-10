@@ -246,6 +246,13 @@ const constraints = [
       'FOREIGN KEY ("finalAuditEventId", "id", "tenantId") REFERENCES "AuditEvent"("id", "attemptId", "tenantId") ON DELETE NO ACTION ON UPDATE NO ACTION'
   },
   {
+    table: 'SastScanRetryDecision',
+    name: 'SastScanRetryDecision_final_audit_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("previousFinalAuditEventId", "previousAttemptId", "tenantId") REFERENCES "AuditEvent"("id", "attemptId", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE'
+  },
+  {
     table: 'SastArtifactIngestion',
     name: 'SastArtifactIngestion_scanner_run_scope_fkey',
     type: 'f',

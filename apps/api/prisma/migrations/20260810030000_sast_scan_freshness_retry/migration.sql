@@ -326,11 +326,9 @@ ALTER TABLE "SastScanRetryDecision"
   FOREIGN KEY ("previousAttemptId", "tenantId", "repositoryBindingId", "scanRequestId")
   REFERENCES "SastScanAttempt"("id", "tenantId", "repositoryBindingId", "scanRequestId")
   ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "SastScanRetryDecision"
-  ADD CONSTRAINT "SastScanRetryDecision_final_audit_fkey"
-  FOREIGN KEY ("previousFinalAuditEventId", "previousAttemptId", "tenantId")
-  REFERENCES "AuditEvent"("id", "attemptId", "tenantId")
-  ON DELETE RESTRICT ON UPDATE CASCADE;
+-- The final-audit scope FK depends on the concurrently installed
+-- AuditEvent_final_attempt_scope_key and is added and validated by the
+-- mandatory prisma:online-schema deployment step.
 
 ALTER TABLE "SastScanAttempt"
   ADD CONSTRAINT "SastScanAttempt_retryDecisionId_fkey"

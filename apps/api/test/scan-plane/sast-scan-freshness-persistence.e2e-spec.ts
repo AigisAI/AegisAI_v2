@@ -6,6 +6,9 @@ describe('SAST scan freshness and retry persistence contract', () => {
   const migration = read(
     'prisma/migrations/20260810030000_sast_scan_freshness_retry/migration.sql'
   );
+  const onlineSchema = read(
+    'scripts/apply-online-sast-runtime-schema.mjs'
+  );
   const store = read(
     'src/scan-plane/prisma-sast-scan-freshness.store.ts'
   );
@@ -43,7 +46,13 @@ describe('SAST scan freshness and retry persistence contract', () => {
     expect(migration).toContain(
       'SastScanRetryDecision_previous_attempt_fkey'
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
+      'SastScanRetryDecision_final_audit_fkey'
+    );
+    expect(onlineSchema).toContain(
+      'FOREIGN KEY ("previousFinalAuditEventId", "previousAttemptId", "tenantId") REFERENCES "AuditEvent"("id", "attemptId", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE'
+    );
+    expect(migration).not.toContain(
       'SastScanRetryDecision_final_audit_fkey'
     );
     expect(migration).toContain(

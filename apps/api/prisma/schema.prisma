@@ -1391,6 +1391,8 @@ model SastScanRetryDecision {
   repositoryBinding       RepositoryBinding @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastScanRetryDecision_repository_scope_fkey")
   scanRequest             ScanRequest       @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastScanRetryDecision_scan_scope_fkey")
   previousAttempt         SastScanAttempt   @relation("SastScanRetryPreviousAttempt", fields: [previousAttemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Restrict, map: "SastScanRetryDecision_previous_attempt_fkey")
+  // Installed and validated by prisma:online-schema after its referenced
+  // AuditEvent composite scope index is concurrently ready.
   previousFinalAuditEvent AuditEvent?       @relation("SastScanRetryFinalAudit", fields: [previousFinalAuditEventId, previousAttemptId, tenantId], references: [id, attemptId, tenantId], onDelete: Restrict, map: "SastScanRetryDecision_final_audit_fkey")
   admittedAttempt         SastScanAttempt?  @relation("SastScanRetryAdmittedAttempt")
 
