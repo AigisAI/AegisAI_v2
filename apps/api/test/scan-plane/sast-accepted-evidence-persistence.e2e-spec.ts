@@ -21,6 +21,9 @@ describe('SAST accepted-finding evidence persistence contract', () => {
     'src/scan-plane/sast-accepted-evidence-source.authority.ts'
   );
   const module = read('src/scan-plane/scan-plane.module.ts');
+  const onlineSchema = read(
+    'scripts/apply-online-sast-runtime-schema.mjs'
+  );
   const shared = readShared(
     'src/types/sast-accepted-evidence.ts'
   );
@@ -39,7 +42,13 @@ describe('SAST accepted-finding evidence persistence contract', () => {
     expect(migration).toContain(
       'SastEvidenceBuildDecision_freshness_scope_fkey'
     );
-    expect(migration).toContain(
+    expect(migration).not.toContain(
+      'SastEvidenceBuildDecision_occurrence_scope_fkey'
+    );
+    expect(onlineSchema).toContain(
+      'SastFindingOccurrence_correlation_scope_key'
+    );
+    expect(onlineSchema).toContain(
       'SastEvidenceBuildDecision_occurrence_scope_fkey'
     );
     expect(migration).toContain(

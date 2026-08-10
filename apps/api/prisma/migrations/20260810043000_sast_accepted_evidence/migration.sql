@@ -1,6 +1,8 @@
 -- Numeric bounds in this migration mirror packages/shared
 -- SAST_ACCEPTED_EVIDENCE_POLICY and SAST_ACCEPTED_EVIDENCE_LIMITS.
 -- The persistence contract test pins both representations together.
+-- The occurrence-scope foreign key is installed by the mandatory online-schema
+-- step after its pre-existing composite occurrence index is concurrently ready.
 CREATE TABLE "SastEvidenceBuildDecision" (
   "id" TEXT NOT NULL,
   "freshnessDecisionId" TEXT NOT NULL,
@@ -258,12 +260,6 @@ ALTER TABLE "SastEvidenceBuildDecision"
   ADD CONSTRAINT "SastEvidenceBuildDecision_freshness_scope_fkey"
   FOREIGN KEY ("freshnessDecisionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")
   REFERENCES "SastScanFreshnessDecision"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")
-  ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "SastEvidenceBuildDecision"
-  ADD CONSTRAINT "SastEvidenceBuildDecision_occurrence_scope_fkey"
-  FOREIGN KEY ("occurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")
-  REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId")
   ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "SastAcceptedEvidencePack"

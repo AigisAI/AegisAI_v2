@@ -1295,6 +1295,9 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
   const migration = readNormalizedText(
     files.apiSastAcceptedEvidenceMigration
   );
+  const onlineSchema = readNormalizedText(
+    files.apiOnlineSastRuntimeSchema
+  );
   const scanPlaneModule = readNormalizedText(
     files.apiScanPlaneModule
   );
@@ -1376,7 +1379,7 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
     /SastEvidenceBuildDecision_freshness_scope_fkey/
   );
   assert.match(
-    migration,
+    onlineSchema,
     /SastEvidenceBuildDecision_occurrence_scope_fkey/
   );
   assert.match(migration, /"dashboardSafe" = false/);
