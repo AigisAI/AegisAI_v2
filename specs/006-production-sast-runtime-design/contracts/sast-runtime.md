@@ -1161,6 +1161,34 @@ and its deletion schedule. It records truncation and suppressed fragment counts.
 archive, broad debug log, raw SARIF/JSON, or sequential fragments that reconstruct substantial
 source is rejected.
 
+### Accepted-finding evidence gate v1
+
+`sast-accepted-finding-evidence-v1` accepts a fragment request only after the persistence
+store reloads the exact T040 decision and proves T039 `COMPLETE`, provider authority
+`VERIFIED`, `FRESH`, `COMPARABLE`, and an empty reason set. The requested occurrence must
+belong to the canonical T038 source set and its T037 observation, normalized-finding metadata,
+lineage, capability, fingerprint, target, fixed commit, profile, canonical key, and plan must
+all match. An UNKNOWN-location or non-occurrence input has no evidence authority.
+
+The source authority is internal and defaults to `UNAVAILABLE`. A verified response binds the
+candidate ID, role, path/range, attested anchor, source-file line count, scanner-redaction
+decision, and source-content digest. Source text is bounded to 8 KiB and exists only in memory.
+T041 reapplies known-format and platform-secret redaction, preserves line count, recomputes
+exact UTF-8 byte size/content digest, and stores neither raw source nor secret values.
+
+Candidate order is canonical. The builder selects at most five fragments and 32 KiB, records
+truncation and every suppressed fragment, and rejects a full-file span or context beyond five
+lines on either side of an attested anchor. Reconstruction uses canonical per-file intervals:
+more than two fragments from a file, overlap, adjacency, or at least 25% combined line coverage
+is `RISK` and rejects the complete pack. A rejected or accepted result is immutable; the
+tenant/occurrence/policy/candidate-set key permits exact replay only inside a bounded
+serializable transaction.
+
+An accepted T041 pack grants only evidence-construction authority.
+`dashboardSafe=false`, `aiSafe=false`, classification and deletion references are null,
+and policy, publication, lifecycle mutation, user access, and AI payload authority remain
+false until T042. `SastAcceptedEvidenceService` exposes no controller or SCM writer.
+
 AI receives finding metadata and reduced evidence references only after a second redaction
 pass. AI never receives the result-ingress artifact reference.
 

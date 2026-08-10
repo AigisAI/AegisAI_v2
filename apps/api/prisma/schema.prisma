@@ -969,6 +969,7 @@ model SastFindingOccurrence {
   sourceCorrelationEdges SastFindingCorrelationEdge[]       @relation("SastFindingCorrelationSourceOccurrence")
   targetCorrelationEdges SastFindingCorrelationEdge[]       @relation("SastFindingCorrelationTargetOccurrence")
   correlationProvenances SastFindingCorrelationProvenance[]
+  evidenceBuildDecisions SastEvidenceBuildDecision[]
 
   @@unique([observationBatchId, ordinal], map: "SastFindingOccurrence_batch_ordinal_key")
   @@unique([normalizedFindingId, tenantId, scanRequestId, scannerRunId], map: "SastFindingOccurrence_normalized_scope_key")
@@ -1351,6 +1352,7 @@ model SastScanFreshnessDecision {
   coverageDecision         SastScanCoverageDecision     @relation("SastScanFreshnessCurrentCoverage", fields: [coverageDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastScanFreshnessDecision_coverage_scope_fkey")
   previousCoverageDecision SastScanCoverageDecision?    @relation("SastScanFreshnessPreviousCoverage", fields: [previousCoverageDecisionId, tenantId, repositoryBindingId, previousScanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Restrict, map: "SastScanFreshnessDecision_previous_coverage_fkey")
   observation              SastLatestTargetObservation? @relation(fields: [observationId, tenantId, repositoryBindingId, provider, targetRef], references: [id, tenantId, repositoryBindingId, provider, targetRef], onDelete: Restrict, map: "SastScanFreshnessDecision_observation_scope_fkey")
+  evidenceBuildDecisions   SastEvidenceBuildDecision[]
 
   @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanFreshnessDecision_scope_key")
   @@unique([coverageDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanFreshnessDecision_coverage_scope_key")
@@ -1403,6 +1405,129 @@ model SastScanRetryDecision {
   @@index([tenantId, retryAllowed, decidedAt], map: "SastScanRetryDecision_outcome_idx")
   @@index([previousAttemptId], map: "SastScanRetryDecision_previousAttemptId_idx")
   @@index([previousFinalAuditEventId], map: "SastScanRetryDecision_previousFinalAuditEventId_idx")
+}
+
+model SastEvidenceBuildDecision {
+  id                           String                @id
+  freshnessDecisionId          String
+  coverageDecisionId           String
+  tenantId                     String
+  repositoryBindingId          String
+  scanRequestId                String
+  attemptId                    String
+  occurrenceId                 String
+  observationBatchId           String
+  normalizedFindingId          String
+  lineageId                    String
+  findingFingerprint           String
+  fingerprintVersion           String
+  capability                   SastFindingCapability
+  policyVersion                String
+  candidateSetDigest           String
+  outcome                      String
+  reasonCodes                  Json
+  selectedFragmentCount        Int
+  suppressedFragmentCount      Int
+  reconstructionStatus         String
+  reconstructionDecision       Json
+  reconstructionDecisionDigest String
+  evidencePackId               String?
+  evidencePackDigest           String?
+  authority                    Json
+  audit                        Json
+  decision                     Json
+  decisionDigest               String                @unique
+  decidedAt                    DateTime
+  createdAt                    DateTime              @default(now())
+
+  freshnessDecision SastScanFreshnessDecision @relation(fields: [freshnessDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastEvidenceBuildDecision_freshness_scope_fkey")
+  findingOccurrence SastFindingOccurrence     @relation(fields: [occurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastEvidenceBuildDecision_occurrence_scope_fkey")
+  evidencePack      SastAcceptedEvidencePack?
+
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastEvidenceBuildDecision_scope_key")
+  @@unique([tenantId, occurrenceId, policyVersion, candidateSetDigest], map: "SastEvidenceBuildDecision_replay_key")
+  @@index([freshnessDecisionId], map: "SastEvidenceBuildDecision_freshnessDecisionId_idx")
+  @@index([occurrenceId], map: "SastEvidenceBuildDecision_occurrenceId_idx")
+  @@index([tenantId, outcome, decidedAt], map: "SastEvidenceBuildDecision_outcome_idx")
+}
+
+model SastAcceptedEvidencePack {
+  id                           String   @id
+  buildDecisionId              String   @unique
+  tenantId                     String
+  repositoryBindingId          String
+  scanRequestId                String
+  attemptId                    String
+  occurrenceId                 String
+  normalizedFindingId          String
+  lineageId                    String
+  findingFingerprint           String
+  policyVersion                String
+  candidateSetDigest           String
+  totalBytes                   Int
+  fragmentCount                Int
+  truncated                    Boolean
+  suppressedFragmentCount      Int
+  reconstructionRiskChecked    Boolean  @default(true)
+  reconstructionDecisionId     String
+  reconstructionDecisionDigest String
+  classificationDecisionRef    String?
+  deletionScheduleRef          String?
+  dashboardSafe                Boolean  @default(false)
+  aiSafe                       Boolean  @default(false)
+  pack                         Json
+  packDigest                   String   @unique
+  createdAt                    DateTime
+  expiresAt                    DateTime
+
+  buildDecision SastEvidenceBuildDecision      @relation(fields: [buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastAcceptedEvidencePack_decision_scope_fkey")
+  fragments     SastAcceptedEvidenceFragment[]
+
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastAcceptedEvidencePack_scope_key")
+  @@unique([id, buildDecisionId], map: "SastAcceptedEvidencePack_decision_key")
+  @@unique([buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastAcceptedEvidencePack_decision_scope_key")
+  @@unique([id, buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastAcceptedEvidencePack_fragment_scope_key")
+  @@index([tenantId, scanRequestId, createdAt], map: "SastAcceptedEvidencePack_scan_idx")
+  @@index([expiresAt], map: "SastAcceptedEvidencePack_expiresAt_idx")
+}
+
+model SastAcceptedEvidenceFragment {
+  id                           String   @id
+  evidencePackId               String
+  buildDecisionId              String
+  tenantId                     String
+  repositoryBindingId          String
+  scanRequestId                String
+  attemptId                    String
+  candidateId                  String
+  ordinal                      Int
+  role                         String
+  normalizedPath               String
+  startLine                    Int
+  endLine                      Int
+  anchorStartLine              Int
+  anchorEndLine                Int
+  sourceFileLineCount          Int
+  redactedContent              String
+  byteSize                     Int
+  sourceContentDigest          String
+  contentDigest                String
+  sourceAttestationRef         String
+  scannerRedactionDecisionRef  String
+  platformRedactionDecisionRef String
+  secretRedactionApplied       Boolean  @default(true)
+  rawSourceStored              Boolean  @default(false)
+  isFullFile                   Boolean  @default(false)
+  fragment                     Json
+  fragmentDigest               String   @unique
+  createdAt                    DateTime @default(now())
+
+  evidencePack SastAcceptedEvidencePack @relation(fields: [evidencePackId, buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastAcceptedEvidenceFragment_pack_scope_fkey")
+
+  @@unique([evidencePackId, ordinal], map: "SastAcceptedEvidenceFragment_pack_ordinal_key")
+  @@unique([evidencePackId, candidateId], map: "SastAcceptedEvidenceFragment_pack_candidate_key")
+  @@index([tenantId, scanRequestId, normalizedPath], map: "SastAcceptedEvidenceFragment_path_idx")
+  @@index([contentDigest], map: "SastAcceptedEvidenceFragment_contentDigest_idx")
 }
 
 model SastFindingCorrelationEdge {

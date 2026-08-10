@@ -321,6 +321,21 @@ incomplete, stale, quarantined, or security-blocked scan.
 
 - **FR-046**: Evidence MUST be built only from accepted normalized findings and bounded
   source fragments.
+- **FR-046a**: T041 MUST reload the exact T040 complete, verified, fresh, comparable decision
+  and the T037 occurrence, observation, normalized-finding, lineage, and fingerprint rows.
+  Caller-provided finding, path, coordinate, coverage, freshness, or evidence authority MUST
+  NOT substitute for durable rebinding.
+- **FR-046b**: A source fragment MUST come from an internal authority that defaults to
+  unavailable, remain memory-only before redaction, preserve its attested line count, and be
+  redacted for known-format and platform secret values before a pack or audit projection is
+  persisted. Raw source and secret values MUST NOT be stored.
+- **FR-046c**: Reconstruction evaluation MUST reject a full file, more than two fragments per
+  file, overlapping or adjacent intervals, or combined fragment coverage of at least 25% of a
+  source file. Rejection MUST create no pack and MUST preserve only a canonical immutable
+  decision/audit projection.
+- **FR-046d**: T041 accepted packs MUST keep dashboard, AI, policy, publication, and lifecycle
+  authority false. Classification/deletion references MUST remain absent until T042, and T041
+  MUST expose no user route, AI payload, or SCM writer.
 - **FR-047**: The default evidence maximum is 32 KiB total, five fragments, 8 KiB per
   fragment, and five context lines on either side.
 - **FR-048**: Evidence MUST redact detected and platform-format secrets before persistence

@@ -69,7 +69,7 @@
 
 ## Phase 8: Evidence, Policy, and AI Boundary
 
-- [ ] T041 Build bounded accepted-finding evidence with reconstruction-risk checks
+- [x] T041 Build bounded accepted-finding evidence with reconstruction-risk checks
 - [ ] T042 Enforce dashboard/AI classification, secret redaction, seven-day expiry, and deletion proof
 - [ ] T043 Send only normalized findings and reduced evidence references to the advisory AI Plane
 - [ ] T044 Prove AI cannot create, suppress, waive, resolve, or override authoritative findings/policy

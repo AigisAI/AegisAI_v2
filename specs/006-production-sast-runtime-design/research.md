@@ -476,3 +476,32 @@ fixed heads, assuming profile names imply compatible capabilities, mutating the 
 retrying attempt three, retrying cleanup/input/capacity/scanner/security failure, reusing a
 sandbox identity, trusting a missing final audit event, or treating unavailable kill-switch
 authority as clear.
+
+## Decision 23: Build Evidence from a Rebound Accepted Occurrence and Reject Reconstruction
+
+**Decision**: `sast-accepted-finding-evidence-v1` reloads the exact T040
+verified/fresh/comparable decision, T039 complete coverage, T038 correlation source, and T037
+occurrence, observation, normalized finding, lineage, and fingerprint before reading source.
+The internal source authority defaults unavailable and returns only a bounded
+scanner-redacted, attested fragment in memory. T041 reapplies known-format and platform-secret
+redaction, verifies UTF-8 bytes and line count, then stores a canonical build decision and,
+only when safe, a short-lived pack plus fragments.
+
+Reconstruction is a deterministic interval decision rather than a caller flag. A file may
+contribute at most two fragments; full-file, overlap, adjacency, or at least 25% combined line
+coverage rejects the entire build. Candidate order, truncation, suppressed count, IDs, and
+digests are canonical. Serializable re-read and the tenant/occurrence/policy/candidate-set key
+permit exact replay only.
+
+**Rationale**: Accepted scanner output alone does not prove that requested source text belongs
+to the same fresh finding, and individually small snippets can reconstruct sensitive code when
+combined. Durable rebinding closes the authority gap; interval union rules make
+reconstruction risk auditable and independent of request order. Keeping all downstream
+authority false lets T042 add classification, expiry enforcement, and deletion proof without
+retroactively trusting T041 construction.
+
+**Rejected**: Building from scanner titles/messages or rejected artifacts, accepting caller
+paths/coordinates/redaction flags, storing raw source or platform secrets, per-fragment
+best-effort acceptance after reconstruction risk, allowing adjacent snippets, using character
+counts instead of UTF-8 bytes, mutable last-writer-wins packs, direct dashboard/AI access, or
+adding an SCM writer in T041.

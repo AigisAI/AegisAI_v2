@@ -126,6 +126,19 @@ import {
 import {
   SastFindingLifecycleCoverageGate
 } from './sast-finding-lifecycle-coverage.gate';
+import {
+  PrismaSastAcceptedEvidenceStore
+} from './prisma-sast-accepted-evidence.store';
+import {
+  SastAcceptedEvidenceStore
+} from './sast-accepted-evidence.store';
+import {
+  SastAcceptedEvidenceSourceAuthority,
+  UnavailableSastAcceptedEvidenceSourceAuthority
+} from './sast-accepted-evidence-source.authority';
+import {
+  SastAcceptedEvidenceService
+} from './sast-accepted-evidence.service';
 
 @Module({
   imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
@@ -149,6 +162,18 @@ import {
     SastFindingCorrelationService,
     SastScanCoverageService,
     SastScanFreshnessService,
+    SastAcceptedEvidenceService,
+    PrismaSastAcceptedEvidenceStore,
+    {
+      provide: SastAcceptedEvidenceStore,
+      useExisting: PrismaSastAcceptedEvidenceStore
+    },
+    UnavailableSastAcceptedEvidenceSourceAuthority,
+    {
+      provide: SastAcceptedEvidenceSourceAuthority,
+      useExisting:
+        UnavailableSastAcceptedEvidenceSourceAuthority
+    },
     PrismaSastFindingLineageStore,
     {
       provide: SastFindingLineageStore,
@@ -267,7 +292,7 @@ import {
     RepositoryPreflightService,
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
-    SastScanFreshnessService
+    SastAcceptedEvidenceService
   ]
 })
 export class ScanPlaneModule {}

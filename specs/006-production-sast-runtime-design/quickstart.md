@@ -461,10 +461,27 @@ portion of Phase 6:
   and immutable plan. Exact allowed replay reuses the persisted decision time for attempt
   creation; denied evidence permanently consumes that scan/attempt slot and recovery starts a
   new scan request.
-- `ScanPlaneModule` now exports only `SastScanFreshnessService` as the sequential T040 handoff
-  to T041. T039 coverage, T038 correlation, T037 lineage, T036 identity construction, T035
-  redaction, and raw OpenGrep/Trivy/Syft normalization remain internal providers. There is
-  still no user route, artifact reader, SCM writer, evidence, policy, publication, or AI path.
+- T041 accepts only a durable T037 occurrence that belongs to the exact T038 source set behind
+  the T039 `COMPLETE` decision and T040 verified, fresh, comparable decision. It reloads the
+  fingerprinted source finding and normalized row rather than accepting finding authority,
+  path, coordinates, or freshness from the caller.
+- The T041 source authority defaults to unavailable. A verified provider returns only a
+  bounded scanner-redacted fragment in memory. The service applies known-format and
+  platform-secret redaction again, stores no raw source or secret value, and checks exact UTF-8
+  bytes and line counts before building a canonical fragment.
+- The canonical pack permits at most 32 KiB, five fragments, 8 KiB per fragment, and five
+  context lines on either side of each attested anchor. Selection is deterministic and records
+  truncation plus suppressed count. A full file, more than two fragments from one file,
+  overlapping or adjacent intervals, or combined coverage of at least 25% of a source file
+  rejects the whole pack and persists only the immutable rejection/audit decision.
+- `SastEvidenceBuildDecision`, `SastAcceptedEvidencePack`, and
+  `SastAcceptedEvidenceFragment` are tenant/scan/attempt scoped with exact T040 and occurrence
+  composite foreign keys. Serializable re-read permits only exact replay.
+- `ScanPlaneModule` now exports only `SastAcceptedEvidenceService` as the sequential T041
+  handoff to T042. T040 freshness and all earlier coverage/correlation/lineage/identity/
+  redaction providers remain internal. T041 adds no controller, evidence access route, AI
+  payload, policy decision, publisher, or SCM writer; `dashboardSafe` and `aiSafe` remain
+  false and classification/deletion references remain null until T042.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -474,8 +491,10 @@ GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
 file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction, T036
 `sast-fingerprint-v1` identity construction, T037 occurrence/exact-lineage lifecycle, and
 T038 authority-aware cross-tool correlation, T039 fail-closed scanner/capability coverage,
-and T040 stale-scan denial and bounded infrastructure-only retry are complete; T041 bounded
-accepted-finding evidence with reconstruction-risk checks is therefore the next implementation task.
+T040 stale-scan denial and bounded infrastructure-only retry, and T041 bounded
+accepted-finding evidence with reconstruction-risk checks are complete; T042 dashboard/AI
+classification, second-pass secret redaction, seven-day expiry enforcement, and deletion
+proof are therefore the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
