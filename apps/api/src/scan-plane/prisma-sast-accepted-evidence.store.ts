@@ -3,7 +3,6 @@ import { createHash } from 'node:crypto';
 import {
   SAST_ACCEPTED_EVIDENCE_POLICY,
   isSastAcceptedEvidenceBuildResultShapeValid,
-  isSastAcceptedEvidencePackShapeValid,
   isSastFingerprintedFindingShapeValid,
   isSastScanCoverageDecisionShapeValid,
   isSastScanFreshnessDecisionShapeValid,
@@ -216,7 +215,8 @@ export class PrismaSastAcceptedEvidenceStore
         decisionDigest: decision.decisionDigest,
         outcome: decision.outcome,
         evidencePackId: pack?.evidencePackId ?? null,
-        replayed: false
+        replayed: false,
+        result: input.result as SastAcceptedEvidenceBuildResult
       };
     });
   }
@@ -681,22 +681,22 @@ function replayExisting(
       storedResult,
       digest,
       SAST_ACCEPTED_EVIDENCE_POLICY
-    ) ||
-    stableJson(decision) !== stableJson(result.decision) ||
-    (result.pack === null) !== (row.evidencePack === null) ||
-    (result.pack !== null &&
-      (!isSastAcceptedEvidencePackShapeValid(
-        pack,
-        digest,
-        SAST_ACCEPTED_EVIDENCE_POLICY
-      ) ||
-        stableJson(pack) !== stableJson(result.pack) ||
-        row.evidencePack?.fragments.length !==
-          result.pack.fragments.length ||
+    )
+  ) {
+    throw new SastAcceptedEvidencePersistenceError(
+      'REPLAY_CONFLICT'
+    );
+  }
+  if (
+    stableJson(replayProjection(storedResult)) !==
+      stableJson(replayProjection(result)) ||
+    (storedResult.pack !== null &&
+      (row.evidencePack?.fragments.length !==
+        storedResult.pack.fragments.length ||
         row.evidencePack.fragments.some(
           (fragment, index) =>
             stableJson(fragment.fragment) !==
-            stableJson(result.pack?.fragments[index])
+            stableJson(storedResult.pack?.fragments[index])
         )))
   ) {
     throw new SastAcceptedEvidencePersistenceError(
@@ -708,8 +708,46 @@ function replayExisting(
     decisionDigest: decision.decisionDigest,
     outcome: decision.outcome,
     evidencePackId: decision.evidencePackId,
-    replayed: true
+    replayed: true,
+    result: storedResult
   };
+}
+
+function replayProjection(
+  result: Readonly<SastAcceptedEvidenceBuildResult>
+): unknown {
+  return {
+    decision: {
+      ...withoutKeys(result.decision, [
+        'decidedAt',
+        'decisionDigest',
+        'evidencePackDigest'
+      ] as const),
+      reconstruction: withoutKeys(
+        result.decision.reconstruction,
+        ['checkedAt', 'decisionDigest'] as const
+      )
+    },
+    pack:
+      result.pack === null
+        ? null
+        : withoutKeys(result.pack, [
+            'createdAt',
+            'expiresAt',
+            'packDigest',
+            'reconstructionRiskDecisionDigest'
+          ] as const)
+  };
+}
+
+function withoutKeys<
+  Value extends object,
+  Key extends keyof Value
+>(value: Value, keys: readonly Key[]): Omit<Value, Key> {
+  const omitted = new Set<PropertyKey>(keys);
+  return Object.fromEntries(
+    Object.entries(value).filter(([key]) => !omitted.has(key))
+  ) as Omit<Value, Key>;
 }
 
 function isRetryableTransactionError(error: unknown): boolean {

@@ -216,13 +216,24 @@ describe('SastAcceptedEvidenceService', () => {
       fragments: [primaryRequest()]
     };
     const first = await service.build(input, () => DECIDED_AT);
-    const second = await service.build(input, () => DECIDED_AT);
+    const second = await service.build(
+      input,
+      () => '2026-08-10T04:41:00.000Z'
+    );
 
     expect(first.outcome).toBe('BUILT');
     expect(second).toMatchObject({
       outcome: 'BUILT',
       replayed: true
     });
+    if (first.outcome !== 'BUILT' || second.outcome !== 'BUILT') {
+      return;
+    }
+    expect(second.decision.decisionDigest).toBe(
+      first.decision.decisionDigest
+    );
+    expect(second.pack.packDigest).toBe(first.pack.packDigest);
+    expect(second.pack.createdAt).toBe(first.pack.createdAt);
     expect(source.calls).toBe(2);
   });
 
@@ -320,21 +331,24 @@ class MemoryEvidenceStore extends SastAcceptedEvidenceStore {
     const replayed = this.persisted !== undefined;
     if (
       this.persisted &&
-      this.persisted.decision.decisionDigest !==
-        input.result.decision.decisionDigest
+      (this.persisted.decision.buildDecisionId !==
+        input.result.decision.buildDecisionId ||
+        this.persisted.decision.candidateSetDigest !==
+          input.result.decision.candidateSetDigest)
     ) {
       throw new Error('changed replay');
     }
-    this.persisted =
+    this.persisted ??=
       input.result as SastAcceptedEvidenceBuildResult;
+    const canonical = this.persisted;
     return {
-      buildDecisionId:
-        input.result.decision.buildDecisionId,
-      decisionDigest: input.result.decision.decisionDigest,
-      outcome: input.result.decision.outcome,
+      buildDecisionId: canonical.decision.buildDecisionId,
+      decisionDigest: canonical.decision.decisionDigest,
+      outcome: canonical.decision.outcome,
       evidencePackId:
-        input.result.pack?.evidencePackId ?? null,
-      replayed
+        canonical.pack?.evidencePackId ?? null,
+      replayed,
+      result: canonical
     };
   }
 }

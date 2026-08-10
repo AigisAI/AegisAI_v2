@@ -15,6 +15,7 @@ export interface PersistedSastAcceptedEvidence {
   outcome: SastEvidenceBuildDecision['outcome'];
   evidencePackId: string | null;
   replayed: boolean;
+  result: SastAcceptedEvidenceBuildResult;
 }
 
 export class SastAcceptedEvidencePersistenceError extends Error {

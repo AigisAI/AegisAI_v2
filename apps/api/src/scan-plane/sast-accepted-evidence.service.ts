@@ -226,31 +226,41 @@ export class SastAcceptedEvidenceService {
         context,
         result
       });
+      const canonicalResult = persisted.result;
       if (
+        !isSastAcceptedEvidenceBuildResultShapeValid(
+          canonicalResult,
+          digest,
+          SAST_ACCEPTED_EVIDENCE_POLICY
+        ) ||
         persisted.buildDecisionId !==
-          result.decision.buildDecisionId ||
+          canonicalResult.decision.buildDecisionId ||
         persisted.decisionDigest !==
-          result.decision.decisionDigest ||
-        persisted.outcome !== result.decision.outcome ||
+          canonicalResult.decision.decisionDigest ||
+        persisted.outcome !== canonicalResult.decision.outcome ||
         persisted.evidencePackId !==
-          (result.pack?.evidencePackId ?? null)
+          (canonicalResult.pack?.evidencePackId ?? null) ||
+        canonicalResult.decision.buildDecisionId !==
+          result.decision.buildDecisionId ||
+        canonicalResult.decision.candidateSetDigest !==
+          result.decision.candidateSetDigest
       ) {
         return this.reject('EVIDENCE_PERSISTENCE_CONFLICT');
       }
-      if (result.pack) {
+      if (canonicalResult.pack) {
         return {
           outcome: 'BUILT',
-          decision: result.decision,
-          pack: result.pack,
+          decision: canonicalResult.decision,
+          pack: canonicalResult.pack,
           replayed: persisted.replayed
         };
       }
       return {
         outcome: 'REJECTED',
         reasonCode:
-          result.decision.reasonCodes[0] ??
+          canonicalResult.decision.reasonCodes[0] ??
           'EVIDENCE_OUTPUT_INVALID',
-        decision: result.decision,
+        decision: canonicalResult.decision,
         replayed: persisted.replayed,
         dashboardPayloadCreated: false,
         aiPayloadCreated: false,
