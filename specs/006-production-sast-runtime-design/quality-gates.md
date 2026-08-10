@@ -267,10 +267,21 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   zero coverage-ledger writes, and can be reevaluated after a required scanner becomes terminal.
 - 100% T039 zero-publication invariant: even complete coverage has false comment/block/AI/
   lifecycle flags while latest-target authority is unavailable and stale/comparability are
-  unknown. Only `SastScanCoverageService` crosses the Scan Plane boundary to T040.
+  unknown. The T039 row remains immutable after T040 installation.
 - The T039 caller records a structured rejection counter keyed by the coarse reason code;
   `SCAN_COVERAGE_PERSISTENCE_FAILED` is alerted separately from expected durable-scope,
   scanner-set, source-set, input, and replay rejections without logging sensitive context.
+- 100% T040 stale-publication invariant: comment/block eligibility and T037 lifecycle
+  verification require exact durable T039 `COMPLETE`, a provider-authoritative monotonic head
+  equal to the fixed commit, and an exact prior-scan tenant/repository/target/profile-family/
+  capability/fingerprint/lifecycle-scope comparison. Every unavailable, invalid, stale, or
+  incomparable fixture produces zero authority and zero publication attempts.
+- 100% T040 retry-fence invariant: only attempt one `FAILED` with
+  `RETRYABLE_INFRASTRUCTURE`, retry eligibility, completion, exact final audit, unchanged and
+  available scanner set, clear kill-switch authority, and fresh attempt/sandbox/workload
+  identities may admit attempt two. Attempt three and every other failure class produce zero
+  sandbox admissions. `SastScanFreshnessService` is the only sequential Scan Plane handoff to
+  T041.
 
 ## Canary and Continuous Production Gates
 

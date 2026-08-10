@@ -14,11 +14,12 @@ microVM platform is live. Provider-specific deployment execution remains governe
 Issue #276 is an explicitly reclassified adjacent bootstrap, not a new production slice.
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
-that bootstrap does not change the next formal 006 task: T040.
+that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
+T040 independently and now proceeds to T041.
 
 ## Target Boundaries
 
-- `packages/shared`: scanner/profile/plan/artifact/finding/coverage/evidence/rule contracts
+- `packages/shared`: scanner/profile/plan/artifact/finding/coverage/freshness/retry/evidence/rule contracts
 - `apps/api`: planning, repository binding, policy, canonical identity, and user-facing state
 - `services/scan-orchestrator`: lane queues, attempt state, isolation requests, retries,
   coverage, correlation, evidence, and cleanup coordination
@@ -118,8 +119,11 @@ severity, lifecycle, coverage, policy, publication, evidence, or AI authority. T
 rebinds that T038 batch to immutable plan, scanner-run, artifact-ingestion/disposition, and
 scanner-responsibility state. It stores canonical scanner records plus a coverage decision
 in one serializable transaction and persists zero publication authority even when coverage
-is complete. Only `SastScanCoverageService` crosses the module boundary; T040 freshness,
-comparability, and retry policy is the next gate.
+is complete. T040 now independently rebinds that immutable coverage source to a monotonic,
+provider-authoritative latest-target observation and an exact prior-scan comparison. It also
+persists a bounded attempt-two infrastructure-only retry decision before sandbox admission,
+with scanner-set and kill-switch revalidation plus new sandbox/workload identity. Only
+`SastScanFreshnessService` crosses the module boundary; T041 bounded evidence is the next gate.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

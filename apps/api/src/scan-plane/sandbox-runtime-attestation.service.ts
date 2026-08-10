@@ -18,6 +18,7 @@ import {
   type SastSandboxRuntimeAttestationClaims,
   type SastSandboxRuntimePolicy,
   type SastScanPlan,
+  type SastScannerPreflightBinding,
   type SastSignedSandboxCleanupObservation
 } from '@aegisai/shared';
 import { Injectable } from '@nestjs/common';
@@ -33,6 +34,7 @@ export interface SandboxRuntimeAttestationBinding {
   sandboxId: string;
   workloadIdentityRef: string;
   policy: Readonly<SastSandboxRuntimePolicy>;
+  preflight?: Readonly<SastScannerPreflightBinding>;
 }
 
 @Injectable()
@@ -44,6 +46,7 @@ export class SandboxRuntimeAttestationService {
     now = new Date(),
     ttlSeconds = MAX_SAST_SANDBOX_ATTESTATION_TTL_SECONDS
   ): SastSandboxRuntimeAttestation {
+    const preflight = this.effectivePreflight(binding);
     if (
       !Number.isSafeInteger(ttlSeconds) ||
       ttlSeconds < 1 ||
@@ -51,6 +54,7 @@ export class SandboxRuntimeAttestationService {
       !Number.isSafeInteger(binding.attemptNumber) ||
       binding.attemptNumber < 1 ||
       binding.attemptNumber > 2 ||
+      !preflight ||
       !isSastScanPlanValid(binding.plan) ||
       !isSastSandboxRuntimePolicyValid(binding.policy, binding.plan)
     ) {
@@ -79,8 +83,8 @@ export class SandboxRuntimeAttestationService {
       profileId: binding.plan.profile.id,
       profileDigest: binding.plan.profileDigest,
       scannerSetDigest: binding.plan.scannerSet.scannerSetDigest,
-      preflightAttestationRef: binding.plan.repositoryState.attestationRef,
-      preflightInventoryDigest: binding.plan.repositoryState.inventoryDigest,
+      preflightAttestationRef: preflight.attestationRef,
+      preflightInventoryDigest: preflight.inventoryDigest,
       policy: binding.policy,
       nonce: randomBytes(16).toString('hex'),
       issuedAt,
@@ -101,8 +105,10 @@ export class SandboxRuntimeAttestationService {
   ): boolean {
     try {
       const claims = attestation?.claims;
+      const preflight = this.effectivePreflight(expected);
       if (
         !claims ||
+        !preflight ||
         !isSastScanPlanValid(expected.plan) ||
         !this.hasOnlyKeys(attestation, ['claims', 'signature']) ||
         !this.hasOnlyKeys(claims, [
@@ -172,9 +178,9 @@ export class SandboxRuntimeAttestationService {
         claims.scannerSetDigest ===
           expected.plan.scannerSet.scannerSetDigest &&
         claims.preflightAttestationRef ===
-          expected.plan.repositoryState.attestationRef &&
+          preflight.attestationRef &&
         claims.preflightInventoryDigest ===
-          expected.plan.repositoryState.inventoryDigest &&
+          preflight.inventoryDigest &&
         this.canonicalPolicy(claims.policy) ===
           this.canonicalPolicy(expected.policy) &&
         /^[a-f0-9]{32}$/u.test(claims.nonce) &&
@@ -394,6 +400,33 @@ export class SandboxRuntimeAttestationService {
           policy.resourceLimits.wallClockTimeoutSeconds
       }
     });
+  }
+
+  private effectivePreflight(
+    binding: SandboxRuntimeAttestationBinding
+  ): Readonly<SastScannerPreflightBinding> | null {
+    const preflight = binding.preflight ?? {
+      attestationRef: binding.plan.repositoryState.attestationRef,
+      decision: 'ACCEPT' as const,
+      inventoryDigest: binding.plan.repositoryState.inventoryDigest,
+      pathPolicyVersion: 'plan-bound-path-policy'
+    };
+    return (
+      this.isBoundedIdentifier(preflight.attestationRef, 8192) &&
+      preflight.inventoryDigest ===
+        binding.plan.repositoryState.inventoryDigest &&
+      (preflight.decision === 'ACCEPT' ||
+        (preflight.decision === 'RESTRICTED_ESCALATION' &&
+          binding.plan.isolationClass === 'RESTRICTED')) &&
+      this.isBoundedIdentifier(preflight.pathPolicyVersion, 255) &&
+      (binding.attemptNumber === 1
+        ? preflight.attestationRef ===
+          binding.plan.repositoryState.attestationRef
+        : preflight.attestationRef !==
+          binding.plan.repositoryState.attestationRef)
+    )
+      ? preflight
+      : null;
   }
 
   private canonicalCleanup(

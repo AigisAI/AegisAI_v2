@@ -27,6 +27,10 @@ import { ScannerSandboxAdapterService } from './scanner-sandbox-adapter.service'
 import { ScannerSandboxRuntimeProvider } from './scanner-sandbox-runtime.provider';
 import { ScannerWorkspaceManifestService } from './scanner-workspace-manifest.service';
 import { SastScannerRuntimeStore } from './sast-scanner-runtime.store';
+import {
+  SastRetryAdmissionGate,
+  UnavailableSastRetryAdmissionGate
+} from './sast-retry-admission.gate';
 
 @Injectable()
 export class SastScannerRuntimeService {
@@ -36,7 +40,9 @@ export class SastScannerRuntimeService {
     private readonly attestation: SandboxRuntimeAttestationService,
     private readonly manifestVerifier: ScannerWorkspaceManifestService,
     private readonly provider: ScannerSandboxRuntimeProvider,
-    private readonly store: SastScannerRuntimeStore
+    private readonly store: SastScannerRuntimeStore,
+    private readonly retryAdmission: SastRetryAdmissionGate =
+      new UnavailableSastRetryAdmissionGate()
   ) {}
 
   async execute(
@@ -65,6 +71,7 @@ export class SastScannerRuntimeService {
     }
 
     await this.assertControlPlaneScope(request);
+    this.manifestVerifier.verifyPreflight(request);
     const policy = this.adapter.buildPolicy(request.plan);
     if (
       !this.attestation.verify(request.sandboxAttestation, {
@@ -73,7 +80,8 @@ export class SastScannerRuntimeService {
         attemptNumber: request.attemptNumber,
         sandboxId: request.sandboxId,
         workloadIdentityRef: request.workloadIdentityRef,
-        policy
+        policy,
+        preflight: request.preflight
       })
     ) {
       throw securityViolation(
@@ -85,6 +93,16 @@ export class SastScannerRuntimeService {
     const startedAt = new Date().toISOString();
     const attemptDeadlineAt =
       request.sandboxAttestation.claims.attemptDeadlineAt;
+    if (
+      request.attemptNumber === 2 &&
+      (await this.retryAdmission.authorize(request, startedAt)) !==
+        'AUTHORIZED'
+    ) {
+      throw securityViolation(
+        'SCAN_ATTEMPT_RETRY_NOT_ELIGIBLE',
+        'Attempt two requires a durable T040 infrastructure-only retry decision.'
+      );
+    }
     await this.store.beginAttempt(request, startedAt);
 
     const auditSignals: SastScannerRuntimeAuditSignal[] = [];

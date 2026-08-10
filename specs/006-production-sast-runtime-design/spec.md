@@ -290,6 +290,15 @@ incomplete, stale, quarantined, or security-blocked scan.
 - **FR-039c**: Until T040 proves the latest target, freshness, and comparability, every T039
   publication decision MUST set external comment, blocking status, AI advisory, and lifecycle
   mutation authority to false even when scanner/capability coverage is `COMPLETE`.
+- **FR-039d**: T040 MUST independently reload the exact terminal T039 decision and bind a
+  provider-authoritative, target-scoped, monotonic head observation. Freshness MUST be true
+  only when that head equals the fixed scanned commit. Comparability MUST require the same
+  tenant/repository/target, supported profile family, exact required capability set,
+  `sast-fingerprint-v1`, and lifecycle-eligibility scope as the previous completed complete
+  scan. Missing or invalid authority MUST fail closed.
+- **FR-039e**: T040 MAY expose comment/block eligibility and lifecycle verification only for
+  complete, verified, fresh, comparable state. It MUST keep AI advisory and publication
+  execution false and MUST NOT expose an SCM-write route.
 - **FR-040**: Required scanner failure, timeout, absence, invalid output, or quarantine MUST
   prevent complete coverage.
 - **FR-041**: Partial, stale, failed, quarantined, or security-blocked scans MUST NOT publish
@@ -300,6 +309,11 @@ incomplete, stale, quarantined, or security-blocked scan.
   automatically under identical conditions.
 - **FR-044**: Retry MUST reuse the canonical scan identity but create a new attempt and
   sandbox identity.
+- **FR-044a**: Attempt two MUST have a durable canonical retry decision that re-verifies the
+  immediately preceding attempt-one infrastructure failure, retry-eligible flag, completion
+  time, final audit event, current scanner-set availability, and kill-switch state. Attempt
+  three, cleanup/input/capacity/scanner/security failure, unavailable safety authority, or
+  reused attempt/sandbox/workload identity MUST deny.
 - **FR-045**: Every partial or failed scan MUST remain visible in the dashboard with reason,
   achieved coverage, and retry eligibility.
 

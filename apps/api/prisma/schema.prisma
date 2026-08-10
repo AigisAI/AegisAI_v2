@@ -376,6 +376,9 @@ model Tenant {
   sastFindingCorrelations    SastFindingCorrelationBatch[]
   sastScanCoverageDecisions  SastScanCoverageDecision[]
   sastScannerCoverageRecords SastScannerCoverageRecord[]
+  sastTargetObservations     SastLatestTargetObservation[]
+  sastFreshnessDecisions     SastScanFreshnessDecision[]
+  sastRetryDecisions         SastScanRetryDecision[]
   users                      User[]
 }
 
@@ -428,6 +431,9 @@ model RepositoryBinding {
   sastFindingCorrelations    SastFindingCorrelationBatch[]
   sastScanCoverageDecisions  SastScanCoverageDecision[]
   sastScannerCoverageRecords SastScannerCoverageRecord[]
+  sastTargetObservations     SastLatestTargetObservation[]
+  sastFreshnessDecisions     SastScanFreshnessDecision[]
+  sastRetryDecisions         SastScanRetryDecision[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
@@ -472,6 +478,8 @@ model ScanRequest {
   sastFindingCorrelations    SastFindingCorrelationBatch[]
   sastScanCoverageDecisions  SastScanCoverageDecision[]
   sastScannerCoverageRecords SastScannerCoverageRecord[]
+  sastFreshnessDecisions     SastScanFreshnessDecision[]
+  sastRetryDecisions         SastScanRetryDecision[]
 
   @@unique([id, tenantId, repositoryBindingId])
   @@index([tenantId])
@@ -538,6 +546,7 @@ model SastScanAttempt {
   cleanupEvidence       Json?
   cleanupEvidenceDigest String?
   finalAuditEventId     String?               @unique
+  retryDecisionId       String?               @unique
   startedAt             DateTime
   attemptDeadlineAt     DateTime
   completedAt           DateTime?
@@ -554,6 +563,8 @@ model SastScanAttempt {
   sastFindingCorrelations    SastFindingCorrelationBatch[]
   sastScanCoverageDecisions  SastScanCoverageDecision[]
   sastScannerCoverageRecords SastScannerCoverageRecord[]
+  previousRetryDecisions     SastScanRetryDecision[]              @relation("SastScanRetryPreviousAttempt")
+  retryAdmissionDecision     SastScanRetryDecision?               @relation("SastScanRetryAdmittedAttempt", fields: [retryDecisionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "SastScanAttempt_retryDecisionId_fkey")
   auditEvents                AuditEvent[]                         @relation("SastScanAttemptAuditEvents")
   finalAuditEvent            AuditEvent?                          @relation("SastScanAttemptFinalAuditEvent", fields: [finalAuditEventId, id, tenantId], references: [id, attemptId, tenantId], onDelete: NoAction, onUpdate: NoAction, map: "SastScanAttempt_finalAuditEventId_fkey")
 
@@ -1170,8 +1181,11 @@ model SastScanCoverageDecision {
   correlationBatch    SastFindingCorrelationBatch      @relation(fields: [correlationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastScanCoverageDecision_correlation_scope_fkey")
   scannerRecords      SastScannerCoverageRecord[]
   publicationDecision SastExternalPublicationDecision?
+  freshnessDecision   SastScanFreshnessDecision?       @relation("SastScanFreshnessCurrentCoverage")
+  comparisonFor       SastScanFreshnessDecision[]      @relation("SastScanFreshnessPreviousCoverage")
 
   @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanCoverageDecision_scope_key")
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId], map: "SastScanCoverageDecision_comparison_scope_key")
   @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId, correlationBatchId], map: "SastScanCoverageDecision_record_scope_key")
   @@unique([correlationBatchId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanCoverageDecision_correlation_scope_key")
   @@unique([tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanCoverageDecision_attempt_key")
@@ -1261,6 +1275,130 @@ model SastExternalPublicationDecision {
 
   @@unique([coverageDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastExternalPublicationDecision_coverage_scope_key")
   @@index([tenantId, repositoryBindingId, decidedAt], map: "SastExternalPublicationDecision_scope_decided_idx")
+}
+
+model SastLatestTargetObservation {
+  id                  String       @id
+  tenantId            String
+  repositoryBindingId String
+  provider            RepoProvider
+  targetRef           String
+  headCommitSha       String
+  sequence            BigInt
+  observerRef         String
+  observation         Json
+  observationDigest   String       @unique
+  observedAt          DateTime
+  createdAt           DateTime     @default(now())
+
+  tenant             Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding  RepositoryBinding           @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastLatestTargetObservation_repository_scope_fkey")
+  freshnessDecisions SastScanFreshnessDecision[]
+
+  @@unique([id, tenantId, repositoryBindingId, provider, targetRef], map: "SastLatestTargetObservation_scope_key")
+  @@unique([tenantId, repositoryBindingId, provider, targetRef, sequence], map: "SastLatestTargetObservation_sequence_key")
+  @@index([tenantId, repositoryBindingId, provider, targetRef, observedAt(sort: Desc)], map: "SastLatestTargetObservation_latest_idx")
+}
+
+model SastScanFreshnessDecision {
+  id                             String       @id
+  coverageDecisionId             String       @unique
+  previousCoverageDecisionId     String?
+  observationId                  String?
+  tenantId                       String
+  repositoryBindingId            String
+  provider                       RepoProvider
+  targetRef                      String
+  commitSha                      String
+  scanRequestId                  String
+  attemptId                      String
+  attemptNumber                  Int
+  coverageDecisionDigest         String
+  lifecycleContextKey            String
+  canonicalScanKey               String
+  planDigest                     String
+  profileId                      String
+  profileDigest                  String
+  profileFamily                  String
+  requiredCapabilities           Json
+  fingerprintVersion             String
+  lifecycleEligibilityScope      String
+  observationDigest              String?
+  observedHeadCommitSha          String?
+  observationSequence            BigInt?
+  previousCoverageDecisionDigest String?
+  previousScanRequestId          String?
+  previousCommitSha              String?
+  latestTargetAuthority          String
+  staleStatus                    String
+  comparabilityStatus            String
+  externalCommentEligible        Boolean      @default(false)
+  blockingStatusEligible         Boolean      @default(false)
+  lifecycleMutationAllowed       Boolean      @default(false)
+  aiAdvisoryAllowed              Boolean      @default(false)
+  publicationAttempted           Boolean      @default(false)
+  reasonCodes                    Json
+  decision                       Json
+  decisionDigest                 String       @unique
+  decidedAt                      DateTime
+  createdAt                      DateTime     @default(now())
+
+  tenant                   Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding        RepositoryBinding            @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastScanFreshnessDecision_repository_scope_fkey")
+  scanRequest              ScanRequest                  @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastScanFreshnessDecision_scan_scope_fkey")
+  coverageDecision         SastScanCoverageDecision     @relation("SastScanFreshnessCurrentCoverage", fields: [coverageDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastScanFreshnessDecision_coverage_scope_fkey")
+  previousCoverageDecision SastScanCoverageDecision?    @relation("SastScanFreshnessPreviousCoverage", fields: [previousCoverageDecisionId, tenantId, repositoryBindingId, previousScanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Restrict, map: "SastScanFreshnessDecision_previous_coverage_fkey")
+  observation              SastLatestTargetObservation? @relation(fields: [observationId, tenantId, repositoryBindingId, provider, targetRef], references: [id, tenantId, repositoryBindingId, provider, targetRef], onDelete: Restrict, map: "SastScanFreshnessDecision_observation_scope_fkey")
+
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanFreshnessDecision_scope_key")
+  @@unique([coverageDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastScanFreshnessDecision_coverage_scope_key")
+  @@index([tenantId, repositoryBindingId, targetRef, decidedAt(sort: Desc)], map: "SastScanFreshnessDecision_target_idx")
+  @@index([previousCoverageDecisionId], map: "SastScanFreshnessDecision_previousCoverageDecisionId_idx")
+  @@index([observationId], map: "SastScanFreshnessDecision_observationId_idx")
+}
+
+model SastScanRetryDecision {
+  id                           String    @id
+  tenantId                     String
+  repositoryBindingId          String
+  scanRequestId                String
+  canonicalScanKey             String
+  planDigest                   String
+  originalScannerSetDigest     String
+  previousAttemptId            String
+  previousAttemptNumber        Int
+  previousSandboxId            String
+  previousWorkloadIdentityRef  String
+  requestedAttemptId           String    @unique
+  requestedAttemptNumber       Int
+  requestedSandboxId           String    @unique
+  requestedWorkloadIdentityRef String    @unique
+  retryAllowed                 Boolean
+  previousFailureClass         String?
+  previousCompletedAt          DateTime?
+  previousFinalAuditEventId    String?
+  currentScannerSetDigest      String?
+  scannerSetAvailable          Boolean
+  killSwitchStatus             String
+  killSwitchSnapshotDigest     String?
+  reasonCodes                  Json
+  decision                     Json
+  decisionDigest               String    @unique
+  decidedAt                    DateTime
+  createdAt                    DateTime  @default(now())
+
+  tenant                  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding       RepositoryBinding @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastScanRetryDecision_repository_scope_fkey")
+  scanRequest             ScanRequest       @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastScanRetryDecision_scan_scope_fkey")
+  previousAttempt         SastScanAttempt   @relation("SastScanRetryPreviousAttempt", fields: [previousAttemptId, tenantId, repositoryBindingId, scanRequestId], references: [id, tenantId, repositoryBindingId, scanRequestId], onDelete: Restrict, map: "SastScanRetryDecision_previous_attempt_fkey")
+  previousFinalAuditEvent AuditEvent?       @relation("SastScanRetryFinalAudit", fields: [previousFinalAuditEventId, previousAttemptId, tenantId], references: [id, attemptId, tenantId], onDelete: Restrict, map: "SastScanRetryDecision_final_audit_fkey")
+  admittedAttempt         SastScanAttempt?  @relation("SastScanRetryAdmittedAttempt")
+
+  @@unique([scanRequestId, requestedAttemptNumber], map: "SastScanRetryDecision_attempt_number_key")
+  @@unique([id, tenantId, repositoryBindingId, scanRequestId], map: "SastScanRetryDecision_scope_key")
+  @@index([tenantId, retryAllowed, decidedAt], map: "SastScanRetryDecision_outcome_idx")
+  @@index([previousAttemptId], map: "SastScanRetryDecision_previousAttemptId_idx")
+  @@index([previousFinalAuditEventId], map: "SastScanRetryDecision_previousFinalAuditEventId_idx")
 }
 
 model SastFindingCorrelationEdge {
@@ -1459,6 +1597,7 @@ model AuditEvent {
   scanRequest                 ScanRequest?                     @relation(fields: [scanRequestId], references: [id], onDelete: SetNull)
   attempt                     SastScanAttempt?                 @relation("SastScanAttemptAuditEvents", fields: [attemptId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "AuditEvent_attempt_scope_fkey")
   finalForAttempt             SastScanAttempt?                 @relation("SastScanAttemptFinalAuditEvent")
+  sastRetryDecisions          SastScanRetryDecision[]          @relation("SastScanRetryFinalAudit")
   artifactDispositionDecision SastArtifactDispositionDecision?
 
   @@unique([id, attemptId, tenantId], map: "AuditEvent_final_attempt_scope_key")

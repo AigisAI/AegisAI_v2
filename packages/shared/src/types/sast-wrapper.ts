@@ -443,8 +443,12 @@ export function isSastScannerWrapperExecutionRequestValid(
       request.preflight.attestationRef &&
     request.sandboxAttestation.claims.preflightInventoryDigest ===
       request.preflight.inventoryDigest &&
-    request.preflight.attestationRef ===
-      request.plan.repositoryState.attestationRef &&
+    isBoundedIdentifier(request.preflight.attestationRef, 8192) &&
+    (request.attemptNumber === 1
+      ? request.preflight.attestationRef ===
+        request.plan.repositoryState.attestationRef
+      : request.preflight.attestationRef !==
+        request.plan.repositoryState.attestationRef) &&
     request.preflight.inventoryDigest ===
       request.plan.repositoryState.inventoryDigest &&
     (request.preflight.decision === 'ACCEPT' ||

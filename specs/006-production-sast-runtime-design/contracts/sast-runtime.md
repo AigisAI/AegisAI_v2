@@ -1081,6 +1081,45 @@ row is a database-enforced zero-authority decision with latest-target authority
 `UNAVAILABLE`, stale/comparability `UNKNOWN`, and comment/block/AI/lifecycle booleans false.
 T040 must replace that missing authority before any external or lifecycle action can proceed.
 
+### Freshness and bounded retry gate v1
+
+`sast-scan-freshness-v1` accepts only the durable terminal T039 decision reference and reloads
+its canonical coverage object. It independently binds tenant, repository, provider, target,
+fixed commit, scan/attempt number, profile/digest/family, canonical scan key, plan digest,
+required capability set, `sast-fingerprint-v1`, and lifecycle-eligibility scope. The caller
+cannot supply `stale=false`, `comparable=true`, target head, or publication authority.
+
+A `sast-latest-target-observation-v1` row is valid only when a provider-authoritative read-only
+adapter returns a canonical commit, strictly increasing target-scoped sequence, nondecreasing
+observation time, and bounded observer reference. Freshness is `FRESH` only when that head is
+byte-exactly the scan's fixed commit. Missing authority is `UNAVAILABLE`/`UNKNOWN`; malformed,
+future, rolled-back, or cross-scope observation is invalid; a different head is `STALE`.
+The default adapter is unavailable and therefore cannot authorize publication or lifecycle.
+
+Comparability requires the previous completed `COMPLETE` T039 source in the same tenant,
+repository, and target plus the exact supported profile family, required capability set,
+fingerprint version, and lifecycle-eligibility scope. Only complete coverage with
+`VERIFIED`, `FRESH`, and `COMPARABLE` state creates comment/block eligibility and permits the
+T037 lifecycle gate to reverify its exact source. The decision keeps `aiAdvisoryAllowed=false`
+and `publicationAttempted=false`; T040 installs neither an SCM writer nor a publisher route.
+The lifecycle consumer performs another authoritative head read and rejects when the target
+has advanced since the stored decision.
+The original T039 external-publication object remains immutable for exact replay. The
+`SastExternalPublicationDecision_contract_check` migration is replaced by a named T039-source
+constraint before the independent T040 authority table is accepted.
+
+`sast-scan-retry-decision-v1` is durable before attempt-two admission. Allow requires the
+immediately preceding attempt one to be terminal `FAILED`, classified
+`RETRYABLE_INFRASTRUCTURE`, explicitly retry eligible, completed, and bound to its exact
+`sandbox.terminated` audit event. It revalidates current scanner-set availability and
+kill-switch state while preserving the original canonical scan key, immutable plan digest,
+and scanner-set digest. Attempt, sandbox, and workload identities must all be new. Attempt
+two also carries fresh attempt-scoped preflight and sandbox attestations over the unchanged
+fixed commit and inventory digest; the original canonical plan remains immutable. Attempt
+three, cleanup failure, capacity/input/scanner/security failure, missing audit, changed or
+unavailable scanner set, active/unavailable kill-switch authority, and identity reuse deny.
+All target, freshness, and retry ledgers use bounded serializable writes and exact replay.
+
 ## Failure Contract
 
 | Failure class | Examples | Automatic retry | Isolation/action |
