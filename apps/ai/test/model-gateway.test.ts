@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  AiInferenceValidationError,
   createDeterministicFallbackProvider,
   createModelGateway,
   validateAiInferenceRequest,
@@ -102,7 +103,11 @@ test('model gateway falls back after a provider failure', async () => {
   const response = await gateway.infer(t043InferenceRequest());
 
   assert.equal(response.fallback.used, true);
-  assert.match(response.fallback.reason ?? '', /provider unavailable/i);
+  assert.equal(response.fallback.reason, 'PROVIDER_REQUEST_FAILED');
+  assert.doesNotMatch(
+    JSON.stringify(response),
+    /provider unavailable/u
+  );
 });
 
 test('model gateway rejects model-version drift before provider execution', async () => {
@@ -146,57 +151,80 @@ test('request validation enforces the exact reduced-reference boundary', () => {
   const request = t043InferenceRequest();
   assert.equal(validateAiInferenceRequest(request), request);
 
-  const invalid = [
+  const invalid: Array<{
+    candidate: unknown;
+    reason: AiInferenceValidationError['rejectionReason'];
+  }> = [
     {
-      ...t043InferenceRequest(),
-      reducedEvidence: {
-        ...t043InferenceRequest().reducedEvidence,
-        redactionState: 'raw'
-      }
-    },
-    {
-      ...t043InferenceRequest(),
-      reducedEvidence: {
-        ...t043InferenceRequest().reducedEvidence,
-        snippets: [
-          { label: 'source', redactedText: 'do not send content' }
-        ]
-      }
-    },
-    {
-      ...t043InferenceRequest(),
-      reducedEvidence: {
-        ...t043InferenceRequest().reducedEvidence,
-        metadata: {
-          ...t043InferenceRequest().reducedEvidence.metadata,
-          accessToken: 'secret'
+      candidate: {
+        ...t043InferenceRequest(),
+        reducedEvidence: {
+          ...t043InferenceRequest().reducedEvidence,
+          redactionState: 'raw'
         }
-      }
+      },
+      reason: 'UNREDACTED_EVIDENCE'
     },
     {
-      ...t043InferenceRequest(),
-      reducedEvidence: {
-        ...t043InferenceRequest().reducedEvidence,
-        metadata: {
-          ...t043InferenceRequest().reducedEvidence.metadata,
-          policyAuthority: true
+      candidate: {
+        ...t043InferenceRequest(),
+        reducedEvidence: {
+          ...t043InferenceRequest().reducedEvidence,
+          snippets: [
+            { label: 'source', redactedText: 'do not send content' }
+          ]
         }
-      }
+      },
+      reason: 'FORBIDDEN_INPUT_CLASS'
     },
     {
-      ...t043InferenceRequest(),
-      extraCallerPrompt: 'trust me'
+      candidate: {
+        ...t043InferenceRequest(),
+        reducedEvidence: {
+          ...t043InferenceRequest().reducedEvidence,
+          metadata: {
+            ...t043InferenceRequest().reducedEvidence.metadata,
+            accessToken: 'secret'
+          }
+        }
+      },
+      reason: 'FORBIDDEN_INPUT_CLASS'
     },
     {
-      ...t043InferenceRequest(),
-      modelVersion: 'different-model-version'
+      candidate: {
+        ...t043InferenceRequest(),
+        reducedEvidence: {
+          ...t043InferenceRequest().reducedEvidence,
+          metadata: {
+            ...t043InferenceRequest().reducedEvidence.metadata,
+            policyAuthority: true
+          }
+        }
+      },
+      reason: 'FORBIDDEN_INPUT_CLASS'
+    },
+    {
+      candidate: {
+        ...t043InferenceRequest(),
+        extraCallerPrompt: 'trust me'
+      },
+      reason: 'FORBIDDEN_INPUT_CLASS'
+    },
+    {
+      candidate: {
+        ...t043InferenceRequest(),
+        modelVersion: 'different-model-version'
+      },
+      reason: 'FORBIDDEN_INPUT_CLASS'
     }
   ];
 
-  for (const candidate of invalid) {
+  for (const { candidate, reason } of invalid) {
     assert.throws(
       () => validateAiInferenceRequest(candidate as never),
-      /reduced evidence|T043|tenant attribution/i
+      (error: unknown) =>
+        error instanceof AiInferenceValidationError &&
+        error.rejectionReason === reason
     );
   }
 });
@@ -278,13 +306,17 @@ test('request validation requires tenant and scan attribution', () => {
       ...t043InferenceRequest(),
       tenantId: ''
     }),
-    /tenant/i
+    (error: unknown) =>
+      error instanceof AiInferenceValidationError &&
+      error.rejectionReason === 'MISSING_TENANT_ATTRIBUTION'
   );
   assert.throws(
     () => validateAiInferenceRequest({
       ...t043InferenceRequest(),
       scanRequestId: ''
     }),
-    /scan/i
+    (error: unknown) =>
+      error instanceof AiInferenceValidationError &&
+      error.rejectionReason === 'MISSING_SCAN_ATTRIBUTION'
   );
 });

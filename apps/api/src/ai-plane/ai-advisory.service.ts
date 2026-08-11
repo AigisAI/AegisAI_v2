@@ -13,6 +13,7 @@ import {
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
@@ -37,6 +38,8 @@ type AdvisoryClock = () => string;
 
 @Injectable()
 export class AiAdvisoryService {
+  private readonly logger = new Logger(AiAdvisoryService.name);
+
   constructor(
     private readonly config: ConfigService,
     private readonly runtimeClient: AiAdvisoryRuntimeClient,
@@ -155,7 +158,8 @@ export class AiAdvisoryService {
           createdAt: completedAt
         }
       });
-    } catch {
+    } catch (error) {
+      this.logFailure('persistence', error, handoff.handoffId);
       throw unavailable();
     }
   }
@@ -186,7 +190,8 @@ export class AiAdvisoryService {
   ) {
     try {
       return await this.evidenceAccess.classifyForAi(scope, clock);
-    } catch {
+    } catch (error) {
+      this.logFailure('access classification', error);
       throw unavailable();
     }
   }
@@ -198,7 +203,8 @@ export class AiAdvisoryService {
   ) {
     try {
       return await this.store.loadNormalizedFinding(decision);
-    } catch {
+    } catch (error) {
+      this.logFailure('finding load', error);
       throw unavailable();
     }
   }
@@ -230,9 +236,22 @@ export class AiAdvisoryService {
         advisoryId: handoff.advisoryId
       });
       return { persisted, existing };
-    } catch {
+    } catch (error) {
+      this.logFailure('handoff persistence', error, handoff.handoffId);
       throw unavailable();
     }
+  }
+
+  private logFailure(
+    stage: string,
+    error: unknown,
+    handoffId?: string
+  ): void {
+    const category = safeErrorCategory(error);
+    const handoff = handoffId === undefined ? '' : ` [${handoffId}]`;
+    this.logger.error(
+      `AI advisory ${stage} failed${handoff} (${category}).`
+    );
   }
 
   private projectInferenceResponse(
@@ -310,19 +329,37 @@ function sameAccess(
     ReturnType<SastEvidenceAccessService['classifyForAi']>
   > & { outcome: 'ALLOWED' }
 ): boolean {
+  if (
+    left.reducedEvidenceReference === null ||
+    right.reducedEvidenceReference === null
+  ) {
+    return false;
+  }
   return (
     left.decision.accessDecisionId ===
       right.decision.accessDecisionId &&
     left.decision.decisionDigest ===
       right.decision.decisionDigest &&
-    left.reducedEvidenceReference?.reducedEvidenceRef ===
-      right.reducedEvidenceReference?.reducedEvidenceRef &&
-    left.reducedEvidenceReference?.redactedProjectionDigest ===
-      right.reducedEvidenceReference?.redactedProjectionDigest &&
-    left.reducedEvidenceReference?.payloadExpiresAt ===
-      right.reducedEvidenceReference?.payloadExpiresAt &&
-    right.reducedEvidenceReference !== null
+    left.reducedEvidenceReference.reducedEvidenceRef ===
+      right.reducedEvidenceReference.reducedEvidenceRef &&
+    left.reducedEvidenceReference.redactedProjectionDigest ===
+      right.reducedEvidenceReference.redactedProjectionDigest &&
+    left.reducedEvidenceReference.payloadExpiresAt ===
+      right.reducedEvidenceReference.payloadExpiresAt
   );
+}
+
+function safeErrorCategory(error: unknown): string {
+  if (!(error instanceof Error)) return 'UnknownError';
+  return [
+    'Error',
+    'TypeError',
+    'PrismaClientKnownRequestError',
+    'PrismaClientUnknownRequestError',
+    'PrismaClientInitializationError'
+  ].includes(error.name)
+    ? error.name
+    : 'UnknownError';
 }
 
 function readClock(clock: AdvisoryClock): string | null {

@@ -96,7 +96,7 @@ export function createModelGateway(options: ModelGatewayOptions): ModelGateway {
             request,
             config,
             startedAt,
-            error instanceof Error ? error.message : "provider failed"
+            "PROVIDER_REQUEST_FAILED"
           );
         }
       }
@@ -109,7 +109,13 @@ export function createModelGateway(options: ModelGatewayOptions): ModelGateway {
         throw new Error("Model gateway provider is not configured and fallback is disabled.");
       }
 
-      return runFallbackProvider(options, request, config, startedAt, "provider not configured");
+      return runFallbackProvider(
+        options,
+        request,
+        config,
+        startedAt,
+        "PROVIDER_NOT_CONFIGURED"
+      );
     }
   };
 }
@@ -143,17 +149,27 @@ async function runFallbackProvider(
 }
 
 export function validateAiInferenceRequest(request: AiInferenceRequest): AiInferenceRequest {
-  if (!isRecord(request as unknown) || !hasExactKeys(request as unknown as Record<string, unknown>, [
-    "tenantId",
-    "scanRequestId",
-    "canonicalScanKey",
-    "requestId",
-    "modelVersion",
-    "reducedEvidence",
-    "requestedCapabilities",
-    "runtimePolicy",
-    "createdAt"
-  ]) || typeof request.tenantId !== "string" || request.tenantId.trim().length === 0) {
+  if (
+    !isRecord(request as unknown) ||
+    !hasExactKeys(request as unknown as Record<string, unknown>, [
+      "tenantId",
+      "scanRequestId",
+      "canonicalScanKey",
+      "requestId",
+      "modelVersion",
+      "reducedEvidence",
+      "requestedCapabilities",
+      "runtimePolicy",
+      "createdAt"
+    ])
+  ) {
+    throw new AiInferenceValidationError(
+      "AI inference request must use the exact T043 reduced-reference contract.",
+      "FORBIDDEN_INPUT_CLASS"
+    );
+  }
+
+  if (typeof request.tenantId !== "string" || request.tenantId.trim().length === 0) {
     throw new AiInferenceValidationError("AI inference request requires tenant attribution.", "MISSING_TENANT_ATTRIBUTION");
   }
 
@@ -455,7 +471,7 @@ export function createDeterministicFallbackProvider(): AiModelProvider {
   };
 }
 
-class AiInferenceValidationError extends Error {
+export class AiInferenceValidationError extends Error {
   constructor(
     message: string,
     readonly rejectionReason: AiInferenceRejectionReason

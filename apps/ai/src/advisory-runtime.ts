@@ -4,6 +4,7 @@ import type {
 } from '@aegisai/shared';
 
 import {
+  AiInferenceValidationError,
   createDeterministicFallbackProvider,
   createModelGateway
 } from './model-gateway';
@@ -32,8 +33,9 @@ export async function handleAiAdvisoryRequest(
   try {
     const body = (await request.json()) as unknown;
     if (!isAiInferenceRequestLike(body)) {
-      throw new Error(
-        'AI advisory runtime requires a T043 reduced-reference handoff.'
+      throw new AiInferenceValidationError(
+        'AI advisory runtime requires a T043 reduced-reference handoff.',
+        'FORBIDDEN_INPUT_CLASS'
       );
     }
     const gateway = createModelGateway({
@@ -49,10 +51,11 @@ export async function handleAiAdvisoryRequest(
   } catch (error) {
     return jsonResponse(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'AI advisory request is malformed.'
+        error: 'AI advisory request was rejected.',
+        reasonCode:
+          error instanceof AiInferenceValidationError
+            ? error.rejectionReason
+            : 'MALFORMED_REQUEST'
       },
       400
     );

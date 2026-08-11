@@ -38,7 +38,12 @@ export class PrismaSastAiAdvisoryStore extends SastAiAdvisoryStore {
     }
 
     const row = await this.prisma.sastEvidenceAccessDecision.findUnique({
-      where: { id: decision.accessDecisionId },
+      where: {
+        id_tenantId: {
+          id: decision.accessDecisionId,
+          tenantId: decision.scope.tenantId
+        }
+      },
       select: {
         id: true,
         tenantId: true,
@@ -517,7 +522,7 @@ function replayHandoff(
     row.findingFingerprint !==
       expected.normalizedFinding.findingFingerprint ||
     row.modelVersion !== expected.modelVersion ||
-    row.payloadExpiresAt.toISOString() !== expected.payloadExpiresAt ||
+    !isSameInstant(row.payloadExpiresAt, expected.payloadExpiresAt) ||
     row.requestDigest !== expected.requestDigest ||
     row.handoffDigest !== expected.handoffDigest ||
     row.normalizedFindingAllowed !== true ||
@@ -540,7 +545,7 @@ function replayHandoff(
     row.publicationAuthority !== false ||
     row.lifecycleMutationAuthority !== false ||
     row.scmWriteAuthority !== false ||
-    row.createdAt.toISOString() !== expected.createdAt
+    !isSameInstant(row.createdAt, expected.createdAt)
   ) {
     throw new SastAiAdvisoryPersistenceError('REPLAY_CONFLICT');
   }
@@ -644,6 +649,12 @@ function objectOrUndefined(value: unknown): object | undefined {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? value
     : undefined;
+}
+
+function isSameInstant(actual: Date, expected: string): boolean {
+  const expectedMilliseconds = Date.parse(expected);
+  return Number.isFinite(expectedMilliseconds) &&
+    actual.getTime() === expectedMilliseconds;
 }
 
 function isSerializableConflict(error: unknown): boolean {

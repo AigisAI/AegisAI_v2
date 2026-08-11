@@ -58,7 +58,10 @@ test('POST /ai/advisories rejects the legacy direct finding payload', async () =
   const body = await response.json();
 
   assert.equal(response.status, 400);
-  assert.match(body.error, /T043 reduced-reference handoff/i);
+  assert.deepEqual(body, {
+    error: 'AI advisory request was rejected.',
+    reasonCode: 'FORBIDDEN_INPUT_CLASS'
+  });
 });
 
 test('POST /ai/advisories rejects unknown fields and authority escalation', async () => {
@@ -90,7 +93,27 @@ test('POST /ai/advisories rejects unknown fields and authority escalation', asyn
       advisoryHttpRequest(input)
     );
     assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: 'AI advisory request was rejected.',
+      reasonCode: 'FORBIDDEN_INPUT_CLASS'
+    });
   }
+});
+
+test('POST /ai/advisories returns a stable error for malformed JSON', async () => {
+  const response = await handleAiAdvisoryRequest(
+    new Request('http://127.0.0.1:8000/ai/advisories', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{'
+    })
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    error: 'AI advisory request was rejected.',
+    reasonCode: 'MALFORMED_REQUEST'
+  });
 });
 
 test('POST /ai/advisories never returns secrets or decision authority', async () => {

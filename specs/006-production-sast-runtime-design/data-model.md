@@ -809,6 +809,10 @@ decisions cannot be inferred from a successful scan or accepted T041 pack.
 - `AiAdvisoryMetadata.sastHandoffId` is nullable only for legacy rows and unique for T043 output;
   new results must rebind to the exact handoff and request digest. Parent deletion is restricted
   so the immutable audit chain cannot be silently cascaded away
+- normal tenant/repository offboarding retains this digest-only chain beneath a soft-revoked
+  tenant tombstone. Exceptional hard purge is an authorized, externally audited maintenance
+  flow that deletes advisory metadata before temporarily bypassing the immutable handoff fence;
+  ordinary application roles cannot perform that operation
 
 ### SastEvidenceDeletionSchedule
 

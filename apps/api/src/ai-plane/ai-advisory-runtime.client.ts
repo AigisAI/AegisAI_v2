@@ -6,6 +6,7 @@ import {
 } from '@aegisai/shared';
 import { BadGatewayException, Injectable } from '@nestjs/common';
 import axios from 'axios';
+import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 
 import { ConfigService } from '../config/config.service';
@@ -25,6 +26,13 @@ const FORBIDDEN_RUNTIME_RESPONSE_KEYS = [
   'waiverApplied',
   'staleSuppressed'
 ];
+const MAX_RUNTIME_ADVISORIES = 32;
+const MAX_RUNTIME_SIGNALS = 32;
+const MAX_RUNTIME_TEXT_BYTES = 2048;
+const MAX_RUNTIME_METADATA_BYTES = 128;
+const MAX_RUNTIME_SCAN_DEPTH = 12;
+const MAX_RUNTIME_SCAN_COLLECTION = 64;
+const MAX_RUNTIME_LATENCY_MILLISECONDS = 30_000;
 
 @Injectable()
 export class AiAdvisoryRuntimeClient {
@@ -39,10 +47,11 @@ export class AiAdvisoryRuntimeClient {
       );
     }
     try {
+      const timeoutMs = this.timeoutMs();
       const response = await axios.post(
         this.runtimeUrl(),
-        this.toInferenceRequest(handoff),
-        { timeout: this.config.get('AI_ADVISORY_TIMEOUT_MS') }
+        this.toInferenceRequest(handoff, timeoutMs),
+        { timeout: timeoutMs }
       );
       return this.parseRuntimeOutput(response.data, handoff);
     } catch (error) {
@@ -54,11 +63,9 @@ export class AiAdvisoryRuntimeClient {
   }
 
   private toInferenceRequest(
-    handoff: Readonly<SastAiAdvisoryHandoff>
+    handoff: Readonly<SastAiAdvisoryHandoff>,
+    maxLatencyMs: number
   ): AiInferenceRequest {
-    const maxLatencyMs = Number(
-      this.config.get('AI_ADVISORY_TIMEOUT_MS')
-    );
     const finding = handoff.normalizedFinding;
     const reference = handoff.reducedEvidenceReference;
     return {
@@ -118,9 +125,7 @@ export class AiAdvisoryRuntimeClient {
       requestedCapabilities: ['detector', 'planner'],
       runtimePolicy: {
         allowFallback: true,
-        maxLatencyMs: Number.isFinite(maxLatencyMs)
-          ? maxLatencyMs
-          : 2500
+        maxLatencyMs
       },
       createdAt: handoff.createdAt
     };
@@ -149,12 +154,14 @@ export class AiAdvisoryRuntimeClient {
       candidate.scanRequestId !== handoff.scanRequestId ||
       candidate.advisoryOnly !== true ||
       !Array.isArray(candidate.detectorAdvisories) ||
+      candidate.detectorAdvisories.length > MAX_RUNTIME_ADVISORIES ||
       !candidate.detectorAdvisories.every(
         (advisory) =>
           isDetectorAdvisory(advisory) &&
           advisory.findingId === findingId
       ) ||
       !Array.isArray(candidate.plannerAdvisories) ||
+      candidate.plannerAdvisories.length > MAX_RUNTIME_ADVISORIES ||
       !candidate.plannerAdvisories.every(
         (advisory) =>
           isPlannerAdvisory(advisory) &&
@@ -162,17 +169,27 @@ export class AiAdvisoryRuntimeClient {
             advisory.findingId === findingId)
       ) ||
       !isRecord(candidate.modelMetadata) ||
-      typeof candidate.modelMetadata.provider !== 'string' ||
-      typeof candidate.modelMetadata.model !== 'string' ||
+      !isBoundedRuntimeResponseText(
+        candidate.modelMetadata.provider,
+        MAX_RUNTIME_METADATA_BYTES
+      ) ||
+      !isBoundedRuntimeResponseText(
+        candidate.modelMetadata.model,
+        MAX_RUNTIME_METADATA_BYTES
+      ) ||
       typeof candidate.modelMetadata.version !== 'string' ||
       candidate.modelMetadata.version !== handoff.modelVersion ||
       !isRecord(candidate.fallback) ||
       typeof candidate.fallback.used !== 'boolean' ||
       (candidate.fallback.reason !== undefined &&
-        typeof candidate.fallback.reason !== 'string') ||
+        !isBoundedRuntimeResponseText(
+          candidate.fallback.reason,
+          MAX_RUNTIME_TEXT_BYTES
+        )) ||
       typeof candidate.latencyMs !== 'number' ||
       !Number.isFinite(candidate.latencyMs) ||
       candidate.latencyMs < 0 ||
+      candidate.latencyMs > MAX_RUNTIME_LATENCY_MILLISECONDS ||
       typeof candidate.createdAt !== 'string' ||
       !Number.isFinite(Date.parse(candidate.createdAt))
     ) {
@@ -181,6 +198,17 @@ export class AiAdvisoryRuntimeClient {
       );
     }
     return candidate as AiInferenceResponse;
+  }
+
+  private timeoutMs(): number {
+    const configured = Number(
+      this.config.get('AI_ADVISORY_TIMEOUT_MS')
+    );
+    return Number.isFinite(configured) &&
+      configured > 0 &&
+      configured <= MAX_RUNTIME_LATENCY_MILLISECONDS
+      ? configured
+      : 2500;
   }
 
   private runtimeUrl(): string {
@@ -212,9 +240,15 @@ function isDetectorAdvisory(
     typeof input.confidence === 'number' &&
     input.confidence >= 0 &&
     input.confidence <= 1 &&
-    typeof input.rationale === 'string' &&
+    isBoundedRuntimeResponseText(
+      input.rationale,
+      MAX_RUNTIME_TEXT_BYTES
+    ) &&
     Array.isArray(input.signals) &&
-    input.signals.every((signal) => typeof signal === 'string')
+    input.signals.length <= MAX_RUNTIME_SIGNALS &&
+    input.signals.every((signal) =>
+      isBoundedRuntimeResponseText(signal, MAX_RUNTIME_TEXT_BYTES)
+    )
   );
 }
 
@@ -225,26 +259,49 @@ function isPlannerAdvisory(
   return (
     (input.findingId === undefined ||
       typeof input.findingId === 'string') &&
-    typeof input.action === 'string' &&
-    typeof input.rationale === 'string' &&
+    isBoundedRuntimeResponseText(
+      input.action,
+      MAX_RUNTIME_TEXT_BYTES
+    ) &&
+    isBoundedRuntimeResponseText(
+      input.rationale,
+      MAX_RUNTIME_TEXT_BYTES
+    ) &&
     (input.priority === 'low' ||
       input.priority === 'medium' ||
       input.priority === 'high')
   );
 }
 
-function hasForbiddenRuntimeResponseKey(input: unknown): boolean {
+function hasForbiddenRuntimeResponseKey(
+  input: unknown,
+  depth = 0
+): boolean {
+  if (depth > MAX_RUNTIME_SCAN_DEPTH) return true;
   if (input === null || typeof input !== 'object') return false;
   if (Array.isArray(input)) {
-    return input.some((item) => hasForbiddenRuntimeResponseKey(item));
+    return input.length > MAX_RUNTIME_SCAN_COLLECTION ||
+      input.some((item) =>
+        hasForbiddenRuntimeResponseKey(item, depth + 1)
+      );
   }
-  return Object.entries(input as Record<string, unknown>).some(
+  const entries = Object.entries(input as Record<string, unknown>);
+  return entries.length > MAX_RUNTIME_SCAN_COLLECTION || entries.some(
     ([key, value]) =>
       FORBIDDEN_RUNTIME_RESPONSE_KEYS.some(
         (forbidden) =>
           forbidden.toLowerCase() === key.toLowerCase()
-      ) || hasForbiddenRuntimeResponseKey(value)
+      ) || hasForbiddenRuntimeResponseKey(value, depth + 1)
   );
+}
+
+function isBoundedRuntimeResponseText(
+  value: unknown,
+  maximumBytes: number
+): value is string {
+  return typeof value === 'string' &&
+    value.length > 0 &&
+    Buffer.byteLength(value, 'utf8') <= maximumBytes;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

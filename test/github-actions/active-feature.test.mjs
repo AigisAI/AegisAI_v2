@@ -1654,6 +1654,9 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   assert.match(shared, /sast-ai-advisory-handoff-v1/);
   assert.match(shared, /isSastAiAdvisoryIntentShapeValid/);
   assert.match(shared, /createdAt: input\.decision\.decidedAt/);
+  assert.match(shared, /isSastReducedEvidenceReferenceShapeValid/);
+  assert.match(shared, /hasAsciiControl\(value\.title\)/);
+  assert.match(shared, /record\[key\] !== undefined/);
   assert.match(sharedIndex, /sast-ai-advisory-handoff/);
   assert.match(
     sharedTest,
@@ -1674,6 +1677,9 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
     store,
     /Prisma\.TransactionIsolationLevel\.Serializable/
   );
+  assert.match(store, /id_tenantId/);
+  assert.match(store, /isSameInstant/);
+  assert.match(service, /safeErrorCategory/);
   assert.doesNotMatch(
     store,
     /handoff:\s*handoff as unknown as Prisma\.InputJsonValue/u
@@ -1681,6 +1687,8 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   assert.match(runtime, /snippets: \[\]/);
   assert.match(runtime, /modelVersion: handoff\.modelVersion/);
   assert.match(runtime, /candidate\.modelMetadata\.version !== handoff\.modelVersion/);
+  assert.match(runtime, /MAX_RUNTIME_ADVISORIES/);
+  assert.match(runtime, /MAX_RUNTIME_SCAN_DEPTH/);
   assert.match(runtime, /retrievalAllowed: false/);
   assert.match(runtime, /toolsAllowed: false/);
   assert.doesNotMatch(runtime, /redactedContent/);
@@ -1715,6 +1723,14 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   );
   assert.match(
     onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "AiAdvisoryMetadata_sastHandoffId_key"/
+  );
+  assert.match(
+    onlineSchema,
+    /AiAdvisoryMetadata_sastHandoffId_fkey/
+  );
+  assert.match(
+    onlineSchema,
     /SastAiAdvisoryHandoff_occurrence_scope_fkey/
   );
   assert.match(
@@ -1723,7 +1739,7 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   );
   assert.doesNotMatch(
     migration,
-    /SastEvidenceAccessDecision_ai_scope_key|SastAiAdvisoryHandoff_(?:occurrence|finding|access)_scope_fkey/
+    /SastEvidenceAccessDecision_ai_scope_key|SastAiAdvisoryHandoff_(?:occurrence|finding|access)_scope_fkey|AiAdvisoryMetadata_sastHandoffId_(?:key|fkey)/
   );
   assert.match(
     migration,

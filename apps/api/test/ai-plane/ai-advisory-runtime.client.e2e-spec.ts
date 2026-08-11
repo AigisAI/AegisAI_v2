@@ -71,6 +71,10 @@ describe('AiAdvisoryRuntimeClient T043 boundary', () => {
       ].join(':')
     );
     expect(inferenceRequest.modelVersion).toBe(handoff.modelVersion);
+    expect(inferenceRequest.reducedEvidence.metadata).toMatchObject({
+      cweIds: 'CWE-502,CWE-79',
+      cveIds: 'CVE-2025-0001,CVE-2026-0002'
+    });
     expect(inferenceRequest.reducedEvidence.metadata).not.toHaveProperty(
       'redactedContent'
     );
@@ -122,6 +126,66 @@ describe('AiAdvisoryRuntimeClient T043 boundary', () => {
     ).rejects.toThrow('AI advisory handoff is malformed.');
     expect(mockedAxios.post).not.toHaveBeenCalled();
   });
+
+  it('uses one bounded timeout value for transport and runtime policy', async () => {
+    const handoff = aiHandoff();
+    mockedAxios.post.mockResolvedValueOnce({
+      data: responseFor(handoff.requestId)
+    });
+    const client = new AiAdvisoryRuntimeClient(runtimeConfig(-1));
+
+    await expect(client.createAdvisory(handoff)).resolves.toEqual(
+      responseFor(handoff.requestId)
+    );
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+      'https://ai-runtime.example/ai/advisories',
+      expect.objectContaining({
+        runtimePolicy: { allowFallback: true, maxLatencyMs: 2500 }
+      }),
+      { timeout: 2500 }
+    );
+  });
+
+  it('rejects oversized or excessively nested runtime output', async () => {
+    const handoff = aiHandoff();
+    const client = new AiAdvisoryRuntimeClient(runtimeConfig());
+    const response = responseFor(handoff.requestId);
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        ...response,
+        detectorAdvisories: [
+          {
+            ...response.detectorAdvisories[0],
+            rationale: 'x'.repeat(2049)
+          }
+        ]
+      }
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response is malformed.'
+    );
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        ...response,
+        detectorAdvisories: Array.from(
+          { length: 33 },
+          () => response.detectorAdvisories[0]
+        )
+      }
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response is malformed.'
+    );
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: { ...response, diagnostics: nestedValue(14) }
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response contains forbidden authority or sensitive content.'
+    );
+  });
 });
 
 function responseFor(requestId: string): AiInferenceResponse {
@@ -157,14 +221,22 @@ function responseFor(requestId: string): AiInferenceResponse {
   };
 }
 
-function runtimeConfig() {
+function runtimeConfig(timeout: number | string = 2500) {
   return {
     get: jest.fn((key: string) => {
       const values: Record<string, string | number> = {
         AI_SERVER_URL: 'https://ai-runtime.example',
-        AI_ADVISORY_TIMEOUT_MS: 2500
+        AI_ADVISORY_TIMEOUT_MS: timeout
       };
       return values[key];
     })
   } as never;
+}
+
+function nestedValue(depth: number): unknown {
+  let value: unknown = 'bounded';
+  for (let index = 0; index < depth; index += 1) {
+    value = { next: value };
+  }
+  return value;
 }

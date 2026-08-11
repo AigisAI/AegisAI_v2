@@ -49,12 +49,22 @@ describe('SAST AI advisory handoff persistence contract', () => {
     expect(onlineSchema).toContain(
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastEvidenceAccessDecision_ai_scope_key"'
     );
+    expect(onlineSchema).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "AiAdvisoryMetadata_sastHandoffId_key"'
+    );
+    expect(onlineSchema).toContain(
+      'AiAdvisoryMetadata_sastHandoffId_fkey'
+    );
     expect(migration).not.toMatch(
       /SastEvidenceAccessDecision_ai_scope_key|SastAiAdvisoryHandoff_(?:access|occurrence|finding)_scope_fkey/u
     );
-    expect(migration).toContain(
-      'AiAdvisoryMetadata_sastHandoffId_fkey'
+    expect(migration).not.toMatch(
+      /AiAdvisoryMetadata_sastHandoffId_(?:key|fkey)/u
     );
+    expect(migration).toContain(
+      '"payloadExpiresAt" TIMESTAMP(3) NOT NULL'
+    );
+    expect(migration).toContain('"createdAt" TIMESTAMP(3) NOT NULL');
     expect(migration).not.toContain('"handoff" JSONB');
     expect(schema).not.toMatch(
       /model SastAiAdvisoryHandoff \{[\s\S]*?\n\s+handoff\s+Json/u
@@ -95,6 +105,8 @@ describe('SAST AI advisory handoff persistence contract', () => {
     );
     expect(store).toContain('isStoredDecisionBound');
     expect(store).toContain('isSourceBound');
+    expect(store).toContain('id_tenantId');
+    expect(store).toContain('isSameInstant');
     expect(store).toContain(
       'Prisma.TransactionIsolationLevel.Serializable'
     );

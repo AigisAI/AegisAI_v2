@@ -186,7 +186,9 @@ The following must always remain true:
   reduced-reference drift; cross-tenant/repository/scan/occurrence/fingerprint rebinding;
   expired and non-monotonic clocks; changed model version; exact retry; snippets/content;
   forbidden secret keys; request/tenant/scan/finding correlation drift; retrieval, tool,
-  policy, publication, lifecycle, and SCM authority widening
+  policy, publication, lifecycle, and SCM authority widening; duplicate/reordered CWE/CVE sets;
+  oversized advisory/signal/text output; excessive response depth/breadth; latency overflow;
+  provider-error reflection; and unauthorized immutable-ledger purge
 - CycloneDX schema/tool/version/source-component rebinding, metadata-tool component
   count smuggling, vulnerability/VEX and nested/file component extensions, duplicate or
   mismatched PURL/BOM references, invalid CPE part/field/quoting/wildcard/language forms,

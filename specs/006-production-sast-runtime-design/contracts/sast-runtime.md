@@ -1261,12 +1261,30 @@ or provider payload.
 The internal AI request contains the handoff-bound model version, normalized metadata, one
 opaque reference, and `snippets=[]`. The model version is part of the canonical runtime key,
 selects the gateway configuration, and must equal the returned model metadata. The request
+carries the canonical T035/T037 `cweIds` and `cveIds` in strict ascending, duplicate-free
+order without runtime normalization; malformed or reordered identifier sets are rejected at
+the shared handoff boundary rather than silently repaired. The request
 carries no result-ingress artifact reference and grants no retrieval, tools, policy,
 publication, lifecycle mutation, or SCM write authority. The runtime rejects unknown keys,
 legacy caller-supplied finding/evidence shapes, content-bearing snippets, model or correlation
 drift, expired references, and authority widening before provider execution. T043 records
 advisory output only; T044 separately proves that output cannot acquire authoritative finding
 or policy effects.
+
+The API consumer treats provider output as hostile input. It accepts at most 32 detector and
+32 planner advisories, at most 32 bounded signals per detector advisory, 2,048 UTF-8 bytes per
+rationale/action/signal/fallback reason, 128 UTF-8 bytes per provider/model identifier, 30,000
+milliseconds of reported latency, and a forbidden-key scan bounded to depth 12 and 64 entries
+per collection. Oversized, excessively nested, cross-request, model-drifted, authority-bearing,
+or sensitive output is rejected before persistence. Client-visible runtime rejection bodies
+use stable error and reason codes and never echo provider or parser exception messages.
+
+Normal tenant or repository offboarding soft-revokes access while retaining the immutable,
+digest-only handoff and advisory audit chain under the tenant tombstone. An exceptional hard
+purge requires an authorized, externally audited database-maintenance procedure: revoke access,
+export the required audit record, remove `AiAdvisoryMetadata` children, bypass the immutable
+delete fence only for the identified handoff rows, and then remove parent scope. The restrictive
+foreign keys intentionally prevent an ordinary cascade from erasing this ledger.
 
 ## Cleanup Contract
 

@@ -123,9 +123,6 @@ CREATE INDEX "SastAiAdvisoryHandoff_finding_scope_idx"
 CREATE INDEX "SastAiAdvisoryHandoff_payloadExpiresAt_idx"
   ON "SastAiAdvisoryHandoff"("payloadExpiresAt");
 
-CREATE UNIQUE INDEX "AiAdvisoryMetadata_sastHandoffId_key"
-  ON "AiAdvisoryMetadata"("sastHandoffId");
-
 ALTER TABLE "SastAiAdvisoryHandoff"
   ADD CONSTRAINT "SastAiAdvisoryHandoff_tenantId_fkey"
   FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id")
@@ -140,11 +137,6 @@ ALTER TABLE "SastAiAdvisoryHandoff"
   FOREIGN KEY ("scanRequestId", "tenantId", "repositoryBindingId")
   REFERENCES "ScanRequest"("id", "tenantId", "repositoryBindingId")
   ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "AiAdvisoryMetadata"
-  ADD CONSTRAINT "AiAdvisoryMetadata_sastHandoffId_fkey"
-  FOREIGN KEY ("sastHandoffId") REFERENCES "SastAiAdvisoryHandoff"("id")
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
 CREATE FUNCTION "reject_sast_ai_advisory_handoff_update"()
 RETURNS trigger
 LANGUAGE plpgsql

@@ -3,6 +3,7 @@ import type {
   AiInferenceResponse,
   SastAiAdvisoryHandoff
 } from '@aegisai/shared';
+import { Logger } from '@nestjs/common';
 
 import { AiAdvisoryService } from '../../src/ai-plane/ai-advisory.service';
 import {
@@ -12,6 +13,8 @@ import {
 } from '../support/sast-ai-advisory-fixture';
 
 describe('AiAdvisoryService T043 handoff', () => {
+  afterEach(() => jest.restoreAllMocks());
+
   it('derives an advisory from durable scope and never accepts caller payloads', async () => {
     const access = allowedAiAccess();
     const evidenceAccess = {
@@ -155,6 +158,9 @@ describe('AiAdvisoryService T043 handoff', () => {
   });
 
   it('fails closed on handoff or result persistence conflicts', async () => {
+    const logger = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     const access = allowedAiAccess();
     const runtime = { createAdvisory: jest.fn() };
     const handoffStore = memoryStore(access.decision);
@@ -186,6 +192,15 @@ describe('AiAdvisoryService T043 handoff', () => {
     await expect(
       resultService.createAdvisory(aiAdvisoryIntent(), clock())
     ).rejects.toThrow('AI advisory source is unavailable.');
+    expect(logger).toHaveBeenCalledWith(
+      expect.stringContaining('AI advisory handoff persistence failed')
+    );
+    expect(logger).toHaveBeenCalledWith(
+      expect.stringContaining('AI advisory persistence failed')
+    );
+    expect(JSON.stringify(logger.mock.calls)).not.toMatch(
+      /handoff conflict|result conflict/u
+    );
   });
 
   it('sends only the canonical handoff to the internal runtime and replays stored results', async () => {

@@ -106,6 +106,12 @@ const indexes = [
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastEvidenceAccessDecision_ai_scope_key" ON "SastEvidenceAccessDecision"("id", "decisionDigest", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "evidencePackId", "findingFingerprint", "decidedAt")'
   },
   {
+    name: 'AiAdvisoryMetadata_sastHandoffId_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "AiAdvisoryMetadata_sastHandoffId_key" ON "AiAdvisoryMetadata"("sastHandoffId")'
+  },
+  {
     name: 'SastArtifactDispositionDecision_coverage_scope_key',
     unique: true,
     create:
@@ -635,6 +641,13 @@ const constraints = [
     type: 'f',
     definition:
       'FOREIGN KEY ("accessDecisionId", "accessDecisionDigest", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "evidencePackId", "findingFingerprint", "createdAt") REFERENCES "SastEvidenceAccessDecision"("id", "decisionDigest", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "evidencePackId", "findingFingerprint", "decidedAt") ON DELETE RESTRICT ON UPDATE CASCADE'
+  },
+  {
+    table: 'AiAdvisoryMetadata',
+    name: 'AiAdvisoryMetadata_sastHandoffId_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("sastHandoffId") REFERENCES "SastAiAdvisoryHandoff"("id") ON DELETE RESTRICT ON UPDATE CASCADE'
   },
   {
     table: 'SastFindingCorrelationEdge',

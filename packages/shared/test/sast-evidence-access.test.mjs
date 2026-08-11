@@ -270,6 +270,52 @@ test('T043 retries are deterministic and reject caller fields or authority widen
     }, digest),
     false
   );
+  assert.equal(
+    isSastAiAdvisoryHandoffShapeValid({
+      ...first,
+      requestDigest: digest('tampered-request')
+    }, digest),
+    false
+  );
+  assert.equal(
+    isSastAiAdvisoryHandoffShapeValid({
+      ...first,
+      handoffDigest: digest('tampered-handoff')
+    }, digest),
+    false
+  );
+  assert.equal(buildSastAiAdvisoryHandoff({
+    ...input,
+    createdAt: decision.aiPayloadExpiresAt
+  }), null);
+  assert.equal(buildSastAiAdvisoryHandoff({
+    ...input,
+    normalizedFinding: {
+      ...input.normalizedFinding,
+      title: 'Unsafe\ndeserialization'
+    },
+    createdAt: '2026-08-10T05:00:01.000Z'
+  }), null);
+
+  const withUndefinedLocation = buildSastAiAdvisoryHandoff({
+    ...input,
+    normalizedFinding: {
+      ...input.normalizedFinding,
+      location: {
+        ...input.normalizedFinding.location,
+        lineEnd: undefined
+      }
+    },
+    createdAt: '2026-08-10T05:00:01.000Z'
+  });
+  assert.ok(withUndefinedLocation);
+  const roundTripped = JSON.parse(JSON.stringify(withUndefinedLocation));
+  assert.equal(
+    isSastAiAdvisoryHandoffShapeValid(roundTripped, digest),
+    true
+  );
+  assert.equal(roundTripped.requestDigest, withUndefinedLocation.requestDigest);
+  assert.equal(roundTripped.handoffDigest, withUndefinedLocation.handoffDigest);
   assert.equal(isSastAiAdvisoryIntentShapeValid({
     tenantId: decision.scope.tenantId,
     repositoryBindingId: decision.scope.repositoryBindingId,
@@ -336,8 +382,8 @@ function advisoryFinding(decision) {
     title: 'Unsafe deserialization',
     severity: 'HIGH',
     confidence: 'HIGH',
-    cweIds: ['CWE-502'],
-    cveIds: [],
+    cweIds: ['CWE-502', 'CWE-79'],
+    cveIds: ['CVE-2025-0001', 'CVE-2026-0002'],
     location: {
       kind: 'FILE',
       normalizedPath: 'src/App.java',

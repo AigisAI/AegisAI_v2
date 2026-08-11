@@ -113,8 +113,8 @@ export function aiNormalizedFinding(
     title: 'Unsafe deserialization',
     severity: 'HIGH',
     confidence: 'HIGH',
-    cweIds: ['CWE-502'],
-    cveIds: [],
+    cweIds: ['CWE-502', 'CWE-79'],
+    cveIds: ['CVE-2025-0001', 'CVE-2026-0002'],
     location: {
       kind: 'FILE',
       normalizedPath: 'src/App.java',

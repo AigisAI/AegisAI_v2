@@ -462,6 +462,47 @@ export function isSastEvidenceAccessScopeValid(
   );
 }
 
+export function isSastReducedEvidenceReferenceShapeValid(
+  value: unknown
+): value is SastReducedEvidenceReference {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, [
+      'version',
+      'reducedEvidenceRef',
+      'accessDecisionId',
+      'accessDecisionDigest',
+      'evidencePackId',
+      'findingFingerprint',
+      'redactedProjectionDigest',
+      'fragmentCount',
+      'payloadExpiresAt',
+      'aiPayloadCreated',
+      'aiProviderCalled',
+      'retrievalAllowed',
+      'toolsAllowed',
+      'advisoryOnly'
+    ]) &&
+    value.version === SAST_REDUCED_EVIDENCE_REFERENCE_VERSION &&
+    isContractId(value.reducedEvidenceRef, 'sast-reduced-evidence') &&
+    isContractId(value.accessDecisionId, 'sast-evidence-access') &&
+    isSha256Digest(value.accessDecisionDigest) &&
+    isContractId(value.evidencePackId, 'sast-evidence-pack') &&
+    isSha256Digest(value.findingFingerprint) &&
+    isSha256Digest(value.redactedProjectionDigest) &&
+    Number.isSafeInteger(value.fragmentCount) &&
+    Number(value.fragmentCount) >= 1 &&
+    Number(value.fragmentCount) <=
+      SAST_ACCEPTED_EVIDENCE_POLICY.maxFragmentCount &&
+    isCanonicalTimestamp(value.payloadExpiresAt) &&
+    value.aiPayloadCreated === false &&
+    value.aiProviderCalled === false &&
+    value.retrievalAllowed === false &&
+    value.toolsAllowed === false &&
+    value.advisoryOnly === true
+  );
+}
+
 export function isSastEvidenceDeletionScheduleShapeValid(
   value: unknown,
   digestCanonical?: SastEvidenceAccessCanonicalDigester
