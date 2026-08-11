@@ -16,19 +16,17 @@ describe("PolicyEngineService", () => {
     status: "OPEN"
   };
 
-  it("creates deterministic policy decisions from scanner findings and coverage", () => {
-    const service = new PolicyEngineService();
+  it("creates deterministic policy decisions from scanner findings and coverage", async () => {
+    const verifier = authorityVerifier(true);
+    const service = new PolicyEngineService(verifier as never);
 
-    const decision = service.evaluate({
+    const decision = await service.evaluate({
       tenantId: "tenant_policy",
       scanRequestId: "scan_request_1",
       finding: highFinding,
       scanLane: "DEEP",
       scannerCoverage: ["OPENGREP"],
-      aiAdvisory: {
-        visible: true,
-        suggestedAction: "BLOCK"
-      }
+      aiAdvisory: policyReference()
     });
 
     expect(decision).toEqual(
@@ -50,12 +48,17 @@ describe("PolicyEngineService", () => {
     expect(decision.reasonCodes).toEqual(
       expect.arrayContaining(["SEVERITY_HIGH", "MISSING_REQUIRED_SCANNER_COVERAGE"])
     );
+    expect(verifier.verifyPolicyReference).toHaveBeenCalledWith({
+      tenantId: 'tenant_policy',
+      normalizedFindingId: 'finding_high',
+      reference: policyReference()
+    });
   });
 
-  it("blocks critical scanner findings without using AI as the policy authority", () => {
-    const service = new PolicyEngineService();
+  it("blocks critical scanner findings without using AI as the policy authority", async () => {
+    const service = new PolicyEngineService(authorityVerifier(true) as never);
 
-    const decision = service.evaluate({
+    const decision = await service.evaluate({
       tenantId: "tenant_policy",
       scanRequestId: "scan_request_2",
       finding: {
@@ -66,10 +69,7 @@ describe("PolicyEngineService", () => {
       },
       scanLane: "FAST",
       scannerCoverage: ["OPENGREP", "TRIVY", "SYFT"],
-      aiAdvisory: {
-        visible: true,
-        suggestedAction: "DASHBOARD_ONLY"
-      }
+      aiAdvisory: policyReference()
     });
 
     expect(decision.enforcementAction).toBe("BLOCK");
@@ -77,4 +77,41 @@ describe("PolicyEngineService", () => {
     expect(decision.aiAdvisoryVisible).toBe(true);
     expect(decision.reasonCodes).toEqual(expect.arrayContaining(["SEVERITY_CRITICAL"]));
   });
+
+  it('rejects suggested actions and unknown authority fields before policy evaluation', async () => {
+    const verifier = authorityVerifier(true);
+    const service = new PolicyEngineService(verifier as never);
+
+    await expect(
+      service.evaluate({
+        tenantId: 'tenant_policy',
+        scanRequestId: 'scan_request_1',
+        finding: highFinding,
+        scanLane: 'DEEP',
+        scannerCoverage: ['OPENGREP', 'TRIVY', 'SYFT'],
+        aiAdvisory: {
+          ...policyReference(),
+          suggestedAction: 'BLOCK',
+          findingStatus: 'FIXED'
+        } as never
+      })
+    ).rejects.toThrow('AI advisory reference is invalid or unavailable.');
+    expect(verifier.verifyPolicyReference).not.toHaveBeenCalled();
+  });
 });
+
+function policyReference() {
+  return {
+    version: 'sast-ai-advisory-policy-reference-v1' as const,
+    advisoryId: `sast-ai-advisory://${'a'.repeat(64)}`,
+    authorityProofId: `sast-ai-authority-proof://${'b'.repeat(64)}`,
+    authorityProofDigest: `sha256:${'c'.repeat(64)}` as const,
+    advisoryOnly: true as const
+  };
+}
+
+function authorityVerifier(result: boolean) {
+  return {
+    verifyPolicyReference: jest.fn().mockResolvedValue(result)
+  };
+}

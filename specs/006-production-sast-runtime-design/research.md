@@ -563,3 +563,32 @@ keeps replay auditable without retaining a second copy of sensitive or expiring 
 content, persisting a full handoff JSON, deriving retry identity from wall-clock invocation
 time, accepting dashboard-purpose authority, enabling model retrieval/tools, or treating an AI
 response as finding, policy, publication, lifecycle, or SCM authority.
+
+## Decision 26: Prove Advisory Consumption with an Immutable Zero-Authority Ledger
+
+**Decision**: T044 accepts only tenant and T043 advisory identity. In one bounded serializable
+transaction it reloads the advisory, immutable handoff, occurrence, normalized finding, and
+lifecycle context, then hashes the scan finding set, target finding status/severity, T037
+lifecycle state/revision, finding policy decisions, finding-scoped waivers, and suppressions
+before and after inserting one `sast-ai-advisory-authority-proof-v1` row. The two complete
+state digests must be byte-identical or the transaction rolls back.
+
+The proof table contains only durable scope references, counts, component/state digests,
+verification time, and fixed booleans proving zero finding creation/status/severity,
+lifecycle, waiver, suppression, policy override, blocking, publication, and SCM authority.
+It stores no advisory output, rationale, prompt, source, evidence, secret, or policy payload.
+Policy accepts only a validated `sast-ai-advisory-policy-reference-v1` for display visibility;
+deterministic finding severity and coverage remain the only enforcement inputs. Waiver and
+suppression payloads use exact key allowlists and reject advisory/proof fields.
+
+**Rationale**: A TypeScript interface or an ignored `suggestedAction` does not prove that AI
+could not reach another write path. Capturing all relevant authoritative ledgers around the
+only permitted proof write, persisting fixed false bits under database checks and immutable
+triggers, and verifying the proof reference at policy entry make the separation executable and
+auditable. Bounded digest sets avoid retaining sensitive content or creating an unbounded proof
+operation.
+
+**Rejected**: Trusting a caller-supplied before/after snapshot, storing advisory or policy JSON
+in the proof, allowing AI-suggested actions and merely ignoring them, regex-only lifecycle key
+blocking, mutating the authoritative row to mark it checked, creating more than one proof per
+advisory, or cascading normal tenant deletion through the immutable audit ledger.

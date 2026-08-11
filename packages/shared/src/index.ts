@@ -25,6 +25,7 @@ export * from './types/sast-scan-freshness';
 export * from './types/sast-accepted-evidence';
 export * from './types/sast-evidence-access';
 export * from './types/sast-ai-advisory-handoff';
+export * from './types/sast-ai-advisory-authority';
 export * from './types/sast-planning';
 export * from './types/sast-fetch';
 export * from './types/sast-wrapper';

@@ -157,5 +157,27 @@ describe("Waiver and suppression lifecycle API (e2e)", () => {
         fullRepository: "all source"
       })
       .expect(400);
+
+    await request(app.getHttpServer())
+      .post('/api/waivers')
+      .send({
+        owner: 'security-reviewer@example.com',
+        reason: 'AI cannot create this waiver.',
+        scope: 'finding:finding_waiver_3',
+        expiresAt: '2026-06-01T00:00:00.000Z',
+        advisoryId: `sast-ai-advisory://${'a'.repeat(64)}`,
+        authorityProofId: `sast-ai-authority-proof://${'b'.repeat(64)}`
+      })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .post('/api/suppressions')
+      .send({
+        scanRequestId: 'scan_request_suppression_3',
+        findingId: 'finding_suppression_3',
+        reason: 'POLICY',
+        aiAdvisory: { advisoryOnly: true }
+      })
+      .expect(400);
   });
 });

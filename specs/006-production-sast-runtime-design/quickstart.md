@@ -518,6 +518,21 @@ portion of Phase 6:
 - The internal AI runtime receives one normalized metadata projection and one opaque reduced
   reference with `snippets=[]`. Retrieval, tools, policy, publication, lifecycle mutation, and
   SCM write authority remain false; the legacy caller-supplied finding/evidence route is denied.
+- T044 accepts only tenant and advisory identity, then rebinds the T043 metadata/handoff to the
+  exact T037 occurrence, normalized finding, lineage, and lifecycle context. In one bounded
+  serializable transaction it hashes the complete scan finding set, target status/severity,
+  lifecycle state/revision, finding policy decisions, finding-scoped waivers, and suppressions
+  before and after inserting the only permitted proof row. Any missing, over-limit, cross-scope,
+  or changed state rolls back.
+- `sast-ai-advisory-authority-proof-v1` stores no JSON or model/content payload. It retains only
+  scope references, counts, component/state/proof digests, verification time, and database-
+  checked booleans: proof-ledger written is true while every finding creation/status/severity,
+  lifecycle, policy, waiver, suppression, block, publication, SCM, and authoritative-write bit
+  is false. Immutable triggers and restricted parent relations preserve exact replay and audit.
+- Policy accepts only a tenant/finding-bound `sast-ai-advisory-policy-reference-v1` to set
+  display visibility. Deterministic finding severity and coverage alone derive enforcement,
+  reasons, tickets, and blocks. The legacy `suggestedAction` shape and advisory/proof fields in
+  exact waiver or suppression payloads fail closed before mutation.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -530,9 +545,9 @@ T038 authority-aware cross-tool correlation, T039 fail-closed scanner/capability
 T040 stale-scan denial and bounded infrastructure-only retry, T041 bounded accepted-finding
 evidence with reconstruction-risk checks, and T042 purpose-bound dashboard/AI classification,
 second-pass secret redaction, seven-day expiry enforcement, and deletion proof are complete;
-T043 normalized-finding plus reduced-reference advisory handoff is also complete; T044 is the
-next implementation task and proves AI cannot create, suppress, waive, resolve, or override
-finding/policy authority.
+T043 normalized-finding plus reduced-reference advisory handoff is complete. T044 zero-authority
+output proof is also complete; T045 is the next implementation task and introduces signed,
+immutable rule-bundle manifests plus compatibility validation.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

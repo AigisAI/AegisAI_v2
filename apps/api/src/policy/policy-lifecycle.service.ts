@@ -8,20 +8,27 @@ import type {
   WaiverUpdateInput
 } from '@aegisai/shared';
 
-const FORBIDDEN_LIFECYCLE_KEYS = [
-  "accessToken",
-  "refreshToken",
-  "tokenValue",
-  "secretValue",
-  "sourceArchive",
-  "fullRepository",
-  "rawScannerPayload",
-  "aiOverride",
-  "policyOverride",
-  "findingOverride",
-  "enforcementAction",
-  "blockRequested"
-];
+const WAIVER_CREATE_KEYS = [
+  'tenantId',
+  'owner',
+  'reason',
+  'scope',
+  'expiresAt'
+] as const;
+const WAIVER_UPDATE_KEYS = [
+  'tenantId',
+  'owner',
+  'reason',
+  'scope',
+  'expiresAt',
+  'lastReviewedAt'
+] as const;
+const SUPPRESSION_CREATE_KEYS = [
+  'tenantId',
+  'scanRequestId',
+  'findingId',
+  'reason'
+] as const;
 
 @Injectable()
 export class PolicyLifecycleService {
@@ -31,7 +38,11 @@ export class PolicyLifecycleService {
   private suppressionSequence = 0;
 
   createWaiver(input: WaiverCreateInput): Waiver {
-    this.assertSafeLifecyclePayload(input);
+    this.assertExactLifecyclePayload(
+      input,
+      WAIVER_CREATE_KEYS,
+      WAIVER_CREATE_KEYS
+    );
     this.assertRequiredString(input.tenantId, "tenantId");
     this.assertRequiredString(input.owner, "owner");
     this.assertRequiredString(input.reason, "reason");
@@ -53,7 +64,11 @@ export class PolicyLifecycleService {
   }
 
   updateWaiver(waiverId: string, input: WaiverUpdateInput): Waiver {
-    this.assertSafeLifecyclePayload(input);
+    this.assertExactLifecyclePayload(
+      input,
+      WAIVER_UPDATE_KEYS,
+      ['tenantId']
+    );
     this.assertRequiredString(input.tenantId, "tenantId");
 
     const waiver = this.waivers.find(
@@ -93,7 +108,11 @@ export class PolicyLifecycleService {
   }
 
   createSuppression(input: SuppressionCreateInput): Suppression {
-    this.assertSafeLifecyclePayload(input);
+    this.assertExactLifecyclePayload(
+      input,
+      SUPPRESSION_CREATE_KEYS,
+      ['tenantId', 'scanRequestId', 'reason']
+    );
     this.assertRequiredString(input.tenantId, "tenantId");
     this.assertRequiredString(input.scanRequestId, "scanRequestId");
 
@@ -114,13 +133,30 @@ export class PolicyLifecycleService {
     return suppression;
   }
 
-  private assertSafeLifecyclePayload(input: unknown): void {
-    const serialized = JSON.stringify(input);
-
-    for (const forbiddenKey of FORBIDDEN_LIFECYCLE_KEYS) {
-      if (new RegExp(forbiddenKey, "i").test(serialized)) {
-        throw new BadRequestException("Lifecycle payload contains forbidden sensitive or authority content.");
-      }
+  private assertExactLifecyclePayload(
+    input: unknown,
+    allowedKeys: readonly string[],
+    requiredKeys: readonly string[]
+  ): asserts input is Record<string, unknown> {
+    if (
+      input === null ||
+      typeof input !== 'object' ||
+      Array.isArray(input)
+    ) {
+      throw new BadRequestException(
+        'Lifecycle payload must be an exact object.'
+      );
+    }
+    const record = input as Record<string, unknown>;
+    if (
+      Object.keys(record).some((key) => !allowedKeys.includes(key)) ||
+      requiredKeys.some(
+        (key) => !Object.prototype.hasOwnProperty.call(record, key)
+      )
+    ) {
+      throw new BadRequestException(
+        'Lifecycle payload contains unknown or missing fields.'
+      );
     }
   }
 

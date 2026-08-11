@@ -1286,6 +1286,42 @@ export the required audit record, remove `AiAdvisoryMetadata` children, bypass t
 delete fence only for the identified handoff rows, and then remove parent scope. The restrictive
 foreign keys intentionally prevent an ordinary cascade from erasing this ledger.
 
+### Advisory output authority proof gate v1
+
+`sast-ai-advisory-authority-proof-v1` accepts exactly `tenantId` and `advisoryId`; caller
+finding, severity, status, lifecycle, waiver, suppression, policy action, block request, state
+digest, or proof fields are unknown keys and reject before storage. The store reloads the
+tenant-bound `AiAdvisoryMetadata`, T043 handoff, T037 occurrence, normalized finding, lineage,
+and lifecycle context. Any advisory/handoff/scope/authority drift returns one generic
+unavailable result.
+
+Within one bounded serializable transaction, the store reads at most 25,000 normalized
+findings for the scan and at most 1,024 finding policy decisions, waivers, and suppressions,
+plus exactly one T037 lifecycle state. Canonical row digests include authoritative status,
+severity, lifecycle revision, policy flags, and row update instants. The store inserts only
+the proof row, repeats the same authoritative reads, and commits only when the two canonical
+state digests match. Over-limit, missing target/lifecycle, reordered, cross-scope, or changed
+state fails closed; exact advisory replay returns the one existing immutable proof.
+
+The database row contains scope IDs, counts, component/state/proof digests, verification time,
+and fixed booleans only. Checks require every finding-create/status/severity, lifecycle,
+waiver, suppression, policy-override, block, publication, and SCM authority bit false; every
+authoritative-write audit bit is false and only `proofLedgerWritten` is true. Immutable update
+and delete triggers plus restrictive foreign keys preserve the audit chain. There is no JSON,
+advisory text, rationale, prompt, source, evidence, secret, or policy payload column.
+
+`sast-ai-advisory-policy-reference-v1` exposes only version, advisory ID, proof ID/digest, and
+`advisoryOnly=true`. Policy verifies that reference against the same tenant and normalized
+finding before setting display visibility. Enforcement action, reason codes, comment/ticket/
+block requests, finding status/severity, waiver, suppression, and lifecycle remain derived
+without AI input. Waiver create/update and suppression create requests use exact key allowlists,
+so advisory/proof fields and the legacy `suggestedAction` shape reject rather than being ignored.
+
+Normal offboarding retains this content-free proof under the tenant tombstone. Exceptional
+tenant/legal hard purge requires access revocation, external audit export, and explicit
+privileged maintenance of the identified proof before restricted parent removal; ordinary
+application roles cannot bypass the immutable fence.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:

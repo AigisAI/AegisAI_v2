@@ -92,4 +92,26 @@ describe('AI advisory API T043 boundary (e2e)', () => {
       /secretValue|sourceArchive|rawScannerPayload|accessToken/i
     );
   });
+
+  it('accepts only tenant and advisory identity for T044 proof creation', async () => {
+    const advisoryId = `sast-ai-advisory://${'a'.repeat(64)}`;
+    await request(app.getHttpServer())
+      .post('/api/ai-advisories/authority-proofs')
+      .send({
+        tenantId: 'tenant-ai',
+        advisoryId,
+        findingStatus: 'FIXED',
+        waiver: true,
+        policyOverride: 'BLOCK'
+      })
+      .expect(400);
+
+    const response = await request(app.getHttpServer())
+      .post('/api/ai-advisories/authority-proofs')
+      .send({ tenantId: 'tenant-ai', advisoryId })
+      .expect(404);
+    expect(JSON.stringify(response.body)).toMatch(
+      /authority proof source is unavailable/i
+    );
+  });
 });

@@ -814,6 +814,30 @@ decisions cannot be inferred from a successful scan or accepted T041 pack.
   flow that deletes advisory metadata before temporarily bypassing the immutable handoff fence;
   ordinary application roles cannot perform that operation
 
+### SastAiAdvisoryAuthorityProof
+
+- one deterministic `sast-ai-authority-proof://<sha256>` row per T043 advisory/handoff, bound
+  to tenant, repository, scan, attempt, occurrence, normalized finding, fingerprint, request
+  digest, and handoff digest
+- bounded component counts and SHA-256 digests cover the complete scan finding set, target
+  status/severity row, exact T037 lifecycle context state/revision, finding policy decisions,
+  `finding:<normalizedFindingId>` waivers, and finding suppressions. `beforeStateDigest` must
+  equal `afterStateDigest`
+- the proof write is the only mutation in its serializable transaction. Finding creation,
+  finding status/severity, lifecycle, waiver, suppression, policy override, blocking,
+  publication, and SCM authority are database-checked false; authoritative-write audit bits
+  are false and `proofLedgerWritten` alone is true
+- no JSON/content column exists. Advisory output, rationale, prompt, source, evidence fragment,
+  secret value, policy payload, owner, or waiver reason is absent; only component row digests
+  survive
+- occurrence and normalized-finding composite constraints are installed by the mandatory
+  online-schema step after their populated referenced indexes are ready. Direct tenant,
+  repository, scan, handoff, and advisory relations restrict deletion
+- ordinary offboarding retains the proof with the advisory audit chain. Exceptional tenant or
+  legal hard purge requires access revocation, external audit export, and explicit privileged
+  maintenance that targets the identified proof before its restricted parents; application
+  roles cannot update or delete it
+
 ### SastEvidenceDeletionSchedule
 
 - deterministic `sast-evidence-deletion://<sha256>` schedule and

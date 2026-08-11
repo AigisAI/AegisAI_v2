@@ -383,6 +383,7 @@ model Tenant {
   sastEvidenceAccessDecisions   SastEvidenceAccessDecision[]
   sastEvidenceDeletionSchedules SastEvidenceDeletionSchedule[]
   sastAiAdvisoryHandoffs        SastAiAdvisoryHandoff[]
+  sastAiAdvisoryAuthorityProofs SastAiAdvisoryAuthorityProof[]
   users                         User[]
 }
 
@@ -442,6 +443,7 @@ model RepositoryBinding {
   sastEvidenceAccessDecisions   SastEvidenceAccessDecision[]
   sastEvidenceDeletionSchedules SastEvidenceDeletionSchedule[]
   sastAiAdvisoryHandoffs        SastAiAdvisoryHandoff[]
+  sastAiAdvisoryAuthorityProofs SastAiAdvisoryAuthorityProof[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
@@ -491,6 +493,7 @@ model ScanRequest {
   sastEvidenceAccessDecisions   SastEvidenceAccessDecision[]
   sastEvidenceDeletionSchedules SastEvidenceDeletionSchedule[]
   sastAiAdvisoryHandoffs        SastAiAdvisoryHandoff[]
+  sastAiAdvisoryAuthorityProofs SastAiAdvisoryAuthorityProof[]
 
   @@unique([id, tenantId, repositoryBindingId])
   @@index([tenantId])
@@ -844,17 +847,19 @@ model NormalizedFinding {
   createdAt                     DateTime                @default(now())
   updatedAt                     DateTime                @updatedAt
 
-  tenant                 Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  scanRequest            ScanRequest             @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
-  scannerRun             ScannerRun              @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
+  tenant                 Tenant                         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest            ScanRequest                    @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  scannerRun             ScannerRun                     @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
   policyDecisions        PolicyDecision[]
   suppressions           Suppression[]
   sastOccurrence         SastFindingOccurrence?
   sastAiAdvisoryHandoffs SastAiAdvisoryHandoff[]
+  sastAiAuthorityProofs  SastAiAdvisoryAuthorityProof[]
 
   // Installed concurrently by the mandatory online-schema step so legacy
   // rows remain deployable while T037 metadata is introduced.
   @@unique([id, tenantId, scanRequestId, scannerRunId], map: "NormalizedFinding_sast_occurrence_scope_key")
+  @@unique([id, tenantId, scanRequestId], map: "NormalizedFinding_ai_authority_scope_key")
   @@index([tenantId])
   @@index([scanRequestId])
   @@index([scannerRunId])
@@ -983,6 +988,7 @@ model SastFindingOccurrence {
   correlationProvenances SastFindingCorrelationProvenance[]
   evidenceBuildDecisions SastEvidenceBuildDecision[]
   aiAdvisoryHandoffs     SastAiAdvisoryHandoff[]
+  aiAdvisoryProofs       SastAiAdvisoryAuthorityProof[]
 
   @@unique([observationBatchId, ordinal], map: "SastFindingOccurrence_batch_ordinal_key")
   @@unique([normalizedFindingId, tenantId, scanRequestId, scannerRunId], map: "SastFindingOccurrence_normalized_scope_key")
@@ -1709,19 +1715,87 @@ model SastAiAdvisoryHandoff {
   scmWriteAuthority               Boolean  @default(false)
   createdAt                       DateTime
 
-  tenant            Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  repositoryBinding RepositoryBinding          @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Restrict, map: "SastAiAdvisoryHandoff_repository_scope_fkey")
-  scanRequest       ScanRequest                @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Restrict, map: "SastAiAdvisoryHandoff_scan_scope_fkey")
-  occurrence        SastFindingOccurrence      @relation(fields: [occurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Restrict, map: "SastAiAdvisoryHandoff_occurrence_scope_fkey")
-  normalizedFinding NormalizedFinding          @relation(fields: [normalizedFindingId, tenantId, scanRequestId, scannerRunId], references: [id, tenantId, scanRequestId, scannerRunId], onDelete: Restrict, map: "SastAiAdvisoryHandoff_finding_scope_fkey")
-  accessDecision    SastEvidenceAccessDecision @relation(fields: [accessDecisionId, accessDecisionDigest, tenantId, repositoryBindingId, scanRequestId, attemptId, occurrenceId, evidencePackId, findingFingerprint, createdAt], references: [id, decisionDigest, tenantId, repositoryBindingId, scanRequestId, attemptId, occurrenceId, evidencePackId, findingFingerprint, decidedAt], onDelete: Restrict, map: "SastAiAdvisoryHandoff_access_scope_fkey")
+  tenant            Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  repositoryBinding RepositoryBinding             @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Restrict, map: "SastAiAdvisoryHandoff_repository_scope_fkey")
+  scanRequest       ScanRequest                   @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Restrict, map: "SastAiAdvisoryHandoff_scan_scope_fkey")
+  occurrence        SastFindingOccurrence         @relation(fields: [occurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Restrict, map: "SastAiAdvisoryHandoff_occurrence_scope_fkey")
+  normalizedFinding NormalizedFinding             @relation(fields: [normalizedFindingId, tenantId, scanRequestId, scannerRunId], references: [id, tenantId, scanRequestId, scannerRunId], onDelete: Restrict, map: "SastAiAdvisoryHandoff_finding_scope_fkey")
+  accessDecision    SastEvidenceAccessDecision    @relation(fields: [accessDecisionId, accessDecisionDigest, tenantId, repositoryBindingId, scanRequestId, attemptId, occurrenceId, evidencePackId, findingFingerprint, createdAt], references: [id, decisionDigest, tenantId, repositoryBindingId, scanRequestId, attemptId, occurrenceId, evidencePackId, findingFingerprint, decidedAt], onDelete: Restrict, map: "SastAiAdvisoryHandoff_access_scope_fkey")
   advisoryMetadata  AiAdvisoryMetadata?
+  authorityProof    SastAiAdvisoryAuthorityProof?
 
   @@unique([id, tenantId], map: "SastAiAdvisoryHandoff_tenant_scope_key")
+  @@unique([id, advisoryId, tenantId, repositoryBindingId, scanRequestId, attemptId, occurrenceId, normalizedFindingId, findingFingerprint, requestDigest, handoffDigest], map: "SastAiAdvisoryHandoff_authority_scope_key")
   @@index([tenantId, repositoryBindingId, scanRequestId, createdAt], map: "SastAiAdvisoryHandoff_scan_idx")
   @@index([accessDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId, occurrenceId, evidencePackId], map: "SastAiAdvisoryHandoff_access_scope_idx")
   @@index([normalizedFindingId, tenantId, scanRequestId, scannerRunId], map: "SastAiAdvisoryHandoff_finding_scope_idx")
   @@index([payloadExpiresAt], map: "SastAiAdvisoryHandoff_payloadExpiresAt_idx")
+}
+
+model SastAiAdvisoryAuthorityProof {
+  id                               String   @id
+  advisoryId                       String   @unique
+  handoffId                        String   @unique
+  tenantId                         String
+  repositoryBindingId              String
+  scanRequestId                    String
+  attemptId                        String
+  occurrenceId                     String
+  normalizedFindingId              String
+  findingFingerprint               String
+  requestDigest                    String
+  handoffDigest                    String
+  normalizedFindingCount           Int
+  normalizedFindingSetDigest       String
+  targetFindingDigest              String
+  lifecycleStateCount              Int
+  lifecycleStateSetDigest          String
+  policyDecisionCount              Int
+  policyDecisionSetDigest          String
+  waiverCount                      Int
+  waiverSetDigest                  String
+  suppressionCount                 Int
+  suppressionSetDigest             String
+  beforeStateDigest                String
+  afterStateDigest                 String
+  findingCreateAuthority           Boolean  @default(false)
+  findingStatusMutationAuthority   Boolean  @default(false)
+  findingSeverityMutationAuthority Boolean  @default(false)
+  lifecycleMutationAuthority       Boolean  @default(false)
+  waiverMutationAuthority          Boolean  @default(false)
+  suppressionMutationAuthority     Boolean  @default(false)
+  policyOverrideAuthority          Boolean  @default(false)
+  blockDecisionAuthority           Boolean  @default(false)
+  publicationAuthority             Boolean  @default(false)
+  scmWriteAuthority                Boolean  @default(false)
+  advisoryOnly                     Boolean  @default(true)
+  proofLedgerWritten               Boolean  @default(true)
+  authoritativeFindingWritten      Boolean  @default(false)
+  lifecycleStateWritten            Boolean  @default(false)
+  policyDecisionWritten            Boolean  @default(false)
+  waiverWritten                    Boolean  @default(false)
+  suppressionWritten               Boolean  @default(false)
+  callerAuthorityFieldsAccepted    Boolean  @default(false)
+  advisoryContentStored            Boolean  @default(false)
+  sourceContentStored              Boolean  @default(false)
+  secretValueStored                Boolean  @default(false)
+  verifiedAt                       DateTime
+  proofDigest                      String   @unique
+  createdAt                        DateTime @default(now())
+
+  tenant            Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  repositoryBinding RepositoryBinding     @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Restrict, map: "SastAiAdvisoryAuthorityProof_repository_scope_fkey")
+  scanRequest       ScanRequest           @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Restrict, map: "SastAiAdvisoryAuthorityProof_scan_scope_fkey")
+  handoff           SastAiAdvisoryHandoff @relation(fields: [handoffId, tenantId], references: [id, tenantId], onDelete: Restrict, map: "SastAiAdvisoryAuthorityProof_handoff_scope_fkey")
+  advisory          AiAdvisoryMetadata    @relation(fields: [advisoryId], references: [id], onDelete: Restrict, map: "SastAiAdvisoryAuthorityProof_advisoryId_fkey")
+  occurrence        SastFindingOccurrence @relation(fields: [occurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Restrict, map: "SastAiAdvisoryAuthorityProof_occurrence_scope_fkey")
+  normalizedFinding NormalizedFinding     @relation(fields: [normalizedFindingId, tenantId, scanRequestId], references: [id, tenantId, scanRequestId], onDelete: Restrict, map: "SastAiAdvisoryAuthorityProof_finding_scope_fkey")
+
+  @@unique([id, tenantId], map: "SastAiAdvisoryAuthorityProof_tenant_scope_key")
+  @@unique([handoffId, tenantId], map: "SastAiAdvisoryAuthorityProof_handoff_tenant_key")
+  @@index([tenantId, repositoryBindingId, scanRequestId, verifiedAt], map: "SastAiAdvisoryAuthorityProof_scan_idx")
+  @@index([occurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastAiAdvisoryAuthorityProof_occurrence_scope_idx")
+  @@index([normalizedFindingId, tenantId, scanRequestId], map: "SastAiAdvisoryAuthorityProof_finding_scope_idx")
 }
 
 model SastFindingCorrelationEdge {
@@ -1861,9 +1935,10 @@ model AiAdvisoryMetadata {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  scanRequest ScanRequest            @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
-  sastHandoff SastAiAdvisoryHandoff? @relation(fields: [sastHandoffId], references: [id], onDelete: Restrict, map: "AiAdvisoryMetadata_sastHandoffId_fkey")
+  tenant         Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest    ScanRequest                   @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  sastHandoff    SastAiAdvisoryHandoff?        @relation(fields: [sastHandoffId], references: [id], onDelete: Restrict, map: "AiAdvisoryMetadata_sastHandoffId_fkey")
+  authorityProof SastAiAdvisoryAuthorityProof?
 
   @@index([tenantId])
   @@index([scanRequestId])

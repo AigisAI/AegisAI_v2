@@ -85,11 +85,6 @@ describe("Policy decision API (e2e)", () => {
           filePath: "src/App.java",
           lineStart: 42,
           status: "OPEN"
-        },
-        aiAdvisory: {
-          visible: true,
-          suggestedAction: "BLOCK",
-          summary: "Advisory context only"
         }
       })
       .expect(201);
@@ -102,7 +97,7 @@ describe("Policy decision API (e2e)", () => {
         scanRequestId: "scan_request_api_1",
         findingId: "finding_api_1",
         enforcementAction: "WARN",
-        aiAdvisoryVisible: true
+        aiAdvisoryVisible: false
       })
     );
 
@@ -115,5 +110,33 @@ describe("Policy decision API (e2e)", () => {
     expect(JSON.stringify({ decision, read: read.body })).not.toMatch(
       /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|aiOverride|policyOverride/i
     );
+  });
+
+  it('rejects legacy AI suggested actions at the policy boundary', async () => {
+    await request(app.getHttpServer())
+      .post('/api/policy-decisions/evaluate')
+      .send({
+        tenantId: 'tenant_policy_api',
+        scanRequestId: 'scan_request_api_2',
+        scanLane: 'FAST',
+        scannerCoverage: ['OPENGREP', 'TRIVY', 'SYFT'],
+        finding: {
+          id: 'finding_api_2',
+          tenantId: 'tenant_policy_api',
+          scanRequestId: 'scan_request_api_2',
+          scannerRunId: 'scanner_run_api_2',
+          title: 'Critical finding',
+          severity: 'CRITICAL',
+          scannerProvenance: 'OPENGREP',
+          filePath: 'src/App.java',
+          lineStart: 42,
+          status: 'OPEN'
+        },
+        aiAdvisory: {
+          visible: true,
+          suggestedAction: 'DASHBOARD_ONLY'
+        }
+      })
+      .expect(400);
   });
 });

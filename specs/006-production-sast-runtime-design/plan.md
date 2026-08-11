@@ -15,7 +15,7 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040, T041, T042, and T043 independently and now proceeds to T044.
+T040, T041, T042, T043, and T044 independently and now proceeds to T045.
 
 ## Target Boundaries
 
@@ -143,7 +143,13 @@ and derives deterministic `sast-ai-advisory-handoff-v1` identities. Its immutabl
 only scope references, digests, expiry, and fixed authority/audit bits; request payload, source,
 secret values, and evidence fragments are absent. The AI runtime receives normalized metadata
 plus one opaque reduced-evidence reference, an empty snippets array, and zero retrieval, tool,
-policy, publication, lifecycle, or SCM authority. T044 output-authority proof is the next gate.
+policy, publication, lifecycle, or SCM authority. T044 now accepts only tenant/advisory identity,
+rebinds the complete T043/T037 scope, and captures bounded finding, lifecycle, policy, waiver,
+and suppression digests before and after the only permitted immutable proof write in one
+serializable transaction. Its content-free ledger fixes every authoritative mutation bit false.
+Policy accepts only a verified advisory/proof reference for visibility while exact waiver and
+suppression request shapes reject AI/proof fields. T045 signed immutable bundle manifests and
+compatibility validation are the next gate.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 
@@ -175,7 +181,8 @@ gates. Produce a machine-readable go/no-go record. Hand live cluster/microVM rol
 - `NormalizedSastFinding`, provenance, occurrence, and correlation
 - `ScannerCoverageRecord` and `SastCoverageDecision`
 - `SastEvidencePolicy` and evidence pack reference
-- `SastAiAdvisoryIntent`, `SastAiAdvisoryHandoff`, and reference-only advisory ledger
+- `SastAiAdvisoryIntent`, `SastAiAdvisoryHandoff`, reference-only advisory ledger,
+  `SastAiAdvisoryAuthorityProof`, and display-only policy reference
 - `RuleBundleDescriptor`, promotion evidence, tenant policy, and kill switch
 - `SastFailureDecision` and sandbox destruction evidence
 - `SastQualityMeasurements` and immutable go/no-go record

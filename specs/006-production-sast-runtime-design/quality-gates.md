@@ -330,6 +330,18 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   one opaque reduced-evidence reference, and zero snippets. Retrieval, tools, policy,
   publication, lifecycle mutation, and SCM write authority are false in every request; legacy
   direct finding/evidence requests, correlation drift, expiry, and authority widening are denied.
+- 100% T044 zero-authority invariant: one serializable operation writes only an immutable proof
+  row. The bounded scan finding set, target status/severity, exact lifecycle state/revision,
+  finding policy decisions, waivers, and suppressions produce identical before/after state
+  digests; finding/lifecycle/policy/waiver/suppression writes and all authority bits equal zero.
+- 100% T044 policy isolation invariant: only a tenant/finding-bound exact advisory/proof
+  reference can set advisory visibility. AI contributes zero enforcement actions, reason codes,
+  ticket/block requests, severity/status changes, waivers, suppressions, or lifecycle events.
+  `suggestedAction`, authority, advisory, proof, unknown, cross-tenant, or drifted fields are
+  rejected, not ignored.
+- 100% T044 content-free/replay invariant: the proof ledger contains only scope references,
+  counts, SHA-256 digests, time, and fixed booleans. Advisory/rationale/prompt/source/evidence/
+  secret/policy payload retention and duplicate proofs equal zero; exact retry returns one row.
 
 ## Canary and Continuous Production Gates
 
