@@ -3,6 +3,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import {
   SAST_ACCEPTED_EVIDENCE_POLICY,
+  buildSastEvidenceDeletionSchedule,
   isSastAcceptedEvidenceBuildResultShapeValid,
   isSastFingerprintedFindingShapeValid,
   isSastScanCoverageDecisionShapeValid,
@@ -25,6 +26,7 @@ import {
   type PersistedSastAcceptedEvidence,
   type SastAcceptedEvidenceContext
 } from './sast-accepted-evidence.store';
+import { sastEvidenceAccessScopeFromResult } from './sast-evidence-access.store';
 
 const EVIDENCE_POLICY_VERSION = 'sast-evidence-policy-v1';
 const SERIALIZABLE_ATTEMPTS = 3;
@@ -210,6 +212,41 @@ export class PrismaSastAcceptedEvidenceStore
             fragmentDigest: fragment.fragmentDigest,
             createdAt: new Date(pack.createdAt)
           }))
+        });
+        const deletionSchedule =
+          buildSastEvidenceDeletionSchedule({
+            scope: sastEvidenceAccessScopeFromResult(
+              input.result
+            ),
+            scheduledAt: pack.createdAt,
+            deleteAfter: pack.expiresAt,
+            digestCanonical: digest
+          });
+        await transaction.sastEvidenceDeletionSchedule.create({
+          data: {
+            id: deletionSchedule.deletionScheduleId,
+            operationId: deletionSchedule.operationId,
+            evidencePackId: pack.evidencePackId,
+            buildDecisionId: decision.buildDecisionId,
+            tenantId: scope.tenantId,
+            repositoryBindingId: scope.repositoryBindingId,
+            scanRequestId: scope.scanRequestId,
+            attemptId: scope.attemptId,
+            occurrenceId: scope.occurrenceId,
+            sourcePackDigest: pack.packDigest,
+            deleteAfter: new Date(pack.expiresAt),
+            scheduledAt: new Date(pack.createdAt),
+            schedule: json(deletionSchedule),
+            scheduleDigest: deletionSchedule.scheduleDigest,
+            createdAt: new Date(pack.createdAt),
+            claim: {
+              create: {
+                status: 'PENDING',
+                nextAttemptAt: new Date(pack.expiresAt),
+                attemptCount: 0
+              }
+            }
+          }
         });
       }
       return {

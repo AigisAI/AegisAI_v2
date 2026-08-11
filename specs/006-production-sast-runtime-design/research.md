@@ -505,3 +505,35 @@ paths/coordinates/redaction flags, storing raw source or platform secrets, per-f
 best-effort acceptance after reconstruction risk, allowing adjacent snippets, using character
 counts instead of UTF-8 bytes, mutable last-writer-wins packs, direct dashboard/AI access, or
 adding an SCM writer in T041.
+
+## Decision 24: Separate Purpose-Bound Access from Receipt-Proven Content Deletion
+
+**Decision**: `sast-evidence-access-decision-v1` classifies dashboard and AI access as two
+independent immutable decisions after a durable rebind of the complete T041/T040/T039/T038/T037
+chain. The service reruns known-format, registered platform-value, and entropy redaction on
+every access, validates paths and identifiers, and checks time before and after the read. The
+dashboard receives only an authenticated tenant/repository-scoped redacted projection. AI
+classification returns only a reduced reference with an at-most-24-hour eligibility window;
+T042 never contacts a provider or constructs an AI payload. T041 pack flags and null
+classification/deletion references remain immutable.
+
+Every accepted pack receives a canonical `sast-evidence-deletion-schedule-v1` row in its
+creation transaction. When seven-day retention expires, a deterministic operation is claimed
+under a leased owner/token fence. The deletion authority defaults unavailable. A bounded,
+operation-bound provider receipt must validate before pack and fragment content is removed and
+an immutable `sast-evidence-deletion-proof-v1` is finalized. The original T041 build decision
+and bounded audit/proof state remain retained; exact replay is allowed, while changed receipts,
+stale claims, late reads, races, and clock rollback deny.
+
+**Rationale**: Construction safety does not grant user or model access, and a database delete
+attempt does not prove that every backing provider removed content. Purpose-specific ledgers
+prevent dashboard consent from becoming AI consent, access-time redaction catches registry and
+entropy changes, and a fenced provider receipt makes expiry an auditable outcome instead of a
+best-effort timer. Retaining the build decision and proof preserves accountability without
+retaining repository content.
+
+**Rejected**: Mutating T041 safe flags, sharing one decision between dashboard and AI,
+returning fragments before the second clock check, deriving AI eligibility from dashboard
+access, retaining an AI payload for T043, treating a deletion request as deletion proof,
+deleting before receipt validation, allowing an unfenced worker to finalize, or erasing the
+T041 decision with the content.

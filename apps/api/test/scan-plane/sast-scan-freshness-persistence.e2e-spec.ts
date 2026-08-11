@@ -170,10 +170,11 @@ describe('SAST scan freshness and retry persistence contract', () => {
     );
   });
 
-  it('keeps T040 internal after exporting the T041 sequential handoff', () => {
+  it('keeps T040 and T041 internal after exporting the T042 handoff', () => {
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ?? '';
-    expect(exportsBlock).toContain('SastAcceptedEvidenceService');
+    expect(exportsBlock).toContain('SastEvidenceAccessService');
+    expect(exportsBlock).not.toContain('SastAcceptedEvidenceService');
     expect(exportsBlock).not.toContain('SastScanFreshnessService');
     expect(exportsBlock).not.toContain('SastScanCoverageService');
     expect(module).toMatch(

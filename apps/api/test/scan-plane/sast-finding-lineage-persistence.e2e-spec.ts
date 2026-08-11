@@ -150,7 +150,7 @@ describe('SAST finding lineage persistence contract', () => {
     );
   });
 
-  it('keeps T037 through T040 internal while preserving the freshness gate', () => {
+  it('keeps T037 through T041 internal while preserving the freshness gate', () => {
     expect(module).toContain(
       'UnavailableSastFindingRenameAttestationVerifier'
     );
@@ -160,7 +160,8 @@ describe('SAST finding lineage persistence contract', () => {
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ??
       '';
-    expect(exportsBlock).toContain('SastAcceptedEvidenceService');
+    expect(exportsBlock).toContain('SastEvidenceAccessService');
+    expect(exportsBlock).not.toContain('SastAcceptedEvidenceService');
     expect(exportsBlock).not.toContain('SastScanFreshnessService');
     expect(exportsBlock).not.toContain('SastScanCoverageService');
     expect(exportsBlock).not.toContain(

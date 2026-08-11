@@ -251,13 +251,12 @@ describe('SAST accepted-finding evidence persistence contract', () => {
     );
   });
 
-  it('exports only the T041 sequential handoff with unavailable source by default', () => {
+  it('keeps T041 internal after exporting the T042 sequential handoff', () => {
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ??
       '';
-    expect(exportsBlock).toContain(
-      'SastAcceptedEvidenceService'
-    );
+    expect(exportsBlock).toContain('SastEvidenceAccessService');
+    expect(exportsBlock).not.toContain('SastAcceptedEvidenceService');
     expect(exportsBlock).not.toContain(
       'SastScanFreshnessService'
     );

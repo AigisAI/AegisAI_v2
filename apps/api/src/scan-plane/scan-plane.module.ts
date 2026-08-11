@@ -139,6 +139,19 @@ import {
 import {
   SastAcceptedEvidenceService
 } from './sast-accepted-evidence.service';
+import { SastEvidenceAccessService } from './sast-evidence-access.service';
+import { SastEvidenceAccessStore } from './sast-evidence-access.store';
+import { PrismaSastEvidenceAccessStore } from './prisma-sast-evidence-access.store';
+import {
+  SastEvidenceSecretRegistry,
+  UnavailableSastEvidenceSecretRegistry
+} from './sast-evidence-secret-registry';
+import {
+  SastEvidenceDeletionAuthority,
+  UnavailableSastEvidenceDeletionAuthority
+} from './sast-evidence-deletion.authority';
+import { SastEvidenceDeletionService } from './sast-evidence-deletion.service';
+import { SastEvidenceDeletionTask } from './sast-evidence-deletion.task';
 
 @Module({
   imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
@@ -163,6 +176,24 @@ import {
     SastScanCoverageService,
     SastScanFreshnessService,
     SastAcceptedEvidenceService,
+    SastEvidenceAccessService,
+    SastEvidenceDeletionService,
+    SastEvidenceDeletionTask,
+    PrismaSastEvidenceAccessStore,
+    {
+      provide: SastEvidenceAccessStore,
+      useExisting: PrismaSastEvidenceAccessStore
+    },
+    UnavailableSastEvidenceSecretRegistry,
+    {
+      provide: SastEvidenceSecretRegistry,
+      useExisting: UnavailableSastEvidenceSecretRegistry
+    },
+    UnavailableSastEvidenceDeletionAuthority,
+    {
+      provide: SastEvidenceDeletionAuthority,
+      useExisting: UnavailableSastEvidenceDeletionAuthority
+    },
     PrismaSastAcceptedEvidenceStore,
     {
       provide: SastAcceptedEvidenceStore,
@@ -292,7 +323,7 @@ import {
     RepositoryPreflightService,
     SandboxRuntimeAttestationService,
     SastScannerRuntimeService,
-    SastAcceptedEvidenceService
+    SastEvidenceAccessService
   ]
 })
 export class ScanPlaneModule {}

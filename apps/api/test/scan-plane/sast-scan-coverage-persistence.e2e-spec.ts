@@ -114,10 +114,11 @@ describe('SAST scan coverage persistence contract', () => {
     );
   });
 
-  it('keeps T039 and T040 internal after exposing only the T041 handoff', () => {
+  it('keeps T039 through T041 internal after exposing only the T042 handoff', () => {
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ?? '';
-    expect(exportsBlock).toContain('SastAcceptedEvidenceService');
+    expect(exportsBlock).toContain('SastEvidenceAccessService');
+    expect(exportsBlock).not.toContain('SastAcceptedEvidenceService');
     expect(exportsBlock).not.toContain('SastScanFreshnessService');
     expect(exportsBlock).not.toContain('SastScanCoverageService');
     expect(exportsBlock).not.toContain(

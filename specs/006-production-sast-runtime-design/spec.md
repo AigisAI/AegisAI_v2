@@ -340,6 +340,27 @@ incomplete, stale, quarantined, or security-blocked scan.
   fragment, and five context lines on either side.
 - **FR-048**: Evidence MUST redact detected and platform-format secrets before persistence
   and again before AI inference.
+- **FR-048a**: T042 MUST classify dashboard and AI access independently from a complete
+  durable rebind of the T041 build decision, pack, fragments, scope, T040 freshness, T039
+  coverage, and T038/T037 source. It MUST rerun known-format, registered platform-value, and
+  entropy redaction at access time and MUST fail closed on an unavailable registry, unsafe
+  path/identifier, digest mismatch, clock rollback, expiry, or deletion claim.
+- **FR-048b**: T042 MUST NOT mutate T041 `dashboardSafe`, `aiSafe`, classification reference,
+  or deletion reference fields. Each purpose MUST have a separate immutable canonical
+  `sast-evidence-access-decision-v1` ledger with explicit zero policy, publication, lifecycle,
+  SCM, provider-call, retrieval, and tool authority.
+- **FR-048c**: Dashboard reads MUST require authenticated tenant and repository binding scope
+  and return only a second-pass-redacted dashboard projection. AI classification MUST return
+  only a reduced evidence reference with an eligibility window no longer than 24 hours; T042
+  MUST create no AI provider request or request payload.
+- **FR-048d**: Every accepted T041 pack MUST receive an immutable deterministic deletion
+  schedule in the same serializable transaction. A due deletion MUST use a leased, token-fenced
+  claim and a deletion provider that defaults unavailable. Pack/fragment content MUST be
+  deleted only after a bounded provider receipt is validated and an immutable canonical proof
+  is committed; the T041 build decision and bounded proof/audit state MUST remain retained.
+- **FR-048e**: Concurrent access, schedule, claim, receipt, and proof operations MUST permit
+  exact replay only. Late readers, changed receipts, stale lease owners, deletion races, and
+  reference-time rollback MUST fail closed without returning or restoring content.
 - **FR-049**: Evidence MUST NOT contain a full file, repository archive, or fragments that
   can reconstruct a substantial repository portion.
 - **FR-050**: Evidence retention MUST NOT exceed seven days; AI request payload retention

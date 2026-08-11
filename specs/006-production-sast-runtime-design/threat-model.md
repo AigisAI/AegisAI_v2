@@ -84,6 +84,9 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Incomplete coverage | Successful tool hides required tool failure | Explicit required coverage state | Comment/block/AI denied |
 | Evidence source forgery | A caller supplies a path/range, finding authority, or fragment that is not the durable accepted occurrence | Rebind exact T040/T039/T038/T037 rows and require an internal source attestation that defaults unavailable | Cross-scope, missing occurrence, changed fingerprint, path/range, and unavailable-source fixtures reject |
 | Evidence reconstruction | Multiple snippets rebuild source | 32 KiB/five-fragment/8 KiB/five-context caps; per-file maximum two; reject full-file, overlap, adjacency, or at least 25% combined line coverage | Evidence build reject and immutable audit with zero pack |
+| Evidence-purpose confusion | Dashboard consent or one stale decision is reused to construct an AI payload | Separate immutable dashboard/AI decisions, complete T041 chain rebind, access-time redaction/classification, and explicit zero provider/tool authority | Purpose swap, opt-in, registry drift, unsafe identifier, cross-tenant, and replay fixtures deny |
+| Evidence expiry race | A reader returns content while expiry/deletion is claimed or after the final clock check | Check retention before read, confirm unchanged schedule/claim/proof and monotonic time after classification, and deny from claim onward | Expiry-before/during-read, late-reader, deletion-race, and clock-rollback fixtures return no content |
+| False deletion proof | A worker marks evidence deleted without the backing provider removing it, or a stale worker finalizes | Deterministic operation, leased owner/token fence, default-unavailable provider, bounded operation-bound receipt, delete-then immutable proof | Unavailable provider, changed receipt, stale token, concurrent claim/finalize, and exact replay corpus |
 | AI prompt injection | Evidence text instructs model | Evidence is untrusted data, bounded/redacted, no retrieval/tools/SCM | Advisory label and output schema validation |
 | Sandbox persistence | Compromise survives next scan | No worker/workspace reuse; new microVM per attempt | Destruction evidence and lag alert |
 | Operator credential leak | Deployment secrets enter repo/config | 005 reference-only credential handoff | Secret scanning and deployment audit |
@@ -152,6 +155,9 @@ The following must always remain true:
 17. An accepted-finding evidence pack records only the durable accepted occurrence under
     verified, fresh, and comparable authority. It contains no raw source or secret value and
     grants no dashboard, AI, policy, publication, or lifecycle mutation authority.
+18. Dashboard and AI evidence access are separately classified after access-time redaction and
+    durable rebinding. Expiry or a deletion claim revokes both; content is deleted only after a
+    fenced provider receipt and the retained canonical proof cannot restore access.
 
 ## Required Security Test Corpus
 
@@ -168,6 +174,10 @@ The following must always remain true:
   identities, package/database/check-bundle rebinding, and omitted dependency coordinates
 - Trivy secret fixtures with sentinel values in `Match`, neighboring `Code`, modified-finding
   `Statement`/`Source`, and untrusted misconfiguration message/trace/rendered-cause fields
+- T042 purpose-swap, platform-registry drift, known-format/entropy secret, unsafe path and
+  identifier, cross-tenant/repository, before/during-read expiry, late-reader, concurrent
+  classification/deletion, unavailable-provider, stale-fence, changed-receipt, exact-replay,
+  and clock-rollback fixtures
 - CycloneDX schema/tool/version/source-component rebinding, metadata-tool component
   count smuggling, vulnerability/VEX and nested/file component extensions, duplicate or
   mismatched PURL/BOM references, invalid CPE part/field/quoting/wildcard/language forms,

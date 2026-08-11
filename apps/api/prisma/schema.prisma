@@ -345,41 +345,44 @@ model Report {
 }
 
 model Tenant {
-  id        String   @id @default(uuid())
-  slug      String   @unique
-  name      String
-  status    String   @default("ACTIVE")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  slug                String   @unique
+  name                String
+  status              String   @default("ACTIVE")
+  sastAiAdvisoryOptIn Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  integrations               ScmIntegration[]
-  repositoryBindings         RepositoryBinding[]
-  scanRequests               ScanRequest[]
-  scannerRuns                ScannerRun[]
-  normalizedFindings         NormalizedFinding[]
-  evidencePacks              EvidencePack[]
-  policyDecisions            PolicyDecision[]
-  aiAdvisoryMetadata         AiAdvisoryMetadata[]
-  waivers                    Waiver[]
-  suppressions               Suppression[]
-  auditEvents                AuditEvent[]
-  sastCredentialLeases       SastRepositoryCredentialLease[]
-  sastScanAttempts           SastScanAttempt[]
-  sastArtifactIngestions     SastArtifactIngestion[]
-  sastFindingLineages        SastFindingLineage[]
-  sastFindingAliases         SastFindingIdentityAlias[]
-  sastFindingBatches         SastFindingObservationBatch[]
-  sastFindingOccurrences     SastFindingOccurrence[]
-  sastFindingStates          SastFindingLifecycleState[]
-  sastFindingReconciliations SastFindingLifecycleReconciliation[]
-  sastFindingEvents          SastFindingLifecycleEvent[]
-  sastFindingCorrelations    SastFindingCorrelationBatch[]
-  sastScanCoverageDecisions  SastScanCoverageDecision[]
-  sastScannerCoverageRecords SastScannerCoverageRecord[]
-  sastTargetObservations     SastLatestTargetObservation[]
-  sastFreshnessDecisions     SastScanFreshnessDecision[]
-  sastRetryDecisions         SastScanRetryDecision[]
-  users                      User[]
+  integrations                  ScmIntegration[]
+  repositoryBindings            RepositoryBinding[]
+  scanRequests                  ScanRequest[]
+  scannerRuns                   ScannerRun[]
+  normalizedFindings            NormalizedFinding[]
+  evidencePacks                 EvidencePack[]
+  policyDecisions               PolicyDecision[]
+  aiAdvisoryMetadata            AiAdvisoryMetadata[]
+  waivers                       Waiver[]
+  suppressions                  Suppression[]
+  auditEvents                   AuditEvent[]
+  sastCredentialLeases          SastRepositoryCredentialLease[]
+  sastScanAttempts              SastScanAttempt[]
+  sastArtifactIngestions        SastArtifactIngestion[]
+  sastFindingLineages           SastFindingLineage[]
+  sastFindingAliases            SastFindingIdentityAlias[]
+  sastFindingBatches            SastFindingObservationBatch[]
+  sastFindingOccurrences        SastFindingOccurrence[]
+  sastFindingStates             SastFindingLifecycleState[]
+  sastFindingReconciliations    SastFindingLifecycleReconciliation[]
+  sastFindingEvents             SastFindingLifecycleEvent[]
+  sastFindingCorrelations       SastFindingCorrelationBatch[]
+  sastScanCoverageDecisions     SastScanCoverageDecision[]
+  sastScannerCoverageRecords    SastScannerCoverageRecord[]
+  sastTargetObservations        SastLatestTargetObservation[]
+  sastFreshnessDecisions        SastScanFreshnessDecision[]
+  sastRetryDecisions            SastScanRetryDecision[]
+  sastEvidenceAccessDecisions   SastEvidenceAccessDecision[]
+  sastEvidenceDeletionSchedules SastEvidenceDeletionSchedule[]
+  users                         User[]
 }
 
 model ScmIntegration {
@@ -403,37 +406,40 @@ model ScmIntegration {
 }
 
 model RepositoryBinding {
-  id               String                  @id @default(uuid())
-  tenantId         String
-  scmIntegrationId String
-  providerRepoId   String
-  fullName         String
-  defaultBranch    String
-  isPrivate        Boolean                 @default(false)
-  status           RepositoryBindingStatus @default(ACTIVE)
-  revokedAt        DateTime?
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
+  id                  String                  @id @default(uuid())
+  tenantId            String
+  scmIntegrationId    String
+  providerRepoId      String
+  fullName            String
+  defaultBranch       String
+  isPrivate           Boolean                 @default(false)
+  status              RepositoryBindingStatus @default(ACTIVE)
+  sastAiAdvisoryOptIn Boolean                 @default(false)
+  revokedAt           DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
 
-  tenant                     Tenant                               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration                ScmIntegration                       @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
-  scanRequests               ScanRequest[]
-  sastCredentialLeases       SastRepositoryCredentialLease[]
-  sastScanAttempts           SastScanAttempt[]
-  sastArtifactIngestions     SastArtifactIngestion[]
-  sastFindingLineages        SastFindingLineage[]
-  sastFindingAliases         SastFindingIdentityAlias[]
-  sastFindingBatches         SastFindingObservationBatch[]
-  sastFindingOccurrences     SastFindingOccurrence[]
-  sastFindingStates          SastFindingLifecycleState[]
-  sastFindingReconciliations SastFindingLifecycleReconciliation[]
-  sastFindingEvents          SastFindingLifecycleEvent[]
-  sastFindingCorrelations    SastFindingCorrelationBatch[]
-  sastScanCoverageDecisions  SastScanCoverageDecision[]
-  sastScannerCoverageRecords SastScannerCoverageRecord[]
-  sastTargetObservations     SastLatestTargetObservation[]
-  sastFreshnessDecisions     SastScanFreshnessDecision[]
-  sastRetryDecisions         SastScanRetryDecision[]
+  tenant                        Tenant                               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration                   ScmIntegration                       @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
+  scanRequests                  ScanRequest[]
+  sastCredentialLeases          SastRepositoryCredentialLease[]
+  sastScanAttempts              SastScanAttempt[]
+  sastArtifactIngestions        SastArtifactIngestion[]
+  sastFindingLineages           SastFindingLineage[]
+  sastFindingAliases            SastFindingIdentityAlias[]
+  sastFindingBatches            SastFindingObservationBatch[]
+  sastFindingOccurrences        SastFindingOccurrence[]
+  sastFindingStates             SastFindingLifecycleState[]
+  sastFindingReconciliations    SastFindingLifecycleReconciliation[]
+  sastFindingEvents             SastFindingLifecycleEvent[]
+  sastFindingCorrelations       SastFindingCorrelationBatch[]
+  sastScanCoverageDecisions     SastScanCoverageDecision[]
+  sastScannerCoverageRecords    SastScannerCoverageRecord[]
+  sastTargetObservations        SastLatestTargetObservation[]
+  sastFreshnessDecisions        SastScanFreshnessDecision[]
+  sastRetryDecisions            SastScanRetryDecision[]
+  sastEvidenceAccessDecisions   SastEvidenceAccessDecision[]
+  sastEvidenceDeletionSchedules SastEvidenceDeletionSchedule[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
@@ -460,26 +466,28 @@ model ScanRequest {
   completedAt         DateTime?
   updatedAt           DateTime               @updatedAt
 
-  tenant                     Tenant                               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding          RepositoryBinding                    @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
-  scannerRuns                ScannerRun[]
-  findings                   NormalizedFinding[]
-  evidencePacks              EvidencePack[]
-  policyDecisions            PolicyDecision[]
-  aiAdvisoryMetadata         AiAdvisoryMetadata[]
-  suppressions               Suppression[]
-  auditEvents                AuditEvent[]
-  sastQueueReservation       SastQueueReservation?
-  sastCredentialLeases       SastRepositoryCredentialLease[]
-  sastScanAttempts           SastScanAttempt[]
-  sastArtifactIngestions     SastArtifactIngestion[]
-  sastFindingBatches         SastFindingObservationBatch[]
-  sastFindingReconciliations SastFindingLifecycleReconciliation[]
-  sastFindingCorrelations    SastFindingCorrelationBatch[]
-  sastScanCoverageDecisions  SastScanCoverageDecision[]
-  sastScannerCoverageRecords SastScannerCoverageRecord[]
-  sastFreshnessDecisions     SastScanFreshnessDecision[]
-  sastRetryDecisions         SastScanRetryDecision[]
+  tenant                        Tenant                               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding             RepositoryBinding                    @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
+  scannerRuns                   ScannerRun[]
+  findings                      NormalizedFinding[]
+  evidencePacks                 EvidencePack[]
+  policyDecisions               PolicyDecision[]
+  aiAdvisoryMetadata            AiAdvisoryMetadata[]
+  suppressions                  Suppression[]
+  auditEvents                   AuditEvent[]
+  sastQueueReservation          SastQueueReservation?
+  sastCredentialLeases          SastRepositoryCredentialLease[]
+  sastScanAttempts              SastScanAttempt[]
+  sastArtifactIngestions        SastArtifactIngestion[]
+  sastFindingBatches            SastFindingObservationBatch[]
+  sastFindingReconciliations    SastFindingLifecycleReconciliation[]
+  sastFindingCorrelations       SastFindingCorrelationBatch[]
+  sastScanCoverageDecisions     SastScanCoverageDecision[]
+  sastScannerCoverageRecords    SastScannerCoverageRecord[]
+  sastFreshnessDecisions        SastScanFreshnessDecision[]
+  sastRetryDecisions            SastScanRetryDecision[]
+  sastEvidenceAccessDecisions   SastEvidenceAccessDecision[]
+  sastEvidenceDeletionSchedules SastEvidenceDeletionSchedule[]
 
   @@unique([id, tenantId, repositoryBindingId])
   @@index([tenantId])
@@ -1440,9 +1448,11 @@ model SastEvidenceBuildDecision {
   decidedAt                    DateTime
   createdAt                    DateTime              @default(now())
 
-  freshnessDecision SastScanFreshnessDecision @relation(fields: [freshnessDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastEvidenceBuildDecision_freshness_scope_fkey")
-  findingOccurrence SastFindingOccurrence     @relation(fields: [occurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastEvidenceBuildDecision_occurrence_scope_fkey")
+  freshnessDecision SastScanFreshnessDecision      @relation(fields: [freshnessDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastEvidenceBuildDecision_freshness_scope_fkey")
+  findingOccurrence SastFindingOccurrence          @relation(fields: [occurrenceId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastEvidenceBuildDecision_occurrence_scope_fkey")
   evidencePack      SastAcceptedEvidencePack?
+  accessDecisions   SastEvidenceAccessDecision[]
+  deletionSchedules SastEvidenceDeletionSchedule[]
 
   @@unique([id, tenantId, repositoryBindingId, scanRequestId, attemptId], map: "SastEvidenceBuildDecision_scope_key")
   @@unique([tenantId, occurrenceId, policyVersion, candidateSetDigest], map: "SastEvidenceBuildDecision_replay_key")
@@ -1529,6 +1539,121 @@ model SastAcceptedEvidenceFragment {
   @@unique([evidencePackId, candidateId], map: "SastAcceptedEvidenceFragment_pack_candidate_key")
   @@index([tenantId, scanRequestId, normalizedPath], map: "SastAcceptedEvidenceFragment_path_idx")
   @@index([contentDigest], map: "SastAcceptedEvidenceFragment_contentDigest_idx")
+}
+
+model SastEvidenceAccessDecision {
+  id                             String    @id
+  buildDecisionId                String
+  deletionScheduleId             String
+  evidencePackId                 String
+  tenantId                       String
+  repositoryBindingId            String
+  scanRequestId                  String
+  attemptId                      String
+  occurrenceId                   String
+  findingFingerprint             String
+  purpose                        String
+  accessPolicyVersion            String
+  secretRegistryVersion          String
+  outcome                        String
+  classification                 String
+  reasonCodes                    Json
+  sourcePackDigest               String
+  redactedProjectionDigest       String?
+  redactedFragmentCount          Int
+  redactedTotalBytes             Int
+  redactionCount                 Int
+  secondPassRedactionDecisionRef String?
+  reducedEvidenceRef             String?
+  aiPayloadExpiresAt             DateTime?
+  evidenceExpiresAt              DateTime
+  decision                       Json
+  decisionDigest                 String    @unique
+  decidedAt                      DateTime
+  createdAt                      DateTime  @default(now())
+
+  tenant            Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding            @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastEvidenceAccessDecision_repository_scope_fkey")
+  scanRequest       ScanRequest                  @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastEvidenceAccessDecision_scan_scope_fkey")
+  buildDecision     SastEvidenceBuildDecision    @relation(fields: [buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastEvidenceAccessDecision_build_scope_fkey")
+  deletionSchedule  SastEvidenceDeletionSchedule @relation(fields: [deletionScheduleId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastEvidenceAccessDecision_schedule_scope_fkey")
+
+  @@unique([id, tenantId], map: "SastEvidenceAccessDecision_tenant_scope_key")
+  @@index([tenantId, repositoryBindingId, evidencePackId, purpose], map: "SastEvidenceAccessDecision_lookup_idx")
+  @@index([evidenceExpiresAt], map: "SastEvidenceAccessDecision_expiresAt_idx")
+  @@index([aiPayloadExpiresAt], map: "SastEvidenceAccessDecision_aiPayloadExpiresAt_idx")
+  @@index([deletionScheduleId], map: "SastEvidenceAccessDecision_deletionScheduleId_idx")
+}
+
+model SastEvidenceDeletionSchedule {
+  id                  String   @id
+  operationId         String   @unique
+  evidencePackId      String   @unique
+  buildDecisionId     String
+  tenantId            String
+  repositoryBindingId String
+  scanRequestId       String
+  attemptId           String
+  occurrenceId        String
+  sourcePackDigest    String
+  deleteAfter         DateTime
+  scheduledAt         DateTime
+  schedule            Json
+  scheduleDigest      String   @unique
+  createdAt           DateTime @default(now())
+
+  tenant            Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding            @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastEvidenceDeletionSchedule_repository_scope_fkey")
+  scanRequest       ScanRequest                  @relation(fields: [scanRequestId, tenantId, repositoryBindingId], references: [id, tenantId, repositoryBindingId], onDelete: Cascade, map: "SastEvidenceDeletionSchedule_scan_scope_fkey")
+  buildDecision     SastEvidenceBuildDecision    @relation(fields: [buildDecisionId, tenantId, repositoryBindingId, scanRequestId, attemptId], references: [id, tenantId, repositoryBindingId, scanRequestId, attemptId], onDelete: Cascade, map: "SastEvidenceDeletionSchedule_build_scope_fkey")
+  accessDecisions   SastEvidenceAccessDecision[]
+  claim             SastEvidenceDeletionClaim?
+  proof             SastEvidenceDeletionProof?
+
+  @@unique([id, tenantId], map: "SastEvidenceDeletionSchedule_tenant_scope_key")
+  @@unique([id, operationId, tenantId], map: "SastEvidenceDeletionSchedule_operation_scope_key")
+  @@index([tenantId, repositoryBindingId, deleteAfter], map: "SastEvidenceDeletionSchedule_tenant_expiry_idx")
+  @@index([deleteAfter], map: "SastEvidenceDeletionSchedule_deleteAfter_idx")
+  @@index([buildDecisionId], map: "SastEvidenceDeletionSchedule_buildDecisionId_idx")
+}
+
+model SastEvidenceDeletionClaim {
+  scheduleId     String    @id
+  tenantId       String
+  status         String    @default("PENDING")
+  leaseOwner     String?
+  leaseToken     String?   @unique
+  leaseExpiresAt DateTime?
+  nextAttemptAt  DateTime
+  attemptCount   Int       @default(0)
+  updatedAt      DateTime  @updatedAt
+
+  schedule SastEvidenceDeletionSchedule @relation(fields: [scheduleId, tenantId], references: [id, tenantId], onDelete: Cascade, map: "SastEvidenceDeletionClaim_schedule_scope_fkey")
+
+  @@unique([scheduleId, tenantId], map: "SastEvidenceDeletionClaim_schedule_scope_key")
+  @@index([status, nextAttemptAt, leaseExpiresAt], map: "SastEvidenceDeletionClaim_due_idx")
+  @@index([tenantId, status], map: "SastEvidenceDeletionClaim_tenant_status_idx")
+}
+
+model SastEvidenceDeletionProof {
+  id                    String   @id
+  scheduleId            String   @unique
+  operationId           String   @unique
+  tenantId              String
+  evidencePackId        String   @unique
+  buildDecisionId       String
+  providerReceiptRef    String
+  providerReceiptDigest String
+  completedAt           DateTime
+  proof                 Json
+  proofDigest           String   @unique
+  createdAt             DateTime @default(now())
+
+  schedule SastEvidenceDeletionSchedule @relation(fields: [scheduleId, operationId, tenantId], references: [id, operationId, tenantId], onDelete: Restrict, map: "SastEvidenceDeletionProof_schedule_scope_fkey")
+
+  @@unique([scheduleId, operationId, tenantId], map: "SastEvidenceDeletionProof_schedule_scope_key")
+  @@index([tenantId, completedAt], map: "SastEvidenceDeletionProof_tenant_completed_idx")
+  @@index([buildDecisionId], map: "SastEvidenceDeletionProof_buildDecisionId_idx")
 }
 
 model SastFindingCorrelationEdge {

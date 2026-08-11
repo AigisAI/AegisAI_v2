@@ -480,11 +480,30 @@ portion of Phase 6:
 - Alongside the four established runtime exports (`RepositoryFetchService`,
   `RepositoryPreflightService`, `SandboxRuntimeAttestationService`, and
   `SastScannerRuntimeService`), `ScanPlaneModule` exports
-  `SastAcceptedEvidenceService` as the sole sequential T041 handoff to T042. T040 freshness
-  and all earlier coverage/correlation/lineage/identity/redaction providers remain internal.
+  `SastEvidenceAccessService` as the sole sequential T042 handoff to T043. T041 construction,
+  T040 freshness, and all earlier coverage/correlation/lineage/identity/redaction providers
+  remain internal.
   T041 adds no controller, evidence access route, AI payload, policy decision, publisher, or
   SCM writer; `dashboardSafe` and `aiSafe` remain false and classification/deletion
-  references remain null until T042.
+  references remain null.
+- T042 creates the immutable `sast-evidence-deletion-schedule-v1` row in the same serializable
+  transaction as each accepted T041 pack, with a maximum seven-day `deleteAfter`. Every read
+  reloads and revalidates that durable pack, fragments, scope, T041 build decision, T040
+  freshness, T039 coverage, and T038/T037 source bindings.
+- Dashboard and AI classification are separate immutable `sast-evidence-access-decision-v1`
+  decisions. Each purpose reruns known-format, registered-platform-value, and entropy
+  redaction, rejects unsafe path/identifier material, verifies canonical content and digests,
+  and checks time both before and immediately after the read. A missing registry, tampered
+  binding, deletion claim, expiry, or clock rollback denies without returning content.
+- The authenticated dashboard route requires the session tenant and repository binding and
+  returns only the dashboard-safe projection. AI classification returns only a reduced
+  evidence reference with an at-most-24-hour eligibility window; T042 creates no provider
+  request, AI payload, retrieval/tool grant, policy mutation, publisher, or SCM action.
+- Expiry processing uses a deterministic operation ID, lease owner/token fencing, a deletion
+  authority that defaults unavailable, and a bounded provider receipt. Only a valid receipt
+  permits pack/fragment deletion and canonical `sast-evidence-deletion-proof-v1` completion.
+  The T041 build decision and bounded audit/proof ledgers remain durable, and replay or a
+  changed receipt cannot mutate the result.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -494,10 +513,11 @@ GitHub App/GitLab scoped minting, microVM, artifact object-store/disposition,
 file-coordinate-attestation, and acceptance-gate adapters. T035 secret redaction, T036
 `sast-fingerprint-v1` identity construction, T037 occurrence/exact-lineage lifecycle, and
 T038 authority-aware cross-tool correlation, T039 fail-closed scanner/capability coverage,
-T040 stale-scan denial and bounded infrastructure-only retry, and T041 bounded
-accepted-finding evidence with reconstruction-risk checks are complete; T042 dashboard/AI
-classification, second-pass secret redaction, seven-day expiry enforcement, and deletion
-proof are therefore the next implementation task.
+T040 stale-scan denial and bounded infrastructure-only retry, T041 bounded accepted-finding
+evidence with reconstruction-risk checks, and T042 purpose-bound dashboard/AI classification,
+second-pass secret redaction, seven-day expiry enforcement, and deletion proof are complete;
+T043 normalized-finding and reduced-evidence-reference delivery to the advisory AI Plane is
+therefore the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
