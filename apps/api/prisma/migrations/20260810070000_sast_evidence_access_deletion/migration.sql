@@ -165,17 +165,39 @@ CREATE TABLE "SastEvidenceDeletionClaim" (
   "leaseExpiresAt" TIMESTAMP(3),
   "nextAttemptAt" TIMESTAMP(3) NOT NULL,
   "attemptCount" INTEGER NOT NULL DEFAULT 0,
+  "lastErrorCode" TEXT,
+  "quarantinedAt" TIMESTAMP(3),
   "updatedAt" TIMESTAMP(3) NOT NULL,
 
   CONSTRAINT "SastEvidenceDeletionClaim_pkey" PRIMARY KEY ("scheduleId"),
   CONSTRAINT "SastEvidenceDeletionClaim_contract_check" CHECK (
     "scheduleId" ~ '^sast-evidence-deletion://[a-f0-9]{64}$'
-    AND "status" IN ('PENDING', 'CLAIMED', 'COMPLETED')
+    AND "status" IN ('PENDING', 'CLAIMED', 'COMPLETED', 'QUARANTINED')
     AND "attemptCount" >= 0
+    AND ("lastErrorCode" IS NULL OR "lastErrorCode" = 'CONTEXT_DRIFT')
     AND (
-      ("status" = 'CLAIMED' AND "leaseOwner" IS NOT NULL AND "leaseToken" IS NOT NULL AND "leaseExpiresAt" IS NOT NULL)
-      OR
-      ("status" IN ('PENDING', 'COMPLETED') AND "leaseOwner" IS NULL AND "leaseToken" IS NULL AND "leaseExpiresAt" IS NULL)
+      (
+        "status" = 'CLAIMED'
+        AND "leaseOwner" IS NOT NULL
+        AND "leaseToken" IS NOT NULL
+        AND "leaseExpiresAt" IS NOT NULL
+        AND "quarantinedAt" IS NULL
+      )
+      OR (
+        "status" IN ('PENDING', 'COMPLETED')
+        AND "leaseOwner" IS NULL
+        AND "leaseToken" IS NULL
+        AND "leaseExpiresAt" IS NULL
+        AND "quarantinedAt" IS NULL
+      )
+      OR (
+        "status" = 'QUARANTINED'
+        AND "leaseOwner" IS NULL
+        AND "leaseToken" IS NULL
+        AND "leaseExpiresAt" IS NULL
+        AND "lastErrorCode" = 'CONTEXT_DRIFT'
+        AND "quarantinedAt" IS NOT NULL
+      )
     )
   )
 );
@@ -241,6 +263,12 @@ CREATE INDEX "SastEvidenceAccessDecision_aiPayloadExpiresAt_idx"
   ON "SastEvidenceAccessDecision"("aiPayloadExpiresAt");
 CREATE INDEX "SastEvidenceAccessDecision_deletionScheduleId_idx"
   ON "SastEvidenceAccessDecision"("deletionScheduleId");
+CREATE INDEX "SastEvidenceAccessDecision_scan_scope_idx"
+  ON "SastEvidenceAccessDecision"("scanRequestId", "tenantId", "repositoryBindingId");
+CREATE INDEX "SastEvidenceAccessDecision_build_scope_idx"
+  ON "SastEvidenceAccessDecision"("buildDecisionId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId");
+CREATE INDEX "SastEvidenceDeletionSchedule_scan_scope_idx"
+  ON "SastEvidenceDeletionSchedule"("scanRequestId", "tenantId", "repositoryBindingId");
 
 CREATE UNIQUE INDEX "SastEvidenceDeletionClaim_leaseToken_key"
   ON "SastEvidenceDeletionClaim"("leaseToken");
@@ -321,6 +349,8 @@ ALTER TABLE "SastEvidenceDeletionProof"
   ADD CONSTRAINT "SastEvidenceDeletionProof_schedule_scope_fkey"
   FOREIGN KEY ("scheduleId", "operationId", "tenantId")
   REFERENCES "SastEvidenceDeletionSchedule"("id", "operationId", "tenantId")
+  -- Deliberate audit hold: normal offboarding soft-revokes tenant/repository
+  -- scope. The documented exceptional purge deletes proof ledgers first.
   ON DELETE RESTRICT ON UPDATE CASCADE;
 
 CREATE FUNCTION "reject_sast_evidence_access_ledger_update"()

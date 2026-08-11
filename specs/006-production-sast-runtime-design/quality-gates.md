@@ -316,7 +316,8 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   batches prevent poll/cap backlog. Unavailable providers, stale tokens, changed receipts,
   concurrent workers, late readers, clock rollback, exact replay, and an original receipt
   recovered after finalization failure create zero false proofs, duplicate rows, overdue
-  content, or restored content.
+  content, or restored content. A context-drifted claim is fenced and quarantined after three
+  validations and cannot starve a later due schedule.
 
 ## Canary and Continuous Production Gates
 

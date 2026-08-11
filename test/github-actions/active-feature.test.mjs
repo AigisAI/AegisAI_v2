@@ -1483,6 +1483,10 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
     sharedTest,
     /deletion proof binds the deterministic operation and bounded provider receipt/
   );
+  assert.match(
+    sharedTest,
+    /denied decisions keep AI-only fields null and never parse unused expiry/
+  );
 
   assert.match(service, /class SastEvidenceAccessService/);
   assert.match(service, /async readDashboard/);
@@ -1495,6 +1499,10 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assert.match(store, /claimDeletion/);
   assert.match(store, /finalizeDeletion/);
   assert.match(store, /providerReceiptDigest/);
+  assert.match(store, /fenceDriftedClaim/);
+  assert.match(store, /QUARANTINED/);
+  assert.match(store, /FOR UPDATE OF p SKIP LOCKED/);
+  assert.match(store, /randomInt/);
   assert.match(registry, /UnavailableSastEvidenceSecretRegistry/);
   assert.match(
     registry,
@@ -1507,11 +1515,13 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assert.match(deletionService, /class SastEvidenceDeletionService/);
   assert.match(deletionService, /DELETION_LEASE_MILLISECONDS/);
   assert.match(deletionService, /isReceiptValid/);
+  assert.match(deletionService, /error\.reason === 'CONTEXT_DRIFT'/);
   assert.match(deletionTask, /MAXIMUM_DELETIONS_PER_BATCH = 64/);
   assert.match(deletionTask, /MAXIMUM_BACKFILLS_PER_BATCH = 128/);
   assert.match(deletionTask, /this\.schedule\(0\)/);
   assert.match(deletionTask, /if \(this\.batchSaturated\)/);
   assert.match(deletionTask, /nextDueAt\.getTime\(\) - Date\.now\(\)/);
+  assert.match(deletionTask, /attemptClock\(\)/);
   assert.match(dashboardController, /@UseGuards\(SessionAuthGuard\)/);
   assert.match(dashboardController, /@Get\(':evidencePackId'\)/);
   assert.match(dashboardController, /user\.tenantId/);
@@ -1540,6 +1550,14 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
     /starts immediately and wakes at the earliest durable deletion deadline/
   );
   assert.match(
+    serviceTest,
+    /contains a fenced context-drift claim so later deletion work can continue/
+  );
+  assert.match(
+    serviceTest,
+    /reads a fresh attempt clock for every item in a batch/
+  );
+  assert.match(
     persistenceTest,
     /serializable replay, claim fencing, and default-unavailable authorities/
   );
@@ -1558,6 +1576,10 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assert.match(migration, /SastEvidenceAccessDecision_immutable_update/);
   assert.match(migration, /SastEvidenceDeletionSchedule_immutable_update/);
   assert.match(migration, /SastEvidenceDeletionProof_immutable_update/);
+  assert.match(migration, /SastEvidenceAccessDecision_scan_scope_idx/);
+  assert.match(migration, /SastEvidenceAccessDecision_build_scope_idx/);
+  assert.match(migration, /SastEvidenceDeletionSchedule_scan_scope_idx/);
+  assert.match(migration, /QUARANTINED/);
   assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T042\b/);

@@ -299,14 +299,19 @@ export class SastEvidenceAccessService {
         classified.decision
       );
     }
+    const reference = reducedReference(classified.decision);
+    if (!reference) {
+      return denied(
+        'EVIDENCE_ACCESS_OUTPUT_INVALID',
+        classified.decision
+      );
+    }
     return {
       outcome: 'ALLOWED',
       decision: classified.decision,
       replayed: classified.replayed,
       dashboardEvidence: null,
-      reducedEvidenceReference: reducedReference(
-        classified.decision
-      )
+      reducedEvidenceReference: reference
     };
   }
 
@@ -860,13 +865,13 @@ function dashboardEvidence(
 
 function reducedReference(
   decision: Readonly<SastEvidenceAccessDecision>
-): SastReducedEvidenceReference {
+): SastReducedEvidenceReference | null {
   if (
     !decision.reducedEvidenceRef ||
     !decision.redactedProjectionDigest ||
     !decision.aiPayloadExpiresAt
   ) {
-    throw new Error('Allowed AI classification is incomplete.');
+    return null;
   }
   return {
     version: SAST_REDUCED_EVIDENCE_REFERENCE_VERSION,

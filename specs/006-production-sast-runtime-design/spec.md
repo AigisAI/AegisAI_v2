@@ -365,7 +365,9 @@ incomplete, stale, quarantined, or security-blocked scan.
   exact replay only. Late readers, changed receipts, stale lease owners, deletion races, and
   reference-time rollback MUST fail closed without returning or restoring content. An exact
   deterministic deletion retry MAY reuse its original receipt when completion is at or after
-  `deleteAfter` and no later than the current observation and lease.
+  `deleteAfter` and no later than the current observation and lease. A context-drifted due row
+  MUST be durably moved behind other work and quarantined after three failed validations so it
+  cannot starve the deletion queue.
 - **FR-049**: Evidence MUST NOT contain a full file, repository archive, or fragments that
   can reconstruct a substantial repository portion.
 - **FR-050**: Evidence retention MUST NOT exceed seven days; AI request payload retention

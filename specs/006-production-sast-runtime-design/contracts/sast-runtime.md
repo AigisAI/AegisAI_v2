@@ -1229,6 +1229,19 @@ schedule, access decisions, canonical proof, and bounded audit state remain reta
 replay is idempotent; a stale token, changed receipt, late reader, deletion race, or clock
 rollback fails closed.
 
+A claim whose durable context fails validation is fenced in a separate write, moved behind
+other due work, and quarantined after three failed validations. The service contains that
+expected `CONTEXT_DRIFT` result so one corrupt row cannot abort the bounded batch or starve the
+deletion queue. Request-path serializable transactions use a short interactive timeout;
+backfill uses one bounded background transaction with locked rows, and retry collisions use
+bounded jitter.
+
+Tenant/repository offboarding normally soft-revokes the durable scope. The proof-to-schedule
+foreign key deliberately restricts hard parent cascades so deletion evidence is not silently
+lost. An exceptional authorized hard purge must revoke access, finish provider deletion for
+live content, retain/export the required external audit record, delete the proof ledger first,
+and only then remove the tenant or another cascading parent.
+
 AI receives finding metadata and reduced evidence references only after a second redaction
 pass. AI never receives the result-ingress artifact reference.
 

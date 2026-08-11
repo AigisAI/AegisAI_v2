@@ -462,7 +462,8 @@ describe('SastEvidenceDeletionService', () => {
       )
     ).resolves.toBe('RETRY_SCHEDULED');
     expect(unavailableContext.deletionState).toBe('ACTIVE');
-    expect(unavailableContext.result?.pack).not.toBeNull();
+    expect(unavailableContext.result).not.toBeNull();
+    expect(unavailableContext.result?.pack).toBeTruthy();
 
     const rollbackContext = accessContext(
       acceptedEvidence('safe content')
@@ -506,6 +507,30 @@ describe('SastEvidenceDeletionService', () => {
     ).resolves.toBe('DELETED');
     expect(authority.calls).toHaveLength(2);
     expect(context.deletionProof?.completedAt).toBe(EXPIRES_AT);
+  });
+
+  it('contains a fenced context-drift claim so later deletion work can continue', async () => {
+    const context = accessContext(acceptedEvidence('safe content'));
+    const store = new MemoryAccessStore(context, 0, 1);
+    const service = new SastEvidenceDeletionService(
+      store,
+      new MemoryDeletionAuthority(EXPIRES_AT)
+    );
+
+    await expect(
+      service.processNext(
+        new Date(EXPIRES_AT),
+        'worker-1',
+        () => EXPIRES_AT
+      )
+    ).resolves.toBe('RETRY_SCHEDULED');
+    await expect(
+      service.processNext(
+        new Date(EXPIRES_AT),
+        'worker-2',
+        () => EXPIRES_AT
+      )
+    ).resolves.toBe('DELETED');
   });
 
   it('fences concurrent workers and rejects a changed receipt after exact proof replay', async () => {
@@ -570,13 +595,13 @@ describe('SastEvidenceDeletionService', () => {
       receipt: changedReceipt,
       digestCanonical: digest
     });
-    expect(() =>
+    await expect(
       replayStore.finalizeDeletion({
         candidate,
         receipt: changedReceipt,
         proof: changedProof
       })
-    ).toThrow(SastEvidenceAccessPersistenceError);
+    ).rejects.toBeInstanceOf(SastEvidenceAccessPersistenceError);
   });
 });
 
@@ -616,6 +641,40 @@ describe('SastEvidenceDeletionTask', () => {
 
     task.onModuleDestroy();
   });
+
+  it('reads a fresh attempt clock for every item in a batch', async () => {
+    const attemptTimes = [
+      new Date(EXPIRES_AT),
+      new Date(AFTER_RETRY)
+    ];
+    const service = {
+      backfill: jest.fn().mockResolvedValue(0),
+      processNext: jest
+        .fn()
+        .mockResolvedValueOnce('DELETED')
+        .mockResolvedValueOnce('IDLE')
+    };
+    const task = new SastEvidenceDeletionTask(
+      service as never,
+      { isTest: () => true } as never
+    );
+
+    await task.processBatch(
+      new Date(CREATED_AT),
+      () => attemptTimes.shift()!
+    );
+
+    expect(service.backfill).toHaveBeenCalledWith(
+      new Date(CREATED_AT),
+      128
+    );
+    expect(service.processNext.mock.calls[0]?.[0]).toEqual(
+      new Date(EXPIRES_AT)
+    );
+    expect(service.processNext.mock.calls[1]?.[0]).toEqual(
+      new Date(AFTER_RETRY)
+    );
+  });
 });
 
 class MemoryAccessStore extends SastEvidenceAccessStore {
@@ -624,7 +683,8 @@ class MemoryAccessStore extends SastEvidenceAccessStore {
 
   constructor(
     private readonly context: SastEvidenceAccessContext,
-    private remainingFinalizeFailures = 0
+    private remainingFinalizeFailures = 0,
+    private remainingClaimDrifts = 0
   ) {
     super();
   }
@@ -710,6 +770,14 @@ class MemoryAccessStore extends SastEvidenceAccessStore {
     leaseOwner: string;
     leaseExpiresAt: string;
   }): Promise<SastEvidenceDeletionCandidate | null> {
+    if (this.remainingClaimDrifts > 0) {
+      this.remainingClaimDrifts -= 1;
+      return Promise.reject(
+        new SastEvidenceAccessPersistenceError(
+          'CONTEXT_DRIFT'
+        )
+      );
+    }
     if (
       this.context.deletionState !== 'ACTIVE' ||
       !this.context.result?.pack ||
@@ -747,8 +815,10 @@ class MemoryAccessStore extends SastEvidenceAccessStore {
           replayed: true
         });
       }
-      throw new SastEvidenceAccessPersistenceError(
-        'REPLAY_CONFLICT'
+      return Promise.reject(
+        new SastEvidenceAccessPersistenceError(
+          'REPLAY_CONFLICT'
+        )
       );
     }
     if (
@@ -757,7 +827,9 @@ class MemoryAccessStore extends SastEvidenceAccessStore {
       input.receipt.operationId !==
         this.context.schedule.operationId
     ) {
-      throw new SastEvidenceAccessPersistenceError('LEASE_LOST');
+      return Promise.reject(
+        new SastEvidenceAccessPersistenceError('LEASE_LOST')
+      );
     }
     this.context.result = null;
     this.context.deletionState = 'DELETED';
@@ -776,7 +848,9 @@ class MemoryAccessStore extends SastEvidenceAccessStore {
       !this.candidate ||
       this.candidate.leaseToken !== input.candidate.leaseToken
     ) {
-      throw new SastEvidenceAccessPersistenceError('LEASE_LOST');
+      return Promise.reject(
+        new SastEvidenceAccessPersistenceError('LEASE_LOST')
+      );
     }
     this.candidate = null;
     this.context.deletionState = 'ACTIVE';

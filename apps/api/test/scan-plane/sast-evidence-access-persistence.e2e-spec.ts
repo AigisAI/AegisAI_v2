@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import {
+  SAST_AI_PAYLOAD_MAX_RETENTION_SECONDS,
+  SAST_EVIDENCE_MAX_RETENTION_SECONDS
+} from '@aegisai/shared';
+
+import { readScanPlaneExports } from '../support/scan-plane-module-source';
+
 describe('SAST evidence access and deletion persistence contract', () => {
   const schema = read('prisma/schema.prisma');
   const migration = read(
@@ -50,6 +57,9 @@ describe('SAST evidence access and deletion persistence contract', () => {
       'SastEvidenceDeletionProof_schedule_scope_fkey'
     );
     expect(migration).toContain(
+      'The documented exceptional purge deletes proof ledgers first.'
+    );
+    expect(migration).toContain(
       'SastEvidenceDeletionClaim_due_idx'
     );
     expect(migration).toContain(
@@ -58,26 +68,29 @@ describe('SAST evidence access and deletion persistence contract', () => {
     expect(migration).toContain(
       'SastEvidenceAccessDecision_aiPayloadExpiresAt_idx'
     );
+    expect(migration).toContain(
+      'SastEvidenceAccessDecision_scan_scope_idx'
+    );
+    expect(migration).toContain(
+      'SastEvidenceAccessDecision_build_scope_idx'
+    );
+    expect(migration).toContain(
+      'SastEvidenceDeletionSchedule_scan_scope_idx'
+    );
     expect(migration).not.toContain('CONCURRENTLY');
   });
 
   it('pins seven-day evidence and 24-hour AI payload retention in code and SQL', () => {
-    expect(shared).toContain(
-      'SAST_EVIDENCE_MAX_RETENTION_SECONDS =\n  7 * 24 * 60 * 60'
+    expect(SAST_EVIDENCE_MAX_RETENTION_SECONDS).toBe(
+      7 * 24 * 60 * 60
     );
-    expect(shared).toContain(
-      'SAST_AI_PAYLOAD_MAX_RETENTION_SECONDS =\n  24 * 60 * 60'
+    expect(SAST_AI_PAYLOAD_MAX_RETENTION_SECONDS).toBe(
+      24 * 60 * 60
     );
     expect(migration).toContain("INTERVAL '7 days'");
     expect(migration).toContain("INTERVAL '24 hours'");
     expect(migration).toContain(
       '"deleteAfter" <= "scheduledAt" + INTERVAL \'7 days\''
-    );
-    expect(service).toContain(
-      'Date.parse(decidedAt) >= Date.parse(context.schedule.deleteAfter)'
-    );
-    expect(store).toContain(
-      'Date.parse(context.result.pack.expiresAt) >'
     );
   });
 
@@ -132,9 +145,7 @@ describe('SAST evidence access and deletion persistence contract', () => {
     );
     expect(controller).toContain('@UseGuards(SessionAuthGuard)');
     expect(module).toContain('SastEvidenceAccessService');
-    const exportsBlock = module.match(
-      /exports:\s*\[([\s\S]*?)\]\s*\}\)\s*export class/
-    )?.[1];
+    const exportsBlock = readScanPlaneExports(module);
     expect(exportsBlock).toContain('SastEvidenceAccessService');
     expect(exportsBlock).not.toContain(
       'SastAcceptedEvidenceService'
@@ -148,6 +159,14 @@ describe('SAST evidence access and deletion persistence contract', () => {
     expect(store).toContain('leaseToken = randomUUID()');
     expect(store).toContain("status: 'CLAIMED'");
     expect(store).toContain("status: 'COMPLETED'");
+    expect(migration).toContain("'QUARANTINED'");
+    expect(store).toContain('fenceDriftedClaim');
+    expect(store).toContain('MAXIMUM_CONTEXT_DRIFT_ATTEMPTS');
+    expect(store).toContain('FOR UPDATE OF p SKIP LOCKED');
+    expect(store).toContain('randomInt(');
+    expect(store).toContain(
+      'SERIALIZABLE_INTERACTIVE_TIMEOUT_MILLISECONDS'
+    );
     expect(store).toContain(
       'transaction.sastAcceptedEvidencePack.delete'
     );
@@ -183,6 +202,10 @@ describe('SAST evidence access and deletion persistence contract', () => {
     );
     expect(deletionTask).toContain(
       'nextDueAt.getTime() - Date.now()'
+    );
+    expect(service).toContain('return null;');
+    expect(service).not.toContain(
+      'Allowed AI classification is incomplete.'
     );
     expect(authority).toContain(
       'UnavailableSastEvidenceDeletionAuthority'

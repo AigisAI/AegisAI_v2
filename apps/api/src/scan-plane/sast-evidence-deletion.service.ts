@@ -6,17 +6,14 @@ import {
   isSastEvidenceDeletionScheduleShapeValid,
   type SastEvidenceDeletionReceipt
 } from '@aegisai/shared';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import {
   SastEvidenceAccessPersistenceError,
   SastEvidenceAccessStore,
   type SastEvidenceDeletionCandidate
 } from './sast-evidence-access.store';
-import {
-  SastEvidenceDeletionAuthority,
-  SastEvidenceDeletionAuthorityUnavailableError
-} from './sast-evidence-deletion.authority';
+import { SastEvidenceDeletionAuthority } from './sast-evidence-deletion.authority';
 
 const DELETION_LEASE_MILLISECONDS = 60_000;
 const DELETION_RETRY_MILLISECONDS = 60_000;
@@ -30,6 +27,10 @@ export type SastEvidenceDeletionProcessingResult =
 
 @Injectable()
 export class SastEvidenceDeletionService {
+  private readonly logger = new Logger(
+    SastEvidenceDeletionService.name
+  );
+
   constructor(
     private readonly store: SastEvidenceAccessStore,
     private readonly authority: SastEvidenceDeletionAuthority
@@ -65,13 +66,28 @@ export class SastEvidenceDeletionService {
       return 'IDLE';
     }
     const reference = referenceTime.toISOString();
-    const candidate = await this.store.claimDeletion({
-      referenceTime: reference,
-      leaseOwner: workerId,
-      leaseExpiresAt: new Date(
-        referenceTime.getTime() + DELETION_LEASE_MILLISECONDS
-      ).toISOString()
-    });
+    let candidate: SastEvidenceDeletionCandidate | null;
+    try {
+      candidate = await this.store.claimDeletion({
+        referenceTime: reference,
+        leaseOwner: workerId,
+        leaseExpiresAt: new Date(
+          referenceTime.getTime() +
+            DELETION_LEASE_MILLISECONDS
+        ).toISOString()
+      });
+    } catch (error) {
+      if (
+        error instanceof SastEvidenceAccessPersistenceError &&
+        error.reason === 'CONTEXT_DRIFT'
+      ) {
+        this.logger.warn(
+          'Fenced a drifted evidence deletion claim.'
+        );
+        return 'RETRY_SCHEDULED';
+      }
+      throw error;
+    }
     if (!candidate) return 'IDLE';
     if (!isCandidateValid(candidate, reference)) {
       await this.safeRelease(candidate, referenceTime);
@@ -90,12 +106,11 @@ export class SastEvidenceDeletionService {
       });
     } catch (error) {
       await this.safeRelease(candidate, referenceTime);
-      if (
-        error instanceof
-        SastEvidenceDeletionAuthorityUnavailableError
-      ) {
-        return 'RETRY_SCHEDULED';
-      }
+      this.logger.warn(
+        `Evidence deletion authority failed for operation ${candidate.schedule.operationId}: ${
+          error instanceof Error ? error.name : 'UnknownError'
+        }`
+      );
       return 'RETRY_SCHEDULED';
     }
 

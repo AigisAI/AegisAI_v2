@@ -803,10 +803,13 @@ decisions cannot be inferred from a successful scan or accepted T041 pack.
 
 ### SastEvidenceDeletionClaim
 
-- one mutable operational row per schedule with `PENDING | CLAIMED | COMPLETED`, bounded
-  attempt count, next-attempt time, lease owner, unique lease token, and lease expiry
+- one mutable operational row per schedule with
+  `PENDING | CLAIMED | COMPLETED | QUARANTINED`, bounded attempt count, next-attempt time,
+  lease owner, unique lease token, lease expiry, bounded error code, and quarantine timestamp
 - claim and finalize use serializable compare-and-set semantics; only the current unexpired
   owner/token may commit a receipt or release for retry
+- a deterministic durable-context drift advances the retry cursor in a separate fencing write;
+  after three failed validations the row is quarantined so it cannot block later due schedules
 - a claim blocks dashboard and AI reads, including readers that began before expiry but finish
   after the claim
 
@@ -820,6 +823,13 @@ decisions cannot be inferred from a successful scan or accepted T041 pack.
 - content deletion cascades from pack to fragments only after receipt validation. The T041
   build decision, schedule, access ledgers, proof, and bounded audit projections remain
   durable and contain no source or second-pass redacted content
+
+Normal tenant and repository offboarding is a soft revocation and never hard-deletes these
+audit ledgers. `SastEvidenceDeletionProof_schedule_scope_fkey` therefore uses `RESTRICT` so a
+parent cascade cannot silently erase deletion evidence. An exceptional authorized hard purge
+must first revoke all access, complete provider deletion for any live pack, retain/export the
+required external audit record, delete the proof ledger explicitly, and only then delete the
+tenant or another parent scope whose cascade removes schedule/access/build rows.
 
 ### RuleBundlePromotionEvidence
 

@@ -47,10 +47,12 @@ export class SastEvidenceDeletionTask
     }
   }
 
-  async processBatch(referenceTime?: Date): Promise<number> {
-    const startedAt = referenceTime ?? new Date();
+  async processBatch(
+    referenceTime = new Date(),
+    attemptClock: () => Date = () => new Date()
+  ): Promise<number> {
     const backfilled = await this.service.backfill(
-      startedAt,
+      referenceTime,
       MAXIMUM_BACKFILLS_PER_BATCH
     );
     let processed = 0;
@@ -62,7 +64,7 @@ export class SastEvidenceDeletionTask
       index += 1
     ) {
       const result = await this.service.processNext(
-        referenceTime ?? new Date(),
+        attemptClock(),
         this.workerId
       );
       attempted += 1;

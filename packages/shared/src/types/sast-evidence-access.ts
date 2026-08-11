@@ -326,14 +326,16 @@ export function buildSastEvidenceAccessDecision(input: {
     allowed && input.purpose === 'AI_ADVISORY'
       ? `sast-reduced-evidence://${suffix}`
       : null;
-  const evidenceExpiry = Date.parse(input.evidenceExpiresAt);
-  const decidedAt = Date.parse(input.decidedAt);
-  const payloadExpiry = new Date(
-    Math.min(
-      evidenceExpiry,
-      decidedAt + SAST_AI_PAYLOAD_MAX_RETENTION_SECONDS * 1000
-    )
-  ).toISOString();
+  const aiPayloadExpiresAt =
+    allowed && input.purpose === 'AI_ADVISORY'
+      ? new Date(
+          Math.min(
+            Date.parse(input.evidenceExpiresAt),
+            Date.parse(input.decidedAt) +
+              SAST_AI_PAYLOAD_MAX_RETENTION_SECONDS * 1000
+          )
+        ).toISOString()
+      : null;
   const core: SastEvidenceAccessDecisionCore = {
     version: SAST_EVIDENCE_ACCESS_DECISION_VERSION,
     accessDecisionId,
@@ -360,10 +362,7 @@ export function buildSastEvidenceAccessDecision(input: {
     redactedTotalBytes: allowed ? input.redactedTotalBytes : 0,
     redactionCount: allowed ? input.redactionCount : 0,
     reducedEvidenceRef,
-    aiPayloadExpiresAt:
-      allowed && input.purpose === 'AI_ADVISORY'
-        ? payloadExpiry
-        : null,
+    aiPayloadExpiresAt,
     evidenceExpiresAt: input.evidenceExpiresAt,
     authority: accessAuthority(input.purpose, allowed),
     audit: {
@@ -580,6 +579,10 @@ export function isSastEvidenceAccessDecisionShapeValid(
   const allowed = value.outcome === 'ALLOWED';
   if (
     allowed !== (value.reasonCodes.length === 0) ||
+    (!allowed &&
+      (value.secondPassRedactionDecisionRef !== null ||
+        value.reducedEvidenceRef !== null ||
+        value.aiPayloadExpiresAt !== null)) ||
     allowed !== isContractId(
       value.secondPassRedactionDecisionRef,
       'sast-evidence-access-redaction'
@@ -613,7 +616,7 @@ export function isSastEvidenceAccessDecisionShapeValid(
   ) {
     return false;
   }
-  if (value.aiPayloadExpiresAt !== null) {
+  if (allowed && value.aiPayloadExpiresAt !== null) {
     const payloadDuration =
       Date.parse(value.aiPayloadExpiresAt as string) -
       Date.parse(value.decidedAt as string);
@@ -835,10 +838,34 @@ function isReasonCodes(
   );
 }
 
-function isContractId(value: unknown, prefix: string): value is string {
+const CONTRACT_ID_PATTERNS = Object.freeze({
+  'finding-occurrence': /^finding-occurrence:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-build': /^sast-evidence-build:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-pack': /^sast-evidence-pack:\/\/[a-f0-9]{64}$/u,
+  'sast-freshness': /^sast-freshness:\/\/[a-f0-9]{64}$/u,
+  'sast-coverage': /^sast-coverage:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-deletion': /^sast-evidence-deletion:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-delete': /^sast-evidence-delete:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-access': /^sast-evidence-access:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-access-redaction':
+    /^sast-evidence-access-redaction:\/\/[a-f0-9]{64}$/u,
+  'sast-reduced-evidence': /^sast-reduced-evidence:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-deletion-proof':
+    /^sast-evidence-deletion-proof:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-delete-receipt':
+    /^sast-evidence-delete-receipt:\/\/[a-f0-9]{64}$/u,
+  'sast-evidence-fragment': /^sast-evidence-fragment:\/\/[a-f0-9]{64}$/u
+});
+
+type ContractIdPrefix = keyof typeof CONTRACT_ID_PATTERNS;
+
+function isContractId(
+  value: unknown,
+  prefix: ContractIdPrefix
+): value is string {
   return (
     typeof value === 'string' &&
-    new RegExp(`^${prefix}:\\/\\/[a-f0-9]{64}$`, 'u').test(value)
+    CONTRACT_ID_PATTERNS[prefix].test(value)
   );
 }
 

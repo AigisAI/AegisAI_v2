@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import {
@@ -33,7 +33,10 @@ import {
 const SERIALIZABLE_ATTEMPTS = 3;
 const SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS = 10;
 const SERIALIZABLE_MAX_WAIT_MILLISECONDS = 5_000;
-const SERIALIZABLE_TIMEOUT_MILLISECONDS = 120_000;
+const SERIALIZABLE_INTERACTIVE_TIMEOUT_MILLISECONDS = 10_000;
+const SERIALIZABLE_BACKGROUND_TIMEOUT_MILLISECONDS = 120_000;
+const MAXIMUM_CONTEXT_DRIFT_ATTEMPTS = 3;
+const CONTEXT_DRIFT_RETRY_MILLISECONDS = 60_000;
 
 const scheduleInclude = Prisma.validator<Prisma.SastEvidenceDeletionScheduleInclude>()({
   claim: true,
@@ -75,6 +78,10 @@ type PackRow = Prisma.SastAcceptedEvidencePackGetPayload<{
 }>;
 type EvidenceTransaction = Prisma.TransactionClient;
 
+interface DriftedDeletionClaim {
+  driftedScheduleId: string;
+}
+
 @Injectable()
 export class PrismaSastEvidenceAccessStore
   extends SastEvidenceAccessStore {
@@ -104,7 +111,7 @@ export class PrismaSastEvidenceAccessStore
         row = await this.readSchedule(transaction, input);
       }
       return row ? contextFromRow(row) : null;
-    });
+    }, SERIALIZABLE_INTERACTIVE_TIMEOUT_MILLISECONDS);
   }
 
   async persistDecision(input: {
@@ -197,7 +204,7 @@ export class PrismaSastEvidenceAccessStore
         decision: decision as SastEvidenceAccessDecision,
         replayed: false
       };
-    });
+    }, SERIALIZABLE_INTERACTIVE_TIMEOUT_MILLISECONDS);
   }
 
   async confirmAccess(input: {
@@ -265,7 +272,7 @@ export class PrismaSastEvidenceAccessStore
         );
       }
       return context.deletionState === 'ACTIVE' ? context : null;
-    });
+    }, SERIALIZABLE_INTERACTIVE_TIMEOUT_MILLISECONDS);
   }
 
   async backfillDeletionSchedules(input: {
@@ -273,32 +280,34 @@ export class PrismaSastEvidenceAccessStore
     limit: number;
   }): Promise<number> {
     const limit = Math.max(1, Math.min(128, input.limit));
-    const rows = await this.prisma.$queryRaw<
-      Array<{
-        id: string;
-        tenantId: string;
-        repositoryBindingId: string;
-      }>
-    >(Prisma.sql`
-      SELECT p."id", p."tenantId", p."repositoryBindingId"
-      FROM "SastAcceptedEvidencePack" p
-      LEFT JOIN "SastEvidenceDeletionSchedule" s
-        ON s."evidencePackId" = p."id"
-      WHERE s."id" IS NULL
-      ORDER BY p."expiresAt" ASC, p."id" ASC
-      LIMIT ${limit}
-    `);
-    let scheduled = 0;
-    for (const row of rows) {
-      const loaded = await this.load({
-        tenantId: row.tenantId,
-        repositoryBindingId: row.repositoryBindingId,
-        evidencePackId: row.id,
-        referenceTime: input.referenceTime
-      });
-      if (loaded) scheduled += 1;
-    }
-    return scheduled;
+    return this.runSerializable(async (transaction) => {
+      const rows = await transaction.$queryRaw<Array<{ id: string }>>(
+        Prisma.sql`
+          SELECT p."id"
+          FROM "SastAcceptedEvidencePack" p
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM "SastEvidenceDeletionSchedule" s
+            WHERE s."evidencePackId" = p."id"
+          )
+          ORDER BY p."expiresAt" ASC, p."id" ASC
+          FOR UPDATE OF p SKIP LOCKED
+          LIMIT ${limit}
+        `
+      );
+      let scheduled = 0;
+      for (const row of rows) {
+        const pack =
+          await transaction.sastAcceptedEvidencePack.findUnique({
+            where: { id: row.id },
+            include: packInclude
+          });
+        if (!pack) continue;
+        await this.createSchedule(transaction, pack);
+        scheduled += 1;
+      }
+      return scheduled;
+    });
   }
 
   async nextDeletionDueAt(): Promise<string | null> {
@@ -331,7 +340,9 @@ export class PrismaSastEvidenceAccessStore
     leaseOwner: string;
     leaseExpiresAt: string;
   }): Promise<SastEvidenceDeletionCandidate | null> {
-    return this.runSerializable(async (transaction) => {
+    const claimed = await this.runSerializable<
+      SastEvidenceDeletionCandidate | DriftedDeletionClaim | null
+    >(async (transaction) => {
       const referenceTime = new Date(input.referenceTime);
       const claim =
         await transaction.sastEvidenceDeletionClaim.findFirst({
@@ -358,7 +369,18 @@ export class PrismaSastEvidenceAccessStore
           }
         });
       if (!claim) return null;
-      const context = contextFromRow(claim.schedule);
+      let context: SastEvidenceAccessContext;
+      try {
+        context = contextFromRow(claim.schedule);
+      } catch (error) {
+        if (
+          error instanceof SastEvidenceAccessPersistenceError &&
+          error.reason === 'CONTEXT_DRIFT'
+        ) {
+          return { driftedScheduleId: claim.scheduleId };
+        }
+        throw error;
+      }
       if (
         context.deletionState === 'DELETED' ||
         !context.result?.pack ||
@@ -367,9 +389,7 @@ export class PrismaSastEvidenceAccessStore
         Date.parse(context.result.pack.expiresAt) >
           referenceTime.getTime()
       ) {
-        throw new SastEvidenceAccessPersistenceError(
-          'CONTEXT_DRIFT'
-        );
+        return { driftedScheduleId: claim.scheduleId };
       }
       const leaseToken = randomUUID();
       const updated =
@@ -389,7 +409,9 @@ export class PrismaSastEvidenceAccessStore
             leaseOwner: input.leaseOwner,
             leaseToken,
             leaseExpiresAt: new Date(input.leaseExpiresAt),
-            attemptCount: { increment: 1 }
+            attemptCount: { increment: 1 },
+            lastErrorCode: null,
+            quarantinedAt: null
           }
         });
       if (updated.count !== 1) return null;
@@ -400,6 +422,16 @@ export class PrismaSastEvidenceAccessStore
         leaseExpiresAt: input.leaseExpiresAt
       };
     });
+    if (claimed && 'driftedScheduleId' in claimed) {
+      await this.fenceDriftedClaim(
+        claimed.driftedScheduleId,
+        input.referenceTime
+      );
+      throw new SastEvidenceAccessPersistenceError(
+        'CONTEXT_DRIFT'
+      );
+    }
+    return claimed;
   }
 
   async finalizeDeletion(input: {
@@ -502,7 +534,9 @@ export class PrismaSastEvidenceAccessStore
             leaseOwner: null,
             leaseToken: null,
             leaseExpiresAt: null,
-            nextAttemptAt: new Date(input.proof.completedAt)
+            nextAttemptAt: new Date(input.proof.completedAt),
+            lastErrorCode: null,
+            quarantinedAt: null
           }
         });
       if (completed.count !== 1) {
@@ -533,12 +567,53 @@ export class PrismaSastEvidenceAccessStore
           leaseOwner: null,
           leaseToken: null,
           leaseExpiresAt: null,
-          nextAttemptAt: new Date(input.retryAt)
+          nextAttemptAt: new Date(input.retryAt),
+          lastErrorCode: null,
+          quarantinedAt: null
         }
       });
     if (updated.count !== 1) {
       throw new SastEvidenceAccessPersistenceError('LEASE_LOST');
     }
+  }
+
+  private async fenceDriftedClaim(
+    scheduleId: string,
+    referenceTime: string
+  ): Promise<void> {
+    const observedAt = new Date(referenceTime);
+    const retryAt = new Date(
+      observedAt.getTime() + CONTEXT_DRIFT_RETRY_MILLISECONDS
+    );
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE "SastEvidenceDeletionClaim"
+      SET
+        "status" = CASE
+          WHEN "attemptCount" + 1 >= ${MAXIMUM_CONTEXT_DRIFT_ATTEMPTS}
+            THEN 'QUARANTINED'
+          ELSE 'PENDING'
+        END,
+        "leaseOwner" = NULL,
+        "leaseToken" = NULL,
+        "leaseExpiresAt" = NULL,
+        "nextAttemptAt" = ${retryAt},
+        "attemptCount" = "attemptCount" + 1,
+        "lastErrorCode" = 'CONTEXT_DRIFT',
+        "quarantinedAt" = CASE
+          WHEN "attemptCount" + 1 >= ${MAXIMUM_CONTEXT_DRIFT_ATTEMPTS}
+            THEN ${observedAt}
+          ELSE NULL
+        END,
+        "updatedAt" = ${observedAt}
+      WHERE "scheduleId" = ${scheduleId}
+        AND (
+          "status" = 'PENDING'
+          OR (
+            "status" = 'CLAIMED'
+            AND "leaseExpiresAt" <= ${observedAt}
+          )
+        )
+    `);
   }
 
   private readSchedule(
@@ -612,7 +687,9 @@ export class PrismaSastEvidenceAccessStore
   }
 
   private async runSerializable<T>(
-    operation: (transaction: EvidenceTransaction) => Promise<T>
+    operation: (transaction: EvidenceTransaction) => Promise<T>,
+    timeoutMilliseconds =
+      SERIALIZABLE_BACKGROUND_TIMEOUT_MILLISECONDS
   ): Promise<T> {
     let lastError: unknown;
     for (
@@ -625,7 +702,7 @@ export class PrismaSastEvidenceAccessStore
           isolationLevel:
             Prisma.TransactionIsolationLevel.Serializable,
           maxWait: SERIALIZABLE_MAX_WAIT_MILLISECONDS,
-          timeout: SERIALIZABLE_TIMEOUT_MILLISECONDS
+          timeout: timeoutMilliseconds
         });
       } catch (error) {
         lastError = error;
@@ -636,7 +713,10 @@ export class PrismaSastEvidenceAccessStore
           throw error;
         }
         await delay(
-          SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS * attempt
+          SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS * attempt +
+            randomInt(
+              SERIALIZABLE_RETRY_BASE_DELAY_MILLISECONDS + 1
+            )
         );
       }
     }
@@ -732,7 +812,8 @@ function contextFromRow(row: ScheduleRow): SastEvidenceAccessContext {
   }
   const deletionState = canonicalProof
     ? 'DELETED'
-    : row.claim.status === 'CLAIMED'
+    : row.claim.status === 'CLAIMED' ||
+        row.claim.status === 'QUARANTINED'
       ? 'DELETION_PENDING'
       : 'ACTIVE';
   if (

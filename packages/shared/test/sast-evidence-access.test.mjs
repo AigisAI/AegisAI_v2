@@ -107,6 +107,56 @@ test('access validators reject authority widening and retention extension', () =
   );
 });
 
+test('denied decisions keep AI-only fields null and never parse unused expiry', () => {
+  const schedule = deletionSchedule();
+  assert.doesNotThrow(() =>
+    buildSastEvidenceAccessDecision({
+      purpose: 'DASHBOARD',
+      scope: schedule.scope,
+      schedule,
+      secretRegistryVersion: 'not-checked-v1',
+      outcome: 'DENIED',
+      reasonCodes: ['EVIDENCE_ACCESS_INPUT_INVALID'],
+      redactedProjectionDigest: null,
+      redactedFragmentCount: 0,
+      redactedTotalBytes: 0,
+      redactionCount: 0,
+      evidenceExpiresAt: 'invalid-expiry',
+      decidedAt: 'invalid-decision-time',
+      digestCanonical: digest
+    })
+  );
+
+  const denied = buildSastEvidenceAccessDecision({
+    purpose: 'AI_ADVISORY',
+    scope: schedule.scope,
+    schedule,
+    secretRegistryVersion: 'not-checked-v1',
+    outcome: 'DENIED',
+    reasonCodes: ['EVIDENCE_ACCESS_EXPIRED'],
+    redactedProjectionDigest: null,
+    redactedFragmentCount: 0,
+    redactedTotalBytes: 0,
+    redactionCount: 0,
+    evidenceExpiresAt: EXPIRES_AT,
+    decidedAt: DECIDED_AT,
+    digestCanonical: digest
+  });
+  assert.equal(
+    isSastEvidenceAccessDecisionShapeValid(denied, digest),
+    true
+  );
+  assert.equal(
+    isSastEvidenceAccessDecisionShapeValid({
+      ...denied,
+      secondPassRedactionDecisionRef: 'invalid',
+      reducedEvidenceRef: 'invalid',
+      aiPayloadExpiresAt: 'invalid'
+    }),
+    false
+  );
+});
+
 test('deletion proof binds the deterministic operation and bounded provider receipt', () => {
   const schedule = deletionSchedule();
   const proof = buildSastEvidenceDeletionProof({
