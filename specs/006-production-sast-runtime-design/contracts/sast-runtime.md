@@ -1189,6 +1189,59 @@ An accepted T041 pack grants only evidence-construction authority.
 and policy, publication, lifecycle mutation, user access, and AI payload authority remain
 false until T042. `SastAcceptedEvidenceService` exposes no controller or SCM writer.
 
+### Evidence access and deletion gate v1
+
+`sast-evidence-access-decision-v1` accepts only an authenticated scope plus a purpose of
+`DASHBOARD` or `AI_ADVISORY`. The persistence boundary reloads the exact T041 build decision,
+pack, every fragment, scope, T040 freshness, T039 coverage, and T038/T037 source chain. It also
+requires the canonical `sast-evidence-deletion-schedule-v1` row created with the pack. Caller
+content, flags, paths, identifiers, timestamps, and digests grant no authority.
+
+Each purpose independently reruns known-format, registered platform-value, and entropy
+redaction, validates canonical paths and identifiers, and recomputes every content, pack,
+projection, and decision digest. The registry authority defaults `UNAVAILABLE`. Time is checked
+before storage confirmation and again after the final awaited confirmation, immediately before
+return; expiry, an active deletion claim, clock rollback, registry-version drift, unsafe
+identifier, or any durable mismatch denies. Neither
+raw/pre-redaction content, secret values, matched-value digests, nor access-time redacted
+content enters the access ledger, logs, audit, or error response.
+
+An allowed dashboard decision returns only a second-pass-redacted projection after session
+tenant and repository binding authorization. A denied or cross-scope request uses a generic
+not-found response. An allowed AI decision returns only a
+`sast-evidence-reduced://<sha256>` reference whose eligibility expires in at most 24 hours and
+never later than pack expiry. T042 performs no AI provider request, stores no request payload,
+and grants no retrieval, tools, policy, publication, lifecycle, or SCM action. T041 safe flags
+and null classification/deletion fields remain unchanged.
+
+Every accepted pack creates a deterministic `sast-evidence-delete://<sha256>` operation with
+a positive retention window no longer than seven days. Due work uses one leased claim with an
+owner and unique fencing token. The task runs immediately on startup, wakes at the earliest
+durable due time, and gives a saturated bounded batch a zero-delay continuation so a fixed poll
+interval or per-tick cap cannot create a retention backlog. The deletion provider defaults
+`UNAVAILABLE`; retry releases the claim without weakening access denial. Only a bounded receipt
+bound to the exact operation, pack, provider, reference, digest, and monotonic completion time
+may authorize pack/fragment content deletion and finalization of
+`sast-evidence-deletion-proof-v1`. An exact deterministic provider replay may return the original
+receipt from an earlier claim; its completion must remain at or after `deleteAfter` and no later
+than the current observation and fencing lease. The T041 build decision,
+schedule, access decisions, canonical proof, and bounded audit state remain retained. Exact
+replay is idempotent; a stale token, changed receipt, late reader, deletion race, or clock
+rollback fails closed.
+
+A claim whose durable context fails validation is fenced in a separate write, moved behind
+other due work, and quarantined after three failed validations. The service contains that
+expected `CONTEXT_DRIFT` result so one corrupt row cannot abort the bounded batch or starve the
+deletion queue. Request-path serializable transactions use a short interactive timeout;
+backfill uses one bounded background transaction with locked rows, and retry collisions use
+bounded jitter.
+
+Tenant/repository offboarding normally soft-revokes the durable scope. The proof-to-schedule
+foreign key deliberately restricts hard parent cascades so deletion evidence is not silently
+lost. An exceptional authorized hard purge must revoke access, finish provider deletion for
+live content, retain/export the required external audit record, delete the proof ledger first,
+and only then remove the tenant or another cascading parent.
+
 AI receives finding metadata and reduced evidence references only after a second redaction
 pass. AI never receives the result-ingress artifact reference.
 

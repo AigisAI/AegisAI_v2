@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { readScanPlaneExports } from '../support/scan-plane-module-source';
+
 describe('SAST scan freshness and retry persistence contract', () => {
   const schema = read('prisma/schema.prisma');
   const migration = read(
@@ -170,10 +172,10 @@ describe('SAST scan freshness and retry persistence contract', () => {
     );
   });
 
-  it('keeps T040 internal after exporting the T041 sequential handoff', () => {
-    const exportsBlock =
-      module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ?? '';
-    expect(exportsBlock).toContain('SastAcceptedEvidenceService');
+  it('keeps T040 and T041 internal after exporting the T042 handoff', () => {
+    const exportsBlock = readScanPlaneExports(module);
+    expect(exportsBlock).toContain('SastEvidenceAccessService');
+    expect(exportsBlock).not.toContain('SastAcceptedEvidenceService');
     expect(exportsBlock).not.toContain('SastScanFreshnessService');
     expect(exportsBlock).not.toContain('SastScanCoverageService');
     expect(module).toMatch(

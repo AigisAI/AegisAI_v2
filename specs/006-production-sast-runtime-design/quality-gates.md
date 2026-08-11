@@ -297,8 +297,27 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   overlap, adjacency, or combined coverage at or above 2,500 basis points reject the complete
   build. Exact replay creates no duplicate decision, pack, or fragment row.
 - T041 accepted and rejected decisions have zero dashboard/AI/policy/publication/lifecycle
-  authority. `SastAcceptedEvidenceService` is the only sequential Scan Plane handoff to T042;
-  the default source authority remains unavailable and no controller or SCM writer is added.
+  authority. The default source authority remains unavailable and no controller or SCM writer
+  is added by T041.
+- 100% T042 access invariant: dashboard and AI classifications are separate immutable
+  decisions over a complete durable T041/T040/T039/T038/T037 rebind. Known-format,
+  registered-platform, and entropy redaction run again at access time; unsafe path/identifier,
+  unavailable registry, binding/digest drift, cross-tenant/repository scope, clock rollback,
+  expiry, or deletion claim returns zero content and zero reduced references.
+- 100% T042 authority invariant: dashboard responses contain only the authenticated
+  second-pass-redacted projection; AI classification contains only an at-most-24-hour reduced
+  reference. Provider requests, AI payload persistence, retrieval/tools, policy, publication,
+  lifecycle mutation, and SCM actions equal zero. T041 safe/reference fields remain unchanged,
+  and `SastEvidenceAccessService` is the only sequential Scan Plane handoff to T043.
+- 100% T042 deletion-proof invariant: every accepted pack has one deterministic at-most-seven-
+  day schedule and one fenced claim. Pack/fragment content is removed only after a valid
+  operation-bound provider receipt; one immutable proof remains with the T041 build decision.
+  Startup processing, earliest-due wakeup, and zero-delay continuation for saturated bounded
+  batches prevent poll/cap backlog. Unavailable providers, stale tokens, changed receipts,
+  concurrent workers, late readers, clock rollback, exact replay, and an original receipt
+  recovered after finalization failure create zero false proofs, duplicate rows, overdue
+  content, or restored content. A context-drifted claim is fenced and quarantined after three
+  validations and cannot starve a later due schedule.
 
 ## Canary and Continuous Production Gates
 

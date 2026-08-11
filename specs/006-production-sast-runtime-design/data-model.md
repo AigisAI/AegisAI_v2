@@ -730,8 +730,8 @@ T040 creates these ledgers in bounded serializable transactions with exact repla
 the former permanent external-publication constraint name only after the online-schema step
 validates the replacement invariant, builds populated-table indexes concurrently, and validates
 their dependent foreign keys. Effective eligibility comes only from the independent freshness row.
-T041 consumes that row internally and `SastAcceptedEvidenceService` is the only sequential
-Scan Plane handoff to T042.
+T041 consumes that row internally. T042 keeps construction internal and exposes only
+`SastEvidenceAccessService` as the sequential Scan Plane handoff to T043.
 
 ### SastEvidenceBuildDecision
 
@@ -774,6 +774,62 @@ fragments per file, overlap, adjacency, or combined coverage of at least 2,500 b
 `RISK` and rejects the whole build. Full-file or context-invalid input is rejected before that
 calculation. The pack remains unavailable to the dashboard and AI Plane until T042; these
 decisions cannot be inferred from a successful scan or accepted T041 pack.
+
+### SastEvidenceAccessDecision
+
+- deterministic purpose-bound `sast-evidence-access://<sha256>` identity for either
+  `DASHBOARD` or `AI_ADVISORY`; one purpose cannot authorize the other
+- exact tenant, repository, scan, attempt, occurrence, fingerprint, T041 build/pack digest,
+  deletion schedule, access policy, and secret-registry version binding
+- `ALLOWED | DENIED`, `DASHBOARD_SAFE | AI_REDUCED_REFERENCE_SAFE | UNSAFE`, canonical reason
+  codes, counts, second-pass redaction reference, projection digest, and decision digest/time
+- dashboard-safe content is returned transiently after the persisted decision and second clock
+  check; it is never stored in the decision, logs, or audit
+- AI decisions contain only a `sast-evidence-reduced://<sha256>` reference and an expiry no
+  later than 24 hours or the pack expiry, whichever comes first; no AI payload is persisted
+- all policy, publication, lifecycle, SCM, provider-call, retrieval, and tool authority remains
+  false; T041 `dashboardSafe`, `aiSafe`, and null reference fields are never updated
+
+### SastEvidenceDeletionSchedule
+
+- deterministic `sast-evidence-deletion://<sha256>` schedule and
+  `sast-evidence-delete://<sha256>` operation bound to the exact pack/build/scope digest
+- created with the accepted T041 pack in the same serializable transaction; `deleteAfter` is
+  positive and no more than seven days after `scheduledAt`
+- immutable canonical schedule JSON and digest; due and tenant-expiry indexes support bounded
+  backfill and deletion batches
+- deliberately has no cascading relation to pack content, so schedule/access/proof audit state
+  survives pack/fragment content deletion
+
+### SastEvidenceDeletionClaim
+
+- one mutable operational row per schedule with
+  `PENDING | CLAIMED | COMPLETED | QUARANTINED`, bounded attempt count, next-attempt time,
+  lease owner, unique lease token, lease expiry, bounded error code, and quarantine timestamp
+- claim and finalize use serializable compare-and-set semantics; only the current unexpired
+  owner/token may commit a receipt or release for retry
+- a deterministic durable-context drift advances the retry cursor in a separate fencing write;
+  after three failed validations the row is quarantined so it cannot block later due schedules
+- a claim blocks dashboard and AI reads, including readers that began before expiry but finish
+  after the claim
+
+### SastEvidenceDeletionProof
+
+- deterministic `sast-evidence-deletion-proof://<sha256>` proof bound to schedule, operation,
+  tenant, pack, retained T041 build decision, provider receipt reference/digest, and completion
+  time
+- `contentDeleted`, `fragmentsDeleted`, `buildDecisionRetained`, and
+  `accessAuthorityRevoked` are all true; a changed receipt cannot replay
+- content deletion cascades from pack to fragments only after receipt validation. The T041
+  build decision, schedule, access ledgers, proof, and bounded audit projections remain
+  durable and contain no source or second-pass redacted content
+
+Normal tenant and repository offboarding is a soft revocation and never hard-deletes these
+audit ledgers. `SastEvidenceDeletionProof_schedule_scope_fkey` therefore uses `RESTRICT` so a
+parent cascade cannot silently erase deletion evidence. An exceptional authorized hard purge
+must first revoke all access, complete provider deletion for any live pack, retain/export the
+required external audit record, delete the proof ledger explicitly, and only then delete the
+tenant or another parent scope whose cascade removes schedule/access/build rows.
 
 ### RuleBundlePromotionEvidence
 

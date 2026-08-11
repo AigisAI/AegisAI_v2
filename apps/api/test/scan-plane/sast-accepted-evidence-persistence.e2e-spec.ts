@@ -6,6 +6,8 @@ import {
   SAST_ACCEPTED_EVIDENCE_POLICY
 } from '@aegisai/shared';
 
+import { readScanPlaneExports } from '../support/scan-plane-module-source';
+
 describe('SAST accepted-finding evidence persistence contract', () => {
   const schema = read('prisma/schema.prisma');
   const migration = read(
@@ -251,13 +253,10 @@ describe('SAST accepted-finding evidence persistence contract', () => {
     );
   });
 
-  it('exports only the T041 sequential handoff with unavailable source by default', () => {
-    const exportsBlock =
-      module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ??
-      '';
-    expect(exportsBlock).toContain(
-      'SastAcceptedEvidenceService'
-    );
+  it('keeps T041 internal after exporting the T042 sequential handoff', () => {
+    const exportsBlock = readScanPlaneExports(module);
+    expect(exportsBlock).toContain('SastEvidenceAccessService');
+    expect(exportsBlock).not.toContain('SastAcceptedEvidenceService');
     expect(exportsBlock).not.toContain(
       'SastScanFreshnessService'
     );

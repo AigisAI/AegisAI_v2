@@ -45,6 +45,8 @@ const files = {
   sharedSastScanFreshnessTest: new URL('../../packages/shared/test/sast-scan-freshness.test.mjs', import.meta.url),
   sharedSastAcceptedEvidence: new URL('../../packages/shared/src/types/sast-accepted-evidence.ts', import.meta.url),
   sharedSastAcceptedEvidenceTest: new URL('../../packages/shared/test/sast-accepted-evidence.test.mjs', import.meta.url),
+  sharedSastEvidenceAccess: new URL('../../packages/shared/src/types/sast-evidence-access.ts', import.meta.url),
+  sharedSastEvidenceAccessTest: new URL('../../packages/shared/test/sast-evidence-access.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -89,6 +91,15 @@ const files = {
   apiSastAcceptedEvidenceStore: new URL('../../apps/api/src/scan-plane/prisma-sast-accepted-evidence.store.ts', import.meta.url),
   apiSastAcceptedEvidenceTest: new URL('../../apps/api/test/scan-plane/sast-accepted-evidence.e2e-spec.ts', import.meta.url),
   apiSastAcceptedEvidencePersistenceTest: new URL('../../apps/api/test/scan-plane/sast-accepted-evidence-persistence.e2e-spec.ts', import.meta.url),
+  apiSastEvidenceAccess: new URL('../../apps/api/src/scan-plane/sast-evidence-access.service.ts', import.meta.url),
+  apiSastEvidenceAccessStore: new URL('../../apps/api/src/scan-plane/prisma-sast-evidence-access.store.ts', import.meta.url),
+  apiSastEvidenceSecretRegistry: new URL('../../apps/api/src/scan-plane/sast-evidence-secret-registry.ts', import.meta.url),
+  apiSastEvidenceDeletionAuthority: new URL('../../apps/api/src/scan-plane/sast-evidence-deletion.authority.ts', import.meta.url),
+  apiSastEvidenceDeletion: new URL('../../apps/api/src/scan-plane/sast-evidence-deletion.service.ts', import.meta.url),
+  apiSastEvidenceDeletionTask: new URL('../../apps/api/src/scan-plane/sast-evidence-deletion.task.ts', import.meta.url),
+  apiDashboardEvidenceController: new URL('../../apps/api/src/dashboard/dashboard-evidence.controller.ts', import.meta.url),
+  apiSastEvidenceAccessTest: new URL('../../apps/api/test/scan-plane/sast-evidence-access.e2e-spec.ts', import.meta.url),
+  apiSastEvidenceAccessPersistenceTest: new URL('../../apps/api/test/scan-plane/sast-evidence-access-persistence.e2e-spec.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
   apiOnlineSastRuntimeSchema: new URL('../../apps/api/scripts/apply-online-sast-runtime-schema.mjs', import.meta.url),
   apiSastFindingLineageMigration: new URL('../../apps/api/prisma/migrations/20260730160000_sast_finding_lineage_lifecycle/migration.sql', import.meta.url),
@@ -96,6 +107,7 @@ const files = {
   apiSastScanCoverageMigration: new URL('../../apps/api/prisma/migrations/20260802150000_sast_scan_coverage/migration.sql', import.meta.url),
   apiSastScanFreshnessMigration: new URL('../../apps/api/prisma/migrations/20260810030000_sast_scan_freshness_retry/migration.sql', import.meta.url),
   apiSastAcceptedEvidenceMigration: new URL('../../apps/api/prisma/migrations/20260810043000_sast_accepted_evidence/migration.sql', import.meta.url),
+  apiSastEvidenceAccessMigration: new URL('../../apps/api/prisma/migrations/20260810070000_sast_evidence_access_deletion/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -132,7 +144,8 @@ const assertScanPlaneExports = (scanPlaneModule) => {
     exportsBlock,
     'Expected to locate the ScanPlaneModule exports array'
   );
-  assert.match(exportsBlock, /SastAcceptedEvidenceService/);
+  assert.match(exportsBlock, /SastEvidenceAccessService/);
+  assert.doesNotMatch(exportsBlock, /SastAcceptedEvidenceService/);
   assert.doesNotMatch(exportsBlock, /SastScanFreshnessService/);
   assert.doesNotMatch(exportsBlock, /SastScanCoverageService/);
   assert.doesNotMatch(exportsBlock, /SastFindingCorrelationService/);
@@ -489,7 +502,7 @@ test('SAST T034 Syft CycloneDX ingestion is inventory-only, transient, and fixtu
   assert.match(tasks, /- \[x\] T034\b/);
   assert.match(
     quickstart,
-    /T035 secret redaction,[\s\S]{0,720}T041 bounded[\s\S]{0,180}are complete/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,120}T043/
   );
   assert.match(contract, /Syft CycloneDX inventory adapter v1/);
   assert.match(spec, /FR-031b/);
@@ -578,7 +591,7 @@ test('SAST T035 secret redaction is deterministic, fail-closed, and still non-du
   assert.match(tasks, /- \[x\] T035\b/);
   assert.match(
     quickstart,
-    /T035 secret redaction,[\s\S]{0,720}T041 bounded[\s\S]{0,180}are complete/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,120}T043/
   );
   assert.match(contract, /Secret redaction gate v1/);
   assert.match(spec, /FR-031c/);
@@ -701,7 +714,7 @@ test('SAST T036 constructs byte-exact stable identity and no downstream authorit
   assert.match(tasks, /- \[x\] T036\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation[\s\S]{0,320}T041 bounded[\s\S]{0,180}are complete; T042/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,120}T043/
   );
   assert.match(contract, /Finding identity construction gate v1/);
   assert.match(spec, /FR-034a/);
@@ -862,7 +875,7 @@ test('SAST T037 persists complete occurrence lineage and fail-closed lifecycle t
   assert.match(tasks, /- \[x\] T037\b/);
   assert.match(
     quickstart,
-    /T038 authority-aware cross-tool correlation[\s\S]{0,320}T041 bounded[\s\S]{0,180}are complete; T042/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,120}T043/
   );
   assert.match(contract, /Finding lineage and lifecycle gate v1/);
   assert.match(dataModel, /SastFindingLifecycleReconciliation/);
@@ -1000,7 +1013,7 @@ test('SAST T038 correlates by scanner authority while preserving every provenanc
   assert.match(tasks, /- \[x\] T038\b/);
   assert.match(
     quickstart,
-    /T039 fail-closed scanner\/capability coverage[\s\S]{0,220}T041 bounded[\s\S]{0,180}are complete; T042/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,120}T043/
   );
   assert.match(contract, /Finding correlation gate v1/);
   assert.match(dataModel, /SastFindingCorrelationProvenance/);
@@ -1253,7 +1266,7 @@ test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () =
   assert.match(tasks, /- \[x\] T040\b/);
   assert.match(
     quickstart,
-    /T040 stale-scan denial and bounded infrastructure-only retry[\s\S]{0,160}T041 bounded[\s\S]{0,160}complete; T042[\s\S]{0,220}next implementation task/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,160}T043[\s\S]{0,160}next implementation task/
   );
   assert.match(contract, /Scan coverage gate v1/);
   assert.match(contract, /Freshness and bounded retry gate v1/);
@@ -1389,14 +1402,14 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
   assert.match(tasks, /- \[x\] T041\b/);
   assert.match(
     quickstart,
-    /T041 bounded[\s\S]{0,180}are complete; T042[\s\S]{0,220}next implementation task/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,160}T043[\s\S]{0,160}next implementation task/
   );
   assert.match(contract, /Accepted-finding evidence gate v1/);
   assert.match(dataModel, /SastEvidenceBuildDecision/);
   assert.match(dataModel, /SastAcceptedEvidencePack/);
   assert.match(
     plan,
-    /T040 and T041 independently and now proceeds to T042/
+    /T040, T041, and T042 independently and now proceeds to T043/
   );
   assert.match(spec, /FR-046a/);
   assert.match(
@@ -1408,6 +1421,183 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
     qualityGates,
     /100% T041 reconstruction invariant/
   );
+});
+
+test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', () => {
+  const shared = readNormalizedText(files.sharedSastEvidenceAccess);
+  const sharedTest = readNormalizedText(
+    files.sharedSastEvidenceAccessTest
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiSastEvidenceAccess);
+  const store = readNormalizedText(files.apiSastEvidenceAccessStore);
+  const registry = readNormalizedText(
+    files.apiSastEvidenceSecretRegistry
+  );
+  const deletionAuthority = readNormalizedText(
+    files.apiSastEvidenceDeletionAuthority
+  );
+  const deletionService = readNormalizedText(
+    files.apiSastEvidenceDeletion
+  );
+  const deletionTask = readNormalizedText(
+    files.apiSastEvidenceDeletionTask
+  );
+  const dashboardController = readNormalizedText(
+    files.apiDashboardEvidenceController
+  );
+  const serviceTest = readNormalizedText(
+    files.apiSastEvidenceAccessTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiSastEvidenceAccessPersistenceTest
+  );
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(
+    files.apiSastEvidenceAccessMigration
+  );
+  const scanPlaneModule = readNormalizedText(files.apiScanPlaneModule);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const plan = readNormalizedText(files.plan);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(shared, /sast-evidence-access-decision-v1/);
+  assert.match(shared, /sast-evidence-deletion-schedule-v1/);
+  assert.match(shared, /sast-evidence-deletion-proof-v1/);
+  assert.match(shared, /SAST_EVIDENCE_MAX_RETENTION_SECONDS/);
+  assert.match(shared, /SAST_AI_PAYLOAD_MAX_RETENTION_SECONDS/);
+  assert.match(shared, /dashboardReadAllowed/);
+  assert.match(shared, /reducedEvidenceReferenceAllowed/);
+  assert.match(sharedIndex, /sast-evidence-access/);
+  assert.match(
+    sharedTest,
+    /dashboard and AI access decisions keep purpose authority independent/
+  );
+  assert.match(
+    sharedTest,
+    /deletion proof binds the deterministic operation and bounded provider receipt/
+  );
+  assert.match(
+    sharedTest,
+    /denied decisions keep AI-only fields null and never parse unused expiry/
+  );
+
+  assert.match(service, /class SastEvidenceAccessService/);
+  assert.match(service, /async readDashboard/);
+  assert.match(service, /async classifyForAi/);
+  assert.match(service, /KNOWN_SECRET_PATTERNS/);
+  assert.match(service, /ENTROPY_TOKEN_PATTERN/);
+  assert.match(service, /confirmAccess/);
+  assert.doesNotMatch(service, /\bLogger\b|\bconsole\./u);
+  assert.match(store, /Prisma\.TransactionIsolationLevel\.Serializable/);
+  assert.match(store, /claimDeletion/);
+  assert.match(store, /finalizeDeletion/);
+  assert.match(store, /providerReceiptDigest/);
+  assert.match(store, /fenceDriftedClaim/);
+  assert.match(store, /QUARANTINED/);
+  assert.match(store, /FOR UPDATE OF p SKIP LOCKED/);
+  assert.match(store, /randomInt/);
+  assert.match(registry, /UnavailableSastEvidenceSecretRegistry/);
+  assert.match(
+    registry,
+    /Promise\.resolve\(\{ status: 'UNAVAILABLE' \}\)/
+  );
+  assert.match(
+    deletionAuthority,
+    /UnavailableSastEvidenceDeletionAuthority/
+  );
+  assert.match(deletionService, /class SastEvidenceDeletionService/);
+  assert.match(deletionService, /DELETION_LEASE_MILLISECONDS/);
+  assert.match(deletionService, /isReceiptValid/);
+  assert.match(deletionService, /error\.reason === 'CONTEXT_DRIFT'/);
+  assert.match(deletionTask, /MAXIMUM_DELETIONS_PER_BATCH = 64/);
+  assert.match(deletionTask, /MAXIMUM_BACKFILLS_PER_BATCH = 128/);
+  assert.match(deletionTask, /this\.schedule\(0\)/);
+  assert.match(deletionTask, /if \(this\.batchSaturated\)/);
+  assert.match(deletionTask, /nextDueAt\.getTime\(\) - Date\.now\(\)/);
+  assert.match(deletionTask, /attemptClock\(\)/);
+  assert.match(dashboardController, /@UseGuards\(SessionAuthGuard\)/);
+  assert.match(dashboardController, /@Get\(':evidencePackId'\)/);
+  assert.match(dashboardController, /user\.tenantId/);
+  assert.match(
+    serviceTest,
+    /denies expired-at-start and expired-during-read without returning content/
+  );
+  assert.match(
+    serviceTest,
+    /denies late readers when the secret registry drifts or deletion is claimed/
+  );
+  assert.match(
+    serviceTest,
+    /claims by deterministic operation, deletes content, and retains one bounded proof/
+  );
+  assert.match(
+    serviceTest,
+    /fences concurrent workers and rejects a changed receipt after exact proof replay/
+  );
+  assert.match(
+    serviceTest,
+    /accepts the original deterministic receipt when finalization retries later/
+  );
+  assert.match(
+    serviceTest,
+    /starts immediately and wakes at the earliest durable deletion deadline/
+  );
+  assert.match(
+    serviceTest,
+    /contains a fenced context-drift claim so later deletion work can continue/
+  );
+  assert.match(
+    serviceTest,
+    /reads a fresh attempt clock for every item in a batch/
+  );
+  assert.match(
+    persistenceTest,
+    /serializable replay, claim fencing, and default-unavailable authorities/
+  );
+
+  for (const model of [
+    'SastEvidenceAccessDecision',
+    'SastEvidenceDeletionSchedule',
+    'SastEvidenceDeletionClaim',
+    'SastEvidenceDeletionProof'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(migration, new RegExp(`CREATE TABLE "${model}"`));
+  }
+  assert.match(migration, /INTERVAL '7 days'/);
+  assert.match(migration, /INTERVAL '24 hours'/);
+  assert.match(migration, /SastEvidenceAccessDecision_immutable_update/);
+  assert.match(migration, /SastEvidenceDeletionSchedule_immutable_update/);
+  assert.match(migration, /SastEvidenceDeletionProof_immutable_update/);
+  assert.match(migration, /SastEvidenceAccessDecision_scan_scope_idx/);
+  assert.match(migration, /SastEvidenceAccessDecision_build_scope_idx/);
+  assert.match(migration, /SastEvidenceDeletionSchedule_scan_scope_idx/);
+  assert.match(migration, /QUARANTINED/);
+  assertScanPlaneExports(scanPlaneModule);
+
+  assert.match(tasks, /- \[x\] T042\b/);
+  assert.match(
+    quickstart,
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,160}T043[\s\S]{0,160}next implementation task/
+  );
+  assert.match(contract, /Evidence access and deletion gate v1/);
+  assert.match(dataModel, /SastEvidenceAccessDecision/);
+  assert.match(dataModel, /SastEvidenceDeletionProof/);
+  assert.match(plan, /Only `SastEvidenceAccessService` crosses the/);
+  assert.match(spec, /FR-048a/);
+  assert.match(
+    research,
+    /Decision 24: Separate Purpose-Bound Access from Receipt-Proven Content Deletion/
+  );
+  assert.match(threatModel, /False deletion proof/);
+  assert.match(qualityGates, /100% T042 deletion-proof invariant/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

@@ -15,7 +15,7 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040 and T041 independently and now proceeds to T042.
+T040, T041, and T042 independently and now proceeds to T043.
 
 ## Target Boundaries
 
@@ -128,9 +128,16 @@ source finding before any evidence source read. The internal source authority de
 unavailable; verified source is scanner-redacted and platform-redacted in memory, then a
 canonical pack is limited to 32 KiB, five fragments, 8 KiB per fragment, and five context
 lines. Full-file spans, more than two fragments per file, overlapping/adjacent intervals, or
-25% or greater per-file line coverage reject the complete build. Only
-`SastAcceptedEvidenceService` crosses the module boundary; T042 classification, expiry
-enforcement, and deletion proof are the next gate.
+25% or greater per-file line coverage reject the complete build. T042 now creates an immutable
+seven-day deletion schedule with every accepted pack and rebinds the complete T041 pack before
+each purpose-specific dashboard or AI decision. It reruns known-format, registered-platform,
+and entropy redaction at access time, rejects unsafe paths and identifiers, and exposes only an
+authenticated tenant/repository-scoped dashboard projection or a reduced AI reference with an
+at-most-24-hour eligibility window. The T041 pack flags remain unchanged. Expiry claims are
+leased and fenced; a verified provider receipt is required before content deletion and an
+immutable proof, while the T041 build decision remains retained. The default secret registry
+and deletion provider authorities fail closed. Only `SastEvidenceAccessService` crosses the
+module boundary; T043 advisory AI consumption is the next gate.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 
