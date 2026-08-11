@@ -69,9 +69,11 @@ export class AiAdvisoryRuntimeClient {
         handoff.repositoryBindingId,
         handoff.scanRequestId,
         handoff.attemptId,
-        handoff.accessDecisionDigest
+        handoff.accessDecisionDigest,
+        handoff.modelVersion
       ].join(':'),
       requestId: handoff.requestId,
+      modelVersion: handoff.modelVersion,
       reducedEvidence: {
         findingIds: [finding.normalizedFindingId],
         scannerNames: [finding.scanner],
@@ -163,6 +165,7 @@ export class AiAdvisoryRuntimeClient {
       typeof candidate.modelMetadata.provider !== 'string' ||
       typeof candidate.modelMetadata.model !== 'string' ||
       typeof candidate.modelMetadata.version !== 'string' ||
+      candidate.modelMetadata.version !== handoff.modelVersion ||
       !isRecord(candidate.fallback) ||
       typeof candidate.fallback.used !== 'boolean' ||
       (candidate.fallback.reason !== undefined &&

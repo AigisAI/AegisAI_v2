@@ -41,7 +41,7 @@ export function validateModelGatewayConfig(config: ModelGatewayConfig): ModelGat
     throw new Error("Model gateway model is required.");
   }
 
-  if (config.version.trim().length === 0) {
+  if (!isRuntimeModelVersion(config.version)) {
     throw new Error("Model gateway version is required.");
   }
 
@@ -57,6 +57,12 @@ export function createModelGateway(options: ModelGatewayOptions): ModelGateway {
 
       try {
         validateAiInferenceRequest(request);
+        if (request.modelVersion !== config.version) {
+          throw new AiInferenceValidationError(
+            "AI inference request model version does not match the selected gateway.",
+            "FORBIDDEN_INPUT_CLASS"
+          );
+        }
       } catch (error) {
         emitAuditEvent(options, request, "ai_inference.rejected", {
           rejectionReason: rejectionReasonFor(error)
@@ -142,6 +148,7 @@ export function validateAiInferenceRequest(request: AiInferenceRequest): AiInfer
     "scanRequestId",
     "canonicalScanKey",
     "requestId",
+    "modelVersion",
     "reducedEvidence",
     "requestedCapabilities",
     "runtimePolicy",
@@ -152,6 +159,13 @@ export function validateAiInferenceRequest(request: AiInferenceRequest): AiInfer
 
   if (typeof request.scanRequestId !== "string" || request.scanRequestId.trim().length === 0) {
     throw new AiInferenceValidationError("AI inference request requires scan attribution.", "MISSING_SCAN_ATTRIBUTION");
+  }
+
+  if (!isRuntimeModelVersion(request.modelVersion)) {
+    throw new AiInferenceValidationError(
+      "AI inference request requires a bounded model version.",
+      "FORBIDDEN_INPUT_CLASS"
+    );
   }
 
   if (!isRecord(request.reducedEvidence as unknown) || request.reducedEvidence.redactionState !== "reduced") {
@@ -255,7 +269,8 @@ function isT043ReducedReferenceRequest(
       metadata.repositoryBindingId,
       request.scanRequestId,
       metadata.attemptId,
-      metadata.accessDecisionDigest
+      metadata.accessDecisionDigest,
+      request.modelVersion
     ].join(":") &&
     request.requestId === `sast-ai-request://${requestSuffix}` &&
     /^sast-ai-request:\/\/[a-f0-9]{64}$/u.test(request.requestId) &&
@@ -330,6 +345,11 @@ function isBoundedRuntimeText(
     value.length <= maximumLength &&
     value.trim() === value &&
     !hasAsciiControl(value);
+}
+
+function isRuntimeModelVersion(value: unknown): value is string {
+  return isBoundedRuntimeText(value, 128) &&
+    /^[A-Za-z0-9][A-Za-z0-9._:@/+-]{0,127}$/u.test(value);
 }
 
 function hasAsciiControl(value: string): boolean {

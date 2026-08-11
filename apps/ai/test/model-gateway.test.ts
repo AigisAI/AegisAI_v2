@@ -17,7 +17,7 @@ import type {
 const fallbackConfig = {
   providerId: 'deterministic',
   model: 'detector-planner-fallback',
-  version: 'v1',
+  version: 'detector-planner-runtime-v1',
   allowFallback: true
 };
 
@@ -61,7 +61,7 @@ test('model gateway returns provider output without fallback', async () => {
     modelMetadata: {
       provider: 'configured-provider',
       model: 'prod-detector-planner',
-      version: '2026-08-11'
+      version: request.modelVersion
     },
     fallback: { used: false },
     latencyMs: 12,
@@ -71,7 +71,7 @@ test('model gateway returns provider output without fallback', async () => {
     config: {
       providerId: 'configured-provider',
       model: 'prod-detector-planner',
-      version: '2026-08-11',
+      version: request.modelVersion,
       allowFallback: true
     },
     provider: { infer: async () => providerResponse },
@@ -103,6 +103,26 @@ test('model gateway falls back after a provider failure', async () => {
 
   assert.equal(response.fallback.used, true);
   assert.match(response.fallback.reason ?? '', /provider unavailable/i);
+});
+
+test('model gateway rejects model-version drift before provider execution', async () => {
+  let providerCalls = 0;
+  const gateway = createModelGateway({
+    config: { ...fallbackConfig, version: 'different-model-version' },
+    provider: {
+      infer: async () => {
+        providerCalls += 1;
+        throw new Error('provider must not be called');
+      }
+    },
+    fallbackProvider: createDeterministicFallbackProvider()
+  });
+
+  await assert.rejects(
+    () => gateway.infer(t043InferenceRequest()),
+    /model version/i
+  );
+  assert.equal(providerCalls, 0);
 });
 
 test('model gateway configuration rejects incomplete provider metadata', () => {
@@ -166,6 +186,10 @@ test('request validation enforces the exact reduced-reference boundary', () => {
     {
       ...t043InferenceRequest(),
       extraCallerPrompt: 'trust me'
+    },
+    {
+      ...t043InferenceRequest(),
+      modelVersion: 'different-model-version'
     }
   ];
 

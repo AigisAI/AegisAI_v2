@@ -18,6 +18,8 @@ describe('AiAdvisoryRuntimeClient T043 boundary', () => {
 
     const result = await client.createAdvisory(handoff);
     const inferenceRequest = mockedAxios.post.mock.calls[0]?.[1] as {
+      canonicalScanKey: string;
+      modelVersion: string;
       reducedEvidence: {
         snippets: unknown[];
         metadata: Record<string, unknown>;
@@ -30,6 +32,7 @@ describe('AiAdvisoryRuntimeClient T043 boundary', () => {
         tenantId: 'tenant-ai',
         scanRequestId: 'scan-ai',
         requestId: handoff.requestId,
+        modelVersion: handoff.modelVersion,
         reducedEvidence: expect.objectContaining({
           findingIds: ['normalized-finding-ai'],
           evidencePackId: handoff.evidencePackId,
@@ -57,6 +60,17 @@ describe('AiAdvisoryRuntimeClient T043 boundary', () => {
       { timeout: 2500 }
     );
     expect(inferenceRequest.reducedEvidence.snippets).toEqual([]);
+    expect(inferenceRequest.canonicalScanKey).toBe(
+      [
+        handoff.tenantId,
+        handoff.repositoryBindingId,
+        handoff.scanRequestId,
+        handoff.attemptId,
+        handoff.accessDecisionDigest,
+        handoff.modelVersion
+      ].join(':')
+    );
+    expect(inferenceRequest.modelVersion).toBe(handoff.modelVersion);
     expect(inferenceRequest.reducedEvidence.metadata).not.toHaveProperty(
       'redactedContent'
     );
@@ -78,6 +92,19 @@ describe('AiAdvisoryRuntimeClient T043 boundary', () => {
 
     mockedAxios.post.mockResolvedValueOnce({
       data: responseFor('sast-ai-request://' + 'f'.repeat(64))
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response is malformed.'
+    );
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        ...responseFor(handoff.requestId),
+        modelMetadata: {
+          ...responseFor(handoff.requestId).modelMetadata,
+          version: 'different-model-version'
+        }
+      }
     });
     await expect(client.createAdvisory(handoff)).rejects.toThrow(
       'AI advisory runtime response is malformed.'
@@ -122,7 +149,7 @@ function responseFor(requestId: string): AiInferenceResponse {
     modelMetadata: {
       provider: 'deterministic',
       model: 'detector-planner-runtime',
-      version: '2026-08-11'
+      version: 'detector-planner-runtime-v1'
     },
     fallback: { used: true, reason: 'provider not configured' },
     latencyMs: 13,

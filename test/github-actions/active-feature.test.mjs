@@ -1638,6 +1638,9 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   const migration = readNormalizedText(
     files.apiSastAiAdvisoryMigration
   );
+  const onlineSchema = readNormalizedText(
+    files.apiOnlineSastRuntimeSchema
+  );
   const tasks = readNormalizedText(files.tasks);
   const quickstart = readNormalizedText(files.quickstart);
   const contract = readNormalizedText(files.contract);
@@ -1676,6 +1679,8 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
     /handoff:\s*handoff as unknown as Prisma\.InputJsonValue/u
   );
   assert.match(runtime, /snippets: \[\]/);
+  assert.match(runtime, /modelVersion: handoff\.modelVersion/);
+  assert.match(runtime, /candidate\.modelMetadata\.version !== handoff\.modelVersion/);
   assert.match(runtime, /retrievalAllowed: false/);
   assert.match(runtime, /toolsAllowed: false/);
   assert.doesNotMatch(runtime, /redactedContent/);
@@ -1693,14 +1698,32 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
     aiRuntime,
     /requires a T043 reduced-reference handoff/
   );
+  assert.match(aiRuntime, /version: body\.modelVersion/);
   assert.match(modelGateway, /T043_METADATA_KEYS/);
+  assert.match(modelGateway, /request\.modelVersion !== config\.version/);
   assert.match(modelGateway, /evidence\.snippets\.length === 0/);
 
   assert.match(schema, /model SastAiAdvisoryHandoff \{/);
   assert.match(migration, /CREATE TABLE "SastAiAdvisoryHandoff"/);
   assert.match(
-    migration,
+    onlineSchema,
     /SastAiAdvisoryHandoff_access_scope_fkey/
+  );
+  assert.match(
+    onlineSchema,
+    /CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastEvidenceAccessDecision_ai_scope_key"/
+  );
+  assert.match(
+    onlineSchema,
+    /SastAiAdvisoryHandoff_occurrence_scope_fkey/
+  );
+  assert.match(
+    onlineSchema,
+    /SastAiAdvisoryHandoff_finding_scope_fkey/
+  );
+  assert.doesNotMatch(
+    migration,
+    /SastEvidenceAccessDecision_ai_scope_key|SastAiAdvisoryHandoff_(?:occurrence|finding|access)_scope_fkey/
   );
   assert.match(
     migration,

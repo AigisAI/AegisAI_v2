@@ -4,20 +4,6 @@
 ALTER TABLE "AiAdvisoryMetadata"
   ADD COLUMN "sastHandoffId" TEXT;
 
-CREATE UNIQUE INDEX "SastEvidenceAccessDecision_ai_scope_key"
-  ON "SastEvidenceAccessDecision"(
-    "id",
-    "decisionDigest",
-    "tenantId",
-    "repositoryBindingId",
-    "scanRequestId",
-    "attemptId",
-    "occurrenceId",
-    "evidencePackId",
-    "findingFingerprint",
-    "decidedAt"
-  );
-
 CREATE TABLE "SastAiAdvisoryHandoff" (
   "id" TEXT NOT NULL,
   "requestId" TEXT NOT NULL,
@@ -154,66 +140,6 @@ ALTER TABLE "SastAiAdvisoryHandoff"
   FOREIGN KEY ("scanRequestId", "tenantId", "repositoryBindingId")
   REFERENCES "ScanRequest"("id", "tenantId", "repositoryBindingId")
   ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "SastAiAdvisoryHandoff"
-  ADD CONSTRAINT "SastAiAdvisoryHandoff_occurrence_scope_fkey"
-  FOREIGN KEY (
-    "occurrenceId",
-    "tenantId",
-    "repositoryBindingId",
-    "scanRequestId",
-    "attemptId"
-  )
-  REFERENCES "SastFindingOccurrence"(
-    "id",
-    "tenantId",
-    "repositoryBindingId",
-    "scanRequestId",
-    "attemptId"
-  )
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "SastAiAdvisoryHandoff"
-  ADD CONSTRAINT "SastAiAdvisoryHandoff_finding_scope_fkey"
-  FOREIGN KEY (
-    "normalizedFindingId",
-    "tenantId",
-    "scanRequestId",
-    "scannerRunId"
-  )
-  REFERENCES "NormalizedFinding"(
-    "id",
-    "tenantId",
-    "scanRequestId",
-    "scannerRunId"
-  )
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "SastAiAdvisoryHandoff"
-  ADD CONSTRAINT "SastAiAdvisoryHandoff_access_scope_fkey"
-  FOREIGN KEY (
-    "accessDecisionId",
-    "accessDecisionDigest",
-    "tenantId",
-    "repositoryBindingId",
-    "scanRequestId",
-    "attemptId",
-    "occurrenceId",
-    "evidencePackId",
-    "findingFingerprint",
-    "createdAt"
-  )
-  REFERENCES "SastEvidenceAccessDecision"(
-    "id",
-    "decisionDigest",
-    "tenantId",
-    "repositoryBindingId",
-    "scanRequestId",
-    "attemptId",
-    "occurrenceId",
-    "evidencePackId",
-    "findingFingerprint",
-    "decidedAt"
-  )
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
 ALTER TABLE "AiAdvisoryMetadata"
   ADD CONSTRAINT "AiAdvisoryMetadata_sastHandoffId_fkey"
   FOREIGN KEY ("sastHandoffId") REFERENCES "SastAiAdvisoryHandoff"("id")

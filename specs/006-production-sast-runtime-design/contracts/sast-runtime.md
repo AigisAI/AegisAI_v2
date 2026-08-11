@@ -1258,13 +1258,15 @@ stores relationship IDs, digests, model version, expiry, and explicit booleans; 
 handoff/request JSON, title/path, prompt, source, secret, evidence fragment, redacted content,
 or provider payload.
 
-The internal AI request contains normalized metadata, one opaque reference, and `snippets=[]`.
-It carries no result-ingress artifact reference and grants no retrieval, tools, policy,
+The internal AI request contains the handoff-bound model version, normalized metadata, one
+opaque reference, and `snippets=[]`. The model version is part of the canonical runtime key,
+selects the gateway configuration, and must equal the returned model metadata. The request
+carries no result-ingress artifact reference and grants no retrieval, tools, policy,
 publication, lifecycle mutation, or SCM write authority. The runtime rejects unknown keys,
-legacy caller-supplied finding/evidence shapes, content-bearing snippets, correlation drift,
-expired references, and authority widening before provider execution. T043 records advisory
-output only; T044 separately proves that output cannot acquire authoritative finding or policy
-effects.
+legacy caller-supplied finding/evidence shapes, content-bearing snippets, model or correlation
+drift, expired references, and authority widening before provider execution. T043 records
+advisory output only; T044 separately proves that output cannot acquire authoritative finding
+or policy effects.
 
 ## Cleanup Contract
 

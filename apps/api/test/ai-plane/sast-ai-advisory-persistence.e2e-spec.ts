@@ -10,6 +10,9 @@ describe('SAST AI advisory handoff persistence contract', () => {
   const migration = read(
     'prisma/migrations/20260811040000_sast_ai_advisory_handoff/migration.sql'
   );
+  const onlineSchema = read(
+    'scripts/apply-online-sast-runtime-schema.mjs'
+  );
   const store = read(
     'src/ai-plane/prisma-sast-ai-advisory.store.ts'
   );
@@ -34,14 +37,20 @@ describe('SAST AI advisory handoff persistence contract', () => {
     expect(migration).toContain(
       'SastAiAdvisoryHandoff_immutable_delete'
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       'SastAiAdvisoryHandoff_access_scope_fkey'
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       'SastAiAdvisoryHandoff_occurrence_scope_fkey'
     );
-    expect(migration).toContain(
+    expect(onlineSchema).toContain(
       'SastAiAdvisoryHandoff_finding_scope_fkey'
+    );
+    expect(onlineSchema).toContain(
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastEvidenceAccessDecision_ai_scope_key"'
+    );
+    expect(migration).not.toMatch(
+      /SastEvidenceAccessDecision_ai_scope_key|SastAiAdvisoryHandoff_(?:access|occurrence|finding)_scope_fkey/u
     );
     expect(migration).toContain(
       'AiAdvisoryMetadata_sastHandoffId_fkey'
@@ -96,6 +105,7 @@ describe('SAST AI advisory handoff persistence contract', () => {
   it('sends no fragment content, retrieval, tools, or decision authority to AI', () => {
     expect(runtime).toContain('snippets: []');
     expect(runtime).toContain("redactionState: 'reduced'");
+    expect(runtime).toContain('modelVersion: handoff.modelVersion');
     expect(runtime).toContain('retrievalAllowed: false');
     expect(runtime).toContain('toolsAllowed: false');
     expect(runtime).toContain('policyAuthority: false');

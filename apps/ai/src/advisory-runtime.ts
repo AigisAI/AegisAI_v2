@@ -40,7 +40,7 @@ export async function handleAiAdvisoryRequest(
       config: {
         providerId: 'deterministic',
         model: 'detector-planner-fallback',
-        version: 'v1',
+        version: body.modelVersion,
         allowFallback: true
       },
       fallbackProvider: createDeterministicFallbackProvider()

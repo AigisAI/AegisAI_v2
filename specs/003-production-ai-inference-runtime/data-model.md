@@ -8,6 +8,7 @@
 - `scanRequestId`
 - `canonicalScanKey`
 - `requestId`
+- `modelVersion`
 - `reducedEvidence`
 - `requestedCapabilities`
 - `runtimePolicy`

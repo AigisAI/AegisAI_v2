@@ -25,6 +25,7 @@ test('POST /ai/advisories accepts only the T043 reduced-reference request', asyn
   assert.equal(body.scanRequestId, request.scanRequestId);
   assert.equal(body.advisoryOnly, true);
   assert.equal(body.fallback.used, true);
+  assert.equal(body.modelMetadata.version, request.modelVersion);
   assert.deepEqual(body.detectorAdvisories[0].signals, [
     'FALLBACK_DETERMINISTIC',
     'EVIDENCE_REDUCED',

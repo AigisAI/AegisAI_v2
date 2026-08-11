@@ -1,6 +1,7 @@
 import type { AiInferenceRequest } from '@aegisai/shared';
 
 const REQUEST_DIGEST = `sha256:${'a'.repeat(64)}`;
+const MODEL_VERSION = 'detector-planner-runtime-v1';
 
 export function t043InferenceRequest(
   referenceTime = Date.now()
@@ -17,9 +18,11 @@ export function t043InferenceRequest(
       'repository-ai-runtime',
       'scan-ai-runtime',
       'attempt-ai-runtime',
-      `sha256:${'d'.repeat(64)}`
+      `sha256:${'d'.repeat(64)}`,
+      MODEL_VERSION
     ].join(':'),
     requestId: `sast-ai-request://${'a'.repeat(64)}`,
+    modelVersion: MODEL_VERSION,
     reducedEvidence: {
       findingIds: ['normalized-finding-ai-runtime'],
       scannerNames: ['OPENGREP'],
