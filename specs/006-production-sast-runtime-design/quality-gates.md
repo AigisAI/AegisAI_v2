@@ -312,8 +312,11 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
 - 100% T042 deletion-proof invariant: every accepted pack has one deterministic at-most-seven-
   day schedule and one fenced claim. Pack/fragment content is removed only after a valid
   operation-bound provider receipt; one immutable proof remains with the T041 build decision.
-  Unavailable providers, stale tokens, changed receipts, concurrent workers, late readers,
-  clock rollback, and exact replay create zero false proofs, duplicate rows, or restored content.
+  Startup processing, earliest-due wakeup, and zero-delay continuation for saturated bounded
+  batches prevent poll/cap backlog. Unavailable providers, stale tokens, changed receipts,
+  concurrent workers, late readers, clock rollback, exact replay, and an original receipt
+  recovered after finalization failure create zero false proofs, duplicate rows, overdue
+  content, or restored content.
 
 ## Canary and Continuous Production Gates
 

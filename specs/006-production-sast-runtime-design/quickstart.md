@@ -502,8 +502,11 @@ portion of Phase 6:
 - Expiry processing uses a deterministic operation ID, lease owner/token fencing, a deletion
   authority that defaults unavailable, and a bounded provider receipt. Only a valid receipt
   permits pack/fragment deletion and canonical `sast-evidence-deletion-proof-v1` completion.
-  The T041 build decision and bounded audit/proof ledgers remain durable, and replay or a
-  changed receipt cannot mutate the result.
+  The worker starts immediately, schedules against the earliest durable due timestamp, and
+  immediately continues a saturated bounded batch. The T041 build decision and bounded
+  audit/proof ledgers remain durable. An original receipt from an exact deterministic retry
+  succeeds when it remains deadline/observation/lease bounded; a changed receipt cannot mutate
+  the result.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test

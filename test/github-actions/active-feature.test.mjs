@@ -1507,8 +1507,11 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assert.match(deletionService, /class SastEvidenceDeletionService/);
   assert.match(deletionService, /DELETION_LEASE_MILLISECONDS/);
   assert.match(deletionService, /isReceiptValid/);
-  assert.match(deletionTask, /MAXIMUM_DELETIONS_PER_TICK = 16/);
-  assert.match(deletionTask, /MAXIMUM_BACKFILLS_PER_TICK = 32/);
+  assert.match(deletionTask, /MAXIMUM_DELETIONS_PER_BATCH = 64/);
+  assert.match(deletionTask, /MAXIMUM_BACKFILLS_PER_BATCH = 128/);
+  assert.match(deletionTask, /this\.schedule\(0\)/);
+  assert.match(deletionTask, /if \(this\.batchSaturated\)/);
+  assert.match(deletionTask, /nextDueAt\.getTime\(\) - Date\.now\(\)/);
   assert.match(dashboardController, /@UseGuards\(SessionAuthGuard\)/);
   assert.match(dashboardController, /@Get\(':evidencePackId'\)/);
   assert.match(dashboardController, /user\.tenantId/);
@@ -1527,6 +1530,14 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assert.match(
     serviceTest,
     /fences concurrent workers and rejects a changed receipt after exact proof replay/
+  );
+  assert.match(
+    serviceTest,
+    /accepts the original deterministic receipt when finalization retries later/
+  );
+  assert.match(
+    serviceTest,
+    /starts immediately and wakes at the earliest durable deletion deadline/
   );
   assert.match(
     persistenceTest,

@@ -1200,8 +1200,9 @@ content, flags, paths, identifiers, timestamps, and digests grant no authority.
 Each purpose independently reruns known-format, registered platform-value, and entropy
 redaction, validates canonical paths and identifiers, and recomputes every content, pack,
 projection, and decision digest. The registry authority defaults `UNAVAILABLE`. Time is checked
-before and immediately after storage confirmation; expiry, an active deletion claim, clock
-rollback, registry-version drift, unsafe identifier, or any durable mismatch denies. Neither
+before storage confirmation and again after the final awaited confirmation, immediately before
+return; expiry, an active deletion claim, clock rollback, registry-version drift, unsafe
+identifier, or any durable mismatch denies. Neither
 raw/pre-redaction content, secret values, matched-value digests, nor access-time redacted
 content enters the access ledger, logs, audit, or error response.
 
@@ -1215,10 +1216,15 @@ and null classification/deletion fields remain unchanged.
 
 Every accepted pack creates a deterministic `sast-evidence-delete://<sha256>` operation with
 a positive retention window no longer than seven days. Due work uses one leased claim with an
-owner and unique fencing token. The deletion provider defaults `UNAVAILABLE`; retry releases
-the claim without weakening access denial. Only a bounded receipt bound to the exact operation,
-pack, provider, reference, digest, and monotonic completion time may authorize pack/fragment
-content deletion and finalization of `sast-evidence-deletion-proof-v1`. The T041 build decision,
+owner and unique fencing token. The task runs immediately on startup, wakes at the earliest
+durable due time, and gives a saturated bounded batch a zero-delay continuation so a fixed poll
+interval or per-tick cap cannot create a retention backlog. The deletion provider defaults
+`UNAVAILABLE`; retry releases the claim without weakening access denial. Only a bounded receipt
+bound to the exact operation, pack, provider, reference, digest, and monotonic completion time
+may authorize pack/fragment content deletion and finalization of
+`sast-evidence-deletion-proof-v1`. An exact deterministic provider replay may return the original
+receipt from an earlier claim; its completion must remain at or after `deleteAfter` and no later
+than the current observation and fencing lease. The T041 build decision,
 schedule, access decisions, canonical proof, and bounded audit state remain retained. Exact
 replay is idempotent; a stale token, changed receipt, late reader, deletion race, or clock
 rollback fails closed.

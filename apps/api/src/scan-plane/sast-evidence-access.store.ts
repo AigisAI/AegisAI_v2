@@ -79,6 +79,8 @@ export abstract class SastEvidenceAccessStore {
     limit: number;
   }): Promise<number>;
 
+  abstract nextDeletionDueAt(): Promise<string | null>;
+
   abstract claimDeletion(input: {
     referenceTime: string;
     leaseOwner: string;

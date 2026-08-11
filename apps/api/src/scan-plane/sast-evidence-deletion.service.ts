@@ -42,6 +42,17 @@ export class SastEvidenceDeletionService {
     });
   }
 
+  async nextDueAt(): Promise<Date | null> {
+    const value = await this.store.nextDeletionDueAt();
+    if (value === null) return null;
+    if (!isCanonicalTimestamp(value)) {
+      throw new SastEvidenceAccessPersistenceError(
+        'CONTEXT_DRIFT'
+      );
+    }
+    return new Date(value);
+  }
+
   async processNext(
     referenceTime: Date,
     workerId: string,
@@ -91,7 +102,7 @@ export class SastEvidenceDeletionService {
     const observedAt = readClock(clock);
     if (
       !observedAt ||
-      !isReceiptValid(receipt, candidate, reference, observedAt)
+      !isReceiptValid(receipt, candidate, observedAt)
     ) {
       await this.safeRelease(candidate, referenceTime);
       return 'RETRY_SCHEDULED';
@@ -179,7 +190,6 @@ function isCandidateValid(
 function isReceiptValid(
   receipt: unknown,
   candidate: Readonly<SastEvidenceDeletionCandidate>,
-  referenceTime: string,
   observedAt: string
 ): receipt is SastEvidenceDeletionReceipt {
   if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)) {
@@ -203,8 +213,11 @@ function isReceiptValid(
     typeof value.providerReceiptDigest === 'string' &&
     /^sha256:[a-f0-9]{64}$/u.test(value.providerReceiptDigest) &&
     isCanonicalTimestamp(value.completedAt) &&
-    Date.parse(value.completedAt) >= Date.parse(referenceTime) &&
-    Date.parse(value.completedAt) <= Date.parse(observedAt)
+    Date.parse(value.completedAt) >=
+      Date.parse(candidate.schedule.deleteAfter) &&
+    Date.parse(value.completedAt) <= Date.parse(observedAt) &&
+    Date.parse(value.completedAt) <=
+      Date.parse(candidate.leaseExpiresAt)
   );
 }
 

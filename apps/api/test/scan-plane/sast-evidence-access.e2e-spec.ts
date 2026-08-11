@@ -26,6 +26,7 @@ import {
 } from '../../src/scan-plane/sast-evidence-access.store';
 import { SastEvidenceDeletionAuthority } from '../../src/scan-plane/sast-evidence-deletion.authority';
 import { SastEvidenceDeletionService } from '../../src/scan-plane/sast-evidence-deletion.service';
+import { SastEvidenceDeletionTask } from '../../src/scan-plane/sast-evidence-deletion.task';
 import {
   SastEvidenceSecretRegistry,
   type SastEvidenceSecretRegistryResult
@@ -34,6 +35,7 @@ import {
 const CREATED_AT = '2026-08-10T04:40:00.000Z';
 const BEFORE_EXPIRY = '2026-08-17T04:39:59.000Z';
 const EXPIRES_AT = '2026-08-17T04:40:00.000Z';
+const AFTER_RETRY = '2026-08-17T04:41:00.000Z';
 const PLATFORM_SECRET = 'platform-secret-value';
 const ENTROPY_SECRET = 'aB3dE5fG7hJ9kL2mN4pQ6rS8tU0vW1xY';
 
@@ -170,6 +172,45 @@ describe('SastEvidenceAccessService', () => {
       outcome: 'DENIED',
       reasonCode: 'EVIDENCE_ACCESS_EXPIRED',
       dashboardEvidence: null
+    });
+
+    const finalDashboardContext = accessContext(
+      acceptedEvidence('safe content')
+    );
+    const finalDashboard = await new SastEvidenceAccessService(
+      new MemoryAccessStore(finalDashboardContext),
+      verifiedRegistry()
+    ).readDashboard(
+      request(finalDashboardContext),
+      clock(
+        BEFORE_EXPIRY,
+        BEFORE_EXPIRY,
+        BEFORE_EXPIRY,
+        EXPIRES_AT
+      )
+    );
+    expect(finalDashboard).toMatchObject({
+      outcome: 'DENIED',
+      reasonCode: 'EVIDENCE_ACCESS_EXPIRED',
+      dashboardEvidence: null
+    });
+
+    const finalAiContext = accessContext(
+      acceptedEvidence('safe content')
+    );
+    finalAiContext.tenantAiAdvisoryOptIn = true;
+    finalAiContext.repositoryAiAdvisoryOptIn = true;
+    const finalAi = await new SastEvidenceAccessService(
+      new MemoryAccessStore(finalAiContext),
+      verifiedRegistry()
+    ).classifyForAi(
+      request(finalAiContext),
+      clock(BEFORE_EXPIRY, BEFORE_EXPIRY, EXPIRES_AT)
+    );
+    expect(finalAi).toMatchObject({
+      outcome: 'DENIED',
+      reasonCode: 'EVIDENCE_ACCESS_EXPIRED',
+      reducedEvidenceReference: null
     });
   });
 
@@ -441,6 +482,32 @@ describe('SastEvidenceDeletionService', () => {
     expect(rollbackContext.deletionProof).toBeNull();
   });
 
+  it('accepts the original deterministic receipt when finalization retries later', async () => {
+    const context = accessContext(acceptedEvidence('safe content'));
+    const store = new MemoryAccessStore(context, 1);
+    const authority = new MemoryDeletionAuthority(EXPIRES_AT);
+    const service = new SastEvidenceDeletionService(store, authority);
+
+    await expect(
+      service.processNext(
+        new Date(EXPIRES_AT),
+        'worker-1',
+        () => EXPIRES_AT
+      )
+    ).resolves.toBe('RETRY_SCHEDULED');
+    expect(context.deletionState).toBe('ACTIVE');
+
+    await expect(
+      service.processNext(
+        new Date(AFTER_RETRY),
+        'worker-2',
+        () => AFTER_RETRY
+      )
+    ).resolves.toBe('DELETED');
+    expect(authority.calls).toHaveLength(2);
+    expect(context.deletionProof?.completedAt).toBe(EXPIRES_AT);
+  });
+
   it('fences concurrent workers and rejects a changed receipt after exact proof replay', async () => {
     const concurrentContext = accessContext(
       acceptedEvidence('safe content')
@@ -513,11 +580,52 @@ describe('SastEvidenceDeletionService', () => {
   });
 });
 
+describe('SastEvidenceDeletionTask', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('starts immediately and wakes at the earliest durable deletion deadline', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(EXPIRES_AT));
+    const nextDueAt = new Date(
+      Date.parse(EXPIRES_AT) + 30_000
+    );
+    const service = {
+      backfill: jest.fn().mockResolvedValue(0),
+      processNext: jest.fn().mockResolvedValue('IDLE'),
+      nextDueAt: jest
+        .fn()
+        .mockResolvedValueOnce(nextDueAt)
+        .mockResolvedValue(null)
+    };
+    const task = new SastEvidenceDeletionTask(
+      service as never,
+      { isTest: () => false } as never
+    );
+
+    task.onModuleInit();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(service.backfill).toHaveBeenCalledTimes(1);
+    expect(service.nextDueAt).toHaveBeenCalledTimes(1);
+
+    await jest.advanceTimersByTimeAsync(29_999);
+    expect(service.backfill).toHaveBeenCalledTimes(1);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(service.backfill).toHaveBeenCalledTimes(2);
+
+    task.onModuleDestroy();
+  });
+});
+
 class MemoryAccessStore extends SastEvidenceAccessStore {
   readonly decisions: SastEvidenceAccessDecision[] = [];
   private candidate: SastEvidenceDeletionCandidate | null = null;
 
-  constructor(private readonly context: SastEvidenceAccessContext) {
+  constructor(
+    private readonly context: SastEvidenceAccessContext,
+    private remainingFinalizeFailures = 0
+  ) {
     super();
   }
 
@@ -587,6 +695,16 @@ class MemoryAccessStore extends SastEvidenceAccessStore {
     return Promise.resolve(0);
   }
 
+  nextDeletionDueAt(): Promise<string | null> {
+    if (!this.context.result || this.context.deletionProof) {
+      return Promise.resolve(null);
+    }
+    return Promise.resolve(
+      this.candidate?.leaseExpiresAt ??
+        this.context.schedule.deleteAfter
+    );
+  }
+
   claimDeletion(input: {
     referenceTime: string;
     leaseOwner: string;
@@ -615,6 +733,10 @@ class MemoryAccessStore extends SastEvidenceAccessStore {
     receipt: Readonly<SastEvidenceDeletionReceipt>;
     proof: Readonly<SastEvidenceDeletionProof>;
   }): Promise<{ proof: SastEvidenceDeletionProof; replayed: boolean }> {
+    if (this.remainingFinalizeFailures > 0) {
+      this.remainingFinalizeFailures -= 1;
+      return Promise.reject(new Error('transient persistence failure'));
+    }
     if (this.context.deletionProof) {
       if (
         JSON.stringify(this.context.deletionProof) ===

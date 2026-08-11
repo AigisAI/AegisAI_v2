@@ -185,6 +185,18 @@ export class SastEvidenceAccessService {
         classified.decision
       );
     }
+    const returnedAt = readClock(clock);
+    if (
+      !returnedAt ||
+      Date.parse(returnedAt) < Date.parse(completedAt) ||
+      Date.parse(returnedAt) >=
+        Date.parse(classified.decision.evidenceExpiresAt)
+    ) {
+      return denied(
+        'EVIDENCE_ACCESS_EXPIRED',
+        classified.decision
+      );
+    }
     return {
       outcome: 'ALLOWED',
       decision: classified.decision,
@@ -269,6 +281,21 @@ export class SastEvidenceAccessService {
     ) {
       return denied(
         'EVIDENCE_ACCESS_CLASSIFICATION_STALE',
+        classified.decision
+      );
+    }
+    const returnedAt = readClock(clock);
+    if (
+      !returnedAt ||
+      Date.parse(returnedAt) < Date.parse(completedAt) ||
+      Date.parse(returnedAt) >=
+        Date.parse(classified.decision.evidenceExpiresAt) ||
+      !classified.decision.aiPayloadExpiresAt ||
+      Date.parse(returnedAt) >=
+        Date.parse(classified.decision.aiPayloadExpiresAt)
+    ) {
+      return denied(
+        'EVIDENCE_ACCESS_EXPIRED',
         classified.decision
       );
     }

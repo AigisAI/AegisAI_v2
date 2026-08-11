@@ -358,9 +358,14 @@ incomplete, stale, quarantined, or security-blocked scan.
   claim and a deletion provider that defaults unavailable. Pack/fragment content MUST be
   deleted only after a bounded provider receipt is validated and an immutable canonical proof
   is committed; the T041 build decision and bounded proof/audit state MUST remain retained.
+  The deletion task MUST run at startup, target the earliest durable due timestamp, and
+  immediately continue saturated bounded batches so polling delay or a per-tick cap cannot
+  extend retention.
 - **FR-048e**: Concurrent access, schedule, claim, receipt, and proof operations MUST permit
   exact replay only. Late readers, changed receipts, stale lease owners, deletion races, and
-  reference-time rollback MUST fail closed without returning or restoring content.
+  reference-time rollback MUST fail closed without returning or restoring content. An exact
+  deterministic deletion retry MAY reuse its original receipt when completion is at or after
+  `deleteAfter` and no later than the current observation and lease.
 - **FR-049**: Evidence MUST NOT contain a full file, repository archive, or fragments that
   can reconstruct a substantial repository portion.
 - **FR-050**: Evidence retention MUST NOT exceed seven days; AI request payload retention

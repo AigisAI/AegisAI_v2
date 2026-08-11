@@ -301,6 +301,31 @@ export class PrismaSastEvidenceAccessStore
     return scheduled;
   }
 
+  async nextDeletionDueAt(): Promise<string | null> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ dueAt: Date | null }>
+    >(Prisma.sql`
+      SELECT MIN(
+        GREATEST(
+          s."deleteAfter",
+          CASE
+            WHEN c."status" = 'CLAIMED'
+              THEN COALESCE(c."leaseExpiresAt", c."nextAttemptAt")
+            ELSE c."nextAttemptAt"
+          END
+        )
+      ) AS "dueAt"
+      FROM "SastEvidenceDeletionClaim" c
+      INNER JOIN "SastEvidenceDeletionSchedule" s
+        ON s."id" = c."scheduleId"
+      LEFT JOIN "SastEvidenceDeletionProof" p
+        ON p."scheduleId" = s."id"
+      WHERE c."status" IN ('PENDING', 'CLAIMED')
+        AND p."id" IS NULL
+    `);
+    return rows[0]?.dueAt?.toISOString() ?? null;
+  }
+
   async claimDeletion(input: {
     referenceTime: string;
     leaseOwner: string;

@@ -15,6 +15,9 @@ describe('SAST evidence access and deletion persistence contract', () => {
   const deletion = read(
     'src/scan-plane/sast-evidence-deletion.service.ts'
   );
+  const deletionTask = read(
+    'src/scan-plane/sast-evidence-deletion.task.ts'
+  );
   const authority = read(
     'src/scan-plane/sast-evidence-deletion.authority.ts'
   );
@@ -165,6 +168,21 @@ describe('SAST evidence access and deletion persistence contract', () => {
     );
     expect(deletion).toContain(
       "return finalized.replayed ? 'REPLAYED' : 'DELETED'"
+    );
+    expect(deletion).toMatch(
+      /Date\.parse\(value\.completedAt\)\s*>=\s*Date\.parse\(candidate\.schedule\.deleteAfter\)/u
+    );
+    expect(deletion).not.toMatch(
+      /Date\.parse\(value\.completedAt\)\s*>=\s*Date\.parse\(referenceTime\)/u
+    );
+    expect(store).toContain('async nextDeletionDueAt()');
+    expect(store).toContain('SELECT MIN(');
+    expect(deletionTask).toContain('this.schedule(0)');
+    expect(deletionTask).toMatch(
+      /if \(this\.batchSaturated\) \{\s*nextDelay = 0;/u
+    );
+    expect(deletionTask).toContain(
+      'nextDueAt.getTime() - Date.now()'
     );
     expect(authority).toContain(
       'UnavailableSastEvidenceDeletionAuthority'
