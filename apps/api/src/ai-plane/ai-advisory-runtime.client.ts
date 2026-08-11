@@ -1,183 +1,253 @@
-import { BadGatewayException, Injectable } from "@nestjs/common";
-import axios from "axios";
+import {
+  isSastAiAdvisoryHandoffShapeValid,
+  type AiInferenceRequest,
+  type AiInferenceResponse,
+  type SastAiAdvisoryHandoff
+} from '@aegisai/shared';
+import { BadGatewayException, Injectable } from '@nestjs/common';
+import axios from 'axios';
+import { createHash } from 'node:crypto';
 
-import { ConfigService } from "../config/config.service";
-
-import type { AiAdvisoryRequest, AiInferenceRequest, AiInferenceResponse } from '@aegisai/shared';
+import { ConfigService } from '../config/config.service';
 
 const FORBIDDEN_RUNTIME_RESPONSE_KEYS = [
-  "accessToken",
-  "refreshToken",
-  "tokenValue",
-  "secretValue",
-  "sourceArchive",
-  "fullRepository",
-  "rawScannerPayload",
-  "policyOverride",
-  "findingOverride",
-  "enforcementAction",
-  "blockRequested",
-  "waiverApplied",
-  "staleSuppressed"
+  'accessToken',
+  'refreshToken',
+  'tokenValue',
+  'secretValue',
+  'sourceArchive',
+  'fullRepository',
+  'rawScannerPayload',
+  'policyOverride',
+  'findingOverride',
+  'enforcementAction',
+  'blockRequested',
+  'waiverApplied',
+  'staleSuppressed'
 ];
 
 @Injectable()
 export class AiAdvisoryRuntimeClient {
   constructor(private readonly config: ConfigService) {}
 
-  async createAdvisory(input: AiAdvisoryRequest): Promise<AiInferenceResponse> {
+  async createAdvisory(
+    handoff: Readonly<SastAiAdvisoryHandoff>
+  ): Promise<AiInferenceResponse> {
+    if (!isSastAiAdvisoryHandoffShapeValid(handoff, digest)) {
+      throw new BadGatewayException(
+        'AI advisory handoff is malformed.'
+      );
+    }
     try {
-      const response = await axios.post(this.runtimeUrl(), this.toInferenceRequest(input), {
-        timeout: this.config.get("AI_ADVISORY_TIMEOUT_MS")
-      });
-
-      return this.parseRuntimeOutput(response.data);
+      const response = await axios.post(
+        this.runtimeUrl(),
+        this.toInferenceRequest(handoff),
+        { timeout: this.config.get('AI_ADVISORY_TIMEOUT_MS') }
+      );
+      return this.parseRuntimeOutput(response.data, handoff);
     } catch (error) {
-      if (error instanceof BadGatewayException) {
-        throw error;
-      }
-
-      throw new BadGatewayException("AI advisory runtime request failed.");
+      if (error instanceof BadGatewayException) throw error;
+      throw new BadGatewayException(
+        'AI advisory runtime request failed.'
+      );
     }
   }
 
-  private toInferenceRequest(input: AiAdvisoryRequest): AiInferenceRequest {
-    const maxLatencyMs = Number(this.config.get("AI_ADVISORY_TIMEOUT_MS"));
-    const location =
-      input.normalizedFinding.lineEnd && input.normalizedFinding.lineEnd !== input.normalizedFinding.lineStart
-        ? `${input.normalizedFinding.filePath}:${input.normalizedFinding.lineStart}-${input.normalizedFinding.lineEnd}`
-        : `${input.normalizedFinding.filePath}:${input.normalizedFinding.lineStart}`;
-
+  private toInferenceRequest(
+    handoff: Readonly<SastAiAdvisoryHandoff>
+  ): AiInferenceRequest {
+    const maxLatencyMs = Number(
+      this.config.get('AI_ADVISORY_TIMEOUT_MS')
+    );
+    const finding = handoff.normalizedFinding;
+    const reference = handoff.reducedEvidenceReference;
     return {
-      tenantId: input.tenantId,
-      scanRequestId: input.scanRequestId,
+      tenantId: handoff.tenantId,
+      scanRequestId: handoff.scanRequestId,
       canonicalScanKey: [
-        input.tenantId,
-        input.scanRequestId,
-        input.findingId,
-        "AI_ADVISORY",
-        input.modelVersion
-      ].join(":"),
-      requestId: `ai_inference_${input.scanRequestId}_${input.findingId}`,
+        handoff.tenantId,
+        handoff.repositoryBindingId,
+        handoff.scanRequestId,
+        handoff.attemptId,
+        handoff.accessDecisionDigest
+      ].join(':'),
+      requestId: handoff.requestId,
       reducedEvidence: {
-        findingIds: [input.findingId],
-        scannerNames: [input.normalizedFinding.scannerProvenance],
-        evidencePackId: input.evidence.id,
-        summary: `${input.normalizedFinding.title} (${input.normalizedFinding.severity})`,
-        snippets: [
-          {
-            label: "finding-location",
-            redactedText: location
-          }
-        ],
+        findingIds: [finding.normalizedFindingId],
+        scannerNames: [finding.scanner],
+        evidencePackId: handoff.evidencePackId,
+        summary: `${finding.title} (${finding.severity})`,
+        snippets: [],
         metadata: {
-          severity: input.normalizedFinding.severity,
-          scannerProvenance: input.normalizedFinding.scannerProvenance,
-          findingStatus: input.normalizedFinding.status,
-          evidenceByteSize: input.evidence.byteSize,
-          evidenceExpiresAt: input.evidence.expiresAt
+          handoffVersion: handoff.version,
+          handoffDigest: handoff.handoffDigest,
+          requestDigest: handoff.requestDigest,
+          repositoryBindingId: handoff.repositoryBindingId,
+          attemptId: handoff.attemptId,
+          occurrenceId: finding.occurrenceId,
+          normalizedFindingId: finding.normalizedFindingId,
+          findingFingerprint: finding.findingFingerprint,
+          capability: finding.capability,
+          severity: finding.severity,
+          confidence: finding.confidence,
+          scanner: finding.scanner,
+          ruleSemanticId: finding.ruleSemanticId,
+          ruleRevision: finding.ruleRevision,
+          location: locationReference(finding.location),
+          cweIds: finding.cweIds.join(','),
+          cveIds: finding.cveIds.join(','),
+          accessDecisionId: handoff.accessDecisionId,
+          accessDecisionDigest: handoff.accessDecisionDigest,
+          reducedEvidenceRef: reference.reducedEvidenceRef,
+          redactedProjectionDigest:
+            reference.redactedProjectionDigest,
+          fragmentCount: reference.fragmentCount,
+          payloadExpiresAt: handoff.payloadExpiresAt,
+          retrievalAllowed: false,
+          toolsAllowed: false,
+          policyAuthority: false,
+          publicationAuthority: false,
+          lifecycleMutationAuthority: false,
+          scmWriteAuthority: false,
+          advisoryOnly: true
         },
-        redactionState: input.evidence.redacted ? "redacted" : "reduced"
+        redactionState: 'reduced'
       },
-      requestedCapabilities: ["detector", "planner"],
+      requestedCapabilities: ['detector', 'planner'],
       runtimePolicy: {
         allowFallback: true,
-        maxLatencyMs: Number.isFinite(maxLatencyMs) ? maxLatencyMs : 2500
+        maxLatencyMs: Number.isFinite(maxLatencyMs)
+          ? maxLatencyMs
+          : 2500
       },
-      createdAt: new Date().toISOString()
+      createdAt: handoff.createdAt
     };
   }
 
-  private parseRuntimeOutput(input: unknown): AiInferenceResponse {
-    if (!input || typeof input !== "object" || Array.isArray(input)) {
-      throw new BadGatewayException("AI advisory runtime response must be an object.");
+  private parseRuntimeOutput(
+    input: unknown,
+    handoff: Readonly<SastAiAdvisoryHandoff>
+  ): AiInferenceResponse {
+    if (!isRecord(input)) {
+      throw new BadGatewayException(
+        'AI advisory runtime response must be an object.'
+      );
     }
-
     if (hasForbiddenRuntimeResponseKey(input)) {
-      throw new BadGatewayException("AI advisory runtime response contains forbidden authority or sensitive content.");
+      throw new BadGatewayException(
+        'AI advisory runtime response contains forbidden authority or sensitive content.'
+      );
     }
-
     const candidate = input as Partial<AiInferenceResponse>;
-
+    const findingId =
+      handoff.normalizedFinding.normalizedFindingId;
     if (
-      typeof candidate.requestId !== "string" ||
-      typeof candidate.tenantId !== "string" ||
-      typeof candidate.scanRequestId !== "string" ||
+      candidate.requestId !== handoff.requestId ||
+      candidate.tenantId !== handoff.tenantId ||
+      candidate.scanRequestId !== handoff.scanRequestId ||
       candidate.advisoryOnly !== true ||
       !Array.isArray(candidate.detectorAdvisories) ||
-      !candidate.detectorAdvisories.every(isDetectorAdvisory) ||
+      !candidate.detectorAdvisories.every(
+        (advisory) =>
+          isDetectorAdvisory(advisory) &&
+          advisory.findingId === findingId
+      ) ||
       !Array.isArray(candidate.plannerAdvisories) ||
-      !candidate.plannerAdvisories.every(isPlannerAdvisory) ||
-      !candidate.modelMetadata ||
-      typeof candidate.modelMetadata.provider !== "string" ||
-      typeof candidate.modelMetadata.model !== "string" ||
-      typeof candidate.modelMetadata.version !== "string" ||
-      !candidate.fallback ||
-      typeof candidate.fallback.used !== "boolean" ||
-      (candidate.fallback.reason !== undefined && typeof candidate.fallback.reason !== "string") ||
-      typeof candidate.latencyMs !== "number" ||
-      typeof candidate.createdAt !== "string"
+      !candidate.plannerAdvisories.every(
+        (advisory) =>
+          isPlannerAdvisory(advisory) &&
+          (advisory.findingId === undefined ||
+            advisory.findingId === findingId)
+      ) ||
+      !isRecord(candidate.modelMetadata) ||
+      typeof candidate.modelMetadata.provider !== 'string' ||
+      typeof candidate.modelMetadata.model !== 'string' ||
+      typeof candidate.modelMetadata.version !== 'string' ||
+      !isRecord(candidate.fallback) ||
+      typeof candidate.fallback.used !== 'boolean' ||
+      (candidate.fallback.reason !== undefined &&
+        typeof candidate.fallback.reason !== 'string') ||
+      typeof candidate.latencyMs !== 'number' ||
+      !Number.isFinite(candidate.latencyMs) ||
+      candidate.latencyMs < 0 ||
+      typeof candidate.createdAt !== 'string' ||
+      !Number.isFinite(Date.parse(candidate.createdAt))
     ) {
-      throw new BadGatewayException("AI advisory runtime response is malformed.");
+      throw new BadGatewayException(
+        'AI advisory runtime response is malformed.'
+      );
     }
-
     return candidate as AiInferenceResponse;
   }
 
   private runtimeUrl(): string {
-    return `${this.config.get("AI_SERVER_URL").replace(/\/$/, "")}/ai/advisories`;
+    return `${this.config.get('AI_SERVER_URL').replace(/\/$/, '')}/ai/advisories`;
   }
 }
 
-function isDetectorAdvisory(input: unknown): boolean {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return false;
+function locationReference(
+  location: Readonly<
+    SastAiAdvisoryHandoff['normalizedFinding']['location']
+  >
+): string {
+  if (location.kind === 'UNKNOWN') {
+    return `UNKNOWN:${location.reasonCode}`;
   }
+  const lines =
+    location.lineEnd && location.lineEnd !== location.lineStart
+      ? `${location.lineStart}-${location.lineEnd}`
+      : String(location.lineStart);
+  return `${location.normalizedPath}:${lines}`;
+}
 
-  const candidate = input as Record<string, unknown>;
-
+function isDetectorAdvisory(
+  input: unknown
+): input is AiInferenceResponse['detectorAdvisories'][number] {
+  if (!isRecord(input)) return false;
   return (
-    typeof candidate.findingId === "string" &&
-    typeof candidate.confidence === "number" &&
-    candidate.confidence >= 0 &&
-    candidate.confidence <= 1 &&
-    typeof candidate.rationale === "string" &&
-    Array.isArray(candidate.signals) &&
-    candidate.signals.every((signal) => typeof signal === "string")
+    typeof input.findingId === 'string' &&
+    typeof input.confidence === 'number' &&
+    input.confidence >= 0 &&
+    input.confidence <= 1 &&
+    typeof input.rationale === 'string' &&
+    Array.isArray(input.signals) &&
+    input.signals.every((signal) => typeof signal === 'string')
   );
 }
 
-function isPlannerAdvisory(input: unknown): boolean {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return false;
-  }
-
-  const candidate = input as Record<string, unknown>;
-
+function isPlannerAdvisory(
+  input: unknown
+): input is AiInferenceResponse['plannerAdvisories'][number] {
+  if (!isRecord(input)) return false;
   return (
-    (candidate.findingId === undefined || typeof candidate.findingId === "string") &&
-    typeof candidate.action === "string" &&
-    typeof candidate.rationale === "string" &&
-    (candidate.priority === "low" || candidate.priority === "medium" || candidate.priority === "high")
+    (input.findingId === undefined ||
+      typeof input.findingId === 'string') &&
+    typeof input.action === 'string' &&
+    typeof input.rationale === 'string' &&
+    (input.priority === 'low' ||
+      input.priority === 'medium' ||
+      input.priority === 'high')
   );
 }
 
 function hasForbiddenRuntimeResponseKey(input: unknown): boolean {
-  if (input === null || typeof input !== "object") {
-    return false;
-  }
-
+  if (input === null || typeof input !== 'object') return false;
   if (Array.isArray(input)) {
     return input.some((item) => hasForbiddenRuntimeResponseKey(item));
   }
-
   return Object.entries(input as Record<string, unknown>).some(
-    ([key, value]) => isForbiddenRuntimeResponseKey(key) || hasForbiddenRuntimeResponseKey(value)
+    ([key, value]) =>
+      FORBIDDEN_RUNTIME_RESPONSE_KEYS.some(
+        (forbidden) =>
+          forbidden.toLowerCase() === key.toLowerCase()
+      ) || hasForbiddenRuntimeResponseKey(value)
   );
 }
 
-function isForbiddenRuntimeResponseKey(key: string): boolean {
-  return FORBIDDEN_RUNTIME_RESPONSE_KEYS.some(
-    (forbiddenKey) => forbiddenKey.toLowerCase() === key.toLowerCase()
-  );
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function digest(value: string): `sha256:${string}` {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }

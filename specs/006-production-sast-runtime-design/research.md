@@ -537,3 +537,29 @@ returning fragments before the second clock check, deriving AI eligibility from 
 access, retaining an AI payload for T043, treating a deletion request as deletion proof,
 deleting before receipt validation, allowing an unfenced worker to finalize, or erasing the
 T041 decision with the content.
+
+## Decision 25: Derive an Expiring Reference-Only Advisory Handoff from Durable State
+
+**Decision**: T043 accepts only tenant, repository-binding, evidence-pack, and model-version
+intent. It calls the T042 AI classifier, reloads and validates the access ledger plus the exact
+T037 occurrence/source and normalized-finding row, then calls the classifier again before
+deriving `sast-ai-advisory-handoff-v1`. The access decision timestamp, rather than invocation
+time, is canonical so every still-valid exact retry derives the same request, handoff, and
+advisory identities.
+
+The persistence ledger stores relationship references, digests, model version, expiry, and
+fixed booleans only. The handoff/request JSON, title, path, source, secret values, fragments,
+prompt, and provider request are not persisted there. The internal AI runtime receives the
+normalized metadata and opaque reduced reference with `snippets=[]`; retrieval, tools, policy,
+publication, lifecycle mutation, and SCM write authority are fixed false. Legacy direct
+finding/evidence requests and unknown fields are rejected.
+
+**Rationale**: A caller-safe reduced reference still does not prove which durable finding is
+being described, and a valid decision can expire or drift while the occurrence is loaded.
+Double classification plus exact durable rebinding closes that race. Reference-only persistence
+keeps replay auditable without retaining a second copy of sensitive or expiring model input.
+
+**Rejected**: Trusting caller-normalized findings, forwarding snippets or redacted fragment
+content, persisting a full handoff JSON, deriving retry identity from wall-clock invocation
+time, accepting dashboard-purpose authority, enabling model retrieval/tools, or treating an AI
+response as finding, policy, publication, lifecycle, or SCM authority.

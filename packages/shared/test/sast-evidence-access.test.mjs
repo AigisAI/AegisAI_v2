@@ -4,10 +4,13 @@ import test from 'node:test';
 
 import {
   SAST_AI_PAYLOAD_MAX_RETENTION_SECONDS,
+  buildSastAiAdvisoryHandoff,
   buildSastEvidenceAccessDecision,
   buildSastEvidenceDeletionProof,
   buildSastEvidenceDeletionSchedule,
   isSafeNormalizedPath,
+  isSastAiAdvisoryHandoffShapeValid,
+  isSastAiAdvisoryIntentShapeValid,
   isSastEvidenceAccessDecisionShapeValid,
   isSastEvidenceDeletionProofShapeValid,
   isSastEvidenceDeletionScheduleShapeValid,
@@ -197,6 +200,91 @@ test('dashboard path classification rejects traversal and repository metadata', 
   assert.equal(isSafeNormalizedPath('C:\\repo\\secret.env'), false);
 });
 
+test('T043 handoff binds normalized findings to an opaque reduced reference', () => {
+  const decision = accessDecision(
+    deletionSchedule(),
+    'AI_ADVISORY'
+  );
+  const reference = reducedReference(decision);
+  const normalizedFinding = advisoryFinding(decision);
+  const handoff = buildSastAiAdvisoryHandoff({
+    decision,
+    reducedEvidenceReference: reference,
+    normalizedFinding,
+    modelVersion: 'detector-planner-runtime-v1',
+    createdAt: '2026-08-10T05:00:01.000Z',
+    digestCanonical: digest
+  });
+
+  assert.ok(handoff);
+  assert.equal(
+    isSastAiAdvisoryHandoffShapeValid(handoff, digest),
+    true
+  );
+  assert.equal(handoff.createdAt, decision.decidedAt);
+  assert.deepEqual(handoff.authority, {
+    normalizedFindingAllowed: true,
+    reducedEvidenceReferenceAllowed: true,
+    aiPayloadAllowed: true,
+    aiProviderCallAllowed: true,
+    retrievalAllowed: false,
+    toolsAllowed: false,
+    policyAuthority: false,
+    publicationAuthority: false,
+    lifecycleMutationAuthority: false,
+    scmWriteAuthority: false,
+    advisoryOnly: true
+  });
+  assert.equal(handoff.audit.requestPayloadStored, false);
+  assert.equal(handoff.audit.rawSourceStored, false);
+  assert.equal(handoff.audit.evidenceFragmentStored, false);
+});
+
+test('T043 retries are deterministic and reject caller fields or authority widening', () => {
+  const decision = accessDecision(
+    deletionSchedule(),
+    'AI_ADVISORY'
+  );
+  const input = {
+    decision,
+    reducedEvidenceReference: reducedReference(decision),
+    normalizedFinding: advisoryFinding(decision),
+    modelVersion: 'detector-planner-runtime-v1',
+    digestCanonical: digest
+  };
+  const first = buildSastAiAdvisoryHandoff({
+    ...input,
+    createdAt: '2026-08-10T05:00:01.000Z'
+  });
+  const retry = buildSastAiAdvisoryHandoff({
+    ...input,
+    createdAt: '2026-08-10T05:00:02.000Z'
+  });
+
+  assert.ok(first);
+  assert.deepEqual(retry, first);
+  assert.equal(
+    isSastAiAdvisoryHandoffShapeValid({
+      ...first,
+      authority: { ...first.authority, toolsAllowed: true }
+    }, digest),
+    false
+  );
+  assert.equal(isSastAiAdvisoryIntentShapeValid({
+    tenantId: decision.scope.tenantId,
+    repositoryBindingId: decision.scope.repositoryBindingId,
+    evidencePackId: decision.scope.evidencePackId,
+    modelVersion: 'detector-planner-runtime-v1'
+  }), true);
+  assert.equal(isSastAiAdvisoryIntentShapeValid({
+    tenantId: decision.scope.tenantId,
+    repositoryBindingId: decision.scope.repositoryBindingId,
+    evidencePackId: decision.scope.evidencePackId,
+    modelVersion: 'detector-planner-runtime-v1',
+    normalizedFinding: { title: 'caller supplied' }
+  }), false);
+});
+
 function accessDecision(schedule, purpose) {
   return buildSastEvidenceAccessDecision({
     purpose,
@@ -213,6 +301,54 @@ function accessDecision(schedule, purpose) {
     decidedAt: DECIDED_AT,
     digestCanonical: digest
   });
+}
+
+function reducedReference(decision) {
+  return {
+    version: 'sast-reduced-evidence-reference-v1',
+    reducedEvidenceRef: decision.reducedEvidenceRef,
+    accessDecisionId: decision.accessDecisionId,
+    accessDecisionDigest: decision.decisionDigest,
+    evidencePackId: decision.scope.evidencePackId,
+    findingFingerprint: decision.scope.findingFingerprint,
+    redactedProjectionDigest: decision.redactedProjectionDigest,
+    fragmentCount: decision.redactedFragmentCount,
+    payloadExpiresAt: decision.aiPayloadExpiresAt,
+    aiPayloadCreated: false,
+    aiProviderCalled: false,
+    retrievalAllowed: false,
+    toolsAllowed: false,
+    advisoryOnly: true
+  };
+}
+
+function advisoryFinding(decision) {
+  return {
+    normalizedFindingId: 'normalized-finding-1',
+    occurrenceId: decision.scope.occurrenceId,
+    tenantId: decision.scope.tenantId,
+    repositoryBindingId: decision.scope.repositoryBindingId,
+    scanRequestId: decision.scope.scanRequestId,
+    attemptId: decision.scope.attemptId,
+    scannerRunId: 'scanner-run-1',
+    findingFingerprint: decision.scope.findingFingerprint,
+    capability: 'SAST',
+    title: 'Unsafe deserialization',
+    severity: 'HIGH',
+    confidence: 'HIGH',
+    cweIds: ['CWE-502'],
+    cveIds: [],
+    location: {
+      kind: 'FILE',
+      normalizedPath: 'src/App.java',
+      lineStart: 42,
+      lineEnd: 42
+    },
+    scanner: 'OPENGREP',
+    ruleSemanticId: 'java.unsafe-deserialization',
+    ruleRevision: '1.0.0',
+    secretRedactionApplied: true
+  };
 }
 
 function deletionSchedule() {

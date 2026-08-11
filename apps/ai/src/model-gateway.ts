@@ -137,15 +137,24 @@ async function runFallbackProvider(
 }
 
 export function validateAiInferenceRequest(request: AiInferenceRequest): AiInferenceRequest {
-  if (request.tenantId.trim().length === 0) {
+  if (!isRecord(request as unknown) || !hasExactKeys(request as unknown as Record<string, unknown>, [
+    "tenantId",
+    "scanRequestId",
+    "canonicalScanKey",
+    "requestId",
+    "reducedEvidence",
+    "requestedCapabilities",
+    "runtimePolicy",
+    "createdAt"
+  ]) || typeof request.tenantId !== "string" || request.tenantId.trim().length === 0) {
     throw new AiInferenceValidationError("AI inference request requires tenant attribution.", "MISSING_TENANT_ATTRIBUTION");
   }
 
-  if (request.scanRequestId.trim().length === 0) {
+  if (typeof request.scanRequestId !== "string" || request.scanRequestId.trim().length === 0) {
     throw new AiInferenceValidationError("AI inference request requires scan attribution.", "MISSING_SCAN_ATTRIBUTION");
   }
 
-  if (request.reducedEvidence.redactionState !== "redacted" && request.reducedEvidence.redactionState !== "reduced") {
+  if (!isRecord(request.reducedEvidence as unknown) || request.reducedEvidence.redactionState !== "reduced") {
     throw new AiInferenceValidationError(
       "AI inference request must remain inside the reduced evidence boundary.",
       "UNREDACTED_EVIDENCE"
@@ -159,7 +168,204 @@ export function validateAiInferenceRequest(request: AiInferenceRequest): AiInfer
     );
   }
 
+  if (!isT043ReducedReferenceRequest(request)) {
+    throw new AiInferenceValidationError(
+      "AI inference request must use the exact T043 reduced-reference contract.",
+      "FORBIDDEN_INPUT_CLASS"
+    );
+  }
+
   return request;
+}
+
+const T043_METADATA_KEYS = [
+  "handoffVersion",
+  "handoffDigest",
+  "requestDigest",
+  "repositoryBindingId",
+  "attemptId",
+  "occurrenceId",
+  "normalizedFindingId",
+  "findingFingerprint",
+  "capability",
+  "severity",
+  "confidence",
+  "scanner",
+  "ruleSemanticId",
+  "ruleRevision",
+  "location",
+  "cweIds",
+  "cveIds",
+  "accessDecisionId",
+  "accessDecisionDigest",
+  "reducedEvidenceRef",
+  "redactedProjectionDigest",
+  "fragmentCount",
+  "payloadExpiresAt",
+  "retrievalAllowed",
+  "toolsAllowed",
+  "policyAuthority",
+  "publicationAuthority",
+  "lifecycleMutationAuthority",
+  "scmWriteAuthority",
+  "advisoryOnly"
+] as const;
+
+function isT043ReducedReferenceRequest(
+  request: AiInferenceRequest
+): boolean {
+  const evidence = request.reducedEvidence;
+  if (
+    !isRecord(evidence as unknown) ||
+    !isRecord(evidence.metadata) ||
+    !Array.isArray(evidence.findingIds) ||
+    !Array.isArray(evidence.scannerNames) ||
+    !Array.isArray(evidence.snippets) ||
+    !Array.isArray(request.requestedCapabilities) ||
+    !isRecord(request.runtimePolicy as unknown)
+  ) {
+    return false;
+  }
+  const metadata = evidence.metadata;
+  const createdAt = Date.parse(request.createdAt);
+  const expiresAt = Date.parse(String(metadata.payloadExpiresAt));
+  const requestSuffix = String(metadata.requestDigest).replace(
+    /^sha256:/u,
+    ""
+  );
+  return (
+    hasExactKeys(evidence as unknown as Record<string, unknown>, [
+      "findingIds",
+      "scannerNames",
+      "evidencePackId",
+      "summary",
+      "snippets",
+      "metadata",
+      "redactionState"
+    ]) &&
+    hasExactKeys(metadata, T043_METADATA_KEYS) &&
+    hasExactKeys(request.runtimePolicy as unknown as Record<string, unknown>, [
+      "allowFallback",
+      "maxLatencyMs"
+    ]) &&
+    isBoundedRuntimeText(request.tenantId, 512) &&
+    isBoundedRuntimeText(request.scanRequestId, 512) &&
+    request.canonicalScanKey === [
+      request.tenantId,
+      metadata.repositoryBindingId,
+      request.scanRequestId,
+      metadata.attemptId,
+      metadata.accessDecisionDigest
+    ].join(":") &&
+    request.requestId === `sast-ai-request://${requestSuffix}` &&
+    /^sast-ai-request:\/\/[a-f0-9]{64}$/u.test(request.requestId) &&
+    /^sha256:[a-f0-9]{64}$/u.test(String(metadata.handoffDigest)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(String(metadata.requestDigest)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(String(metadata.findingFingerprint)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(String(metadata.accessDecisionDigest)) &&
+    /^sha256:[a-f0-9]{64}$/u.test(String(metadata.redactedProjectionDigest)) &&
+    metadata.handoffVersion === "sast-ai-advisory-handoff-v1" &&
+    /^sast-evidence-access:\/\/[a-f0-9]{64}$/u.test(String(metadata.accessDecisionId)) &&
+    /^sast-reduced-evidence:\/\/[a-f0-9]{64}$/u.test(String(metadata.reducedEvidenceRef)) &&
+    /^sast-evidence-pack:\/\/[a-f0-9]{64}$/u.test(evidence.evidencePackId) &&
+    /^finding-occurrence:\/\/[a-f0-9]{64}$/u.test(String(metadata.occurrenceId)) &&
+    isBoundedRuntimeText(metadata.repositoryBindingId, 512) &&
+    isBoundedRuntimeText(metadata.attemptId, 512) &&
+    isBoundedRuntimeText(metadata.normalizedFindingId, 512) &&
+    isBoundedRuntimeText(metadata.ruleSemanticId, 512) &&
+    isBoundedRuntimeText(metadata.ruleRevision, 512) &&
+    isBoundedRuntimeText(metadata.location, 1024) &&
+    isCommaSeparatedIdentifiers(metadata.cweIds) &&
+    isCommaSeparatedIdentifiers(metadata.cveIds) &&
+    [
+      "SAST",
+      "DEPENDENCY_VULNERABILITY",
+      "SECRET_DETECTION",
+      "IAC_MISCONFIGURATION"
+    ].includes(String(metadata.capability)) &&
+    evidence.findingIds.length === 1 &&
+    evidence.findingIds[0] === metadata.normalizedFindingId &&
+    evidence.scannerNames.length === 1 &&
+    evidence.scannerNames[0] === metadata.scanner &&
+    evidence.snippets.length === 0 &&
+    typeof evidence.summary === "string" &&
+    evidence.summary.length > 0 &&
+    evidence.summary.length <= 1024 &&
+    (metadata.scanner === "OPENGREP" || metadata.scanner === "TRIVY") &&
+    ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"].includes(String(metadata.severity)) &&
+    ["HIGH", "MEDIUM", "LOW", "UNKNOWN"].includes(String(metadata.confidence)) &&
+    Number.isInteger(metadata.fragmentCount) &&
+    Number(metadata.fragmentCount) >= 1 &&
+    Number(metadata.fragmentCount) <= 5 &&
+    metadata.retrievalAllowed === false &&
+    metadata.toolsAllowed === false &&
+    metadata.policyAuthority === false &&
+    metadata.publicationAuthority === false &&
+    metadata.lifecycleMutationAuthority === false &&
+    metadata.scmWriteAuthority === false &&
+    metadata.advisoryOnly === true &&
+    request.requestedCapabilities.length === 2 &&
+    request.requestedCapabilities[0] === "detector" &&
+    request.requestedCapabilities[1] === "planner" &&
+    request.runtimePolicy.allowFallback === true &&
+    Number.isFinite(request.runtimePolicy.maxLatencyMs) &&
+    request.runtimePolicy.maxLatencyMs > 0 &&
+    request.runtimePolicy.maxLatencyMs <= 30_000 &&
+    Number.isFinite(createdAt) &&
+    Number.isFinite(expiresAt) &&
+    new Date(createdAt).toISOString() === request.createdAt &&
+    new Date(expiresAt).toISOString() === metadata.payloadExpiresAt &&
+    createdAt < expiresAt &&
+    Date.now() < expiresAt &&
+    expiresAt - createdAt <= 24 * 60 * 60 * 1000
+  );
+}
+
+function isBoundedRuntimeText(
+  value: unknown,
+  maximumLength: number
+): value is string {
+  return typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= maximumLength &&
+    value.trim() === value &&
+    !hasAsciiControl(value);
+}
+
+function hasAsciiControl(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) return true;
+  }
+  return false;
+}
+
+function isCommaSeparatedIdentifiers(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  if (value === "") return true;
+  const identifiers = value.split(",");
+  return identifiers.length <= 32 &&
+    identifiers.every((identifier) =>
+      /^[A-Z0-9][A-Z0-9._:-]{0,127}$/u.test(identifier)
+    ) &&
+    new Set(identifiers).size === identifiers.length &&
+    identifiers.every((identifier, index) =>
+      index === 0 || String(identifiers[index - 1]) < identifier
+    );
+}
+
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[]
+): boolean {
+  const actual = Object.keys(value).sort();
+  const ordered = [...expected].sort();
+  return actual.length === ordered.length &&
+    actual.every((key, index) => key === ordered[index]);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function hasForbiddenEvidenceKey(input: unknown): boolean {

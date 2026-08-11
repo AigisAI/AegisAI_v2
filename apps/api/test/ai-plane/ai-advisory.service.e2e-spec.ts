@@ -1,247 +1,301 @@
-import { AiAdvisoryService } from "../../src/ai-plane/ai-advisory.service";
+import type {
+  AiAdvisoryResult,
+  AiInferenceResponse,
+  SastAiAdvisoryHandoff
+} from '@aegisai/shared';
 
-import type { AiAdvisoryRequest, AiInferenceResponse } from "../../../../packages/shared/src";
+import { AiAdvisoryService } from '../../src/ai-plane/ai-advisory.service';
+import {
+  aiAdvisoryIntent,
+  aiNormalizedFinding,
+  allowedAiAccess
+} from '../support/sast-ai-advisory-fixture';
 
-describe("AiAdvisoryService", () => {
-  const request: AiAdvisoryRequest = {
-    tenantId: "tenant_ai",
-    scanRequestId: "scan_request_1",
-    findingId: "finding_1",
-    normalizedFinding: {
-      id: "finding_1",
-      tenantId: "tenant_ai",
-      scanRequestId: "scan_request_1",
-      scannerRunId: "scanner_run_1",
-      title: "Unsafe deserialization",
-      severity: "HIGH",
-      scannerProvenance: "OPENGREP",
-      filePath: "src/App.java",
-      lineStart: 42,
-      status: "OPEN"
-    },
-    evidence: {
-      id: "evidence_1",
-      tenantId: "tenant_ai",
-      scanRequestId: "scan_request_1",
-      classification: "SHORT_LIVED_EVIDENCE",
-      objectKey: "tenant_ai/scan_request_1/evidence/evidence_1.json",
-      expiresAt: "2026-04-19T00:00:00.000Z",
-      byteSize: 512,
-      redacted: true
-    },
-    modelVersion: "detector-planner-mock-v1"
-  };
+describe('AiAdvisoryService T043 handoff', () => {
+  it('derives an advisory from durable scope and never accepts caller payloads', async () => {
+    const access = allowedAiAccess();
+    const evidenceAccess = {
+      classifyForAi: jest.fn().mockResolvedValue(access)
+    };
+    const store = memoryStore(access.decision);
+    const runtime = { createAdvisory: jest.fn() };
+    const service = new AiAdvisoryService(
+      config(false),
+      runtime as never,
+      evidenceAccess as never,
+      store as never
+    );
 
-  it("creates advisory-only detector planner output from normalized findings and redacted evidence", async () => {
-    const service = new AiAdvisoryService({
-      get: jest.fn().mockReturnValue("false")
-    } as never);
+    const advisory = await service.createAdvisory(
+      aiAdvisoryIntent(),
+      clock()
+    );
 
-    const advisory = await service.createAdvisory(request);
-
+    expect(evidenceAccess.classifyForAi).toHaveBeenCalledTimes(2);
+    expect(evidenceAccess.classifyForAi).toHaveBeenNthCalledWith(
+      1,
+      {
+        tenantId: 'tenant-ai',
+        repositoryBindingId: 'repository-ai',
+        evidencePackId: aiAdvisoryIntent().evidencePackId
+      },
+      expect.any(Function)
+    );
+    expect(store.loadNormalizedFinding).toHaveBeenCalledWith(
+      access.decision
+    );
+    expect(store.persistHandoff).toHaveBeenCalledWith(
+      expect.objectContaining({
+        version: 'sast-ai-advisory-handoff-v1',
+        tenantId: 'tenant-ai',
+        evidencePackId: aiAdvisoryIntent().evidencePackId,
+        authority: expect.objectContaining({
+          aiProviderCallAllowed: true,
+          retrievalAllowed: false,
+          toolsAllowed: false,
+          policyAuthority: false,
+          lifecycleMutationAuthority: false,
+          scmWriteAuthority: false
+        }),
+        audit: expect.objectContaining({
+          callerFindingAccepted: false,
+          callerEvidenceAccepted: false,
+          requestPayloadStored: false
+        })
+      })
+    );
+    expect(runtime.createAdvisory).not.toHaveBeenCalled();
     expect(advisory).toEqual(
       expect.objectContaining({
-        tenantId: "tenant_ai",
-        scanRequestId: "scan_request_1",
-        findingId: "finding_1",
-        modelVersion: "detector-planner-mock-v1",
+        id: expect.stringMatching(/^sast-ai-advisory:\/\//u),
+        sastHandoffId: expect.stringMatching(
+          /^sast-ai-handoff:\/\//u
+        ),
+        tenantId: 'tenant-ai',
+        scanRequestId: 'scan-ai',
+        findingId: 'normalized-finding-ai',
         advisoryOnly: true,
         redactedEvidenceOnly: true,
-        confidence: expect.any(Number)
+        detectorSignals: expect.arrayContaining([
+          'T043_REDUCED_REFERENCE_ONLY'
+        ])
       })
     );
-    expect(advisory.detectorSignals).toEqual(expect.arrayContaining(["SCANNER_CONFIRMED"]));
-    expect(advisory.plannerSteps).toEqual(expect.arrayContaining(["Review scanner evidence before remediation."]));
-    expect(JSON.stringify(advisory)).not.toMatch(
-      /enforcementAction|blockRequested|policyOverride|findingOverride|accessToken|refreshToken|tokenValue|secretValue|fullRepository|sourceArchive|rawScannerPayload/i
-    );
+    expect(JSON.stringify({ advisory, calls: store.persistHandoff.mock.calls }))
+      .not.toMatch(
+        /sourceArchive|fullRepository|rawScannerPayload|redactedContent|policyOverride|findingOverride|"secretValue"\s*:/i
+      );
   });
 
-  it("rejects unredacted evidence and forbidden repository or credential payloads", async () => {
-    const service = new AiAdvisoryService({
-      get: jest.fn().mockReturnValue("false")
-    } as never);
+  it('rejects the legacy caller-supplied finding and evidence shape before access', async () => {
+    const evidenceAccess = { classifyForAi: jest.fn() };
+    const access = allowedAiAccess();
+    const store = memoryStore(access.decision);
+    const service = new AiAdvisoryService(
+      config(false),
+      { createAdvisory: jest.fn() } as never,
+      evidenceAccess as never,
+      store as never
+    );
 
     await expect(
       service.createAdvisory({
-        ...request,
-        evidence: {
-          ...request.evidence,
-          redacted: false
-        }
-      })
-    ).rejects.toThrow("AI advisory input must use redacted evidence.");
-
-    await expect(
-      service.createAdvisory({
-        ...request,
-        normalizedFinding: {
-          ...request.normalizedFinding,
-          title: "fullRepository payload was supplied"
-        }
-      })
-    ).rejects.toThrow("AI advisory input contains forbidden sensitive content.");
+        ...aiAdvisoryIntent(),
+        normalizedFinding: { title: 'caller supplied' },
+        evidence: { redacted: true }
+      } as never)
+    ).rejects.toThrow(
+      'AI advisory intent must contain only durable scope identifiers.'
+    );
+    expect(evidenceAccess.classifyForAi).not.toHaveBeenCalled();
+    expect(store.persistHandoff).not.toHaveBeenCalled();
   });
 
-  it("uses runtime detector planner output when internal AI runtime is enabled", async () => {
+  it('fails closed on durable finding drift or a changed final access decision', async () => {
+    const access = allowedAiAccess();
+    const denied = {
+      outcome: 'DENIED' as const,
+      reasonCode: 'EVIDENCE_ACCESS_DELETION_PENDING' as const,
+      decision: access.decision,
+      replayed: false,
+      dashboardEvidence: null,
+      reducedEvidenceReference: null
+    };
+    const evidenceAccess = {
+      classifyForAi: jest
+        .fn()
+        .mockResolvedValueOnce(access)
+        .mockResolvedValueOnce(denied)
+    };
+    const store = memoryStore(access.decision);
+    const service = new AiAdvisoryService(
+      config(false),
+      { createAdvisory: jest.fn() } as never,
+      evidenceAccess as never,
+      store as never
+    );
+
+    await expect(
+      service.createAdvisory(aiAdvisoryIntent(), clock())
+    ).rejects.toThrow('AI advisory source is unavailable.');
+    expect(store.persistHandoff).not.toHaveBeenCalled();
+
+    const missingStore = memoryStore(access.decision);
+    missingStore.loadNormalizedFinding.mockResolvedValueOnce(null);
+    const missingService = new AiAdvisoryService(
+      config(false),
+      { createAdvisory: jest.fn() } as never,
+      { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
+      missingStore as never
+    );
+    await expect(
+      missingService.createAdvisory(aiAdvisoryIntent(), clock())
+    ).rejects.toThrow('AI advisory source is unavailable.');
+    expect(missingStore.persistHandoff).not.toHaveBeenCalled();
+  });
+
+  it('fails closed on handoff or result persistence conflicts', async () => {
+    const access = allowedAiAccess();
+    const runtime = { createAdvisory: jest.fn() };
+    const handoffStore = memoryStore(access.decision);
+    handoffStore.persistHandoff.mockRejectedValueOnce(
+      new Error('handoff conflict')
+    );
+    const handoffService = new AiAdvisoryService(
+      config(false),
+      runtime as never,
+      { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
+      handoffStore as never
+    );
+
+    await expect(
+      handoffService.createAdvisory(aiAdvisoryIntent(), clock())
+    ).rejects.toThrow('AI advisory source is unavailable.');
+    expect(runtime.createAdvisory).not.toHaveBeenCalled();
+
+    const resultStore = memoryStore(access.decision);
+    resultStore.persistAdvisory.mockRejectedValueOnce(
+      new Error('result conflict')
+    );
+    const resultService = new AiAdvisoryService(
+      config(false),
+      runtime as never,
+      { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
+      resultStore as never
+    );
+    await expect(
+      resultService.createAdvisory(aiAdvisoryIntent(), clock())
+    ).rejects.toThrow('AI advisory source is unavailable.');
+  });
+
+  it('sends only the canonical handoff to the internal runtime and replays stored results', async () => {
+    const access = allowedAiAccess();
     const runtimeResponse: AiInferenceResponse = {
-      requestId: "ai_request_1",
-      tenantId: "tenant_ai",
-      scanRequestId: "scan_request_1",
+      requestId: 'ignored-by-service-mock',
+      tenantId: 'tenant-ai',
+      scanRequestId: 'scan-ai',
       advisoryOnly: true,
       detectorAdvisories: [
         {
-          findingId: "finding_1",
+          findingId: 'normalized-finding-ai',
           confidence: 0.83,
-          rationale: "Runtime detector advisory.",
-          signals: ["SCANNER_CONFIRMED", "MODEL_TRIAGED"]
+          rationale: 'Runtime detector advisory.',
+          signals: ['SCANNER_CONFIRMED', 'MODEL_TRIAGED']
         }
       ],
       plannerAdvisories: [
         {
-          findingId: "finding_1",
-          action: "Review scanner evidence before remediation.",
-          rationale: "Runtime planner advisory.",
-          priority: "high"
+          findingId: 'normalized-finding-ai',
+          action: 'Review normalized evidence.',
+          rationale: 'Runtime planner advisory.',
+          priority: 'high'
         }
       ],
       modelMetadata: {
-        provider: "deterministic",
-        model: "detector-planner-runtime",
-        version: "2026-05-26"
+        provider: 'deterministic',
+        model: 'detector-planner-runtime',
+        version: '2026-08-11'
       },
-      fallback: {
-        used: true,
-        reason: "provider not configured"
-      },
+      fallback: { used: true, reason: 'provider not configured' },
       latencyMs: 11,
-      createdAt: "2026-05-26T00:00:00.000Z"
+      createdAt: '2026-08-11T04:00:00.450Z'
     };
     const runtime = {
       createAdvisory: jest.fn().mockResolvedValue(runtimeResponse)
     };
+    const store = memoryStore(access.decision);
     const service = new AiAdvisoryService(
-      {
-        get: jest.fn((key: string) => (key === "USE_INTERNAL_AI" ? "true" : undefined))
-      } as never,
-      runtime as never
+      config(true),
+      runtime as never,
+      { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
+      store as never
     );
 
-    const advisory = await service.createAdvisory({
-      ...request,
-      modelVersion: "detector-planner-runtime-v1"
-    });
-
+    const advisory = await service.createAdvisory(
+      aiAdvisoryIntent(),
+      clock()
+    );
     expect(runtime.createAdvisory).toHaveBeenCalledWith(
       expect.objectContaining({
-        tenantId: "tenant_ai",
-        findingId: "finding_1",
-        evidence: expect.objectContaining({
-          redacted: true
+        normalizedFinding: expect.objectContaining({
+          normalizedFindingId: 'normalized-finding-ai'
+        }),
+        reducedEvidenceReference: expect.objectContaining({
+          retrievalAllowed: false,
+          toolsAllowed: false
         })
       })
     );
-    expect(advisory).toEqual(
-      expect.objectContaining({
-        modelVersion: "2026-05-26",
-        detectorSignals: ["SCANNER_CONFIRMED", "MODEL_TRIAGED"],
-        plannerSteps: ["Review scanner evidence before remediation."],
-        confidence: 0.83,
-        advisoryOnly: true,
-        redactedEvidenceOnly: true,
-        detectorAdvisories: runtimeResponse.detectorAdvisories,
-        plannerAdvisories: runtimeResponse.plannerAdvisories,
-        modelMetadata: runtimeResponse.modelMetadata,
-        fallback: runtimeResponse.fallback
-      })
-    );
-    expect(JSON.stringify(advisory)).not.toMatch(
-      /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/i
-    );
-  });
+    expect(advisory.modelVersion).toBe('2026-08-11');
+    expect(advisory.detectorSignals).toEqual([
+      'SCANNER_CONFIRMED',
+      'MODEL_TRIAGED'
+    ]);
 
-  it("persists advisory metadata without granting finding or policy authority", async () => {
-    const createdAt = new Date("2026-05-26T00:00:00.000Z");
-    const prisma = {
-      aiAdvisoryMetadata: {
-        create: jest.fn(async ({ data }) => ({
-          ...data,
-          createdAt,
-          updatedAt: createdAt
-        })),
-        findFirst: jest.fn(async ({ where }) => ({
-          id: where.id,
-          tenantId: where.tenantId,
-          scanRequestId: "scan_request_1",
-          findingId: "finding_1",
-          modelVersion: "detector-planner-mock-v1",
-          advisoryOnly: true,
-          redactedEvidenceOnly: true,
-          detectorSignals: ["SCANNER_CONFIRMED", "SEVERITY_HIGH", "PROVENANCE_OPENGREP"],
-          plannerSteps: [
-            "Review scanner evidence before remediation.",
-            "Prioritize owner review before merging affected changes.",
-            "Apply remediation outside the AI advisory boundary."
-          ],
-          confidence: 0.74,
-          detectorAdvisories: null,
-          plannerAdvisories: null,
-          modelMetadata: null,
-          fallback: null,
-          createdAt,
-          updatedAt: createdAt
-        }))
-      }
-    };
-    const service = new AiAdvisoryService(
-      {
-        get: jest.fn().mockReturnValue("false")
-      } as never,
-      undefined,
-      prisma as never
+    store.loadAdvisory.mockResolvedValueOnce(advisory);
+    runtime.createAdvisory.mockClear();
+    const replayed = await service.createAdvisory(
+      aiAdvisoryIntent(),
+      clock()
     );
-
-    const advisory = await service.createAdvisory(request);
-
-    expect(advisory.id).not.toBe("ai_advisory_1");
-    expect(advisory.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    expect(prisma.aiAdvisoryMetadata.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        id: advisory.id,
-        tenantId: "tenant_ai",
-        scanRequestId: "scan_request_1",
-        findingId: "finding_1",
-        modelVersion: "detector-planner-mock-v1",
-        advisoryOnly: true,
-        redactedEvidenceOnly: true,
-        confidence: 0.74
-      })
-    });
-    expect(JSON.stringify(prisma.aiAdvisoryMetadata.create.mock.calls)).not.toMatch(
-      /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/i
-    );
-
-    const stored = await service.getAdvisory("tenant_ai", advisory.id);
-
-    expect(prisma.aiAdvisoryMetadata.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: advisory.id,
-        tenantId: "tenant_ai"
-      }
-    });
-    expect(stored).toEqual(
-      expect.objectContaining({
-        id: advisory.id,
-        tenantId: "tenant_ai",
-        scanRequestId: "scan_request_1",
-        findingId: "finding_1",
-        advisoryOnly: true,
-        redactedEvidenceOnly: true,
-        detectorSignals: ["SCANNER_CONFIRMED", "SEVERITY_HIGH", "PROVENANCE_OPENGREP"]
-      })
-    );
-    expect(JSON.stringify(stored)).not.toMatch(
-      /enforcementAction|blockRequested|policyOverride|findingOverride|waiverApplied|staleSuppressed/i
-    );
+    expect(replayed).toEqual(advisory);
+    expect(runtime.createAdvisory).not.toHaveBeenCalled();
   });
 });
+
+function memoryStore(decision: ReturnType<typeof allowedAiAccess>['decision']) {
+  let persisted: SastAiAdvisoryHandoff | null = null;
+  return {
+    loadNormalizedFinding: jest
+      .fn()
+      .mockResolvedValue(aiNormalizedFinding(decision)),
+    persistHandoff: jest.fn(async (handoff: SastAiAdvisoryHandoff) => {
+      const replayed = persisted !== null;
+      persisted = handoff;
+      return { handoff, replayed };
+    }),
+    loadAdvisory: jest.fn<Promise<AiAdvisoryResult | null>, [unknown]>()
+      .mockResolvedValue(null),
+    persistAdvisory: jest.fn(async ({ advisory }: { advisory: AiAdvisoryResult }) => advisory)
+  };
+}
+
+function config(enabled: boolean) {
+  return {
+    get: jest.fn((key: string) =>
+      key === 'USE_INTERNAL_AI' ? String(enabled) : undefined
+    )
+  } as never;
+}
+
+function clock() {
+  const values = [
+    '2026-08-11T04:00:00.100Z',
+    '2026-08-11T04:00:00.200Z',
+    '2026-08-11T04:00:00.300Z',
+    '2026-08-11T04:00:00.400Z',
+    '2026-08-11T04:00:00.500Z'
+  ];
+  let index = 0;
+  return () => values[Math.min(index++, values.length - 1)] as string;
+}

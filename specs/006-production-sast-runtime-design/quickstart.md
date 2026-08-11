@@ -507,6 +507,17 @@ portion of Phase 6:
   audit/proof ledgers remain durable. An original receipt from an exact deterministic retry
   succeeds when it remains deadline/observation/lease bounded; a changed receipt cannot mutate
   the result.
+- T043 accepts only exact advisory intent (`tenantId`, `repositoryBindingId`, `evidencePackId`,
+  and `modelVersion`). It classifies T042 AI access twice around a durable T037 occurrence,
+  source-finding, and normalized-finding rebind; any scope, digest, access, clock, or expiry drift
+  returns the same generic unavailable result.
+- `sast-ai-advisory-handoff-v1` derives deterministic request, handoff, and advisory identities
+  from the immutable T042 decision timestamp. Its ledger stores only scope references, digests,
+  expiry, model version, and fixed audit/authority bits. It stores no request/handoff JSON,
+  title/path, source, secret, fragment, prompt, or provider payload.
+- The internal AI runtime receives one normalized metadata projection and one opaque reduced
+  reference with `snippets=[]`. Retrieval, tools, policy, publication, lifecycle mutation, and
+  SCM write authority remain false; the legacy caller-supplied finding/evidence route is denied.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -519,8 +530,9 @@ T038 authority-aware cross-tool correlation, T039 fail-closed scanner/capability
 T040 stale-scan denial and bounded infrastructure-only retry, T041 bounded accepted-finding
 evidence with reconstruction-risk checks, and T042 purpose-bound dashboard/AI classification,
 second-pass secret redaction, seven-day expiry enforcement, and deletion proof are complete;
-T043 normalized-finding and reduced-evidence-reference delivery to the advisory AI Plane is
-therefore the next implementation task.
+T043 normalized-finding plus reduced-reference advisory handoff is also complete; T044 is the
+next implementation task and proves AI cannot create, suppress, waive, resolve, or override
+finding/policy authority.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

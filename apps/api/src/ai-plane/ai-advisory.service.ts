@@ -1,18 +1,26 @@
-import { BadRequestException, Injectable, NotFoundException, Optional } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
-
-import type {
-  AiAdvisoryRequest,
-  AiAdvisoryResult,
-  AiDetectorAdvisory,
-  AiInferenceFallback,
-  AiInferenceResponse,
-  AiModelMetadata,
-  AiPlannerAdvisory
+import {
+  buildSastAiAdvisoryHandoff,
+  isSastAiAdvisoryIntentShapeValid,
+  type AiAdvisoryResult,
+  type AiDetectorAdvisory,
+  type AiInferenceFallback,
+  type AiInferenceResponse,
+  type AiModelMetadata,
+  type AiPlannerAdvisory,
+  type SastAiAdvisoryHandoff,
+  type SastAiAdvisoryIntent
 } from '@aegisai/shared';
-import { ConfigService } from "../config/config.service";
-import { PrismaService } from "../prisma/prisma.service";
-import { AiAdvisoryRuntimeClient } from "./ai-advisory-runtime.client";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common';
+import { createHash } from 'node:crypto';
+
+import { ConfigService } from '../config/config.service';
+import { SastEvidenceAccessService } from '../scan-plane/sast-evidence-access.service';
+import { AiAdvisoryRuntimeClient } from './ai-advisory-runtime.client';
+import { SastAiAdvisoryStore } from './sast-ai-advisory.store';
 
 interface AiAdvisoryRuntimeProjection {
   detectorSignals: string[];
@@ -25,200 +33,225 @@ interface AiAdvisoryRuntimeProjection {
   fallback?: AiInferenceFallback;
 }
 
-interface AiAdvisoryMetadataRecord {
-  id: string;
-  tenantId: string;
-  scanRequestId: string;
-  findingId: string;
-  modelVersion: string;
-  advisoryOnly: boolean;
-  redactedEvidenceOnly: boolean;
-  detectorSignals: unknown;
-  plannerSteps: unknown;
-  confidence: number;
-  detectorAdvisories?: unknown;
-  plannerAdvisories?: unknown;
-  modelMetadata?: unknown;
-  fallback?: unknown;
-  createdAt: Date | string;
-}
-
-interface AiAdvisoryMetadataDelegate {
-  create(input: { data: Record<string, unknown> }): Promise<AiAdvisoryMetadataRecord>;
-  findFirst(input: { where: { id: string; tenantId: string } }): Promise<AiAdvisoryMetadataRecord | null>;
-}
-
-const FORBIDDEN_AI_INPUT_KEYS = [
-  "accessToken",
-  "refreshToken",
-  "tokenValue",
-  "secretValue",
-  "sourceArchive",
-  "fullRepository",
-  "rawScannerPayload",
-  "policyOverride",
-  "findingOverride"
-];
+type AdvisoryClock = () => string;
 
 @Injectable()
 export class AiAdvisoryService {
-  private readonly advisories: AiAdvisoryResult[] = [];
-  private advisorySequence = 0;
-
   constructor(
-    private readonly config?: ConfigService,
-    private readonly runtimeClient?: AiAdvisoryRuntimeClient,
-    @Optional() private readonly prisma?: PrismaService
+    private readonly config: ConfigService,
+    private readonly runtimeClient: AiAdvisoryRuntimeClient,
+    private readonly evidenceAccess: SastEvidenceAccessService,
+    private readonly store: SastAiAdvisoryStore
   ) {}
 
-  async createAdvisory(input: AiAdvisoryRequest): Promise<AiAdvisoryResult> {
-    this.assertReducedInput(input);
-    const runtimeOutput = await this.resolveRuntimeOutput(input);
-    const persistentStore = this.persistentStore();
-
-    const advisory: AiAdvisoryResult = {
-      id: persistentStore ? randomUUID() : `ai_advisory_${++this.advisorySequence}`,
-      tenantId: input.tenantId,
-      scanRequestId: input.scanRequestId,
-      findingId: input.findingId,
-      modelVersion: runtimeOutput.modelVersion,
-      advisoryOnly: true,
-      redactedEvidenceOnly: true,
-      detectorSignals: runtimeOutput.detectorSignals,
-      plannerSteps: runtimeOutput.plannerSteps,
-      confidence: runtimeOutput.confidence,
-      detectorAdvisories: runtimeOutput.detectorAdvisories,
-      plannerAdvisories: runtimeOutput.plannerAdvisories,
-      modelMetadata: runtimeOutput.modelMetadata,
-      fallback: runtimeOutput.fallback,
-      createdAt: new Date().toISOString()
-    };
-
-    if (persistentStore) {
-      return this.toAdvisoryResult(
-        await persistentStore.create({
-          data: {
-            id: advisory.id,
-            tenantId: advisory.tenantId,
-            scanRequestId: advisory.scanRequestId,
-            findingId: advisory.findingId,
-            modelVersion: advisory.modelVersion,
-            advisoryOnly: advisory.advisoryOnly,
-            redactedEvidenceOnly: advisory.redactedEvidenceOnly,
-            detectorSignals: advisory.detectorSignals,
-            plannerSteps: advisory.plannerSteps,
-            confidence: advisory.confidence,
-            detectorAdvisories: advisory.detectorAdvisories,
-            plannerAdvisories: advisory.plannerAdvisories,
-            modelMetadata: advisory.modelMetadata,
-            fallback: advisory.fallback
-          }
-        })
+  async createAdvisory(
+    input: SastAiAdvisoryIntent,
+    clock: AdvisoryClock = () => new Date().toISOString()
+  ): Promise<AiAdvisoryResult> {
+    if (!isSastAiAdvisoryIntentShapeValid(input)) {
+      throw new BadRequestException(
+        'AI advisory intent must contain only durable scope identifiers.'
       );
     }
 
-    this.advisories.push(advisory);
+    const startedAt = readClock(clock);
+    if (!startedAt) throw unavailable();
 
-    return advisory;
-  }
+    const scope = {
+      tenantId: input.tenantId,
+      repositoryBindingId: input.repositoryBindingId,
+      evidencePackId: input.evidencePackId
+    };
+    const firstAccess = await this.classify(scope, clock);
+    if (firstAccess.outcome !== 'ALLOWED') throw unavailable();
 
-  async getAdvisory(tenantId: string, advisoryId: string): Promise<AiAdvisoryResult> {
-    const persistentStore = this.persistentStore();
-    if (persistentStore) {
-      const advisory = await persistentStore.findFirst({
-        where: {
-          id: advisoryId,
-          tenantId
+    const normalizedFinding = await this.loadFinding(
+      firstAccess.decision
+    );
+    if (!normalizedFinding) throw unavailable();
+
+    const reboundAt = readClock(clock);
+    if (
+      !reboundAt ||
+      Date.parse(reboundAt) < Date.parse(startedAt)
+    ) {
+      throw unavailable();
+    }
+    const finalAccess = await this.classify(scope, clock);
+    if (
+      finalAccess.outcome !== 'ALLOWED' ||
+      !sameAccess(firstAccess, finalAccess) ||
+      finalAccess.reducedEvidenceReference === null
+    ) {
+      throw unavailable();
+    }
+    const reducedEvidenceReference =
+      finalAccess.reducedEvidenceReference;
+
+    const createdAt = readClock(clock);
+    if (
+      !createdAt ||
+      Date.parse(createdAt) < Date.parse(reboundAt) ||
+      Date.parse(createdAt) >=
+        Date.parse(reducedEvidenceReference.payloadExpiresAt)
+    ) {
+      throw unavailable();
+    }
+    const handoff = buildSastAiAdvisoryHandoff({
+      decision: finalAccess.decision,
+      reducedEvidenceReference,
+      normalizedFinding,
+      modelVersion: input.modelVersion,
+      createdAt,
+      digestCanonical: digest
+    });
+    if (!handoff) throw unavailable();
+
+    const { persisted, existing } =
+      await this.persistHandoffAndRead(handoff);
+    if (existing) return existing;
+
+    const invokedAt = readClock(clock);
+    if (
+      !invokedAt ||
+      Date.parse(invokedAt) < Date.parse(createdAt) ||
+      Date.parse(invokedAt) >= Date.parse(handoff.payloadExpiresAt)
+    ) {
+      throw unavailable();
+    }
+
+    const runtimeOutput = await this.resolveRuntimeOutput(
+      persisted.handoff
+    );
+    const completedAt = readClock(clock);
+    if (
+      !completedAt ||
+      Date.parse(completedAt) < Date.parse(invokedAt) ||
+      Date.parse(completedAt) >= Date.parse(handoff.payloadExpiresAt)
+    ) {
+      throw unavailable();
+    }
+
+    try {
+      return await this.store.persistAdvisory({
+        handoff: persisted.handoff,
+        advisory: {
+          id: handoff.advisoryId,
+          sastHandoffId: handoff.handoffId,
+          requestDigest: handoff.requestDigest,
+          tenantId: handoff.tenantId,
+          scanRequestId: handoff.scanRequestId,
+          findingId: handoff.normalizedFinding.normalizedFindingId,
+          modelVersion: runtimeOutput.modelVersion,
+          advisoryOnly: true,
+          redactedEvidenceOnly: true,
+          detectorSignals: runtimeOutput.detectorSignals,
+          plannerSteps: runtimeOutput.plannerSteps,
+          confidence: runtimeOutput.confidence,
+          detectorAdvisories: runtimeOutput.detectorAdvisories,
+          plannerAdvisories: runtimeOutput.plannerAdvisories,
+          modelMetadata: runtimeOutput.modelMetadata,
+          fallback: runtimeOutput.fallback,
+          createdAt: completedAt
         }
       });
-
-      if (advisory) {
-        return this.toAdvisoryResult(advisory);
-      }
+    } catch {
+      throw unavailable();
     }
+  }
 
-    const advisory = this.advisories.find(
-      (candidate) => candidate.id === advisoryId && candidate.tenantId === tenantId
-    );
-
+  async getAdvisory(
+    tenantId: string,
+    advisoryId: string
+  ): Promise<AiAdvisoryResult> {
+    const advisory = await this.store.loadAdvisory({
+      tenantId,
+      advisoryId
+    });
     if (!advisory) {
-      throw new NotFoundException("AI advisory was not found for tenant.");
+      throw new NotFoundException(
+        'AI advisory was not found for tenant.'
+      );
     }
-
     return advisory;
   }
 
-  private persistentStore(): AiAdvisoryMetadataDelegate | undefined {
-    const candidate = this.prisma as unknown as { aiAdvisoryMetadata?: AiAdvisoryMetadataDelegate } | undefined;
-
-    if (
-      candidate?.aiAdvisoryMetadata &&
-      typeof candidate.aiAdvisoryMetadata.create === "function" &&
-      typeof candidate.aiAdvisoryMetadata.findFirst === "function"
-    ) {
-      return candidate.aiAdvisoryMetadata;
+  private async classify(
+    scope: {
+      tenantId: string;
+      repositoryBindingId: string;
+      evidencePackId: string;
+    },
+    clock: AdvisoryClock
+  ) {
+    try {
+      return await this.evidenceAccess.classifyForAi(scope, clock);
+    } catch {
+      throw unavailable();
     }
-
-    return undefined;
   }
 
-  private toAdvisoryResult(record: AiAdvisoryMetadataRecord): AiAdvisoryResult {
+  private async loadFinding(
+    decision: Parameters<
+      SastAiAdvisoryStore['loadNormalizedFinding']
+    >[0]
+  ) {
+    try {
+      return await this.store.loadNormalizedFinding(decision);
+    } catch {
+      throw unavailable();
+    }
+  }
+
+  private async resolveRuntimeOutput(
+    handoff: Readonly<SastAiAdvisoryHandoff>
+  ): Promise<AiAdvisoryRuntimeProjection> {
+    if (this.config.get('USE_INTERNAL_AI') === 'true') {
+      return this.projectInferenceResponse(
+        await this.runtimeClient.createAdvisory(handoff)
+      );
+    }
+
     return {
-      id: record.id,
-      tenantId: record.tenantId,
-      scanRequestId: record.scanRequestId,
-      findingId: record.findingId,
-      modelVersion: record.modelVersion,
-      advisoryOnly: true,
-      redactedEvidenceOnly: true,
-      detectorSignals: toStringArray(record.detectorSignals),
-      plannerSteps: toStringArray(record.plannerSteps),
-      confidence: record.confidence,
-      detectorAdvisories: toDetectorAdvisories(record.detectorAdvisories),
-      plannerAdvisories: toPlannerAdvisories(record.plannerAdvisories),
-      modelMetadata: toModelMetadata(record.modelMetadata),
-      fallback: toFallback(record.fallback),
-      createdAt: record.createdAt instanceof Date ? record.createdAt.toISOString() : record.createdAt
+      detectorSignals: this.detectorSignalsFor(handoff),
+      plannerSteps: this.plannerStepsFor(handoff),
+      confidence: this.confidenceFor(handoff),
+      modelVersion: handoff.modelVersion
     };
   }
 
-  private assertReducedInput(input: AiAdvisoryRequest): void {
-    if (!input.evidence.redacted) {
-      throw new BadRequestException("AI advisory input must use redacted evidence.");
-    }
-
-    const serialized = JSON.stringify(input);
-
-    for (const forbiddenKey of FORBIDDEN_AI_INPUT_KEYS) {
-      if (new RegExp(forbiddenKey, "i").test(serialized)) {
-        throw new BadRequestException("AI advisory input contains forbidden sensitive content.");
-      }
+  private async persistHandoffAndRead(
+    handoff: Readonly<SastAiAdvisoryHandoff>
+  ) {
+    try {
+      const persisted = await this.store.persistHandoff(handoff);
+      const existing = await this.store.loadAdvisory({
+        tenantId: handoff.tenantId,
+        advisoryId: handoff.advisoryId
+      });
+      return { persisted, existing };
+    } catch {
+      throw unavailable();
     }
   }
 
-  private async resolveRuntimeOutput(input: AiAdvisoryRequest): Promise<AiAdvisoryRuntimeProjection> {
-    if (this.config?.get("USE_INTERNAL_AI") === "true") {
-      if (!this.runtimeClient) {
-        throw new BadRequestException("AI advisory runtime client is not configured.");
-      }
-
-      return this.projectInferenceResponse(await this.runtimeClient.createAdvisory(input));
-    }
-
+  private projectInferenceResponse(
+    response: AiInferenceResponse
+  ): AiAdvisoryRuntimeProjection {
     return {
-      detectorSignals: this.detectorSignalsFor(input),
-      plannerSteps: this.plannerStepsFor(input),
-      confidence: this.confidenceFor(input),
-      modelVersion: input.modelVersion
-    };
-  }
-
-  private projectInferenceResponse(response: AiInferenceResponse): AiAdvisoryRuntimeProjection {
-    return {
-      detectorSignals: Array.from(new Set(response.detectorAdvisories.flatMap((advisory) => advisory.signals))),
-      plannerSteps: response.plannerAdvisories.map((advisory) => advisory.action),
+      detectorSignals: Array.from(
+        new Set(
+          response.detectorAdvisories.flatMap(
+            (advisory) => advisory.signals
+          )
+        )
+      ),
+      plannerSteps: response.plannerAdvisories.map(
+        (advisory) => advisory.action
+      ),
       confidence: response.detectorAdvisories.reduce(
-        (highestConfidence, advisory) => Math.max(highestConfidence, advisory.confidence),
+        (highest, advisory) =>
+          Math.max(highest, advisory.confidence),
         0
       ),
       modelVersion: response.modelMetadata.version,
@@ -229,125 +262,86 @@ export class AiAdvisoryService {
     };
   }
 
-  private detectorSignalsFor(input: AiAdvisoryRequest): string[] {
+  private detectorSignalsFor(
+    handoff: Readonly<SastAiAdvisoryHandoff>
+  ): string[] {
     return [
-      "SCANNER_CONFIRMED",
-      `SEVERITY_${input.normalizedFinding.severity}`,
-      `PROVENANCE_${input.normalizedFinding.scannerProvenance}`
+      'SCANNER_CONFIRMED',
+      `SEVERITY_${handoff.normalizedFinding.severity}`,
+      `PROVENANCE_${handoff.normalizedFinding.scanner}`,
+      'T043_REDUCED_REFERENCE_ONLY'
     ];
   }
 
-  private plannerStepsFor(input: AiAdvisoryRequest): string[] {
-    const steps = ["Review scanner evidence before remediation."];
-
-    if (input.normalizedFinding.severity === "CRITICAL" || input.normalizedFinding.severity === "HIGH") {
-      steps.push("Prioritize owner review before merging affected changes.");
+  private plannerStepsFor(
+    handoff: Readonly<SastAiAdvisoryHandoff>
+  ): string[] {
+    const steps = [
+      'Review normalized scanner evidence before remediation.'
+    ];
+    if (
+      handoff.normalizedFinding.severity === 'CRITICAL' ||
+      handoff.normalizedFinding.severity === 'HIGH'
+    ) {
+      steps.push(
+        'Prioritize owner review before merging affected changes.'
+      );
     }
-
-    steps.push("Apply remediation outside the AI advisory boundary.");
-
+    steps.push(
+      'Keep remediation, policy, and merge decisions outside the AI Plane.'
+    );
     return steps;
   }
 
-  private confidenceFor(input: AiAdvisoryRequest): number {
-    if (input.normalizedFinding.severity === "CRITICAL") {
-      return 0.82;
-    }
-
-    if (input.normalizedFinding.severity === "HIGH") {
-      return 0.74;
-    }
-
+  private confidenceFor(
+    handoff: Readonly<SastAiAdvisoryHandoff>
+  ): number {
+    if (handoff.normalizedFinding.severity === 'CRITICAL') return 0.82;
+    if (handoff.normalizedFinding.severity === 'HIGH') return 0.74;
     return 0.61;
   }
 }
 
-function toStringArray(input: unknown): string[] {
-  return Array.isArray(input) ? input.filter((item): item is string => typeof item === "string") : [];
-}
-
-function toDetectorAdvisories(input: unknown): AiDetectorAdvisory[] | undefined {
-  if (!Array.isArray(input)) {
-    return undefined;
-  }
-
-  return input.filter(isDetectorAdvisory);
-}
-
-function toPlannerAdvisories(input: unknown): AiPlannerAdvisory[] | undefined {
-  if (!Array.isArray(input)) {
-    return undefined;
-  }
-
-  return input.filter(isPlannerAdvisory);
-}
-
-function toModelMetadata(input: unknown): AiModelMetadata | undefined {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return undefined;
-  }
-
-  const candidate = input as Record<string, unknown>;
-
-  if (
-    typeof candidate.provider === "string" &&
-    typeof candidate.model === "string" &&
-    typeof candidate.version === "string"
-  ) {
-    return {
-      provider: candidate.provider,
-      model: candidate.model,
-      version: candidate.version
-    };
-  }
-
-  return undefined;
-}
-
-function toFallback(input: unknown): AiInferenceFallback | undefined {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return undefined;
-  }
-
-  const candidate = input as Record<string, unknown>;
-
-  if (typeof candidate.used !== "boolean") {
-    return undefined;
-  }
-
-  return {
-    used: candidate.used,
-    reason: typeof candidate.reason === "string" ? candidate.reason : undefined
-  };
-}
-
-function isDetectorAdvisory(input: unknown): input is AiDetectorAdvisory {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return false;
-  }
-
-  const candidate = input as Record<string, unknown>;
-
+function sameAccess(
+  left: Awaited<
+    ReturnType<SastEvidenceAccessService['classifyForAi']>
+  > & { outcome: 'ALLOWED' },
+  right: Awaited<
+    ReturnType<SastEvidenceAccessService['classifyForAi']>
+  > & { outcome: 'ALLOWED' }
+): boolean {
   return (
-    typeof candidate.findingId === "string" &&
-    typeof candidate.confidence === "number" &&
-    typeof candidate.rationale === "string" &&
-    Array.isArray(candidate.signals) &&
-    candidate.signals.every((signal) => typeof signal === "string")
+    left.decision.accessDecisionId ===
+      right.decision.accessDecisionId &&
+    left.decision.decisionDigest ===
+      right.decision.decisionDigest &&
+    left.reducedEvidenceReference?.reducedEvidenceRef ===
+      right.reducedEvidenceReference?.reducedEvidenceRef &&
+    left.reducedEvidenceReference?.redactedProjectionDigest ===
+      right.reducedEvidenceReference?.redactedProjectionDigest &&
+    left.reducedEvidenceReference?.payloadExpiresAt ===
+      right.reducedEvidenceReference?.payloadExpiresAt &&
+    right.reducedEvidenceReference !== null
   );
 }
 
-function isPlannerAdvisory(input: unknown): input is AiPlannerAdvisory {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return false;
+function readClock(clock: AdvisoryClock): string | null {
+  try {
+    const value = clock();
+    return typeof value === 'string' &&
+      Number.isFinite(Date.parse(value)) &&
+      new Date(value).toISOString() === value
+      ? value
+      : null;
+  } catch {
+    return null;
   }
+}
 
-  const candidate = input as Record<string, unknown>;
+function unavailable(): NotFoundException {
+  return new NotFoundException('AI advisory source is unavailable.');
+}
 
-  return (
-    (candidate.findingId === undefined || typeof candidate.findingId === "string") &&
-    typeof candidate.action === "string" &&
-    typeof candidate.rationale === "string" &&
-    (candidate.priority === "low" || candidate.priority === "medium" || candidate.priority === "high")
-  );
+function digest(value: string): `sha256:${string}` {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }

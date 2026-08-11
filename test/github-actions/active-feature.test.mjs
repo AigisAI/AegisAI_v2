@@ -47,6 +47,7 @@ const files = {
   sharedSastAcceptedEvidenceTest: new URL('../../packages/shared/test/sast-accepted-evidence.test.mjs', import.meta.url),
   sharedSastEvidenceAccess: new URL('../../packages/shared/src/types/sast-evidence-access.ts', import.meta.url),
   sharedSastEvidenceAccessTest: new URL('../../packages/shared/test/sast-evidence-access.test.mjs', import.meta.url),
+  sharedSastAiAdvisoryHandoff: new URL('../../packages/shared/src/types/sast-ai-advisory-handoff.ts', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -100,6 +101,15 @@ const files = {
   apiDashboardEvidenceController: new URL('../../apps/api/src/dashboard/dashboard-evidence.controller.ts', import.meta.url),
   apiSastEvidenceAccessTest: new URL('../../apps/api/test/scan-plane/sast-evidence-access.e2e-spec.ts', import.meta.url),
   apiSastEvidenceAccessPersistenceTest: new URL('../../apps/api/test/scan-plane/sast-evidence-access-persistence.e2e-spec.ts', import.meta.url),
+  apiAiAdvisoryService: new URL('../../apps/api/src/ai-plane/ai-advisory.service.ts', import.meta.url),
+  apiAiAdvisoryStore: new URL('../../apps/api/src/ai-plane/prisma-sast-ai-advisory.store.ts', import.meta.url),
+  apiAiAdvisoryRuntime: new URL('../../apps/api/src/ai-plane/ai-advisory-runtime.client.ts', import.meta.url),
+  apiAiAdvisoryController: new URL('../../apps/api/src/ai-plane/ai-advisory.controller.ts', import.meta.url),
+  apiAiAdvisoryModule: new URL('../../apps/api/src/ai-plane/ai-plane.module.ts', import.meta.url),
+  apiAiAdvisoryServiceTest: new URL('../../apps/api/test/ai-plane/ai-advisory.service.e2e-spec.ts', import.meta.url),
+  apiAiAdvisoryPersistenceTest: new URL('../../apps/api/test/ai-plane/sast-ai-advisory-persistence.e2e-spec.ts', import.meta.url),
+  aiAdvisoryRuntime: new URL('../../apps/ai/src/advisory-runtime.ts', import.meta.url),
+  aiModelGateway: new URL('../../apps/ai/src/model-gateway.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
   apiOnlineSastRuntimeSchema: new URL('../../apps/api/scripts/apply-online-sast-runtime-schema.mjs', import.meta.url),
   apiSastFindingLineageMigration: new URL('../../apps/api/prisma/migrations/20260730160000_sast_finding_lineage_lifecycle/migration.sql', import.meta.url),
@@ -108,6 +118,7 @@ const files = {
   apiSastScanFreshnessMigration: new URL('../../apps/api/prisma/migrations/20260810030000_sast_scan_freshness_retry/migration.sql', import.meta.url),
   apiSastAcceptedEvidenceMigration: new URL('../../apps/api/prisma/migrations/20260810043000_sast_accepted_evidence/migration.sql', import.meta.url),
   apiSastEvidenceAccessMigration: new URL('../../apps/api/prisma/migrations/20260810070000_sast_evidence_access_deletion/migration.sql', import.meta.url),
+  apiSastAiAdvisoryMigration: new URL('../../apps/api/prisma/migrations/20260811040000_sast_ai_advisory_handoff/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -1409,7 +1420,7 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
   assert.match(dataModel, /SastAcceptedEvidencePack/);
   assert.match(
     plan,
-    /T040, T041, and T042 independently and now proceeds to T043/
+    /T040, T041, T042, and T043 independently and now proceeds to T044/
   );
   assert.match(spec, /FR-046a/);
   assert.match(
@@ -1598,6 +1609,123 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   );
   assert.match(threatModel, /False deletion proof/);
   assert.match(qualityGates, /100% T042 deletion-proof invariant/);
+});
+
+test('SAST T043 sends only a durable normalized finding and opaque AI reference', () => {
+  const shared = readNormalizedText(
+    files.sharedSastAiAdvisoryHandoff
+  );
+  const sharedTest = readNormalizedText(
+    files.sharedSastEvidenceAccessTest
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiAiAdvisoryService);
+  const store = readNormalizedText(files.apiAiAdvisoryStore);
+  const runtime = readNormalizedText(files.apiAiAdvisoryRuntime);
+  const controller = readNormalizedText(
+    files.apiAiAdvisoryController
+  );
+  const aiModule = readNormalizedText(files.apiAiAdvisoryModule);
+  const serviceTest = readNormalizedText(
+    files.apiAiAdvisoryServiceTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiAiAdvisoryPersistenceTest
+  );
+  const aiRuntime = readNormalizedText(files.aiAdvisoryRuntime);
+  const modelGateway = readNormalizedText(files.aiModelGateway);
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(
+    files.apiSastAiAdvisoryMigration
+  );
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const plan = readNormalizedText(files.plan);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(shared, /sast-ai-advisory-handoff-v1/);
+  assert.match(shared, /isSastAiAdvisoryIntentShapeValid/);
+  assert.match(shared, /createdAt: input\.decision\.decidedAt/);
+  assert.match(sharedIndex, /sast-ai-advisory-handoff/);
+  assert.match(
+    sharedTest,
+    /T043 retries are deterministic and reject caller fields or authority widening/
+  );
+
+  assert.match(service, /isSastAiAdvisoryIntentShapeValid/);
+  assert.equal(
+    service.match(/this\.classify\(scope, clock\)/gu)?.length,
+    2
+  );
+  assert.match(store, /isSastEvidenceAccessDecisionShapeValid/);
+  assert.match(
+    store,
+    /isSastSecretRedactedFindingCandidateShapeValid/
+  );
+  assert.match(
+    store,
+    /Prisma\.TransactionIsolationLevel\.Serializable/
+  );
+  assert.doesNotMatch(
+    store,
+    /handoff:\s*handoff as unknown as Prisma\.InputJsonValue/u
+  );
+  assert.match(runtime, /snippets: \[\]/);
+  assert.match(runtime, /retrievalAllowed: false/);
+  assert.match(runtime, /toolsAllowed: false/);
+  assert.doesNotMatch(runtime, /redactedContent/);
+  assert.match(controller, /SastAiAdvisoryIntent/);
+  assert.match(aiModule, /ScanPlaneModule/);
+  assert.match(
+    serviceTest,
+    /never accepts caller payloads/
+  );
+  assert.match(
+    persistenceTest,
+    /immutable reference-only handoff ledger/
+  );
+  assert.match(
+    aiRuntime,
+    /requires a T043 reduced-reference handoff/
+  );
+  assert.match(modelGateway, /T043_METADATA_KEYS/);
+  assert.match(modelGateway, /evidence\.snippets\.length === 0/);
+
+  assert.match(schema, /model SastAiAdvisoryHandoff \{/);
+  assert.match(migration, /CREATE TABLE "SastAiAdvisoryHandoff"/);
+  assert.match(
+    migration,
+    /SastAiAdvisoryHandoff_access_scope_fkey/
+  );
+  assert.match(
+    migration,
+    /SastAiAdvisoryHandoff_immutable_update/
+  );
+  assert.doesNotMatch(migration, /"handoff" JSONB/);
+
+  assert.match(tasks, /- \[x\] T043\b/);
+  assert.match(
+    quickstart,
+    /T043 normalized-finding plus reduced-reference advisory handoff is also complete;[\s\S]{0,80}T044 is the[\s\S]{0,80}next implementation task/
+  );
+  assert.match(contract, /Advisory AI handoff gate v1/);
+  assert.match(dataModel, /### SastAiAdvisoryHandoff/);
+  assert.match(
+    plan,
+    /T040, T041, T042, and T043 independently and now proceeds to T044/
+  );
+  assert.match(spec, /FR-051a/);
+  assert.match(
+    research,
+    /Decision 25: Derive an Expiring Reference-Only Advisory Handoff from Durable State/
+  );
+  assert.match(threatModel, /AI handoff forgery or payload smuggling/);
+  assert.match(qualityGates, /100% T043 reference-only invariant/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

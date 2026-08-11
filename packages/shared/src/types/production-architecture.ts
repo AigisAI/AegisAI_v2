@@ -419,6 +419,8 @@ export interface AiAdvisoryRequest {
 
 export interface AiAdvisoryResult {
   id: string;
+  sastHandoffId?: string;
+  requestDigest?: `sha256:${string}`;
   tenantId: string;
   scanRequestId: string;
   findingId: string;

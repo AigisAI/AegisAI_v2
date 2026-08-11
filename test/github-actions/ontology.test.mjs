@@ -82,7 +82,7 @@ test('active 006 spec explicitly reclassifies only the bounded issue 276 bootstr
   assert.match(plan, /Issue #276 is an explicitly reclassified adjacent bootstrap/);
   assert.match(
     plan,
-    /did not advance or satisfy T040[\s\S]*completed[\s\S]*T042[\s\S]*proceeds to T043/
+    /did not advance or satisfy T040[\s\S]*completed[\s\S]*T043[\s\S]*proceeds to T044/
   );
   assert.match(tasks, /Approved Adjacent Bootstrap \(Does Not Advance 006\)/);
   assert.match(tasks, /Keep T040 as the next formal active-milestone task/);
