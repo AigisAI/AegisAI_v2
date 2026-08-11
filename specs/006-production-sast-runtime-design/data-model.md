@@ -785,10 +785,34 @@ decisions cannot be inferred from a successful scan or accepted T041 pack.
   codes, counts, second-pass redaction reference, projection digest, and decision digest/time
 - dashboard-safe content is returned transiently after the persisted decision and second clock
   check; it is never stored in the decision, logs, or audit
-- AI decisions contain only a `sast-evidence-reduced://<sha256>` reference and an expiry no
+- AI decisions contain only a `sast-reduced-evidence://<sha256>` reference and an expiry no
   later than 24 hours or the pack expiry, whichever comes first; no AI payload is persisted
 - all policy, publication, lifecycle, SCM, provider-call, retrieval, and tool authority remains
   false; T041 `dashboardSafe`, `aiSafe`, and null reference fields are never updated
+
+### SastAiAdvisoryHandoff
+
+- deterministic `sast-ai-handoff://<sha256>`, `sast-ai-request://<sha256>`, and
+  `sast-ai-advisory://<sha256>` identities bind one model version to the exact T042 AI access
+  decision, T037 occurrence, durable normalized finding, and reduced-evidence reference
+- tenant, repository, scan, attempt, occurrence, normalized-finding, scanner-run, evidence-pack,
+  fingerprint, access-decision, request, and handoff digests are enforced by composite foreign
+  keys and exact-replay-only serializable persistence
+- `payloadExpiresAt` is inherited from T042; the canonical creation timestamp is the immutable
+  access-decision timestamp so later valid retries reproduce byte-identical identities
+- the ledger stores no JSON handoff/request body, title, path, prompt, raw source, secret value,
+  evidence fragment, or redacted content. It retains only relationship references, digests,
+  model version, expiry, and explicit audit/authority booleans
+- normalized-finding, reduced-reference, payload, and provider-call handoff authority are true;
+  retrieval, tools, policy, publication, lifecycle mutation, and SCM write authority are false.
+  Caller finding/evidence/prompt acceptance and every content-storage audit bit are false
+- `AiAdvisoryMetadata.sastHandoffId` is nullable only for legacy rows and unique for T043 output;
+  new results must rebind to the exact handoff and request digest. Parent deletion is restricted
+  so the immutable audit chain cannot be silently cascaded away
+- normal tenant/repository offboarding retains this digest-only chain beneath a soft-revoked
+  tenant tombstone. Exceptional hard purge is an authorized, externally audited maintenance
+  flow that deletes advisory metadata before temporarily bypassing the immutable handoff fence;
+  ordinary application roles cannot perform that operation
 
 ### SastEvidenceDeletionSchedule
 

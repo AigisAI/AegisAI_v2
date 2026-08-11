@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 
-import type { AiAdvisoryRequest } from '@aegisai/shared';
+import type { SastAiAdvisoryIntent } from '@aegisai/shared';
 import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { InternalServiceGuard } from '../common/security/internal-service.guard';
@@ -12,7 +12,7 @@ export class AiAdvisoryController {
 
   @Post()
   @UseGuards(InternalServiceGuard)
-  create(@Body() body: AiAdvisoryRequest) {
+  create(@Body() body: SastAiAdvisoryIntent) {
     return this.aiAdvisoryService.createAdvisory(body);
   }
 

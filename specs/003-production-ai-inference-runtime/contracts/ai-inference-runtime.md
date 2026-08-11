@@ -26,6 +26,7 @@ export interface AiInferenceRequest {
   scanRequestId: string;
   canonicalScanKey: string;
   requestId: string;
+  modelVersion: string;
   reducedEvidence: ReducedEvidence;
   requestedCapabilities: Array<'detector' | 'planner'>;
   runtimePolicy: {

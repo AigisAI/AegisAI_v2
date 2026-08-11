@@ -318,6 +318,18 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   recovered after finalization failure create zero false proofs, duplicate rows, overdue
   content, or restored content. A context-drifted claim is fenced and quarantined after three
   validations and cannot starve a later due schedule.
+- 100% T043 source-binding invariant: every advisory handoff is derived from two matching T042
+  AI classifications around one exact durable T037 occurrence/source/normalized-finding rebind.
+  Caller finding, evidence, prompt, path, digest, expiry, unknown field, cross-scope identifier,
+  changed decision, clock rollback, or late access creates zero handoffs and provider calls.
+- 100% T043 reference-only invariant: the immutable ledger stores only scope relationships,
+  digests, model version, expiry, and fixed authority/audit bits. Stored request/handoff JSON,
+  source, secret, evidence fragment, prompt, retrieval payload, and redacted content equal zero.
+  Exact valid retries reproduce one request, handoff, advisory, and result row.
+- 100% T043 AI-boundary invariant: runtime requests contain one normalized metadata projection,
+  one opaque reduced-evidence reference, and zero snippets. Retrieval, tools, policy,
+  publication, lifecycle mutation, and SCM write authority are false in every request; legacy
+  direct finding/evidence requests, correlation drift, expiry, and authority widening are denied.
 
 ## Canary and Continuous Production Gates
 

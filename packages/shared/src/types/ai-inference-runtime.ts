@@ -47,6 +47,7 @@ export interface AiInferenceRequest {
   scanRequestId: string;
   canonicalScanKey: string;
   requestId: string;
+  modelVersion: string;
   reducedEvidence: ReducedEvidence;
   requestedCapabilities: AiInferenceCapability[];
   runtimePolicy: AiRuntimePolicy;

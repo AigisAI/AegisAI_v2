@@ -1209,7 +1209,7 @@ content enters the access ledger, logs, audit, or error response.
 An allowed dashboard decision returns only a second-pass-redacted projection after session
 tenant and repository binding authorization. A denied or cross-scope request uses a generic
 not-found response. An allowed AI decision returns only a
-`sast-evidence-reduced://<sha256>` reference whose eligibility expires in at most 24 hours and
+`sast-reduced-evidence://<sha256>` reference whose eligibility expires in at most 24 hours and
 never later than pack expiry. T042 performs no AI provider request, stores no request payload,
 and grants no retrieval, tools, policy, publication, lifecycle, or SCM action. T041 safe flags
 and null classification/deletion fields remain unchanged.
@@ -1242,8 +1242,49 @@ lost. An exceptional authorized hard purge must revoke access, finish provider d
 live content, retain/export the required external audit record, delete the proof ledger first,
 and only then remove the tenant or another cascading parent.
 
-AI receives finding metadata and reduced evidence references only after a second redaction
-pass. AI never receives the result-ingress artifact reference.
+### Advisory AI handoff gate v1
+
+`sast-ai-advisory-handoff-v1` accepts only an exact intent containing `tenantId`,
+`repositoryBindingId`, `evidencePackId`, and `modelVersion`. It obtains a T042 `AI_ADVISORY`
+decision, reloads that ledger and the exact T037 occurrence, secret-redacted source finding,
+and normalized-finding row, then obtains the same access decision again. Any missing, changed,
+cross-scope, expired, or non-monotonic state produces one generic unavailable result.
+
+The canonical request contains the normalized finding projection and the opaque
+`sast-reduced-evidence://<sha256>` reference only. Its creation time is the immutable T042
+decision time, so exact retries derive identical `sast-ai-request`, `sast-ai-handoff`, and
+`sast-ai-advisory` IDs. Serializable persistence permits only exact replay. The immutable ledger
+stores relationship IDs, digests, model version, expiry, and explicit booleans; it stores no
+handoff/request JSON, title/path, prompt, source, secret, evidence fragment, redacted content,
+or provider payload.
+
+The internal AI request contains the handoff-bound model version, normalized metadata, one
+opaque reference, and `snippets=[]`. The model version is part of the canonical runtime key,
+selects the gateway configuration, and must equal the returned model metadata. The request
+carries the canonical T035/T037 `cweIds` and `cveIds` in strict ascending, duplicate-free
+order without runtime normalization; malformed or reordered identifier sets are rejected at
+the shared handoff boundary rather than silently repaired. The request
+carries no result-ingress artifact reference and grants no retrieval, tools, policy,
+publication, lifecycle mutation, or SCM write authority. The runtime rejects unknown keys,
+legacy caller-supplied finding/evidence shapes, content-bearing snippets, model or correlation
+drift, expired references, and authority widening before provider execution. T043 records
+advisory output only; T044 separately proves that output cannot acquire authoritative finding
+or policy effects.
+
+The API consumer treats provider output as hostile input. It accepts at most 32 detector and
+32 planner advisories, at most 32 bounded signals per detector advisory, 2,048 UTF-8 bytes per
+rationale/action/signal/fallback reason, 128 UTF-8 bytes per provider/model identifier, 30,000
+milliseconds of reported latency, and a forbidden-key scan bounded to depth 12 and 64 entries
+per collection. Oversized, excessively nested, cross-request, model-drifted, authority-bearing,
+or sensitive output is rejected before persistence. Client-visible runtime rejection bodies
+use stable error and reason codes and never echo provider or parser exception messages.
+
+Normal tenant or repository offboarding soft-revokes access while retaining the immutable,
+digest-only handoff and advisory audit chain under the tenant tombstone. An exceptional hard
+purge requires an authorized, externally audited database-maintenance procedure: revoke access,
+export the required audit record, remove `AiAdvisoryMetadata` children, bypass the immutable
+delete fence only for the identified handoff rows, and then remove parent scope. The restrictive
+foreign keys intentionally prevent an ordinary cascade from erasing this ledger.
 
 ## Cleanup Contract
 

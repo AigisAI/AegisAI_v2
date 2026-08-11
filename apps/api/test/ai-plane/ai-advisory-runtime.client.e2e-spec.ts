@@ -1,164 +1,242 @@
-import axios from "axios";
+import type { AiInferenceResponse } from '@aegisai/shared';
+import axios from 'axios';
 
-import { AiAdvisoryRuntimeClient } from "../../src/ai-plane/ai-advisory-runtime.client";
+import { AiAdvisoryRuntimeClient } from '../../src/ai-plane/ai-advisory-runtime.client';
+import { aiHandoff } from '../support/sast-ai-advisory-fixture';
 
-import type { AiAdvisoryRequest, AiInferenceResponse } from "../../../../packages/shared/src";
-
-jest.mock("axios");
-
+jest.mock('axios');
 const mockedAxios = jest.mocked(axios);
 
-describe("AiAdvisoryRuntimeClient", () => {
-  const request: AiAdvisoryRequest = {
-    tenantId: "tenant_runtime",
-    scanRequestId: "scan_request_1",
-    findingId: "finding_1",
-    normalizedFinding: {
-      id: "finding_1",
-      tenantId: "tenant_runtime",
-      scanRequestId: "scan_request_1",
-      scannerRunId: "scanner_run_1",
-      title: "Unsafe deserialization",
-      severity: "HIGH",
-      scannerProvenance: "OPENGREP",
-      filePath: "src/App.java",
-      lineStart: 42,
-      status: "OPEN"
-    },
-    evidence: {
-      id: "evidence_1",
-      tenantId: "tenant_runtime",
-      scanRequestId: "scan_request_1",
-      classification: "SHORT_LIVED_EVIDENCE",
-      objectKey: "tenant_runtime/scan_request_1/evidence/evidence_1.json",
-      expiresAt: "2026-04-19T00:00:00.000Z",
-      byteSize: 512,
-      redacted: true
-    },
-    modelVersion: "detector-planner-runtime-v1"
-  };
+describe('AiAdvisoryRuntimeClient T043 boundary', () => {
+  beforeEach(() => mockedAxios.post.mockReset());
 
-  beforeEach(() => {
-    mockedAxios.post.mockReset();
-  });
+  it('sends only normalized metadata and an opaque reduced reference', async () => {
+    const handoff = aiHandoff();
+    const runtimeResponse = responseFor(handoff.requestId);
+    mockedAxios.post.mockResolvedValueOnce({ data: runtimeResponse });
+    const client = new AiAdvisoryRuntimeClient(runtimeConfig());
 
-  it("sends reduced inference requests and accepts the model gateway response shape", async () => {
-    const runtimeResponse: AiInferenceResponse = {
-      requestId: "ai_request_1",
-      tenantId: "tenant_runtime",
-      scanRequestId: "scan_request_1",
-      advisoryOnly: true,
-      detectorAdvisories: [
-        {
-          findingId: "finding_1",
-          confidence: 0.91,
-          rationale: "Model gateway mapped reduced evidence to a detector advisory.",
-          signals: ["SCANNER_CONFIRMED", "MODEL_TRIAGED"]
-        }
-      ],
-      plannerAdvisories: [
-        {
-          findingId: "finding_1",
-          action: "Review scanner evidence before remediation.",
-          rationale: "Planner advisory generated from reduced evidence.",
-          priority: "high"
-        }
-      ],
-      modelMetadata: {
-        provider: "deterministic",
-        model: "detector-planner-runtime",
-        version: "2026-05-26"
-      },
-      fallback: {
-        used: true,
-        reason: "provider not configured"
-      },
-      latencyMs: 13,
-      createdAt: "2026-05-26T00:00:00.000Z"
+    const result = await client.createAdvisory(handoff);
+    const inferenceRequest = mockedAxios.post.mock.calls[0]?.[1] as {
+      canonicalScanKey: string;
+      modelVersion: string;
+      reducedEvidence: {
+        snippets: unknown[];
+        metadata: Record<string, unknown>;
+      };
     };
-    mockedAxios.post.mockResolvedValueOnce({
-      data: runtimeResponse
-    });
-    const client = new AiAdvisoryRuntimeClient({
-      get: jest.fn((key: string) => {
-        const values: Record<string, string | number> = {
-          AI_SERVER_URL: "https://ai-runtime.example",
-          AI_ADVISORY_TIMEOUT_MS: 2500
-        };
-
-        return values[key];
-      })
-    } as never);
-
-    const result = await client.createAdvisory(request);
-    const inferenceRequest = mockedAxios.post.mock.calls[0]?.[1] as Record<string, unknown>;
 
     expect(mockedAxios.post).toHaveBeenCalledWith(
-      "https://ai-runtime.example/ai/advisories",
+      'https://ai-runtime.example/ai/advisories',
       expect.objectContaining({
-        tenantId: "tenant_runtime",
-        scanRequestId: "scan_request_1",
-        requestId: expect.any(String),
-        canonicalScanKey: expect.any(String),
+        tenantId: 'tenant-ai',
+        scanRequestId: 'scan-ai',
+        requestId: handoff.requestId,
+        modelVersion: handoff.modelVersion,
         reducedEvidence: expect.objectContaining({
-          findingIds: ["finding_1"],
-          evidencePackId: "evidence_1",
-          scannerNames: ["OPENGREP"],
-          redactionState: "redacted"
+          findingIds: ['normalized-finding-ai'],
+          evidencePackId: handoff.evidencePackId,
+          scannerNames: ['OPENGREP'],
+          snippets: [],
+          redactionState: 'reduced',
+          metadata: expect.objectContaining({
+            handoffVersion: 'sast-ai-advisory-handoff-v1',
+            handoffDigest: handoff.handoffDigest,
+            requestDigest: handoff.requestDigest,
+            normalizedFindingId: 'normalized-finding-ai',
+            reducedEvidenceRef:
+              handoff.reducedEvidenceReference.reducedEvidenceRef,
+            retrievalAllowed: false,
+            toolsAllowed: false,
+            policyAuthority: false,
+            lifecycleMutationAuthority: false,
+            scmWriteAuthority: false,
+            advisoryOnly: true
+          })
         }),
-        requestedCapabilities: ["detector", "planner"],
-        runtimePolicy: {
-          allowFallback: true,
-          maxLatencyMs: 2500
-        }
+        requestedCapabilities: ['detector', 'planner'],
+        runtimePolicy: { allowFallback: true, maxLatencyMs: 2500 }
       }),
-      expect.objectContaining({
-        timeout: 2500
-      })
+      { timeout: 2500 }
     );
-    expect(inferenceRequest).not.toHaveProperty("normalizedFinding");
-    expect(inferenceRequest).not.toHaveProperty("evidence");
+    expect(inferenceRequest.reducedEvidence.snippets).toEqual([]);
+    expect(inferenceRequest.canonicalScanKey).toBe(
+      [
+        handoff.tenantId,
+        handoff.repositoryBindingId,
+        handoff.scanRequestId,
+        handoff.attemptId,
+        handoff.accessDecisionDigest,
+        handoff.modelVersion
+      ].join(':')
+    );
+    expect(inferenceRequest.modelVersion).toBe(handoff.modelVersion);
+    expect(inferenceRequest.reducedEvidence.metadata).toMatchObject({
+      cweIds: 'CWE-502,CWE-79',
+      cveIds: 'CVE-2025-0001,CVE-2026-0002'
+    });
+    expect(inferenceRequest.reducedEvidence.metadata).not.toHaveProperty(
+      'redactedContent'
+    );
     expect(result).toEqual(runtimeResponse);
-    expect(JSON.stringify({ calls: mockedAxios.post.mock.calls, result })).not.toMatch(
-      /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload/i
+    expect(JSON.stringify(mockedAxios.post.mock.calls)).not.toMatch(
+      /accessToken|secretValue|sourceArchive|fullRepository|rawScannerPayload|redactedContent/i
     );
   });
 
-  it("rejects runtime responses that attempt to override findings or policy", async () => {
+  it('rejects authority-bearing or cross-request runtime responses', async () => {
+    const handoff = aiHandoff();
+    const client = new AiAdvisoryRuntimeClient(runtimeConfig());
+    mockedAxios.post.mockResolvedValueOnce({
+      data: { ...responseFor(handoff.requestId), enforcementAction: 'BLOCK' }
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response contains forbidden authority or sensitive content.'
+    );
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: responseFor('sast-ai-request://' + 'f'.repeat(64))
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response is malformed.'
+    );
+
     mockedAxios.post.mockResolvedValueOnce({
       data: {
-        requestId: "ai_request_1",
-        tenantId: "tenant_runtime",
-        scanRequestId: "scan_request_1",
-        advisoryOnly: true,
-        detectorAdvisories: [],
-        plannerAdvisories: [],
+        ...responseFor(handoff.requestId),
         modelMetadata: {
-          provider: "deterministic",
-          model: "detector-planner-runtime",
-          version: "2026-05-26"
-        },
-        fallback: {
-          used: false
-        },
-        latencyMs: 1,
-        createdAt: "2026-05-26T00:00:00.000Z",
-        enforcementAction: "BLOCK"
+          ...responseFor(handoff.requestId).modelMetadata,
+          version: 'different-model-version'
+        }
       }
     });
-    const client = new AiAdvisoryRuntimeClient({
-      get: jest.fn((key: string) => {
-        const values: Record<string, string | number> = {
-          AI_SERVER_URL: "https://ai-runtime.example",
-          AI_ADVISORY_TIMEOUT_MS: 2500
-        };
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response is malformed.'
+    );
+  });
 
-        return values[key];
-      })
-    } as never);
+  it('rejects a tampered handoff before any provider request', async () => {
+    const handoff = aiHandoff();
+    const client = new AiAdvisoryRuntimeClient(runtimeConfig());
+    await expect(
+      client.createAdvisory({
+        ...handoff,
+        authority: { ...handoff.authority, toolsAllowed: true }
+      } as never)
+    ).rejects.toThrow('AI advisory handoff is malformed.');
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+  });
 
-    await expect(client.createAdvisory(request)).rejects.toThrow(
-      "AI advisory runtime response contains forbidden authority or sensitive content."
+  it('uses one bounded timeout value for transport and runtime policy', async () => {
+    const handoff = aiHandoff();
+    mockedAxios.post.mockResolvedValueOnce({
+      data: responseFor(handoff.requestId)
+    });
+    const client = new AiAdvisoryRuntimeClient(runtimeConfig(-1));
+
+    await expect(client.createAdvisory(handoff)).resolves.toEqual(
+      responseFor(handoff.requestId)
+    );
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+      'https://ai-runtime.example/ai/advisories',
+      expect.objectContaining({
+        runtimePolicy: { allowFallback: true, maxLatencyMs: 2500 }
+      }),
+      { timeout: 2500 }
+    );
+  });
+
+  it('rejects oversized or excessively nested runtime output', async () => {
+    const handoff = aiHandoff();
+    const client = new AiAdvisoryRuntimeClient(runtimeConfig());
+    const response = responseFor(handoff.requestId);
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        ...response,
+        detectorAdvisories: [
+          {
+            ...response.detectorAdvisories[0],
+            rationale: 'x'.repeat(2049)
+          }
+        ]
+      }
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response is malformed.'
+    );
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        ...response,
+        detectorAdvisories: Array.from(
+          { length: 33 },
+          () => response.detectorAdvisories[0]
+        )
+      }
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response is malformed.'
+    );
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: { ...response, diagnostics: nestedValue(14) }
+    });
+    await expect(client.createAdvisory(handoff)).rejects.toThrow(
+      'AI advisory runtime response contains forbidden authority or sensitive content.'
     );
   });
 });
+
+function responseFor(requestId: string): AiInferenceResponse {
+  return {
+    requestId,
+    tenantId: 'tenant-ai',
+    scanRequestId: 'scan-ai',
+    advisoryOnly: true,
+    detectorAdvisories: [
+      {
+        findingId: 'normalized-finding-ai',
+        confidence: 0.91,
+        rationale: 'Model gateway mapped the reduced reference.',
+        signals: ['SCANNER_CONFIRMED', 'MODEL_TRIAGED']
+      }
+    ],
+    plannerAdvisories: [
+      {
+        findingId: 'normalized-finding-ai',
+        action: 'Review normalized scanner evidence.',
+        rationale: 'Advisory planning remains non-authoritative.',
+        priority: 'high'
+      }
+    ],
+    modelMetadata: {
+      provider: 'deterministic',
+      model: 'detector-planner-runtime',
+      version: 'detector-planner-runtime-v1'
+    },
+    fallback: { used: true, reason: 'provider not configured' },
+    latencyMs: 13,
+    createdAt: '2026-08-11T04:00:00.450Z'
+  };
+}
+
+function runtimeConfig(timeout: number | string = 2500) {
+  return {
+    get: jest.fn((key: string) => {
+      const values: Record<string, string | number> = {
+        AI_SERVER_URL: 'https://ai-runtime.example',
+        AI_ADVISORY_TIMEOUT_MS: timeout
+      };
+      return values[key];
+    })
+  } as never;
+}
+
+function nestedValue(depth: number): unknown {
+  let value: unknown = 'bounded';
+  for (let index = 0; index < depth; index += 1) {
+    value = { next: value };
+  }
+  return value;
+}

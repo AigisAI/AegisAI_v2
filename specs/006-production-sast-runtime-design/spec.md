@@ -374,6 +374,20 @@ incomplete, stale, quarantined, or security-blocked scan.
   MUST NOT exceed 24 hours.
 - **FR-051**: AI eligibility requires complete non-stale coverage, an approved profile,
   reduced evidence, and tenant/repository opt-in.
+- **FR-051a**: T043 MUST accept only tenant, repository binding, evidence-pack, and model-version
+  intent. It MUST independently obtain T042 `AI_ADVISORY` access before and after reloading the
+  exact T037 occurrence, source finding, and normalized-finding row. Caller-provided findings,
+  evidence, prompts, paths, digests, expiry, or authority MUST be rejected before access.
+- **FR-051b**: The canonical `sast-ai-advisory-handoff-v1` MUST contain only the rebound
+  normalized finding and the T042 opaque reduced-evidence reference. Its immutable database
+  ledger MUST store only scope references, digests, expiry, model version, and fixed audit/
+  authority booleans; it MUST NOT persist the handoff/request body, raw source, secret values,
+  access-time fragments, or prompt text.
+- **FR-051c**: The AI runtime request MUST carry no snippets or retrievable content and MUST set
+  retrieval, tools, policy, publication, lifecycle mutation, and SCM write authority false.
+  Tenant/scan/finding/request correlation and payload expiry MUST be validated, and an exact
+  retry MUST derive the same request, handoff, and advisory identities. Drift, expiry, clock
+  rollback, unknown fields, or authority widening MUST fail closed.
 - **FR-052**: AI output MUST remain advisory and MUST NOT create, suppress, waive, resolve,
   re-severity, or block a deterministic finding.
 

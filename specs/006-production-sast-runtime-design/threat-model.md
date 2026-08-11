@@ -87,6 +87,7 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Evidence-purpose confusion | Dashboard consent or one stale decision is reused to construct an AI payload | Separate immutable dashboard/AI decisions, complete T041 chain rebind, access-time redaction/classification, and explicit zero provider/tool authority | Purpose swap, opt-in, registry drift, unsafe identifier, cross-tenant, and replay fixtures deny |
 | Evidence expiry race | A reader returns content while expiry/deletion is claimed or after the final clock check | Check retention before read and after the final awaited confirmation, confirm unchanged schedule/claim/proof, and deny from claim onward | Expiry-before/during/final-confirmation read, late-reader, deletion-race, and clock-rollback fixtures return no content |
 | False deletion proof or overdue content | A worker marks evidence deleted without provider removal, rejects the original receipt after a finalization retry, or lets polling/batch caps or one corrupt claim create a retention backlog | Deterministic operation, leased owner/token fence, default-unavailable provider, deadline-aware startup/earliest-due scheduling, saturated zero-delay continuation, context-drift quarantine, exact receipt replay, delete-then immutable proof | Unavailable provider, changed/original receipt, stale token, concurrent claim/finalize, drifted-head queue, deadline wakeup, and exact replay corpus |
+| AI handoff forgery or payload smuggling | A caller supplies a finding, prompt, fragment, stale access reference, or authority bit and causes it to reach the model | Exact four-field intent, double T042 classification, durable T037 source rebind, canonical expiring handoff, empty snippets, exact runtime keys, and fixed zero downstream authority | Legacy/extra-field, cross-scope, drift, expiry, correlation, snippet, secret-key, and authority-widening fixtures deny before provider use |
 | AI prompt injection | Evidence text instructs model | Evidence is untrusted data, bounded/redacted, no retrieval/tools/SCM | Advisory label and output schema validation |
 | Sandbox persistence | Compromise survives next scan | No worker/workspace reuse; new microVM per attempt | Destruction evidence and lag alert |
 | Operator credential leak | Deployment secrets enter repo/config | 005 reference-only credential handoff | Secret scanning and deployment audit |
@@ -158,6 +159,9 @@ The following must always remain true:
 18. Dashboard and AI evidence access are separately classified after access-time redaction and
     durable rebinding. Expiry or a deletion claim revokes both; content is deleted only after a
     fenced provider receipt and the retained canonical proof cannot restore access.
+19. Advisory AI input is derived only from the exact T042/T037 durable chain. Its ledger is
+    reference-only, its runtime request contains no snippets or retrievable content, and it
+    grants no policy, publication, lifecycle, finding, tool, retrieval, or SCM authority.
 
 ## Required Security Test Corpus
 
@@ -178,6 +182,13 @@ The following must always remain true:
   identifier, cross-tenant/repository, before/during-read expiry, late-reader, concurrent
   classification/deletion, unavailable-provider, stale-fence, changed-receipt, exact-replay,
   and clock-rollback fixtures
+- T043 caller-supplied finding/evidence/prompt and unknown-field rejection; T042 decision or
+  reduced-reference drift; cross-tenant/repository/scan/occurrence/fingerprint rebinding;
+  expired and non-monotonic clocks; changed model version; exact retry; snippets/content;
+  forbidden secret keys; request/tenant/scan/finding correlation drift; retrieval, tool,
+  policy, publication, lifecycle, and SCM authority widening; duplicate/reordered CWE/CVE sets;
+  oversized advisory/signal/text output; excessive response depth/breadth; latency overflow;
+  provider-error reflection; and unauthorized immutable-ledger purge
 - CycloneDX schema/tool/version/source-component rebinding, metadata-tool component
   count smuggling, vulnerability/VEX and nested/file component extensions, duplicate or
   mismatched PURL/BOM references, invalid CPE part/field/quoting/wildcard/language forms,
