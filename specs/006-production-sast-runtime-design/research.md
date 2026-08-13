@@ -563,3 +563,37 @@ keeps replay auditable without retaining a second copy of sensitive or expiring 
 content, persisting a full handoff JSON, deriving retry identity from wall-clock invocation
 time, accepting dashboard-purpose authority, enabling model retrieval/tools, or treating an AI
 response as finding, policy, publication, lifecycle, or SCM authority.
+
+## Decision 26: Prove Advisory Consumption with an Immutable Zero-Authority Ledger
+
+**Decision**: T044 accepts only tenant and T043 advisory identity under a tenant-bound internal
+credential. In one bounded serializable transaction it locks the advisory context, reloads the
+advisory, immutable handoff, occurrence, normalized finding, and lifecycle context, and then
+locks the scan, lifecycle-context, and finding authority fences. All application writers to the
+covered authoritative tables advance those same fences; normalized-finding and lifecycle bulk
+writes aggregate distinct affected keys once per statement. The transaction hashes one stable scan
+finding set, target finding status/severity, T037 lifecycle state/revision, finding policy
+decision, finding-scoped waiver, and suppression snapshot, then inserts one
+`sast-ai-advisory-authority-proof-v1` row. The proof projects that one locked snapshot into
+byte-identical before/after fields; replay must still match current locked state.
+
+The proof table contains only durable scope references, counts, component/state digests,
+verification time, and fixed booleans proving zero finding creation/status/severity,
+lifecycle, waiver, suppression, policy override, blocking, publication, and SCM authority.
+It stores no advisory output, rationale, prompt, source, evidence, secret, or policy payload.
+Policy accepts only a validated `sast-ai-advisory-policy-reference-v1` for display visibility;
+deterministic finding severity and coverage remain the only enforcement inputs. Waiver and
+suppression payloads use exact key allowlists and reject advisory/proof fields.
+
+**Rationale**: A TypeScript interface, ignored `suggestedAction`, or two reads from one MVCC
+snapshot does not prove that AI could not reach another write path. A database fence shared by
+proof creation and every covered writer closes the race; persisting fixed false bits under
+database checks and immutable triggers, using the same durable policy/lifecycle tables, and
+verifying the proof reference at policy entry make the separation executable and auditable.
+Bounded digest sets avoid retaining sensitive content or creating an unbounded proof operation.
+
+**Rejected**: Trusting a caller-supplied before/after snapshot, relying on two same-transaction
+reads without a writer fence, storing advisory or policy JSON
+in the proof, allowing AI-suggested actions and merely ignoring them, regex-only lifecycle key
+blocking, mutating the authoritative row to mark it checked, creating more than one proof per
+advisory, or cascading normal tenant deletion through the immutable audit ledger.

@@ -390,6 +390,27 @@ incomplete, stale, quarantined, or security-blocked scan.
   rollback, unknown fields, or authority widening MUST fail closed.
 - **FR-052**: AI output MUST remain advisory and MUST NOT create, suppress, waive, resolve,
   re-severity, or block a deterministic finding.
+- **FR-052a**: T044 authority-proof intent MUST accept exactly `tenantId` and `advisoryId`, and
+  the body tenant MUST match a tenant-bound authenticated internal credential. A serializable
+  transaction MUST first lock the advisory context, then rebind the T043 advisory/handoff to its tenant, repository,
+  scan, attempt, occurrence, normalized finding, fingerprint, request digest, and handoff
+  digest. It MUST lock shared scan, lifecycle-context, and finding authority fences before
+  capturing one bounded canonical authoritative snapshot and projecting that snapshot into the
+  proof's before/after fields. All covered authoritative writers MUST advance the same fences;
+  bulk normalized-finding and lifecycle writes MUST deduplicate affected scope keys per statement.
+  The scan finding set, target status/severity, T037 lifecycle state/revision, finding policy
+  decisions, finding-scoped waivers, and suppressions MUST come from the same durable tables and
+  have identical state digests. Missing fences and concurrent or replay drift MUST fail closed.
+- **FR-052b**: `sast-ai-advisory-authority-proof-v1` MUST be immutable and MUST store only
+  scope references, bounded counts, SHA-256 digests, proof time, and fixed zero-authority/audit
+  bits. Advisory output, rationale, prompt, source, evidence, secrets, policy payloads, and
+  caller-provided authority state MUST NOT be stored. Exact retry MUST reuse one proof; changed,
+  cross-tenant, over-limit, or incomplete state MUST fail closed.
+- **FR-052c**: Policy evaluation MAY make AI advisory metadata visible only from an exact,
+  durable advisory/proof reference with `advisoryOnly=true`. AI fields MUST NOT contribute to
+  enforcement action, reason codes, ticketing, blocking, severity, finding status, waiver,
+  suppression, or lifecycle decisions. Waiver and suppression APIs MUST reject unknown,
+  advisory, proof, and authority fields through exact request-shape validation.
 
 ### Rule Governance
 

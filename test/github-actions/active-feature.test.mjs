@@ -48,6 +48,8 @@ const files = {
   sharedSastEvidenceAccess: new URL('../../packages/shared/src/types/sast-evidence-access.ts', import.meta.url),
   sharedSastEvidenceAccessTest: new URL('../../packages/shared/test/sast-evidence-access.test.mjs', import.meta.url),
   sharedSastAiAdvisoryHandoff: new URL('../../packages/shared/src/types/sast-ai-advisory-handoff.ts', import.meta.url),
+  sharedSastAiAdvisoryAuthority: new URL('../../packages/shared/src/types/sast-ai-advisory-authority.ts', import.meta.url),
+  sharedSastAiAdvisoryAuthorityTest: new URL('../../packages/shared/test/sast-ai-advisory-authority.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -108,6 +110,14 @@ const files = {
   apiAiAdvisoryModule: new URL('../../apps/api/src/ai-plane/ai-plane.module.ts', import.meta.url),
   apiAiAdvisoryServiceTest: new URL('../../apps/api/test/ai-plane/ai-advisory.service.e2e-spec.ts', import.meta.url),
   apiAiAdvisoryPersistenceTest: new URL('../../apps/api/test/ai-plane/sast-ai-advisory-persistence.e2e-spec.ts', import.meta.url),
+  apiAiAdvisoryAuthorityService: new URL('../../apps/api/src/ai-plane/ai-advisory-authority.service.ts', import.meta.url),
+  apiAiAdvisoryAuthorityStore: new URL('../../apps/api/src/ai-plane/prisma-sast-ai-advisory-authority.store.ts', import.meta.url),
+  apiAiAdvisoryAuthorityServiceTest: new URL('../../apps/api/test/ai-plane/ai-advisory-authority.service.e2e-spec.ts', import.meta.url),
+  apiAiAdvisoryAuthorityPersistenceTest: new URL('../../apps/api/test/ai-plane/sast-ai-advisory-authority-persistence.e2e-spec.ts', import.meta.url),
+  apiPolicyEngine: new URL('../../apps/api/src/policy/policy-engine.service.ts', import.meta.url),
+  apiPolicyLifecycle: new URL('../../apps/api/src/policy/policy-lifecycle.service.ts', import.meta.url),
+  apiPolicyEngineTest: new URL('../../apps/api/test/policy/policy-engine.service.e2e-spec.ts', import.meta.url),
+  apiPolicyLifecycleTest: new URL('../../apps/api/test/policy/waiver-suppression-lifecycle.e2e-spec.ts', import.meta.url),
   aiAdvisoryRuntime: new URL('../../apps/ai/src/advisory-runtime.ts', import.meta.url),
   aiModelGateway: new URL('../../apps/ai/src/model-gateway.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
@@ -119,6 +129,7 @@ const files = {
   apiSastAcceptedEvidenceMigration: new URL('../../apps/api/prisma/migrations/20260810043000_sast_accepted_evidence/migration.sql', import.meta.url),
   apiSastEvidenceAccessMigration: new URL('../../apps/api/prisma/migrations/20260810070000_sast_evidence_access_deletion/migration.sql', import.meta.url),
   apiSastAiAdvisoryMigration: new URL('../../apps/api/prisma/migrations/20260811040000_sast_ai_advisory_handoff/migration.sql', import.meta.url),
+  apiSastAiAdvisoryAuthorityMigration: new URL('../../apps/api/prisma/migrations/20260811140000_sast_ai_advisory_authority_proof/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -1277,7 +1288,7 @@ test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () =
   assert.match(tasks, /- \[x\] T040\b/);
   assert.match(
     quickstart,
-    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,160}T043[\s\S]{0,160}next implementation task/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,180}T043[\s\S]{0,180}T044[\s\S]{0,120}T045 is the next implementation task/
   );
   assert.match(contract, /Scan coverage gate v1/);
   assert.match(contract, /Freshness and bounded retry gate v1/);
@@ -1413,14 +1424,14 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
   assert.match(tasks, /- \[x\] T041\b/);
   assert.match(
     quickstart,
-    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,160}T043[\s\S]{0,160}next implementation task/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,180}T043[\s\S]{0,180}T044[\s\S]{0,120}T045 is the next implementation task/
   );
   assert.match(contract, /Accepted-finding evidence gate v1/);
   assert.match(dataModel, /SastEvidenceBuildDecision/);
   assert.match(dataModel, /SastAcceptedEvidencePack/);
   assert.match(
     plan,
-    /T040, T041, T042, and T043 independently and now proceeds to T044/
+    /T040, T041, T042, T043, and T044 independently and now proceeds to T045/
   );
   assert.match(spec, /FR-046a/);
   assert.match(
@@ -1596,7 +1607,7 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assert.match(tasks, /- \[x\] T042\b/);
   assert.match(
     quickstart,
-    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,160}T043[\s\S]{0,160}next implementation task/
+    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,180}T043[\s\S]{0,180}T044[\s\S]{0,120}T045 is the next implementation task/
   );
   assert.match(contract, /Evidence access and deletion gate v1/);
   assert.match(dataModel, /SastEvidenceAccessDecision/);
@@ -1750,13 +1761,13 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   assert.match(tasks, /- \[x\] T043\b/);
   assert.match(
     quickstart,
-    /T043 normalized-finding plus reduced-reference advisory handoff is also complete;[\s\S]{0,80}T044 is the[\s\S]{0,80}next implementation task/
+    /T043 normalized-finding plus reduced-reference advisory handoff is complete\.[\s\S]{0,180}T045 is the next implementation task/
   );
   assert.match(contract, /Advisory AI handoff gate v1/);
   assert.match(dataModel, /### SastAiAdvisoryHandoff/);
   assert.match(
     plan,
-    /T040, T041, T042, and T043 independently and now proceeds to T044/
+    /T040, T041, T042, T043, and T044 independently and now proceeds to T045/
   );
   assert.match(spec, /FR-051a/);
   assert.match(
@@ -1765,6 +1776,153 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   );
   assert.match(threatModel, /AI handoff forgery or payload smuggling/);
   assert.match(qualityGates, /100% T043 reference-only invariant/);
+});
+
+test('SAST T044 proves AI output has zero finding and policy authority', () => {
+  const shared = readNormalizedText(
+    files.sharedSastAiAdvisoryAuthority
+  );
+  const sharedTest = readNormalizedText(
+    files.sharedSastAiAdvisoryAuthorityTest
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(
+    files.apiAiAdvisoryAuthorityService
+  );
+  const store = readNormalizedText(files.apiAiAdvisoryAuthorityStore);
+  const serviceTest = readNormalizedText(
+    files.apiAiAdvisoryAuthorityServiceTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiAiAdvisoryAuthorityPersistenceTest
+  );
+  const policy = readNormalizedText(files.apiPolicyEngine);
+  const lifecycle = readNormalizedText(files.apiPolicyLifecycle);
+  const policyTest = readNormalizedText(files.apiPolicyEngineTest);
+  const lifecycleTest = readNormalizedText(
+    files.apiPolicyLifecycleTest
+  );
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(
+    files.apiSastAiAdvisoryAuthorityMigration
+  );
+  const onlineSchema = readNormalizedText(
+    files.apiOnlineSastRuntimeSchema
+  );
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const plan = readNormalizedText(files.plan);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(shared, /sast-ai-advisory-authority-proof-v1/);
+  assert.match(shared, /sast-ai-advisory-policy-reference-v1/);
+  assert.match(
+    shared,
+    /buildSastAiAdvisoryAuthorityStateSnapshot/
+  );
+  assert.match(shared, /stableJson\(input\.before\) !== stableJson\(input\.after\)/);
+  assert.match(shared, /findingCreateAuthority: false/);
+  assert.match(shared, /policyOverrideAuthority: false/);
+  assert.match(shared, /blockDecisionAuthority: false/);
+  assert.match(sharedIndex, /sast-ai-advisory-authority/);
+  assert.match(sharedTest, /rejects state drift, caller authority/);
+
+  assert.match(service, /isSastAiAdvisoryAuthorityProofIntentShapeValid/);
+  assert.match(service, /buildSastAiAdvisoryPolicyReference/);
+  assert.match(store, /Prisma\.TransactionIsolationLevel\.Serializable/);
+  assert.match(store, /captureAuthorityState/);
+  assert.match(store, /acquireAuthorityFence\(tx, context\)/);
+  assert.doesNotMatch(
+    store,
+    /const after = await captureAuthorityState\(tx, context\)/
+  );
+  assert.match(store, /sastAiAdvisoryAuthorityProof\.create/);
+  assert.doesNotMatch(
+    store,
+    /\b(?:normalizedFinding|sastFindingLifecycleState|policyDecision|waiver|suppression)\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\b/u
+  );
+  assert.match(
+    policy,
+    /isSastAiAdvisoryPolicyReferenceShapeValid/
+  );
+  assert.match(policy, /verifyPolicyReference/);
+  assert.match(lifecycle, /assertExactLifecyclePayload/);
+  assert.doesNotMatch(lifecycle, /new RegExp\(forbiddenKey/);
+  assert.match(serviceTest, /rejects caller finding, lifecycle, waiver/);
+  assert.match(persistenceTest, /no authoritative model writes/);
+  assert.match(policyTest, /rejects suggested actions/);
+  assert.match(lifecycleTest, /authorityProofId/);
+
+  assert.match(schema, /model SastAiAdvisoryAuthorityProof \{/);
+  assert.match(
+    migration,
+    /CREATE TABLE "SastAiAdvisoryAuthorityProof"/
+  );
+  assert.match(
+    migration,
+    /"beforeStateDigest" = "afterStateDigest"/
+  );
+  assert.match(
+    migration,
+    /SastAiAdvisoryAuthorityProof_immutable_update/
+  );
+  assert.match(
+    migration,
+    /acquire_sast_ai_advisory_authority_fence/
+  );
+  assert.match(migration, /PolicyDecision_ai_authority_fence/);
+  assert.doesNotMatch(migration, /JSONB/);
+  assert.match(
+    onlineSchema,
+    /NormalizedFinding_ai_authority_scope_key/
+  );
+  assert.match(
+    onlineSchema,
+    /SastAiAdvisoryHandoff_authority_scope_key/
+  );
+  assert.match(
+    onlineSchema,
+    /SastAiAdvisoryAuthorityProof_handoff_authority_scope_fkey/
+  );
+  assert.match(
+    onlineSchema,
+    /SastAiAdvisoryAuthorityProof_occurrence_scope_fkey/
+  );
+  assert.match(
+    onlineSchema,
+    /SastAiAdvisoryAuthorityProof_finding_scope_fkey/
+  );
+  assert.doesNotMatch(
+    migration,
+    /SastAiAdvisoryAuthorityProof_(?:occurrence|finding)_scope_fkey/
+  );
+
+  assert.match(tasks, /- \[x\] T044\b/);
+  assert.match(
+    quickstart,
+    /T044 zero-authority[\s\S]{0,30}output proof is also complete;[\s\S]{0,100}T045 is the[\s\S]{0,100}next implementation task/
+  );
+  assert.match(contract, /Advisory output authority proof gate v1/);
+  assert.match(dataModel, /### SastAiAdvisoryAuthorityProof/);
+  assert.match(
+    plan,
+    /T040, T041, T042, T043, and T044 independently and now proceeds to T045/
+  );
+  assert.match(spec, /FR-052a/);
+  assert.match(
+    research,
+    /Decision 26: Prove Advisory Consumption with an Immutable Zero-Authority Ledger/
+  );
+  assert.match(
+    threatModel,
+    /AI output authority escalation or proof forgery/
+  );
+  assert.match(qualityGates, /100% T044 zero-authority invariant/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

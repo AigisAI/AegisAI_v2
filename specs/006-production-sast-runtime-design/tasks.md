@@ -72,7 +72,7 @@
 - [x] T041 Build bounded accepted-finding evidence with reconstruction-risk checks
 - [x] T042 Enforce dashboard/AI classification, secret redaction, seven-day expiry, and deletion proof
 - [x] T043 Send only normalized findings and reduced evidence references to the advisory AI Plane
-- [ ] T044 Prove AI cannot create, suppress, waive, resolve, or override authoritative findings/policy
+- [x] T044 Prove AI cannot create, suppress, waive, resolve, or override authoritative findings/policy
 
 ## Phase 9: Rule Governance Runtime
 

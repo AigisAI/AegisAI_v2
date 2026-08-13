@@ -1,4 +1,5 @@
 import type { AiDetectorAdvisory, AiInferenceFallback, AiModelMetadata, AiPlannerAdvisory } from './ai-inference-runtime';
+import type { SastAiAdvisoryPolicyReference } from './sast-ai-advisory-authority';
 
 export const PRODUCTION_SCAN_ARCHITECTURE_FEATURE_ID = '002-production-scan-architecture';
 
@@ -158,11 +159,7 @@ export interface PolicyEvaluationInput {
   finding: NormalizedFinding;
   scanLane: ScanLane;
   scannerCoverage: ScannerKind[];
-  aiAdvisory?: {
-    visible: boolean;
-    suggestedAction?: PolicyAction;
-    summary?: string;
-  };
+  aiAdvisory?: SastAiAdvisoryPolicyReference;
 }
 
 export interface CommentDispatchPlanRequest {

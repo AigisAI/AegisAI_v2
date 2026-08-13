@@ -82,6 +82,12 @@ const indexes = [
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "NormalizedFinding_sast_occurrence_scope_key" ON "NormalizedFinding"("id", "tenantId", "scanRequestId", "scannerRunId")'
   },
   {
+    name: 'NormalizedFinding_ai_authority_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "NormalizedFinding_ai_authority_scope_key" ON "NormalizedFinding"("id", "tenantId", "scanRequestId")'
+  },
+  {
     name: 'NormalizedFinding_sastLineageId_idx',
     unique: false,
     create:
@@ -110,6 +116,12 @@ const indexes = [
     unique: true,
     create:
       'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "AiAdvisoryMetadata_sastHandoffId_key" ON "AiAdvisoryMetadata"("sastHandoffId")'
+  },
+  {
+    name: 'SastAiAdvisoryHandoff_authority_scope_key',
+    unique: true,
+    create:
+      'CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "SastAiAdvisoryHandoff_authority_scope_key" ON "SastAiAdvisoryHandoff"("id", "advisoryId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "normalizedFindingId", "findingFingerprint", "requestDigest", "handoffDigest")'
   },
   {
     name: 'SastArtifactDispositionDecision_coverage_scope_key',
@@ -648,6 +660,27 @@ const constraints = [
     type: 'f',
     definition:
       'FOREIGN KEY ("sastHandoffId") REFERENCES "SastAiAdvisoryHandoff"("id") ON DELETE RESTRICT ON UPDATE CASCADE'
+  },
+  {
+    table: 'SastAiAdvisoryAuthorityProof',
+    name: 'SastAiAdvisoryAuthorityProof_occurrence_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("occurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") ON DELETE RESTRICT ON UPDATE RESTRICT'
+  },
+  {
+    table: 'SastAiAdvisoryAuthorityProof',
+    name: 'SastAiAdvisoryAuthorityProof_handoff_authority_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("handoffId", "advisoryId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "normalizedFindingId", "findingFingerprint", "requestDigest", "handoffDigest") REFERENCES "SastAiAdvisoryHandoff"("id", "advisoryId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "normalizedFindingId", "findingFingerprint", "requestDigest", "handoffDigest") ON DELETE RESTRICT ON UPDATE RESTRICT'
+  },
+  {
+    table: 'SastAiAdvisoryAuthorityProof',
+    name: 'SastAiAdvisoryAuthorityProof_finding_scope_fkey',
+    type: 'f',
+    definition:
+      'FOREIGN KEY ("normalizedFindingId", "tenantId", "scanRequestId") REFERENCES "NormalizedFinding"("id", "tenantId", "scanRequestId") ON DELETE RESTRICT ON UPDATE RESTRICT'
   },
   {
     table: 'SastFindingCorrelationEdge',

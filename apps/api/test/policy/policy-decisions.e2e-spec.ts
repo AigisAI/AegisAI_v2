@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
 import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
+import { PolicyDecisionStore } from '../../src/policy/policy-decision.store';
 import { TestInternalServiceGuard, TestSessionAuthGuard } from '../support/security-guards';
 
 describe("Policy decision API (e2e)", () => {
@@ -28,6 +29,24 @@ describe("Policy decision API (e2e)", () => {
       import("../../src/app.module"),
       import("../../src/prisma/prisma.service")
     ]);
+    let decisionSequence = 0;
+    const decisions = new Map<string, Record<string, unknown>>();
+    const policyDecisionStore = {
+      create: jest.fn(async (input: Record<string, unknown>) => {
+        const decision = {
+          id: `policy_decision_${++decisionSequence}`,
+          ...input
+        };
+        decisions.set(String(decision.id), decision);
+        return decision;
+      }),
+      findByTenantAndId: jest.fn(
+        async (tenantId: string, id: string) => {
+          const decision = decisions.get(id);
+          return decision?.tenantId === tenantId ? decision : null;
+        }
+      )
+    };
 
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule]
@@ -40,6 +59,8 @@ describe("Policy decision API (e2e)", () => {
         onModuleDestroy: jest.fn().mockResolvedValue(undefined),
         $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }])
       })
+      .overrideProvider(PolicyDecisionStore)
+      .useValue(policyDecisionStore)
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .overrideGuard(InternalServiceGuard)
@@ -85,11 +106,6 @@ describe("Policy decision API (e2e)", () => {
           filePath: "src/App.java",
           lineStart: 42,
           status: "OPEN"
-        },
-        aiAdvisory: {
-          visible: true,
-          suggestedAction: "BLOCK",
-          summary: "Advisory context only"
         }
       })
       .expect(201);
@@ -102,7 +118,7 @@ describe("Policy decision API (e2e)", () => {
         scanRequestId: "scan_request_api_1",
         findingId: "finding_api_1",
         enforcementAction: "WARN",
-        aiAdvisoryVisible: true
+        aiAdvisoryVisible: false
       })
     );
 
@@ -115,5 +131,33 @@ describe("Policy decision API (e2e)", () => {
     expect(JSON.stringify({ decision, read: read.body })).not.toMatch(
       /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|aiOverride|policyOverride/i
     );
+  });
+
+  it('rejects legacy AI suggested actions at the policy boundary', async () => {
+    await request(app.getHttpServer())
+      .post('/api/policy-decisions/evaluate')
+      .send({
+        tenantId: 'tenant_policy_api',
+        scanRequestId: 'scan_request_api_2',
+        scanLane: 'FAST',
+        scannerCoverage: ['OPENGREP', 'TRIVY', 'SYFT'],
+        finding: {
+          id: 'finding_api_2',
+          tenantId: 'tenant_policy_api',
+          scanRequestId: 'scan_request_api_2',
+          scannerRunId: 'scanner_run_api_2',
+          title: 'Critical finding',
+          severity: 'CRITICAL',
+          scannerProvenance: 'OPENGREP',
+          filePath: 'src/App.java',
+          lineStart: 42,
+          status: 'OPEN'
+        },
+        aiAdvisory: {
+          visible: true,
+          suggestedAction: 'DASHBOARD_ONLY'
+        }
+      })
+      .expect(400);
   });
 });

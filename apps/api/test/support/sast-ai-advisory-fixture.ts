@@ -2,9 +2,13 @@ import { createHash } from 'node:crypto';
 
 import {
   buildSastAiAdvisoryHandoff,
+  buildSastAiAdvisoryAuthorityProof,
+  buildSastAiAdvisoryAuthorityStateSnapshot,
+  buildSastAiAdvisoryPolicyReference,
   buildSastEvidenceAccessDecision,
   buildSastEvidenceDeletionSchedule,
   type SastAiAdvisoryHandoff,
+  type SastAiAdvisoryAuthorityProof,
   type SastAiAdvisoryIntent,
   type SastAiAdvisoryNormalizedFinding,
   type SastEvidenceAccessDecision,
@@ -142,6 +146,52 @@ export function aiHandoff(
   });
   if (!handoff) throw new Error('AI handoff fixture is invalid.');
   return handoff;
+}
+
+export function aiAuthorityProof(): SastAiAdvisoryAuthorityProof {
+  const handoff = aiHandoff();
+  const snapshot = buildSastAiAdvisoryAuthorityStateSnapshot({
+    normalizedFindingDigests: [digest('authority-finding')],
+    targetFindingDigest: digest('authority-finding'),
+    lifecycleStateDigests: [digest('authority-lifecycle')],
+    policyDecisionDigests: [digest('authority-policy')],
+    waiverDigests: [],
+    suppressionDigests: [],
+    digestCanonical: digest
+  });
+  if (!snapshot) throw new Error('AI authority snapshot fixture is invalid.');
+  const proof = buildSastAiAdvisoryAuthorityProof({
+    scope: {
+      tenantId: handoff.tenantId,
+      repositoryBindingId: handoff.repositoryBindingId,
+      scanRequestId: handoff.scanRequestId,
+      attemptId: handoff.attemptId,
+      advisoryId: handoff.advisoryId,
+      handoffId: handoff.handoffId,
+      requestDigest: handoff.requestDigest,
+      handoffDigest: handoff.handoffDigest,
+      normalizedFindingId:
+        handoff.normalizedFinding.normalizedFindingId,
+      occurrenceId: handoff.normalizedFinding.occurrenceId,
+      findingFingerprint:
+        handoff.normalizedFinding.findingFingerprint
+    },
+    before: snapshot,
+    after: snapshot,
+    verifiedAt: '2026-08-11T05:30:00.000Z',
+    digestCanonical: digest
+  });
+  if (!proof) throw new Error('AI authority proof fixture is invalid.');
+  return proof;
+}
+
+export function aiPolicyReference() {
+  const reference = buildSastAiAdvisoryPolicyReference(
+    aiAuthorityProof(),
+    digest
+  );
+  if (!reference) throw new Error('AI policy reference fixture is invalid.');
+  return reference;
 }
 
 export function allowedAiAccess() {
