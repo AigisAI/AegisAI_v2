@@ -396,7 +396,8 @@ incomplete, stale, quarantined, or security-blocked scan.
   scan, attempt, occurrence, normalized finding, fingerprint, request digest, and handoff
   digest. It MUST lock shared scan, lifecycle-context, and finding authority fences before
   capturing one bounded canonical authoritative snapshot and projecting that snapshot into the
-  proof's before/after fields. All covered authoritative writers MUST advance the same fences.
+  proof's before/after fields. All covered authoritative writers MUST advance the same fences;
+  bulk normalized-finding and lifecycle writes MUST deduplicate affected scope keys per statement.
   The scan finding set, target status/severity, T037 lifecycle state/revision, finding policy
   decisions, finding-scoped waivers, and suppressions MUST come from the same durable tables and
   have identical state digests. Missing fences and concurrent or replay drift MUST fail closed.

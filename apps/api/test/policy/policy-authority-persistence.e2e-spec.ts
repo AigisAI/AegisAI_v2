@@ -41,6 +41,43 @@ describe('Authoritative policy persistence used by T044 snapshots', () => {
     });
   });
 
+  it('rejects unsupported scanner coverage before write and after read', async () => {
+    const row = policyDecisionRow();
+    const prisma = {
+      policyDecision: {
+        create: jest.fn().mockResolvedValue(row),
+        findFirst: jest.fn().mockResolvedValue({
+          ...row,
+          requiredCoverage: ['OPENGREP', 'UNSUPPORTED']
+        })
+      }
+    };
+    const store = new PrismaPolicyDecisionStore(prisma as never);
+
+    await expect(
+      store.create({
+        tenantId: row.tenantId,
+        scanRequestId: row.scanRequestId,
+        findingId: row.findingId,
+        enforcementAction: row.enforcementAction,
+        commentAllowed: row.commentAllowed,
+        dashboardVisible: row.dashboardVisible,
+        ticketRequested: row.ticketRequested,
+        blockRequested: row.blockRequested,
+        reasonCodes: row.reasonCodes,
+        requiredCoverage: ['OPENGREP', 'UNSUPPORTED'] as never,
+        waiverApplied: row.waiverApplied,
+        staleSuppressed: row.staleSuppressed,
+        aiAdvisoryVisible: row.aiAdvisoryVisible
+      })
+    ).rejects.toThrow('unsupported scanner kind');
+    expect(prisma.policyDecision.create).not.toHaveBeenCalled();
+
+    await expect(
+      store.findByTenantAndId(row.tenantId, row.id)
+    ).rejects.toThrow('unsupported scanner kind');
+  });
+
   it('persists waiver and suppression lifecycle changes through shared authoritative tables', async () => {
     const waiver = {
       id: 'waiver-durable',

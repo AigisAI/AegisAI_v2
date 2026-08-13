@@ -847,8 +847,9 @@ decisions cannot be inferred from a successful scan or accepted T041 pack.
 
 - internal coordination ledger containing only canonical JSON scope keys, monotonic versions,
   and creation time; it contains no finding, policy, advisory, source, evidence, or secret data
-- advisory metadata writes touch the tenant/advisory key; normalized finding writes touch scan
-  and finding keys; lifecycle, policy, waiver, and suppression writes touch their matching keys
+- advisory metadata writes touch the tenant/advisory key; normalized-finding and lifecycle bulk
+  writes aggregate distinct affected scope keys once per SQL statement, while policy, waiver,
+  and suppression writes touch their matching finding keys
 - proof creation locks one advisory key before context reload and three authority keys before
   snapshot capture. Missing rows fail closed and concurrent changes surface as serializable
   conflicts; the fence never grants policy or lifecycle authority

@@ -135,7 +135,7 @@ CREATE FUNCTION "sast_ai_authority_scan_fence_key"(
 )
 RETURNS TEXT
 LANGUAGE sql
-IMMUTABLE
+STABLE
 STRICT
 SET search_path = pg_catalog
 AS $$
@@ -154,7 +154,7 @@ CREATE FUNCTION "sast_ai_authority_lifecycle_fence_key"(
 )
 RETURNS TEXT
 LANGUAGE sql
-IMMUTABLE
+STABLE
 STRICT
 SET search_path = pg_catalog
 AS $$
@@ -173,7 +173,7 @@ CREATE FUNCTION "sast_ai_authority_finding_fence_key"(
 )
 RETURNS TEXT
 LANGUAGE sql
-IMMUTABLE
+STABLE
 STRICT
 SET search_path = pg_catalog
 AS $$
@@ -190,7 +190,7 @@ CREATE FUNCTION "sast_ai_authority_advisory_fence_key"(
 )
 RETURNS TEXT
 LANGUAGE sql
-IMMUTABLE
+STABLE
 STRICT
 SET search_path = pg_catalog
 AS $$
@@ -231,85 +231,141 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION "fence_sast_ai_authority_normalized_finding"()
+-- Transition-table triggers collapse a bulk createMany/updateMany/deleteMany
+-- into one ordered touch per distinct scan, finding, or lifecycle scope.
+CREATE FUNCTION "fence_sast_ai_authority_normalized_finding_statement"()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog
 AS $$
 DECLARE
-  scope_keys TEXT[] := ARRAY[]::TEXT[];
+  scope_keys TEXT[];
 BEGIN
-  IF TG_OP IN ('UPDATE', 'DELETE') THEN
-    scope_keys := array_append(
-      scope_keys,
-      public."sast_ai_authority_scan_fence_key"(
-        OLD."tenantId",
-        OLD."scanRequestId"
-      )
-    );
-    scope_keys := array_append(
-      scope_keys,
-      public."sast_ai_authority_finding_fence_key"(
-        OLD."tenantId",
-        OLD."id"
-      )
-    );
+  IF TG_OP = 'INSERT' THEN
+    SELECT array_agg(changed.scope_key ORDER BY changed.scope_key)
+    INTO scope_keys
+    FROM (
+      SELECT public."sast_ai_authority_scan_fence_key"(
+        "tenantId",
+        "scanRequestId"
+      ) AS scope_key
+      FROM new_rows
+      UNION
+      SELECT public."sast_ai_authority_finding_fence_key"(
+        "tenantId",
+        "id"
+      ) AS scope_key
+      FROM new_rows
+    ) AS changed;
+  ELSIF TG_OP = 'UPDATE' THEN
+    SELECT array_agg(changed.scope_key ORDER BY changed.scope_key)
+    INTO scope_keys
+    FROM (
+      SELECT public."sast_ai_authority_scan_fence_key"(
+        "tenantId",
+        "scanRequestId"
+      ) AS scope_key
+      FROM old_rows
+      UNION
+      SELECT public."sast_ai_authority_finding_fence_key"(
+        "tenantId",
+        "id"
+      ) AS scope_key
+      FROM old_rows
+      UNION
+      SELECT public."sast_ai_authority_scan_fence_key"(
+        "tenantId",
+        "scanRequestId"
+      ) AS scope_key
+      FROM new_rows
+      UNION
+      SELECT public."sast_ai_authority_finding_fence_key"(
+        "tenantId",
+        "id"
+      ) AS scope_key
+      FROM new_rows
+    ) AS changed;
+  ELSE
+    SELECT array_agg(changed.scope_key ORDER BY changed.scope_key)
+    INTO scope_keys
+    FROM (
+      SELECT public."sast_ai_authority_scan_fence_key"(
+        "tenantId",
+        "scanRequestId"
+      ) AS scope_key
+      FROM old_rows
+      UNION
+      SELECT public."sast_ai_authority_finding_fence_key"(
+        "tenantId",
+        "id"
+      ) AS scope_key
+      FROM old_rows
+    ) AS changed;
   END IF;
-  IF TG_OP IN ('INSERT', 'UPDATE') THEN
-    scope_keys := array_append(
-      scope_keys,
-      public."sast_ai_authority_scan_fence_key"(
-        NEW."tenantId",
-        NEW."scanRequestId"
-      )
-    );
-    scope_keys := array_append(
-      scope_keys,
-      public."sast_ai_authority_finding_fence_key"(
-        NEW."tenantId",
-        NEW."id"
-      )
-    );
-  END IF;
-  PERFORM public."touch_sast_ai_advisory_authority_fences"(scope_keys);
-  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
-  RETURN NEW;
+  PERFORM public."touch_sast_ai_advisory_authority_fences"(
+    COALESCE(scope_keys, ARRAY[]::TEXT[])
+  );
+  RETURN NULL;
 END;
 $$;
 
-CREATE FUNCTION "fence_sast_ai_authority_lifecycle_state"()
+CREATE FUNCTION "fence_sast_ai_authority_lifecycle_state_statement"()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog
 AS $$
 DECLARE
-  scope_keys TEXT[] := ARRAY[]::TEXT[];
+  scope_keys TEXT[];
 BEGIN
-  IF TG_OP IN ('UPDATE', 'DELETE') THEN
-    scope_keys := array_append(
-      scope_keys,
-      public."sast_ai_authority_lifecycle_fence_key"(
-        OLD."tenantId",
-        OLD."repositoryBindingId",
-        OLD."lifecycleContextKey",
-        OLD."lineageId"
-      )
-    );
+  IF TG_OP = 'INSERT' THEN
+    SELECT array_agg(changed.scope_key ORDER BY changed.scope_key)
+    INTO scope_keys
+    FROM (
+      SELECT public."sast_ai_authority_lifecycle_fence_key"(
+        "tenantId",
+        "repositoryBindingId",
+        "lifecycleContextKey",
+        "lineageId"
+      ) AS scope_key
+      FROM new_rows
+    ) AS changed;
+  ELSIF TG_OP = 'UPDATE' THEN
+    SELECT array_agg(changed.scope_key ORDER BY changed.scope_key)
+    INTO scope_keys
+    FROM (
+      SELECT public."sast_ai_authority_lifecycle_fence_key"(
+        "tenantId",
+        "repositoryBindingId",
+        "lifecycleContextKey",
+        "lineageId"
+      ) AS scope_key
+      FROM old_rows
+      UNION
+      SELECT public."sast_ai_authority_lifecycle_fence_key"(
+        "tenantId",
+        "repositoryBindingId",
+        "lifecycleContextKey",
+        "lineageId"
+      ) AS scope_key
+      FROM new_rows
+    ) AS changed;
+  ELSE
+    SELECT array_agg(changed.scope_key ORDER BY changed.scope_key)
+    INTO scope_keys
+    FROM (
+      SELECT public."sast_ai_authority_lifecycle_fence_key"(
+        "tenantId",
+        "repositoryBindingId",
+        "lifecycleContextKey",
+        "lineageId"
+      ) AS scope_key
+      FROM old_rows
+    ) AS changed;
   END IF;
-  IF TG_OP IN ('INSERT', 'UPDATE') THEN
-    scope_keys := array_append(
-      scope_keys,
-      public."sast_ai_authority_lifecycle_fence_key"(
-        NEW."tenantId",
-        NEW."repositoryBindingId",
-        NEW."lifecycleContextKey",
-        NEW."lineageId"
-      )
-    );
-  END IF;
-  PERFORM public."touch_sast_ai_advisory_authority_fences"(scope_keys);
-  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
-  RETURN NEW;
+  PERFORM public."touch_sast_ai_advisory_authority_fences"(
+    COALESCE(scope_keys, ARRAY[]::TEXT[])
+  );
+  RETURN NULL;
 END;
 $$;
 
@@ -440,15 +496,41 @@ FROM (
 ) AS existing_scopes
 ON CONFLICT ("scopeKey") DO NOTHING;
 
-CREATE TRIGGER "NormalizedFinding_ai_authority_fence"
-  BEFORE INSERT OR UPDATE OR DELETE ON "NormalizedFinding"
-  FOR EACH ROW
-  EXECUTE FUNCTION "fence_sast_ai_authority_normalized_finding"();
+CREATE TRIGGER "NormalizedFinding_ai_authority_fence_insert"
+  AFTER INSERT ON "NormalizedFinding"
+  REFERENCING NEW TABLE AS new_rows
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION "fence_sast_ai_authority_normalized_finding_statement"();
 
-CREATE TRIGGER "SastFindingLifecycleState_ai_authority_fence"
-  BEFORE INSERT OR UPDATE OR DELETE ON "SastFindingLifecycleState"
-  FOR EACH ROW
-  EXECUTE FUNCTION "fence_sast_ai_authority_lifecycle_state"();
+CREATE TRIGGER "NormalizedFinding_ai_authority_fence_update"
+  AFTER UPDATE ON "NormalizedFinding"
+  REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION "fence_sast_ai_authority_normalized_finding_statement"();
+
+CREATE TRIGGER "NormalizedFinding_ai_authority_fence_delete"
+  AFTER DELETE ON "NormalizedFinding"
+  REFERENCING OLD TABLE AS old_rows
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION "fence_sast_ai_authority_normalized_finding_statement"();
+
+CREATE TRIGGER "SastFindingLifecycleState_ai_authority_fence_insert"
+  AFTER INSERT ON "SastFindingLifecycleState"
+  REFERENCING NEW TABLE AS new_rows
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION "fence_sast_ai_authority_lifecycle_state_statement"();
+
+CREATE TRIGGER "SastFindingLifecycleState_ai_authority_fence_update"
+  AFTER UPDATE ON "SastFindingLifecycleState"
+  REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION "fence_sast_ai_authority_lifecycle_state_statement"();
+
+CREATE TRIGGER "SastFindingLifecycleState_ai_authority_fence_delete"
+  AFTER DELETE ON "SastFindingLifecycleState"
+  REFERENCING OLD TABLE AS old_rows
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION "fence_sast_ai_authority_lifecycle_state_statement"();
 
 CREATE TRIGGER "PolicyDecision_ai_authority_fence"
   BEFORE INSERT OR UPDATE OR DELETE ON "PolicyDecision"

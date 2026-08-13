@@ -525,7 +525,8 @@ portion of Phase 6:
   hashes the complete scan finding set, target status/severity, lifecycle state/revision, durable
   finding policy decisions, finding-scoped waivers, and suppressions once, and projects that
   locked snapshot into identical before/after proof fields. Covered writers use the same fence;
-  any missing, over-limit, cross-scope, concurrent, or changed replay state fails closed.
+  bulk normalized-finding and lifecycle statements advance each distinct affected scope once.
+  Any missing, over-limit, cross-scope, concurrent, or changed replay state fails closed.
 - `sast-ai-advisory-authority-proof-v1` stores no JSON or model/content payload. It retains only
   scope references, counts, component/state/proof digests, verification time, and database-
   checked booleans: proof-ledger written is true while every finding creation/status/severity,

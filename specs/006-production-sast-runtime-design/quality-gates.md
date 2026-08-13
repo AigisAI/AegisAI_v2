@@ -332,7 +332,8 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   direct finding/evidence requests, correlation drift, expiry, and authority widening are denied.
 - 100% T044 zero-authority invariant: one serializable operation locks one advisory-context and
   three authority fence rows, then writes only an immutable proof row. Every covered writer
-  advances the same fence. The bounded scan finding set, target status/severity, exact lifecycle
+  advances the same fence; bulk finding and lifecycle writes deduplicate affected keys once per
+  SQL statement. The bounded scan finding set, target status/severity, exact lifecycle
   state/revision, durable finding policy decisions, waivers, and suppressions produce one locked
   snapshot projected into identical before/after state digests; authoritative writes and all
   authority bits equal zero.

@@ -570,7 +570,8 @@ response as finding, policy, publication, lifecycle, or SCM authority.
 credential. In one bounded serializable transaction it locks the advisory context, reloads the
 advisory, immutable handoff, occurrence, normalized finding, and lifecycle context, and then
 locks the scan, lifecycle-context, and finding authority fences. All application writers to the
-covered authoritative tables advance those same fences. The transaction hashes one stable scan
+covered authoritative tables advance those same fences; normalized-finding and lifecycle bulk
+writes aggregate distinct affected keys once per statement. The transaction hashes one stable scan
 finding set, target finding status/severity, T037 lifecycle state/revision, finding policy
 decision, finding-scoped waiver, and suppression snapshot, then inserts one
 `sast-ai-advisory-authority-proof-v1` row. The proof projects that one locked snapshot into

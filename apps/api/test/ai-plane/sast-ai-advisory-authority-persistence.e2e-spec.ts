@@ -111,6 +111,33 @@ describe('SAST AI advisory authority proof persistence contract', () => {
     expect(migration).toContain(
       'PolicyDecision_ai_authority_fence'
     );
+    for (const fenceKeyFunction of [
+      'scan',
+      'lifecycle',
+      'finding',
+      'advisory'
+    ]) {
+      expect(migration).toMatch(
+        new RegExp(
+          `CREATE FUNCTION "sast_ai_authority_${fenceKeyFunction}_fence_key"[\\s\\S]*?\\r?\\nSTABLE\\r?\\nSTRICT`,
+          'u'
+        )
+      );
+    }
+    expect(migration).toContain(
+      'fence_sast_ai_authority_normalized_finding_statement'
+    );
+    expect(migration).toContain(
+      'fence_sast_ai_authority_lifecycle_state_statement'
+    );
+    expect(migration).toContain('REFERENCING NEW TABLE AS new_rows');
+    expect(migration).toContain(
+      'REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows'
+    );
+    expect(migration).toContain('FOR EACH STATEMENT');
+    expect(migration).not.toMatch(
+      /"(?:NormalizedFinding|SastFindingLifecycleState)_ai_authority_fence[^\n]*"[\s\S]{0,120}FOR EACH ROW/u
+    );
     expect(storeSource).toContain('await acquireAuthorityFence(tx, context)');
     expect(storeSource).not.toMatch(
       /\b(?:normalizedFinding|sastFindingLifecycleState|policyDecision|waiver|suppression)\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\b/u

@@ -1,7 +1,8 @@
-import type {
-  PolicyAction,
-  PolicyDecision,
-  ScannerKind
+import {
+  SCANNER_KINDS,
+  type PolicyAction,
+  type PolicyDecision,
+  type ScannerKind
 } from '@aegisai/shared';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -11,6 +12,8 @@ import {
   PolicyDecisionStore,
   type PolicyDecisionCreate
 } from './policy-decision.store';
+
+const SUPPORTED_SCANNER_KINDS = new Set<string>(SCANNER_KINDS);
 
 interface PolicyDecisionRow {
   id: string;
@@ -38,6 +41,10 @@ export class PrismaPolicyDecisionStore extends PolicyDecisionStore {
   async create(
     input: Readonly<PolicyDecisionCreate>
   ): Promise<PolicyDecision> {
+    const requiredCoverage = scannerKinds(
+      [...input.requiredCoverage],
+      'requiredCoverage'
+    );
     const row = await this.prisma.policyDecision.create({
       data: {
         tenantId: input.tenantId,
@@ -49,7 +56,7 @@ export class PrismaPolicyDecisionStore extends PolicyDecisionStore {
         ticketRequested: input.ticketRequested,
         blockRequested: input.blockRequested,
         reasonCodes: input.reasonCodes,
-        requiredCoverage: input.requiredCoverage,
+        requiredCoverage,
         waiverApplied: input.waiverApplied,
         staleSuppressed: input.staleSuppressed,
         aiAdvisoryVisible: input.aiAdvisoryVisible
@@ -83,10 +90,10 @@ function policyDecisionFromRow(
     ticketRequested: row.ticketRequested,
     blockRequested: row.blockRequested,
     reasonCodes: stringArray(row.reasonCodes, 'reasonCodes'),
-    requiredCoverage: stringArray(
+    requiredCoverage: scannerKinds(
       row.requiredCoverage,
       'requiredCoverage'
-    ) as ScannerKind[],
+    ),
     waiverApplied: row.waiverApplied,
     staleSuppressed: row.staleSuppressed,
     aiAdvisoryVisible: row.aiAdvisoryVisible
@@ -101,4 +108,17 @@ function stringArray(value: Prisma.JsonValue, field: string): string[] {
     throw new Error(`Persisted policy decision ${field} is invalid.`);
   }
   return [...value];
+}
+
+function scannerKinds(
+  value: Prisma.JsonValue,
+  field: string
+): ScannerKind[] {
+  const values = stringArray(value, field);
+  if (!values.every((value) => SUPPORTED_SCANNER_KINDS.has(value))) {
+    throw new Error(
+      `Policy decision ${field} contains an unsupported scanner kind.`
+    );
+  }
+  return values as ScannerKind[];
 }
