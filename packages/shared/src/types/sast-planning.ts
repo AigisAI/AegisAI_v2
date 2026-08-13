@@ -6,7 +6,8 @@ import {
   type SastScanLane,
   type SastScanPlan,
   type SastScanProfile,
-  type ScannerSetDescriptor
+  type ScannerSetDescriptor,
+  type VerifiedScannerSetDescriptor
 } from './sast-runtime';
 
 export const SAST_PLANNING_STATES = ['ADMITTED', 'DEFERRED', 'REJECTED'] as const;
@@ -39,6 +40,10 @@ export const SAST_PLANNING_REASON_CODES = [
   'SCANNER_SET_INVALID',
   'REQUIRED_SCANNER_MISSING',
   'REQUIRED_RULE_BUNDLE_MISSING',
+  'RULE_BUNDLE_MANIFEST_UNVERIFIED',
+  'RULE_BUNDLE_MANIFEST_MISMATCH',
+  'RULE_BUNDLE_COMPATIBILITY_UNSUPPORTED',
+  'RULE_BUNDLE_VERIFICATION_UNAVAILABLE',
   'VULNERABILITY_DATABASE_INVALID',
   'SCHEMA_BUNDLE_INVALID',
   'NORMALIZER_BUNDLE_INVALID',
@@ -152,7 +157,7 @@ export interface SastCanonicalScanKeyInput {
   policyVersion: string;
   profile: SastScanProfile;
   profileDigest: `sha256:${string}`;
-  scannerSet: ScannerSetDescriptor;
+  scannerSet: VerifiedScannerSetDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
 }
 
@@ -542,7 +547,10 @@ export function buildSastCanonicalScanKeyPreimage(
       scanner: bundle.scanner,
       bundleId: bundle.bundleId,
       version: bundle.version,
-      digest: bundle.digest
+      digest: bundle.digest,
+      manifestDigest: bundle.manifestDigest,
+      verificationDigest: bundle.verificationDigest,
+      compatibilityReceiptDigest: bundle.compatibilityReceiptDigest
     }))
     .sort((left, right) =>
       compareStrings(

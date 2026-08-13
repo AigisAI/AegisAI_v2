@@ -65,6 +65,43 @@ Immutable platform-managed rule collection.
 - `killSwitchRef`
 - creation, validation, promotion, suspension, rollback, and retirement timestamps
 
+### SastRuleBundleManifest
+
+Immutable T045 platform supply-chain ledger. The parent stores the canonical manifest and
+set digests plus bounded quality, signer, rollout, kill-switch, and rollback references.
+Normalized child rows store only ordered member ID/digest pairs, rule identity metadata, and
+typed compatibility values. Counts on the parent must match every reconstructed child set.
+The schema has fixed `PLATFORM_MANAGED`, immutable, zero-customer-executable-content,
+zero-customer-source, and zero-secret checks. No rule body, signature bytes, provenance
+payload, repository content, or generic JSON field exists.
+
+### SastRuleBundleSupplyChainAttestation
+
+One immutable trusted verification per manifest:
+
+- deterministic verification ID bound to the manifest digest
+- exact manifest, bundle, member-set, signer, signature, and provenance identities
+- signature, provenance, signer, and subject-digest verification facts fixed true
+- signature-byte, provenance-payload, and executable-rule-content storage facts fixed false
+- canonical verification timestamp and attestation digest
+
+The production-default authority is unavailable; only an installed platform verifier can
+create this record.
+
+### SastRuleBundleCompatibilityReceipt
+
+One immutable successful compatibility binding for a manifest, scanner set, and profile:
+
+- manifest and supply-chain verification IDs/digests
+- scanner set and profile IDs/digests
+- exact scanner kind/version/image, wrapper, schema, and normalizer digests
+- compatibility, manifest-projection, signature, provenance, and signer facts fixed true
+- customer-input and executable-rule-content storage facts fixed false
+- canonical evaluation timestamp and receipt digest
+
+An unsupported or unavailable evaluation creates no receipt. A plan contains the receipt ID
+and digest, and its canonical scan key commits to that digest before queue reservation.
+
 ### RuleDefinitionMetadata
 
 Non-executable searchable rule metadata stored independently from the signed bundle.

@@ -14,6 +14,7 @@ import {
   type SastScanPlanningInput,
   type SastScanPlan,
   type ScannerSetDescriptor,
+  type VerifiedScannerSetDescriptor,
   type TrustedSastRepositoryMetadata
 } from '@aegisai/shared';
 
@@ -21,6 +22,10 @@ import { ControlPlaneService } from '../../src/control-plane/control-plane.servi
 import type { SastQueueReservationInput } from '../../src/control-plane/sast-queue-admission.store';
 import { SastQueueAdmissionService } from '../../src/control-plane/sast-queue-admission.service';
 import { SastScanPlannerService } from '../../src/control-plane/sast-scan-planner.service';
+import {
+  SastRuleBundleCompatibilityGate,
+  SastRuleBundleCompatibilityGateError
+} from '../../src/rule-governance/sast-rule-bundle-compatibility.gate';
 import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
 import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
 
@@ -38,11 +43,16 @@ const ruleBundle = (scanner: 'OPENGREP' | 'TRIVY', character: string) => ({
   version: '1.0.0',
   state: 'ACTIVE' as const,
   digest: digest(character),
+  manifestId: `sast-rule-bundle-manifest://${character.repeat(64)}`,
+  manifestDigest: digest(character),
+  verificationId: `sast-rule-bundle-verification://${character.repeat(64)}`,
+  verificationDigest: digest(character),
   signatureRef: `signature://rules/${scanner}`,
   provenanceRef: `provenance://rules/${scanner}`,
   compatibilityRef: `compatibility://rules/${scanner}`,
   rolloutPolicyRef: `rollout://rules/${scanner}`,
   killSwitchRef: `kill-switch://rules/${scanner}`,
+  rollbackTargetDigest: digest(character === 'f' ? 'e' : 'f'),
   scanner,
   source: 'PLATFORM_MANAGED' as const,
   immutable: true as const,
@@ -90,6 +100,34 @@ const buildScannerSet = (): ScannerSetDescriptor => ({
   sbomSchema: 'CYCLONEDX_JSON',
   rollbackRef: 'rollback://scanner-set-0'
 });
+
+const verifiedRuleBundle = (
+  scanner: 'OPENGREP' | 'TRIVY',
+  character: string
+) => ({
+  ...ruleBundle(scanner, character),
+  compatibilityReceiptId: `sast-rule-bundle-compatibility://${character.repeat(64)}`,
+  compatibilityReceiptDigest: digest(character)
+});
+
+const buildVerifiedScannerSet = (
+  scannerSet: ScannerSetDescriptor = buildScannerSet()
+): VerifiedScannerSetDescriptor => ({
+  ...scannerSet,
+  ruleBundles: scannerSet.ruleBundles.map((bundle) => ({
+    ...bundle,
+    compatibilityReceiptId: `sast-rule-bundle-compatibility://${bundle.digest.slice('sha256:'.length)}`,
+    compatibilityReceiptDigest: bundle.manifestDigest
+  }))
+});
+
+class AcceptingRuleBundleCompatibilityGate extends SastRuleBundleCompatibilityGate {
+  async verifyScannerSet(input: {
+    scannerSet: Readonly<ScannerSetDescriptor>;
+  }): Promise<VerifiedScannerSetDescriptor> {
+    return buildVerifiedScannerSet(structuredClone(input.scannerSet));
+  }
+}
 
 const queuePolicy: SastQueuePolicySet = {
   policyVersion: 'queue-policy-1',
@@ -184,7 +222,7 @@ const buildReservationPlan = (input: {
     submodulesEnabled: false,
     lfsObjectsFetched: false
   },
-  scannerSet: buildScannerSet(),
+  scannerSet: buildVerifiedScannerSet(),
   isolationClass: 'HARDENED',
   resultIngressRef: `result-ingress://${input.tenantId}/${input.scanRequestId}`,
   evidenceOutputRef: `evidence-output://${input.tenantId}/${input.scanRequestId}`,
@@ -246,7 +284,11 @@ const buildDispatchReservationInput = (input: {
   };
 };
 
-async function createHarness(lane: 'FAST' | 'DEEP' = 'FAST') {
+async function createHarness(
+  lane: 'FAST' | 'DEEP' = 'FAST',
+  ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate =
+    new AcceptingRuleBundleCompatibilityGate()
+) {
   const scanRequestStore = new InMemoryControlPlaneScanRequestStore();
   const queueStore = new InMemorySastQueueAdmissionStore();
   const controlPlane = new ControlPlaneService(
@@ -290,7 +332,12 @@ async function createHarness(lane: 'FAST' | 'DEEP' = 'FAST') {
     scanRequestStore,
     queueStore,
     queueAdmission,
-    planner: new SastScanPlannerService(controlPlane, queueAdmission),
+    ruleBundleCompatibilityGate,
+    planner: new SastScanPlannerService(
+      controlPlane,
+      queueAdmission,
+      ruleBundleCompatibilityGate
+    ),
     repositoryBindingId,
     scanRequest
   };
@@ -319,6 +366,48 @@ function buildPlanningInput(
 }
 
 describe('SastScanPlannerService', () => {
+  it.each([
+    ['MANIFEST_UNVERIFIED', 'RULE_BUNDLE_MANIFEST_UNVERIFIED'],
+    ['MANIFEST_MISMATCH', 'RULE_BUNDLE_MANIFEST_MISMATCH'],
+    [
+      'COMPATIBILITY_UNSUPPORTED',
+      'RULE_BUNDLE_COMPATIBILITY_UNSUPPORTED'
+    ],
+    [
+      'VERIFICATION_UNAVAILABLE',
+      'RULE_BUNDLE_VERIFICATION_UNAVAILABLE'
+    ]
+  ] as const)(
+    'fails closed before queue reservation for %s',
+    async (gateReason, planningReason) => {
+      const gate = new (class extends SastRuleBundleCompatibilityGate {
+        async verifyScannerSet(): Promise<VerifiedScannerSetDescriptor> {
+          throw new SastRuleBundleCompatibilityGateError(gateReason);
+        }
+      })();
+      const harness = await createHarness('FAST', gate);
+      const reserve = jest.spyOn(
+        harness.queueAdmission,
+        'reserveWithContext'
+      );
+
+      const result = await harness.planner.plan(
+        buildPlanningInput(
+          harness.repositoryBindingId,
+          harness.scanRequest.id
+        )
+      );
+
+      expect(result).toEqual({
+        planning: expect.objectContaining({
+          state: 'REJECTED',
+          reasonCodes: [planningReason]
+        })
+      });
+      expect(reserve).not.toHaveBeenCalled();
+    }
+  );
+
   it('selects the Java Fast profile and records an immutable admitted plan', async () => {
     const harness = await createHarness('FAST');
     const input = buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id);
@@ -397,7 +486,8 @@ describe('SastScanPlannerService', () => {
     const restartedQueue = new SastQueueAdmissionService(harness.queueStore);
     const restartedPlanner = new SastScanPlannerService(
       restartedControlPlane,
-      restartedQueue
+      restartedQueue,
+      harness.ruleBundleCompatibilityGate
     );
     await expect(restartedControlPlane.listIntegrations('tenant-1')).resolves.toHaveLength(1);
     await expect(
@@ -634,11 +724,11 @@ describe('SastScanPlannerService', () => {
       policyVersion: harness.scanRequest.policyVersion,
       profile: baselineResult.plan!.profile,
       profileDigest: baselineResult.plan!.profileDigest,
-      scannerSet: baseInput.scannerSet,
+      scannerSet: baselineResult.plan!.scannerSet,
       isolationClass: baselineResult.plan!.isolationClass
     };
     const keyFor = (
-      scannerSet: ScannerSetDescriptor,
+      scannerSet: VerifiedScannerSetDescriptor,
       inventoryDigest = baseCanonicalInput.inventoryDigest,
       attestationRef = baseCanonicalInput.attestationRef
     ): `sha256:${string}` =>
@@ -653,28 +743,31 @@ describe('SastScanPlannerService', () => {
           'utf8'
         )
         .digest('hex')}`;
-    expect(keyFor(baseInput.scannerSet)).toBe(baseline);
-    const variants: ScannerSetDescriptor[] = [
-      { ...baseInput.scannerSet, scannerSetDigest: digest('2') },
+    expect(keyFor(baselineResult.plan!.scannerSet)).toBe(baseline);
+    const variants: VerifiedScannerSetDescriptor[] = [
+      { ...baselineResult.plan!.scannerSet, scannerSetDigest: digest('2') },
       {
-        ...baseInput.scannerSet,
-        ruleBundles: [ruleBundle('OPENGREP', '3'), ruleBundle('TRIVY', '8')]
+        ...baselineResult.plan!.scannerSet,
+        ruleBundles: [
+          verifiedRuleBundle('OPENGREP', '3'),
+          verifiedRuleBundle('TRIVY', '8')
+        ]
       },
       {
-        ...baseInput.scannerSet,
+        ...baselineResult.plan!.scannerSet,
         vulnerabilityDatabase: {
-          ...baseInput.scannerSet.vulnerabilityDatabase,
+          ...baselineResult.plan!.scannerSet.vulnerabilityDatabase,
           digest: digest('4')
         }
       },
-      { ...baseInput.scannerSet, schemaBundle: signedArtifact('5') },
-      { ...baseInput.scannerSet, normalizerBundle: signedArtifact('7') },
+      { ...baselineResult.plan!.scannerSet, schemaBundle: signedArtifact('5') },
+      { ...baselineResult.plan!.scannerSet, normalizerBundle: signedArtifact('7') },
       {
-        ...baseInput.scannerSet,
+        ...baselineResult.plan!.scannerSet,
         scanners: {
-          ...baseInput.scannerSet.scanners,
+          ...baselineResult.plan!.scannerSet.scanners,
           OPENGREP: {
-            ...baseInput.scannerSet.scanners.OPENGREP,
+            ...baselineResult.plan!.scannerSet.scanners.OPENGREP,
             wrapper: signedArtifact('8')
           }
         }
@@ -685,10 +778,13 @@ describe('SastScanPlannerService', () => {
     expect(keys.every((key) => key !== baseline)).toBe(true);
     expect(new Set(keys).size).toBe(keys.length);
 
-    const inventoryKey = keyFor(baseInput.scannerSet, digest('3'));
+    const inventoryKey = keyFor(
+      baselineResult.plan!.scannerSet,
+      digest('3')
+    );
     expect(inventoryKey).not.toBe(baseline);
     const attestationKey = keyFor(
-      baseInput.scannerSet,
+      baselineResult.plan!.scannerSet,
       baseCanonicalInput.inventoryDigest,
       'attestation://inventory-2'
     );

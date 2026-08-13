@@ -8,6 +8,7 @@ import { InternalServiceGuard } from '../../src/common/security/internal-service
 import { configureApp } from '../../src/bootstrap/configure-app';
 import { ControlPlaneScanRequestStore } from '../../src/control-plane/control-plane-scan-request.store';
 import { SastQueueAdmissionStore } from '../../src/control-plane/sast-queue-admission.store';
+import { SastRuleBundleCompatibilityGate } from '../../src/rule-governance/sast-rule-bundle-compatibility.gate';
 import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
 import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
 import {
@@ -42,11 +43,16 @@ const ruleBundle = (scanner: 'OPENGREP' | 'TRIVY', character: string) => ({
   version: '1.0.0',
   state: 'ACTIVE' as const,
   digest: digest(character),
+  manifestId: `sast-rule-bundle-manifest://${character.repeat(64)}`,
+  manifestDigest: digest(character),
+  verificationId: `sast-rule-bundle-verification://${character.repeat(64)}`,
+  verificationDigest: digest(character),
   signatureRef: `signature://rules/${scanner}`,
   provenanceRef: `provenance://rules/${scanner}`,
   compatibilityRef: `compatibility://rules/${scanner}`,
   rolloutPolicyRef: `rollout://rules/${scanner}`,
   killSwitchRef: `kill-switch://rules/${scanner}`,
+  rollbackTargetDigest: digest(character === 'f' ? 'e' : 'f'),
   scanner,
   source: 'PLATFORM_MANAGED' as const,
   immutable: true as const,
@@ -207,6 +213,19 @@ describe("Control Plane skeleton (e2e)", () => {
       .useValue(new InMemoryControlPlaneScanRequestStore())
       .overrideProvider(SastQueueAdmissionStore)
       .useValue(new InMemorySastQueueAdmissionStore())
+      .overrideProvider(SastRuleBundleCompatibilityGate)
+      .useValue({
+        verifyScannerSet: async (input: {
+          scannerSet: ScannerSetDescriptor;
+        }) => ({
+          ...structuredClone(input.scannerSet),
+          ruleBundles: input.scannerSet.ruleBundles.map((bundle) => ({
+            ...structuredClone(bundle),
+            compatibilityReceiptId: `sast-rule-bundle-compatibility://${bundle.manifestDigest.slice('sha256:'.length)}`,
+            compatibilityReceiptDigest: bundle.verificationDigest
+          }))
+        })
+      })
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .overrideGuard(InternalServiceGuard)

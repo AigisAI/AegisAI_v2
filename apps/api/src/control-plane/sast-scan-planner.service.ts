@@ -19,9 +19,14 @@ import {
   type SastScanPlanningResult,
   type SastScanProfile,
   type SastUserVisiblePlanningState,
-  type ScannerSetDescriptor
+  type ScannerSetDescriptor,
+  type VerifiedScannerSetDescriptor
 } from '@aegisai/shared';
 
+import {
+  SastRuleBundleCompatibilityGate,
+  SastRuleBundleCompatibilityGateError
+} from '../rule-governance/sast-rule-bundle-compatibility.gate';
 import { ControlPlaneService } from './control-plane.service';
 import type { ControlPlaneScanRequest } from './control-plane.types';
 import { SastQueueAdmissionService } from './sast-queue-admission.service';
@@ -30,7 +35,8 @@ import { SastQueueAdmissionService } from './sast-queue-admission.service';
 export class SastScanPlannerService {
   constructor(
     private readonly controlPlaneService: ControlPlaneService,
-    private readonly queueAdmissionService: SastQueueAdmissionService
+    private readonly queueAdmissionService: SastQueueAdmissionService,
+    private readonly ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate
   ) {}
 
   async plan(input: SastScanPlanningInput): Promise<SastScanPlanningResult> {
@@ -120,7 +126,27 @@ export class SastScanPlannerService {
       );
     }
 
-    const profileDigest = this.digest(buildSastProfileDigestPreimage(profileSelection.profile));
+    const profileDigest = this.digest(
+      buildSastProfileDigestPreimage(profileSelection.profile)
+    );
+    let verifiedScannerSet: VerifiedScannerSetDescriptor;
+    try {
+      verifiedScannerSet =
+        await this.ruleBundleCompatibilityGate.verifyScannerSet({
+          scannerSet: input.scannerSet,
+          profile: profileSelection.profile,
+          profileDigest,
+          evaluatedAt: requestedAt
+        });
+    } catch (error) {
+      return this.reject(
+        scanRequest,
+        requestedAt,
+        this.ruleBundleReasonCode(error),
+        profileSelection.coverageClaim,
+        profileSelection.profile
+      );
+    }
     const isolationClass =
       scanRequest.isolationClass === 'RESTRICTED' ? 'RESTRICTED' : 'HARDENED';
     const canonicalScanKey = this.digest(
@@ -135,7 +161,7 @@ export class SastScanPlannerService {
         policyVersion: scanRequest.policyVersion,
         profile: profileSelection.profile,
         profileDigest,
-        scannerSet: input.scannerSet,
+        scannerSet: verifiedScannerSet,
         isolationClass
       })
     );
@@ -154,7 +180,7 @@ export class SastScanPlannerService {
       profileSelection.profile,
       profileDigest,
       canonicalScanKey,
-      input.scannerSet,
+      verifiedScannerSet,
       isolationClass,
       input.repositoryMetadata.inventoryDigest,
       input.repositoryMetadata.attestationRef,
@@ -232,7 +258,7 @@ export class SastScanPlannerService {
               profileSelection.profile,
               profileDigest,
               canonicalScanKey,
-              input.scannerSet,
+              verifiedScannerSet,
               isolationClass,
               input.repositoryMetadata.inventoryDigest,
               input.repositoryMetadata.attestationRef,
@@ -253,7 +279,7 @@ export class SastScanPlannerService {
     profile: SastScanProfile,
     profileDigest: `sha256:${string}`,
     canonicalScanKey: `sha256:${string}`,
-    scannerSet: ScannerSetDescriptor,
+    scannerSet: VerifiedScannerSetDescriptor,
     isolationClass: 'HARDENED' | 'RESTRICTED',
     inventoryDigest: `sha256:${string}`,
     attestationRef: string,
@@ -340,6 +366,24 @@ export class SastScanPlannerService {
     }
 
     return Array.from(new Set(reasonCodes));
+  }
+
+  private ruleBundleReasonCode(
+    error: unknown
+  ): SastPlanningReasonCode {
+    if (!(error instanceof SastRuleBundleCompatibilityGateError)) {
+      return 'RULE_BUNDLE_VERIFICATION_UNAVAILABLE';
+    }
+    switch (error.reason) {
+      case 'MANIFEST_UNVERIFIED':
+        return 'RULE_BUNDLE_MANIFEST_UNVERIFIED';
+      case 'MANIFEST_MISMATCH':
+        return 'RULE_BUNDLE_MANIFEST_MISMATCH';
+      case 'COMPATIBILITY_UNSUPPORTED':
+        return 'RULE_BUNDLE_COMPATIBILITY_UNSUPPORTED';
+      case 'VERIFICATION_UNAVAILABLE':
+        return 'RULE_BUNDLE_VERIFICATION_UNAVAILABLE';
+    }
   }
 
   private async reject(

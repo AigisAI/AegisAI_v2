@@ -49,11 +49,18 @@ const ruleBundle = (scanner, character, state = 'ACTIVE') => ({
   version: '1.0.0',
   state,
   digest: digest(character),
+  manifestId: `sast-rule-bundle-manifest://${character.repeat(64)}`,
+  manifestDigest: digest(character),
+  verificationId: `sast-rule-bundle-verification://${character.repeat(64)}`,
+  verificationDigest: digest(character),
   signatureRef: `signature://rules/${scanner}`,
   provenanceRef: `provenance://rules/${scanner}`,
   compatibilityRef: `compatibility://rules/${scanner}`,
   rolloutPolicyRef: `rollout://rules/${scanner}`,
   killSwitchRef: `kill-switch://rules/${scanner}`,
+  rollbackTargetDigest: digest(character === 'f' ? 'e' : 'f'),
+  compatibilityReceiptId: `sast-rule-bundle-compatibility://${character.repeat(64)}`,
+  compatibilityReceiptDigest: digest(character),
   scanner,
   source: 'PLATFORM_MANAGED',
   immutable: true,
@@ -246,6 +253,20 @@ test('rule bundle descriptors bind unique immutable rule identity metadata', () 
         { ...bundle.rules[0], ruleId: 'z-rule' },
         { ...bundle.rules[0], ruleId: 'a-rule' }
       ]
+    }),
+    false
+  );
+  assert.equal(
+    runtime.isRuleBundleDescriptorValid({
+      ...bundle,
+      manifestId: `sast-rule-bundle-manifest://${'8'.repeat(64)}`
+    }),
+    false
+  );
+  assert.equal(
+    runtime.isRuleBundleDescriptorValid({
+      ...bundle,
+      verificationId: `sast-rule-bundle-verification://${'8'.repeat(64)}`
     }),
     false
   );

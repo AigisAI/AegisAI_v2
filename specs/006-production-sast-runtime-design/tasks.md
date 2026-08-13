@@ -76,7 +76,7 @@
 
 ## Phase 9: Rule Governance Runtime
 
-- [ ] T045 Implement signed immutable bundle manifests and compatibility validation
+- [x] T045 Implement signed immutable bundle manifests and compatibility validation
 - [ ] T046 Implement semantic rule identity and non-executable tenant policy metadata
 - [ ] T047 Implement promotion evidence, approvals, and state transitions
 - [ ] T048 Implement deterministic tenant-safe canary cohorts and observation gates

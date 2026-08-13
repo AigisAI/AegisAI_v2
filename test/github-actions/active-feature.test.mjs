@@ -50,6 +50,8 @@ const files = {
   sharedSastAiAdvisoryHandoff: new URL('../../packages/shared/src/types/sast-ai-advisory-handoff.ts', import.meta.url),
   sharedSastAiAdvisoryAuthority: new URL('../../packages/shared/src/types/sast-ai-advisory-authority.ts', import.meta.url),
   sharedSastAiAdvisoryAuthorityTest: new URL('../../packages/shared/test/sast-ai-advisory-authority.test.mjs', import.meta.url),
+  sharedSastRuleBundleManifest: new URL('../../packages/shared/src/types/sast-rule-bundle-manifest.ts', import.meta.url),
+  sharedSastRuleBundleManifestTest: new URL('../../packages/shared/test/sast-rule-bundle-manifest.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
@@ -118,6 +120,13 @@ const files = {
   apiPolicyLifecycle: new URL('../../apps/api/src/policy/policy-lifecycle.service.ts', import.meta.url),
   apiPolicyEngineTest: new URL('../../apps/api/test/policy/policy-engine.service.e2e-spec.ts', import.meta.url),
   apiPolicyLifecycleTest: new URL('../../apps/api/test/policy/waiver-suppression-lifecycle.e2e-spec.ts', import.meta.url),
+  apiRuleBundleManifestService: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-manifest.service.ts', import.meta.url),
+  apiRuleBundleManifestStore: new URL('../../apps/api/src/rule-governance/prisma-sast-rule-bundle-manifest.store.ts', import.meta.url),
+  apiRuleBundleCompatibilityGate: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-compatibility.gate.ts', import.meta.url),
+  apiRuleBundleSupplyChainAuthority: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-supply-chain.authority.ts', import.meta.url),
+  apiRuleGovernanceModule: new URL('../../apps/api/src/rule-governance/rule-governance.module.ts', import.meta.url),
+  apiRuleBundleManifestServiceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-manifest.service.e2e-spec.ts', import.meta.url),
+  apiRuleBundleManifestPersistenceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-manifest-persistence.e2e-spec.ts', import.meta.url),
   aiAdvisoryRuntime: new URL('../../apps/ai/src/advisory-runtime.ts', import.meta.url),
   aiModelGateway: new URL('../../apps/ai/src/model-gateway.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
@@ -130,6 +139,7 @@ const files = {
   apiSastEvidenceAccessMigration: new URL('../../apps/api/prisma/migrations/20260810070000_sast_evidence_access_deletion/migration.sql', import.meta.url),
   apiSastAiAdvisoryMigration: new URL('../../apps/api/prisma/migrations/20260811040000_sast_ai_advisory_handoff/migration.sql', import.meta.url),
   apiSastAiAdvisoryAuthorityMigration: new URL('../../apps/api/prisma/migrations/20260811140000_sast_ai_advisory_authority_proof/migration.sql', import.meta.url),
+  apiSastRuleBundleManifestMigration: new URL('../../apps/api/prisma/migrations/20260813120000_sast_rule_bundle_manifest/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -1288,7 +1298,7 @@ test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () =
   assert.match(tasks, /- \[x\] T040\b/);
   assert.match(
     quickstart,
-    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,180}T043[\s\S]{0,180}T044[\s\S]{0,120}T045 is the next implementation task/
+    /T045 signed immutable,[\s\S]{0,300}are complete; T046 semantic rule identity/
   );
   assert.match(contract, /Scan coverage gate v1/);
   assert.match(contract, /Freshness and bounded retry gate v1/);
@@ -1424,14 +1434,14 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
   assert.match(tasks, /- \[x\] T041\b/);
   assert.match(
     quickstart,
-    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,180}T043[\s\S]{0,180}T044[\s\S]{0,120}T045 is the next implementation task/
+    /T045 signed immutable,[\s\S]{0,300}are complete; T046 semantic rule identity/
   );
   assert.match(contract, /Accepted-finding evidence gate v1/);
   assert.match(dataModel, /SastEvidenceBuildDecision/);
   assert.match(dataModel, /SastAcceptedEvidencePack/);
   assert.match(
     plan,
-    /T040, T041, T042, T043, and T044 independently and now proceeds to T045/
+    /T040, T041, T042, T043, T044, and T045 independently and now proceeds to T046/
   );
   assert.match(spec, /FR-046a/);
   assert.match(
@@ -1607,7 +1617,7 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assert.match(tasks, /- \[x\] T042\b/);
   assert.match(
     quickstart,
-    /T042 purpose-bound dashboard\/AI classification,[\s\S]{0,260}are complete;[\s\S]{0,180}T043[\s\S]{0,180}T044[\s\S]{0,120}T045 is the next implementation task/
+    /T045 signed immutable,[\s\S]{0,300}are complete; T046 semantic rule identity/
   );
   assert.match(contract, /Evidence access and deletion gate v1/);
   assert.match(dataModel, /SastEvidenceAccessDecision/);
@@ -1761,13 +1771,13 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   assert.match(tasks, /- \[x\] T043\b/);
   assert.match(
     quickstart,
-    /T043 normalized-finding plus reduced-reference advisory handoff is complete\.[\s\S]{0,180}T045 is the next implementation task/
+    /T045 signed immutable,[\s\S]{0,300}are complete; T046 semantic rule identity/
   );
   assert.match(contract, /Advisory AI handoff gate v1/);
   assert.match(dataModel, /### SastAiAdvisoryHandoff/);
   assert.match(
     plan,
-    /T040, T041, T042, T043, and T044 independently and now proceeds to T045/
+    /T040, T041, T042, T043, T044, and T045 independently and now proceeds to T046/
   );
   assert.match(spec, /FR-051a/);
   assert.match(
@@ -1905,13 +1915,13 @@ test('SAST T044 proves AI output has zero finding and policy authority', () => {
   assert.match(tasks, /- \[x\] T044\b/);
   assert.match(
     quickstart,
-    /T044 zero-authority[\s\S]{0,30}output proof is also complete;[\s\S]{0,100}T045 is the[\s\S]{0,100}next implementation task/
+    /T045 signed immutable,[\s\S]{0,300}are complete; T046 semantic rule identity/
   );
   assert.match(contract, /Advisory output authority proof gate v1/);
   assert.match(dataModel, /### SastAiAdvisoryAuthorityProof/);
   assert.match(
     plan,
-    /T040, T041, T042, T043, and T044 independently and now proceeds to T045/
+    /T040, T041, T042, T043, T044, and T045 independently and now proceeds to T046/
   );
   assert.match(spec, /FR-052a/);
   assert.match(
@@ -1923,6 +1933,123 @@ test('SAST T044 proves AI output has zero finding and policy authority', () => {
     /AI output authority escalation or proof forgery/
   );
   assert.match(qualityGates, /100% T044 zero-authority invariant/);
+});
+
+test('SAST T045 requires signed immutable manifests and exact compatibility before queueing', () => {
+  const shared = readNormalizedText(files.sharedSastRuleBundleManifest);
+  const sharedTest = readNormalizedText(
+    files.sharedSastRuleBundleManifestTest
+  );
+  const sharedRuntime = readNormalizedText(files.sharedSastRuntime);
+  const sharedPlanning = readNormalizedText(files.sharedSastPlanning);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiRuleBundleManifestService);
+  const store = readNormalizedText(files.apiRuleBundleManifestStore);
+  const gate = readNormalizedText(files.apiRuleBundleCompatibilityGate);
+  const authority = readNormalizedText(
+    files.apiRuleBundleSupplyChainAuthority
+  );
+  const moduleSource = readNormalizedText(files.apiRuleGovernanceModule);
+  const serviceTest = readNormalizedText(
+    files.apiRuleBundleManifestServiceTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiRuleBundleManifestPersistenceTest
+  );
+  const planner = readNormalizedText(files.apiSastPlanner);
+  const plannerTest = readNormalizedText(files.apiSastPlannerTest);
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(
+    files.apiSastRuleBundleManifestMigration
+  );
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+
+  assert.match(shared, /sast-rule-bundle-manifest-v1/);
+  assert.match(
+    shared,
+    /sast-rule-bundle-supply-chain-attestation-v1/
+  );
+  assert.match(
+    shared,
+    /sast-rule-bundle-compatibility-receipt-v1/
+  );
+  assert.match(shared, /signatureBytesStored: false/);
+  assert.match(shared, /provenancePayloadStored: false/);
+  assert.match(shared, /customerInputAccepted: false/);
+  assert.match(shared, /executableRuleContentStored: false/);
+  assert.match(shared, /findSastRuleBundleCompatibilityReasonCodes/);
+  assert.match(sharedTest, /rejects manifest tampering/);
+  assert.match(sharedTest, /persists no denial receipt/);
+  assert.match(sharedRuntime, /VerifiedScannerSetDescriptor/);
+  assert.match(sharedRuntime, /compatibilityReceiptDigest/);
+  assert.match(sharedPlanning, /RULE_BUNDLE_MANIFEST_UNVERIFIED/);
+  assert.match(sharedPlanning, /compatibilityReceiptDigest/);
+  assert.match(sharedIndex, /sast-rule-bundle-manifest/);
+
+  assert.match(service, /registerVerifiedManifest/);
+  assert.match(service, /manifestProjectionMatches/);
+  assert.match(service, /buildSastRuleBundleCompatibilityReceipt/);
+  assert.match(store, /Prisma\.TransactionIsolationLevel\.Serializable/);
+  assert.match(store, /canonicalizeSastRuleBundleManifest/);
+  assert.match(store, /recordCompatibilityReceipt/);
+  assert.match(gate, /MANIFEST_UNVERIFIED/);
+  assert.match(gate, /COMPATIBILITY_UNSUPPORTED/);
+  assert.match(authority, /AUTHORITY_UNAVAILABLE/);
+  assert.match(
+    moduleSource,
+    /UnavailableSastRuleBundleSupplyChainAuthority/
+  );
+  assert.match(serviceTest, /defaults to an unavailable verifier/);
+  assert.match(persistenceTest, /gates planning before queue reservation/);
+
+  const compatibilityGate = planner.indexOf(
+    'ruleBundleCompatibilityGate.verifyScannerSet'
+  );
+  const queueReservation = planner.indexOf(
+    'assertSastQueueReservationAllowed'
+  );
+  assert.ok(compatibilityGate >= 0);
+  assert.ok(queueReservation > compatibilityGate);
+  assert.match(plannerTest, /fails closed before queue reservation/);
+
+  for (const model of [
+    'SastRuleBundleManifest',
+    'SastRuleBundleManifestMember',
+    'SastRuleBundleManifestRule',
+    'SastRuleBundleCompatibilityEntry',
+    'SastRuleBundleSupplyChainAttestation',
+    'SastRuleBundleCompatibilityReceipt'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(migration, new RegExp(`CREATE TABLE "${model}"`));
+    assert.match(migration, new RegExp(`${model}_immutable_update`));
+    assert.match(migration, new RegExp(`${model}_immutable_delete`));
+  }
+  assert.doesNotMatch(migration, /JSONB/);
+  assert.doesNotMatch(
+    migration,
+    /"(?:ruleContent|sourceContent|repositoryContent|signatureBytes|provenancePayload|secretValue)"/
+  );
+
+  assert.match(tasks, /- \[x\] T045\b/);
+  assert.match(
+    quickstart,
+    /T045 signed immutable,[\s\S]{0,300}are complete; T046 semantic rule identity/
+  );
+  assert.match(
+    plan,
+    /T040, T041, T042, T043, T044, and T045 independently and now proceeds to T046/
+  );
+  assert.match(ruleGovernance, /A signed bundle manifest contains only/);
+  assert.match(ruleGovernance, /mutable tags[\s\S]{0,40}invalid production inputs/);
+  assert.match(contract, /Rule-bundle manifest and compatibility gate v1/);
+  assert.match(dataModel, /### SastRuleBundleManifest/);
+  assert.match(dataModel, /### SastRuleBundleCompatibilityReceipt/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

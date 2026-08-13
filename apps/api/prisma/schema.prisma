@@ -1987,6 +1987,158 @@ model Suppression {
   @@index([findingId])
 }
 
+model SastRuleBundleManifest {
+  id                              String   @id
+  manifestDigest                  String   @unique
+  contractVersion                 String
+  bundleId                        String
+  bundleVersion                   String
+  lifecycleState                  String
+  scanner                         String
+  builtAt                         DateTime
+  sourceRevision                  String
+  bundleDigest                    String
+  memberCount                     Int
+  memberSetDigest                 String
+  ruleCount                       Int
+  ruleSetDigest                   String
+  scannerVersionCount             Int
+  scannerImageDigestCount         Int
+  wrapperDigestCount              Int
+  schemaBundleDigestCount         Int
+  normalizerBundleDigestCount     Int
+  profileIdCount                  Int
+  compatibilityDigest             String
+  goldenCorpusResultRef           String
+  regressionCorpusResultRef       String
+  maliciousCorpusResultRef        String
+  performanceCorpusResultRef      String
+  qualityEvidenceDigest           String
+  signerIdentity                  String
+  signatureRef                    String
+  provenanceRef                   String
+  compatibilityRef                String
+  rolloutPolicyRef                String
+  killSwitchNamespace             String
+  killSwitchRef                   String
+  rollbackTargetDigest            String
+  source                          String   @default("PLATFORM_MANAGED")
+  immutable                       Boolean  @default(true)
+  customerExecutableConfigAllowed Boolean  @default(false)
+  executableRuleContentStored     Boolean  @default(false)
+  customerSourceStored            Boolean  @default(false)
+  secretValueStored               Boolean  @default(false)
+  createdAt                       DateTime @default(now())
+
+  members                SastRuleBundleManifestMember[]
+  rules                  SastRuleBundleManifestRule[]
+  compatibilityEntries   SastRuleBundleCompatibilityEntry[]
+  supplyChainAttestation SastRuleBundleSupplyChainAttestation?
+  compatibilityReceipts  SastRuleBundleCompatibilityReceipt[]
+
+  @@index([bundleId, bundleVersion])
+  @@index([scanner, lifecycleState])
+  @@index([bundleDigest])
+}
+
+model SastRuleBundleManifestMember {
+  manifestId String
+  position   Int
+  memberId   String
+  digest     String
+
+  manifest SastRuleBundleManifest @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([manifestId, position])
+  @@unique([manifestId, memberId])
+}
+
+model SastRuleBundleManifestRule {
+  manifestId     String
+  position       Int
+  ruleId         String
+  ruleRevision   String
+  ruleSemanticId String
+  metadataDigest String
+
+  manifest SastRuleBundleManifest @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([manifestId, position])
+  @@unique([manifestId, ruleId])
+}
+
+model SastRuleBundleCompatibilityEntry {
+  manifestId String
+  kind       String
+  position   Int
+  value      String
+
+  manifest SastRuleBundleManifest @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([manifestId, kind, position])
+  @@unique([manifestId, kind, value])
+}
+
+model SastRuleBundleSupplyChainAttestation {
+  id                          String   @id
+  manifestId                  String   @unique
+  contractVersion             String
+  manifestDigest              String
+  bundleDigest                String
+  memberSetDigest             String
+  signerIdentity              String
+  signatureRef                String
+  provenanceRef               String
+  signatureVerified           Boolean  @default(true)
+  provenanceVerified          Boolean  @default(true)
+  trustedSigner               Boolean  @default(true)
+  subjectDigestsVerified      Boolean  @default(true)
+  signatureBytesStored        Boolean  @default(false)
+  provenancePayloadStored     Boolean  @default(false)
+  executableRuleContentStored Boolean  @default(false)
+  verifiedAt                  DateTime
+  attestationDigest           String   @unique
+  createdAt                   DateTime @default(now())
+
+  manifest              SastRuleBundleManifest               @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  compatibilityReceipts SastRuleBundleCompatibilityReceipt[]
+}
+
+model SastRuleBundleCompatibilityReceipt {
+  id                          String   @id
+  contractVersion             String
+  manifestId                  String
+  manifestDigest              String
+  verificationId              String
+  verificationDigest          String
+  bundleDigest                String
+  scannerSetDigest            String
+  profileId                   String
+  profileDigest               String
+  scanner                     String
+  scannerVersion              String
+  scannerImageDigest          String
+  wrapperDigest               String
+  schemaBundleDigest          String
+  normalizerBundleDigest      String
+  compatible                  Boolean  @default(true)
+  manifestProjectionMatched   Boolean  @default(true)
+  signatureVerified           Boolean  @default(true)
+  provenanceVerified          Boolean  @default(true)
+  trustedSigner               Boolean  @default(true)
+  customerInputAccepted       Boolean  @default(false)
+  executableRuleContentStored Boolean  @default(false)
+  evaluatedAt                 DateTime
+  receiptDigest               String   @unique
+  createdAt                   DateTime @default(now())
+
+  manifest    SastRuleBundleManifest               @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  attestation SastRuleBundleSupplyChainAttestation @relation(fields: [verificationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([manifestId, scannerSetDigest, profileDigest], map: "SastRuleBundleCompatibilityReceipt_manifest_context_key")
+  @@index([scannerSetDigest, profileId], map: "SastRuleBundleCompatibilityReceipt_scannerSet_profile_idx")
+}
+
 model AuditEvent {
   id            String   @id @default(uuid())
   tenantId      String

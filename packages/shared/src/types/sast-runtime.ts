@@ -369,16 +369,27 @@ export interface RuleBundleDescriptor {
   version: string;
   state: RuleBundleState;
   digest: `sha256:${string}`;
+  manifestId: string;
+  manifestDigest: `sha256:${string}`;
+  verificationId: string;
+  verificationDigest: `sha256:${string}`;
   signatureRef: string;
   provenanceRef: string;
   compatibilityRef: string;
   rolloutPolicyRef: string;
   killSwitchRef: string;
+  rollbackTargetDigest: `sha256:${string}`;
   scanner: 'OPENGREP' | 'TRIVY';
   source: 'PLATFORM_MANAGED';
   immutable: true;
   customerExecutableConfigAllowed: false;
   rules: RuleBundleRuleDescriptor[];
+}
+
+export interface VerifiedRuleBundleDescriptor
+  extends RuleBundleDescriptor {
+  compatibilityReceiptId: string;
+  compatibilityReceiptDigest: `sha256:${string}`;
 }
 
 export interface SignedSastArtifactDescriptor {
@@ -413,6 +424,11 @@ export interface ScannerSetDescriptor {
   rollbackRef: string;
 }
 
+export interface VerifiedScannerSetDescriptor
+  extends Omit<ScannerSetDescriptor, 'ruleBundles'> {
+  ruleBundles: VerifiedRuleBundleDescriptor[];
+}
+
 export interface SastRepositoryState {
   repositoryBindingId: string;
   fixedCommitSha: string;
@@ -432,7 +448,7 @@ export interface SastScanPlan {
   profileDigest: `sha256:${string}`;
   policyVersion: string;
   repositoryState: SastRepositoryState;
-  scannerSet: ScannerSetDescriptor;
+  scannerSet: VerifiedScannerSetDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
   resultIngressRef: string;
   evidenceOutputRef: string;
@@ -839,11 +855,25 @@ export function isRuleBundleDescriptorValid(bundle: RuleBundleDescriptor): boole
     bundle.immutable === true &&
     bundle.customerExecutableConfigAllowed === false &&
     isSha256Digest(bundle.digest) &&
+    /^sast-rule-bundle-manifest:\/\/[a-f0-9]{64}$/u.test(
+      bundle.manifestId
+    ) &&
+    isSha256Digest(bundle.manifestDigest) &&
+    bundle.manifestId ===
+      `sast-rule-bundle-manifest://${bundle.manifestDigest.slice('sha256:'.length)}` &&
+    /^sast-rule-bundle-verification:\/\/[a-f0-9]{64}$/u.test(
+      bundle.verificationId
+    ) &&
+    bundle.verificationId ===
+      `sast-rule-bundle-verification://${bundle.manifestDigest.slice('sha256:'.length)}` &&
+    isSha256Digest(bundle.verificationDigest) &&
     isNonBlank(bundle.signatureRef) &&
     isNonBlank(bundle.provenanceRef) &&
     isNonBlank(bundle.compatibilityRef) &&
     isNonBlank(bundle.rolloutPolicyRef) &&
     isNonBlank(bundle.killSwitchRef) &&
+    isSha256Digest(bundle.rollbackTargetDigest) &&
+    bundle.rollbackTargetDigest !== bundle.digest &&
     rules.length > 0 &&
     rules.length <= SAST_RULE_BUNDLE_MAX_RULES &&
     hasUniqueValues(ruleIds) &&
@@ -857,6 +887,18 @@ export function isRuleBundleDescriptorValid(bundle: RuleBundleDescriptor): boole
           (rules[index - 1] as RuleBundleRuleDescriptor).ruleId <
             rule.ruleId)
     )
+  );
+}
+
+export function isVerifiedRuleBundleDescriptorValid(
+  bundle: VerifiedRuleBundleDescriptor
+): boolean {
+  return (
+    isRuleBundleDescriptorValid(bundle) &&
+    /^sast-rule-bundle-compatibility:\/\/[a-f0-9]{64}$/u.test(
+      bundle.compatibilityReceiptId
+    ) &&
+    isSha256Digest(bundle.compatibilityReceiptDigest)
   );
 }
 
@@ -880,7 +922,7 @@ export function isScannerSetDescriptorValid(scannerSet: ScannerSetDescriptor): b
         isSignedSastArtifactDescriptorValid(descriptor) &&
         isSignedSastArtifactDescriptorValid(descriptor.wrapper)
     ) &&
-    scannerSet.ruleBundles.length >= 2 &&
+    scannerSet.ruleBundles.length === 2 &&
     hasUniqueValues(ruleBundleIds) &&
     hasUniqueValues(ruleBundleDigests) &&
     scannerSet.ruleBundles.every(
@@ -889,6 +931,10 @@ export function isScannerSetDescriptorValid(scannerSet: ScannerSetDescriptor): b
     ) &&
     scannerSet.ruleBundles.some((bundle) => bundle.scanner === 'OPENGREP') &&
     scannerSet.ruleBundles.some((bundle) => bundle.scanner === 'TRIVY') &&
+    scannerSet.ruleBundles.filter((bundle) => bundle.scanner === 'OPENGREP')
+      .length === 1 &&
+    scannerSet.ruleBundles.filter((bundle) => bundle.scanner === 'TRIVY')
+      .length === 1 &&
     isSignedSastArtifactDescriptorValid(scannerSet.vulnerabilityDatabase) &&
     isNonBlank(scannerSet.vulnerabilityDatabase.databaseVersion) &&
     isIsoTimestamp(scannerSet.vulnerabilityDatabase.publishedAt) &&
@@ -896,6 +942,15 @@ export function isScannerSetDescriptorValid(scannerSet: ScannerSetDescriptor): b
     isSignedSastArtifactDescriptorValid(scannerSet.normalizerBundle) &&
     scannerSet.sbomSchema === 'CYCLONEDX_JSON' &&
     isNonBlank(scannerSet.rollbackRef)
+  );
+}
+
+export function isVerifiedScannerSetDescriptorValid(
+  scannerSet: VerifiedScannerSetDescriptor
+): boolean {
+  return (
+    isScannerSetDescriptorValid(scannerSet) &&
+    scannerSet.ruleBundles.every(isVerifiedRuleBundleDescriptorValid)
   );
 }
 
@@ -1006,7 +1061,7 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
       plan.repositoryState.shallowFetchPreferred === true &&
       plan.repositoryState.submodulesEnabled === false &&
       plan.repositoryState.lfsObjectsFetched === false &&
-      isScannerSetDescriptorValid(plan.scannerSet) &&
+      isVerifiedScannerSetDescriptorValid(plan.scannerSet) &&
       (plan.isolationClass === 'HARDENED' || plan.isolationClass === 'RESTRICTED') &&
       isNonBlank(plan.resultIngressRef) &&
       isNonBlank(plan.evidenceOutputRef) &&
