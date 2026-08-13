@@ -1337,6 +1337,38 @@ tenant/legal hard purge follows the two-operator, externally audited procedure i
 [`docs/runbooks/sast-ai-authority-proof-hard-purge.md`](../../docs/runbooks/sast-ai-authority-proof-hard-purge.md);
 ordinary application roles cannot bypass the immutable fence.
 
+### Rule-bundle manifest and compatibility gate v1
+
+`sast-rule-bundle-manifest-v1` accepts only canonical platform metadata. It requires a
+scanner-specific bundle ID and semantic version, lifecycle state, build/source identity,
+bundle digest, one or more code-unit-sorted unique member ID/digest pairs, one or more sorted
+unique rule identity projections, exact sorted compatibility sets, four digest-bound quality
+references, trusted signer identity, non-HTTP digest-bound signature/provenance/rollout/
+kill-switch references, and a distinct rollback target. Unknown fields, mutable references,
+duplicate/noncanonical sets, customer executable configuration, and content fields reject.
+
+The supply-chain authority returns
+`sast-rule-bundle-supply-chain-attestation-v1` only after signature, provenance, trusted signer,
+and every subject digest are verified. Its deterministic identity is derived from the manifest
+digest. It contains verification facts and references, never signature bytes, provenance
+payloads, rule bodies, source, or secrets. The application default returns
+`AUTHORITY_UNAVAILABLE` and cannot mint a local attestation.
+
+Before queue reservation, the compatibility gate reloads that immutable verified manifest,
+compares every plan-visible bundle field and ordered rule projection, validates the selected
+profile digest, and checks exact scanner version/image, wrapper, schema, normalizer, and profile
+membership. Only `CANARY` and `ACTIVE` manifests are selectable. A successful evaluation
+creates one `sast-rule-bundle-compatibility-receipt-v1`; a later equivalent evaluation returns
+that first immutable receipt, while denials write no receipt. Its digest is copied into the
+verified scanner-set descriptor and canonical scan key.
+Missing, drifted, unsupported, malformed, or unavailable verification produces one bounded
+planning reason and invokes neither queue reservation nor scanner execution.
+
+Manifest, child-set, attestation, and receipt rows are normalized, serializable, insert-only,
+and protected by update/delete rejection triggers plus restrictive foreign keys. The store
+reconstructs and revalidates every canonical set on read and permits replay only when the
+complete immutable contract matches. There is no user route for manifest registration.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:

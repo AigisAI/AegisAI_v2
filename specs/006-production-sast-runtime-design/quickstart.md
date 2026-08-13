@@ -549,8 +549,10 @@ T040 stale-scan denial and bounded infrastructure-only retry, T041 bounded accep
 evidence with reconstruction-risk checks, and T042 purpose-bound dashboard/AI classification,
 second-pass secret redaction, seven-day expiry enforcement, and deletion proof are complete;
 T043 normalized-finding plus reduced-reference advisory handoff is complete. T044 zero-authority
-output proof is also complete; T045 is the next implementation task and introduces signed,
-immutable rule-bundle manifests plus compatibility validation.
+output proof is also complete. T045 signed immutable, content-free rule-bundle manifests,
+trusted signature/provenance attestations, exact runtime compatibility receipts, and the
+pre-queue fail-closed planning gate are complete; T046 semantic rule identity and
+non-executable tenant policy metadata are the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

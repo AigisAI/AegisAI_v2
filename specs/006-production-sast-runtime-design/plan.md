@@ -15,7 +15,7 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040, T041, T042, T043, and T044 independently and now proceeds to T045.
+T040, T041, T042, T043, T044, and T045 independently and now proceeds to T046.
 
 ## Target Boundaries
 
@@ -151,8 +151,11 @@ before and after the only permitted immutable proof write in one serializable tr
 content-free ledger fixes every authoritative mutation bit false. Bulk normalized-finding and
 lifecycle statements deduplicate affected fence keys before advancing their versions.
 Policy accepts only a verified advisory/proof reference for visibility while exact waiver and
-suppression request shapes reject AI/proof fields. T045 signed immutable bundle manifests and
-compatibility validation are the next gate.
+suppression request shapes reject AI/proof fields. T045 now records canonical content-free
+rule-bundle manifests, trusted signature/provenance attestations, and exact immutable
+scanner/image/wrapper/schema/normalizer/profile compatibility receipts. Planning rejects
+unverified, drifted, unsupported, or unavailable verification before queue reservation. T046
+semantic rule identity and non-executable tenant policy metadata are the next gate.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

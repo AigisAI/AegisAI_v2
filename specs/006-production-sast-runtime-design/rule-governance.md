@@ -60,6 +60,26 @@ The scanner wrapper verifies the manifest and member digests before execution. T
 ingress verifies that the reported bundle digest equals the plan. A customer cannot add
 command-line flags, rule code, templates, post-processors, or executable configuration.
 
+### T045 Planning and Ledger Boundary
+
+- `sast-rule-bundle-manifest-v1` canonicalizes bounded member identities/digests, rule
+  identity metadata, quality references, lifecycle state, rollback identity, and exact
+  compatibility sets. It contains no executable rule body or customer content.
+- A platform supply-chain authority must return a digest-bound
+  `sast-rule-bundle-supply-chain-attestation-v1`. The installed default is unavailable and
+  cannot self-attest a manifest.
+- The database stores normalized immutable manifest/member/rule/compatibility rows,
+  verification facts, and successful compatibility receipts. Denied evaluations write no
+  receipt, and signature bytes or provenance payloads are never persisted.
+- Planning compares the caller-visible descriptor with the verified manifest projection and
+  checks the exact scanner version/image, wrapper, schema bundle, normalizer bundle, and
+  profile before queue reservation. The receipt digest is part of the canonical scan key and
+  immutable plan.
+- T045 does not install a live registry signer verifier or microVM asset-mount verifier. The
+  production sandbox provider must still rehash every mounted member before invocation; that
+  provider rollout and its verification drill remain gated by T055 and the 005 deployment
+  operations flow.
+
 ## Lifecycle
 
 ```text

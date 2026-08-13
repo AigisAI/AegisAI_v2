@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 
 import { CommentDispatchesController } from "./comment-dispatches.controller";
 import { ConfigModule } from "../config/config.module";
+import { RuleGovernanceModule } from '../rule-governance/rule-governance.module';
 import { ControlPlaneService } from "./control-plane.service";
 import { ControlPlaneScanRequestStore } from './control-plane-scan-request.store';
 import { GithubAppInstallationClient } from "./github-app-installation.client";
@@ -20,7 +21,7 @@ import { SastQueueAdmissionService } from './sast-queue-admission.service';
 import { SastScanPlannerService } from './sast-scan-planner.service';
 
 @Module({
-  imports: [ConfigModule, HttpModule],
+  imports: [ConfigModule, HttpModule, RuleGovernanceModule],
   controllers: [
     IntegrationsController,
     RepositoryBindingsController,
