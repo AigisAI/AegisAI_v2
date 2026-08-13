@@ -330,10 +330,12 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   one opaque reduced-evidence reference, and zero snippets. Retrieval, tools, policy,
   publication, lifecycle mutation, and SCM write authority are false in every request; legacy
   direct finding/evidence requests, correlation drift, expiry, and authority widening are denied.
-- 100% T044 zero-authority invariant: one serializable operation writes only an immutable proof
-  row. The bounded scan finding set, target status/severity, exact lifecycle state/revision,
-  finding policy decisions, waivers, and suppressions produce identical before/after state
-  digests; finding/lifecycle/policy/waiver/suppression writes and all authority bits equal zero.
+- 100% T044 zero-authority invariant: one serializable operation locks one advisory-context and
+  three authority fence rows, then writes only an immutable proof row. Every covered writer
+  advances the same fence. The bounded scan finding set, target status/severity, exact lifecycle
+  state/revision, durable finding policy decisions, waivers, and suppressions produce one locked
+  snapshot projected into identical before/after state digests; authoritative writes and all
+  authority bits equal zero.
 - 100% T044 policy isolation invariant: only a tenant/finding-bound exact advisory/proof
   reference can set advisory visibility. AI contributes zero enforcement actions, reason codes,
   ticket/block requests, severity/status changes, waivers, suppressions, or lifecycle events.

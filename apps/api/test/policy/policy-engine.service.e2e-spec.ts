@@ -18,7 +18,11 @@ describe("PolicyEngineService", () => {
 
   it("creates deterministic policy decisions from scanner findings and coverage", async () => {
     const verifier = authorityVerifier(true);
-    const service = new PolicyEngineService(verifier as never);
+    const store = policyStore();
+    const service = new PolicyEngineService(
+      store as never,
+      verifier as never
+    );
 
     const decision = await service.evaluate({
       tenantId: "tenant_policy",
@@ -53,10 +57,14 @@ describe("PolicyEngineService", () => {
       normalizedFindingId: 'finding_high',
       reference: policyReference()
     });
+    expect(store.create).toHaveBeenCalledTimes(1);
   });
 
   it("blocks critical scanner findings without using AI as the policy authority", async () => {
-    const service = new PolicyEngineService(authorityVerifier(true) as never);
+    const service = new PolicyEngineService(
+      policyStore() as never,
+      authorityVerifier(true) as never
+    );
 
     const decision = await service.evaluate({
       tenantId: "tenant_policy",
@@ -80,7 +88,10 @@ describe("PolicyEngineService", () => {
 
   it('rejects suggested actions and unknown authority fields before policy evaluation', async () => {
     const verifier = authorityVerifier(true);
-    const service = new PolicyEngineService(verifier as never);
+    const service = new PolicyEngineService(
+      policyStore() as never,
+      verifier as never
+    );
 
     await expect(
       service.evaluate({
@@ -113,5 +124,26 @@ function policyReference() {
 function authorityVerifier(result: boolean) {
   return {
     verifyPolicyReference: jest.fn().mockResolvedValue(result)
+  };
+}
+
+function policyStore() {
+  let sequence = 0;
+  const decisions = new Map<string, Record<string, unknown>>();
+  return {
+    create: jest.fn(async (input: Record<string, unknown>) => {
+      const decision = {
+        id: `policy_decision_${++sequence}`,
+        ...input
+      };
+      decisions.set(String(decision.id), decision);
+      return decision;
+    }),
+    findByTenantAndId: jest.fn(
+      async (tenantId: string, id: string) => {
+        const decision = decisions.get(id);
+        return decision?.tenantId === tenantId ? decision : null;
+      }
+    )
   };
 }

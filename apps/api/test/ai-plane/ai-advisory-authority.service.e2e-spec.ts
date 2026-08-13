@@ -1,4 +1,5 @@
 import { AiAdvisoryAuthorityService } from '../../src/ai-plane/ai-advisory-authority.service';
+import { SastAiAdvisoryAuthorityPersistenceError } from '../../src/ai-plane/sast-ai-advisory-authority.store';
 import {
   aiAuthorityProof,
   aiPolicyReference
@@ -93,6 +94,58 @@ describe('AiAdvisoryAuthorityService T044 boundary', () => {
         reference: { ...reference, suggestedAction: 'BLOCK' } as never
       })
     ).resolves.toBe(false);
-    expect(store.verifyPolicyReference).toHaveBeenCalledTimes(1);
+    store.verifyPolicyReference.mockResolvedValueOnce(false);
+    await expect(
+      service.verifyPolicyReference({
+        tenantId: 'tenant-ai',
+        normalizedFindingId: 'normalized-finding-ai',
+        reference
+      })
+    ).resolves.toBe(false);
+    store.verifyPolicyReference.mockRejectedValueOnce(
+      new Error('database unavailable')
+    );
+    await expect(
+      service.verifyPolicyReference({
+        tenantId: 'tenant-ai',
+        normalizedFindingId: 'normalized-finding-ai',
+        reference
+      })
+    ).resolves.toBe(false);
+    expect(store.verifyPolicyReference).toHaveBeenCalledTimes(3);
+  });
+
+  it('maps missing, conflicting, and operational failures to distinct opaque statuses', async () => {
+    const proof = aiAuthorityProof();
+    const store = {
+      createProof: jest.fn(),
+      verifyPolicyReference: jest.fn()
+    };
+    const service = new AiAdvisoryAuthorityService(store as never);
+    const intent = {
+      tenantId: proof.scope.tenantId,
+      advisoryId: proof.scope.advisoryId
+    };
+
+    store.createProof.mockRejectedValueOnce(
+      new SastAiAdvisoryAuthorityPersistenceError('CONTEXT_DRIFT')
+    );
+    await expect(
+      service.createProof(intent, () => proof.verifiedAt)
+    ).rejects.toMatchObject({ status: 404 });
+
+    store.createProof.mockRejectedValueOnce(
+      new SastAiAdvisoryAuthorityPersistenceError('STATE_DRIFT')
+    );
+    await expect(
+      service.createProof(intent, () => proof.verifiedAt)
+    ).rejects.toMatchObject({ status: 409 });
+
+    store.createProof.mockRejectedValueOnce(
+      new Error('database unavailable')
+    );
+    await expect(
+      service.createProof(intent, () => proof.verifiedAt)
+    ).rejects.toMatchObject({ status: 503 });
   });
 });

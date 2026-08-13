@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Post,
+  UseGuards
+} from '@nestjs/common';
 
 import type {
   SastAiAdvisoryAuthorityProofIntent,
@@ -6,7 +14,9 @@ import type {
 } from '@aegisai/shared';
 import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
+import { CurrentInternalTenant } from '../common/security/current-internal-tenant.decorator';
 import { InternalServiceGuard } from '../common/security/internal-service.guard';
+import { InternalTenantServiceGuard } from '../common/security/internal-tenant-service.guard';
 import { AiAdvisoryAuthorityService } from './ai-advisory-authority.service';
 import { AiAdvisoryService } from "./ai-advisory.service";
 
@@ -24,10 +34,16 @@ export class AiAdvisoryController {
   }
 
   @Post('authority-proofs')
-  @UseGuards(InternalServiceGuard)
+  @UseGuards(InternalTenantServiceGuard)
   createAuthorityProof(
+    @CurrentInternalTenant() authenticatedTenantId: string,
     @Body() body: SastAiAdvisoryAuthorityProofIntent
   ) {
+    if (body?.tenantId !== authenticatedTenantId) {
+      throw new ForbiddenException(
+        'AI authority proof tenant does not match the authenticated internal tenant.'
+      );
+    }
     return this.authorityService.createProof(body);
   }
 

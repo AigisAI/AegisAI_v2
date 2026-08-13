@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import {
   buildSastAiAdvisoryPolicyReference,
   isSastAiAdvisoryAuthorityProofIntentShapeValid,
@@ -9,11 +7,15 @@ import {
 } from '@aegisai/shared';
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
-  NotFoundException
+  NotFoundException,
+  ServiceUnavailableException
 } from '@nestjs/common';
 
+import { digestAuthorityCanonical } from './sast-ai-advisory-authority-canonical';
+import { SastAiAdvisoryAuthorityPersistenceError } from './sast-ai-advisory-authority.store';
 import { SastAiAdvisoryAuthorityStore } from './sast-ai-advisory-authority.store';
 
 type AuthorityClock = () => string;
@@ -46,7 +48,7 @@ export class AiAdvisoryAuthorityService {
       });
       const policyReference = buildSastAiAdvisoryPolicyReference(
         persisted.proof,
-        digest
+        digestAuthorityCanonical
       );
       if (!policyReference) throw new Error('invalid proof reference');
       return { ...persisted, policyReference };
@@ -54,7 +56,7 @@ export class AiAdvisoryAuthorityService {
       this.logger.error(
         `AI advisory authority proof failed (${safeErrorCategory(error)}).`
       );
-      throw unavailable();
+      throw mappedFailure(error);
     }
   }
 
@@ -72,7 +74,10 @@ export class AiAdvisoryAuthorityService {
     }
     try {
       return await this.store.verifyPolicyReference(input);
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `AI advisory authority proof verification failed (${safeErrorCategory(error)}).`
+      );
       return false;
     }
   }
@@ -99,6 +104,9 @@ function isBoundedReference(value: unknown): value is string {
 }
 
 function safeErrorCategory(error: unknown): string {
+  if (error instanceof SastAiAdvisoryAuthorityPersistenceError) {
+    return `${error.name}:${error.reason}`;
+  }
   if (!(error instanceof Error)) return 'UnknownError';
   return [
     'Error',
@@ -112,12 +120,27 @@ function safeErrorCategory(error: unknown): string {
     : 'UnknownError';
 }
 
+function mappedFailure(
+  error: unknown
+): NotFoundException | ConflictException | ServiceUnavailableException {
+  if (error instanceof SastAiAdvisoryAuthorityPersistenceError) {
+    if (error.reason === 'CONTEXT_DRIFT') return unavailable();
+    if (
+      error.reason === 'REPLAY_CONFLICT' ||
+      error.reason === 'STATE_DRIFT'
+    ) {
+      return new ConflictException(
+        'AI advisory authority proof conflicts with current authoritative state.'
+      );
+    }
+  }
+  return new ServiceUnavailableException(
+    'AI advisory authority proof service is temporarily unavailable.'
+  );
+}
+
 function unavailable(): NotFoundException {
   return new NotFoundException(
     'AI advisory authority proof source is unavailable.'
   );
-}
-
-function digest(value: string): `sha256:${string}` {
-  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }

@@ -132,6 +132,71 @@ test('T044 rejects state drift, caller authority, and non-exact proof intent', (
   );
 });
 
+test('T044 rejects tampered proof identity, scope, and digest', () => {
+  const snapshot = authoritySnapshot();
+  const proof = buildSastAiAdvisoryAuthorityProof({
+    scope: authorityScope(),
+    before: snapshot,
+    after: snapshot,
+    verifiedAt: '2026-08-11T05:30:00.000Z',
+    digestCanonical: digest
+  });
+  assert.ok(proof);
+
+  for (const tampered of [
+    {
+      ...proof,
+      proofId: `sast-ai-authority-proof://${'0'.repeat(64)}`
+    },
+    {
+      ...proof,
+      scope: { ...proof.scope, tenantId: 'foreign-tenant' }
+    },
+    { ...proof, proofDigest: `sha256:${'0'.repeat(64)}` }
+  ]) {
+    assert.equal(
+      isSastAiAdvisoryAuthorityProofShapeValid(tampered, digest),
+      false
+    );
+  }
+});
+
+test('T044 rejects empty, duplicate, unsorted, and target-missing digest sets', () => {
+  const findingA = digest('finding-a');
+  const findingB = digest('finding-b');
+  const sorted = [findingA, findingB].sort();
+  const common = {
+    targetFindingDigest: sorted[0],
+    lifecycleStateDigests: [digest('lifecycle-open')],
+    policyDecisionDigests: [],
+    waiverDigests: [],
+    suppressionDigests: [],
+    digestCanonical: digest
+  };
+
+  for (const normalizedFindingDigests of [
+    [],
+    [findingA, findingA],
+    [...sorted].reverse()
+  ]) {
+    assert.equal(
+      buildSastAiAdvisoryAuthorityStateSnapshot({
+        ...common,
+        normalizedFindingDigests
+      }),
+      null
+    );
+  }
+  assert.equal(
+    buildSastAiAdvisoryAuthorityStateSnapshot({
+      ...common,
+      normalizedFindingDigests: sorted,
+      targetFindingDigest: digest('missing-target')
+    }),
+    null
+  );
+});
+
 function authoritySnapshot() {
   const snapshot = buildSastAiAdvisoryAuthorityStateSnapshot({
     normalizedFindingDigests: [digest('finding-a')],

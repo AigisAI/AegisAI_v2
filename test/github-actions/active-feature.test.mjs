@@ -1836,9 +1836,10 @@ test('SAST T044 proves AI output has zero finding and policy authority', () => {
   assert.match(service, /buildSastAiAdvisoryPolicyReference/);
   assert.match(store, /Prisma\.TransactionIsolationLevel\.Serializable/);
   assert.match(store, /captureAuthorityState/);
-  assert.ok(
-    (store.match(/captureAuthorityState\(tx, context\)/gu)?.length ?? 0) >=
-      2
+  assert.match(store, /acquireAuthorityFence\(tx, context\)/);
+  assert.doesNotMatch(
+    store,
+    /const after = await captureAuthorityState\(tx, context\)/
   );
   assert.match(store, /sastAiAdvisoryAuthorityProof\.create/);
   assert.doesNotMatch(
@@ -1870,6 +1871,11 @@ test('SAST T044 proves AI output has zero finding and policy authority', () => {
     migration,
     /SastAiAdvisoryAuthorityProof_immutable_update/
   );
+  assert.match(
+    migration,
+    /acquire_sast_ai_advisory_authority_fence/
+  );
+  assert.match(migration, /PolicyDecision_ai_authority_fence/);
   assert.doesNotMatch(migration, /JSONB/);
   assert.match(
     onlineSchema,

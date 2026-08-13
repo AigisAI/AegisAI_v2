@@ -1288,26 +1288,41 @@ foreign keys intentionally prevent an ordinary cascade from erasing this ledger.
 
 ### Advisory output authority proof gate v1
 
-`sast-ai-advisory-authority-proof-v1` accepts exactly `tenantId` and `advisoryId`; caller
+`sast-ai-advisory-authority-proof-v1` accepts exactly `tenantId` and `advisoryId` over a
+tenant-bound internal credential; the authenticated tenant must equal the body tenant. Caller
 finding, severity, status, lifecycle, waiver, suppression, policy action, block request, state
 digest, or proof fields are unknown keys and reject before storage. The store reloads the
 tenant-bound `AiAdvisoryMetadata`, T043 handoff, T037 occurrence, normalized finding, lineage,
 and lifecycle context. Any advisory/handoff/scope/authority drift returns one generic
 unavailable result.
 
-Within one bounded serializable transaction, the store reads at most 25,000 normalized
-findings for the scan and at most 1,024 finding policy decisions, waivers, and suppressions,
-plus exactly one T037 lifecycle state. Canonical row digests include authoritative status,
-severity, lifecycle revision, policy flags, and row update instants. The store inserts only
-the proof row, repeats the same authoritative reads, and commits only when the two canonical
-state digests match. Over-limit, missing target/lifecycle, reordered, cross-scope, or changed
-state fails closed; exact advisory replay returns the one existing immutable proof.
+The caller sends `x-aegis-internal-tenant-id` and a `Bearer v1.<hex>` credential derived with
+HMAC-SHA-256 from the internal root secret, a fixed versioned domain separator, and that exact
+tenant ID. A credential derived for one tenant fails under every other tenant header. The root
+secret is never sent, stored in a proof, or accepted in the request body.
+
+Within one bounded serializable transaction, the store first locks the advisory context fence
+and then the canonical scan, lifecycle-context, and finding authority fences. Every application
+write to normalized findings, lifecycle state, policy decisions, finding-scoped waivers, or
+suppressions advances and locks the same database fence before mutation. The store then reads
+at most 25,000 normalized findings for the scan and at most 1,024 finding policy decisions,
+waivers, and suppressions, plus exactly one T037 lifecycle state. These policy and lifecycle
+API paths persist to the same authoritative Prisma tables read by the proof store; they have no
+in-memory shadow authority. Canonical row digests include status, severity, lifecycle revision,
+policy flags, and row update instants.
+
+The store inserts only the proof row and projects the single locked state snapshot into both
+`before` and `after`; equality is therefore evidence of zero authority, while race exclusion is
+provided by the database fence and serializable conflict retry. A concurrent relevant writer
+blocks or causes retry instead of being hidden by a transaction snapshot. Over-limit, missing
+target/lifecycle, missing fence, reordered, cross-scope, or changed replay state fails closed;
+exact advisory replay returns the one existing immutable proof.
 
 The database row contains scope IDs, counts, component/state/proof digests, verification time,
 and fixed booleans only. Checks require every finding-create/status/severity, lifecycle,
 waiver, suppression, policy-override, block, publication, and SCM authority bit false; every
 authoritative-write audit bit is false and only `proofLedgerWritten` is true. Immutable update
-and delete triggers plus restrictive foreign keys preserve the audit chain. There is no JSON,
+and delete triggers plus delete/update-restrictive foreign keys preserve the audit chain. There is no JSON,
 advisory text, rationale, prompt, source, evidence, secret, or policy payload column.
 
 `sast-ai-advisory-policy-reference-v1` exposes only version, advisory ID, proof ID/digest, and
@@ -1318,9 +1333,9 @@ without AI input. Waiver create/update and suppression create requests use exact
 so advisory/proof fields and the legacy `suggestedAction` shape reject rather than being ignored.
 
 Normal offboarding retains this content-free proof under the tenant tombstone. Exceptional
-tenant/legal hard purge requires access revocation, external audit export, and explicit
-privileged maintenance of the identified proof before restricted parent removal; ordinary
-application roles cannot bypass the immutable fence.
+tenant/legal hard purge follows the two-operator, externally audited procedure in
+[`docs/runbooks/sast-ai-authority-proof-hard-purge.md`](../../docs/runbooks/sast-ai-authority-proof-hard-purge.md);
+ordinary application roles cannot bypass the immutable fence.
 
 ## Cleanup Contract
 

@@ -2,6 +2,7 @@ import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
+import { PolicyLifecycleStore } from '../../src/policy/policy-lifecycle.store';
 import { TestSessionAuthGuard } from '../support/security-guards';
 
 describe("Waiver and suppression lifecycle API (e2e)", () => {
@@ -27,6 +28,34 @@ describe("Waiver and suppression lifecycle API (e2e)", () => {
       import("../../src/app.module"),
       import("../../src/prisma/prisma.service")
     ]);
+    let waiverSequence = 0;
+    let suppressionSequence = 0;
+    const waivers = new Map<string, Record<string, unknown>>();
+    const policyLifecycleStore = {
+      createWaiver: jest.fn(async (input: Record<string, unknown>) => {
+        const waiver = {
+          id: `waiver_${++waiverSequence}`,
+          ...input
+        };
+        waivers.set(String(waiver.id), waiver);
+        return waiver;
+      }),
+      updateWaiver: jest.fn(
+        async (id: string, input: Record<string, unknown>) => {
+          const waiver = waivers.get(id);
+          if (!waiver || waiver.tenantId !== input.tenantId) return null;
+          const updated = { ...waiver, ...input };
+          waivers.set(id, updated);
+          return updated;
+        }
+      ),
+      createSuppression: jest.fn(
+        async (input: Record<string, unknown>) => ({
+          id: `suppression_${++suppressionSequence}`,
+          ...input
+        })
+      )
+    };
 
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule]
@@ -39,6 +68,8 @@ describe("Waiver and suppression lifecycle API (e2e)", () => {
         onModuleDestroy: jest.fn().mockResolvedValue(undefined),
         $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }])
       })
+      .overrideProvider(PolicyLifecycleStore)
+      .useValue(policyLifecycleStore)
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .compile();

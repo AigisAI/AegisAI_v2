@@ -518,12 +518,14 @@ portion of Phase 6:
 - The internal AI runtime receives one normalized metadata projection and one opaque reduced
   reference with `snippets=[]`. Retrieval, tools, policy, publication, lifecycle mutation, and
   SCM write authority remain false; the legacy caller-supplied finding/evidence route is denied.
-- T044 accepts only tenant and advisory identity, then rebinds the T043 metadata/handoff to the
+- T044 accepts only tenant and advisory identity under a tenant-bound internal credential, then
+  locks the advisory context and rebinds the T043 metadata/handoff to the
   exact T037 occurrence, normalized finding, lineage, and lifecycle context. In one bounded
-  serializable transaction it hashes the complete scan finding set, target status/severity,
-  lifecycle state/revision, finding policy decisions, finding-scoped waivers, and suppressions
-  before and after inserting the only permitted proof row. Any missing, over-limit, cross-scope,
-  or changed state rolls back.
+  serializable transaction it locks the scan, lifecycle-context, and finding authority fences,
+  hashes the complete scan finding set, target status/severity, lifecycle state/revision, durable
+  finding policy decisions, finding-scoped waivers, and suppressions once, and projects that
+  locked snapshot into identical before/after proof fields. Covered writers use the same fence;
+  any missing, over-limit, cross-scope, concurrent, or changed replay state fails closed.
 - `sast-ai-advisory-authority-proof-v1` stores no JSON or model/content payload. It retains only
   scope references, counts, component/state/proof digests, verification time, and database-
   checked booleans: proof-ledger written is true while every finding creation/status/severity,

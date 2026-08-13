@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
 import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
+import { PolicyDecisionStore } from '../../src/policy/policy-decision.store';
 import { TestInternalServiceGuard, TestSessionAuthGuard } from '../support/security-guards';
 
 describe("Policy decision API (e2e)", () => {
@@ -28,6 +29,24 @@ describe("Policy decision API (e2e)", () => {
       import("../../src/app.module"),
       import("../../src/prisma/prisma.service")
     ]);
+    let decisionSequence = 0;
+    const decisions = new Map<string, Record<string, unknown>>();
+    const policyDecisionStore = {
+      create: jest.fn(async (input: Record<string, unknown>) => {
+        const decision = {
+          id: `policy_decision_${++decisionSequence}`,
+          ...input
+        };
+        decisions.set(String(decision.id), decision);
+        return decision;
+      }),
+      findByTenantAndId: jest.fn(
+        async (tenantId: string, id: string) => {
+          const decision = decisions.get(id);
+          return decision?.tenantId === tenantId ? decision : null;
+        }
+      )
+    };
 
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule]
@@ -40,6 +59,8 @@ describe("Policy decision API (e2e)", () => {
         onModuleDestroy: jest.fn().mockResolvedValue(undefined),
         $queryRawUnsafe: jest.fn().mockResolvedValue([{ result: 1 }])
       })
+      .overrideProvider(PolicyDecisionStore)
+      .useValue(policyDecisionStore)
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .overrideGuard(InternalServiceGuard)

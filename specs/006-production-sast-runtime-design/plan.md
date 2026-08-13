@@ -143,10 +143,12 @@ and derives deterministic `sast-ai-advisory-handoff-v1` identities. Its immutabl
 only scope references, digests, expiry, and fixed authority/audit bits; request payload, source,
 secret values, and evidence fragments are absent. The AI runtime receives normalized metadata
 plus one opaque reduced-evidence reference, an empty snippets array, and zero retrieval, tool,
-policy, publication, lifecycle, or SCM authority. T044 now accepts only tenant/advisory identity,
+policy, publication, lifecycle, or SCM authority. T044 now accepts only tenant/advisory identity
+bound to the authenticated internal tenant,
 rebinds the complete T043/T037 scope, and captures bounded finding, lifecycle, policy, waiver,
-and suppression digests before and after the only permitted immutable proof write in one
-serializable transaction. Its content-free ledger fixes every authoritative mutation bit false.
+and suppression digests from one database-fenced authoritative snapshot projected identically
+before and after the only permitted immutable proof write in one serializable transaction. Its
+content-free ledger fixes every authoritative mutation bit false.
 Policy accepts only a verified advisory/proof reference for visibility while exact waiver and
 suppression request shapes reject AI/proof fields. T045 signed immutable bundle manifests and
 compatibility validation are the next gate.

@@ -1,7 +1,6 @@
-import { createHash } from 'node:crypto';
-
 import {
   SAST_AI_ADVISORY_AUTHORITY_LIMITS,
+  SAST_AI_ADVISORY_AUTHORITY_PROOF_VERSION,
   buildSastAiAdvisoryAuthorityProof,
   buildSastAiAdvisoryAuthorityStateSnapshot,
   isSastAiAdvisoryAuthorityProofShapeValid,
@@ -15,6 +14,10 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  digestAuthorityCanonical,
+  stableAuthorityJson
+} from './sast-ai-advisory-authority-canonical';
 import {
   SastAiAdvisoryAuthorityPersistenceError,
   SastAiAdvisoryAuthorityStore,
@@ -95,12 +98,15 @@ export class PrismaSastAiAdvisoryAuthorityStore extends SastAiAdvisoryAuthorityS
   }): Promise<PersistedSastAiAdvisoryAuthorityProof> {
     try {
       return await this.runSerializable(async (tx) => {
+        await acquireAdvisoryContextFence(tx, input);
         const context = await loadAuthorityContext(tx, input);
         if (!context) {
           throw new SastAiAdvisoryAuthorityPersistenceError(
             'CONTEXT_DRIFT'
           );
         }
+
+        await acquireAuthorityFence(tx, context);
 
         const existing =
           await tx.sastAiAdvisoryAuthorityProof.findUnique({
@@ -125,7 +131,7 @@ export class PrismaSastAiAdvisoryAuthorityStore extends SastAiAdvisoryAuthorityS
           before,
           after: before,
           verifiedAt: input.verifiedAt,
-          digestCanonical: digest
+          digestCanonical: digestAuthorityCanonical
         });
         if (!proof) {
           throw new SastAiAdvisoryAuthorityPersistenceError(
@@ -137,23 +143,24 @@ export class PrismaSastAiAdvisoryAuthorityStore extends SastAiAdvisoryAuthorityS
           await tx.sastAiAdvisoryAuthorityProof.create({
             data: proofData(proof)
           });
-        const after = await captureAuthorityState(tx, context);
-        if (before.stateDigest !== after.stateDigest) {
-          throw new SastAiAdvisoryAuthorityPersistenceError(
-            'STATE_DRIFT'
-          );
-        }
         return replayProof(created, context, false);
       });
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;
       return this.runSerializable(async (tx) => {
+        await acquireAdvisoryContextFence(tx, input);
         const context = await loadAuthorityContext(tx, input);
+        if (!context) {
+          throw new SastAiAdvisoryAuthorityPersistenceError(
+            'REPLAY_CONFLICT'
+          );
+        }
+        await acquireAuthorityFence(tx, context);
         const existing =
           await tx.sastAiAdvisoryAuthorityProof.findUnique({
             where: { advisoryId: input.advisoryId }
           });
-        if (!context || !existing) {
+        if (!existing) {
           throw new SastAiAdvisoryAuthorityPersistenceError(
             'REPLAY_CONFLICT'
           );
@@ -222,6 +229,46 @@ export class PrismaSastAiAdvisoryAuthorityStore extends SastAiAdvisoryAuthorityS
     }
     throw new SastAiAdvisoryAuthorityPersistenceError(
       'REPLAY_CONFLICT'
+    );
+  }
+}
+
+async function acquireAdvisoryContextFence(
+  tx: Prisma.TransactionClient,
+  input: Readonly<{ tenantId: string; advisoryId: string }>
+): Promise<void> {
+  const rows = await tx.$queryRaw<
+    Array<{ lockedContextCount: bigint | number }>
+  >`
+    SELECT "acquire_sast_ai_advisory_context_fence"(
+      ${input.tenantId},
+      ${input.advisoryId}
+    ) AS "lockedContextCount"
+  `;
+  if (rows.length !== 1 || Number(rows[0].lockedContextCount) !== 1) {
+    throw new SastAiAdvisoryAuthorityPersistenceError(
+      'CONTEXT_DRIFT'
+    );
+  }
+}
+
+async function acquireAuthorityFence(
+  tx: Prisma.TransactionClient,
+  context: Readonly<AuthorityContext>
+): Promise<void> {
+  const rows = await tx.$queryRaw<Array<{ lockedScopeCount: bigint | number }>>`
+    SELECT "acquire_sast_ai_advisory_authority_fence"(
+      ${context.scope.tenantId},
+      ${context.scope.scanRequestId},
+      ${context.scope.repositoryBindingId},
+      ${context.lifecycleContextKey},
+      ${context.lineageId},
+      ${context.scope.normalizedFindingId}
+    ) AS "lockedScopeCount"
+  `;
+  if (rows.length !== 1 || Number(rows[0].lockedScopeCount) !== 3) {
+    throw new SastAiAdvisoryAuthorityPersistenceError(
+      'CONTEXT_DRIFT'
     );
   }
 }
@@ -441,10 +488,15 @@ async function captureAuthorityState(
     })
   ]);
 
+  if (lifecycleStates.length === 0) {
+    throw new SastAiAdvisoryAuthorityPersistenceError(
+      'CONTEXT_DRIFT'
+    );
+  }
   if (
     findings.length >
       SAST_AI_ADVISORY_AUTHORITY_LIMITS.maximumNormalizedFindings ||
-    lifecycleStates.length !== 1 ||
+    lifecycleStates.length > 1 ||
     policyDecisions.length >
       SAST_AI_ADVISORY_AUTHORITY_LIMITS.maximumPolicyDecisions ||
     waivers.length > SAST_AI_ADVISORY_AUTHORITY_LIMITS.maximumWaivers ||
@@ -486,7 +538,7 @@ async function captureAuthorityState(
     suppressionDigests: suppressions
       .map((row) => rowDigest('suppression', row))
       .sort(),
-    digestCanonical: digest
+    digestCanonical: digestAuthorityCanonical
   });
   if (!snapshot) {
     throw new SastAiAdvisoryAuthorityPersistenceError(
@@ -524,27 +576,8 @@ function proofData(proof: Readonly<SastAiAdvisoryAuthorityProof>) {
     suppressionSetDigest: state.suppressionSetDigest,
     beforeStateDigest: proof.before.stateDigest,
     afterStateDigest: proof.after.stateDigest,
-    findingCreateAuthority: false,
-    findingStatusMutationAuthority: false,
-    findingSeverityMutationAuthority: false,
-    lifecycleMutationAuthority: false,
-    waiverMutationAuthority: false,
-    suppressionMutationAuthority: false,
-    policyOverrideAuthority: false,
-    blockDecisionAuthority: false,
-    publicationAuthority: false,
-    scmWriteAuthority: false,
-    advisoryOnly: true,
-    proofLedgerWritten: true,
-    authoritativeFindingWritten: false,
-    lifecycleStateWritten: false,
-    policyDecisionWritten: false,
-    waiverWritten: false,
-    suppressionWritten: false,
-    callerAuthorityFieldsAccepted: false,
-    advisoryContentStored: false,
-    sourceContentStored: false,
-    secretValueStored: false,
+    ...proof.authority,
+    ...proof.audit,
     verifiedAt: new Date(proof.verifiedAt),
     proofDigest: proof.proofDigest
   };
@@ -558,7 +591,8 @@ function replayProof(
   const proof = proofFromRow(row);
   if (
     !proof ||
-    stableJson(proof.scope) !== stableJson(context.scope) ||
+    stableAuthorityJson(proof.scope) !==
+      stableAuthorityJson(context.scope) ||
     Date.parse(proof.verifiedAt) <
       Date.parse(context.advisoryCreatedAt)
   ) {
@@ -591,7 +625,7 @@ function proofFromRow(
     stateDigest: row.beforeStateDigest as `sha256:${string}`
   };
   const proof: SastAiAdvisoryAuthorityProof = {
-    version: 'sast-ai-advisory-authority-proof-v1',
+    version: SAST_AI_ADVISORY_AUTHORITY_PROOF_VERSION,
     proofId: row.id,
     scope: {
       tenantId: row.tenantId,
@@ -644,29 +678,16 @@ function proofFromRow(
     verifiedAt: row.verifiedAt.toISOString(),
     proofDigest: row.proofDigest as `sha256:${string}`
   };
-  return isSastAiAdvisoryAuthorityProofShapeValid(proof, digest)
+  return isSastAiAdvisoryAuthorityProofShapeValid(
+    proof,
+    digestAuthorityCanonical
+  )
     ? proof
     : null;
 }
 
 function rowDigest(kind: string, row: object): `sha256:${string}` {
-  return digest(stableJson({ kind, row }));
-}
-
-function stableJson(value: unknown): string {
-  if (value instanceof Date) return JSON.stringify(value.toISOString());
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableJson(item)).join(',')}]`;
-  }
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
-    .filter((key) => record[key] !== undefined)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`)
-    .join(',')}}`;
+  return digestAuthorityCanonical(stableAuthorityJson({ kind, row }));
 }
 
 function isSerializableConflict(error: unknown): boolean {
@@ -677,8 +698,4 @@ function isSerializableConflict(error: unknown): boolean {
 function isUniqueConflict(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === 'P2002';
-}
-
-function digest(value: string): `sha256:${string}` {
-  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }

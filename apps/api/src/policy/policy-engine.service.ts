@@ -12,6 +12,7 @@ import {
   type ScannerKind
 } from '@aegisai/shared';
 import { AiAdvisoryAuthorityService } from '../ai-plane/ai-advisory-authority.service';
+import { PolicyDecisionStore } from './policy-decision.store';
 
 /*
  * Policy enforcement is derived only from deterministic findings and scanner
@@ -26,10 +27,8 @@ const REQUIRED_SCANNER_COVERAGE: ScannerKind[] = [
 
 @Injectable()
 export class PolicyEngineService {
-  private readonly policyDecisions: PolicyDecision[] = [];
-  private decisionSequence = 0;
-
   constructor(
+    private readonly policyDecisionStore: PolicyDecisionStore,
     @Optional()
     private readonly authorityVerifier?: AiAdvisoryAuthorityService
   ) {}
@@ -38,8 +37,7 @@ export class PolicyEngineService {
     const aiAdvisoryVisible = await this.verifyAdvisoryReference(input);
     const reasonCodes = this.reasonCodesFor(input);
     const enforcementAction = this.enforcementActionFor(input);
-    const decision: PolicyDecision = {
-      id: `policy_decision_${++this.decisionSequence}`,
+    return this.policyDecisionStore.create({
       tenantId: input.tenantId,
       scanRequestId: input.scanRequestId,
       findingId: input.finding.id,
@@ -53,20 +51,23 @@ export class PolicyEngineService {
       waiverApplied: false,
       staleSuppressed: false,
       aiAdvisoryVisible
-    };
-
-    this.policyDecisions.push(decision);
-    return decision;
+    });
   }
 
   getPolicyDecision(
     tenantId: string,
     policyDecisionId: string
-  ): PolicyDecision {
-    const decision = this.policyDecisions.find(
-      (policyDecision) =>
-        policyDecision.id === policyDecisionId &&
-        policyDecision.tenantId === tenantId
+  ): Promise<PolicyDecision> {
+    return this.readPolicyDecision(tenantId, policyDecisionId);
+  }
+
+  private async readPolicyDecision(
+    tenantId: string,
+    policyDecisionId: string
+  ): Promise<PolicyDecision> {
+    const decision = await this.policyDecisionStore.findByTenantAndId(
+      tenantId,
+      policyDecisionId
     );
 
     if (!decision) {

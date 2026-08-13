@@ -390,12 +390,16 @@ incomplete, stale, quarantined, or security-blocked scan.
   rollback, unknown fields, or authority widening MUST fail closed.
 - **FR-052**: AI output MUST remain advisory and MUST NOT create, suppress, waive, resolve,
   re-severity, or block a deterministic finding.
-- **FR-052a**: T044 authority-proof intent MUST accept exactly `tenantId` and `advisoryId`.
-  A serializable transaction MUST rebind the T043 advisory/handoff to its tenant, repository,
+- **FR-052a**: T044 authority-proof intent MUST accept exactly `tenantId` and `advisoryId`, and
+  the body tenant MUST match a tenant-bound authenticated internal credential. A serializable
+  transaction MUST first lock the advisory context, then rebind the T043 advisory/handoff to its tenant, repository,
   scan, attempt, occurrence, normalized finding, fingerprint, request digest, and handoff
-  digest, then capture bounded canonical authoritative state before and after the proof write.
+  digest. It MUST lock shared scan, lifecycle-context, and finding authority fences before
+  capturing one bounded canonical authoritative snapshot and projecting that snapshot into the
+  proof's before/after fields. All covered authoritative writers MUST advance the same fences.
   The scan finding set, target status/severity, T037 lifecycle state/revision, finding policy
-  decisions, finding-scoped waivers, and suppressions MUST have identical state digests.
+  decisions, finding-scoped waivers, and suppressions MUST come from the same durable tables and
+  have identical state digests. Missing fences and concurrent or replay drift MUST fail closed.
 - **FR-052b**: `sast-ai-advisory-authority-proof-v1` MUST be immutable and MUST store only
   scope references, bounded counts, SHA-256 digests, proof time, and fixed zero-authority/audit
   bits. Advisory output, rationale, prompt, source, evidence, secrets, policy payloads, and

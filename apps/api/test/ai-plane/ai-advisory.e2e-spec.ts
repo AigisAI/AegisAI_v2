@@ -4,6 +4,7 @@ import request from 'supertest';
 
 import { SessionAuthGuard } from '../../src/auth/guards/session-auth.guard';
 import { InternalServiceGuard } from '../../src/common/security/internal-service.guard';
+import { deriveTenantBoundInternalCredential } from '../../src/common/security/internal-tenant-service.guard';
 import {
   TestInternalServiceGuard,
   TestSessionAuthGuard
@@ -31,6 +32,8 @@ describe('AI advisory API T043 boundary (e2e)', () => {
     process.env.FRONTEND_URL = 'http://localhost:5173';
     process.env.TOKEN_ENCRYPTION_KEY =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    process.env.INTERNAL_API_SECRET =
+      'test-internal-secret-value-at-least-32-characters';
 
     const [{ AppModule }, { PrismaService }] = await Promise.all([
       import('../../src/app.module'),
@@ -95,10 +98,18 @@ describe('AI advisory API T043 boundary (e2e)', () => {
 
   it('accepts only tenant and advisory identity for T044 proof creation', async () => {
     const advisoryId = `sast-ai-advisory://${'a'.repeat(64)}`;
+    const tenantId = 'tenant-ai';
+    const credential = deriveTenantBoundInternalCredential(
+      process.env.INTERNAL_API_SECRET ?? '',
+      tenantId
+    );
+    expect(credential).not.toBeNull();
     await request(app.getHttpServer())
       .post('/api/ai-advisories/authority-proofs')
+      .set('x-aegis-internal-tenant-id', tenantId)
+      .set('authorization', `Bearer ${credential}`)
       .send({
-        tenantId: 'tenant-ai',
+        tenantId,
         advisoryId,
         findingStatus: 'FIXED',
         waiver: true,
@@ -108,10 +119,29 @@ describe('AI advisory API T043 boundary (e2e)', () => {
 
     const response = await request(app.getHttpServer())
       .post('/api/ai-advisories/authority-proofs')
-      .send({ tenantId: 'tenant-ai', advisoryId })
-      .expect(404);
+      .set('x-aegis-internal-tenant-id', tenantId)
+      .set('authorization', `Bearer ${credential}`)
+      .send({ tenantId, advisoryId })
+      .expect(503);
     expect(JSON.stringify(response.body)).toMatch(
-      /authority proof source is unavailable/i
+      /authority proof service is temporarily unavailable/i
     );
+  });
+
+  it('rejects a proof tenant that is not bound to the internal credential', async () => {
+    const authenticatedTenantId = 'tenant-ai';
+    const credential = deriveTenantBoundInternalCredential(
+      process.env.INTERNAL_API_SECRET ?? '',
+      authenticatedTenantId
+    );
+    await request(app.getHttpServer())
+      .post('/api/ai-advisories/authority-proofs')
+      .set('x-aegis-internal-tenant-id', authenticatedTenantId)
+      .set('authorization', `Bearer ${credential}`)
+      .send({
+        tenantId: 'foreign-tenant',
+        advisoryId: `sast-ai-advisory://${'a'.repeat(64)}`
+      })
+      .expect(403);
   });
 });

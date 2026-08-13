@@ -821,22 +821,37 @@ decisions cannot be inferred from a successful scan or accepted T041 pack.
   digest, and handoff digest
 - bounded component counts and SHA-256 digests cover the complete scan finding set, target
   status/severity row, exact T037 lifecycle context state/revision, finding policy decisions,
-  `finding:<normalizedFindingId>` waivers, and finding suppressions. `beforeStateDigest` must
-  equal `afterStateDigest`
-- the proof write is the only mutation in its serializable transaction. Finding creation,
+  `finding:<normalizedFindingId>` waivers, and finding suppressions. Both `before` and `after`
+  fields project one database-fenced snapshot, so `beforeStateDigest` must equal
+  `afterStateDigest`
+- the transaction first locks advisory, scan, lifecycle-context, and finding fence rows;
+  relevant authoritative writers advance the same rows, so a concurrent mutation conflicts
+  and retries. The proof write is the only product/audit mutation in its transaction. Finding creation,
   finding status/severity, lifecycle, waiver, suppression, policy override, blocking,
   publication, and SCM authority are database-checked false; authoritative-write audit bits
   are false and `proofLedgerWritten` alone is true
 - no JSON/content column exists. Advisory output, rationale, prompt, source, evidence fragment,
   secret value, policy payload, owner, or waiver reason is absent; only component row digests
   survive
+- policy decisions, waivers, and suppressions returned by application services are persisted in
+  the same Prisma tables included in the digest; no in-memory authority store exists
 - occurrence and normalized-finding composite constraints are installed by the mandatory
   online-schema step after their populated referenced indexes are ready. Direct tenant,
   repository, scan, handoff, and advisory relations restrict deletion
 - ordinary offboarding retains the proof with the advisory audit chain. Exceptional tenant or
-  legal hard purge requires access revocation, external audit export, and explicit privileged
-  maintenance that targets the identified proof before its restricted parents; application
-  roles cannot update or delete it
+  legal hard purge uses the reviewed
+  [`docs/runbooks/sast-ai-authority-proof-hard-purge.md`](../../docs/runbooks/sast-ai-authority-proof-hard-purge.md)
+  flow; application roles cannot update or delete it
+
+### SastAiAdvisoryAuthorityFence
+
+- internal coordination ledger containing only canonical JSON scope keys, monotonic versions,
+  and creation time; it contains no finding, policy, advisory, source, evidence, or secret data
+- advisory metadata writes touch the tenant/advisory key; normalized finding writes touch scan
+  and finding keys; lifecycle, policy, waiver, and suppression writes touch their matching keys
+- proof creation locks one advisory key before context reload and three authority keys before
+  snapshot capture. Missing rows fail closed and concurrent changes surface as serializable
+  conflicts; the fence never grants policy or lifecycle authority
 
 ### SastEvidenceDeletionSchedule
 

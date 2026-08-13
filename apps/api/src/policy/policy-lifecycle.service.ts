@@ -7,6 +7,7 @@ import type {
   WaiverCreateInput,
   WaiverUpdateInput
 } from '@aegisai/shared';
+import { PolicyLifecycleStore } from './policy-lifecycle.store';
 
 const WAIVER_CREATE_KEYS = [
   'tenantId',
@@ -32,12 +33,9 @@ const SUPPRESSION_CREATE_KEYS = [
 
 @Injectable()
 export class PolicyLifecycleService {
-  private readonly waivers: Waiver[] = [];
-  private readonly suppressions: Suppression[] = [];
-  private waiverSequence = 0;
-  private suppressionSequence = 0;
+  constructor(private readonly store: PolicyLifecycleStore) {}
 
-  createWaiver(input: WaiverCreateInput): Waiver {
+  async createWaiver(input: WaiverCreateInput): Promise<Waiver> {
     this.assertExactLifecyclePayload(
       input,
       WAIVER_CREATE_KEYS,
@@ -48,22 +46,14 @@ export class PolicyLifecycleService {
     this.assertRequiredString(input.reason, "reason");
     this.assertRequiredString(input.scope, "scope");
     this.assertRequiredString(input.expiresAt, "expiresAt");
-
-    const waiver: Waiver = {
-      id: `waiver_${++this.waiverSequence}`,
-      tenantId: input.tenantId,
-      owner: input.owner,
-      reason: input.reason,
-      scope: input.scope,
-      expiresAt: input.expiresAt
-    };
-
-    this.waivers.push(waiver);
-
-    return waiver;
+    this.assertIsoInstant(input.expiresAt, 'expiresAt');
+    return this.store.createWaiver(input);
   }
 
-  updateWaiver(waiverId: string, input: WaiverUpdateInput): Waiver {
+  async updateWaiver(
+    waiverId: string,
+    input: WaiverUpdateInput
+  ): Promise<Waiver> {
     this.assertExactLifecyclePayload(
       input,
       WAIVER_UPDATE_KEYS,
@@ -71,43 +61,37 @@ export class PolicyLifecycleService {
     );
     this.assertRequiredString(input.tenantId, "tenantId");
 
-    const waiver = this.waivers.find(
-      (candidate) => candidate.id === waiverId && candidate.tenantId === input.tenantId
-    );
-
-    if (!waiver) {
-      throw new NotFoundException("Waiver was not found for tenant.");
-    }
-
     if (input.owner !== undefined) {
       this.assertRequiredString(input.owner, "owner");
-      waiver.owner = input.owner;
     }
 
     if (input.reason !== undefined) {
       this.assertRequiredString(input.reason, "reason");
-      waiver.reason = input.reason;
     }
 
     if (input.scope !== undefined) {
       this.assertRequiredString(input.scope, "scope");
-      waiver.scope = input.scope;
     }
 
     if (input.expiresAt !== undefined) {
       this.assertRequiredString(input.expiresAt, "expiresAt");
-      waiver.expiresAt = input.expiresAt;
+      this.assertIsoInstant(input.expiresAt, 'expiresAt');
     }
 
     if (input.lastReviewedAt !== undefined) {
       this.assertRequiredString(input.lastReviewedAt, "lastReviewedAt");
-      waiver.lastReviewedAt = input.lastReviewedAt;
+      this.assertIsoInstant(input.lastReviewedAt, 'lastReviewedAt');
     }
-
+    const waiver = await this.store.updateWaiver(waiverId, input);
+    if (!waiver) {
+      throw new NotFoundException("Waiver was not found for tenant.");
+    }
     return waiver;
   }
 
-  createSuppression(input: SuppressionCreateInput): Suppression {
+  async createSuppression(
+    input: SuppressionCreateInput
+  ): Promise<Suppression> {
     this.assertExactLifecyclePayload(
       input,
       SUPPRESSION_CREATE_KEYS,
@@ -120,17 +104,10 @@ export class PolicyLifecycleService {
       throw new BadRequestException("Suppression reason is invalid.");
     }
 
-    const suppression: Suppression = {
-      id: `suppression_${++this.suppressionSequence}`,
-      tenantId: input.tenantId,
-      scanRequestId: input.scanRequestId,
-      findingId: input.findingId,
-      reason: input.reason
-    };
-
-    this.suppressions.push(suppression);
-
-    return suppression;
+    if (input.findingId !== undefined) {
+      this.assertRequiredString(input.findingId, 'findingId');
+    }
+    return this.store.createSuppression(input);
   }
 
   private assertExactLifecyclePayload(
@@ -163,6 +140,17 @@ export class PolicyLifecycleService {
   private assertRequiredString(value: unknown, fieldName: string): asserts value is string {
     if (typeof value !== "string" || value.trim().length === 0) {
       throw new BadRequestException(`Lifecycle payload is missing required field: ${fieldName}.`);
+    }
+  }
+
+  private assertIsoInstant(value: string, fieldName: string): void {
+    if (
+      !Number.isFinite(Date.parse(value)) ||
+      new Date(value).toISOString() !== value
+    ) {
+      throw new BadRequestException(
+        `Lifecycle payload field must be an ISO instant: ${fieldName}.`
+      );
     }
   }
 }

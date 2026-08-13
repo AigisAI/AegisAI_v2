@@ -88,7 +88,7 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Evidence expiry race | A reader returns content while expiry/deletion is claimed or after the final clock check | Check retention before read and after the final awaited confirmation, confirm unchanged schedule/claim/proof, and deny from claim onward | Expiry-before/during/final-confirmation read, late-reader, deletion-race, and clock-rollback fixtures return no content |
 | False deletion proof or overdue content | A worker marks evidence deleted without provider removal, rejects the original receipt after a finalization retry, or lets polling/batch caps or one corrupt claim create a retention backlog | Deterministic operation, leased owner/token fence, default-unavailable provider, deadline-aware startup/earliest-due scheduling, saturated zero-delay continuation, context-drift quarantine, exact receipt replay, delete-then immutable proof | Unavailable provider, changed/original receipt, stale token, concurrent claim/finalize, drifted-head queue, deadline wakeup, and exact replay corpus |
 | AI handoff forgery or payload smuggling | A caller supplies a finding, prompt, fragment, stale access reference, or authority bit and causes it to reach the model | Exact four-field intent, double T042 classification, durable T037 source rebind, canonical expiring handoff, empty snippets, exact runtime keys, and fixed zero downstream authority | Legacy/extra-field, cross-scope, drift, expiry, correlation, snippet, secret-key, and authority-widening fixtures deny before provider use |
-| AI output authority escalation or proof forgery | An advisory, caller snapshot, suggested action, forged proof, or lifecycle payload creates/resolves/re-severities a finding, waives/suppresses it, or overrides policy | Exact two-field proof intent; serializable before/after digests over all relevant authoritative rows; proof-only write; fixed-false database checks; immutable triggers; tenant/finding-bound display-only proof reference; exact lifecycle key allowlists | State-drift, cross-tenant, replay-conflict, over-limit, suggested-action, proof-injection, and zero-authoritative-write fixtures deny |
+| AI output authority escalation or proof forgery | An advisory, caller snapshot, suggested action, forged proof, tenant spoof, concurrent writer, or lifecycle payload creates/resolves/re-severities a finding, waives/suppresses it, or overrides policy | Tenant-bound internal credential; exact two-field proof intent; shared advisory/scan/lifecycle/finding database fences; one durable policy/lifecycle source; single locked snapshot projected to before/after digests; proof-only write; fixed-false checks; immutable triggers; tenant/finding-bound display-only proof reference; exact lifecycle key allowlists | State-drift, tenant mismatch, cross-tenant, concurrent writer, replay-conflict, over-limit, suggested-action, proof-injection, and zero-authoritative-write fixtures deny |
 | AI prompt injection | Evidence text instructs model | Evidence is untrusted data, bounded/redacted, no retrieval/tools/SCM | Advisory label and output schema validation |
 | Sandbox persistence | Compromise survives next scan | No worker/workspace reuse; new microVM per attempt | Destruction evidence and lag alert |
 | Operator credential leak | Deployment secrets enter repo/config | 005 reference-only credential handoff | Secret scanning and deployment audit |
@@ -163,9 +163,10 @@ The following must always remain true:
 19. Advisory AI input is derived only from the exact T042/T037 durable chain. Its ledger is
     reference-only, its runtime request contains no snippets or retrievable content, and it
     grants no policy, publication, lifecycle, finding, tool, retrieval, or SCM authority.
-20. Advisory output can create only one immutable T044 proof. The bounded authoritative state
-    digest is identical before and after that write; policy accepts only a tenant/finding-bound
-    display reference, and lifecycle endpoints reject every advisory or proof field.
+20. Advisory output can create only one immutable T044 proof under a tenant-bound internal
+    credential. Shared database fences hold one authoritative snapshot whose before/after digest
+    projections are identical; policy accepts only a tenant/finding-bound display reference, and
+    lifecycle endpoints persist to the covered tables while rejecting every advisory/proof field.
 
 ## Required Security Test Corpus
 

@@ -666,21 +666,21 @@ const constraints = [
     name: 'SastAiAdvisoryAuthorityProof_occurrence_scope_fkey',
     type: 'f',
     definition:
-      'FOREIGN KEY ("occurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") ON DELETE RESTRICT ON UPDATE CASCADE'
+      'FOREIGN KEY ("occurrenceId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") REFERENCES "SastFindingOccurrence"("id", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId") ON DELETE RESTRICT ON UPDATE RESTRICT'
   },
   {
     table: 'SastAiAdvisoryAuthorityProof',
     name: 'SastAiAdvisoryAuthorityProof_handoff_authority_scope_fkey',
     type: 'f',
     definition:
-      'FOREIGN KEY ("handoffId", "advisoryId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "normalizedFindingId", "findingFingerprint", "requestDigest", "handoffDigest") REFERENCES "SastAiAdvisoryHandoff"("id", "advisoryId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "normalizedFindingId", "findingFingerprint", "requestDigest", "handoffDigest") ON DELETE RESTRICT ON UPDATE CASCADE'
+      'FOREIGN KEY ("handoffId", "advisoryId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "normalizedFindingId", "findingFingerprint", "requestDigest", "handoffDigest") REFERENCES "SastAiAdvisoryHandoff"("id", "advisoryId", "tenantId", "repositoryBindingId", "scanRequestId", "attemptId", "occurrenceId", "normalizedFindingId", "findingFingerprint", "requestDigest", "handoffDigest") ON DELETE RESTRICT ON UPDATE RESTRICT'
   },
   {
     table: 'SastAiAdvisoryAuthorityProof',
     name: 'SastAiAdvisoryAuthorityProof_finding_scope_fkey',
     type: 'f',
     definition:
-      'FOREIGN KEY ("normalizedFindingId", "tenantId", "scanRequestId") REFERENCES "NormalizedFinding"("id", "tenantId", "scanRequestId") ON DELETE RESTRICT ON UPDATE CASCADE'
+      'FOREIGN KEY ("normalizedFindingId", "tenantId", "scanRequestId") REFERENCES "NormalizedFinding"("id", "tenantId", "scanRequestId") ON DELETE RESTRICT ON UPDATE RESTRICT'
   },
   {
     table: 'SastFindingCorrelationEdge',

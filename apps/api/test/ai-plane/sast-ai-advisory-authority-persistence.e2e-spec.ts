@@ -74,7 +74,7 @@ describe('SAST AI advisory authority proof persistence contract', () => {
     );
   });
 
-  it('uses one serializable proof write and no authoritative model writes', async () => {
+  it('uses one fenced serializable snapshot and no authoritative model writes', async () => {
     const fixture = prismaFixture();
     const store = new PrismaSastAiAdvisoryAuthorityStore(
       fixture.prisma as never
@@ -91,11 +91,27 @@ describe('SAST AI advisory authority proof persistence contract', () => {
       first.proof.after.stateDigest
     );
     expect(fixture.proof.create).toHaveBeenCalledTimes(1);
-    expect(fixture.finding.findMany).toHaveBeenCalledTimes(2);
-    expect(fixture.lifecycle.findMany).toHaveBeenCalledTimes(2);
-    expect(fixture.policy.findMany).toHaveBeenCalledTimes(2);
-    expect(fixture.waiver.findMany).toHaveBeenCalledTimes(2);
-    expect(fixture.suppression.findMany).toHaveBeenCalledTimes(2);
+    expect(fixture.fenceQuery).toHaveBeenCalledTimes(2);
+    expect(fixture.finding.findMany).toHaveBeenCalledTimes(1);
+    expect(fixture.lifecycle.findMany).toHaveBeenCalledTimes(1);
+    expect(fixture.policy.findMany).toHaveBeenCalledTimes(1);
+    expect(fixture.waiver.findMany).toHaveBeenCalledTimes(1);
+    expect(fixture.suppression.findMany).toHaveBeenCalledTimes(1);
+    expect(fixture.prisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      {
+        isolationLevel: 'Serializable',
+        maxWait: 10_000,
+        timeout: 10_000
+      }
+    );
+    expect(migration).toContain(
+      'acquire_sast_ai_advisory_authority_fence'
+    );
+    expect(migration).toContain(
+      'PolicyDecision_ai_authority_fence'
+    );
+    expect(storeSource).toContain('await acquireAuthorityFence(tx, context)');
     expect(storeSource).not.toMatch(
       /\b(?:normalizedFinding|sastFindingLifecycleState|policyDecision|waiver|suppression)\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\b/u
     );
@@ -143,6 +159,35 @@ describe('SAST AI advisory authority proof persistence contract', () => {
         reference
       })
     ).resolves.toBe(false);
+    await expect(
+      store.verifyPolicyReference({
+        tenantId: handoff.tenantId,
+        normalizedFindingId: 'foreign-finding',
+        reference
+      })
+    ).resolves.toBe(false);
+    await expect(
+      store.verifyPolicyReference({
+        tenantId: handoff.tenantId,
+        normalizedFindingId:
+          handoff.normalizedFinding.normalizedFindingId,
+        reference: {
+          ...reference,
+          authorityProofDigest: `sha256:${'0'.repeat(64)}`
+        }
+      })
+    ).resolves.toBe(false);
+    await expect(
+      store.verifyPolicyReference({
+        tenantId: handoff.tenantId,
+        normalizedFindingId:
+          handoff.normalizedFinding.normalizedFindingId,
+        reference: {
+          ...reference,
+          advisoryId: `sast-ai-advisory://${'0'.repeat(64)}`
+        }
+      })
+    ).resolves.toBe(false);
   });
 
   it('rejects replay after authoritative finding state drift', async () => {
@@ -170,6 +215,23 @@ describe('SAST AI advisory authority proof persistence contract', () => {
       reason: 'STATE_DRIFT'
     });
     expect(fixture.proof.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('classifies a missing lifecycle state as context drift', async () => {
+    const fixture = prismaFixture();
+    fixture.lifecycle.findMany.mockResolvedValue([]);
+    const store = new PrismaSastAiAdvisoryAuthorityStore(
+      fixture.prisma as never
+    );
+    const handoff = aiHandoff();
+
+    await expect(
+      store.createProof({
+        tenantId: handoff.tenantId,
+        advisoryId: handoff.advisoryId,
+        verifiedAt: '2026-08-11T05:30:00.000Z'
+      })
+    ).rejects.toMatchObject({ reason: 'CONTEXT_DRIFT' });
   });
 });
 
@@ -294,7 +356,14 @@ function prismaFixture() {
     sastFindingLifecycleState: lifecycle,
     policyDecision: policy,
     waiver,
-    suppression
+    suppression,
+    $queryRaw: jest.fn((query: TemplateStringsArray) =>
+      Promise.resolve(
+        query[0].includes('advisory_context_fence')
+          ? [{ lockedContextCount: 1n }]
+          : [{ lockedScopeCount: 3n }]
+      )
+    )
   };
   const prisma = {
     ...transaction,
@@ -310,7 +379,8 @@ function prismaFixture() {
     lifecycle,
     policy,
     waiver,
-    suppression
+    suppression,
+    fenceQuery: transaction.$queryRaw
   };
 }
 
