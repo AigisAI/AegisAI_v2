@@ -1369,6 +1369,40 @@ and protected by update/delete rejection triggers plus restrictive foreign keys.
 reconstructs and revalidates every canonical set on read and permits replay only when the
 complete immutable contract matches. There is no user route for manifest registration.
 
+### Semantic metadata and tenant rule-policy gate v1
+
+T046 resolves only platform-managed `sast-rule-definition-metadata-v1` content through an
+exact `sast-rule-definition-metadata-binding-v1` for every rule in the verified T045 scanner
+set. The metadata digest is independent of bundle/manifest identity; the binding digest
+commits to the full manifest, bundle, scanner rule/revision, semantic identity, and metadata
+projection. This prevents the manifest/metadata circular hash while allowing unchanged
+metadata to be reused across later signed bundles.
+
+The semantic identity digest covers capability, category, languages/formats, vulnerability
+predicate, source/sink taxonomy, default severity/confidence, finding identity, and mandatory
+tenant control. A reused semantic ID with any changed core, unsupported scanner version,
+pre-introduction bundle, retired rule without replacement, mutable reference, or mismatched
+manifest projection rejects before policy evaluation.
+
+`sast-tenant-rule-policy-v1` is exact canonical metadata: approved category/rule states,
+literal safe path prefixes, platform-minimum severity floors, monotonic repository narrowing,
+tenant-scoped existing waiver/suppression references, bounded effective/expiry time, actor,
+and digest-bound audit reference. It has no rule body, flags, regex/glob program, plugin,
+arbitrary configuration, source, secret, scanner command, policy script, or customer-supplied
+authority field. Once any applicable policy scope disables a selection, a more specific scope
+cannot re-enable it. Mandatory rules cannot be disabled by this contract.
+Policy-window and evaluation timestamps use exact UTC millisecond form so their digest-bound
+string representation survives the `TIMESTAMP(3)` persistence round trip without normalization
+or calendar-date drift.
+
+A successful evaluation emits one immutable `sast-tenant-rule-policy-resolution-v1` receipt
+and normalized rule/path children. Its independently validated identity digest binds policy,
+repository, scanner set, profile, manifest set, and semantic metadata set; its receipt digest
+also binds the exact evaluation time, resolved binding states, paths, severity floors, and all
+fixed safety facts. The verified descriptor enters both the canonical scan key and immutable
+`SastScanPlan` before queue reservation. All failure paths expose only bounded planning reasons,
+write no successful receipt, and invoke neither queue reservation nor scanner execution.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:

@@ -1,3 +1,8 @@
+import {
+  isVerifiedSastTenantRulePolicyDescriptorValid,
+  type VerifiedSastTenantRulePolicyDescriptor
+} from './sast-rule-semantic-policy';
+
 export const PRODUCTION_SAST_RUNTIME_FEATURE_ID = '006-production-sast-runtime-design';
 
 export const SAST_SCANNER_KINDS = ['OPENGREP', 'TRIVY', 'SYFT'] as const;
@@ -447,6 +452,7 @@ export interface SastScanPlan {
   profile: SastScanProfile;
   profileDigest: `sha256:${string}`;
   policyVersion: string;
+  tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
   repositoryState: SastRepositoryState;
   scannerSet: VerifiedScannerSetDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
@@ -1037,6 +1043,7 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
     !plan ||
     typeof plan !== 'object' ||
     !plan.profile ||
+    !plan.tenantRulePolicy ||
     !plan.repositoryState ||
     !plan.scannerSet ||
     !Array.isArray(plan.forbiddenCapabilities)
@@ -1053,6 +1060,10 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
       isSha256Digest(plan.profileDigest) &&
       plan.profileDigest === SAST_APPROVED_PROFILE_DIGESTS[plan.profile.id] &&
       isNonBlank(plan.policyVersion) &&
+      plan.policyVersion === plan.tenantRulePolicy.policyVersion &&
+      isVerifiedSastTenantRulePolicyDescriptorValid(
+        plan.tenantRulePolicy
+      ) &&
       isNonBlank(plan.repositoryState.repositoryBindingId) &&
       isGitCommitSha(plan.repositoryState.fixedCommitSha) &&
       isNonBlank(plan.repositoryState.targetRef) &&

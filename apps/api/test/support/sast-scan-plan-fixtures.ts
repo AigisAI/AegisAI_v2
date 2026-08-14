@@ -3,7 +3,8 @@ import {
   SAST_FORBIDDEN_CAPABILITIES,
   SAST_SCAN_PROFILES,
   type SastProfileId,
-  type SastScanPlan
+  type SastScanPlan,
+  type VerifiedSastTenantRulePolicyDescriptor
 } from '@aegisai/shared';
 
 import { fixtureDigest } from './sast-finding-lineage-fixtures';
@@ -30,6 +31,7 @@ export function durableSastScanPlan(
     profile,
     profileDigest: SAST_APPROVED_PROFILE_DIGESTS[profile.id],
     policyVersion: 'policy-v1',
+    tenantRulePolicy: verifiedTenantRulePolicy('policy-v1'),
     repositoryState: {
       repositoryBindingId:
         options.repositoryBindingId ?? 'repository-1',
@@ -85,6 +87,45 @@ export function durableSastScanPlan(
     auditSinkRef: 'audit-sink://tenant-1/scan-1',
     forbiddenCapabilities: [...SAST_FORBIDDEN_CAPABILITIES],
     createdAt: '2026-07-29T23:00:00.000Z'
+  };
+}
+
+export function verifiedTenantRulePolicy(
+  policyVersion = 'policy-v1'
+): VerifiedSastTenantRulePolicyDescriptor {
+  const policyDigest = fixtureDigest(`policy:${policyVersion}`);
+  const policySuffix = policyDigest.slice('sha256:'.length);
+  const resolutionDigest = fixtureDigest(
+    `policy-resolution:${policyVersion}`
+  );
+  const resolutionSuffix = resolutionDigest.slice('sha256:'.length);
+  return {
+    policyId: `sast-tenant-rule-policy://${policySuffix}`,
+    policyVersion,
+    policyDigest,
+    resolutionReceiptId:
+      `sast-tenant-rule-policy-resolution://${resolutionSuffix}`,
+    resolutionIdentityDigest: resolutionDigest,
+    resolutionReceiptDigest: resolutionDigest,
+    semanticMetadataSetDigest: fixtureDigest(
+      `semantic-metadata-set:${policyVersion}`
+    ),
+    ruleResolutionDigest: fixtureDigest(
+      `rule-resolution:${policyVersion}`
+    ),
+    enabledRuleSetDigest: fixtureDigest(
+      `enabled-rules:${policyVersion}`
+    ),
+    disabledRuleSetDigest: fixtureDigest(
+      `disabled-rules:${policyVersion}`
+    ),
+    pathExclusionDigest: fixtureDigest(
+      `path-exclusions:${policyVersion}`
+    ),
+    severityFloors: {
+      dashboard: 'INFO',
+      publication: 'MEDIUM'
+    }
   };
 }
 

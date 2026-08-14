@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
 
 import { ConflictException } from '@nestjs/common';
 import {
@@ -26,6 +27,10 @@ import {
   SastRuleBundleCompatibilityGate,
   SastRuleBundleCompatibilityGateError
 } from '../../src/rule-governance/sast-rule-bundle-compatibility.gate';
+import {
+  SastTenantRulePolicyGate,
+  SastTenantRulePolicyGateError
+} from '../../src/rule-governance/sast-tenant-rule-policy.gate';
 import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
 import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
 
@@ -129,6 +134,12 @@ class AcceptingRuleBundleCompatibilityGate extends SastRuleBundleCompatibilityGa
   }
 }
 
+class AcceptingTenantRulePolicyGate extends SastTenantRulePolicyGate {
+  async resolve(input: { policyVersion: string }) {
+    return verifiedTenantRulePolicy(input.policyVersion);
+  }
+}
+
 const queuePolicy: SastQueuePolicySet = {
   policyVersion: 'queue-policy-1',
   digest: digest('e'),
@@ -212,6 +223,7 @@ const buildReservationPlan = (input: {
   profile: SAST_SCAN_PROFILES.JAVA_FAST_V1,
   profileDigest: SAST_APPROVED_PROFILE_DIGESTS.JAVA_FAST_V1,
   policyVersion: 'policy-1',
+  tenantRulePolicy: verifiedTenantRulePolicy('policy-1'),
   repositoryState: {
     repositoryBindingId: input.repositoryBindingId,
     fixedCommitSha: 'a'.repeat(40),
@@ -287,7 +299,9 @@ const buildDispatchReservationInput = (input: {
 async function createHarness(
   lane: 'FAST' | 'DEEP' = 'FAST',
   ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate =
-    new AcceptingRuleBundleCompatibilityGate()
+    new AcceptingRuleBundleCompatibilityGate(),
+  tenantRulePolicyGate: SastTenantRulePolicyGate =
+    new AcceptingTenantRulePolicyGate()
 ) {
   const scanRequestStore = new InMemoryControlPlaneScanRequestStore();
   const queueStore = new InMemorySastQueueAdmissionStore();
@@ -297,6 +311,7 @@ async function createHarness(
     null as never,
     scanRequestStore
   );
+
   const queueAdmission = new SastQueueAdmissionService(
     queueStore
   );
@@ -333,10 +348,12 @@ async function createHarness(
     queueStore,
     queueAdmission,
     ruleBundleCompatibilityGate,
+    tenantRulePolicyGate,
     planner: new SastScanPlannerService(
       controlPlane,
       queueAdmission,
-      ruleBundleCompatibilityGate
+      ruleBundleCompatibilityGate,
+      tenantRulePolicyGate
     ),
     repositoryBindingId,
     scanRequest
@@ -408,6 +425,46 @@ describe('SastScanPlannerService', () => {
     }
   );
 
+  it.each([
+    ['RULE_METADATA_UNVERIFIED', 'RULE_METADATA_UNVERIFIED'],
+    ['RULE_METADATA_MISMATCH', 'RULE_METADATA_MISMATCH'],
+    ['TENANT_POLICY_INVALID', 'TENANT_RULE_POLICY_INVALID'],
+    ['POLICY_STORE_UNAVAILABLE', 'TENANT_RULE_POLICY_UNAVAILABLE']
+  ] as const)(
+    'fails closed before queue reservation for tenant policy %s',
+    async (gateReason, planningReason) => {
+      const gate = new (class extends SastTenantRulePolicyGate {
+        async resolve(): Promise<never> {
+          throw new SastTenantRulePolicyGateError(gateReason);
+        }
+      })();
+      const harness = await createHarness(
+        'FAST',
+        new AcceptingRuleBundleCompatibilityGate(),
+        gate
+      );
+      const reserve = jest.spyOn(
+        harness.queueAdmission,
+        'reserveWithContext'
+      );
+
+      const result = await harness.planner.plan(
+        buildPlanningInput(
+          harness.repositoryBindingId,
+          harness.scanRequest.id
+        )
+      );
+
+      expect(result).toEqual({
+        planning: expect.objectContaining({
+          state: 'REJECTED',
+          reasonCodes: [planningReason]
+        })
+      });
+      expect(reserve).not.toHaveBeenCalled();
+    }
+  );
+
   it('selects the Java Fast profile and records an immutable admitted plan', async () => {
     const harness = await createHarness('FAST');
     const input = buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id);
@@ -437,10 +494,12 @@ describe('SastScanPlannerService', () => {
     expect(Object.isFrozen(first.plan?.profile)).toBe(true);
     expect(Object.isFrozen(first.plan?.scannerSet)).toBe(true);
     expect(Object.isFrozen(first.plan?.scannerSet.ruleBundles)).toBe(true);
+    expect(Object.isFrozen(first.plan?.tenantRulePolicy)).toBe(true);
     expect(first.plan).toMatchObject({
       tenantId: 'tenant-1',
       scanRequestId: harness.scanRequest.id,
       isolationClass: 'HARDENED',
+      tenantRulePolicy: verifiedTenantRulePolicy('policy-1'),
       repositoryState: {
         repositoryBindingId: harness.repositoryBindingId,
         fixedCommitSha: 'a'.repeat(40),
@@ -487,7 +546,8 @@ describe('SastScanPlannerService', () => {
     const restartedPlanner = new SastScanPlannerService(
       restartedControlPlane,
       restartedQueue,
-      harness.ruleBundleCompatibilityGate
+      harness.ruleBundleCompatibilityGate,
+      harness.tenantRulePolicyGate
     );
     await expect(restartedControlPlane.listIntegrations('tenant-1')).resolves.toHaveLength(1);
     await expect(
@@ -725,6 +785,7 @@ describe('SastScanPlannerService', () => {
       profile: baselineResult.plan!.profile,
       profileDigest: baselineResult.plan!.profileDigest,
       scannerSet: baselineResult.plan!.scannerSet,
+      tenantRulePolicy: baselineResult.plan!.tenantRulePolicy,
       isolationClass: baselineResult.plan!.isolationClass
     };
     const keyFor = (

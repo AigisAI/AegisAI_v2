@@ -80,6 +80,39 @@ command-line flags, rule code, templates, post-processors, or executable configu
   provider rollout and its verification drill remain gated by T055 and the 005 deployment
   operations flow.
 
+### T046 Semantic Metadata and Tenant Policy Boundary
+
+- `sast-rule-semantic-identity-v1` makes capability, category, language/format coverage,
+  predicate, source/sink taxonomy, default severity/confidence, finding identity, and
+  mandatory/optional tenant control one immutable semantic core. A semantic ID cannot be
+  reused with a different core.
+- `sast-rule-definition-metadata-v1` is reusable content metadata. Its digest intentionally
+  excludes bundle and manifest identity, avoiding a circular digest with the T045 rule
+  projection. `sast-rule-definition-metadata-binding-v1` separately binds that digest,
+  scanner rule/revision, semantic identity, bundle, and exact verified manifest projection.
+- Metadata stores owner, taxonomy, documentation, fixture, scanner-support, introduction,
+  and deprecation/replacement references only. Every reference is bounded and digest-bound;
+  rule bodies, source, secrets, mutable URLs, customer flags, plugins, and arbitrary
+  configuration are absent.
+- `sast-tenant-rule-policy-v1` accepts canonical approved rule/category decisions, literal
+  normalized path prefixes, non-weakening severity floors, repository-scoped narrowing,
+  existing waiver/suppression references, one effective window, actor, and audit reference.
+  A repository override cannot re-enable a tenant-disabled selection or weaken its floors.
+  Mandatory rules cannot be disabled without a future explicitly scoped authority contract.
+  Policy-window and evaluation instants use exact UTC millisecond strings so digest identity
+  cannot drift through the database `TIMESTAMP(3)` representation.
+- Planning resolves the selected signed manifests and all metadata bindings into one
+  content-free `sast-tenant-rule-policy-resolution-v1` receipt. Missing, extra, conflicting,
+  expired, cross-tenant, unknown-selector, or mandatory-disable state writes no receipt and
+  fails closed before canonical-key construction or queue reservation.
+- The receipt identity, receipt digest, semantic metadata set, enabled/disabled binding sets,
+  path exclusions, and severity floors are frozen into `SastScanPlan`. Normalized immutable
+  PostgreSQL ledgers, restrictive exact-projection foreign keys, mutation-rejection triggers,
+  and serializable exact replay preserve the decision after process restart.
+- T046 grants no rule promotion, canary, kill-switch, rollback, scanner execution, waiver
+  creation, finding mutation, publication, AI, or SCM authority. Those remain T047-T050 and
+  later runtime gates.
+
 ## Lifecycle
 
 ```text

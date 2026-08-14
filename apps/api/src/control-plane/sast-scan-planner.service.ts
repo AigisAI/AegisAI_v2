@@ -20,6 +20,7 @@ import {
   type SastScanProfile,
   type SastUserVisiblePlanningState,
   type ScannerSetDescriptor,
+  type VerifiedSastTenantRulePolicyDescriptor,
   type VerifiedScannerSetDescriptor
 } from '@aegisai/shared';
 
@@ -27,6 +28,10 @@ import {
   SastRuleBundleCompatibilityGate,
   SastRuleBundleCompatibilityGateError
 } from '../rule-governance/sast-rule-bundle-compatibility.gate';
+import {
+  SastTenantRulePolicyGate,
+  SastTenantRulePolicyGateError
+} from '../rule-governance/sast-tenant-rule-policy.gate';
 import { ControlPlaneService } from './control-plane.service';
 import type { ControlPlaneScanRequest } from './control-plane.types';
 import { SastQueueAdmissionService } from './sast-queue-admission.service';
@@ -36,7 +41,8 @@ export class SastScanPlannerService {
   constructor(
     private readonly controlPlaneService: ControlPlaneService,
     private readonly queueAdmissionService: SastQueueAdmissionService,
-    private readonly ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate
+    private readonly ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate,
+    private readonly tenantRulePolicyGate: SastTenantRulePolicyGate
   ) {}
 
   async plan(input: SastScanPlanningInput): Promise<SastScanPlanningResult> {
@@ -147,6 +153,26 @@ export class SastScanPlannerService {
         profileSelection.profile
       );
     }
+    let tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
+    try {
+      tenantRulePolicy = await this.tenantRulePolicyGate.resolve({
+        tenantId: scanRequest.tenantId,
+        repositoryBindingId: scanRequest.repositoryBindingId,
+        policyVersion: scanRequest.policyVersion,
+        scannerSet: verifiedScannerSet,
+        profile: profileSelection.profile,
+        profileDigest,
+        evaluatedAt: requestedAt
+      });
+    } catch (error) {
+      return this.reject(
+        scanRequest,
+        requestedAt,
+        this.tenantRulePolicyReasonCode(error),
+        profileSelection.coverageClaim,
+        profileSelection.profile
+      );
+    }
     const isolationClass =
       scanRequest.isolationClass === 'RESTRICTED' ? 'RESTRICTED' : 'HARDENED';
     const canonicalScanKey = this.digest(
@@ -162,6 +188,7 @@ export class SastScanPlannerService {
         profile: profileSelection.profile,
         profileDigest,
         scannerSet: verifiedScannerSet,
+        tenantRulePolicy,
         isolationClass
       })
     );
@@ -181,6 +208,7 @@ export class SastScanPlannerService {
       profileDigest,
       canonicalScanKey,
       verifiedScannerSet,
+      tenantRulePolicy,
       isolationClass,
       input.repositoryMetadata.inventoryDigest,
       input.repositoryMetadata.attestationRef,
@@ -259,6 +287,7 @@ export class SastScanPlannerService {
               profileDigest,
               canonicalScanKey,
               verifiedScannerSet,
+              tenantRulePolicy,
               isolationClass,
               input.repositoryMetadata.inventoryDigest,
               input.repositoryMetadata.attestationRef,
@@ -280,6 +309,7 @@ export class SastScanPlannerService {
     profileDigest: `sha256:${string}`,
     canonicalScanKey: `sha256:${string}`,
     scannerSet: VerifiedScannerSetDescriptor,
+    tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor,
     isolationClass: 'HARDENED' | 'RESTRICTED',
     inventoryDigest: `sha256:${string}`,
     attestationRef: string,
@@ -297,6 +327,9 @@ export class SastScanPlannerService {
       profile: profileSnapshot,
       profileDigest,
       policyVersion: scanRequest.policyVersion,
+      tenantRulePolicy: this.deepFreeze(
+        structuredClone(tenantRulePolicy)
+      ),
       repositoryState: {
         repositoryBindingId: scanRequest.repositoryBindingId,
         fixedCommitSha: scanRequest.commitSha.toLowerCase(),
@@ -384,6 +417,24 @@ export class SastScanPlannerService {
       case 'VERIFICATION_UNAVAILABLE':
         return 'RULE_BUNDLE_VERIFICATION_UNAVAILABLE';
     }
+  }
+
+  private tenantRulePolicyReasonCode(
+    error: unknown
+  ): SastPlanningReasonCode {
+    if (!(error instanceof SastTenantRulePolicyGateError)) {
+      return 'TENANT_RULE_POLICY_UNAVAILABLE';
+    }
+    if (error.reason === 'RULE_METADATA_UNVERIFIED') {
+      return 'RULE_METADATA_UNVERIFIED';
+    }
+    if (error.reason === 'RULE_METADATA_MISMATCH') {
+      return 'RULE_METADATA_MISMATCH';
+    }
+    if (error.reason === 'TENANT_POLICY_INVALID') {
+      return 'TENANT_RULE_POLICY_INVALID';
+    }
+    return 'TENANT_RULE_POLICY_UNAVAILABLE';
   }
 
   private async reject(

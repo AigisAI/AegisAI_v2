@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
 
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
@@ -88,6 +89,7 @@ describe('SastRuleBundleManifestService T045 gate', () => {
         profile: SAST_SCAN_PROFILES.JAVA_FAST_V1,
         profileDigest: SAST_APPROVED_PROFILE_DIGESTS.JAVA_FAST_V1,
         policyVersion: 'policy-1',
+        tenantRulePolicy: verifiedTenantRulePolicy('policy-1'),
         repositoryState: {
           repositoryBindingId: 'repository-1',
           fixedCommitSha: 'a'.repeat(40),

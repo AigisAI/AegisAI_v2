@@ -85,6 +85,7 @@ test('canonical scan identity includes fixed source and every executable artifac
     'inventoryDigest',
     'attestationRef',
     'profileDigest',
+    'tenantRulePolicy',
     'scannerSetDigest',
     'imageDigest',
     'wrapperDigest',

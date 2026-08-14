@@ -104,24 +104,34 @@ and digest, and its canonical scan key commits to that digest before queue reser
 
 ### RuleDefinitionMetadata
 
-Non-executable searchable rule metadata stored independently from the signed bundle.
+Reusable, immutable, non-executable T046 rule metadata stored independently from a signed
+bundle so an unchanged rule can appear in later manifests without a digest cycle.
 
 - `semanticRuleId`
 - `scannerRuleId`
-- `bundleId` and bundle digest
+- scanner rule revision and semantic-identity ID/digest
+- digest-bound owner reference
 - `capability`
-- `language`
+- canonical languages and formats
 - `category`
 - default severity and confidence
 - CWE and OWASP mappings
 - source/sink taxonomy
 - documentation reference
+- digest-bound positive/negative fixture references
+- introduction bundle version
 - first and last supported scanner versions
 - deprecation and replacement metadata
 
+`SastRuleDefinitionMetadataBinding` is a separate immutable ledger row containing the exact
+T045 manifest ID/digest, bundle ID/digest, scanner, rule ID/revision, semantic ID, metadata
+ID/digest, and semantic-identity digest. Composite restrictive foreign keys bind both the
+complete manifest projection and reusable metadata content. Neither table stores a rule body,
+repository/source content, secret, executable configuration, or generic JSON.
+
 ### TenantRulePolicy
 
-Selection metadata only; it cannot inject executable configuration.
+Immutable T046 selection metadata only; it cannot inject executable configuration.
 
 - `tenantId`
 - `policyVersion`
@@ -132,6 +142,17 @@ Selection metadata only; it cannot inject executable configuration.
 - approved waiver/suppression references
 - effective and expiry timestamps
 - actor and audit reference
+
+All selectors must already exist in the platform semantic-identity ledger. Decisions are
+monotonic narrowing: a more specific repository override cannot reverse an applicable
+disable, lower a severity floor, or disable a mandatory semantic rule. Paths are literal NFC
+prefixes with no regex, glob, traversal, absolute root, or backslash semantics.
+
+`SastTenantRulePolicyResolution` records one successful pre-queue evaluation with exact
+tenant/repository, policy, profile, scanner-set, manifest-set, metadata-binding, rule-state,
+path, severity-floor, evaluation-time, identity-digest, and receipt-digest bindings. Child
+rows retain every resolved concrete rule and literal path prefix. Denials create no receipt;
+successful replays return the first immutable result.
 
 ### SastScanPlan
 
@@ -145,7 +166,7 @@ Immutable execution plan produced from `ScanRequest`.
 - trusted inventory digest and signed preflight attestation reference used for deterministic selection
 - profile snapshot and digest
 - scanner-set snapshot and digest
-- tenant rule-policy version
+- tenant rule-policy version plus verified T046 receipt descriptor/digests
 - isolation class
 - per-scan result ingress, evidence output, and audit references
 - creation timestamp
