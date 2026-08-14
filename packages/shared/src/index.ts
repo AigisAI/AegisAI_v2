@@ -27,6 +27,7 @@ export * from './types/sast-evidence-access';
 export * from './types/sast-ai-advisory-handoff';
 export * from './types/sast-ai-advisory-authority';
 export * from './types/sast-rule-bundle-manifest';
+export * from './types/sast-rule-semantic-policy';
 export * from './types/sast-planning';
 export * from './types/sast-fetch';
 export * from './types/sast-wrapper';

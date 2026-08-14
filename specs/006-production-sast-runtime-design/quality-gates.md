@@ -345,6 +345,23 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
 - 100% T044 content-free/replay invariant: the proof ledger contains only scope references,
   counts, SHA-256 digests, time, and fixed booleans. Advisory/rationale/prompt/source/evidence/
   secret/policy payload retention and duplicate proofs equal zero; exact retry returns one row.
+- 100% T046 semantic-identity invariant: one semantic ID maps to exactly one complete core.
+  Predicate, capability/category, language/format, source/sink, default severity/confidence,
+  finding identity, or tenant-control drift creates zero metadata bindings. Deprecated rules
+  may omit a replacement; retired rules may not, and replacement cycles are rejected.
+- 100% T046 manifest-binding invariant: reusable metadata can bind to later signed manifests
+  without changing its content digest, while any manifest/bundle/scanner/rule/revision/
+  metadata/semantic-identity drift rejects. The normalized ledgers contain zero rule body,
+  source, secret, executable configuration, mutable URL, or generic JSON fields.
+- 100% T046 policy/planning invariant: executable fields, unknown selectors, regex/glob or
+  traversal paths, weakened severity floors, repository re-enable attempts, mandatory-rule
+  disables, expired/cross-tenant references, missing metadata, and store outages create zero
+  successful receipts and queue reservations. A valid retry returns one immutable receipt whose
+  identity/digest and enabled/disabled binding sets are committed to the canonical scan plan.
+  Caller request time has zero authority over policy windows or receipt time; old/future request
+  times still use the trusted service clock, while throwing or invalid clocks fail closed. The
+  canonical preimage is exactly `sast-canonical-scan-key-v2`, and migration rejects a cutover
+  until every prior non-terminal SAST plan and reservation has finished or been canceled.
 
 ## Canary and Continuous Production Gates
 

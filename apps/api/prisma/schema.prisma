@@ -353,38 +353,41 @@ model Tenant {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  integrations                  ScmIntegration[]
-  repositoryBindings            RepositoryBinding[]
-  scanRequests                  ScanRequest[]
-  scannerRuns                   ScannerRun[]
-  normalizedFindings            NormalizedFinding[]
-  evidencePacks                 EvidencePack[]
-  policyDecisions               PolicyDecision[]
-  aiAdvisoryMetadata            AiAdvisoryMetadata[]
-  waivers                       Waiver[]
-  suppressions                  Suppression[]
-  auditEvents                   AuditEvent[]
-  sastCredentialLeases          SastRepositoryCredentialLease[]
-  sastScanAttempts              SastScanAttempt[]
-  sastArtifactIngestions        SastArtifactIngestion[]
-  sastFindingLineages           SastFindingLineage[]
-  sastFindingAliases            SastFindingIdentityAlias[]
-  sastFindingBatches            SastFindingObservationBatch[]
-  sastFindingOccurrences        SastFindingOccurrence[]
-  sastFindingStates             SastFindingLifecycleState[]
-  sastFindingReconciliations    SastFindingLifecycleReconciliation[]
-  sastFindingEvents             SastFindingLifecycleEvent[]
-  sastFindingCorrelations       SastFindingCorrelationBatch[]
-  sastScanCoverageDecisions     SastScanCoverageDecision[]
-  sastScannerCoverageRecords    SastScannerCoverageRecord[]
-  sastTargetObservations        SastLatestTargetObservation[]
-  sastFreshnessDecisions        SastScanFreshnessDecision[]
-  sastRetryDecisions            SastScanRetryDecision[]
-  sastEvidenceAccessDecisions   SastEvidenceAccessDecision[]
-  sastEvidenceDeletionSchedules SastEvidenceDeletionSchedule[]
-  sastAiAdvisoryHandoffs        SastAiAdvisoryHandoff[]
-  sastAiAdvisoryAuthorityProofs SastAiAdvisoryAuthorityProof[]
-  users                         User[]
+  integrations                        ScmIntegration[]
+  repositoryBindings                  RepositoryBinding[]
+  scanRequests                        ScanRequest[]
+  scannerRuns                         ScannerRun[]
+  normalizedFindings                  NormalizedFinding[]
+  evidencePacks                       EvidencePack[]
+  policyDecisions                     PolicyDecision[]
+  aiAdvisoryMetadata                  AiAdvisoryMetadata[]
+  waivers                             Waiver[]
+  suppressions                        Suppression[]
+  auditEvents                         AuditEvent[]
+  sastCredentialLeases                SastRepositoryCredentialLease[]
+  sastScanAttempts                    SastScanAttempt[]
+  sastArtifactIngestions              SastArtifactIngestion[]
+  sastFindingLineages                 SastFindingLineage[]
+  sastFindingAliases                  SastFindingIdentityAlias[]
+  sastFindingBatches                  SastFindingObservationBatch[]
+  sastFindingOccurrences              SastFindingOccurrence[]
+  sastFindingStates                   SastFindingLifecycleState[]
+  sastFindingReconciliations          SastFindingLifecycleReconciliation[]
+  sastFindingEvents                   SastFindingLifecycleEvent[]
+  sastFindingCorrelations             SastFindingCorrelationBatch[]
+  sastScanCoverageDecisions           SastScanCoverageDecision[]
+  sastScannerCoverageRecords          SastScannerCoverageRecord[]
+  sastTargetObservations              SastLatestTargetObservation[]
+  sastFreshnessDecisions              SastScanFreshnessDecision[]
+  sastRetryDecisions                  SastScanRetryDecision[]
+  sastEvidenceAccessDecisions         SastEvidenceAccessDecision[]
+  sastEvidenceDeletionSchedules       SastEvidenceDeletionSchedule[]
+  sastAiAdvisoryHandoffs              SastAiAdvisoryHandoff[]
+  sastAiAdvisoryAuthorityProofs       SastAiAdvisoryAuthorityProof[]
+  sastTenantRulePolicies              SastTenantRulePolicy[]
+  sastTenantRulePolicyWaiverRefs      SastTenantRulePolicyWaiverReference[]
+  sastTenantRulePolicySuppressionRefs SastTenantRulePolicySuppressionReference[]
+  users                               User[]
 }
 
 model ScmIntegration {
@@ -421,29 +424,31 @@ model RepositoryBinding {
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 
-  tenant                        Tenant                               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration                   ScmIntegration                       @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
-  scanRequests                  ScanRequest[]
-  sastCredentialLeases          SastRepositoryCredentialLease[]
-  sastScanAttempts              SastScanAttempt[]
-  sastArtifactIngestions        SastArtifactIngestion[]
-  sastFindingLineages           SastFindingLineage[]
-  sastFindingAliases            SastFindingIdentityAlias[]
-  sastFindingBatches            SastFindingObservationBatch[]
-  sastFindingOccurrences        SastFindingOccurrence[]
-  sastFindingStates             SastFindingLifecycleState[]
-  sastFindingReconciliations    SastFindingLifecycleReconciliation[]
-  sastFindingEvents             SastFindingLifecycleEvent[]
-  sastFindingCorrelations       SastFindingCorrelationBatch[]
-  sastScanCoverageDecisions     SastScanCoverageDecision[]
-  sastScannerCoverageRecords    SastScannerCoverageRecord[]
-  sastTargetObservations        SastLatestTargetObservation[]
-  sastFreshnessDecisions        SastScanFreshnessDecision[]
-  sastRetryDecisions            SastScanRetryDecision[]
-  sastEvidenceAccessDecisions   SastEvidenceAccessDecision[]
-  sastEvidenceDeletionSchedules SastEvidenceDeletionSchedule[]
-  sastAiAdvisoryHandoffs        SastAiAdvisoryHandoff[]
-  sastAiAdvisoryAuthorityProofs SastAiAdvisoryAuthorityProof[]
+  tenant                          Tenant                                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration                     ScmIntegration                           @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
+  scanRequests                    ScanRequest[]
+  sastCredentialLeases            SastRepositoryCredentialLease[]
+  sastScanAttempts                SastScanAttempt[]
+  sastArtifactIngestions          SastArtifactIngestion[]
+  sastFindingLineages             SastFindingLineage[]
+  sastFindingAliases              SastFindingIdentityAlias[]
+  sastFindingBatches              SastFindingObservationBatch[]
+  sastFindingOccurrences          SastFindingOccurrence[]
+  sastFindingStates               SastFindingLifecycleState[]
+  sastFindingReconciliations      SastFindingLifecycleReconciliation[]
+  sastFindingEvents               SastFindingLifecycleEvent[]
+  sastFindingCorrelations         SastFindingCorrelationBatch[]
+  sastScanCoverageDecisions       SastScanCoverageDecision[]
+  sastScannerCoverageRecords      SastScannerCoverageRecord[]
+  sastTargetObservations          SastLatestTargetObservation[]
+  sastFreshnessDecisions          SastScanFreshnessDecision[]
+  sastRetryDecisions              SastScanRetryDecision[]
+  sastEvidenceAccessDecisions     SastEvidenceAccessDecision[]
+  sastEvidenceDeletionSchedules   SastEvidenceDeletionSchedule[]
+  sastAiAdvisoryHandoffs          SastAiAdvisoryHandoff[]
+  sastAiAdvisoryAuthorityProofs   SastAiAdvisoryAuthorityProof[]
+  sastTenantRulePolicyOverrides   SastTenantRulePolicyRepositoryOverride[]
+  sastTenantRulePolicyResolutions SastTenantRulePolicyResolution[]
 
   @@unique([id, tenantId])
   @@unique([tenantId, scmIntegrationId, providerRepoId])
@@ -1963,8 +1968,10 @@ model Waiver {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant                         Tenant                                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sastTenantRulePolicyReferences SastTenantRulePolicyWaiverReference[]
 
+  @@unique([id, tenantId])
   @@index([tenantId])
   @@index([expiresAt])
 }
@@ -1978,10 +1985,12 @@ model Suppression {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
-  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  scanRequest ScanRequest        @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
-  finding     NormalizedFinding? @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  tenant                         Tenant                                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest                    ScanRequest                                @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  finding                        NormalizedFinding?                         @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  sastTenantRulePolicyReferences SastTenantRulePolicySuppressionReference[]
 
+  @@unique([id, tenantId])
   @@index([tenantId])
   @@index([scanRequestId])
   @@index([findingId])
@@ -2030,12 +2039,15 @@ model SastRuleBundleManifest {
   secretValueStored               Boolean  @default(false)
   createdAt                       DateTime @default(now())
 
-  members                SastRuleBundleManifestMember[]
-  rules                  SastRuleBundleManifestRule[]
-  compatibilityEntries   SastRuleBundleCompatibilityEntry[]
-  supplyChainAttestation SastRuleBundleSupplyChainAttestation?
-  compatibilityReceipts  SastRuleBundleCompatibilityReceipt[]
+  members                    SastRuleBundleManifestMember[]
+  rules                      SastRuleBundleManifestRule[]
+  compatibilityEntries       SastRuleBundleCompatibilityEntry[]
+  supplyChainAttestation     SastRuleBundleSupplyChainAttestation?
+  compatibilityReceipts      SastRuleBundleCompatibilityReceipt[]
+  definitionMetadataBindings SastRuleDefinitionMetadataBinding[]
 
+  @@unique([id, manifestDigest], map: "SastRuleBundleManifest_id_digest_key")
+  @@unique([id, manifestDigest, bundleId, bundleDigest, scanner], map: "SastRuleBundleManifest_metadata_binding_key")
   @@index([bundleId, bundleVersion])
   @@index([scanner, lifecycleState])
   @@index([bundleDigest])
@@ -2061,10 +2073,12 @@ model SastRuleBundleManifestRule {
   ruleSemanticId String
   metadataDigest String
 
-  manifest SastRuleBundleManifest @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  manifest         SastRuleBundleManifest              @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  metadataBindings SastRuleDefinitionMetadataBinding[]
 
   @@id([manifestId, position])
   @@unique([manifestId, ruleId])
+  @@unique([manifestId, ruleId, ruleRevision, ruleSemanticId, metadataDigest], map: "SastRuleBundleManifestRule_metadata_binding_key")
 }
 
 model SastRuleBundleCompatibilityEntry {
@@ -2137,6 +2151,361 @@ model SastRuleBundleCompatibilityReceipt {
 
   @@unique([manifestId, scannerSetDigest, profileDigest], map: "SastRuleBundleCompatibilityReceipt_manifest_context_key")
   @@index([scannerSetDigest, profileId], map: "SastRuleBundleCompatibilityReceipt_scannerSet_profile_idx")
+}
+
+model SastRuleSemanticIdentity {
+  id                          String   @id
+  contractVersion             String
+  semanticRuleId              String   @unique
+  semanticIdentityDigest      String   @unique
+  capability                  String
+  category                    String
+  languageCount               Int
+  formatCount                 Int
+  vulnerabilityPredicateRef   String
+  sourceKindCount             Int
+  sinkKindCount               Int
+  defaultSeverity             Severity
+  defaultConfidence           String
+  findingIdentityRef          String
+  tenantControl               String
+  source                      String   @default("PLATFORM_MANAGED")
+  immutable                   Boolean  @default(true)
+  executableRuleContentStored Boolean  @default(false)
+  customerSourceStored        Boolean  @default(false)
+  secretValueStored           Boolean  @default(false)
+  createdAt                   DateTime @default(now())
+
+  values          SastRuleSemanticIdentityValue[]
+  metadata        SastRuleDefinitionMetadata[]
+  resolutionRules SastTenantRulePolicyResolutionRule[]
+
+  @@unique([id, semanticRuleId, semanticIdentityDigest], map: "SastRuleSemanticIdentity_binding_key")
+  @@unique([semanticRuleId, semanticIdentityDigest, category, tenantControl], map: "SastRuleSemanticIdentity_resolution_key")
+  @@index([capability, category], map: "SastRuleSemanticIdentity_capability_category_idx")
+}
+
+model SastRuleSemanticIdentityValue {
+  semanticIdentityId String
+  kind               String
+  position           Int
+  value              String
+
+  semanticIdentity SastRuleSemanticIdentity @relation(fields: [semanticIdentityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([semanticIdentityId, kind, position])
+  @@unique([semanticIdentityId, kind, value], map: "SastRuleSemanticIdentityValue_kind_value_key")
+}
+
+model SastRuleDefinitionMetadata {
+  id                              String   @id
+  contractVersion                 String
+  metadataDigest                  String   @unique
+  scanner                         String
+  ruleId                          String
+  ruleRevision                    String
+  semanticRuleId                  String
+  semanticIdentityId              String
+  semanticIdentityDigest          String
+  ownerRef                        String
+  cweCount                        Int
+  owaspMappingCount               Int
+  documentationRef                String
+  fixtureRefCount                 Int
+  introducedInBundleVersion       String
+  firstSupportedScannerVersion    String
+  lastSupportedScannerVersion     String?
+  deprecationState                String
+  replacementSemanticRuleId       String?
+  source                          String   @default("PLATFORM_MANAGED")
+  immutable                       Boolean  @default(true)
+  executableRuleContentStored     Boolean  @default(false)
+  customerExecutableConfigAllowed Boolean  @default(false)
+  customerSourceStored            Boolean  @default(false)
+  secretValueStored               Boolean  @default(false)
+  createdAt                       DateTime @default(now())
+
+  semanticIdentity SastRuleSemanticIdentity            @relation(fields: [semanticIdentityId, semanticRuleId, semanticIdentityDigest], references: [id, semanticRuleId, semanticIdentityDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleDefinitionMetadata_semantic_identity_fkey")
+  values           SastRuleDefinitionMetadataValue[]
+  bindings         SastRuleDefinitionMetadataBinding[]
+
+  @@unique([id, metadataDigest, semanticRuleId, semanticIdentityDigest], map: "SastRuleDefinitionMetadata_content_binding_key")
+  @@index([semanticRuleId], map: "SastRuleDefinitionMetadata_semanticRuleId_idx")
+}
+
+model SastRuleDefinitionMetadataValue {
+  metadataId String
+  kind       String
+  position   Int
+  value      String
+
+  metadata SastRuleDefinitionMetadata @relation(fields: [metadataId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([metadataId, kind, position])
+  @@unique([metadataId, kind, value], map: "SastRuleDefinitionMetadataValue_kind_value_key")
+}
+
+model SastRuleDefinitionMetadataBinding {
+  id                              String   @id
+  contractVersion                 String
+  bindingDigest                   String   @unique
+  manifestId                      String
+  manifestDigest                  String
+  bundleId                        String
+  bundleDigest                    String
+  scanner                         String
+  ruleId                          String
+  ruleRevision                    String
+  semanticRuleId                  String
+  metadataId                      String
+  metadataDigest                  String
+  semanticIdentityDigest          String
+  source                          String   @default("PLATFORM_MANAGED")
+  immutable                       Boolean  @default(true)
+  executableRuleContentStored     Boolean  @default(false)
+  customerExecutableConfigAllowed Boolean  @default(false)
+  customerSourceStored            Boolean  @default(false)
+  secretValueStored               Boolean  @default(false)
+  createdAt                       DateTime @default(now())
+
+  manifest        SastRuleBundleManifest               @relation(fields: [manifestId, manifestDigest, bundleId, bundleDigest, scanner], references: [id, manifestDigest, bundleId, bundleDigest, scanner], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleDefinitionMetadataBinding_manifest_fkey")
+  manifestRule    SastRuleBundleManifestRule           @relation(fields: [manifestId, ruleId, ruleRevision, semanticRuleId, metadataDigest], references: [manifestId, ruleId, ruleRevision, ruleSemanticId, metadataDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleDefinitionMetadataBinding_manifest_rule_fkey")
+  metadata        SastRuleDefinitionMetadata           @relation(fields: [metadataId, metadataDigest, semanticRuleId, semanticIdentityDigest], references: [id, metadataDigest, semanticRuleId, semanticIdentityDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleDefinitionMetadataBinding_metadata_fkey")
+  resolutionRules SastTenantRulePolicyResolutionRule[]
+
+  @@unique([manifestId, ruleId], map: "SastRuleDefinitionMetadataBinding_manifest_rule_key")
+  @@unique([manifestId, ruleId, ruleRevision, semanticRuleId, metadataDigest], map: "SastRuleDefinitionMetadataBinding_manifest_projection_key")
+  @@unique([id, bindingDigest, manifestId, manifestDigest, bundleDigest, ruleId, ruleRevision, metadataId, metadataDigest, semanticRuleId, semanticIdentityDigest], map: "SastRuleDefinitionMetadataBinding_resolution_key")
+  @@index([metadataId], map: "SastRuleDefinitionMetadataBinding_metadataId_idx")
+  @@index([bundleDigest], map: "SastRuleDefinitionMetadataBinding_bundleDigest_idx")
+}
+
+model SastTenantRulePolicy {
+  id                             String   @id
+  contractVersion                String
+  tenantId                       String
+  policyVersion                  String
+  policyDigest                   String   @unique
+  effectiveAt                    DateTime
+  expiresAt                      DateTime
+  categoryDecisionCount          Int
+  categoryDecisionDigest         String
+  ruleDecisionCount              Int
+  ruleDecisionDigest             String
+  pathExclusionCount             Int
+  pathExclusionDigest            String
+  dashboardSeverityFloor         Severity
+  publicationSeverityFloor       Severity
+  repositoryOverrideCount        Int
+  repositoryOverrideDigest       String
+  approvedWaiverRefCount         Int
+  approvedSuppressionRefCount    Int
+  approvedReferenceDigest        String
+  actorRef                       String
+  auditRef                       String
+  source                         String   @default("TENANT_ADMIN_METADATA")
+  immutable                      Boolean  @default(true)
+  executableRulesAccepted        Boolean  @default(false)
+  cliFlagsAccepted               Boolean  @default(false)
+  pluginsAccepted                Boolean  @default(false)
+  arbitraryConfigurationAccepted Boolean  @default(false)
+  customerSourceStored           Boolean  @default(false)
+  secretValueStored              Boolean  @default(false)
+  createdAt                      DateTime @default(now())
+
+  tenant                Tenant                                     @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  decisions             SastTenantRulePolicyDecision[]
+  pathExclusions        SastTenantRulePolicyPathExclusion[]
+  repositoryOverrides   SastTenantRulePolicyRepositoryOverride[]
+  waiverReferences      SastTenantRulePolicyWaiverReference[]
+  suppressionReferences SastTenantRulePolicySuppressionReference[]
+  resolutions           SastTenantRulePolicyResolution[]
+
+  @@unique([tenantId, policyVersion], map: "SastTenantRulePolicy_tenant_version_key")
+  @@unique([id, tenantId], map: "SastTenantRulePolicy_id_tenant_key")
+  @@unique([id, tenantId, policyVersion, policyDigest], map: "SastTenantRulePolicy_resolution_binding_key")
+  @@index([tenantId, effectiveAt, expiresAt], map: "SastTenantRulePolicy_effective_window_idx")
+}
+
+model SastTenantRulePolicyDecision {
+  policyId String
+  kind     String
+  position Int
+  target   String
+  state    String
+
+  policy SastTenantRulePolicy @relation(fields: [policyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([policyId, kind, position])
+  @@unique([policyId, kind, target], map: "SastTenantRulePolicyDecision_kind_target_key")
+}
+
+model SastTenantRulePolicyPathExclusion {
+  policyId   String
+  position   Int
+  pathPrefix String
+
+  policy SastTenantRulePolicy @relation(fields: [policyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([policyId, position])
+  @@unique([policyId, pathPrefix], map: "SastTenantRulePolicyPathExclusion_path_key")
+}
+
+model SastTenantRulePolicyRepositoryOverride {
+  policyId                 String
+  tenantId                 String
+  repositoryBindingId      String
+  position                 Int
+  categoryDecisionCount    Int
+  ruleDecisionCount        Int
+  pathExclusionCount       Int
+  dashboardSeverityFloor   Severity
+  publicationSeverityFloor Severity
+
+  policy         SastTenantRulePolicy                          @relation(fields: [policyId, tenantId], references: [id, tenantId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyRepositoryOverride_policy_fkey")
+  repository     RepositoryBinding                             @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyRepositoryOverride_repository_fkey")
+  decisions      SastTenantRulePolicyRepositoryDecision[]
+  pathExclusions SastTenantRulePolicyRepositoryPathExclusion[]
+
+  @@id([policyId, repositoryBindingId])
+  @@unique([policyId, position], map: "SastTenantRulePolicyRepositoryOverride_position_key")
+  @@index([tenantId, repositoryBindingId], map: "SastTenantRulePolicyRepositoryOverride_tenant_repo_idx")
+}
+
+model SastTenantRulePolicyRepositoryDecision {
+  policyId            String
+  repositoryBindingId String
+  kind                String
+  position            Int
+  target              String
+  state               String
+
+  override SastTenantRulePolicyRepositoryOverride @relation(fields: [policyId, repositoryBindingId], references: [policyId, repositoryBindingId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyRepositoryDecision_override_fkey")
+
+  @@id([policyId, repositoryBindingId, kind, position])
+  @@unique([policyId, repositoryBindingId, kind, target], map: "SastTenantRulePolicyRepositoryDecision_target_key")
+}
+
+model SastTenantRulePolicyRepositoryPathExclusion {
+  policyId            String
+  repositoryBindingId String
+  position            Int
+  pathPrefix          String
+
+  override SastTenantRulePolicyRepositoryOverride @relation(fields: [policyId, repositoryBindingId], references: [policyId, repositoryBindingId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyRepositoryPath_override_fkey")
+
+  @@id([policyId, repositoryBindingId, position])
+  @@unique([policyId, repositoryBindingId, pathPrefix], map: "SastTenantRulePolicyRepositoryPath_path_key")
+}
+
+model SastTenantRulePolicyWaiverReference {
+  policyId  String
+  tenantId  String
+  position  Int
+  reference String
+  waiverId  String
+
+  policy SastTenantRulePolicy @relation(fields: [policyId, tenantId], references: [id, tenantId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyWaiverReference_policy_fkey")
+  tenant Tenant               @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  waiver Waiver               @relation(fields: [waiverId, tenantId], references: [id, tenantId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyWaiverReference_waiver_fkey")
+
+  @@id([policyId, position])
+  @@unique([policyId, reference], map: "SastTenantRulePolicyWaiverReference_reference_key")
+}
+
+model SastTenantRulePolicySuppressionReference {
+  policyId      String
+  tenantId      String
+  position      Int
+  reference     String
+  suppressionId String
+
+  policy      SastTenantRulePolicy @relation(fields: [policyId, tenantId], references: [id, tenantId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicySuppressionReference_policy_fkey")
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  suppression Suppression          @relation(fields: [suppressionId, tenantId], references: [id, tenantId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicySuppressionReference_suppression_fkey")
+
+  @@id([policyId, position])
+  @@unique([policyId, reference], map: "SastTenantRulePolicySuppressionReference_reference_key")
+}
+
+model SastTenantRulePolicyResolution {
+  id                              String   @id
+  contractVersion                 String
+  receiptIdentityDigest           String   @unique
+  receiptDigest                   String   @unique
+  policyId                        String
+  tenantId                        String
+  policyVersion                   String
+  policyDigest                    String
+  repositoryBindingId             String
+  scannerSetDigest                String
+  profileId                       String
+  profileDigest                   String
+  manifestCount                   Int
+  manifestSetDigest               String
+  semanticMetadataSetDigest       String
+  ruleCount                       Int
+  ruleResolutionDigest            String
+  enabledRuleSetDigest            String
+  disabledRuleSetDigest           String
+  pathExclusionCount              Int
+  pathExclusionDigest             String
+  dashboardSeverityFloor          Severity
+  publicationSeverityFloor        Severity
+  policyMatched                   Boolean  @default(true)
+  manifestMetadataMatched         Boolean  @default(true)
+  semanticIdentityVerified        Boolean  @default(true)
+  mandatoryRulesPreserved         Boolean  @default(true)
+  executableConfigurationAccepted Boolean  @default(false)
+  customerInputStored             Boolean  @default(false)
+  evaluatedAt                     DateTime
+  createdAt                       DateTime @default(now())
+
+  policy         SastTenantRulePolicy                          @relation(fields: [policyId, tenantId, policyVersion, policyDigest], references: [id, tenantId, policyVersion, policyDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyResolution_policy_fkey")
+  repository     RepositoryBinding                             @relation(fields: [repositoryBindingId, tenantId], references: [id, tenantId], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyResolution_repository_fkey")
+  rules          SastTenantRulePolicyResolutionRule[]
+  pathExclusions SastTenantRulePolicyResolutionPathExclusion[]
+
+  @@unique([policyId, repositoryBindingId, scannerSetDigest, profileDigest], map: "SastTenantRulePolicyResolution_context_key")
+  @@index([tenantId, repositoryBindingId, evaluatedAt], map: "SastTenantRulePolicyResolution_tenant_repo_idx")
+}
+
+model SastTenantRulePolicyResolutionRule {
+  resolutionId           String
+  position               Int
+  bindingId              String
+  bindingDigest          String
+  manifestId             String
+  manifestDigest         String
+  bundleDigest           String
+  ruleId                 String
+  ruleRevision           String
+  semanticRuleId         String
+  metadataId             String
+  metadataDigest         String
+  semanticIdentityDigest String
+  category               String
+  tenantControl          String
+  state                  String
+
+  resolution       SastTenantRulePolicyResolution    @relation(fields: [resolutionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  metadataBinding  SastRuleDefinitionMetadataBinding @relation(fields: [bindingId, bindingDigest, manifestId, manifestDigest, bundleDigest, ruleId, ruleRevision, metadataId, metadataDigest, semanticRuleId, semanticIdentityDigest], references: [id, bindingDigest, manifestId, manifestDigest, bundleDigest, ruleId, ruleRevision, metadataId, metadataDigest, semanticRuleId, semanticIdentityDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyResolutionRule_metadata_binding_fkey")
+  semanticIdentity SastRuleSemanticIdentity          @relation(fields: [semanticRuleId, semanticIdentityDigest, category, tenantControl], references: [semanticRuleId, semanticIdentityDigest, category, tenantControl], onDelete: Restrict, onUpdate: Restrict, map: "SastTenantRulePolicyResolutionRule_semantic_identity_fkey")
+
+  @@id([resolutionId, position])
+  @@unique([resolutionId, manifestId, ruleId], map: "SastTenantRulePolicyResolutionRule_manifest_rule_key")
+  @@index([semanticRuleId, state], map: "SastTenantRulePolicyResolutionRule_semantic_state_idx")
+}
+
+model SastTenantRulePolicyResolutionPathExclusion {
+  resolutionId String
+  position     Int
+  pathPrefix   String
+
+  resolution SastTenantRulePolicyResolution @relation(fields: [resolutionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([resolutionId, position])
+  @@unique([resolutionId, pathPrefix], map: "SastTenantRulePolicyResolutionPath_path_key")
 }
 
 model AuditEvent {

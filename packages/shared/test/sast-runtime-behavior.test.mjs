@@ -4,16 +4,29 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ts from 'typescript';
 
-const source = readFileSync(new URL('../src/types/sast-runtime.ts', import.meta.url), 'utf8');
-const transpiled = ts.transpileModule(source, {
+const transpile = (source) => ts.transpileModule(source, {
   compilerOptions: {
     module: ts.ModuleKind.CommonJS,
     target: ts.ScriptTarget.ES2022
   }
 });
+const semanticSource = readFileSync(
+  new URL('../src/types/sast-rule-semantic-policy.ts', import.meta.url),
+  'utf8'
+);
+const semanticModule = { exports: {} };
+new Function('module', 'exports', transpile(semanticSource).outputText)(
+  semanticModule,
+  semanticModule.exports
+);
+const source = readFileSync(new URL('../src/types/sast-runtime.ts', import.meta.url), 'utf8');
+const transpiled = transpile(source);
 const localModule = { exports: {} };
-const evaluateModule = new Function('module', 'exports', transpiled.outputText);
-evaluateModule(localModule, localModule.exports);
+const evaluateModule = new Function('module', 'exports', 'require', transpiled.outputText);
+evaluateModule(localModule, localModule.exports, (specifier) => {
+  if (specifier === './sast-rule-semantic-policy') return semanticModule.exports;
+  throw new Error(`unsupported local module: ${specifier}`);
+});
 const runtime = localModule.exports;
 
 const digest = (character) => `sha256:${character.repeat(64)}`;
@@ -112,6 +125,21 @@ const buildPlan = () => ({
   profile: runtime.SAST_SCAN_PROFILES.JAVA_FAST_V1,
   profileDigest: runtime.SAST_APPROVED_PROFILE_DIGESTS.JAVA_FAST_V1,
   policyVersion: 'policy-1',
+  tenantRulePolicy: {
+    policyId: `sast-tenant-rule-policy://${'a'.repeat(64)}`,
+    policyVersion: 'policy-1',
+    policyDigest: digest('a'),
+    resolutionReceiptId:
+      `sast-tenant-rule-policy-resolution://${'b'.repeat(64)}`,
+    resolutionIdentityDigest: digest('b'),
+    resolutionReceiptDigest: digest('c'),
+    semanticMetadataSetDigest: digest('d'),
+    ruleResolutionDigest: digest('e'),
+    enabledRuleSetDigest: digest('f'),
+    disabledRuleSetDigest: digest('0'),
+    pathExclusionDigest: digest('1'),
+    severityFloors: { dashboard: 'INFO', publication: 'MEDIUM' }
+  },
   repositoryState: {
     repositoryBindingId: 'repository-1',
     fixedCommitSha: 'a'.repeat(40),
@@ -296,6 +324,14 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
   const expectedBinding = expectedArtifactBinding(envelope);
 
   assert.equal(runtime.isScannerSetDescriptorValid(plan.scannerSet), true);
+  const duplicateManifestScannerSet = structuredClone(plan.scannerSet);
+  const firstManifest = duplicateManifestScannerSet.ruleBundles[0];
+  const secondManifest = duplicateManifestScannerSet.ruleBundles[1];
+  secondManifest.manifestId = firstManifest.manifestId;
+  assert.equal(
+    runtime.isScannerSetDescriptorValid(duplicateManifestScannerSet),
+    false
+  );
   assert.equal(runtime.isSastScanPlanValid(plan), true);
   assert.equal(runtime.isSastScanPlanValid({}), false);
   assert.equal(runtime.isScannerArtifactEnvelopeShapeValid(envelope), true);

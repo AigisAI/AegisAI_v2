@@ -21,6 +21,7 @@ test('SAST planning contracts expose trusted metadata, profile, queue, and user-
     'evaluateSastQueueAdmission',
     'isSastQueueUsageSnapshotValid',
     'orderSastQueueCandidatesFairly',
+    'SAST_CANONICAL_SCAN_KEY_VERSION',
     'buildSastCanonicalScanKeyPreimage'
   ]) {
     assert.match(contract, new RegExp(`export (interface|const|type|function) ${exportName}\\b`));
@@ -85,6 +86,7 @@ test('canonical scan identity includes fixed source and every executable artifac
     'inventoryDigest',
     'attestationRef',
     'profileDigest',
+    'tenantRulePolicy',
     'scannerSetDigest',
     'imageDigest',
     'wrapperDigest',
@@ -96,6 +98,11 @@ test('canonical scan identity includes fixed source and every executable artifac
   ]) {
     assert.match(keyFunction, new RegExp(`\\b${field}\\b`));
   }
+  assert.match(
+    contract,
+    /SAST_CANONICAL_SCAN_KEY_VERSION\s*=\s*\n\s*'sast-canonical-scan-key-v2'/
+  );
+  assert.match(keyFunction, /version: SAST_CANONICAL_SCAN_KEY_VERSION/);
 });
 
 test('queue admission is lane-separated, quota-bounded, and tenant-fair', () => {

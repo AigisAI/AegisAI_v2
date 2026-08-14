@@ -9,9 +9,13 @@ import {
   type ScannerSetDescriptor,
   type VerifiedScannerSetDescriptor
 } from './sast-runtime';
+import type { VerifiedSastTenantRulePolicyDescriptor } from './sast-rule-semantic-policy';
 
 export const SAST_PLANNING_STATES = ['ADMITTED', 'DEFERRED', 'REJECTED'] as const;
 export type SastPlanningState = (typeof SAST_PLANNING_STATES)[number];
+
+export const SAST_CANONICAL_SCAN_KEY_VERSION =
+  'sast-canonical-scan-key-v2' as const;
 
 export const SAST_COVERAGE_CLAIMS = [
   'LANGUAGE_SAST_COMPLETE',
@@ -44,6 +48,10 @@ export const SAST_PLANNING_REASON_CODES = [
   'RULE_BUNDLE_MANIFEST_MISMATCH',
   'RULE_BUNDLE_COMPATIBILITY_UNSUPPORTED',
   'RULE_BUNDLE_VERIFICATION_UNAVAILABLE',
+  'RULE_METADATA_UNVERIFIED',
+  'RULE_METADATA_MISMATCH',
+  'TENANT_RULE_POLICY_INVALID',
+  'TENANT_RULE_POLICY_UNAVAILABLE',
   'VULNERABILITY_DATABASE_INVALID',
   'SCHEMA_BUNDLE_INVALID',
   'NORMALIZER_BUNDLE_INVALID',
@@ -158,6 +166,7 @@ export interface SastCanonicalScanKeyInput {
   profile: SastScanProfile;
   profileDigest: `sha256:${string}`;
   scannerSet: VerifiedScannerSetDescriptor;
+  tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
 }
 
@@ -560,7 +569,7 @@ export function buildSastCanonicalScanKeyPreimage(
     );
 
   return canonicalJson({
-    version: 'sast-canonical-scan-key-v1',
+    version: SAST_CANONICAL_SCAN_KEY_VERSION,
     tenantId: input.tenantId,
     repositoryBindingId: input.repositoryBindingId,
     lane: input.lane,
@@ -569,6 +578,7 @@ export function buildSastCanonicalScanKeyPreimage(
     inventoryDigest: input.inventoryDigest,
     attestationRef: input.attestationRef,
     policyVersion: input.policyVersion,
+    tenantRulePolicy: input.tenantRulePolicy,
     profileId: input.profile.id,
     profileDigest: input.profileDigest,
     scannerSetVersion: input.scannerSet.scannerSetVersion,

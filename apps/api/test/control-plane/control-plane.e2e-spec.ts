@@ -9,8 +9,10 @@ import { configureApp } from '../../src/bootstrap/configure-app';
 import { ControlPlaneScanRequestStore } from '../../src/control-plane/control-plane-scan-request.store';
 import { SastQueueAdmissionStore } from '../../src/control-plane/sast-queue-admission.store';
 import { SastRuleBundleCompatibilityGate } from '../../src/rule-governance/sast-rule-bundle-compatibility.gate';
+import { SastTenantRulePolicyGate } from '../../src/rule-governance/sast-tenant-rule-policy.gate';
 import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
 import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
+import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
 import {
   TestGithubWebhookSignatureGuard,
   TestInternalServiceGuard,
@@ -225,6 +227,11 @@ describe("Control Plane skeleton (e2e)", () => {
             compatibilityReceiptDigest: bundle.verificationDigest
           }))
         })
+      })
+      .overrideProvider(SastTenantRulePolicyGate)
+      .useValue({
+        resolve: async (input: { policyVersion: string }) =>
+          verifiedTenantRulePolicy(input.policyVersion)
       })
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)

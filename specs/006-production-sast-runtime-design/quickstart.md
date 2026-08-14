@@ -551,8 +551,10 @@ second-pass secret redaction, seven-day expiry enforcement, and deletion proof a
 T043 normalized-finding plus reduced-reference advisory handoff is complete. T044 zero-authority
 output proof is also complete. T045 signed immutable, content-free rule-bundle manifests,
 trusted signature/provenance attestations, exact runtime compatibility receipts, and the
-pre-queue fail-closed planning gate are complete; T046 semantic rule identity and
-non-executable tenant policy metadata are the next implementation task.
+pre-queue fail-closed planning gate are complete. T046 reusable semantic rule metadata,
+byte-exact signed-manifest bindings, monotonic non-executable tenant policy, immutable
+resolution receipts, and canonical-plan/queue gating are also complete; T047 promotion
+evidence, approvals, and lifecycle transitions are the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

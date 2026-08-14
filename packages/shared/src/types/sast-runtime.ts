@@ -1,3 +1,8 @@
+import {
+  isVerifiedSastTenantRulePolicyDescriptorValid,
+  type VerifiedSastTenantRulePolicyDescriptor
+} from './sast-rule-semantic-policy';
+
 export const PRODUCTION_SAST_RUNTIME_FEATURE_ID = '006-production-sast-runtime-design';
 
 export const SAST_SCANNER_KINDS = ['OPENGREP', 'TRIVY', 'SYFT'] as const;
@@ -447,6 +452,7 @@ export interface SastScanPlan {
   profile: SastScanProfile;
   profileDigest: `sha256:${string}`;
   policyVersion: string;
+  tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
   repositoryState: SastRepositoryState;
   scannerSet: VerifiedScannerSetDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
@@ -906,6 +912,9 @@ export function isScannerSetDescriptorValid(scannerSet: ScannerSetDescriptor): b
   const scannerDescriptors = SAST_SCANNER_KINDS.map((scanner) => scannerSet.scanners[scanner]);
   const ruleBundleIds = scannerSet.ruleBundles.map((bundle) => bundle.bundleId);
   const ruleBundleDigests = scannerSet.ruleBundles.map((bundle) => bundle.digest);
+  const ruleBundleManifestIds = scannerSet.ruleBundles.map(
+    (bundle) => bundle.manifestId
+  );
   const executableRuleStates: RuleBundleState[] = ['CANARY', 'ACTIVE'];
 
   return (
@@ -925,6 +934,7 @@ export function isScannerSetDescriptorValid(scannerSet: ScannerSetDescriptor): b
     scannerSet.ruleBundles.length === 2 &&
     hasUniqueValues(ruleBundleIds) &&
     hasUniqueValues(ruleBundleDigests) &&
+    hasUniqueValues(ruleBundleManifestIds) &&
     scannerSet.ruleBundles.every(
       (bundle) =>
         isRuleBundleDescriptorValid(bundle) && executableRuleStates.includes(bundle.state)
@@ -1037,6 +1047,7 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
     !plan ||
     typeof plan !== 'object' ||
     !plan.profile ||
+    !plan.tenantRulePolicy ||
     !plan.repositoryState ||
     !plan.scannerSet ||
     !Array.isArray(plan.forbiddenCapabilities)
@@ -1053,6 +1064,10 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
       isSha256Digest(plan.profileDigest) &&
       plan.profileDigest === SAST_APPROVED_PROFILE_DIGESTS[plan.profile.id] &&
       isNonBlank(plan.policyVersion) &&
+      plan.policyVersion === plan.tenantRulePolicy.policyVersion &&
+      isVerifiedSastTenantRulePolicyDescriptorValid(
+        plan.tenantRulePolicy
+      ) &&
       isNonBlank(plan.repositoryState.repositoryBindingId) &&
       isGitCommitSha(plan.repositoryState.fixedCommitSha) &&
       isNonBlank(plan.repositoryState.targetRef) &&

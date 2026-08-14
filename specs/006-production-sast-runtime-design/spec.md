@@ -426,6 +426,22 @@ incomplete, stale, quarantined, or security-blocked scan.
   tenant, repository, capability, and external publication.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
+- **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the
+  vulnerability predicate, capability/category, language/format scope, source/sink model,
+  default severity/confidence, finding identity, or tenant-control class MUST NOT reuse the
+  same semantic rule ID.
+- **FR-058b**: Reusable non-executable rule metadata MUST be separate from its exact signed-
+  manifest binding. Tenant policy MUST accept only approved canonical selectors, literal
+  normalized path prefixes, non-weakening severity floors, bounded existing waiver/
+  suppression references, and repository overrides that only narrow the tenant policy.
+- **FR-058c**: Planning MUST resolve the exact selected manifest metadata and tenant policy
+  into one immutable content-free receipt before canonical-key construction and queue
+  reservation. Missing, extra, mismatched, expired, unknown, cross-scope, mandatory-disable,
+  persistence-unavailable, or trusted-clock-invalid state MUST fail closed and MUST create no
+  successful receipt. The evaluation instant MUST come from a service-owned UTC clock, never
+  a caller request timestamp. The receipt MUST enter `sast-canonical-scan-key-v2`; deployment
+  MUST drain or explicitly cancel every non-terminal v1 SAST plan and reservation before the
+  v2 cutover, while retaining terminal v1 rows as immutable audit history.
 
 ### Audit and Observability
 

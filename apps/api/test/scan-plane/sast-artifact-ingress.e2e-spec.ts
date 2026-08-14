@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
 
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
@@ -622,6 +623,7 @@ function buildPlan(): SastScanPlan {
     profile,
     profileDigest: SAST_APPROVED_PROFILE_DIGESTS[profile.id],
     policyVersion: 'policy-v1',
+    tenantRulePolicy: verifiedTenantRulePolicy('policy-v1'),
     repositoryState: {
       repositoryBindingId: 'repository-1',
       fixedCommitSha: FIXED_COMMIT,

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
 
 import { Prisma } from '@prisma/client';
 import {
@@ -1462,6 +1463,7 @@ function durablePlan(): SastScanPlan {
     profileDigest:
       SAST_APPROVED_PROFILE_DIGESTS[profile.id],
     policyVersion: 'policy-v1',
+    tenantRulePolicy: verifiedTenantRulePolicy('policy-v1'),
     repositoryState: {
       repositoryBindingId: 'repository-1',
       fixedCommitSha: 'a'.repeat(40),
