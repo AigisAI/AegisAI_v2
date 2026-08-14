@@ -101,6 +101,10 @@ command-line flags, rule code, templates, post-processors, or executable configu
   Mandatory rules cannot be disabled without a future explicitly scoped authority contract.
   Policy-window and evaluation instants use exact UTC millisecond strings so digest identity
   cannot drift through the database `TIMESTAMP(3)` representation.
+- The planner obtains the policy evaluation instant only from its injected service-owned UTC
+  clock. Caller-controlled request timestamps never establish the policy window or receipt
+  `evaluatedAt`; an unavailable, throwing, or invalid trusted clock fails closed before any
+  successful receipt or queue reservation.
 - Planning resolves the selected signed manifests and all metadata bindings into one
   content-free `sast-tenant-rule-policy-resolution-v1` receipt. Missing, extra, conflicting,
   expired, cross-tenant, unknown-selector, or mandatory-disable state writes no receipt and
@@ -109,6 +113,10 @@ command-line flags, rule code, templates, post-processors, or executable configu
   path exclusions, and severity floors are frozen into `SastScanPlan`. Normalized immutable
   PostgreSQL ledgers, restrictive exact-projection foreign keys, mutation-rejection triggers,
   and serializable exact replay preserve the decision after process restart.
+- `sast-canonical-scan-key-v2` commits the verified tenant-policy receipt. Deployment is a
+  fail-closed cutover: every non-terminal v1 SAST plan and queue reservation must first finish
+  or be explicitly canceled. Terminal v1 rows remain immutable audit history and are never
+  rewritten or replayed as v2 work.
 - T046 grants no rule promotion, canary, kill-switch, rollback, scanner execution, waiver
   creation, finding mutation, publication, AI, or SCM authority. Those remain T047-T050 and
   later runtime gates.

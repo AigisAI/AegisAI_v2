@@ -55,6 +55,7 @@ const files = {
   sharedSastRuleSemanticPolicy: new URL('../../packages/shared/src/types/sast-rule-semantic-policy.ts', import.meta.url),
   sharedSastRuleSemanticPolicyTest: new URL('../../packages/shared/test/sast-rule-semantic-policy.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
+  apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
   apiSastPlannerTest: new URL('../../apps/api/test/control-plane/sast-scan-planner.service.e2e-spec.ts', import.meta.url),
@@ -2079,6 +2080,9 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
     files.apiRuleSemanticPolicyPersistenceTest
   );
   const planner = readNormalizedText(files.apiSastPlanner);
+  const policyEvaluationClock = readNormalizedText(
+    files.apiSastPolicyEvaluationClock
+  );
   const plannerTest = readNormalizedText(files.apiSastPlannerTest);
   const schema = readNormalizedText(files.apiPrismaSchema);
   const migration = readNormalizedText(
@@ -2103,6 +2107,7 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   assert.match(shared, /customerExecutableConfigAllowed: false/);
   assert.match(shared, /customerSourceStored: false/);
   assert.match(shared, /secretValueStored: false/);
+  assert.match(shared, /maximumManifestDigests: 256/);
   assert.match(
     sharedTest,
     /separates reusable rule metadata from immutable signed-manifest bindings/
@@ -2115,6 +2120,7 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   assert.match(sharedRuntime, /tenantRulePolicy/);
   assert.match(sharedPlanning, /TENANT_RULE_POLICY_INVALID/);
   assert.match(sharedPlanning, /tenantRulePolicy/);
+  assert.match(sharedPlanning, /sast-canonical-scan-key-v2/);
   assert.match(sharedIndex, /sast-rule-semantic-policy/);
 
   assert.match(service, /registerRuleMetadataBinding/);
@@ -2150,9 +2156,19 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   assert.ok(policyGate > compatibilityGate);
   assert.ok(canonicalKey > policyGate);
   assert.ok(queueReservation > canonicalKey);
+  assert.match(policyEvaluationClock, /return new Date\(\)/);
+  assert.match(planner, /policyEvaluationClock\.now\(\)/);
   assert.match(
     plannerTest,
     /fails closed before queue reservation for tenant policy %s/
+  );
+  assert.match(
+    plannerTest,
+    /uses the trusted service clock for policy windows instead of requestedAt/
+  );
+  assert.match(
+    plannerTest,
+    /fails closed before queue reservation for a %s policy clock/
   );
   assert.match(plannerTest, /TENANT_RULE_POLICY_INVALID/);
 
@@ -2181,6 +2197,7 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   }
   assert.match(migration, /receiptIdentityDigest/);
   assert.match(migration, /"evaluatedAt" TIMESTAMP\(3\) NOT NULL/);
+  assert.match(migration, /T046 canonical scan-key v2 cutover/);
   assert.doesNotMatch(migration, /JSONB/);
   assert.doesNotMatch(
     migration,

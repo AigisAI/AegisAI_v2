@@ -28,6 +28,7 @@ export const SAST_RULE_POLICY_LIMITS = Object.freeze({
   maximumRuleDecisions: 25_000,
   maximumPathExclusions: 256,
   maximumRepositoryOverrides: 256,
+  maximumManifestDigests: 256,
   maximumApprovedReferences: 1_024,
   maximumResolvedRules: 50_000,
   maximumPolicyLifetimeMilliseconds: 366 * 24 * 60 * 60 * 1_000
@@ -382,6 +383,7 @@ const SUPPRESSION_REFERENCE_PATTERN =
 const RESOURCE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/u;
 const ISO_INSTANT_PATTERN =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
+const UTF8_ENCODER = new TextEncoder();
 
 const SEVERITIES = [
   'CRITICAL',
@@ -1174,7 +1176,6 @@ export function isSastTenantRulePolicyResolutionReceiptShapeValid(
   }
   const receipt =
     value as unknown as SastTenantRulePolicyResolutionReceipt;
-  const core = resolutionReceiptCore(receipt);
   const rulesValid =
     Array.isArray(receipt.rules) &&
     receipt.rules.length > 0 &&
@@ -1184,19 +1185,25 @@ export function isSastTenantRulePolicyResolutionReceiptShapeValid(
       (rule, index, values) =>
         index === 0 || compareResolvedRules(values[index - 1]!, rule) < 0
     );
-  const derivedManifestDigests = Array.isArray(receipt.rules)
-    ? [...new Set(receipt.rules.map((rule) => rule.manifestDigest))].sort(
-        compareStrings
-      )
-    : [];
-  const derivedSemanticMetadataSet = Array.isArray(receipt.rules)
-    ? receipt.rules.map((rule) => ({
-        bindingDigest: rule.bindingDigest,
-        metadataDigest: rule.metadataDigest,
-        ruleSemanticId: rule.ruleSemanticId,
-        semanticIdentityDigest: rule.semanticIdentityDigest
-      }))
-    : [];
+  if (
+    !rulesValid ||
+    !Array.isArray(receipt.manifestDigests) ||
+    !Array.isArray(receipt.pathExclusions) ||
+    !isResolutionContextValid(receipt.context) ||
+    !isSeverityFloorsValid(receipt.severityFloors)
+  ) {
+    return false;
+  }
+  const core = resolutionReceiptCore(receipt);
+  const derivedManifestDigests = [
+    ...new Set(receipt.rules.map((rule) => rule.manifestDigest))
+  ].sort(compareStrings);
+  const derivedSemanticMetadataSet = receipt.rules.map((rule) => ({
+    bindingDigest: rule.bindingDigest,
+    metadataDigest: rule.metadataDigest,
+    ruleSemanticId: rule.ruleSemanticId,
+    semanticIdentityDigest: rule.semanticIdentityDigest
+  }));
   const derivedIdentityDigest = digestCanonical(
     stableJson({
       version: SAST_TENANT_RULE_POLICY_RESOLUTION_VERSION,
@@ -1222,7 +1229,7 @@ export function isSastTenantRulePolicyResolutionReceiptShapeValid(
     receipt.evaluatedAt === receipt.context.evaluatedAt &&
     isCanonicalStringSet(
       receipt.manifestDigests,
-      SAST_RULE_POLICY_LIMITS.maximumRepositoryOverrides,
+      SAST_RULE_POLICY_LIMITS.maximumManifestDigests,
       isDigest
     ) &&
     stableJson(receipt.manifestDigests) ===
@@ -1561,8 +1568,7 @@ function isTenantRulePolicyCoreValid(
         })
       ) &&
     typeof policy.actorRef === 'string' &&
-    Buffer.byteLength(policy.actorRef, 'utf8') <=
-      SAST_RULE_POLICY_LIMITS.referenceBytes &&
+    utf8ByteLength(policy.actorRef) <= SAST_RULE_POLICY_LIMITS.referenceBytes &&
     ACTOR_REFERENCE_PATTERN.test(policy.actorRef) &&
     isDigestBoundReference(policy.auditRef) &&
     policy.source === 'TENANT_ADMIN_METADATA' &&
@@ -2036,8 +2042,7 @@ function isBoundedIdentifier(value: unknown): value is string {
   return (
     typeof value === 'string' &&
     value.length > 0 &&
-    Buffer.byteLength(value, 'utf8') <=
-      SAST_RULE_POLICY_LIMITS.identifierBytes &&
+    utf8ByteLength(value) <= SAST_RULE_POLICY_LIMITS.identifierBytes &&
     value.normalize('NFC') === value &&
     !hasUnsafeControl(value)
   );
@@ -2047,7 +2052,7 @@ function isSafePathPrefix(value: unknown): value is string {
   if (
     typeof value !== 'string' ||
     value.length === 0 ||
-    Buffer.byteLength(value, 'utf8') > 1_024 ||
+    utf8ByteLength(value) > 1_024 ||
     value.normalize('NFC') !== value ||
     hasUnsafeControl(value) ||
     value.startsWith('/') ||
@@ -2066,8 +2071,7 @@ function isSafePathPrefix(value: unknown): value is string {
 function isDigestBoundReference(value: unknown): value is string {
   return (
     typeof value === 'string' &&
-    Buffer.byteLength(value, 'utf8') <=
-      SAST_RULE_POLICY_LIMITS.referenceBytes &&
+    utf8ByteLength(value) <= SAST_RULE_POLICY_LIMITS.referenceBytes &&
     value.normalize('NFC') === value &&
     !/^https?:\/\//iu.test(value) &&
     DIGEST_BOUND_REFERENCE_PATTERN.test(value)
@@ -2080,6 +2084,10 @@ function isResourceId(value: unknown): value is string {
 
 function isDigest(value: unknown): value is Sha256Digest {
   return typeof value === 'string' && SHA256_PATTERN.test(value);
+}
+
+function utf8ByteLength(value: string): number {
+  return UTF8_ENCODER.encode(value).byteLength;
 }
 
 function digestSuffix(value: unknown): string | null {

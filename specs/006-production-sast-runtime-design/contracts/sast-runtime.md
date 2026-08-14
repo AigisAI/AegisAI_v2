@@ -1394,6 +1394,9 @@ cannot re-enable it. Mandatory rules cannot be disabled by this contract.
 Policy-window and evaluation timestamps use exact UTC millisecond form so their digest-bound
 string representation survives the `TIMESTAMP(3)` persistence round trip without normalization
 or calendar-date drift.
+The evaluation timestamp comes only from the planner's injected service-owned UTC clock;
+caller `requestedAt` is not a policy-time authority. A throwing or invalid clock produces a
+bounded fail-closed planning result, no receipt, and no queue reservation.
 
 A successful evaluation emits one immutable `sast-tenant-rule-policy-resolution-v1` receipt
 and normalized rule/path children. Its independently validated identity digest binds policy,
@@ -1402,6 +1405,11 @@ also binds the exact evaluation time, resolved binding states, paths, severity f
 fixed safety facts. The verified descriptor enters both the canonical scan key and immutable
 `SastScanPlan` before queue reservation. All failure paths expose only bounded planning reasons,
 write no successful receipt, and invoke neither queue reservation nor scanner execution.
+
+The receipt-bearing preimage is versioned `sast-canonical-scan-key-v2`. Before deploying it,
+all non-terminal v1 SAST plans and reservations must finish or be explicitly canceled; the
+schema migration rejects a dirty cutover. Terminal v1 records remain immutable audit history
+and are never rewritten or dispatched under the v2 identity.
 
 ## Cleanup Contract
 

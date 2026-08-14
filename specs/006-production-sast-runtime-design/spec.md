@@ -437,7 +437,11 @@ incomplete, stale, quarantined, or security-blocked scan.
 - **FR-058c**: Planning MUST resolve the exact selected manifest metadata and tenant policy
   into one immutable content-free receipt before canonical-key construction and queue
   reservation. Missing, extra, mismatched, expired, unknown, cross-scope, mandatory-disable,
-  or persistence-unavailable state MUST fail closed and MUST create no successful receipt.
+  persistence-unavailable, or trusted-clock-invalid state MUST fail closed and MUST create no
+  successful receipt. The evaluation instant MUST come from a service-owned UTC clock, never
+  a caller request timestamp. The receipt MUST enter `sast-canonical-scan-key-v2`; deployment
+  MUST drain or explicitly cancel every non-terminal v1 SAST plan and reservation before the
+  v2 cutover, while retaining terminal v1 rows as immutable audit history.
 
 ### Audit and Observability
 

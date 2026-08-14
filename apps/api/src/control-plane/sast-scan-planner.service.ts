@@ -34,6 +34,7 @@ import {
 } from '../rule-governance/sast-tenant-rule-policy.gate';
 import { ControlPlaneService } from './control-plane.service';
 import type { ControlPlaneScanRequest } from './control-plane.types';
+import { SastPolicyEvaluationClock } from './sast-policy-evaluation-clock.service';
 import { SastQueueAdmissionService } from './sast-queue-admission.service';
 
 @Injectable()
@@ -42,7 +43,8 @@ export class SastScanPlannerService {
     private readonly controlPlaneService: ControlPlaneService,
     private readonly queueAdmissionService: SastQueueAdmissionService,
     private readonly ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate,
-    private readonly tenantRulePolicyGate: SastTenantRulePolicyGate
+    private readonly tenantRulePolicyGate: SastTenantRulePolicyGate,
+    private readonly policyEvaluationClock: SastPolicyEvaluationClock
   ) {}
 
   async plan(input: SastScanPlanningInput): Promise<SastScanPlanningResult> {
@@ -155,6 +157,7 @@ export class SastScanPlannerService {
     }
     let tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
     try {
+      const policyEvaluatedAt = this.readPolicyEvaluationTime();
       tenantRulePolicy = await this.tenantRulePolicyGate.resolve({
         tenantId: scanRequest.tenantId,
         repositoryBindingId: scanRequest.repositoryBindingId,
@@ -162,7 +165,7 @@ export class SastScanPlannerService {
         scannerSet: verifiedScannerSet,
         profile: profileSelection.profile,
         profileDigest,
-        evaluatedAt: requestedAt
+        evaluatedAt: policyEvaluatedAt
       });
     } catch (error) {
       return this.reject(
@@ -425,16 +428,16 @@ export class SastScanPlannerService {
     if (!(error instanceof SastTenantRulePolicyGateError)) {
       return 'TENANT_RULE_POLICY_UNAVAILABLE';
     }
-    if (error.reason === 'RULE_METADATA_UNVERIFIED') {
-      return 'RULE_METADATA_UNVERIFIED';
+    switch (error.reason) {
+      case 'RULE_METADATA_UNVERIFIED':
+        return 'RULE_METADATA_UNVERIFIED';
+      case 'RULE_METADATA_MISMATCH':
+        return 'RULE_METADATA_MISMATCH';
+      case 'TENANT_POLICY_INVALID':
+        return 'TENANT_RULE_POLICY_INVALID';
+      case 'POLICY_STORE_UNAVAILABLE':
+        return 'TENANT_RULE_POLICY_UNAVAILABLE';
     }
-    if (error.reason === 'RULE_METADATA_MISMATCH') {
-      return 'RULE_METADATA_MISMATCH';
-    }
-    if (error.reason === 'TENANT_POLICY_INVALID') {
-      return 'TENANT_RULE_POLICY_INVALID';
-    }
-    return 'TENANT_RULE_POLICY_UNAVAILABLE';
   }
 
   private async reject(
@@ -480,6 +483,15 @@ export class SastScanPlannerService {
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u.test(value) &&
       Number.isFinite(Date.parse(value))
     );
+  }
+
+  private readPolicyEvaluationTime(): string {
+    const value = this.policyEvaluationClock.now();
+    const milliseconds = Date.prototype.getTime.call(value);
+    if (!Number.isFinite(milliseconds)) {
+      throw new Error('The trusted SAST policy evaluation clock is invalid.');
+    }
+    return new Date(milliseconds).toISOString();
   }
 
   private deepFreeze<T>(value: T): T {

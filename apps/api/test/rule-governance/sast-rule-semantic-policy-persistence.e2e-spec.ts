@@ -156,6 +156,10 @@ describe('SAST semantic metadata and tenant policy T046 persistence contract', (
     const queueReservation = planner.indexOf(
       'assertSastQueueReservationAllowed'
     );
+    expect(compatibilityGate).toBeGreaterThan(-1);
+    expect(policyGate).toBeGreaterThan(-1);
+    expect(canonicalKey).toBeGreaterThan(-1);
+    expect(queueReservation).toBeGreaterThan(-1);
     expect(policyGate).toBeGreaterThan(compatibilityGate);
     expect(canonicalKey).toBeGreaterThan(policyGate);
     expect(queueReservation).toBeGreaterThan(canonicalKey);

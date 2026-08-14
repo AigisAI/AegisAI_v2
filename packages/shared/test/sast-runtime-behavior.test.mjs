@@ -324,6 +324,14 @@ test('scan plans and artifact envelopes bind fixed intent and reject normalizati
   const expectedBinding = expectedArtifactBinding(envelope);
 
   assert.equal(runtime.isScannerSetDescriptorValid(plan.scannerSet), true);
+  const duplicateManifestScannerSet = structuredClone(plan.scannerSet);
+  const firstManifest = duplicateManifestScannerSet.ruleBundles[0];
+  const secondManifest = duplicateManifestScannerSet.ruleBundles[1];
+  secondManifest.manifestId = firstManifest.manifestId;
+  assert.equal(
+    runtime.isScannerSetDescriptorValid(duplicateManifestScannerSet),
+    false
+  );
   assert.equal(runtime.isSastScanPlanValid(plan), true);
   assert.equal(runtime.isSastScanPlanValid({}), false);
   assert.equal(runtime.isScannerArtifactEnvelopeShapeValid(envelope), true);

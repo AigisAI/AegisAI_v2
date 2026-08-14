@@ -2,6 +2,28 @@
 -- non-executable policy metadata. Rule bodies, repository/source/evidence,
 -- arbitrary configuration, credentials, and secret values are absent.
 
+-- The v2 planning key adds the verified tenant-policy receipt. Existing v1
+-- planning identities cannot be rewritten safely, so deployment must first
+-- drain or explicitly cancel every non-terminal v1 plan/reservation. Terminal
+-- rows remain immutable audit history.
+DO $t046_canonical_key_cutover$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM "ScanRequest"
+    WHERE "status" IN ('QUEUED', 'PLANNING', 'RUNNING')
+      AND "sastPlanning" IS NOT NULL
+  ) OR EXISTS (
+    SELECT 1
+    FROM "SastQueueReservation"
+    WHERE "terminalStatus" IS NULL
+  ) THEN
+    RAISE EXCEPTION
+      'T046 canonical scan-key v2 cutover requires all existing v1 SAST plans and reservations to be completed, failed, or canceled';
+  END IF;
+END;
+$t046_canonical_key_cutover$;
+
 CREATE UNIQUE INDEX "SastRuleBundleManifest_id_digest_key"
   ON "SastRuleBundleManifest"("id", "manifestDigest");
 CREATE UNIQUE INDEX "SastRuleBundleManifest_metadata_binding_key"

@@ -14,6 +14,9 @@ import type { VerifiedSastTenantRulePolicyDescriptor } from './sast-rule-semanti
 export const SAST_PLANNING_STATES = ['ADMITTED', 'DEFERRED', 'REJECTED'] as const;
 export type SastPlanningState = (typeof SAST_PLANNING_STATES)[number];
 
+export const SAST_CANONICAL_SCAN_KEY_VERSION =
+  'sast-canonical-scan-key-v2' as const;
+
 export const SAST_COVERAGE_CLAIMS = [
   'LANGUAGE_SAST_COMPLETE',
   'COMMON_STATIC_COVERAGE_ONLY',
@@ -566,7 +569,7 @@ export function buildSastCanonicalScanKeyPreimage(
     );
 
   return canonicalJson({
-    version: 'sast-canonical-scan-key-v1',
+    version: SAST_CANONICAL_SCAN_KEY_VERSION,
     tenantId: input.tenantId,
     repositoryBindingId: input.repositoryBindingId,
     lane: input.lane,

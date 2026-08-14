@@ -20,6 +20,7 @@ import {
 } from '@aegisai/shared';
 
 import { ControlPlaneService } from '../../src/control-plane/control-plane.service';
+import { SastPolicyEvaluationClock } from '../../src/control-plane/sast-policy-evaluation-clock.service';
 import type { SastQueueReservationInput } from '../../src/control-plane/sast-queue-admission.store';
 import { SastQueueAdmissionService } from '../../src/control-plane/sast-queue-admission.service';
 import { SastScanPlannerService } from '../../src/control-plane/sast-scan-planner.service';
@@ -29,7 +30,8 @@ import {
 } from '../../src/rule-governance/sast-rule-bundle-compatibility.gate';
 import {
   SastTenantRulePolicyGate,
-  SastTenantRulePolicyGateError
+  SastTenantRulePolicyGateError,
+  type SastTenantRulePolicyGateInput
 } from '../../src/rule-governance/sast-tenant-rule-policy.gate';
 import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
 import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
@@ -139,6 +141,21 @@ class AcceptingTenantRulePolicyGate extends SastTenantRulePolicyGate {
     return verifiedTenantRulePolicy(input.policyVersion);
   }
 }
+
+class CapturingTenantRulePolicyGate extends SastTenantRulePolicyGate {
+  lastInput: SastTenantRulePolicyGateInput | undefined;
+
+  async resolve(input: SastTenantRulePolicyGateInput) {
+    this.lastInput = structuredClone(input);
+    return verifiedTenantRulePolicy(input.policyVersion);
+  }
+}
+
+const fixedPolicyEvaluationClock = (
+  value = '2026-07-22T01:00:00.000Z'
+): SastPolicyEvaluationClock => ({
+  now: () => new Date(value)
+});
 
 const queuePolicy: SastQueuePolicySet = {
   policyVersion: 'queue-policy-1',
@@ -301,7 +318,9 @@ async function createHarness(
   ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate =
     new AcceptingRuleBundleCompatibilityGate(),
   tenantRulePolicyGate: SastTenantRulePolicyGate =
-    new AcceptingTenantRulePolicyGate()
+    new AcceptingTenantRulePolicyGate(),
+  policyEvaluationClock: SastPolicyEvaluationClock =
+    fixedPolicyEvaluationClock()
 ) {
   const scanRequestStore = new InMemoryControlPlaneScanRequestStore();
   const queueStore = new InMemorySastQueueAdmissionStore();
@@ -349,11 +368,13 @@ async function createHarness(
     queueAdmission,
     ruleBundleCompatibilityGate,
     tenantRulePolicyGate,
+    policyEvaluationClock,
     planner: new SastScanPlannerService(
       controlPlane,
       queueAdmission,
       ruleBundleCompatibilityGate,
-      tenantRulePolicyGate
+      tenantRulePolicyGate,
+      policyEvaluationClock
     ),
     repositoryBindingId,
     scanRequest
@@ -465,6 +486,56 @@ describe('SastScanPlannerService', () => {
     }
   );
 
+  it.each(['2026-07-22T01:00:00Z', '2099-12-31T23:59:59Z'])(
+    'uses the trusted service clock for policy windows instead of requestedAt %s',
+    async (requestedAt) => {
+      const gate = new CapturingTenantRulePolicyGate();
+      const clock = fixedPolicyEvaluationClock('2026-08-14T06:20:30.123Z');
+      const harness = await createHarness(
+        'FAST',
+        new AcceptingRuleBundleCompatibilityGate(),
+        gate,
+        clock
+      );
+
+      await harness.planner.plan(
+        buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id, {
+          requestedAt
+        })
+      );
+
+      expect(gate.lastInput?.evaluatedAt).toBe('2026-08-14T06:20:30.123Z');
+      expect(gate.lastInput?.evaluatedAt).not.toBe(
+        new Date(requestedAt).toISOString()
+      );
+    }
+  );
+
+  it.each([
+    ['throwing', { now: () => { throw new Error('clock unavailable'); } }],
+    ['invalid', fixedPolicyEvaluationClock('invalid')]
+  ] as const)('fails closed before queue reservation for a %s policy clock', async (_label, clock) => {
+    const gate = new CapturingTenantRulePolicyGate();
+    const harness = await createHarness(
+      'FAST',
+      new AcceptingRuleBundleCompatibilityGate(),
+      gate,
+      clock
+    );
+    const reserve = jest.spyOn(harness.queueAdmission, 'reserveWithContext');
+
+    const result = await harness.planner.plan(
+      buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id)
+    );
+
+    expect(result.planning).toMatchObject({
+      state: 'REJECTED',
+      reasonCodes: ['TENANT_RULE_POLICY_UNAVAILABLE']
+    });
+    expect(gate.lastInput).toBeUndefined();
+    expect(reserve).not.toHaveBeenCalled();
+  });
+
   it('selects the Java Fast profile and records an immutable admitted plan', async () => {
     const harness = await createHarness('FAST');
     const input = buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id);
@@ -547,7 +618,8 @@ describe('SastScanPlannerService', () => {
       restartedControlPlane,
       restartedQueue,
       harness.ruleBundleCompatibilityGate,
-      harness.tenantRulePolicyGate
+      harness.tenantRulePolicyGate,
+      harness.policyEvaluationClock
     );
     await expect(restartedControlPlane.listIntegrations('tenant-1')).resolves.toHaveLength(1);
     await expect(

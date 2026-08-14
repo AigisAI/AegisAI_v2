@@ -162,19 +162,30 @@ export class SastRuleSemanticPolicyService extends SastTenantRulePolicyGate {
       if (error instanceof SastTenantRulePolicyGateError) throw error;
       if (error instanceof SastRuleSemanticPolicyPersistenceError) {
         throw new SastTenantRulePolicyGateError(
-          error.reason === 'METADATA_NOT_FOUND'
-            ? 'RULE_METADATA_UNVERIFIED'
-            : error.reason === 'POLICY_NOT_FOUND' ||
-                error.reason === 'TENANT_SCOPE_INVALID' ||
-                error.reason === 'REFERENCE_INVALID'
-              ? 'TENANT_POLICY_INVALID'
-              : 'POLICY_STORE_UNAVAILABLE'
+          policyGateReasonForPersistence(error.reason)
         );
       }
       throw new SastTenantRulePolicyGateError(
         'POLICY_STORE_UNAVAILABLE'
       );
     }
+  }
+}
+
+function policyGateReasonForPersistence(
+  reason: SastRuleSemanticPolicyPersistenceError['reason']
+): SastTenantRulePolicyGateError['reason'] {
+  switch (reason) {
+    case 'MANIFEST_NOT_FOUND':
+    case 'METADATA_NOT_FOUND':
+      return 'RULE_METADATA_UNVERIFIED';
+    case 'INPUT_INVALID':
+    case 'LEDGER_CORRUPT':
+    case 'POLICY_NOT_FOUND':
+    case 'TENANT_SCOPE_INVALID':
+    case 'REFERENCE_INVALID':
+    case 'REPLAY_CONFLICT':
+      return 'TENANT_POLICY_INVALID';
   }
 }
 

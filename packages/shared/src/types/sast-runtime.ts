@@ -912,6 +912,9 @@ export function isScannerSetDescriptorValid(scannerSet: ScannerSetDescriptor): b
   const scannerDescriptors = SAST_SCANNER_KINDS.map((scanner) => scannerSet.scanners[scanner]);
   const ruleBundleIds = scannerSet.ruleBundles.map((bundle) => bundle.bundleId);
   const ruleBundleDigests = scannerSet.ruleBundles.map((bundle) => bundle.digest);
+  const ruleBundleManifestIds = scannerSet.ruleBundles.map(
+    (bundle) => bundle.manifestId
+  );
   const executableRuleStates: RuleBundleState[] = ['CANARY', 'ACTIVE'];
 
   return (
@@ -931,6 +934,7 @@ export function isScannerSetDescriptorValid(scannerSet: ScannerSetDescriptor): b
     scannerSet.ruleBundles.length === 2 &&
     hasUniqueValues(ruleBundleIds) &&
     hasUniqueValues(ruleBundleDigests) &&
+    hasUniqueValues(ruleBundleManifestIds) &&
     scannerSet.ruleBundles.every(
       (bundle) =>
         isRuleBundleDescriptorValid(bundle) && executableRuleStates.includes(bundle.state)

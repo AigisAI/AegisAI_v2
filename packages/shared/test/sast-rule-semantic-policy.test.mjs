@@ -226,6 +226,21 @@ test('T046 produces a content-free exact resolution receipt and frozen plan desc
     ),
     false
   );
+  for (const hostileReceipt of [
+    { ...receipt, context: null },
+    { ...receipt, rules: null },
+    { ...receipt, manifestDigests: null },
+    { ...receipt, pathExclusions: null },
+    { ...receipt, severityFloors: null }
+  ]) {
+    assert.equal(
+      isSastTenantRulePolicyResolutionReceiptShapeValid(
+        hostileReceipt,
+        digest
+      ),
+      false
+    );
+  }
   assert.equal(
     buildSastTenantRulePolicyResolution({
       policy,

@@ -26,6 +26,7 @@ import {
 } from '../../src/rule-governance/sast-rule-bundle-manifest.store';
 import { SastRuleSemanticPolicyService } from '../../src/rule-governance/sast-rule-semantic-policy.service';
 import {
+  SastRuleSemanticPolicyPersistenceError,
   SastRuleSemanticPolicyStore,
   type PersistedSastRuleDefinitionMetadataBinding,
   type PersistedSastTenantRulePolicy,
@@ -174,6 +175,42 @@ describe('SastRuleSemanticPolicyService', () => {
       })
     ).rejects.toMatchObject({ reason: 'POLICY_STORE_UNAVAILABLE' });
   });
+
+  it.each([
+    ['MANIFEST_NOT_FOUND', 'RULE_METADATA_UNVERIFIED'],
+    ['METADATA_NOT_FOUND', 'RULE_METADATA_UNVERIFIED'],
+    ['INPUT_INVALID', 'TENANT_POLICY_INVALID'],
+    ['LEDGER_CORRUPT', 'TENANT_POLICY_INVALID'],
+    ['POLICY_NOT_FOUND', 'TENANT_POLICY_INVALID'],
+    ['TENANT_SCOPE_INVALID', 'TENANT_POLICY_INVALID'],
+    ['REFERENCE_INVALID', 'TENANT_POLICY_INVALID'],
+    ['REPLAY_CONFLICT', 'TENANT_POLICY_INVALID']
+  ] as const)(
+    'maps deterministic persistence failure %s to %s',
+    async (persistenceReason, gateReason) => {
+      const fixtures = governanceFixtures();
+      const store = new MemorySemanticPolicyStore();
+      store.findPolicyError =
+        new SastRuleSemanticPolicyPersistenceError(persistenceReason);
+      const service = new SastRuleSemanticPolicyService(
+        store,
+        new MemoryManifestStore(fixtures.verifiedBundles)
+      );
+
+      await expect(
+        service.resolve({
+          tenantId: 'tenant-1',
+          repositoryBindingId: 'repository-1',
+          policyVersion: 'policy-v1',
+          scannerSet: fixtures.scannerSet,
+          profile: SAST_SCAN_PROFILES.JAVA_FAST_V1,
+          profileDigest: SAST_APPROVED_PROFILE_DIGESTS.JAVA_FAST_V1,
+          evaluatedAt: '2026-08-13T13:00:00.000Z'
+        })
+      ).rejects.toMatchObject({ reason: gateReason });
+      expect(store.receipts).toHaveLength(0);
+    }
+  );
 });
 
 class MemorySemanticPolicyStore extends SastRuleSemanticPolicyStore {

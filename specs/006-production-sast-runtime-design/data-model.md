@@ -148,6 +148,10 @@ monotonic narrowing: a more specific repository override cannot reverse an appli
 disable, lower a severity floor, or disable a mandatory semantic rule. Paths are literal NFC
 prefixes with no regex, glob, traversal, absolute root, or backslash semantics.
 
+The policy evaluation instant is supplied by the planner's service-owned UTC clock. A scan
+request timestamp is context only and cannot select a policy window or set receipt
+`evaluatedAt`; clock failure or an invalid instant creates no successful resolution.
+
 `SastTenantRulePolicyResolution` records one successful pre-queue evaluation with exact
 tenant/repository, policy, profile, scanner-set, manifest-set, metadata-binding, rule-state,
 path, severity-floor, evaluation-time, identity-digest, and receipt-digest bindings. Child
@@ -160,7 +164,7 @@ Immutable execution plan produced from `ScanRequest`.
 
 - `tenantId`
 - `scanRequestId`
-- `canonicalScanKey`
+- `canonicalScanKey` using `sast-canonical-scan-key-v2`
 - `repositoryBindingId`
 - fixed commit SHA and contextual target ref
 - trusted inventory digest and signed preflight attestation reference used for deterministic selection
@@ -170,6 +174,11 @@ Immutable execution plan produced from `ScanRequest`.
 - isolation class
 - per-scan result ingress, evidence output, and audit references
 - creation timestamp
+
+The v2 key commits the verified tenant-policy receipt. Its deployment gate rejects a cutover
+while any pre-existing SAST plan or queue reservation is non-terminal. Operators must drain or
+explicitly cancel that v1 work; completed, failed, and canceled v1 rows remain immutable audit
+records and are not rewritten into v2 identities.
 
 ### TrustedSastRepositoryMetadata
 

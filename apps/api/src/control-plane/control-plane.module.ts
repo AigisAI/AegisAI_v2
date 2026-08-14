@@ -16,6 +16,7 @@ import { ScanRequestsController } from "./scan-requests.controller";
 import { PrismaSastQueueAdmissionStore } from './prisma-sast-queue-admission.store';
 import { PrismaControlPlaneScanRequestStore } from './prisma-control-plane-scan-request.store';
 import { SastPlanningController } from './sast-planning.controller';
+import { SastPolicyEvaluationClock } from './sast-policy-evaluation-clock.service';
 import { SastQueueAdmissionStore } from './sast-queue-admission.store';
 import { SastQueueAdmissionService } from './sast-queue-admission.service';
 import { SastScanPlannerService } from './sast-scan-planner.service';
@@ -43,6 +44,7 @@ import { SastScanPlannerService } from './sast-scan-planner.service';
       useExisting: PrismaSastQueueAdmissionStore
     },
     SastQueueAdmissionService,
+    SastPolicyEvaluationClock,
     SastScanPlannerService,
     GithubAppInstallationClient,
     GithubAppInstallationStateService,

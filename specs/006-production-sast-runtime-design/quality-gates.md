@@ -358,6 +358,10 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   disables, expired/cross-tenant references, missing metadata, and store outages create zero
   successful receipts and queue reservations. A valid retry returns one immutable receipt whose
   identity/digest and enabled/disabled binding sets are committed to the canonical scan plan.
+  Caller request time has zero authority over policy windows or receipt time; old/future request
+  times still use the trusted service clock, while throwing or invalid clocks fail closed. The
+  canonical preimage is exactly `sast-canonical-scan-key-v2`, and migration rejects a cutover
+  until every prior non-terminal SAST plan and reservation has finished or been canceled.
 
 ## Canary and Continuous Production Gates
 
