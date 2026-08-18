@@ -19,12 +19,17 @@ import {
   type SastScanPlanningResult,
   type SastScanProfile,
   type SastUserVisiblePlanningState,
+  type CanaryQualifiedScannerSetDescriptor,
   type PromotionVerifiedScannerSetDescriptor,
   type ScannerSetDescriptor,
   type VerifiedSastTenantRulePolicyDescriptor,
   type VerifiedScannerSetDescriptor
 } from '@aegisai/shared';
 
+import {
+  SastRuleBundleCanaryGate,
+  SastRuleBundleCanaryGateError
+} from '../rule-governance/sast-rule-bundle-canary.gate';
 import {
   SastRuleBundleCompatibilityGate,
   SastRuleBundleCompatibilityGateError
@@ -49,6 +54,7 @@ export class SastScanPlannerService {
     private readonly queueAdmissionService: SastQueueAdmissionService,
     private readonly ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate,
     private readonly ruleBundleLifecycleGate: SastRuleBundleLifecycleGate,
+    private readonly ruleBundleCanaryGate: SastRuleBundleCanaryGate,
     private readonly tenantRulePolicyGate: SastTenantRulePolicyGate,
     private readonly policyEvaluationClock: SastPolicyEvaluationClock
   ) {}
@@ -162,6 +168,7 @@ export class SastScanPlannerService {
       );
     }
     let promotionVerifiedScannerSet: PromotionVerifiedScannerSetDescriptor;
+    let canaryQualifiedScannerSet: CanaryQualifiedScannerSetDescriptor;
     let tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
     try {
       const policyEvaluatedAt = this.readPolicyEvaluationTime();
@@ -170,11 +177,20 @@ export class SastScanPlannerService {
           scannerSet: verifiedScannerSet,
           evaluatedAt: policyEvaluatedAt
         });
+      canaryQualifiedScannerSet =
+        await this.ruleBundleCanaryGate.verifyScannerSet({
+          tenantId: scanRequest.tenantId,
+          repositoryBindingId: scanRequest.repositoryBindingId,
+          scannerSet: promotionVerifiedScannerSet,
+          profile: profileSelection.profile,
+          profileDigest,
+          evaluatedAt: policyEvaluatedAt
+        });
       tenantRulePolicy = await this.tenantRulePolicyGate.resolve({
         tenantId: scanRequest.tenantId,
         repositoryBindingId: scanRequest.repositoryBindingId,
         policyVersion: scanRequest.policyVersion,
-        scannerSet: promotionVerifiedScannerSet,
+        scannerSet: canaryQualifiedScannerSet,
         profile: profileSelection.profile,
         profileDigest,
         evaluatedAt: policyEvaluatedAt
@@ -185,7 +201,9 @@ export class SastScanPlannerService {
         requestedAt,
         error instanceof SastRuleBundleLifecycleGateError
           ? this.ruleBundleLifecycleReasonCode(error)
-          : this.tenantRulePolicyReasonCode(error),
+          : error instanceof SastRuleBundleCanaryGateError
+            ? this.ruleBundleCanaryReasonCode(error)
+            : this.tenantRulePolicyReasonCode(error),
         profileSelection.coverageClaim,
         profileSelection.profile
       );
@@ -204,7 +222,7 @@ export class SastScanPlannerService {
         policyVersion: scanRequest.policyVersion,
         profile: profileSelection.profile,
         profileDigest,
-        scannerSet: promotionVerifiedScannerSet,
+        scannerSet: canaryQualifiedScannerSet,
         tenantRulePolicy,
         isolationClass
       })
@@ -224,7 +242,7 @@ export class SastScanPlannerService {
       profileSelection.profile,
       profileDigest,
       canonicalScanKey,
-      promotionVerifiedScannerSet,
+      canaryQualifiedScannerSet,
       tenantRulePolicy,
       isolationClass,
       input.repositoryMetadata.inventoryDigest,
@@ -303,7 +321,7 @@ export class SastScanPlannerService {
               profileSelection.profile,
               profileDigest,
               canonicalScanKey,
-              promotionVerifiedScannerSet,
+              canaryQualifiedScannerSet,
               tenantRulePolicy,
               isolationClass,
               input.repositoryMetadata.inventoryDigest,
@@ -325,7 +343,7 @@ export class SastScanPlannerService {
     profile: SastScanProfile,
     profileDigest: `sha256:${string}`,
     canonicalScanKey: `sha256:${string}`,
-    scannerSet: PromotionVerifiedScannerSetDescriptor,
+    scannerSet: CanaryQualifiedScannerSetDescriptor,
     tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor,
     isolationClass: 'HARDENED' | 'RESTRICTED',
     inventoryDigest: `sha256:${string}`,
@@ -470,6 +488,25 @@ export class SastScanPlannerService {
         return 'RULE_BUNDLE_LIFECYCLE_AUTHORITY_UNAVAILABLE';
       case 'LIFECYCLE_STORE_UNAVAILABLE':
         return 'RULE_BUNDLE_LIFECYCLE_STORE_UNAVAILABLE';
+    }
+  }
+
+  private ruleBundleCanaryReasonCode(
+    error: SastRuleBundleCanaryGateError
+  ): SastPlanningReasonCode {
+    switch (error.reason) {
+      case 'CANARY_ROLLOUT_UNAVAILABLE':
+        return 'RULE_BUNDLE_CANARY_ROLLOUT_UNAVAILABLE';
+      case 'CANARY_ELIGIBILITY_UNAVAILABLE':
+        return 'RULE_BUNDLE_CANARY_ELIGIBILITY_UNAVAILABLE';
+      case 'CANARY_ASSIGNMENT_INELIGIBLE':
+        return 'RULE_BUNDLE_CANARY_ASSIGNMENT_INELIGIBLE';
+      case 'CANARY_ASSIGNMENT_STALE':
+        return 'RULE_BUNDLE_CANARY_ASSIGNMENT_STALE';
+      case 'CANARY_KEY_UNAVAILABLE':
+        return 'RULE_BUNDLE_CANARY_KEY_UNAVAILABLE';
+      case 'CANARY_STORE_UNAVAILABLE':
+        return 'RULE_BUNDLE_CANARY_STORE_UNAVAILABLE';
     }
   }
 

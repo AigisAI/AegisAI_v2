@@ -1406,9 +1406,10 @@ fixed safety facts. The verified descriptor enters both the canonical scan key a
 `SastScanPlan` before queue reservation. All failure paths expose only bounded planning reasons,
 write no successful receipt, and invoke neither queue reservation nor scanner execution.
 
-The tenant-policy receipt remains part of the current canonical preimage. T047 advances that
-preimage to v3 as described below; terminal earlier-version records remain immutable audit
-history and are never rewritten under a newer identity.
+The tenant-policy receipt remains part of the current canonical preimage. T047 advanced that
+preimage to v3 as described below; T048 advances the current preimage to v4 with stable canary
+membership as described in the next section. Terminal earlier-version records remain immutable
+audit history and are never rewritten under a newer identity.
 
 ### Promotion evidence and lifecycle selection gate v1
 
@@ -1441,9 +1442,9 @@ Every row increments one bundle's sequence, binds the immediately previous trans
 digest, revalidates the exact evidence and approvals, and is immutable after insertion. A
 `CANARY -> ACTIVE` transition requires `CANARY_OBSERVATION`; suspension requires
 `EMERGENCY_SUSPENSION`; rollback requires `ROLLBACK`. Each authority must return a matching
-digest-bound receipt. Their production defaults intentionally return unavailable until T048,
-T049, and T050 install the corresponding implementations; all other edges require `NONE` and
-must contain no external receipt.
+digest-bound receipt. T048 installs `CANARY_OBSERVATION`; `EMERGENCY_SUSPENSION` and `ROLLBACK`
+remain unavailable until T049 and T050 install their corresponding implementations. All other
+edges require `NONE` and must contain no external receipt.
 
 Before tenant-policy resolution, the lifecycle gate serializably reloads the latest transition,
 evidence, and approvals and accepts only `CANARY` or `ACTIVE`. It persists one content-free
@@ -1458,7 +1459,7 @@ precedes tenant policy, and both verified receipts precede canonical-key constru
 admission.
 
 The immutable plan retains the exact selection receipt for audit and admission validation. The
-lifecycle portion of `sast-canonical-scan-key-v3` commits only the stable state, sequence,
+lifecycle portion introduced by `sast-canonical-scan-key-v3` commits only the stable state, sequence,
 transition ID/digest, evidence ID/digest, and approval-set digest; it deliberately excludes the
 evaluation-time-derived selection receipt ID/digest so an equivalent retry keeps one canonical
 identity. `compatibilityReceiptDigest` remains committed. Immediately before writing a queue
@@ -1468,10 +1469,95 @@ selection receipt. The database reservation trigger applies the same fail-closed
 writes, so a concurrent suspension or retirement either precedes and rejects admission or follows
 an already-serialized reservation.
 
-The lifecycle-bearing preimage is exactly `sast-canonical-scan-key-v3`. Before deployment, all
+T047's lifecycle-bearing preimage was exactly `sast-canonical-scan-key-v3`. Before that cutover, all
 non-terminal v2 SAST plans and reservations must finish or be explicitly canceled; the schema
 migration rejects a dirty cutover. Terminal v2 records remain immutable audit history and are
 never rewritten or dispatched under the v3 identity.
+
+### Deterministic canary cohort and observation gate v1
+
+T048 registers one immutable `sast-rule-bundle-canary-rollout-v1` for one candidate manifest and
+profile. The candidate must still be the exact latest T047 `CANARY` transition, the distinct
+baseline must still be the exact latest `ACTIVE` transition, and both must rebind to the rollout's
+T045 manifests, bundles, profile, T047 evidence, and candidate transition. The rollout also fixes
+one digest-bound HMAC key reference/version, platform eligibility policy, exact observation
+source, creation time, and the non-skippable progression below. A candidate manifest/profile is
+single-use: `PAUSED` and completed rollouts cannot be resumed or replaced under the same pair.
+
+```text
+INTERNAL_CORPUS -> INTERNAL_REPOSITORIES -> 1% -> 5% -> 25% -> 100%
+```
+
+Eligibility is an immutable platform-owned decision. Only internal corpus, internal repository,
+or eligible production classification is accepted, and contractual/residency exclusion is
+explicit. The HMAC preimage is
+`sast-rule-bundle-canary-membership-hmac-v1` plus UTF-8 byte-length-framed tenant ID,
+repository-binding ID, profile ID, and rollout ID. HMAC-SHA-256 key material must decode from
+canonical base64 to at least 32 bytes, is used in memory and zeroed, and is never persisted. Its
+SHA-256 fingerprint must equal the digest suffix of the fixed key reference, preventing silent
+material drift under one reference/version while persisting no secret. The first eight digest
+bytes modulo 10,000 are the membership bucket; application and PostgreSQL
+derive the same value. Repository content, findings, severity, and customer attributes are
+forbidden inputs.
+
+The planner order is T045 compatibility -> T047 lifecycle -> T048 canary -> T046 tenant policy.
+An exact candidate receipt enriches the rule-bundle descriptor with rollout, membership, bucket,
+step, step-head, and assignment identities. If a supplied `CANARY` bundle resolves to baseline or
+exclusion, this gate rejects it rather than rewriting a descriptor that already passed
+compatibility and lifecycle verification. Trusted orchestration must submit the separately
+verified exact `ACTIVE` baseline scanner set for a non-cohort production scan; an explicitly
+excluded scope receives no candidate. Active bundles always carry `canaryAssignment=null`. A
+canary bundle is valid only with an exact candidate assignment. Denial, missing eligibility,
+HMAC failure, lifecycle drift,
+paused/completed rollout, stale step, store failure, or clock failure creates no plan or queue
+reservation.
+
+`sast-canonical-scan-key-v4` retains every v3 field and additionally commits the stable rollout
+ID/digest, membership ID/digest, bucket, and `candidateAssigned=true`. It deliberately excludes
+the evaluation-time assignment receipt ID/digest, rollout step, and step-head decision so exact
+retries keep one identity. Those excluded values remain in the immutable plan. Queue admission
+first locks/revalidates T047 lifecycle heads, then locks the T048 rollout head and verifies the
+persisted candidate receipt, exact current step/head, manifest, membership, and selection before
+reading the scan. The database trigger applies the same fence to direct inserts. Before v4
+cutover, every non-terminal v3 plan and reservation must finish or be explicitly canceled;
+terminal v3 history remains immutable.
+
+An observation is accepted only from the rollout's fixed source after independently rebinding an
+immutable queued plan, exact candidate assignment or exact `ACTIVE` baseline selection, one
+terminal attempt with matching start/end, complete or explicitly incomplete T039 coverage,
+T040 publication authority, and a digest-bound telemetry source. The source supplies only
+bounded scalar measurements. The collection caller supplies no cohort role or repository-size
+bucket; the trusted source derives both from durable plan and telemetry authority. The store
+derives coverage completeness and publication denial
+from durable rows, verifies attempt and plan scope, and stores no repository/finding content,
+secret, HMAC key, or JSON payload. Baseline and candidate observations are partitioned by exact
+profile and `SMALL|MEDIUM|LARGE` repository-size bucket.
+
+Each append-only `sast-rule-bundle-canary-step-decision-v1` reloads the current rollout/lifecycle
+heads, locks the step head, selects every committed observation in the exact closed window,
+whose cutoff is the evaluator's trusted service time, sorts and binds the complete set without
+accepting a caller-provided cutoff or IDs, and recomputes all
+candidate/baseline aggregates. The first four steps require at
+least 200 completed scans per arm and 24 hours; 25% and 100% require at least 1,000 per arm and
+48 hours. Every applicable size bucket must be represented in both arms. Candidate gates are:
+
+- false-positive rate no more than two percentage points above baseline;
+- scanner failure rate no more than 2% of eligible attempts;
+- p95 latency no more than 20% above baseline and no more than 10 minutes Fast or 45 minutes Deep;
+- completed-scan-normalized Critical/High finding rate no more than 20% above baseline;
+- complete telemetry and coverage, exact publication data, and all profile-size comparisons; and
+- zero cross-tenant, secret-leak, sandbox-escape, stale-publication, unauthorized-egress,
+  missing-destruction-evidence, evidence-policy-violation, or unsigned-artifact-execution events.
+
+Time or per-arm sample insufficiency is `PENDING` and does not advance the head. Incomplete
+coverage and any other hard-gate failure are terminal `PAUSED`; no later eligibility, assignment,
+observation, or decision is
+accepted. A `PASSED` decision advances exactly one step. Only six contiguous ordered passes,
+ending at 100%, can issue one immutable
+`sast-rule-bundle-canary-observation-receipt-v1`. The lifecycle router accepts that exact receipt
+only for the matching candidate's `CANARY -> ACTIVE` transition and no other edge. The production
+observation-source adapter intentionally defaults unavailable until production qualification can
+provide durable metrics; T048 never fabricates an observation to unlock promotion.
 
 ## Cleanup Contract
 

@@ -360,7 +360,7 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   identity/digest and enabled/disabled binding sets are committed to the canonical scan plan.
   Caller request time has zero authority over policy windows or receipt time; old/future request
   times still use the trusted service clock, while throwing or invalid clocks fail closed. The
-  the tenant-policy receipt remains committed to the current canonical preimage.
+  tenant-policy receipt remains committed to the current canonical preimage.
 - 100% T047 evidence invariant: candidate and distinct baseline rebind to exact T045 manifest,
   supply-chain verification, bundle, profile, and rollback identities. All seven immutable corpus
   references, minimum 200 positive/negative samples bound exactly to the golden denominator,
@@ -381,12 +381,56 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   scanner-set transaction, so later-bundle failure and concurrent transition produce no partial
   selection set. Queue reservation then locks the trigger-maintained latest head for every
   manifest and revalidates the exact receipt, so a selection-to-admission suspension race cannot
-  enqueue stale work. The canonical preimage is exactly `sast-canonical-scan-key-v3`: it commits
+  enqueue stale work. T047's canonical preimage is exactly `sast-canonical-scan-key-v3`: it commits
   stable lifecycle transition/evidence/approval fields and the compatibility receipt, but excludes
   the evaluation-time-derived lifecycle selection receipt ID/digest. The immutable plan still
   retains that receipt for audit and admission validation. Migration
   rejects the cutover until every prior non-terminal v2 SAST plan and reservation has finished or
   been canceled.
+- 100% T048 rollout/lifecycle invariant: one candidate manifest/profile has exactly one immutable
+  rollout, bound to its exact latest `CANARY` head, distinct exact latest `ACTIVE` baseline, T045
+  manifests/bundles, T047 evidence/transition, profile, cohort key reference/version, eligibility
+  policy, observation source, and six fixed ordered steps. A paused or completed candidate/profile
+  cannot be re-enrolled; lifecycle drift, duplicate rollout, or missing authority creates no
+  assignment, observation, receipt, or promotion.
+- 100% T048 cohort invariant: eligibility is platform-managed and contractual/residency exclusion
+  is explicit. Membership uses HMAC-SHA-256 over length-framed tenant, repository binding,
+  profile, and rollout identity with at least 32 bytes of canonical-base64 key material. Only its
+  digest and the first-eight-byte modulo-10,000 bucket persist, and PostgreSQL independently
+  recomputes the bucket. Content, findings, severity, customer attributes, or key material in the
+  ledger equal zero. Membership remains stable and selection expands monotonically at 1%, 5%,
+  25%, and 100%.
+- 100% T048 planning/admission invariant: the order is compatibility -> lifecycle -> canary ->
+  tenant policy. Only an exact candidate assignment adds a canary descriptor. A supplied canary
+  resolving outside the cohort is rejected rather than rewritten; trusted orchestration submits
+  the separately verified exact `ACTIVE` baseline set for non-cohort production, and excluded
+  scopes use no candidate. The
+  current preimage is exactly `sast-canonical-scan-key-v4`: it adds stable rollout/membership/
+  bucket identity while excluding assignment receipt, step, and step-head identity retained by
+  the plan. Queue reservation locks lifecycle heads then the canary head and revalidates the exact
+  receipt. The v4 migration rejects non-terminal v3 work.
+- 100% T048 observation invariant: every observation rebinds the immutable candidate or baseline
+  plan, exact assignment where applicable, terminal attempt interval, profile/lane/size bucket,
+  durable coverage and publication decisions, rollout-fixed observation source, and telemetry
+  source. Coverage and publication counts are derived from those durable authorities. Source or
+  finding content, secrets, arbitrary JSON, foreign scope, partial binding, reordered binding,
+  or forged scalar authority creates zero observations.
+- 100% T048 step-gate invariant: every decision automatically binds the canonically sorted set of
+  every committed observation through the evaluator's trusted-time cutoff and recomputes all
+  candidate/baseline aggregates; a caller cannot choose the cutoff or select/omit observation
+  IDs. Internal through 5% requires 200
+  completed scans per arm and 24 hours; 25% and 100% requires 1,000 per arm and 48 hours.
+  Every repository-size bucket must be compared. Maximum candidate deltas are two percentage
+  points for false positives and 20% for p95 latency and completed-scan-normalized Critical/High
+  rate; candidate scanner failure is at most 2%, and p95 also satisfies the 10-minute Fast or
+  45-minute Deep absolute SLO.
+  All eight security counters are exactly zero.
+- 100% T048 terminal-state invariant: insufficient time/sample is `PENDING`; missing telemetry,
+  incomplete coverage or size comparison, threshold breach, or any zero-tolerance event is terminal
+  `PAUSED`; only zero reasons is `PASSED`. Threshold waivers and step skipping equal zero. Six
+  contiguous ordered passes issue one immutable observation receipt, and only that exact receipt
+  authorizes the matching `CANARY -> ACTIVE` transition. The default production observation
+  source remains unavailable and therefore cannot manufacture promotion evidence.
 
 ## Canary and Continuous Production Gates
 
@@ -400,8 +444,11 @@ At every canary step compare candidate and last-known-good by profile and reposi
 - cleanup lag, egress denial, quarantine, and kill-switch signals
 
 Automatic canary pause occurs on any zero-tolerance event, threshold breach, missing telemetry,
-or unexplained Critical/High volume change above 20%. Resume requires a new evidence record and
-human approvals; the clock and minimum scan count restart for the affected step.
+incomplete coverage, or unexplained completed-scan-normalized Critical/High rate change above
+20%. `PAUSED` is terminal for that
+candidate-manifest/profile pair. Recovery requires a new signed candidate manifest, new T047
+evidence and human approvals, and a new rollout whose observation clock and sample counts begin
+at zero; the old rollout and decisions remain immutable.
 
 Production remains eligible only while rolling 24-hour and 7-day windows meet all security
 gates, scanner failure <= 2%, absolute lane p95 SLOs, and no more than a two-percentage-point

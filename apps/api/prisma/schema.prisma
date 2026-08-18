@@ -2768,3 +2768,399 @@ model AuditEvent {
   @@index([eventType])
   @@index([occurredAt])
 }
+
+model SastRuleBundleCanaryRollout {
+  id                      String   @id
+  contractVersion         String
+  rolloutDigest           String   @unique
+  candidateManifestId     String
+  candidateManifestDigest String
+  candidateBundleId       String
+  candidateBundleDigest   String
+  baselineManifestId      String
+  baselineManifestDigest  String
+  baselineBundleDigest    String
+  profileId               String
+  profileDigest           String
+  promotionEvidenceId     String
+  promotionEvidenceDigest String
+  canaryTransitionId      String
+  canaryTransitionDigest  String
+  cohortKeyRef            String
+  cohortKeyVersion        String
+  eligibilityPolicyRef    String
+  eligibilityPolicyDigest String
+  observationSourceRef    String
+  observationSourceDigest String
+  progressionCount        Int      @default(6)
+  immutable               Boolean  @default(true)
+  customerInputAccepted   Boolean  @default(false)
+  repositoryContentStored Boolean  @default(false)
+  findingContentStored    Boolean  @default(false)
+  secretKeyMaterialStored Boolean  @default(false)
+  createdAt               DateTime
+  recordedAt              DateTime @default(now())
+
+  @@unique([id, rolloutDigest, profileId, profileDigest], map: "SastRuleBundleCanaryRollout_binding_key")
+  @@unique([candidateManifestId, profileId], map: "SastRuleBundleCanaryRollout_candidate_profile_key")
+  @@index([candidateManifestId, profileId, createdAt(sort: Desc)], map: "SastRuleBundleCanaryRollout_candidate_profile_idx")
+  @@index([baselineManifestId], map: "SastRuleBundleCanaryRollout_baseline_idx")
+}
+
+model SastRuleBundleCanaryRolloutStep {
+  rolloutId String
+  position  Int
+  step      String
+
+  @@id([rolloutId, position])
+  @@unique([rolloutId, step], map: "SastRuleBundleCanaryRolloutStep_rollout_step_key")
+}
+
+model SastRuleBundleCanaryEligibilityDecision {
+  id                        String   @id
+  contractVersion           String
+  eligibilityDecisionDigest String   @unique
+  rolloutId                 String
+  rolloutDigest             String
+  tenantId                  String
+  repositoryBindingId       String
+  profileId                 String
+  profileDigest             String
+  eligibilityClass          String
+  excluded                  Boolean
+  exclusionRef              String?
+  eligibilityPolicyRef      String
+  eligibilityPolicyDigest   String
+  actorRef                  String
+  auditRef                  String
+  evaluatedAt               DateTime
+  platformManaged           Boolean  @default(true)
+  customerOverrideAccepted  Boolean  @default(false)
+  repositoryContentUsed     Boolean  @default(false)
+  findingOrSeverityUsed     Boolean  @default(false)
+  recordedAt                DateTime @default(now())
+
+  @@unique([rolloutId, tenantId, repositoryBindingId, profileId], map: "SastRuleBundleCanaryEligibilityDecision_scope_key")
+  @@unique([id, eligibilityDecisionDigest, rolloutId, rolloutDigest], map: "SastRuleBundleCanaryEligibilityDecision_binding_key")
+  @@index([tenantId, repositoryBindingId, evaluatedAt], map: "SastRuleBundleCanaryEligibilityDecision_tenant_repo_idx")
+}
+
+model SastRuleBundleCanaryMembership {
+  id                        String   @id
+  contractVersion           String
+  membershipDigest          String   @unique
+  rolloutId                 String
+  rolloutDigest             String
+  tenantId                  String
+  repositoryBindingId       String
+  profileId                 String
+  profileDigest             String
+  eligibilityDecisionId     String
+  eligibilityDecisionDigest String
+  eligibilityClass          String
+  excluded                  Boolean
+  exclusionRef              String?
+  eligibilityPolicyRef      String
+  eligibilityPolicyDigest   String
+  cohortKeyRef              String
+  cohortKeyVersion          String
+  assignmentHmacDigest      String
+  bucketBasisPoints         Int
+  evaluatedAt               DateTime
+  immutableForRollout       Boolean  @default(true)
+  repositoryContentUsed     Boolean  @default(false)
+  findingOrSeverityUsed     Boolean  @default(false)
+  customerAttributeUsed     Boolean  @default(false)
+  secretKeyMaterialStored   Boolean  @default(false)
+  recordedAt                DateTime @default(now())
+
+  @@unique([rolloutId, tenantId, repositoryBindingId, profileId], map: "SastRuleBundleCanaryMembership_scope_key")
+  @@unique([id, membershipDigest, rolloutId, rolloutDigest, tenantId, repositoryBindingId, profileId], map: "SastRuleBundleCanaryMembership_binding_key")
+  @@index([rolloutId, bucketBasisPoints], map: "SastRuleBundleCanaryMembership_bucket_idx")
+}
+
+model SastRuleBundleCanaryAssignmentReceipt {
+  id                       String   @id
+  contractVersion          String
+  assignmentReceiptDigest  String   @unique
+  rolloutId                String
+  rolloutDigest            String
+  membershipId             String
+  membershipDigest         String
+  tenantId                 String
+  repositoryBindingId      String
+  profileId                String
+  profileDigest            String
+  eligibilityClass         String
+  excluded                 Boolean
+  bucketBasisPoints        Int
+  step                     String
+  stepHeadDecisionId       String?
+  stepHeadDecisionDigest   String?
+  candidateManifestId      String
+  candidateManifestDigest  String
+  candidateBundleDigest    String
+  baselineManifestId       String
+  baselineManifestDigest   String
+  baselineBundleDigest     String
+  selection                String
+  selectedManifestId       String?
+  selectedManifestDigest   String?
+  selectedBundleDigest     String?
+  evaluatedAt              DateTime
+  deterministic            Boolean  @default(true)
+  immutable                Boolean  @default(true)
+  customerOverrideAccepted Boolean  @default(false)
+  repositoryContentUsed    Boolean  @default(false)
+  findingOrSeverityUsed    Boolean  @default(false)
+  recordedAt               DateTime @default(now())
+
+  @@unique([id, assignmentReceiptDigest, rolloutId, rolloutDigest, membershipId, membershipDigest], map: "SastRuleBundleCanaryAssignmentReceipt_binding_key")
+  @@index([rolloutId, tenantId, repositoryBindingId, evaluatedAt], map: "SastRuleBundleCanaryAssignmentReceipt_scope_time_idx")
+  @@index([stepHeadDecisionId], map: "SastRuleBundleCanaryAssignmentReceipt_step_head_idx")
+}
+
+model SastRuleBundleCanaryScanObservation {
+  id                               String   @id
+  contractVersion                  String
+  observationDigest                String   @unique
+  rolloutId                        String
+  rolloutDigest                    String
+  step                             String
+  cohortRole                       String
+  tenantId                         String
+  repositoryBindingId              String
+  scanRequestId                    String
+  attemptId                        String
+  assignmentReceiptId              String?
+  assignmentReceiptDigest          String?
+  selectedManifestId               String
+  selectedManifestDigest           String
+  selectedBundleDigest             String
+  profileId                        String
+  profileDigest                    String
+  lane                             ScanLane
+  repositorySizeBucket             String
+  coverageDecisionId               String
+  coverageDecisionDigest           String
+  publicationDecisionId            String
+  publicationDecisionDigest        String
+  observationSourceRef             String
+  observationSourceDigest          String
+  telemetrySourceRef               String
+  telemetrySourceDigest            String
+  startedAt                        DateTime
+  completedAt                      DateTime
+  findingCount                     Int
+  criticalHighFindingCount         Int
+  falsePositiveCount               Int
+  feedbackEligibleFindingCount     Int
+  waiverCount                      Int
+  suppressionCount                 Int
+  scannerFailureCount              Int
+  scannerTimeoutCount              Int
+  eligibleScannerAttemptCount      Int
+  artifactRejectionCount           Int
+  latencyMilliseconds              Int
+  cpuMilliseconds                  BigInt
+  peakMemoryBytes                  BigInt
+  diskBytes                        BigInt
+  incompleteCoverageCount          Int
+  publicationDenialCount           Int
+  egressDenialCount                Int
+  cleanupLagMilliseconds           Int
+  quarantineCount                  Int
+  killSwitchSignalCount            Int
+  crossTenantEvents                Int
+  secretLeakEvents                 Int
+  sandboxEscapeEvents              Int
+  stalePublicationEvents           Int
+  unauthorizedEgressEvents         Int
+  missingDestructionEvidenceEvents Int
+  evidencePolicyViolationEvents    Int
+  unsignedArtifactExecutionEvents  Int
+  terminalScanVerified             Boolean  @default(true)
+  immutablePlanVerified            Boolean  @default(true)
+  coverageComplete                 Boolean  @default(true)
+  telemetryComplete                Boolean  @default(true)
+  sourceOrFindingContentStored     Boolean  @default(false)
+  secretValueStored                Boolean  @default(false)
+  recordedAt                       DateTime @default(now())
+
+  @@unique([rolloutId, tenantId, scanRequestId, attemptId], map: "SastRuleBundleCanaryScanObservation_scan_key")
+  @@unique([id, observationDigest], map: "SastRuleBundleCanaryScanObservation_identity_key")
+  @@unique([id, observationDigest, rolloutId, rolloutDigest, step], map: "SastRuleBundleCanaryScanObservation_binding_key")
+  @@index([rolloutId, step, cohortRole, repositorySizeBucket, completedAt], map: "SastRuleBundleCanaryScanObservation_gate_idx")
+  @@index([assignmentReceiptId], map: "SastRuleBundleCanaryScanObservation_assignment_idx")
+}
+
+model SastRuleBundleCanaryStepDecision {
+  id                                    String   @id
+  contractVersion                       String
+  decisionDigest                        String   @unique
+  rolloutId                             String
+  rolloutDigest                         String
+  candidateManifestId                   String
+  candidateManifestDigest               String
+  candidateBundleDigest                 String
+  baselineManifestId                    String
+  baselineManifestDigest                String
+  baselineBundleDigest                  String
+  profileId                             String
+  profileDigest                         String
+  sequence                              Int
+  step                                  String
+  previousDecisionId                    String?
+  previousDecisionDigest                String?
+  windowStartedAt                       DateTime
+  windowEndedAt                         DateTime
+  observationSetDigest                  String
+  observationCount                      Int
+  reasonCodeCount                       Int
+  candidateCompletedScans               Int
+  baselineCompletedScans                Int
+  candidateFindingCount                 Int
+  baselineFindingCount                  Int
+  candidateCriticalHighFindingCount     Int
+  baselineCriticalHighFindingCount      Int
+  candidateFalsePositiveCount           Int
+  candidateFeedbackEligibleFindingCount Int
+  baselineFalsePositiveCount            Int
+  baselineFeedbackEligibleFindingCount  Int
+  candidateWaiverCount                  Int
+  baselineWaiverCount                   Int
+  candidateSuppressionCount             Int
+  baselineSuppressionCount              Int
+  candidateScannerFailureCount          Int
+  candidateEligibleScannerAttemptCount  Int
+  baselineScannerFailureCount           Int
+  baselineEligibleScannerAttemptCount   Int
+  candidateScannerTimeoutCount          Int
+  baselineScannerTimeoutCount           Int
+  candidateP50LatencyMilliseconds       Int
+  candidateP95LatencyMilliseconds       Int
+  baselineP50LatencyMilliseconds        Int
+  baselineP95LatencyMilliseconds        Int
+  candidateP95CpuMilliseconds           BigInt
+  baselineP95CpuMilliseconds            BigInt
+  candidateP95PeakMemoryBytes           BigInt
+  baselineP95PeakMemoryBytes            BigInt
+  candidateP95DiskBytes                 BigInt
+  baselineP95DiskBytes                  BigInt
+  candidateArtifactRejectionCount       Int
+  baselineArtifactRejectionCount        Int
+  candidateIncompleteCoverageCount      Int
+  baselineIncompleteCoverageCount       Int
+  candidatePublicationDenialCount       Int
+  baselinePublicationDenialCount        Int
+  candidateEgressDenialCount            Int
+  baselineEgressDenialCount             Int
+  candidateP95CleanupLagMilliseconds    Int
+  baselineP95CleanupLagMilliseconds     Int
+  candidateQuarantineCount              Int
+  baselineQuarantineCount               Int
+  candidateKillSwitchSignalCount        Int
+  baselineKillSwitchSignalCount         Int
+  crossTenantEvents                     Int
+  secretLeakEvents                      Int
+  sandboxEscapeEvents                   Int
+  stalePublicationEvents                Int
+  unauthorizedEgressEvents              Int
+  missingDestructionEvidenceEvents      Int
+  evidencePolicyViolationEvents         Int
+  unsignedArtifactExecutionEvents       Int
+  telemetryComplete                     Boolean
+  allProfileSizeBucketsCompared         Boolean
+  evaluatorRef                          String
+  auditRef                              String
+  evaluatedAt                           DateTime
+  outcome                               String
+  thresholdsWaived                      Boolean  @default(false)
+  customerInputAccepted                 Boolean  @default(false)
+  immutable                             Boolean  @default(true)
+  recordedAt                            DateTime @default(now())
+
+  @@unique([rolloutId, sequence], map: "SastRuleBundleCanaryStepDecision_rollout_sequence_key")
+  @@unique([id, decisionDigest], map: "SastRuleBundleCanaryStepDecision_identity_key")
+  @@unique([id, decisionDigest, rolloutId, rolloutDigest, sequence, step, outcome], map: "SastRuleBundleCanaryStepDecision_binding_key")
+  @@index([rolloutId, step, outcome, evaluatedAt], map: "SastRuleBundleCanaryStepDecision_gate_idx")
+}
+
+model SastRuleBundleCanaryStepDecisionReason {
+  decisionId String
+  position   Int
+  reasonCode String
+
+  @@id([decisionId, position])
+  @@unique([decisionId, reasonCode], map: "SastRuleBundleCanaryStepDecisionReason_code_key")
+}
+
+model SastRuleBundleCanaryStepDecisionObservation {
+  decisionId        String
+  position          Int
+  observationId     String
+  observationDigest String
+
+  @@id([decisionId, position])
+  @@unique([decisionId, observationId], map: "SastRuleBundleCanaryStepDecisionObservation_id_key")
+}
+
+model SastRuleBundleCanaryRolloutHead {
+  rolloutId            String   @id
+  rolloutDigest        String   @unique
+  currentStep          String
+  latestDecisionId     String?  @unique
+  latestDecisionDigest String?  @unique
+  latestSequence       Int      @default(0)
+  latestOutcome        String?
+  windowStartedAt      DateTime
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([rolloutId, rolloutDigest, currentStep, latestDecisionId, latestDecisionDigest, latestSequence], map: "SastRuleBundleCanaryRolloutHead_binding_key")
+  @@index([currentStep, latestOutcome, updatedAt], map: "SastRuleBundleCanaryRolloutHead_state_idx")
+}
+
+model SastRuleBundleCanaryObservationReceipt {
+  id                      String   @id
+  contractVersion         String
+  receiptDigest           String   @unique
+  rolloutId               String   @unique
+  rolloutDigest           String
+  candidateManifestId     String
+  candidateManifestDigest String
+  candidateBundleId       String
+  candidateBundleDigest   String
+  baselineManifestId      String
+  baselineManifestDigest  String
+  baselineBundleDigest    String
+  profileId               String
+  profileDigest           String
+  promotionEvidenceId     String
+  promotionEvidenceDigest String
+  passedStepCount         Int      @default(6)
+  observedFrom            DateTime
+  observedThrough         DateTime
+  issuedAt                DateTime
+  everyStepPassed         Boolean  @default(true)
+  thresholdsWaived        Boolean  @default(false)
+  immutable               Boolean  @default(true)
+  repositoryContentStored Boolean  @default(false)
+  findingContentStored    Boolean  @default(false)
+  recordedAt              DateTime @default(now())
+
+  @@unique([id, receiptDigest, rolloutId, rolloutDigest], map: "SastRuleBundleCanaryObservationReceipt_binding_key")
+  @@index([candidateManifestId, profileId, issuedAt], map: "SastRuleBundleCanaryObservationReceipt_authority_idx")
+}
+
+model SastRuleBundleCanaryReceiptPassedStep {
+  receiptId      String
+  position       Int
+  step           String
+  decisionId     String
+  decisionDigest String
+
+  @@id([receiptId, position])
+  @@unique([receiptId, step], map: "SastRuleBundleCanaryReceiptPassedStep_step_key")
+  @@unique([receiptId, decisionId], map: "SastRuleBundleCanaryReceiptPassedStep_decision_key")
+}

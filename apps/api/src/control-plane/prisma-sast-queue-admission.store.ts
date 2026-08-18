@@ -64,6 +64,16 @@ interface LockedRuleBundleLifecycleHeadRow {
   selectionReceiptExists: boolean;
 }
 
+interface LockedRuleBundleCanaryHeadRow {
+  rolloutId: string;
+  rolloutDigest: string;
+  currentStep: string;
+  latestDecisionId: string | null;
+  latestDecisionDigest: string | null;
+  latestOutcome: string | null;
+  assignmentReceiptExists: boolean;
+}
+
 class RetryableDispatchClaimConflict extends Error {}
 
 @Injectable()
@@ -99,6 +109,10 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       }
 
       await this.assertCurrentRuleBundleLifecycleHeads(transaction, input.plan);
+      await this.assertCurrentRuleBundleCanaryAssignments(
+        transaction,
+        input.plan
+      );
 
       const scanRequest = await transaction.scanRequest.findUnique({
         where: { id: input.scanRequestId }
@@ -792,6 +806,100 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       ) {
         throw new ConflictException(
           'SAST rule-bundle lifecycle changed before queue admission.'
+        );
+      }
+    }
+  }
+
+  private async assertCurrentRuleBundleCanaryAssignments(
+    transaction: Prisma.TransactionClient,
+    plan: Readonly<SastScanPlan>
+  ): Promise<void> {
+    const bundles = [...plan.scannerSet.ruleBundles].sort((left, right) =>
+      left.manifestId.localeCompare(right.manifestId)
+    );
+
+    for (const bundle of bundles) {
+      const assignment = bundle.canaryAssignment;
+      if (bundle.lifecycle.lifecycleState === 'ACTIVE') {
+        if (assignment !== null) {
+          throw new ConflictException(
+            'An active SAST rule bundle cannot carry a canary assignment.'
+          );
+        }
+        continue;
+      }
+      if (!assignment) {
+        throw new ConflictException(
+          'A canary SAST rule bundle requires an assignment receipt.'
+        );
+      }
+
+      const rows = await transaction.$queryRaw<
+        LockedRuleBundleCanaryHeadRow[]
+      >`
+        SELECT
+          head."rolloutId",
+          head."rolloutDigest",
+          head."currentStep",
+          head."latestDecisionId",
+          head."latestDecisionDigest",
+          head."latestOutcome",
+          EXISTS (
+            SELECT 1
+            FROM "SastRuleBundleCanaryAssignmentReceipt" receipt
+            JOIN "SastRuleBundleCanaryMembership" membership
+              ON membership."id" = receipt."membershipId"
+             AND membership."membershipDigest" = receipt."membershipDigest"
+            JOIN "SastRuleBundleCanaryRollout" rollout
+              ON rollout."id" = receipt."rolloutId"
+             AND rollout."rolloutDigest" = receipt."rolloutDigest"
+            WHERE receipt."id" = ${assignment.assignmentReceiptId}
+              AND receipt."assignmentReceiptDigest" = ${assignment.assignmentReceiptDigest}
+              AND receipt."rolloutId" = head."rolloutId"
+              AND receipt."rolloutDigest" = head."rolloutDigest"
+              AND receipt."membershipId" = ${assignment.membershipId}
+              AND receipt."membershipDigest" = ${assignment.membershipDigest}
+              AND receipt."tenantId" = ${plan.tenantId}
+              AND receipt."repositoryBindingId" = ${plan.repositoryState.repositoryBindingId}
+              AND receipt."profileId" = ${plan.profile.id}
+              AND receipt."profileDigest" = ${plan.profileDigest}
+              AND receipt."bucketBasisPoints" = ${assignment.bucketBasisPoints}
+              AND receipt."step" = head."currentStep"
+              AND receipt."stepHeadDecisionId" IS NOT DISTINCT FROM head."latestDecisionId"
+              AND receipt."stepHeadDecisionDigest" IS NOT DISTINCT FROM head."latestDecisionDigest"
+              AND receipt."selection" = 'CANDIDATE'
+              AND receipt."selectedManifestId" = ${bundle.manifestId}
+              AND receipt."selectedManifestDigest" = ${bundle.manifestDigest}
+              AND receipt."selectedBundleDigest" = ${bundle.digest}
+              AND membership."tenantId" = receipt."tenantId"
+              AND membership."repositoryBindingId" = receipt."repositoryBindingId"
+              AND membership."profileId" = receipt."profileId"
+              AND membership."profileDigest" = receipt."profileDigest"
+              AND membership."bucketBasisPoints" = receipt."bucketBasisPoints"
+              AND membership."excluded" IS FALSE
+              AND rollout."candidateManifestId" = ${bundle.manifestId}
+              AND rollout."candidateManifestDigest" = ${bundle.manifestDigest}
+              AND rollout."candidateBundleDigest" = ${bundle.digest}
+          ) AS "assignmentReceiptExists"
+        FROM "SastRuleBundleCanaryRolloutHead" head
+        WHERE head."rolloutId" = ${assignment.rolloutId}
+        FOR UPDATE OF head
+      `;
+      const head = rows[0];
+      if (
+        rows.length !== 1 ||
+        !head ||
+        head.rolloutId !== assignment.rolloutId ||
+        head.rolloutDigest !== assignment.rolloutDigest ||
+        head.currentStep !== assignment.step ||
+        head.latestDecisionId !== assignment.stepHeadDecisionId ||
+        head.latestDecisionDigest !== assignment.stepHeadDecisionDigest ||
+        head.latestOutcome === 'PAUSED' ||
+        head.assignmentReceiptExists !== true
+      ) {
+        throw new ConflictException(
+          'SAST rule-bundle canary assignment changed before queue admission.'
         );
       }
     }

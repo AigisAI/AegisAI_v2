@@ -604,6 +604,7 @@ function buildPlan(): SastScanPlan {
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${digest(`receipt-${value}`).slice('sha256:'.length)}`,
     compatibilityReceiptDigest: digest(`receipt-${value}`),
     lifecycle: verifiedRuleBundleLifecycle(value),
+    canaryAssignment: null,
     scanner: kind,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,

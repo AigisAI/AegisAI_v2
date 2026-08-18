@@ -17,6 +17,9 @@ describe('T047 rule-bundle lifecycle persistence contracts', () => {
   const service = read(
     'apps/api/src/rule-governance/sast-rule-bundle-lifecycle.service.ts'
   );
+  const authorityRouter = read(
+    'apps/api/src/rule-governance/sast-rule-bundle-lifecycle-authority.router.ts'
+  );
   const moduleSource = read(
     'apps/api/src/rule-governance/rule-governance.module.ts'
   );
@@ -143,35 +146,44 @@ describe('T047 rule-bundle lifecycle persistence contracts', () => {
     expect(migration).toContain('FOR UPDATE');
   });
 
-  it('keeps T048, T049, and T050 external authority seams unavailable by default', () => {
+  it('installs the T048 canary authority while keeping T049 and T050 unavailable', () => {
     expect(service).toContain("'CANARY_OBSERVATION'");
     expect(service).toContain("'EMERGENCY_SUSPENSION'");
     expect(service).toContain("'ROLLBACK'");
     expect(moduleSource).toContain(
       'UnavailableSastRuleBundleLifecycleAuthority'
     );
+    expect(moduleSource).toContain('SastRuleBundleLifecycleAuthorityRouter');
     expect(moduleSource).toContain('provide: SastRuleBundleLifecycleAuthority');
+    expect(moduleSource).toContain(
+      'useExisting: SastRuleBundleLifecycleAuthorityRouter'
+    );
+    expect(authorityRouter).toContain("input.authority !== 'CANARY_OBSERVATION'");
+    expect(authorityRouter).toContain('this.canary.authorizeLifecycleTransition');
+    expect(authorityRouter).toContain('this.unavailable.authorize()');
     expect(moduleSource).toContain('provide: SastRuleBundleLifecycleGate');
     expect(moduleSource).toContain('useExisting: SastRuleBundleLifecycleService');
   });
 
-  it('orders compatibility, lifecycle, and tenant policy before queue reservation', () => {
+  it('orders compatibility, lifecycle, canary, and tenant policy before queue reservation', () => {
     const compatibility = planner.indexOf(
       'ruleBundleCompatibilityGate.verifyScannerSet'
     );
     const lifecycle = planner.indexOf(
       'ruleBundleLifecycleGate.verifyScannerSet'
     );
+    const canary = planner.indexOf('ruleBundleCanaryGate.verifyScannerSet');
     const tenantPolicy = planner.indexOf('tenantRulePolicyGate.resolve');
     const queue = planner.indexOf('queueAdmissionService.reserveWithContext');
     expect(compatibility).toBeGreaterThan(-1);
     expect(lifecycle).toBeGreaterThan(compatibility);
-    expect(tenantPolicy).toBeGreaterThan(lifecycle);
+    expect(canary).toBeGreaterThan(lifecycle);
+    expect(tenantPolicy).toBeGreaterThan(canary);
     expect(queue).toBeGreaterThan(tenantPolicy);
     expect(sharedRuntime).toContain(
-      'isPromotionVerifiedScannerSetDescriptorValid(plan.scannerSet)'
+      'isCanaryQualifiedScannerSetDescriptorValid(plan.scannerSet)'
     );
-    expect(sharedPlanning).toContain("'sast-canonical-scan-key-v3'");
+    expect(sharedPlanning).toContain("'sast-canonical-scan-key-v4'");
     expect(sharedPlanning).toContain(
       'lifecycleTransitionDigest:'
     );

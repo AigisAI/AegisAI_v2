@@ -56,6 +56,8 @@ const files = {
   sharedSastRuleSemanticPolicyTest: new URL('../../packages/shared/test/sast-rule-semantic-policy.test.mjs', import.meta.url),
   sharedSastRulePromotionLifecycle: new URL('../../packages/shared/src/types/sast-rule-promotion-lifecycle.ts', import.meta.url),
   sharedSastRulePromotionLifecycleTest: new URL('../../packages/shared/test/sast-rule-promotion-lifecycle.test.mjs', import.meta.url),
+  sharedSastRuleBundleCanary: new URL('../../packages/shared/src/types/sast-rule-bundle-canary.ts', import.meta.url),
+  sharedSastRuleBundleCanaryTest: new URL('../../packages/shared/test/sast-rule-bundle-canary.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -145,6 +147,14 @@ const files = {
   apiRuleBundleLifecycleClock: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-lifecycle.clock.ts', import.meta.url),
   apiRuleBundleLifecycleServiceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-lifecycle.service.e2e-spec.ts', import.meta.url),
   apiRuleBundleLifecyclePersistenceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-lifecycle-persistence.e2e-spec.ts', import.meta.url),
+  apiRuleBundleCanaryService: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-canary.service.ts', import.meta.url),
+  apiRuleBundleCanaryStore: new URL('../../apps/api/src/rule-governance/prisma-sast-rule-bundle-canary.store.ts', import.meta.url),
+  apiRuleBundleCanaryGate: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-canary.gate.ts', import.meta.url),
+  apiRuleBundleCanaryKeyProvider: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-canary-key.provider.ts', import.meta.url),
+  apiRuleBundleCanaryObservationSource: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-canary-observation.source.ts', import.meta.url),
+  apiRuleBundleLifecycleAuthorityRouter: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-lifecycle-authority.router.ts', import.meta.url),
+  apiRuleBundleCanaryServiceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-canary.service.e2e-spec.ts', import.meta.url),
+  apiRuleBundleCanaryPersistenceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-canary-persistence.e2e-spec.ts', import.meta.url),
   aiAdvisoryRuntime: new URL('../../apps/ai/src/advisory-runtime.ts', import.meta.url),
   aiModelGateway: new URL('../../apps/ai/src/model-gateway.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
@@ -160,6 +170,7 @@ const files = {
   apiSastRuleBundleManifestMigration: new URL('../../apps/api/prisma/migrations/20260813120000_sast_rule_bundle_manifest/migration.sql', import.meta.url),
   apiSastRuleSemanticPolicyMigration: new URL('../../apps/api/prisma/migrations/20260813130000_sast_rule_semantic_policy/migration.sql', import.meta.url),
   apiSastRuleBundleLifecycleMigration: new URL('../../apps/api/prisma/migrations/20260814120000_sast_rule_bundle_lifecycle/migration.sql', import.meta.url),
+  apiSastRuleBundleCanaryMigration: new URL('../../apps/api/prisma/migrations/20260819120000_sast_rule_bundle_canary/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -212,14 +223,14 @@ const assertScanPlaneExports = (scanPlaneModule) => {
 const assertT047QuickstartHandoff = (quickstart) => {
   assert.match(
     quickstart,
-    /T045 signed immutable,[\s\S]{0,360}T046 reusable semantic rule metadata,[\s\S]{0,360}are also complete\. T047 quantitative[\s\S]{0,280}are complete; T048 deterministic/
+    /T047 quantitative[\s\S]{0,320}are complete\. T048 deterministic[\s\S]{0,360}are complete; T049 scanner/
   );
 };
 
 const assertT047PlanHandoff = (plan) => {
   assert.match(
     plan,
-    /T040, T041, T042, T043, T044, T045, T046, and T047 independently and now proceeds to T048/
+    /T040 through T048 independently and now proceeds to T049/
   );
 };
 
@@ -280,7 +291,7 @@ test('SAST threat, rule, and quantitative quality decisions are explicit', () =>
   assert.match(threatModel, /output bomb/i);
   assert.match(threatModel, /prompt-injection strings/i);
   assert.match(ruleGovernance, /DRAFT -> VALIDATED -> CANARY -> ACTIVE/);
-  assert.match(ruleGovernance, /platform-secret keyed hash/);
+  assert.match(ruleGovernance, /HMAC-SHA-256/);
   for (const requiredScope of [
     'scanner version',
     'bundle digest',
@@ -2115,7 +2126,7 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   assert.match(sharedRuntime, /tenantRulePolicy/);
   assert.match(sharedPlanning, /TENANT_RULE_POLICY_INVALID/);
   assert.match(sharedPlanning, /tenantRulePolicy/);
-  assert.match(sharedPlanning, /sast-canonical-scan-key-v3/);
+  assert.match(sharedPlanning, /sast-canonical-scan-key-v4/);
   assert.match(sharedIndex, /sast-rule-semantic-policy/);
 
   assert.match(service, /registerRuleMetadataBinding/);
@@ -2292,7 +2303,7 @@ test('SAST T047 binds promotion evidence and latest lifecycle state before queue
     assert.match(sharedPlanning, new RegExp(reason));
     assert.match(planner, new RegExp(reason));
   }
-  assert.match(sharedPlanning, /sast-canonical-scan-key-v3/);
+  assert.match(sharedPlanning, /sast-canonical-scan-key-v4/);
   assert.match(sharedIndex, /sast-rule-promotion-lifecycle/);
 
   assert.match(service, /registerPromotionEvidence/);
@@ -2428,6 +2439,182 @@ test('SAST T047 binds promotion evidence and latest lifecycle state before queue
   assert.match(threatModel, /Lifecycle fork, stale replay, or partial scanner-set selection/);
   assert.match(qualityGates, /100% T047 evidence invariant/);
   assert.match(qualityGates, /100% T047 planning invariant/);
+});
+
+test('SAST T048 binds deterministic cohorts and exact observation authority before queueing', () => {
+  const shared = readNormalizedText(files.sharedSastRuleBundleCanary);
+  const sharedTest = readNormalizedText(files.sharedSastRuleBundleCanaryTest);
+  const sharedRuntime = readNormalizedText(files.sharedSastRuntime);
+  const sharedPlanning = readNormalizedText(files.sharedSastPlanning);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiRuleBundleCanaryService);
+  const store = readNormalizedText(files.apiRuleBundleCanaryStore);
+  const gate = readNormalizedText(files.apiRuleBundleCanaryGate);
+  const keyProvider = readNormalizedText(files.apiRuleBundleCanaryKeyProvider);
+  const observationSource = readNormalizedText(
+    files.apiRuleBundleCanaryObservationSource
+  );
+  const authorityRouter = readNormalizedText(
+    files.apiRuleBundleLifecycleAuthorityRouter
+  );
+  const moduleSource = readNormalizedText(files.apiRuleGovernanceModule);
+  const serviceTest = readNormalizedText(files.apiRuleBundleCanaryServiceTest);
+  const persistenceTest = readNormalizedText(
+    files.apiRuleBundleCanaryPersistenceTest
+  );
+  const planner = readNormalizedText(files.apiSastPlanner);
+  const plannerTest = readNormalizedText(files.apiSastPlannerTest);
+  const queueStore = readNormalizedText(files.apiPrismaSastQueueAdmissionStore);
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(files.apiSastRuleBundleCanaryMigration);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  for (const version of [
+    'sast-rule-bundle-canary-rollout-v1',
+    'sast-rule-bundle-canary-eligibility-v1',
+    'sast-rule-bundle-canary-membership-v1',
+    'sast-rule-bundle-canary-assignment-v1',
+    'sast-rule-bundle-canary-scan-observation-v1',
+    'sast-rule-bundle-canary-step-decision-v1',
+    'sast-rule-bundle-canary-observation-receipt-v1'
+  ]) {
+    assert.match(shared, new RegExp(version));
+  }
+  for (const step of [
+    'INTERNAL_CORPUS',
+    'INTERNAL_REPOSITORIES',
+    'PERCENT_1',
+    'PERCENT_5',
+    'PERCENT_25',
+    'PERCENT_100'
+  ]) {
+    assert.match(shared, new RegExp(step));
+  }
+  assert.match(shared, /bucketCardinality: 10_000/);
+  assert.match(shared, /minimumStandardCompletedScansPerArm: 200/);
+  assert.match(shared, /minimumExpandedCompletedScansPerArm: 1_000/);
+  assert.match(shared, /maximumFalsePositiveIncreaseBasisPoints: 200/);
+  assert.match(shared, /maximumScannerFailureRateBasisPoints: 200/);
+  assert.match(shared, /maximumP95LatencyIncreaseBasisPoints: 2_000/);
+  assert.match(shared, /maximumCriticalHighVolumeIncreaseBasisPoints: 2_000/);
+  assert.match(shared, /COVERAGE_INCOMPLETE/);
+  assert.match(shared, /relativeRateIncreaseAtMost\(/);
+  assert.match(shared, /frame\(input\.tenantId\)/);
+  assert.match(shared, /frame\(input\.repositoryBindingId\)/);
+  assert.match(shared, /frame\(input\.profileId\)/);
+  assert.match(shared, /frame\(input\.rolloutId\)/);
+  assert.match(shared, /CANARY_PAUSE_REASONS/);
+  assert.match(sharedTest, /stable tenant-safe membership/);
+  assert.match(sharedTest, /1,000 scans per arm and 48 hours/);
+  assert.match(sharedTest, /all six passed steps in order/);
+  assert.match(sharedRuntime, /CanaryQualifiedScannerSetDescriptor/);
+  assert.match(sharedPlanning, /sast-canonical-scan-key-v4/);
+  assert.match(sharedIndex, /sast-rule-bundle-canary/);
+
+  assert.match(service, /createHmac\('sha256'/);
+  assert.match(service, /keyMaterial\?\.fill\(0\)/);
+  assert.match(service, /registerEligibilityDecision/);
+  assert.match(service, /recordScanObservation/);
+  assert.match(service, /evaluateStep/);
+  assert.match(service, /authorizeLifecycleTransition/);
+  assert.doesNotMatch(service, /observationIds/);
+  assert.match(service, /const windowEndedAt = evaluatedAt/);
+  assert.match(service, /windowStartedAt: current\.windowStartedAt/);
+  assert.match(store, /Prisma\.TransactionIsolationLevel\.Serializable/);
+  assert.match(store, /candidateManifestId_profileId/);
+  assert.match(gate, /CANARY_ASSIGNMENT_STALE/);
+  assert.match(keyProvider, /MINIMUM_HMAC_KEY_BYTES = 32/);
+  assert.match(keyProvider, /SAST_CANARY_COHORT_HMAC_KEY_BASE64/);
+  assert.match(keyProvider, /createHash\('sha256'\)\.update\(keyMaterial\)/);
+  assert.match(observationSource, /UnavailableSastRuleBundleCanaryObservationSource/);
+  assert.doesNotMatch(observationSource, /cohortRole|repositorySizeBucket/);
+  assert.match(authorityRouter, /input\.authority !== 'CANARY_OBSERVATION'/);
+  assert.match(moduleSource, /SastRuleBundleCanaryService/);
+  assert.match(moduleSource, /SastRuleBundleLifecycleAuthorityRouter/);
+  assert.match(serviceTest, /passes all six ordered steps/);
+  assert.match(serviceTest, /insufficient duration\/sample evidence pending/);
+  assert.match(serviceTest, /caller-selected-observations/);
+  assert.match(serviceTest, /incomplete coverage/);
+  assert.match(persistenceTest, /recomputes every observation aggregate/);
+  assert.match(persistenceTest, /canonical v4 stable cohort identity/);
+
+  const compatibilityGate = planner.indexOf(
+    'ruleBundleCompatibilityGate.verifyScannerSet'
+  );
+  const lifecycleGate = planner.indexOf(
+    'ruleBundleLifecycleGate.verifyScannerSet'
+  );
+  const canaryGate = planner.indexOf('ruleBundleCanaryGate.verifyScannerSet');
+  const policyGate = planner.indexOf('tenantRulePolicyGate.resolve');
+  const canonicalKey = planner.indexOf(
+    'buildSastCanonicalScanKeyPreimage',
+    policyGate
+  );
+  assert.ok(compatibilityGate >= 0);
+  assert.ok(lifecycleGate > compatibilityGate);
+  assert.ok(canaryGate > lifecycleGate);
+  assert.ok(policyGate > canaryGate);
+  assert.ok(canonicalKey > policyGate);
+  assert.match(plannerTest, /fails closed after lifecycle and before tenant policy for canary/);
+  assert.match(queueStore, /assertCurrentRuleBundleCanaryAssignments/);
+  assert.match(queueStore, /FOR UPDATE OF head/);
+
+  const canonicalPreimage = sharedPlanning
+    .split('export function buildSastCanonicalScanKeyPreimage')[1]
+    .split('function rejectedProfileSelection')[0];
+  assert.match(canonicalPreimage, /rolloutId/);
+  assert.match(canonicalPreimage, /membershipId/);
+  assert.match(canonicalPreimage, /bucketBasisPoints/);
+  assert.doesNotMatch(canonicalPreimage, /assignmentReceiptId/);
+  assert.doesNotMatch(canonicalPreimage, /stepHeadDecisionId/);
+
+  for (const model of [
+    'SastRuleBundleCanaryRollout',
+    'SastRuleBundleCanaryRolloutStep',
+    'SastRuleBundleCanaryEligibilityDecision',
+    'SastRuleBundleCanaryMembership',
+    'SastRuleBundleCanaryAssignmentReceipt',
+    'SastRuleBundleCanaryScanObservation',
+    'SastRuleBundleCanaryStepDecision',
+    'SastRuleBundleCanaryStepDecisionReason',
+    'SastRuleBundleCanaryStepDecisionObservation',
+    'SastRuleBundleCanaryRolloutHead',
+    'SastRuleBundleCanaryObservationReceipt',
+    'SastRuleBundleCanaryReceiptPassedStep'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(migration, new RegExp(`CREATE TABLE "${model}"`));
+  }
+  assert.match(migration, /SastRuleBundleCanaryRollout_candidate_profile_key/);
+  assert.match(migration, /derive_sast_rule_bundle_canary_bucket/);
+  assert.match(migration, /SastQueueReservation_canary_head/);
+  assert.match(migration, /T048 canonical scan-key v4 cutover/);
+  assert.match(migration, /coverage_failed := NEW\."candidateIncompleteCoverageCount" <> 0/);
+  assert.match(
+    migration,
+    /FROM public\."SastRuleBundleCanaryScanObservation" o\s+WHERE o\."rolloutId" = NEW\."rolloutId"/
+  );
+  assert.doesNotMatch(migration, /ON DELETE CASCADE/);
+  assert.doesNotMatch(migration, /"[A-Za-z0-9_]+"\s+JSONB\s+(?:NOT\s+)?NULL/i);
+
+  assert.match(tasks, /- \[x\] T048\b/);
+  assertT047QuickstartHandoff(quickstart);
+  assertT047PlanHandoff(plan);
+  assert.match(contract, /Deterministic canary cohort and observation gate v1/);
+  assert.match(dataModel, /### SastRuleBundleCanaryRollout and SastRuleBundleCanaryRolloutStep/);
+  assert.match(spec, /FR-056d/);
+  assert.match(ruleGovernance, /T048 Deterministic Canary and Observation Boundary/);
+  assert.match(threatModel, /Canary telemetry poisoning or omission/);
+  assert.match(qualityGates, /100% T048 step-gate invariant/);
+  assert.match(qualityGates, /caller cannot choose the cutoff or select\/omit observation/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

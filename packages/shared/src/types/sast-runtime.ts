@@ -6,6 +6,10 @@ import {
   isVerifiedSastRuleBundleLifecycleDescriptorValid,
   type VerifiedSastRuleBundleLifecycleDescriptor
 } from './sast-rule-promotion-lifecycle';
+import {
+  isVerifiedSastRuleBundleCanaryAssignmentDescriptorValid,
+  type VerifiedSastRuleBundleCanaryAssignmentDescriptor
+} from './sast-rule-bundle-canary';
 
 export const PRODUCTION_SAST_RUNTIME_FEATURE_ID = '006-production-sast-runtime-design';
 
@@ -448,6 +452,16 @@ export interface PromotionVerifiedScannerSetDescriptor
   ruleBundles: PromotionVerifiedRuleBundleDescriptor[];
 }
 
+export interface CanaryQualifiedRuleBundleDescriptor
+  extends PromotionVerifiedRuleBundleDescriptor {
+  canaryAssignment: VerifiedSastRuleBundleCanaryAssignmentDescriptor | null;
+}
+
+export interface CanaryQualifiedScannerSetDescriptor
+  extends Omit<PromotionVerifiedScannerSetDescriptor, 'ruleBundles'> {
+  ruleBundles: CanaryQualifiedRuleBundleDescriptor[];
+}
+
 export interface SastRepositoryState {
   repositoryBindingId: string;
   fixedCommitSha: string;
@@ -468,7 +482,7 @@ export interface SastScanPlan {
   policyVersion: string;
   tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
   repositoryState: SastRepositoryState;
-  scannerSet: PromotionVerifiedScannerSetDescriptor;
+  scannerSet: CanaryQualifiedScannerSetDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
   resultIngressRef: string;
   evidenceOutputRef: string;
@@ -998,6 +1012,29 @@ export function isPromotionVerifiedScannerSetDescriptorValid(
   );
 }
 
+export function isCanaryQualifiedRuleBundleDescriptorValid(
+  bundle: CanaryQualifiedRuleBundleDescriptor
+): boolean {
+  return (
+    isPromotionVerifiedRuleBundleDescriptorValid(bundle) &&
+    (bundle.lifecycle.lifecycleState === 'ACTIVE'
+      ? bundle.canaryAssignment === null
+      : bundle.lifecycle.lifecycleState === 'CANARY' &&
+        isVerifiedSastRuleBundleCanaryAssignmentDescriptorValid(
+          bundle.canaryAssignment
+        ))
+  );
+}
+
+export function isCanaryQualifiedScannerSetDescriptorValid(
+  scannerSet: CanaryQualifiedScannerSetDescriptor
+): boolean {
+  return (
+    isPromotionVerifiedScannerSetDescriptorValid(scannerSet) &&
+    scannerSet.ruleBundles.every(isCanaryQualifiedRuleBundleDescriptorValid)
+  );
+}
+
 export function isSastScanProfileValid(profile: SastScanProfile): boolean {
   if (
     !profile ||
@@ -1110,7 +1147,7 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
       plan.repositoryState.shallowFetchPreferred === true &&
       plan.repositoryState.submodulesEnabled === false &&
       plan.repositoryState.lfsObjectsFetched === false &&
-      isPromotionVerifiedScannerSetDescriptorValid(plan.scannerSet) &&
+      isCanaryQualifiedScannerSetDescriptorValid(plan.scannerSet) &&
       (plan.isolationClass === 'HARDENED' || plan.isolationClass === 'RESTRICTED') &&
       isNonBlank(plan.resultIngressRef) &&
       isNonBlank(plan.evidenceOutputRef) &&

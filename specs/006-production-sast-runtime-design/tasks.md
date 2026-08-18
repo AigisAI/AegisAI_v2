@@ -79,7 +79,7 @@
 - [x] T045 Implement signed immutable bundle manifests and compatibility validation
 - [x] T046 Implement semantic rule identity and non-executable tenant policy metadata
 - [x] T047 Implement promotion evidence, approvals, and state transitions
-- [ ] T048 Implement deterministic tenant-safe canary cohorts and observation gates
+- [x] T048 Implement deterministic tenant-safe canary cohorts and observation gates
 - [ ] T049 Implement scanner/bundle/rule/profile/tenant/global kill switches
 - [ ] T050 Implement last-known-good rollback without historical mutation
 

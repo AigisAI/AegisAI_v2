@@ -101,17 +101,30 @@ test('canonical scan identity includes fixed source and every executable artifac
   }
   assert.match(
     contract,
-    /SAST_CANONICAL_SCAN_KEY_VERSION\s*=\s*\n\s*'sast-canonical-scan-key-v3'/
+    /SAST_CANONICAL_SCAN_KEY_VERSION\s*=\s*\n\s*'sast-canonical-scan-key-v4'/
   );
   assert.match(keyFunction, /version: SAST_CANONICAL_SCAN_KEY_VERSION/);
+  assert.match(keyFunction, /canaryAssignment/);
+  assert.match(keyFunction, /rolloutDigest/);
+  assert.match(keyFunction, /membershipDigest/);
+  assert.match(keyFunction, /bucketBasisPoints/);
+  assert.match(keyFunction, /candidateAssigned/);
   assert.doesNotMatch(keyFunction, /selectionReceipt(?:Id|Digest)/);
+  assert.doesNotMatch(keyFunction, /assignmentReceipt(?:Id|Digest)/);
+  assert.doesNotMatch(keyFunction, /stepHeadDecision(?:Id|Digest)/);
   for (const reason of [
     'RULE_BUNDLE_PROMOTION_EVIDENCE_UNVERIFIED',
     'RULE_BUNDLE_PROMOTION_APPROVAL_INVALID',
     'RULE_BUNDLE_LIFECYCLE_NOT_SELECTABLE',
     'RULE_BUNDLE_LIFECYCLE_STALE',
     'RULE_BUNDLE_LIFECYCLE_AUTHORITY_UNAVAILABLE',
-    'RULE_BUNDLE_LIFECYCLE_STORE_UNAVAILABLE'
+    'RULE_BUNDLE_LIFECYCLE_STORE_UNAVAILABLE',
+    'RULE_BUNDLE_CANARY_ROLLOUT_UNAVAILABLE',
+    'RULE_BUNDLE_CANARY_ELIGIBILITY_UNAVAILABLE',
+    'RULE_BUNDLE_CANARY_ASSIGNMENT_INELIGIBLE',
+    'RULE_BUNDLE_CANARY_ASSIGNMENT_STALE',
+    'RULE_BUNDLE_CANARY_KEY_UNAVAILABLE',
+    'RULE_BUNDLE_CANARY_STORE_UNAVAILABLE'
   ]) {
     assert.match(contract, new RegExp(`'${reason}'`));
   }
