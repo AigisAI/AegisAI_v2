@@ -9,10 +9,14 @@ import { configureApp } from '../../src/bootstrap/configure-app';
 import { ControlPlaneScanRequestStore } from '../../src/control-plane/control-plane-scan-request.store';
 import { SastQueueAdmissionStore } from '../../src/control-plane/sast-queue-admission.store';
 import { SastRuleBundleCompatibilityGate } from '../../src/rule-governance/sast-rule-bundle-compatibility.gate';
+import { SastRuleBundleLifecycleGate } from '../../src/rule-governance/sast-rule-bundle-lifecycle.gate';
 import { SastTenantRulePolicyGate } from '../../src/rule-governance/sast-tenant-rule-policy.gate';
 import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
 import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
-import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
+import {
+  verifiedRuleBundleLifecycle,
+  verifiedTenantRulePolicy
+} from '../support/sast-scan-plan-fixtures';
 import {
   TestGithubWebhookSignatureGuard,
   TestInternalServiceGuard,
@@ -225,6 +229,22 @@ describe("Control Plane skeleton (e2e)", () => {
             ...structuredClone(bundle),
             compatibilityReceiptId: `sast-rule-bundle-compatibility://${bundle.manifestDigest.slice('sha256:'.length)}`,
             compatibilityReceiptDigest: bundle.verificationDigest
+          }))
+        })
+      })
+      .overrideProvider(SastRuleBundleLifecycleGate)
+      .useValue({
+        verifyScannerSet: async (input: {
+          scannerSet: Awaited<
+            ReturnType<SastRuleBundleCompatibilityGate['verifyScannerSet']>
+          >;
+        }) => ({
+          ...structuredClone(input.scannerSet),
+          ruleBundles: input.scannerSet.ruleBundles.map((bundle) => ({
+            ...structuredClone(bundle),
+            lifecycle: verifiedRuleBundleLifecycle(
+              bundle.scanner.toLowerCase()
+            )
           }))
         })
       })

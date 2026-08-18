@@ -6,8 +6,8 @@ import {
   type SastScanLane,
   type SastScanPlan,
   type SastScanProfile,
+  type PromotionVerifiedScannerSetDescriptor,
   type ScannerSetDescriptor,
-  type VerifiedScannerSetDescriptor
 } from './sast-runtime';
 import type { VerifiedSastTenantRulePolicyDescriptor } from './sast-rule-semantic-policy';
 
@@ -15,7 +15,7 @@ export const SAST_PLANNING_STATES = ['ADMITTED', 'DEFERRED', 'REJECTED'] as cons
 export type SastPlanningState = (typeof SAST_PLANNING_STATES)[number];
 
 export const SAST_CANONICAL_SCAN_KEY_VERSION =
-  'sast-canonical-scan-key-v2' as const;
+  'sast-canonical-scan-key-v3' as const;
 
 export const SAST_COVERAGE_CLAIMS = [
   'LANGUAGE_SAST_COMPLETE',
@@ -48,6 +48,12 @@ export const SAST_PLANNING_REASON_CODES = [
   'RULE_BUNDLE_MANIFEST_MISMATCH',
   'RULE_BUNDLE_COMPATIBILITY_UNSUPPORTED',
   'RULE_BUNDLE_VERIFICATION_UNAVAILABLE',
+  'RULE_BUNDLE_PROMOTION_EVIDENCE_UNVERIFIED',
+  'RULE_BUNDLE_PROMOTION_APPROVAL_INVALID',
+  'RULE_BUNDLE_LIFECYCLE_NOT_SELECTABLE',
+  'RULE_BUNDLE_LIFECYCLE_STALE',
+  'RULE_BUNDLE_LIFECYCLE_AUTHORITY_UNAVAILABLE',
+  'RULE_BUNDLE_LIFECYCLE_STORE_UNAVAILABLE',
   'RULE_METADATA_UNVERIFIED',
   'RULE_METADATA_MISMATCH',
   'TENANT_RULE_POLICY_INVALID',
@@ -165,7 +171,7 @@ export interface SastCanonicalScanKeyInput {
   policyVersion: string;
   profile: SastScanProfile;
   profileDigest: `sha256:${string}`;
-  scannerSet: VerifiedScannerSetDescriptor;
+  scannerSet: PromotionVerifiedScannerSetDescriptor;
   tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
 }
@@ -559,7 +565,17 @@ export function buildSastCanonicalScanKeyPreimage(
       digest: bundle.digest,
       manifestDigest: bundle.manifestDigest,
       verificationDigest: bundle.verificationDigest,
-      compatibilityReceiptDigest: bundle.compatibilityReceiptDigest
+      compatibilityReceiptDigest: bundle.compatibilityReceiptDigest,
+      lifecycle: {
+        lifecycleState: bundle.lifecycle.lifecycleState,
+        lifecycleSequence: bundle.lifecycle.lifecycleSequence,
+        lifecycleTransitionId: bundle.lifecycle.lifecycleTransitionId,
+        lifecycleTransitionDigest:
+          bundle.lifecycle.lifecycleTransitionDigest,
+        promotionEvidenceId: bundle.lifecycle.promotionEvidenceId,
+        promotionEvidenceDigest: bundle.lifecycle.promotionEvidenceDigest,
+        approvalSetDigest: bundle.lifecycle.approvalSetDigest
+      }
     }))
     .sort((left, right) =>
       compareStrings(

@@ -4,6 +4,7 @@ import {
   SAST_SCAN_PROFILES,
   type SastProfileId,
   type SastScanPlan,
+  type VerifiedSastRuleBundleLifecycleDescriptor,
   type VerifiedSastTenantRulePolicyDescriptor
 } from '@aegisai/shared';
 
@@ -129,6 +130,29 @@ export function verifiedTenantRulePolicy(
   };
 }
 
+export function verifiedRuleBundleLifecycle(
+  seed: string,
+  lifecycleState: 'CANARY' | 'ACTIVE' = 'ACTIVE'
+): VerifiedSastRuleBundleLifecycleDescriptor {
+  const transitionDigest = fixtureDigest(`${seed}-lifecycle-transition`);
+  const evidenceDigest = fixtureDigest(`${seed}-promotion-evidence`);
+  const selectionDigest = fixtureDigest(`${seed}-lifecycle-selection`);
+  return {
+    lifecycleState,
+    lifecycleSequence: lifecycleState === 'CANARY' ? 2 : 3,
+    lifecycleTransitionId:
+      `sast-rule-bundle-lifecycle-transition://${transitionDigest.slice('sha256:'.length)}`,
+    lifecycleTransitionDigest: transitionDigest,
+    promotionEvidenceId:
+      `sast-rule-bundle-promotion-evidence://${evidenceDigest.slice('sha256:'.length)}`,
+    promotionEvidenceDigest: evidenceDigest,
+    approvalSetDigest: fixtureDigest(`${seed}-approval-set`),
+    selectionReceiptId:
+      `sast-rule-bundle-lifecycle-selection://${selectionDigest.slice('sha256:'.length)}`,
+    selectionReceiptDigest: selectionDigest
+  };
+}
+
 function scannerDescriptor(
   scanner: 'OPENGREP' | 'TRIVY' | 'SYFT',
   version: string,
@@ -170,6 +194,7 @@ function ruleBundle(
     rollbackTargetDigest: fixtureDigest(`${seed}-rollback`),
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${fixtureDigest(`${seed}-receipt`).slice('sha256:'.length)}`,
     compatibilityReceiptDigest: fixtureDigest(`${seed}-receipt`),
+    lifecycle: verifiedRuleBundleLifecycle(seed),
     scanner,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,

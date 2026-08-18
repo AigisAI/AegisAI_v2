@@ -60,7 +60,7 @@ Start from its
 | --- | --- |
 | Production SAST runtime | Active 006 detailed-design and implementation milestone |
 | SAST scanner set | OpenGrep SAST, Trivy dependency/secret/IaC, Syft SBOM with explicit authority |
-| Rule governance | Immutable signed bundles, quantitative promotion, canary, kill switch, and rollback |
+| Rule governance | T047 immutable promotion evidence/approvals/lifecycle selection complete; T048 tenant-safe canary observation next |
 | Deployment operations | Completed provider-neutral contract baseline in [`005-production-deployment-operations`](./specs/005-production-deployment-operations/) |
 | Runtime infrastructure | Completed baseline in [`004-production-runtime-infrastructure`](./specs/004-production-runtime-infrastructure/) |
 | Production AI inference | Completed baseline in [`003-production-ai-inference-runtime`](./specs/003-production-ai-inference-runtime/) |

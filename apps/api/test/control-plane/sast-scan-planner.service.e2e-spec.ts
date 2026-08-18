@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
-import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
+import {
+  verifiedRuleBundleLifecycle,
+  verifiedTenantRulePolicy
+} from '../support/sast-scan-plan-fixtures';
 
 import { ConflictException } from '@nestjs/common';
 import {
@@ -14,6 +17,7 @@ import {
   type SastQueueUsageSnapshot,
   type SastScanPlanningInput,
   type SastScanPlan,
+  type PromotionVerifiedScannerSetDescriptor,
   type ScannerSetDescriptor,
   type VerifiedScannerSetDescriptor,
   type TrustedSastRepositoryMetadata
@@ -28,6 +32,10 @@ import {
   SastRuleBundleCompatibilityGate,
   SastRuleBundleCompatibilityGateError
 } from '../../src/rule-governance/sast-rule-bundle-compatibility.gate';
+import {
+  SastRuleBundleLifecycleGate,
+  SastRuleBundleLifecycleGateError
+} from '../../src/rule-governance/sast-rule-bundle-lifecycle.gate';
 import {
   SastTenantRulePolicyGate,
   SastTenantRulePolicyGateError,
@@ -114,17 +122,19 @@ const verifiedRuleBundle = (
 ) => ({
   ...ruleBundle(scanner, character),
   compatibilityReceiptId: `sast-rule-bundle-compatibility://${character.repeat(64)}`,
-  compatibilityReceiptDigest: digest(character)
+  compatibilityReceiptDigest: digest(character),
+  lifecycle: verifiedRuleBundleLifecycle(`${scanner.toLowerCase()}-${character}`)
 });
 
 const buildVerifiedScannerSet = (
   scannerSet: ScannerSetDescriptor = buildScannerSet()
-): VerifiedScannerSetDescriptor => ({
+): PromotionVerifiedScannerSetDescriptor => ({
   ...scannerSet,
   ruleBundles: scannerSet.ruleBundles.map((bundle) => ({
     ...bundle,
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${bundle.digest.slice('sha256:'.length)}`,
-    compatibilityReceiptDigest: bundle.manifestDigest
+    compatibilityReceiptDigest: bundle.manifestDigest,
+    lifecycle: verifiedRuleBundleLifecycle(bundle.scanner.toLowerCase())
   }))
 });
 
@@ -133,6 +143,20 @@ class AcceptingRuleBundleCompatibilityGate extends SastRuleBundleCompatibilityGa
     scannerSet: Readonly<ScannerSetDescriptor>;
   }): Promise<VerifiedScannerSetDescriptor> {
     return buildVerifiedScannerSet(structuredClone(input.scannerSet));
+  }
+}
+
+class AcceptingRuleBundleLifecycleGate extends SastRuleBundleLifecycleGate {
+  async verifyScannerSet(input: {
+    scannerSet: Readonly<VerifiedScannerSetDescriptor>;
+  }): Promise<PromotionVerifiedScannerSetDescriptor> {
+    return {
+      ...structuredClone(input.scannerSet),
+      ruleBundles: input.scannerSet.ruleBundles.map((bundle) => ({
+        ...structuredClone(bundle),
+        lifecycle: verifiedRuleBundleLifecycle(bundle.scanner.toLowerCase())
+      }))
+    };
   }
 }
 
@@ -320,7 +344,9 @@ async function createHarness(
   tenantRulePolicyGate: SastTenantRulePolicyGate =
     new AcceptingTenantRulePolicyGate(),
   policyEvaluationClock: SastPolicyEvaluationClock =
-    fixedPolicyEvaluationClock()
+    fixedPolicyEvaluationClock(),
+  ruleBundleLifecycleGate: SastRuleBundleLifecycleGate =
+    new AcceptingRuleBundleLifecycleGate()
 ) {
   const scanRequestStore = new InMemoryControlPlaneScanRequestStore();
   const queueStore = new InMemorySastQueueAdmissionStore();
@@ -368,11 +394,13 @@ async function createHarness(
     queueAdmission,
     ruleBundleCompatibilityGate,
     tenantRulePolicyGate,
+    ruleBundleLifecycleGate,
     policyEvaluationClock,
     planner: new SastScanPlannerService(
       controlPlane,
       queueAdmission,
       ruleBundleCompatibilityGate,
+      ruleBundleLifecycleGate,
       tenantRulePolicyGate,
       policyEvaluationClock
     ),
@@ -447,6 +475,66 @@ describe('SastScanPlannerService', () => {
   );
 
   it.each([
+    [
+      'PROMOTION_EVIDENCE_UNVERIFIED',
+      'RULE_BUNDLE_PROMOTION_EVIDENCE_UNVERIFIED'
+    ],
+    [
+      'PROMOTION_APPROVAL_INVALID',
+      'RULE_BUNDLE_PROMOTION_APPROVAL_INVALID'
+    ],
+    [
+      'LIFECYCLE_STATE_NOT_SELECTABLE',
+      'RULE_BUNDLE_LIFECYCLE_NOT_SELECTABLE'
+    ],
+    ['LIFECYCLE_STATE_STALE', 'RULE_BUNDLE_LIFECYCLE_STALE'],
+    [
+      'LIFECYCLE_AUTHORITY_UNAVAILABLE',
+      'RULE_BUNDLE_LIFECYCLE_AUTHORITY_UNAVAILABLE'
+    ],
+    [
+      'LIFECYCLE_STORE_UNAVAILABLE',
+      'RULE_BUNDLE_LIFECYCLE_STORE_UNAVAILABLE'
+    ]
+  ] as const)(
+    'fails closed before tenant policy and queue reservation for lifecycle %s',
+    async (gateReason, planningReason) => {
+      const lifecycleGate = new (class extends SastRuleBundleLifecycleGate {
+        async verifyScannerSet(): Promise<never> {
+          throw new SastRuleBundleLifecycleGateError(gateReason);
+        }
+      })();
+      const tenantGate = new AcceptingTenantRulePolicyGate();
+      const tenantResolve = jest.spyOn(tenantGate, 'resolve');
+      const harness = await createHarness(
+        'FAST',
+        new AcceptingRuleBundleCompatibilityGate(),
+        tenantGate,
+        fixedPolicyEvaluationClock(),
+        lifecycleGate
+      );
+      const reserve = jest.spyOn(
+        harness.queueAdmission,
+        'reserveWithContext'
+      );
+
+      const result = await harness.planner.plan(
+        buildPlanningInput(
+          harness.repositoryBindingId,
+          harness.scanRequest.id
+        )
+      );
+
+      expect(result.planning).toMatchObject({
+        state: 'REJECTED',
+        reasonCodes: [planningReason]
+      });
+      expect(tenantResolve).not.toHaveBeenCalled();
+      expect(reserve).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
     ['RULE_METADATA_UNVERIFIED', 'RULE_METADATA_UNVERIFIED'],
     ['RULE_METADATA_MISMATCH', 'RULE_METADATA_MISMATCH'],
     ['TENANT_POLICY_INVALID', 'TENANT_RULE_POLICY_INVALID'],
@@ -507,6 +595,13 @@ describe('SastScanPlannerService', () => {
       expect(gate.lastInput?.evaluatedAt).toBe('2026-08-14T06:20:30.123Z');
       expect(gate.lastInput?.evaluatedAt).not.toBe(
         new Date(requestedAt).toISOString()
+      );
+      expect(gate.lastInput?.scannerSet.ruleBundles).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            lifecycle: expect.objectContaining({ lifecycleState: 'ACTIVE' })
+          })
+        ])
       );
     }
   );
@@ -618,6 +713,7 @@ describe('SastScanPlannerService', () => {
       restartedControlPlane,
       restartedQueue,
       harness.ruleBundleCompatibilityGate,
+      harness.ruleBundleLifecycleGate,
       harness.tenantRulePolicyGate,
       harness.policyEvaluationClock
     );
@@ -861,7 +957,7 @@ describe('SastScanPlannerService', () => {
       isolationClass: baselineResult.plan!.isolationClass
     };
     const keyFor = (
-      scannerSet: VerifiedScannerSetDescriptor,
+      scannerSet: PromotionVerifiedScannerSetDescriptor,
       inventoryDigest = baseCanonicalInput.inventoryDigest,
       attestationRef = baseCanonicalInput.attestationRef
     ): `sha256:${string}` =>
@@ -877,7 +973,7 @@ describe('SastScanPlannerService', () => {
         )
         .digest('hex')}`;
     expect(keyFor(baselineResult.plan!.scannerSet)).toBe(baseline);
-    const variants: VerifiedScannerSetDescriptor[] = [
+    const variants: PromotionVerifiedScannerSetDescriptor[] = [
       { ...baselineResult.plan!.scannerSet, scannerSetDigest: digest('2') },
       {
         ...baselineResult.plan!.scannerSet,
@@ -885,6 +981,23 @@ describe('SastScanPlannerService', () => {
           verifiedRuleBundle('OPENGREP', '3'),
           verifiedRuleBundle('TRIVY', '8')
         ]
+      },
+      {
+        ...baselineResult.plan!.scannerSet,
+        ruleBundles: baselineResult.plan!.scannerSet.ruleBundles.map(
+          (bundle, index) =>
+            index === 0
+              ? {
+                  ...bundle,
+                  lifecycle: {
+                    ...bundle.lifecycle,
+                    lifecycleTransitionId:
+                      `sast-rule-bundle-lifecycle-transition://${'a'.repeat(64)}`,
+                    lifecycleTransitionDigest: digest('a')
+                  }
+                }
+              : bundle
+        )
       },
       {
         ...baselineResult.plan!.scannerSet,
@@ -910,6 +1023,25 @@ describe('SastScanPlannerService', () => {
     const keys = variants.map((scannerSet) => keyFor(scannerSet));
     expect(keys.every((key) => key !== baseline)).toBe(true);
     expect(new Set(keys).size).toBe(keys.length);
+
+    const receiptOnlyScannerSet: PromotionVerifiedScannerSetDescriptor = {
+      ...baselineResult.plan!.scannerSet,
+      ruleBundles: baselineResult.plan!.scannerSet.ruleBundles.map(
+        (bundle, index) =>
+          index === 0
+            ? {
+                ...bundle,
+                lifecycle: {
+                  ...bundle.lifecycle,
+                  selectionReceiptId:
+                    `sast-rule-bundle-lifecycle-selection://${'b'.repeat(64)}`,
+                  selectionReceiptDigest: digest('b')
+                }
+              }
+            : bundle
+      )
+    };
+    expect(keyFor(receiptOnlyScannerSet)).toBe(baseline);
 
     const inventoryKey = keyFor(
       baselineResult.plan!.scannerSet,

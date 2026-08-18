@@ -31,7 +31,7 @@ import {
 } from '../../src/rule-governance/sast-rule-bundle-supply-chain.authority';
 
 describe('SastRuleBundleManifestService T045 gate', () => {
-  it('registers trusted immutable manifests and binds exact receipts into a valid plan descriptor', async () => {
+  it('registers trusted immutable manifests while lifecycle verification remains mandatory for plans', async () => {
     const store = new InMemoryManifestStore();
     const service = new SastRuleBundleManifestService(
       store,
@@ -100,7 +100,7 @@ describe('SastRuleBundleManifestService T045 gate', () => {
           submodulesEnabled: false,
           lfsObjectsFetched: false
         },
-        scannerSet: verifiedScannerSet,
+        scannerSet: verifiedScannerSet as never,
         isolationClass: 'HARDENED',
         resultIngressRef: 'result-ingress://tenant-1/scan-1',
         evidenceOutputRef: 'evidence-output://tenant-1/scan-1',
@@ -108,7 +108,7 @@ describe('SastRuleBundleManifestService T045 gate', () => {
         forbiddenCapabilities: [...SAST_FORBIDDEN_CAPABILITIES],
         createdAt: '2026-08-13T11:05:00.000Z'
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('fails closed without creating a receipt for projection drift or unsupported compatibility', async () => {

@@ -91,6 +91,7 @@ test('canonical scan identity includes fixed source and every executable artifac
     'imageDigest',
     'wrapperDigest',
     'ruleBundles',
+    'lifecycle',
     'vulnerabilityDatabaseDigest',
     'schemaBundleDigest',
     'normalizerBundleDigest',
@@ -100,9 +101,20 @@ test('canonical scan identity includes fixed source and every executable artifac
   }
   assert.match(
     contract,
-    /SAST_CANONICAL_SCAN_KEY_VERSION\s*=\s*\n\s*'sast-canonical-scan-key-v2'/
+    /SAST_CANONICAL_SCAN_KEY_VERSION\s*=\s*\n\s*'sast-canonical-scan-key-v3'/
   );
   assert.match(keyFunction, /version: SAST_CANONICAL_SCAN_KEY_VERSION/);
+  assert.doesNotMatch(keyFunction, /selectionReceipt(?:Id|Digest)/);
+  for (const reason of [
+    'RULE_BUNDLE_PROMOTION_EVIDENCE_UNVERIFIED',
+    'RULE_BUNDLE_PROMOTION_APPROVAL_INVALID',
+    'RULE_BUNDLE_LIFECYCLE_NOT_SELECTABLE',
+    'RULE_BUNDLE_LIFECYCLE_STALE',
+    'RULE_BUNDLE_LIFECYCLE_AUTHORITY_UNAVAILABLE',
+    'RULE_BUNDLE_LIFECYCLE_STORE_UNAVAILABLE'
+  ]) {
+    assert.match(contract, new RegExp(`'${reason}'`));
+  }
 });
 
 test('queue admission is lane-separated, quota-bounded, and tenant-fair', () => {

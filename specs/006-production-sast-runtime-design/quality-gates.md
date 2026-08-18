@@ -360,8 +360,33 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   identity/digest and enabled/disabled binding sets are committed to the canonical scan plan.
   Caller request time has zero authority over policy windows or receipt time; old/future request
   times still use the trusted service clock, while throwing or invalid clocks fail closed. The
-  canonical preimage is exactly `sast-canonical-scan-key-v2`, and migration rejects a cutover
-  until every prior non-terminal SAST plan and reservation has finished or been canceled.
+  the tenant-policy receipt remains committed to the current canonical preimage.
+- 100% T047 evidence invariant: candidate and distinct baseline rebind to exact T045 manifest,
+  supply-chain verification, bundle, profile, and rollback identities. All seven immutable corpus
+  references, minimum 200 positive/negative samples bound exactly to the golden denominator,
+  minimum 30 performance runs, exact corpus pass requirements, recall/precision,
+  false-positive/failure/relative-and-absolute-latency thresholds, and four zero-
+  tolerance event counts are enforced in both shared contracts and normalized database checks.
+  Failed, incomplete, future-dated, or drifted evidence creates no row.
+- 100% T047 approval/lifecycle invariant: automated evidence grants no approval; every approval
+  is human, candidate-author-separated, exact-evidence-bound, time-bounded, and unique by role and
+  approver. Every legal edge has Security Engineering approval; `ACTIVE` and `RETIRED` have an
+  additional Scan Platform or Security Operations approval. Sequence, previous digest, approval
+  set, and exact external-authority receipt are append-only and cannot fork or mutate.
+- 100% T047 planning invariant: after T045 compatibility and before T046 tenant policy, only the
+  latest `CANARY` or `ACTIVE` transition can create one immutable lifecycle selection receipt.
+  Suspended, rolled-back, retired, draft, validated, stale, cross-bundle, unavailable-store, or
+  invalid-clock state creates zero successful receipts and queue reservations. Exact replay must
+  recheck latest state; all bundle receipts use ordered manifest-row locks and one serializable
+  scanner-set transaction, so later-bundle failure and concurrent transition produce no partial
+  selection set. Queue reservation then locks the trigger-maintained latest head for every
+  manifest and revalidates the exact receipt, so a selection-to-admission suspension race cannot
+  enqueue stale work. The canonical preimage is exactly `sast-canonical-scan-key-v3`: it commits
+  stable lifecycle transition/evidence/approval fields and the compatibility receipt, but excludes
+  the evaluation-time-derived lifecycle selection receipt ID/digest. The immutable plan still
+  retains that receipt for audit and admission validation. Migration
+  rejects the cutover until every prior non-terminal v2 SAST plan and reservation has finished or
+  been canceled.
 
 ## Canary and Continuous Production Gates
 

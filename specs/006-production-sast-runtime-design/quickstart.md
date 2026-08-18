@@ -536,6 +536,29 @@ portion of Phase 6:
   display visibility. Deterministic finding severity and coverage alone derive enforcement,
   reasons, tickets, and blocks. The legacy `suggestedAction` shape and advisory/proof fields in
   exact waiver or suppression payloads fail closed before mutation.
+- T047 records one exact, content-free `sast-rule-bundle-promotion-evidence-v1` object for a
+  candidate and its distinct T045 baseline. The evidence must bind the verified manifest,
+  profile supported by both candidate and baseline, rollback target, immutable corpus/environment
+  references, denominator-bound sufficient sample counts, relative and absolute p95 gates, all
+  other quantitative gates, and zero security events. Automated evidence never grants approval.
+- Human approvals use `sast-rule-bundle-promotion-approval-v1`, bind the exact evidence and
+  candidate, reject the candidate author, and remain unique by role and approver. Every lifecycle
+  transition requires Security Engineering; `ACTIVE` and `RETIRED` also require an independent
+  Scan Platform or Security Operations approval.
+- `sast-rule-bundle-lifecycle-transition-v1` is an append-only, previous-digest-linked state
+  ledger. Only `DRAFT -> VALIDATED -> CANARY -> ACTIVE -> RETIRED`, `CANARY|ACTIVE -> SUSPENDED`,
+  and `SUSPENDED -> ROLLED_BACK` are legal. The exact canary-observation, emergency-suspension,
+  and rollback seams default unavailable until T048, T049, and T050 install their authorities.
+- Before tenant policy, planning revalidates the latest lifecycle snapshot and persists a
+  `sast-rule-bundle-lifecycle-selection-v1` receipt. Only latest `CANARY` or `ACTIVE` bundles are
+  selectable. All selected bundle receipts are committed atomically under ordered manifest-row
+  locks, so one invalid or concurrently changed bundle leaves no partial scanner-set receipt.
+  The immutable plan retains the lifecycle descriptor and receipt for audit. The stable state,
+  sequence, transition, evidence, and approval-set projection enters
+  `sast-canonical-scan-key-v3`, while the evaluation-time-derived receipt ID/digest is excluded so
+  exact retries remain idempotent. Queue reservation locks and revalidates a trigger-maintained
+  latest-transition head plus the receipt before insertion; the schema cutover refuses to proceed
+  while prior v2 SAST work is non-terminal.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -553,8 +576,10 @@ output proof is also complete. T045 signed immutable, content-free rule-bundle m
 trusted signature/provenance attestations, exact runtime compatibility receipts, and the
 pre-queue fail-closed planning gate are complete. T046 reusable semantic rule metadata,
 byte-exact signed-manifest bindings, monotonic non-executable tenant policy, immutable
-resolution receipts, and canonical-plan/queue gating are also complete; T047 promotion
-evidence, approvals, and lifecycle transitions are the next implementation task.
+resolution receipts, and canonical-plan/queue gating are also complete. T047 quantitative
+promotion evidence, independent approvals, append-only lifecycle transitions, latest-state
+selection receipts, and canonical v3 planning gates are complete; T048 deterministic
+tenant-safe canary cohorts and observation gates are the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

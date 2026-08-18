@@ -49,6 +49,21 @@ interface PersistedReservationRow {
   terminalStatus: string | null;
 }
 
+interface LockedRuleBundleLifecycleHeadRow {
+  manifestId: string;
+  manifestDigest: string;
+  bundleId: string;
+  bundleDigest: string;
+  transitionId: string;
+  transitionDigest: string;
+  sequence: number;
+  lifecycleState: string;
+  promotionEvidenceId: string;
+  promotionEvidenceDigest: string;
+  approvalSetDigest: string;
+  selectionReceiptExists: boolean;
+}
+
 class RetryableDispatchClaimConflict extends Error {}
 
 @Injectable()
@@ -82,6 +97,8 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       if (existing) {
         return { state: 'EXISTING', reservation: this.toReservationRecord(existing) };
       }
+
+      await this.assertCurrentRuleBundleLifecycleHeads(transaction, input.plan);
 
       const scanRequest = await transaction.scanRequest.findUnique({
         where: { id: input.scanRequestId }
@@ -706,6 +723,78 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       authoritative.activeForTenant === input.usage.activeForTenant &&
       authoritative.queuedForTenant === input.usage.queuedForTenant
     );
+  }
+
+  private async assertCurrentRuleBundleLifecycleHeads(
+    transaction: Prisma.TransactionClient,
+    plan: Readonly<SastScanPlan>
+  ): Promise<void> {
+    const bundles = [...plan.scannerSet.ruleBundles].sort((left, right) =>
+      left.manifestId.localeCompare(right.manifestId)
+    );
+
+    for (const bundle of bundles) {
+      const lifecycle = bundle.lifecycle;
+      const rows = await transaction.$queryRaw<
+        LockedRuleBundleLifecycleHeadRow[]
+      >`
+        SELECT
+          head."manifestId",
+          head."manifestDigest",
+          head."bundleId",
+          head."bundleDigest",
+          head."transitionId",
+          head."transitionDigest",
+          head."sequence",
+          head."lifecycleState",
+          head."promotionEvidenceId",
+          head."promotionEvidenceDigest",
+          head."approvalSetDigest",
+          EXISTS (
+            SELECT 1
+            FROM "SastRuleBundleLifecycleSelectionReceipt" receipt
+            WHERE receipt."id" = ${lifecycle.selectionReceiptId}
+              AND receipt."receiptDigest" = ${lifecycle.selectionReceiptDigest}
+              AND receipt."manifestId" = head."manifestId"
+              AND receipt."manifestDigest" = head."manifestDigest"
+              AND receipt."bundleId" = head."bundleId"
+              AND receipt."bundleDigest" = head."bundleDigest"
+              AND receipt."lifecycleState" = head."lifecycleState"
+              AND receipt."lifecycleSequence" = head."sequence"
+              AND receipt."transitionId" = head."transitionId"
+              AND receipt."transitionDigest" = head."transitionDigest"
+              AND receipt."promotionEvidenceId" = head."promotionEvidenceId"
+              AND receipt."promotionEvidenceDigest" = head."promotionEvidenceDigest"
+              AND receipt."approvalSetDigest" = head."approvalSetDigest"
+          ) AS "selectionReceiptExists"
+        FROM "SastRuleBundleLifecycleHead" head
+        WHERE head."manifestId" = ${bundle.manifestId}
+        FOR UPDATE OF head
+      `;
+      const head = rows[0];
+      if (
+        rows.length !== 1 ||
+        !head ||
+        head.manifestId !== bundle.manifestId ||
+        head.manifestDigest !== bundle.manifestDigest ||
+        head.bundleId !== bundle.bundleId ||
+        head.bundleDigest !== bundle.digest ||
+        (head.lifecycleState !== 'CANARY' &&
+          head.lifecycleState !== 'ACTIVE') ||
+        head.lifecycleState !== lifecycle.lifecycleState ||
+        head.sequence !== lifecycle.lifecycleSequence ||
+        head.transitionId !== lifecycle.lifecycleTransitionId ||
+        head.transitionDigest !== lifecycle.lifecycleTransitionDigest ||
+        head.promotionEvidenceId !== lifecycle.promotionEvidenceId ||
+        head.promotionEvidenceDigest !== lifecycle.promotionEvidenceDigest ||
+        head.approvalSetDigest !== lifecycle.approvalSetDigest ||
+        head.selectionReceiptExists !== true
+      ) {
+        throw new ConflictException(
+          'SAST rule-bundle lifecycle changed before queue admission.'
+        );
+      }
+    }
   }
 
   private matchesRepositoryUsage(
