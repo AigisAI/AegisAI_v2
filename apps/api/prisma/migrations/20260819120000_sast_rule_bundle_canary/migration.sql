@@ -1003,8 +1003,9 @@ BEGIN
      OR coverage_record."attemptId" IS DISTINCT FROM NEW."attemptId"
      OR coverage_record."state" IS NOT DISTINCT FROM 'PENDING'
      OR NEW."coverageComplete" IS DISTINCT FROM (coverage_record."state" = 'COMPLETE')
-     OR NEW."incompleteCoverageCount" IS DISTINCT FROM
+     OR NEW."incompleteCoverageCount" IS DISTINCT FROM (
         CASE WHEN coverage_record."state" = 'COMPLETE' THEN 0 ELSE 1 END
+     )
      OR coverage_record."decisionDigest" IS DISTINCT FROM NEW."coverageDecisionDigest"
      OR publication_record."coverageDecisionId" IS DISTINCT FROM NEW."coverageDecisionId"
      OR publication_record."tenantId" IS DISTINCT FROM NEW."tenantId"
@@ -1012,8 +1013,9 @@ BEGIN
      OR publication_record."scanRequestId" IS DISTINCT FROM NEW."scanRequestId"
      OR publication_record."attemptId" IS DISTINCT FROM NEW."attemptId"
      OR publication_record."decisionDigest" IS DISTINCT FROM NEW."publicationDecisionDigest"
-     OR NEW."publicationDenialCount" IS DISTINCT FROM
-        CASE WHEN publication_record."externalCommentAllowed" THEN 0 ELSE 1 END THEN
+     OR NEW."publicationDenialCount" IS DISTINCT FROM (
+        CASE WHEN publication_record."externalCommentAllowed" THEN 0 ELSE 1 END
+     ) THEN
     RAISE EXCEPTION 'SAST canary observation source is incomplete or stale';
   END IF;
 

@@ -228,6 +228,12 @@ describe('T048 rule-bundle canary persistence contracts', () => {
     expect(migration).toContain(
       'coverage_failed := NEW."candidateIncompleteCoverageCount" <> 0'
     );
+    expect(migration).toMatch(
+      /NEW\."incompleteCoverageCount" IS DISTINCT FROM \(\s+CASE WHEN coverage_record\."state" = 'COMPLETE' THEN 0 ELSE 1 END\s+\)/u
+    );
+    expect(migration).toMatch(
+      /NEW\."publicationDenialCount" IS DISTINCT FROM \(\s+CASE WHEN publication_record\."externalCommentAllowed" THEN 0 ELSE 1 END\s+\)/u
+    );
   });
 
   it('serializes rollout, assignment, observation, and decision writes with replay-only conflicts', () => {
