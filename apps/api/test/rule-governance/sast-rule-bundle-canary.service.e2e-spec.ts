@@ -65,6 +65,7 @@ import {
   type SastRuleBundleLifecycleLedgerSnapshot
 } from '../../src/rule-governance/sast-rule-bundle-lifecycle.store';
 import {
+  SastRuleBundleManifestPersistenceError,
   SastRuleBundleManifestStore,
   type PersistedVerifiedSastRuleBundle
 } from '../../src/rule-governance/sast-rule-bundle-manifest.store';
@@ -119,6 +120,36 @@ describe('SastRuleBundleCanaryService T048 gate', () => {
         else process.env[name] = value;
       }
     }
+  });
+
+  it('zeros loaded cohort key material when a verified-state lookup fails', async () => {
+    const candidate = scannerSetWithCanaries(['OPENGREP']).ruleBundles[0];
+    const rolloutInput = rolloutInputFor(candidate);
+    const rollout = requiredRollout(rolloutInput);
+    const keyProvider = new FixtureKeyProvider(rollout);
+    const manifestStore = new (class extends FixtureManifestStore {
+      override async findVerified(): Promise<never> {
+        throw new SastRuleBundleManifestPersistenceError('LEDGER_CORRUPT');
+      }
+    })([rollout]);
+    const service = new SastRuleBundleCanaryService(
+      new InMemoryCanaryStore(),
+      manifestStore,
+      new FixtureLifecycleStore([rollout]),
+      keyProvider,
+      new FixtureObservationSource(async () => {
+        throw new SastRuleBundleCanaryObservationSourceError('UNAVAILABLE');
+      }),
+      new MutableCanaryClock('2026-08-20T00:00:00.000Z')
+    );
+
+    await expect(service.registerRollout(rolloutInput)).rejects.toMatchObject({
+      reason: 'MANIFEST_UNVERIFIED'
+    });
+    expect(keyProvider.returnedBuffers).toHaveLength(1);
+    expect(
+      keyProvider.returnedBuffers[0]?.every((value) => value === 0)
+    ).toBe(true);
   });
 
   it('bypasses canary dependencies for ACTIVE bundles and keeps membership stable across assignment times', async () => {

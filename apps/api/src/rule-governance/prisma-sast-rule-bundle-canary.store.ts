@@ -91,21 +91,28 @@ export class PrismaSastRuleBundleCanaryStore extends SastRuleBundleCanaryStore {
     manifestId: string,
     profileId: string
   ): Promise<SastRuleBundleCanaryRolloutSnapshot | null> {
-    const row = await this.prisma.sastRuleBundleCanaryRollout.findUnique({
-      where: {
-        candidateManifestId_profileId: { candidateManifestId: manifestId, profileId }
-      }
+    return this.runSerializable(async (tx) => {
+      const row = await tx.sastRuleBundleCanaryRollout.findUnique({
+        where: {
+          candidateManifestId_profileId: {
+            candidateManifestId: manifestId,
+            profileId
+          }
+        }
+      });
+      return row ? this.snapshot(tx, row) : null;
     });
-    return row ? this.snapshot(row) : null;
   }
 
   async findRollout(
     rolloutId: string
   ): Promise<SastRuleBundleCanaryRolloutSnapshot | null> {
-    const row = await this.prisma.sastRuleBundleCanaryRollout.findUnique({
-      where: { id: rolloutId }
+    return this.runSerializable(async (tx) => {
+      const row = await tx.sastRuleBundleCanaryRollout.findUnique({
+        where: { id: rolloutId }
+      });
+      return row ? this.snapshot(tx, row) : null;
     });
-    return row ? this.snapshot(row) : null;
   }
 
   async registerEligibilityDecision(
@@ -490,21 +497,22 @@ export class PrismaSastRuleBundleCanaryStore extends SastRuleBundleCanaryStore {
   }
 
   private async snapshot(
+    tx: Prisma.TransactionClient,
     row: RolloutRow
   ): Promise<SastRuleBundleCanaryRolloutSnapshot> {
     const [steps, head, decisionRows, receiptRow] = await Promise.all([
-      this.prisma.sastRuleBundleCanaryRolloutStep.findMany({
+      tx.sastRuleBundleCanaryRolloutStep.findMany({
         where: { rolloutId: row.id },
         orderBy: { position: 'asc' }
       }),
-      this.prisma.sastRuleBundleCanaryRolloutHead.findUnique({
+      tx.sastRuleBundleCanaryRolloutHead.findUnique({
         where: { rolloutId: row.id }
       }),
-      this.prisma.sastRuleBundleCanaryStepDecision.findMany({
+      tx.sastRuleBundleCanaryStepDecision.findMany({
         where: { rolloutId: row.id },
         orderBy: { sequence: 'asc' }
       }),
-      this.prisma.sastRuleBundleCanaryObservationReceipt.findUnique({
+      tx.sastRuleBundleCanaryObservationReceipt.findUnique({
         where: { rolloutId: row.id }
       })
     ]);
@@ -519,7 +527,7 @@ export class PrismaSastRuleBundleCanaryStore extends SastRuleBundleCanaryStore {
     ) {
       throw new SastRuleBundleCanaryPersistenceError('LEDGER_CORRUPT');
     }
-    const decisions = await this.loadDecisions(decisionRows);
+    const decisions = await this.loadDecisions(tx, decisionRows);
     const latestDecision = decisions.at(-1) ?? null;
     if (!headMatchesDecision(head, latestDecision)) {
       throw new SastRuleBundleCanaryPersistenceError('LEDGER_CORRUPT');
@@ -527,7 +535,7 @@ export class PrismaSastRuleBundleCanaryStore extends SastRuleBundleCanaryStore {
     let observationReceipt: SastRuleBundleCanaryObservationReceipt | null = null;
     if (receiptRow) {
       const passed =
-        await this.prisma.sastRuleBundleCanaryReceiptPassedStep.findMany({
+        await tx.sastRuleBundleCanaryReceiptPassedStep.findMany({
           where: { receiptId: receiptRow.id },
           orderBy: { position: 'asc' }
         });
@@ -549,16 +557,17 @@ export class PrismaSastRuleBundleCanaryStore extends SastRuleBundleCanaryStore {
   }
 
   private async loadDecisions(
+    tx: Prisma.TransactionClient,
     rows: readonly DecisionRow[]
   ): Promise<SastRuleBundleCanaryStepDecision[]> {
     if (rows.length === 0) return [];
     const ids = rows.map((row) => row.id);
     const [reasons, observations] = await Promise.all([
-      this.prisma.sastRuleBundleCanaryStepDecisionReason.findMany({
+      tx.sastRuleBundleCanaryStepDecisionReason.findMany({
         where: { decisionId: { in: ids } },
         orderBy: [{ decisionId: 'asc' }, { position: 'asc' }]
       }),
-      this.prisma.sastRuleBundleCanaryStepDecisionObservation.findMany({
+      tx.sastRuleBundleCanaryStepDecisionObservation.findMany({
         where: { decisionId: { in: ids } },
         orderBy: [{ decisionId: 'asc' }, { position: 'asc' }]
       })

@@ -243,6 +243,25 @@ describe('T048 rule-bundle canary persistence contracts', () => {
     expect(migration).toContain(
       'CREATE UNIQUE INDEX "SastRuleBundleCanaryStepDecision_identity_key" ON "SastRuleBundleCanaryStepDecision"("id","decisionDigest")'
     );
+    const findByCandidate = store
+      .split('async findRolloutForCandidate')[1]
+      .split('async findRollout(')[0];
+    const findById = store
+      .split('async findRollout(')[1]
+      .split('async registerEligibilityDecision')[0];
+    const snapshot = store
+      .split('private async snapshot')[1]
+      .split('private async loadDecisions')[0];
+    const loadDecisions = store
+      .split('private async loadDecisions')[1]
+      .split('private async replayDecision')[0];
+    expect(findByCandidate).toContain('this.runSerializable(async (tx)');
+    expect(findByCandidate).toContain('this.snapshot(tx, row)');
+    expect(findById).toContain('this.runSerializable(async (tx)');
+    expect(findById).toContain('this.snapshot(tx, row)');
+    expect(snapshot).toContain('this.loadDecisions(tx, decisionRows)');
+    expect(snapshot).not.toContain('this.prisma.');
+    expect(loadDecisions).not.toContain('this.prisma.');
     expect(store).toContain('Prisma.TransactionIsolationLevel.Serializable');
     expect(store).toContain('SERIALIZABLE_RETRIES = 3');
     expect(store).toContain('SERIALIZABLE_MAX_WAIT_MILLISECONDS = 5_000');

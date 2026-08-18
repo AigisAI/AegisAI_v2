@@ -131,7 +131,12 @@ export class SastRuleBundleCanaryService extends SastRuleBundleCanaryGate {
     }
     let keyMaterial: Buffer | null = null;
     try {
-      const [candidate, baseline, lifecycle, baselineLifecycle, key] = await Promise.all([
+      const key = await this.keyProvider.load();
+      keyMaterial = Buffer.isBuffer(key?.keyMaterial) ? key.keyMaterial : null;
+      if (!isUsableCohortKey(key)) {
+        throw new SastRuleBundleCanaryCohortKeyError('INVALID');
+      }
+      const [candidate, baseline, lifecycle, baselineLifecycle] = await Promise.all([
         this.manifestStore.findVerified(rollout.candidateManifestId),
         this.manifestStore.findVerified(rollout.baselineManifestId),
         this.lifecycleStore.findLatestLifecycleSnapshot(
@@ -139,13 +144,8 @@ export class SastRuleBundleCanaryService extends SastRuleBundleCanaryGate {
         ),
         this.lifecycleStore.findLatestLifecycleSnapshot(
           rollout.baselineManifestId
-        ),
-        this.keyProvider.load()
+        )
       ]);
-      keyMaterial = Buffer.isBuffer(key?.keyMaterial) ? key.keyMaterial : null;
-      if (!isUsableCohortKey(key)) {
-        throw new SastRuleBundleCanaryCohortKeyError('INVALID');
-      }
       if (!candidate || !baseline || !lifecycle || !baselineLifecycle) {
         throw new SastRuleBundleCanaryServiceError('MANIFEST_UNVERIFIED');
       }
