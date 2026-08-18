@@ -1637,7 +1637,7 @@ function isBoundedNfc(value: string, maximumBytes: number): boolean {
     value.length > 0 &&
     value === value.trim() &&
     value.normalize('NFC') === value &&
-    Buffer.byteLength(value, 'utf8') <= maximumBytes
+    utf8ByteLength(value) <= maximumBytes
   );
 }
 
@@ -1675,7 +1675,11 @@ function isBoundedNonNegativeInteger(value: unknown): value is number {
 }
 
 function frame(value: string): string {
-  return `${Buffer.byteLength(value, 'utf8')}:${value}`;
+  return `${utf8ByteLength(value)}:${value}`;
+}
+
+function utf8ByteLength(value: string): number {
+  return new TextEncoder().encode(value).byteLength;
 }
 
 function hasExactKeys<T extends readonly string[]>(
