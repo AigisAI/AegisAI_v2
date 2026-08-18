@@ -59,6 +59,7 @@ const files = {
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
+  apiPrismaSastQueueAdmissionStore: new URL('../../apps/api/src/control-plane/prisma-sast-queue-admission.store.ts', import.meta.url),
   apiSastPlanningController: new URL('../../apps/api/src/control-plane/sast-planning.controller.ts', import.meta.url),
   apiSastPlannerTest: new URL('../../apps/api/test/control-plane/sast-scan-planner.service.e2e-spec.ts', import.meta.url),
   apiOpenGrepNormalizer: new URL('../../apps/api/src/scan-plane/opengrep-sarif-normalizer.ts', import.meta.url),
@@ -2234,6 +2235,7 @@ test('SAST T047 binds promotion evidence and latest lifecycle state before queue
   );
   const planner = readNormalizedText(files.apiSastPlanner);
   const plannerTest = readNormalizedText(files.apiSastPlannerTest);
+  const queueStore = readNormalizedText(files.apiPrismaSastQueueAdmissionStore);
   const schema = readNormalizedText(files.apiPrismaSchema);
   const migration = readNormalizedText(files.apiSastRuleBundleLifecycleMigration);
   const tasks = readNormalizedText(files.tasks);
@@ -2272,6 +2274,10 @@ test('SAST T047 binds promotion evidence and latest lifecycle state before queue
   assert.match(
     sharedTest,
     /validators return false for hostile nested shapes without throwing/
+  );
+  assert.match(
+    sharedTest,
+    /rejects digest-derived identifiers that are not bound to their paired digest/
   );
   assert.match(sharedRuntime, /PromotionVerifiedScannerSetDescriptor/);
   assert.match(sharedRuntime, /VerifiedSastRuleBundleLifecycleDescriptor/);
@@ -2320,6 +2326,12 @@ test('SAST T047 binds promotion evidence and latest lifecycle state before queue
     persistenceTest,
     /serializes append and latest-selection races with bounded retries/
   );
+  assert.match(
+    persistenceTest,
+    /fences queue admission against a concurrent lifecycle transition/
+  );
+  assert.match(queueStore, /assertCurrentRuleBundleLifecycleHeads/);
+  assert.match(queueStore, /FOR UPDATE OF head/);
 
   const compatibilityGate = planner.indexOf(
     'ruleBundleCompatibilityGate.verifyScannerSet'
@@ -2346,8 +2358,15 @@ test('SAST T047 binds promotion evidence and latest lifecycle state before queue
   );
   assert.match(
     plannerTest,
-    /selectionReceiptDigest: digest\('a'\)/
+    /lifecycleTransitionDigest: digest\('a'\)/
   );
+  assert.match(plannerTest, /expect\(keyFor\(receiptOnlyScannerSet\)\)\.toBe\(baseline\)/);
+
+  const canonicalPreimage = sharedPlanning
+    .split('export function buildSastCanonicalScanKeyPreimage')[1]
+    .split('function rejectedProfileSelection')[0];
+  assert.doesNotMatch(canonicalPreimage, /selectionReceiptId/);
+  assert.doesNotMatch(canonicalPreimage, /selectionReceiptDigest/);
 
   for (const model of [
     'SastRuleBundlePromotionEvidence',
@@ -2361,15 +2380,36 @@ test('SAST T047 binds promotion evidence and latest lifecycle state before queue
     assert.match(migration, new RegExp(`${model}_immutable_update`));
     assert.match(migration, new RegExp(`${model}_immutable_delete`));
   }
+  assert.match(schema, /model SastRuleBundleLifecycleHead \{/);
+  assert.match(migration, /CREATE TABLE "SastRuleBundleLifecycleHead"/);
+  assert.match(migration, /SastRuleBundleLifecycleTransition_refresh_head/);
+  assert.match(migration, /SastQueueReservation_lifecycle_head/);
   assert.match(migration, /T047 canonical scan-key v3 cutover/);
+  assert.match(migration, /"terminalStatus" IS NULL/);
+  assert.doesNotMatch(migration, /INTO STRICT/);
   assert.match(
     migration,
     /"positiveCases" BETWEEN 200 AND 1000000000[\s\S]{0,80}"negativeCases" BETWEEN 200 AND 1000000000/
   );
+  assert.match(
+    migration,
+    /"goldenTotalCases" = "positiveCases" \+ "negativeCases"/
+  );
+  assert.match(
+    migration,
+    /"candidateP95LatencyMilliseconds" BETWEEN 1 AND 600000/
+  );
+  assert.match(
+    migration,
+    /"kind" = 'PROFILE_ID' AND "value" = NEW\."profileId"/
+  );
   assert.match(migration, /pg_advisory_xact_lock/);
   assert.match(migration, /DEFERRABLE INITIALLY DEFERRED/);
   assert.match(migration, /SastRuleBundleLifecycleSelectionReceipt_latest/);
-  assert.doesNotMatch(migration, /JSONB/);
+  assert.doesNotMatch(
+    migration,
+    /"(?:evidence|approval|transition|selection|head)(?:Payload|Json)"\s+JSONB/i
+  );
   assert.doesNotMatch(
     migration,
     /"(?:ruleContent|sourceContent|repositoryContent|signatureBytes|provenancePayload|secretValue)"/

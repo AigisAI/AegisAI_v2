@@ -1417,7 +1417,10 @@ candidate manifest and supply-chain verification already exist in T045. The base
 distinct, its bundle digest must equal the rollback target, the profile must match, every
 environment/corpus reference must be immutable and digest-bound, and `measuredAt` must not be
 future relative to the trusted lifecycle clock. Evidence construction applies the quantitative
-thresholds in `quality-gates.md`; failed or incomplete metrics create no evidence row. Evidence
+thresholds in `quality-gates.md`. The positive and negative sample counts must sum exactly to the
+golden-corpus denominator, subset denominators cannot exceed that bound population, and the
+candidate p95 must satisfy both the relative regression threshold and the profile's absolute
+Fast/Deep SLO. Failed or incomplete metrics create no evidence row. Evidence
 is explicitly automated-only and has zero approval authority.
 
 `sast-rule-bundle-promotion-approval-v1` is an exact human decision bound to that evidence and
@@ -1453,6 +1456,17 @@ atomic, while database advisory locks and triggers independently reject transiti
 forks. Compatibility verification therefore precedes lifecycle selection, lifecycle selection
 precedes tenant policy, and both verified receipts precede canonical-key construction and queue
 admission.
+
+The immutable plan retains the exact selection receipt for audit and admission validation. The
+lifecycle portion of `sast-canonical-scan-key-v3` commits only the stable state, sequence,
+transition ID/digest, evidence ID/digest, and approval-set digest; it deliberately excludes the
+evaluation-time-derived selection receipt ID/digest so an equivalent retry keeps one canonical
+identity. `compatibilityReceiptDigest` remains committed. Immediately before writing a queue
+reservation, the serializable store locks a trigger-maintained latest-transition head for every
+manifest in deterministic order and revalidates both that stable projection and the persisted
+selection receipt. The database reservation trigger applies the same fail-closed fence to direct
+writes, so a concurrent suspension or retirement either precedes and rejects admission or follows
+an already-serialized reservation.
 
 The lifecycle-bearing preimage is exactly `sast-canonical-scan-key-v3`. Before deployment, all
 non-terminal v2 SAST plans and reservations must finish or be explicitly canceled; the schema

@@ -489,6 +489,7 @@ function evidenceMatchesVerifiedManifests(
     candidate.manifest.bundleId === baseline.manifest.bundleId &&
     candidate.manifest.scanner === baseline.manifest.scanner &&
     candidate.manifest.compatibility.profileIds.includes(evidence.profileId) &&
+    baseline.manifest.compatibility.profileIds.includes(evidence.profileId) &&
     Date.parse(evidence.measuredAt) >= Date.parse(candidate.manifest.builtAt) &&
     Date.parse(evidence.measuredAt) >= Date.parse(candidate.attestation.verifiedAt) &&
     Date.parse(evidence.measuredAt) >= Date.parse(baseline.manifest.builtAt) &&
@@ -705,15 +706,22 @@ function isTransitionRequestShapeValid(
   request: Readonly<SastRuleBundleLifecycleTransitionRequest>
 ): boolean {
   return (
-    /^sast-rule-bundle-manifest:\/\/[a-f0-9]{64}$/u.test(request.manifestId) &&
-    /^sast-rule-bundle-promotion-evidence:\/\/[a-f0-9]{64}$/u.test(
-      request.promotionEvidenceId
+    isPatternedIdentifier(
+      request.manifestId,
+      /^sast-rule-bundle-manifest:\/\/[a-f0-9]{64}$/u
+    ) &&
+    isPatternedIdentifier(
+      request.promotionEvidenceId,
+      /^sast-rule-bundle-promotion-evidence:\/\/[a-f0-9]{64}$/u
     ) &&
     Array.isArray(request.approvalIds) &&
     request.approvalIds.length >= 1 &&
     request.approvalIds.length <= 3 &&
     request.approvalIds.every((id) =>
-      /^sast-rule-bundle-promotion-approval:\/\/[a-f0-9]{64}$/u.test(id)
+      isPatternedIdentifier(
+        id,
+        /^sast-rule-bundle-promotion-approval:\/\/[a-f0-9]{64}$/u
+      )
     ) &&
     new Set(request.approvalIds).size === request.approvalIds.length &&
     [
@@ -730,6 +738,10 @@ function isTransitionRequestShapeValid(
     isDigestBoundReference(request.auditRef) &&
     isExactIsoInstant(request.transitionedAt)
   );
+}
+
+function isPatternedIdentifier(value: unknown, pattern: RegExp): value is string {
+  return typeof value === 'string' && pattern.test(value);
 }
 
 function lifecycleServiceReasonForPersistence(

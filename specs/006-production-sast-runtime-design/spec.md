@@ -421,9 +421,10 @@ incomplete, stale, quarantined, or security-blocked scan.
 - **FR-055**: Promotion MUST require signature/provenance verification, corpus results,
   compatibility evidence, security approval, and rollback reference.
 - **FR-055a**: Promotion evidence MUST bind one exact T045 candidate and distinct baseline,
-  profile, candidate author, tested rollback target, digest-bound environment/corpora, trusted
-  measurement time, sufficient sample counts, every quantitative threshold, and zero security
-  events. Automated evidence MUST NOT grant approval, and invalid evidence MUST create no row.
+  profile supported by both manifests, candidate author, tested rollback target, digest-bound
+  environment/corpora, trusted measurement time, denominator-bound sufficient sample counts,
+  relative and absolute p95 limits, every other quantitative threshold, and zero security events.
+  Automated evidence MUST NOT grant approval, and invalid evidence MUST create no row.
 - **FR-055b**: Lifecycle approvals MUST be immutable human decisions bound to the exact evidence
   and candidate. Candidate self-approval, duplicate roles/approvers, and approvals outside the
   evidence-to-transition interval MUST fail closed. Every edge MUST have Security Engineering;
@@ -433,6 +434,11 @@ incomplete, stale, quarantined, or security-blocked scan.
   suspension, and rollback MUST require matching digest-bound external-authority receipts; their
   default providers MUST be unavailable. Planning MUST admit only the latest `CANARY` or `ACTIVE`
   transition through one immutable selection receipt before tenant policy and queue reservation.
+  Queue reservation MUST lock and revalidate a database-maintained latest-transition projection
+  and the exact receipt, making a concurrent lifecycle change serializable and fail closed. The
+  immutable plan MUST retain the receipt, while canonical scan-key v3 MUST commit only the stable
+  lifecycle transition/evidence/approval projection and MUST exclude its evaluation-time-derived
+  receipt identity.
 - **FR-056**: Canary assignment MUST be deterministic and tenant-safe; one tenant MUST NOT
   receive mixed bundle versions for the same canonical scan.
 - **FR-057**: Emergency kill switches MUST exist for scanner version, rule bundle, rule ID,

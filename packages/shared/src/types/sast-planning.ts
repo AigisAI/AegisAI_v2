@@ -566,7 +566,16 @@ export function buildSastCanonicalScanKeyPreimage(
       manifestDigest: bundle.manifestDigest,
       verificationDigest: bundle.verificationDigest,
       compatibilityReceiptDigest: bundle.compatibilityReceiptDigest,
-      lifecycle: bundle.lifecycle
+      lifecycle: {
+        lifecycleState: bundle.lifecycle.lifecycleState,
+        lifecycleSequence: bundle.lifecycle.lifecycleSequence,
+        lifecycleTransitionId: bundle.lifecycle.lifecycleTransitionId,
+        lifecycleTransitionDigest:
+          bundle.lifecycle.lifecycleTransitionDigest,
+        promotionEvidenceId: bundle.lifecycle.promotionEvidenceId,
+        promotionEvidenceDigest: bundle.lifecycle.promotionEvidenceDigest,
+        approvalSetDigest: bundle.lifecycle.approvalSetDigest
+      }
     }))
     .sort((left, right) =>
       compareStrings(

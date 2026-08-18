@@ -991,7 +991,9 @@ describe('SastScanPlannerService', () => {
                   ...bundle,
                   lifecycle: {
                     ...bundle.lifecycle,
-                    selectionReceiptDigest: digest('a')
+                    lifecycleTransitionId:
+                      `sast-rule-bundle-lifecycle-transition://${'a'.repeat(64)}`,
+                    lifecycleTransitionDigest: digest('a')
                   }
                 }
               : bundle
@@ -1021,6 +1023,25 @@ describe('SastScanPlannerService', () => {
     const keys = variants.map((scannerSet) => keyFor(scannerSet));
     expect(keys.every((key) => key !== baseline)).toBe(true);
     expect(new Set(keys).size).toBe(keys.length);
+
+    const receiptOnlyScannerSet: PromotionVerifiedScannerSetDescriptor = {
+      ...baselineResult.plan!.scannerSet,
+      ruleBundles: baselineResult.plan!.scannerSet.ruleBundles.map(
+        (bundle, index) =>
+          index === 0
+            ? {
+                ...bundle,
+                lifecycle: {
+                  ...bundle.lifecycle,
+                  selectionReceiptId:
+                    `sast-rule-bundle-lifecycle-selection://${'b'.repeat(64)}`,
+                  selectionReceiptDigest: digest('b')
+                }
+              }
+            : bundle
+      )
+    };
+    expect(keyFor(receiptOnlyScannerSet)).toBe(baseline);
 
     const inventoryKey = keyFor(
       baselineResult.plan!.scannerSet,

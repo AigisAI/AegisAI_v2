@@ -176,7 +176,10 @@ Immutable execution plan produced from `ScanRequest`.
 - per-scan result ingress, evidence output, and audit references
 - creation timestamp
 
-The v3 key commits both the verified lifecycle selection receipt and the tenant-policy receipt.
+The v3 key commits the verified lifecycle state/sequence, transition, promotion evidence, and
+approval-set projection plus the tenant-policy receipt. The immutable plan also retains the exact
+lifecycle selection receipt, but its evaluation-time-derived ID/digest is excluded from the key so
+an equivalent retry remains idempotent. `compatibilityReceiptDigest` remains committed.
 Its deployment gate rejects a cutover while any prior v2 SAST plan or queue reservation is
 non-terminal. Operators must drain or explicitly cancel that work; completed, failed, and
 canceled v2 rows remain immutable audit records and are not rewritten into v3 identities.
@@ -979,6 +982,11 @@ distinct T045 baseline:
 - zero cross-tenant, secret-leak, sandbox-escape, and stale-publication events
 - canonical corpus-set, measurement, and evidence digests plus a trusted measurement timestamp
 
+`positiveCases + negativeCases` must equal the golden-corpus denominator, and prior-must-detect,
+recall, and precision denominators cannot exceed their bound positive/combined populations. The
+record also stores candidate p95 milliseconds and enforces the 10-minute Fast or 45-minute Deep
+absolute SLO in addition to the relative latency delta.
+
 The row fixes `automatedEvidenceOnly=true` and `approvalGranted=false`; it stores no rule body,
 repository content, customer executable configuration, secret, signature bytes, provenance
 payload, or generic JSON.
@@ -1002,6 +1010,16 @@ require Scan Platform or Security Operations. Exact external authority is mandat
 keys, deferred approval-set validation, and mutation-rejection triggers prevent forked or
 partially approved histories. T048-T050 authority providers are unavailable by default.
 
+### SastRuleBundleLifecycleHead
+
+A trigger-maintained, content-free projection of the latest transition for one manifest. It stores
+the exact manifest/bundle, transition, sequence/state, promotion-evidence, approval-set, and
+transition-time bindings under restrictive composite foreign keys. Unlike the authoritative
+append-only transition ledger, this row is intentionally replaced only by the transition-insert
+trigger and rejects direct application mutation. Queue admission locks these heads in manifest-ID
+order and compares them with the immutable plan before it can create a reservation. A concurrent
+transition updates the same locked row, forcing serialization retry or a stale-state rejection.
+
 ### SastRuleBundleLifecycleSelectionReceipt
 
 An immutable pre-planning decision bound to the latest transition. Only `CANARY` and `ACTIVE`
@@ -1010,8 +1028,9 @@ transition digests are revalidated with the service-owned clock. A valid replay 
 original row only after latest state is rechecked. All receipts for one scanner set are inserted
 atomically in one serializable transaction after ordered manifest-row locks, so a later invalid
 bundle or concurrent transition rolls back the complete set. The receipts and their verified
-descriptors enter the scanner set and canonical v3 plan before tenant-policy resolution and queue
-reservation; denial creates no receipt.
+descriptors enter the scanner set and immutable v3 plan before tenant-policy resolution and queue
+reservation; their stable lifecycle authorization projection, rather than receipt identity, enters
+the canonical key. Denial creates no receipt.
 
 ### SastQualityEvaluation
 

@@ -2048,6 +2048,7 @@ model SastRuleBundleManifest {
   promotionCandidateEvidence SastRuleBundlePromotionEvidence[]     @relation("SastRuleBundlePromotionCandidateManifest")
   promotionBaselineEvidence  SastRuleBundlePromotionEvidence[]     @relation("SastRuleBundlePromotionBaselineManifest")
   lifecycleTransitions       SastRuleBundleLifecycleTransition[]
+  lifecycleHead              SastRuleBundleLifecycleHead?
 
   @@unique([id, manifestDigest], map: "SastRuleBundleManifest_id_digest_key")
   @@unique([id, manifestDigest, bundleDigest], map: "SastRuleBundleManifest_evidence_baseline_key")
@@ -2208,6 +2209,7 @@ model SastRuleBundlePromotionEvidence {
   falsePositiveIncreaseBasisPoints Int
   scannerFailureRateBasisPoints    Int
   p95LatencyIncreaseBasisPoints    Int
+  candidateP95LatencyMilliseconds  Int
   crossTenantEvents                Int
   secretLeakEvents                 Int
   sandboxEscapeEvents              Int
@@ -2297,16 +2299,42 @@ model SastRuleBundleLifecycleTransition {
 
   manifest           SastRuleBundleManifest                      @relation(fields: [manifestId, manifestDigest, bundleId, bundleDigest], references: [id, manifestDigest, bundleId, bundleDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleTransition_manifest_fkey")
   promotionEvidence  SastRuleBundlePromotionEvidence             @relation(fields: [promotionEvidenceId, promotionEvidenceDigest, manifestId, manifestDigest, bundleDigest, candidateAuthorRef], references: [id, evidenceDigest, manifestId, manifestDigest, bundleDigest, candidateAuthorRef], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleTransition_evidence_fkey")
-  previousTransition SastRuleBundleLifecycleTransition?          @relation("SastRuleBundleLifecycleChain", fields: [previousTransitionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  previousTransition SastRuleBundleLifecycleTransition?          @relation("SastRuleBundleLifecycleChain", fields: [previousTransitionId, previousTransitionDigest], references: [id, transitionDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleTransition_previousTransition_fkey")
   nextTransitions    SastRuleBundleLifecycleTransition[]         @relation("SastRuleBundleLifecycleChain")
   approvals          SastRuleBundleLifecycleTransitionApproval[]
   selections         SastRuleBundleLifecycleSelectionReceipt[]
+  lifecycleHead      SastRuleBundleLifecycleHead?
 
   @@unique([manifestId, sequence], map: "SastRuleBundleLifecycleTransition_manifest_sequence_key")
+  @@unique([id, transitionDigest], map: "SastRuleBundleLifecycleTransition_id_transitionDigest_key")
   @@unique([id, promotionEvidenceId], map: "SastRuleBundleLifecycleTransition_approval_evidence_key")
   @@unique([id, transitionDigest, manifestId, manifestDigest, bundleId, bundleDigest, sequence, toState, promotionEvidenceId, promotionEvidenceDigest, approvalSetDigest], map: "SastRuleBundleLifecycleTransition_selection_key")
   @@index([manifestId, transitionedAt], map: "SastRuleBundleLifecycleTransition_manifest_time_idx")
   @@index([promotionEvidenceId], map: "SastRuleBundleLifecycleTransition_evidence_idx")
+}
+
+model SastRuleBundleLifecycleHead {
+  manifestId              String   @id
+  manifestDigest          String
+  bundleId                String
+  bundleDigest            String
+  transitionId            String   @unique
+  transitionDigest        String   @unique
+  sequence                Int
+  lifecycleState          String
+  promotionEvidenceId     String
+  promotionEvidenceDigest String
+  approvalSetDigest       String
+  transitionedAt          DateTime
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  manifest   SastRuleBundleManifest            @relation(fields: [manifestId, manifestDigest, bundleId, bundleDigest], references: [id, manifestDigest, bundleId, bundleDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleHead_manifest_fkey")
+  transition SastRuleBundleLifecycleTransition @relation(fields: [transitionId, transitionDigest, manifestId, manifestDigest, bundleId, bundleDigest, sequence, lifecycleState, promotionEvidenceId, promotionEvidenceDigest, approvalSetDigest], references: [id, transitionDigest, manifestId, manifestDigest, bundleId, bundleDigest, sequence, toState, promotionEvidenceId, promotionEvidenceDigest, approvalSetDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleHead_transition_fkey")
+
+  @@unique([manifestId, manifestDigest, bundleId, bundleDigest], map: "SastRuleBundleLifecycleHead_manifest_key")
+  @@unique([transitionId, transitionDigest, manifestId, manifestDigest, bundleId, bundleDigest, sequence, lifecycleState, promotionEvidenceId, promotionEvidenceDigest, approvalSetDigest], map: "SastRuleBundleLifecycleHead_transition_key")
+  @@index([lifecycleState, updatedAt], map: "SastRuleBundleLifecycleHead_state_updated_idx")
 }
 
 model SastRuleBundleLifecycleTransitionApproval {

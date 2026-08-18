@@ -25,6 +25,8 @@ export const SAST_RULE_BUNDLE_PROMOTION_LIMITS = Object.freeze({
   maximumFalsePositiveIncreaseBasisPoints: 200,
   maximumScannerFailureRateBasisPoints: 200,
   maximumP95LatencyIncreaseBasisPoints: 2_000,
+  maximumFastP95LatencyMilliseconds: 600_000,
+  maximumDeepP95LatencyMilliseconds: 2_700_000,
   maximumLifecycleSequence: 1_000_000
 });
 
@@ -97,6 +99,7 @@ export interface SastRuleBundlePromotionMeasurements {
   falsePositiveIncreaseBasisPoints: number;
   scannerFailureRateBasisPoints: number;
   p95LatencyIncreaseBasisPoints: number;
+  candidateP95LatencyMilliseconds: number;
   crossTenantEvents: number;
   secretLeakEvents: number;
   sandboxEscapeEvents: number;
@@ -362,9 +365,14 @@ export function findSastRuleBundlePromotionEvidenceReasonCodes(
   ) {
     reasons.push('FAILURE_RATE_GATE_FAILED');
   }
+  const maximumAbsoluteP95 =
+    input.profileId === 'JAVA_FAST_V1'
+      ? SAST_RULE_BUNDLE_PROMOTION_LIMITS.maximumFastP95LatencyMilliseconds
+      : SAST_RULE_BUNDLE_PROMOTION_LIMITS.maximumDeepP95LatencyMilliseconds;
   if (
     measurements.p95LatencyIncreaseBasisPoints >
-    SAST_RULE_BUNDLE_PROMOTION_LIMITS.maximumP95LatencyIncreaseBasisPoints
+      SAST_RULE_BUNDLE_PROMOTION_LIMITS.maximumP95LatencyIncreaseBasisPoints ||
+    measurements.candidateP95LatencyMilliseconds > maximumAbsoluteP95
   ) {
     reasons.push('LATENCY_GATE_FAILED');
   }
@@ -440,8 +448,12 @@ export function isSastRuleBundlePromotionEvidenceShapeValid(
   const evidence = value as unknown as SastRuleBundlePromotionEvidence;
   if (
     evidence.version !== SAST_RULE_BUNDLE_PROMOTION_EVIDENCE_VERSION ||
-    !EVIDENCE_ID_PATTERN.test(evidence.evidenceId) ||
-    !isDigest(evidence.evidenceDigest) ||
+    !identifierMatchesDigest(
+      evidence.evidenceId,
+      'sast-rule-bundle-promotion-evidence://',
+      evidence.evidenceDigest,
+      EVIDENCE_ID_PATTERN
+    ) ||
     !isPromotionEvidenceInputStructurallyValid(
       selectContractFields<SastRuleBundlePromotionEvidenceInput>(
         evidence,
@@ -515,8 +527,12 @@ export function isSastRuleBundlePromotionApprovalShapeValid(
   const approval = value as unknown as SastRuleBundlePromotionApproval;
   if (
     approval.version !== SAST_RULE_BUNDLE_PROMOTION_APPROVAL_VERSION ||
-    !APPROVAL_ID_PATTERN.test(approval.approvalId) ||
-    !isDigest(approval.approvalDigest) ||
+    !identifierMatchesDigest(
+      approval.approvalId,
+      'sast-rule-bundle-promotion-approval://',
+      approval.approvalDigest,
+      APPROVAL_ID_PATTERN
+    ) ||
     !isPromotionApprovalInputValid(
       selectContractFields<SastRuleBundlePromotionApprovalInput>(
         approval,
@@ -581,8 +597,12 @@ export function isSastRuleBundleLifecycleTransitionShapeValid(
   const transition = value as unknown as SastRuleBundleLifecycleTransition;
   if (
     transition.version !== SAST_RULE_BUNDLE_LIFECYCLE_TRANSITION_VERSION ||
-    !TRANSITION_ID_PATTERN.test(transition.transitionId) ||
-    !isDigest(transition.transitionDigest) ||
+    !identifierMatchesDigest(
+      transition.transitionId,
+      'sast-rule-bundle-lifecycle-transition://',
+      transition.transitionDigest,
+      TRANSITION_ID_PATTERN
+    ) ||
     !isDigest(transition.approvalSetDigest) ||
     !isLifecycleTransitionInputValid(
       selectContractFields<SastRuleBundleLifecycleTransitionInput>(
@@ -648,8 +668,12 @@ export function isSastRuleBundleLifecycleSelectionReceiptShapeValid(
     value as unknown as SastRuleBundleLifecycleSelectionReceipt;
   if (
     receipt.version !== SAST_RULE_BUNDLE_LIFECYCLE_SELECTION_VERSION ||
-    !SELECTION_ID_PATTERN.test(receipt.receiptId) ||
-    !isDigest(receipt.receiptDigest) ||
+    !identifierMatchesDigest(
+      receipt.receiptId,
+      'sast-rule-bundle-lifecycle-selection://',
+      receipt.receiptDigest,
+      SELECTION_ID_PATTERN
+    ) ||
     !isLifecycleSelectionInputValid(
       selectContractFields<SastRuleBundleLifecycleSelectionReceiptInput>(
         receipt,
@@ -705,13 +729,25 @@ export function isVerifiedSastRuleBundleLifecycleDescriptorValid(
     ]) &&
     (value.lifecycleState === 'CANARY' || value.lifecycleState === 'ACTIVE') &&
     isLifecycleSequence(value.lifecycleSequence) &&
-    TRANSITION_ID_PATTERN.test(value.lifecycleTransitionId as string) &&
-    isDigest(value.lifecycleTransitionDigest) &&
-    EVIDENCE_ID_PATTERN.test(value.promotionEvidenceId as string) &&
-    isDigest(value.promotionEvidenceDigest) &&
+    identifierMatchesDigest(
+      value.lifecycleTransitionId,
+      'sast-rule-bundle-lifecycle-transition://',
+      value.lifecycleTransitionDigest,
+      TRANSITION_ID_PATTERN
+    ) &&
+    identifierMatchesDigest(
+      value.promotionEvidenceId,
+      'sast-rule-bundle-promotion-evidence://',
+      value.promotionEvidenceDigest,
+      EVIDENCE_ID_PATTERN
+    ) &&
     isDigest(value.approvalSetDigest) &&
-    SELECTION_ID_PATTERN.test(value.selectionReceiptId as string) &&
-    isDigest(value.selectionReceiptDigest)
+    identifierMatchesDigest(
+      value.selectionReceiptId,
+      'sast-rule-bundle-lifecycle-selection://',
+      value.selectionReceiptDigest,
+      SELECTION_ID_PATTERN
+    )
   );
 }
 
@@ -736,16 +772,29 @@ function isPromotionEvidenceInputStructurallyValid(
   if (!hasExactKeys(value, PROMOTION_EVIDENCE_INPUT_KEYS)) return false;
   const input = value as unknown as SastRuleBundlePromotionEvidenceInput;
   return (
-    MANIFEST_ID_PATTERN.test(input.manifestId) &&
-    isDigest(input.manifestDigest) &&
-    VERIFICATION_ID_PATTERN.test(input.verificationId) &&
+    identifierMatchesDigest(
+      input.manifestId,
+      'sast-rule-bundle-manifest://',
+      input.manifestDigest,
+      MANIFEST_ID_PATTERN
+    ) &&
+    identifierMatchesDigest(
+      input.verificationId,
+      'sast-rule-bundle-verification://',
+      input.manifestDigest,
+      VERIFICATION_ID_PATTERN
+    ) &&
     isDigest(input.verificationDigest) &&
-    BUNDLE_ID_PATTERN.test(input.bundleId) &&
+    isPatternedIdentifier(input.bundleId, BUNDLE_ID_PATTERN) &&
     isDigest(input.bundleDigest) &&
     PROFILE_IDS.includes(input.profileId) &&
     isActorReference(input.candidateAuthorRef) &&
-    MANIFEST_ID_PATTERN.test(input.baselineManifestId) &&
-    isDigest(input.baselineManifestDigest) &&
+    identifierMatchesDigest(
+      input.baselineManifestId,
+      'sast-rule-bundle-manifest://',
+      input.baselineManifestDigest,
+      MANIFEST_ID_PATTERN
+    ) &&
     isDigest(input.baselineBundleDigest) &&
     input.baselineManifestId !== input.manifestId &&
     input.baselineManifestDigest !== input.manifestDigest &&
@@ -801,6 +850,13 @@ function isPromotionMeasurementsStructurallyValid(
     return false;
   }
   return (
+    measurements.candidateP95LatencyMilliseconds > 0 &&
+    measurements.goldenTotalCases ===
+      measurements.positiveCases + measurements.negativeCases &&
+    measurements.priorMustDetectTotalCases <= measurements.positiveCases &&
+    measurements.mustDetectExpectedCases <= measurements.positiveCases &&
+    measurements.criticalHighReportedCases <=
+      measurements.positiveCases + measurements.negativeCases &&
     measurements.goldenPassedCases <= measurements.goldenTotalCases &&
     measurements.priorMustDetectPassedCases <=
       measurements.priorMustDetectTotalCases &&
@@ -825,10 +881,18 @@ function isPromotionApprovalInputValid(
   const approval =
     value as unknown as SastRuleBundlePromotionApprovalInput;
   return (
-    EVIDENCE_ID_PATTERN.test(approval.evidenceId) &&
-    isDigest(approval.evidenceDigest) &&
-    MANIFEST_ID_PATTERN.test(approval.manifestId) &&
-    isDigest(approval.manifestDigest) &&
+    identifierMatchesDigest(
+      approval.evidenceId,
+      'sast-rule-bundle-promotion-evidence://',
+      approval.evidenceDigest,
+      EVIDENCE_ID_PATTERN
+    ) &&
+    identifierMatchesDigest(
+      approval.manifestId,
+      'sast-rule-bundle-manifest://',
+      approval.manifestDigest,
+      MANIFEST_ID_PATTERN
+    ) &&
     isDigest(approval.bundleDigest) &&
     SAST_RULE_BUNDLE_PROMOTION_APPROVAL_ROLES.includes(approval.role) &&
     isActorReference(approval.candidateAuthorRef) &&
@@ -846,9 +910,13 @@ function isLifecycleTransitionInputValid(
   const input =
     value as unknown as SastRuleBundleLifecycleTransitionInput;
   if (
-    !MANIFEST_ID_PATTERN.test(input.manifestId) ||
-    !isDigest(input.manifestDigest) ||
-    !BUNDLE_ID_PATTERN.test(input.bundleId) ||
+    !identifierMatchesDigest(
+      input.manifestId,
+      'sast-rule-bundle-manifest://',
+      input.manifestDigest,
+      MANIFEST_ID_PATTERN
+    ) ||
+    !isPatternedIdentifier(input.bundleId, BUNDLE_ID_PATTERN) ||
     !isDigest(input.bundleDigest) ||
     !isLifecycleSequence(input.sequence) ||
     !RULE_BUNDLE_STATES.includes(input.fromState) ||
@@ -857,8 +925,12 @@ function isLifecycleTransitionInputValid(
       input.fromState,
       input.toState
     ) ||
-    !EVIDENCE_ID_PATTERN.test(input.promotionEvidenceId) ||
-    !isDigest(input.promotionEvidenceDigest) ||
+    !identifierMatchesDigest(
+      input.promotionEvidenceId,
+      'sast-rule-bundle-promotion-evidence://',
+      input.promotionEvidenceDigest,
+      EVIDENCE_ID_PATTERN
+    ) ||
     !isActorReference(input.candidateAuthorRef) ||
     !isCanonicalApprovalBindings(input.approvals) ||
     !SAST_RULE_BUNDLE_LIFECYCLE_EXTERNAL_AUTHORITIES.includes(
@@ -881,8 +953,12 @@ function isLifecycleTransitionInputValid(
     ? input.fromState === 'DRAFT' &&
         input.previousTransitionId === null &&
         input.previousTransitionDigest === null
-    : TRANSITION_ID_PATTERN.test(input.previousTransitionId ?? '') &&
-        isDigest(input.previousTransitionDigest);
+    : identifierMatchesDigest(
+        input.previousTransitionId,
+        'sast-rule-bundle-lifecycle-transition://',
+        input.previousTransitionDigest,
+        TRANSITION_ID_PATTERN
+      );
 }
 
 function isCanonicalApprovalBindings(
@@ -916,8 +992,12 @@ function isCanonicalApprovalBindings(
       | SastRuleBundlePromotionApprovalBinding
       | undefined;
     const valid =
-      APPROVAL_ID_PATTERN.test(candidate.approvalId) &&
-      isDigest(candidate.approvalDigest) &&
+      identifierMatchesDigest(
+        candidate.approvalId,
+        'sast-rule-bundle-promotion-approval://',
+        candidate.approvalDigest,
+        APPROVAL_ID_PATTERN
+      ) &&
       SAST_RULE_BUNDLE_PROMOTION_APPROVAL_ROLES.includes(role) &&
       isActorReference(candidate.approverRef) &&
       isIsoInstant(candidate.approvedAt) &&
@@ -980,17 +1060,29 @@ function isLifecycleSelectionInputValid(
   const input =
     value as unknown as SastRuleBundleLifecycleSelectionReceiptInput;
   return (
-    MANIFEST_ID_PATTERN.test(input.manifestId) &&
-    isDigest(input.manifestDigest) &&
-    BUNDLE_ID_PATTERN.test(input.bundleId) &&
+    identifierMatchesDigest(
+      input.manifestId,
+      'sast-rule-bundle-manifest://',
+      input.manifestDigest,
+      MANIFEST_ID_PATTERN
+    ) &&
+    isPatternedIdentifier(input.bundleId, BUNDLE_ID_PATTERN) &&
     isDigest(input.bundleDigest) &&
     (input.lifecycleState === 'CANARY' ||
       input.lifecycleState === 'ACTIVE') &&
     isLifecycleSequence(input.lifecycleSequence) &&
-    TRANSITION_ID_PATTERN.test(input.transitionId) &&
-    isDigest(input.transitionDigest) &&
-    EVIDENCE_ID_PATTERN.test(input.promotionEvidenceId) &&
-    isDigest(input.promotionEvidenceDigest) &&
+    identifierMatchesDigest(
+      input.transitionId,
+      'sast-rule-bundle-lifecycle-transition://',
+      input.transitionDigest,
+      TRANSITION_ID_PATTERN
+    ) &&
+    identifierMatchesDigest(
+      input.promotionEvidenceId,
+      'sast-rule-bundle-promotion-evidence://',
+      input.promotionEvidenceDigest,
+      EVIDENCE_ID_PATTERN
+    ) &&
     isDigest(input.approvalSetDigest) &&
     isIsoInstant(input.evaluatedAt)
   );
@@ -1149,6 +1241,27 @@ function isDigest(value: unknown): value is Sha256Digest {
   return typeof value === 'string' && SHA256_PATTERN.test(value);
 }
 
+function isPatternedIdentifier(
+  value: unknown,
+  pattern: RegExp
+): value is string {
+  return typeof value === 'string' && pattern.test(value);
+}
+
+function identifierMatchesDigest(
+  value: unknown,
+  prefix: string,
+  digest: unknown,
+  pattern: RegExp
+): value is string {
+  const suffix = digestSuffix(digest);
+  return (
+    suffix !== null &&
+    isPatternedIdentifier(value, pattern) &&
+    value === `${prefix}${suffix}`
+  );
+}
+
 function digestSuffix(value: unknown): string | null {
   return isDigest(value) ? value.slice('sha256:'.length) : null;
 }
@@ -1210,6 +1323,7 @@ const PROMOTION_MEASUREMENT_KEYS = [
   'falsePositiveIncreaseBasisPoints',
   'scannerFailureRateBasisPoints',
   'p95LatencyIncreaseBasisPoints',
+  'candidateP95LatencyMilliseconds',
   'crossTenantEvents',
   'secretLeakEvents',
   'sandboxEscapeEvents',

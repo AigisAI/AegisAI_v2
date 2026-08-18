@@ -104,6 +104,7 @@ test('canonical scan identity includes fixed source and every executable artifac
     /SAST_CANONICAL_SCAN_KEY_VERSION\s*=\s*\n\s*'sast-canonical-scan-key-v3'/
   );
   assert.match(keyFunction, /version: SAST_CANONICAL_SCAN_KEY_VERSION/);
+  assert.doesNotMatch(keyFunction, /selectionReceipt(?:Id|Digest)/);
   for (const reason of [
     'RULE_BUNDLE_PROMOTION_EVIDENCE_UNVERIFIED',
     'RULE_BUNDLE_PROMOTION_APPROVAL_INVALID',

@@ -114,7 +114,8 @@ command-line flags, rule code, templates, post-processors, or executable configu
   PostgreSQL ledgers, restrictive exact-projection foreign keys, mutation-rejection triggers,
   and serializable exact replay preserve the decision after process restart.
 - The verified tenant-policy receipt remains committed to the current canonical plan. T047
-  advances the complete preimage to `sast-canonical-scan-key-v3` and adds the lifecycle receipt.
+  advances the complete preimage to `sast-canonical-scan-key-v3` and adds the stable lifecycle
+  transition/evidence/approval projection; its audit receipt remains in the immutable plan.
 - T046 grants no lifecycle transition, scanner execution, waiver creation, finding mutation,
   publication, AI, or SCM authority. Those require their independently scoped runtime gates.
 
@@ -140,7 +141,12 @@ command-line flags, rule code, templates, post-processors, or executable configu
   drift, unavailable store, or invalid clock produces no successful receipt or queue reservation.
   Exact replay rechecks latest state, and ordered manifest-row locks commit all scanner-set
   selection receipts atomically so a concurrent or later-bundle failure leaves no partial set.
-- `sast-canonical-scan-key-v3` commits the verified lifecycle and tenant-policy receipts. The
+- Queue reservation locks a trigger-maintained latest-transition head per manifest in canonical
+  order and revalidates the selected transition/evidence/approval projection and persisted
+  selection receipt. The database insert trigger enforces the same fence for direct writes.
+- `sast-canonical-scan-key-v3` commits the stable lifecycle authorization projection, existing
+  compatibility receipt digest, and tenant-policy receipt. The immutable plan retains the
+  lifecycle selection receipt, but the key excludes its evaluation-time-derived ID/digest. The
   migration rejects deployment while any v2 plan or reservation is non-terminal; terminal v2
   history is retained and never rewritten or replayed as v3 work.
 - T047 does not assign tenant-safe canary cohorts, observe production canaries, actuate kill
@@ -180,7 +186,8 @@ Promotion from `DRAFT` to `VALIDATED` is fail-closed and requires:
 4. at least 95% must-detect recall and at least 90% Critical/High precision;
 5. 100% malicious-corpus control pass and malformed-artifact rejection;
 6. no more than a two-percentage-point false-positive increase;
-7. no more than 2% scanner failure rate and no more than 20% p95 latency regression;
+7. no more than 2% scanner failure rate, no more than 20% p95 latency regression, and the
+   profile's absolute 10-minute Fast or 45-minute Deep p95 SLO;
 8. zero cross-tenant, secret, sandbox-escape, or stale-publication events;
 9. Security Engineering approval and a tested rollback reference.
 

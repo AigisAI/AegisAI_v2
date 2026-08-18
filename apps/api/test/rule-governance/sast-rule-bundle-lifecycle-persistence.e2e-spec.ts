@@ -23,6 +23,9 @@ describe('T047 rule-bundle lifecycle persistence contracts', () => {
   const planner = read(
     'apps/api/src/control-plane/sast-scan-planner.service.ts'
   );
+  const queueStore = read(
+    'apps/api/src/control-plane/prisma-sast-queue-admission.store.ts'
+  );
   const sharedRuntime = read('packages/shared/src/types/sast-runtime.ts');
   const sharedPlanning = read('packages/shared/src/types/sast-planning.ts');
 
@@ -44,6 +47,14 @@ describe('T047 rule-bundle lifecycle persistence contracts', () => {
       /"(?:sourceContent|ruleContent|repositoryContent|secretValue|credential|customerConfig)"/iu
     );
     expect(migration).not.toContain('ON DELETE CASCADE');
+    expect(schema).toContain('model SastRuleBundleLifecycleHead');
+    expect(migration).toContain(
+      'CREATE TABLE "SastRuleBundleLifecycleHead"'
+    );
+    expect(prismaModel(schema, 'SastRuleBundleLifecycleHead')).not.toMatch(
+      /\bJson\b/u
+    );
+    expect(migration).toContain('SastRuleBundleLifecycleHead_protect_update');
   });
 
   it('enforces quantitative gates, separation of duties, and the exact state graph in PostgreSQL', () => {
@@ -55,6 +66,15 @@ describe('T047 rule-bundle lifecycle persistence contracts', () => {
     expect(migration).toContain('"falsePositiveIncreaseBasisPoints" BETWEEN -10000 AND 200');
     expect(migration).toContain('"scannerFailureRateBasisPoints" BETWEEN 0 AND 200');
     expect(migration).toContain('"p95LatencyIncreaseBasisPoints" BETWEEN -10000 AND 2000');
+    expect(migration).toContain(
+      '"goldenTotalCases" = "positiveCases" + "negativeCases"'
+    );
+    expect(migration).toContain(
+      '"candidateP95LatencyMilliseconds" BETWEEN 1 AND 600000'
+    );
+    expect(migration).toContain(
+      '"candidateP95LatencyMilliseconds" BETWEEN 1 AND 2700000'
+    );
     expect(migration).toContain('"crossTenantEvents" = 0');
     expect(migration).toContain('"approverRef" <> "candidateAuthorRef"');
     expect(migration).toContain("'DRAFT' AND \"toState\" = 'VALIDATED'");
@@ -74,6 +94,9 @@ describe('T047 rule-bundle lifecycle persistence contracts', () => {
     expect(store).toContain('SERIALIZABLE_MAX_WAIT_MILLISECONDS = 5_000');
     expect(store).toContain('SERIALIZABLE_TIMEOUT_MILLISECONDS = 120_000');
     expect(migration).toContain('pg_advisory_xact_lock');
+    expect(migration).toContain(
+      '"kind" = \'PROFILE_ID\' AND "value" = NEW."profileId"'
+    );
     expect(store).toContain('FOR UPDATE');
     expect(store).toContain('lockLifecycleManifest');
     expect(migration).toContain('enforce_sast_rule_bundle_lifecycle_append');
@@ -84,6 +107,40 @@ describe('T047 rule-bundle lifecycle persistence contracts', () => {
     expect(store).toMatch(
       /recordLifecycleSelections[\s\S]*?sastRuleBundleLifecycleTransition\.findFirst[\s\S]*?sastRuleBundleLifecycleSelectionReceipt\.findUnique/u
     );
+    const selectionWrite = store
+      .split('async recordLifecycleSelections')[1]
+      .split('private async replayEvidenceAfterConflict')[0];
+    expect(selectionWrite).not.toContain(
+      'attempt <= SERIALIZABLE_RETRIES'
+    );
+    expect(selectionWrite).toContain('replaySelectionsAfterConflict');
+    expect(migration).not.toContain('INTO STRICT');
+  });
+
+  it('fences queue admission against a concurrent lifecycle transition', () => {
+    const headLock = queueStore.indexOf(
+      'assertCurrentRuleBundleLifecycleHeads(transaction, input.plan)'
+    );
+    const existingReservation = queueStore.indexOf(
+      'transaction.sastQueueReservation.findUnique'
+    );
+    const scanRequestRead = queueStore.indexOf(
+      'transaction.scanRequest.findUnique'
+    );
+    expect(headLock).toBeGreaterThan(-1);
+    expect(headLock).toBeGreaterThan(existingReservation);
+    expect(scanRequestRead).toBeGreaterThan(headLock);
+    expect(queueStore).toContain('FROM "SastRuleBundleLifecycleHead" head');
+    expect(queueStore).toContain('FOR UPDATE OF head');
+    expect(queueStore).toContain('selectionReceiptExists');
+    expect(migration).toContain(
+      'SastRuleBundleLifecycleTransition_refresh_head'
+    );
+    expect(migration).toContain('SastQueueReservation_lifecycle_head');
+    expect(migration).toContain(
+      'enforce_sast_queue_rule_bundle_lifecycle_head'
+    );
+    expect(migration).toContain('FOR UPDATE');
   });
 
   it('keeps T048, T049, and T050 external authority seams unavailable by default', () => {
@@ -115,8 +172,20 @@ describe('T047 rule-bundle lifecycle persistence contracts', () => {
       'isPromotionVerifiedScannerSetDescriptorValid(plan.scannerSet)'
     );
     expect(sharedPlanning).toContain("'sast-canonical-scan-key-v3'");
-    expect(sharedPlanning).toContain('lifecycle: bundle.lifecycle');
+    expect(sharedPlanning).toContain(
+      'lifecycleTransitionDigest:'
+    );
+    expect(sharedPlanning).toContain('approvalSetDigest:');
+    const canonicalPreimage = sharedPlanning
+      .split('export function buildSastCanonicalScanKeyPreimage')[1]
+      .split('function rejectedProfileSelection')[0];
+    expect(canonicalPreimage).not.toContain('selectionReceiptId');
+    expect(canonicalPreimage).not.toContain('selectionReceiptDigest');
     expect(migration).toContain('T047 canonical scan-key v3 cutover');
+    expect(migration).toContain('"terminalStatus" IS NULL');
+    expect(migration).toContain(
+      '"status" IN (\'QUEUED\', \'PLANNING\', \'RUNNING\')'
+    );
   });
 });
 

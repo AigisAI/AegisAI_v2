@@ -182,57 +182,52 @@ export class PrismaSastRuleBundleLifecycleStore extends SastRuleBundleLifecycleS
       throw new SastRuleBundleLifecyclePersistenceError('INPUT_INVALID');
     }
 
-    for (let attempt = 1; attempt <= SERIALIZABLE_RETRIES; attempt += 1) {
-      try {
-        return await this.runSerializable(async (tx) => {
-          for (const manifestId of manifestIds) {
-            await lockLifecycleManifest(tx, manifestId);
-          }
-
-          const persisted: PersistedSastRuleBundleLifecycleSelection[] = [];
-          for (const receipt of receipts) {
-            const latest =
-              await tx.sastRuleBundleLifecycleTransition.findFirst({
-                where: { manifestId: receipt.manifestId },
-                orderBy: { sequence: 'desc' },
-                include: TRANSITION_INCLUDE
-              });
-            if (!latest) {
-              throw new SastRuleBundleLifecyclePersistenceError(
-                'TRANSITION_NOT_FOUND'
-              );
-            }
-            const snapshot = snapshotFromRow(latest);
-            if (!selectionMatchesLatest(receipt, snapshot.transition)) {
-              throw new SastRuleBundleLifecyclePersistenceError(
-                'STALE_TRANSITION'
-              );
-            }
-
-            const existing =
-              await tx.sastRuleBundleLifecycleSelectionReceipt.findUnique({
-                where: { id: receipt.receiptId }
-              });
-            if (existing) {
-              persisted.push(replaySelection(existing, receipt));
-              continue;
-            }
-            const created =
-              await tx.sastRuleBundleLifecycleSelectionReceipt.create({
-                data: selectionData(receipt)
-              });
-            persisted.push(replaySelection(created, receipt, false));
-          }
-          return persisted;
-        });
-      } catch (error) {
-        if (isUniqueConflict(error) && attempt < SERIALIZABLE_RETRIES) {
-          continue;
+    try {
+      return await this.runSerializable(async (tx) => {
+        for (const manifestId of manifestIds) {
+          await lockLifecycleManifest(tx, manifestId);
         }
-        throw mapPrismaError(error);
-      }
+
+        const persisted: PersistedSastRuleBundleLifecycleSelection[] = [];
+        for (const receipt of receipts) {
+          const latest =
+            await tx.sastRuleBundleLifecycleTransition.findFirst({
+              where: { manifestId: receipt.manifestId },
+              orderBy: { sequence: 'desc' },
+              include: TRANSITION_INCLUDE
+            });
+          if (!latest) {
+            throw new SastRuleBundleLifecyclePersistenceError(
+              'TRANSITION_NOT_FOUND'
+            );
+          }
+          const snapshot = snapshotFromRow(latest);
+          if (!selectionMatchesLatest(receipt, snapshot.transition)) {
+            throw new SastRuleBundleLifecyclePersistenceError(
+              'STALE_TRANSITION'
+            );
+          }
+
+          const existing =
+            await tx.sastRuleBundleLifecycleSelectionReceipt.findUnique({
+              where: { id: receipt.receiptId }
+            });
+          if (existing) {
+            persisted.push(replaySelection(existing, receipt));
+            continue;
+          }
+          const created =
+            await tx.sastRuleBundleLifecycleSelectionReceipt.create({
+              data: selectionData(receipt)
+            });
+          persisted.push(replaySelection(created, receipt, false));
+        }
+        return persisted;
+      });
+    } catch (error) {
+      if (!isUniqueConflict(error)) throw mapPrismaError(error);
+      return this.replaySelectionsAfterConflict(receipts, manifestIds);
     }
-    throw replayConflict();
   }
 
   private async replayEvidenceAfterConflict(
@@ -275,6 +270,43 @@ export class PrismaSastRuleBundleLifecycleStore extends SastRuleBundleLifecycleS
       });
       if (!existing) throw replayConflict();
       return replayTransition(existing, transition);
+    });
+  }
+
+  private async replaySelectionsAfterConflict(
+    receipts: readonly Readonly<SastRuleBundleLifecycleSelectionReceipt>[],
+    manifestIds: readonly string[]
+  ): Promise<PersistedSastRuleBundleLifecycleSelection[]> {
+    return this.runSerializable(async (tx) => {
+      for (const manifestId of manifestIds) {
+        await lockLifecycleManifest(tx, manifestId);
+      }
+
+      const persisted: PersistedSastRuleBundleLifecycleSelection[] = [];
+      for (const receipt of receipts) {
+        const latest =
+          await tx.sastRuleBundleLifecycleTransition.findFirst({
+            where: { manifestId: receipt.manifestId },
+            orderBy: { sequence: 'desc' },
+            include: TRANSITION_INCLUDE
+          });
+        if (!latest) {
+          throw new SastRuleBundleLifecyclePersistenceError(
+            'TRANSITION_NOT_FOUND'
+          );
+        }
+        if (!selectionMatchesLatest(receipt, snapshotFromRow(latest).transition)) {
+          throw new SastRuleBundleLifecyclePersistenceError('STALE_TRANSITION');
+        }
+
+        const existing =
+          await tx.sastRuleBundleLifecycleSelectionReceipt.findUnique({
+            where: { id: receipt.receiptId }
+          });
+        if (!existing) throw replayConflict();
+        persisted.push(replaySelection(existing, receipt));
+      }
+      return persisted;
     });
   }
 
@@ -326,11 +358,17 @@ async function assertEvidenceReferences(
   const [candidate, baseline] = await Promise.all([
     tx.sastRuleBundleManifest.findUnique({
       where: { id: evidence.manifestId },
-      include: { supplyChainAttestation: true }
+      include: {
+        supplyChainAttestation: true,
+        compatibilityEntries: { where: { kind: 'PROFILE_ID' } }
+      }
     }),
     tx.sastRuleBundleManifest.findUnique({
       where: { id: evidence.baselineManifestId },
-      include: { supplyChainAttestation: true }
+      include: {
+        supplyChainAttestation: true,
+        compatibilityEntries: { where: { kind: 'PROFILE_ID' } }
+      }
     })
   ]);
   if (!candidate || !baseline) {
@@ -351,6 +389,12 @@ async function assertEvidenceReferences(
     baseline.bundleId !== evidence.bundleId ||
     baseline.bundleDigest !== evidence.baselineBundleDigest ||
     baseline.scanner !== candidate.scanner ||
+    !candidate.compatibilityEntries.some(
+      (entry) => entry.value === evidence.profileId
+    ) ||
+    !baseline.compatibilityEntries.some(
+      (entry) => entry.value === evidence.profileId
+    ) ||
     evidence.rollbackTargetDigest !== baseline.bundleDigest ||
     evidence.measuredAt < candidate.builtAt.toISOString() ||
     evidence.measuredAt < verification.verifiedAt.toISOString() ||
@@ -631,6 +675,8 @@ function evidenceFromRow(row: EvidenceRow): SastRuleBundlePromotionEvidence {
         row.falsePositiveIncreaseBasisPoints,
       scannerFailureRateBasisPoints: row.scannerFailureRateBasisPoints,
       p95LatencyIncreaseBasisPoints: row.p95LatencyIncreaseBasisPoints,
+      candidateP95LatencyMilliseconds:
+        row.candidateP95LatencyMilliseconds,
       crossTenantEvents: row.crossTenantEvents,
       secretLeakEvents: row.secretLeakEvents,
       sandboxEscapeEvents: row.sandboxEscapeEvents,

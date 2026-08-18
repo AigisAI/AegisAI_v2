@@ -48,12 +48,20 @@ test('T047 rejects every quantitative gate independently and in stable order', (
     ],
     ['scannerFailureRateBasisPoints', 201, 'FAILURE_RATE_GATE_FAILED'],
     ['p95LatencyIncreaseBasisPoints', 2_001, 'LATENCY_GATE_FAILED'],
+    ['candidateP95LatencyMilliseconds', 600_001, 'LATENCY_GATE_FAILED'],
     ['crossTenantEvents', 1, 'SECURITY_EVENT_RECORDED']
   ];
 
   for (const [field, value, reason] of cases) {
     const input = evidenceInput();
     input.measurements[field] = value;
+    if (field === 'positiveCases') {
+      input.measurements.goldenPassedCases = 399;
+      input.measurements.goldenTotalCases = 399;
+      input.measurements.priorMustDetectPassedCases = 199;
+      input.measurements.priorMustDetectTotalCases = 199;
+      input.measurements.mustDetectExpectedCases = 199;
+    }
     assert.equal(
       findSastRuleBundlePromotionEvidenceReasonCodes(input).includes(reason),
       true,
@@ -65,12 +73,39 @@ test('T047 rejects every quantitative gate independently and in stable order', (
   const combined = evidenceInput();
   combined.measurements.positiveCases = 199;
   combined.measurements.goldenPassedCases = 199;
+  combined.measurements.goldenTotalCases = 399;
+  combined.measurements.priorMustDetectPassedCases = 199;
+  combined.measurements.priorMustDetectTotalCases = 199;
+  combined.measurements.mustDetectExpectedCases = 199;
   combined.measurements.crossTenantEvents = 1;
   assert.deepEqual(findSastRuleBundlePromotionEvidenceReasonCodes(combined), [
     'SAMPLE_INSUFFICIENT',
     'CORPUS_GATE_FAILED',
     'SECURITY_EVENT_RECORDED'
   ]);
+});
+
+test('T047 binds sample minima to corpus denominators and enforces profile p95 SLOs', () => {
+  const disconnectedSamples = evidenceInput();
+  disconnectedSamples.measurements.goldenPassedCases = 1;
+  disconnectedSamples.measurements.goldenTotalCases = 1;
+  assert.deepEqual(
+    findSastRuleBundlePromotionEvidenceReasonCodes(disconnectedSamples),
+    ['INPUT_INVALID']
+  );
+
+  const deepAtBoundary = evidenceInput();
+  deepAtBoundary.profileId = 'JAVA_DEEP_V1';
+  deepAtBoundary.measurements.candidateP95LatencyMilliseconds = 2_700_000;
+  assert.deepEqual(
+    findSastRuleBundlePromotionEvidenceReasonCodes(deepAtBoundary),
+    []
+  );
+  deepAtBoundary.measurements.candidateP95LatencyMilliseconds = 2_700_001;
+  assert.deepEqual(
+    findSastRuleBundlePromotionEvidenceReasonCodes(deepAtBoundary),
+    ['LATENCY_GATE_FAILED']
+  );
 });
 
 test('T047 keeps automated evidence separate from role-bound human approvals', () => {
@@ -240,20 +275,104 @@ test('T047 validators return false for hostile nested shapes without throwing', 
     ),
     false
   );
+  assert.equal(
+    isSastRuleBundlePromotionEvidenceShapeValid(
+      { ...evidence, evidenceId: Symbol('hostile-evidence-id') },
+      digest
+    ),
+    false
+  );
+  assert.equal(
+    isSastRuleBundleLifecycleTransitionShapeValid(
+      { ...validated, transitionId: Symbol('hostile-transition-id') },
+      digest
+    ),
+    false
+  );
+  const canary = transition({
+    evidence,
+    approvals: [security],
+    sequence: 2,
+    fromState: 'VALIDATED',
+    toState: 'CANARY',
+    previous: validated
+  });
+  assert.equal(
+    isVerifiedSastRuleBundleLifecycleDescriptorValid({
+      ...toVerifiedSastRuleBundleLifecycleDescriptor(
+        selectionReceipt(canary)
+      ),
+      selectionReceiptId: Symbol('hostile-selection-id')
+    }),
+    false
+  );
+});
+
+test('T047 rejects digest-derived identifiers that are not bound to their paired digest', () => {
+  const evidence = promotionEvidence();
+  const security = approval(evidence, 'SECURITY_ENGINEERING', 'security');
+  const validated = transition({
+    evidence,
+    approvals: [security],
+    sequence: 1,
+    fromState: 'DRAFT',
+    toState: 'VALIDATED'
+  });
+  const canary = transition({
+    evidence,
+    approvals: [security],
+    sequence: 2,
+    fromState: 'VALIDATED',
+    toState: 'CANARY',
+    previous: validated
+  });
+  const receipt = selectionReceipt(canary);
+
+  assert.equal(
+    buildSastRuleBundleLifecycleTransition(
+      {
+        ...transitionInput({
+          evidence,
+          approvals: [security],
+          sequence: 2,
+          fromState: 'VALIDATED',
+          toState: 'CANARY',
+          previous: validated
+        }),
+        previousTransitionId:
+          `sast-rule-bundle-lifecycle-transition://${'f'.repeat(64)}`
+      },
+      digest
+    ),
+    null
+  );
+  assert.equal(
+    isSastRuleBundleLifecycleSelectionReceiptShapeValid(
+      {
+        ...receipt,
+        promotionEvidenceId:
+          `sast-rule-bundle-promotion-evidence://${'f'.repeat(64)}`
+      },
+      digest
+    ),
+    false
+  );
 });
 
 function evidenceInput() {
+  const manifestDigest = digest('candidate-manifest');
+  const baselineManifestDigest = digest('baseline-manifest');
   return {
-    manifestId: `sast-rule-bundle-manifest://${'1'.repeat(64)}`,
-    manifestDigest: digest('candidate-manifest'),
-    verificationId: `sast-rule-bundle-verification://${'2'.repeat(64)}`,
+    manifestId: `sast-rule-bundle-manifest://${manifestDigest.slice('sha256:'.length)}`,
+    manifestDigest,
+    verificationId: `sast-rule-bundle-verification://${manifestDigest.slice('sha256:'.length)}`,
     verificationDigest: digest('candidate-verification'),
     bundleId: 'sast-rule-bundle://opengrep/java-core',
     bundleDigest: digest('candidate-bundle'),
     profileId: 'JAVA_FAST_V1',
     candidateAuthorRef: 'sast-actor://rule-authors/alice',
-    baselineManifestId: `sast-rule-bundle-manifest://${'3'.repeat(64)}`,
-    baselineManifestDigest: digest('baseline-manifest'),
+    baselineManifestId: `sast-rule-bundle-manifest://${baselineManifestDigest.slice('sha256:'.length)}`,
+    baselineManifestDigest,
     baselineBundleDigest: digest('baseline-bundle'),
     rollbackTargetDigest: digest('baseline-bundle'),
     environmentRef: reference('qualification-environment'),
@@ -270,8 +389,8 @@ function evidenceInput() {
       positiveCases: 200,
       negativeCases: 200,
       performanceRuns: 30,
-      goldenPassedCases: 200,
-      goldenTotalCases: 200,
+      goldenPassedCases: 400,
+      goldenTotalCases: 400,
       priorMustDetectPassedCases: 200,
       priorMustDetectTotalCases: 200,
       mustDetectTruePositiveCases: 190,
@@ -289,6 +408,7 @@ function evidenceInput() {
       falsePositiveIncreaseBasisPoints: 200,
       scannerFailureRateBasisPoints: 200,
       p95LatencyIncreaseBasisPoints: 2_000,
+      candidateP95LatencyMilliseconds: 600_000,
       crossTenantEvents: 0,
       secretLeakEvents: 0,
       sandboxEscapeEvents: 0,

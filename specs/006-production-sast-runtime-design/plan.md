@@ -160,8 +160,11 @@ only monotonic declarative tenant policy, and commits the immutable resolution r
 canonical plan before queue reservation. T047 now binds quantitative candidate/baseline evidence
 to the exact T045 supply-chain records, enforces independent human approvals and the legal
 append-only lifecycle graph, and admits only the latest `CANARY` or `ACTIVE` transition through
-an immutable selection receipt before tenant-policy resolution. That receipt enters
-`sast-canonical-scan-key-v3`; external canary-observation, emergency-suspension, and rollback
+an immutable selection receipt before tenant-policy resolution. The immutable plan retains that
+receipt for audit, while `sast-canonical-scan-key-v3` commits the stable lifecycle transition,
+evidence, and approval projection without the evaluation-time-derived receipt identity. Queue
+reservation locks and revalidates a trigger-maintained latest-transition head, closing the
+selection-to-admission race. External canary-observation, emergency-suspension, and rollback
 authorities remain fail-closed seams for T048, T049, and T050. T048 deterministic tenant-safe
 canary cohorts and observation gates are the next implementation task.
 

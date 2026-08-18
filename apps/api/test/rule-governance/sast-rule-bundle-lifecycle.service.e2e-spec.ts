@@ -111,6 +111,22 @@ describe('SastRuleBundleLifecycleService T047 gate', () => {
     );
   });
 
+  it('rejects evidence when the baseline does not support the measured profile', async () => {
+    const pair = bundlePair('OPENGREP', ['JAVA_DEEP_V1']);
+    const store = new InMemoryLifecycleStore();
+    const service = lifecycleService(
+      new InMemoryManifestStore([pair.candidate, pair.baseline]),
+      store
+    );
+
+    await expect(
+      service.registerPromotionEvidence(evidenceInput(pair))
+    ).rejects.toMatchObject<Partial<SastRuleBundleLifecycleServiceError>>({
+      reason: 'EVIDENCE_UNVERIFIED'
+    });
+    expect(store.evidence).toHaveLength(0);
+  });
+
   it('fails closed on illegal edges without appending partial state', async () => {
     const fixtures = lifecycleFixtures();
     const store = new InMemoryLifecycleStore();
@@ -606,14 +622,20 @@ function lifecycleFixtures(): {
   };
 }
 
-function bundlePair(scanner: 'OPENGREP' | 'TRIVY'): BundlePair {
+function bundlePair(
+  scanner: 'OPENGREP' | 'TRIVY',
+  baselineProfileIds: readonly ('JAVA_FAST_V1' | 'JAVA_DEEP_V1')[] = [
+    'JAVA_FAST_V1'
+  ]
+): BundlePair {
   const slug = scanner.toLowerCase();
   const baselineBundleDigest = digest(`${slug}-baseline-bundle`);
   const baselineManifest = manifest(
     scanner,
     '1.0.0',
     baselineBundleDigest,
-    digest(`${slug}-older-bundle`)
+    digest(`${slug}-older-bundle`),
+    baselineProfileIds
   );
   const candidateManifest = manifest(
     scanner,
@@ -631,7 +653,10 @@ function manifest(
   scanner: 'OPENGREP' | 'TRIVY',
   bundleVersion: string,
   bundleDigest: `sha256:${string}`,
-  rollbackTargetDigest: `sha256:${string}`
+  rollbackTargetDigest: `sha256:${string}`,
+  profileIds: readonly ('JAVA_FAST_V1' | 'JAVA_DEEP_V1')[] = [
+    'JAVA_FAST_V1'
+  ]
 ): SastRuleBundleManifest {
   const slug = scanner.toLowerCase();
   const value = buildSastRuleBundleManifest(
@@ -664,7 +689,7 @@ function manifest(
         wrapperDigests: [digest(`${slug}-wrapper`)],
         schemaBundleDigests: [digest('schema')],
         normalizerBundleDigests: [digest('normalizer')],
-        profileIds: ['JAVA_FAST_V1']
+        profileIds: [...profileIds]
       },
       qualityEvidence: {
         goldenCorpusResultRef: reference(`${slug}-golden`),
@@ -770,8 +795,8 @@ function evidenceInput(pair: BundlePair) {
       positiveCases: 200,
       negativeCases: 200,
       performanceRuns: 30,
-      goldenPassedCases: 200,
-      goldenTotalCases: 200,
+      goldenPassedCases: 400,
+      goldenTotalCases: 400,
       priorMustDetectPassedCases: 200,
       priorMustDetectTotalCases: 200,
       mustDetectTruePositiveCases: 190,
@@ -789,6 +814,7 @@ function evidenceInput(pair: BundlePair) {
       falsePositiveIncreaseBasisPoints: 200,
       scannerFailureRateBasisPoints: 200,
       p95LatencyIncreaseBasisPoints: 2_000,
+      candidateP95LatencyMilliseconds: 600_000,
       crossTenantEvents: 0,
       secretLeakEvents: 0,
       sandboxEscapeEvents: 0,
