@@ -1569,6 +1569,7 @@ function ruleBundle(
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${batchIndependentDigest(`${seed}-receipt`).slice('sha256:'.length)}`,
     compatibilityReceiptDigest: batchIndependentDigest(`${seed}-receipt`),
     lifecycle: verifiedRuleBundleLifecycle(seed),
+    canaryAssignment: null,
     scanner,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,

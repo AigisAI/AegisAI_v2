@@ -899,6 +899,7 @@ function buildPlan(
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${digest(`receipt-${kind}`).slice('sha256:'.length)}`,
     compatibilityReceiptDigest: digest(`receipt-${kind}`),
     lifecycle: verifiedRuleBundleLifecycle(kind.toLowerCase()),
+    canaryAssignment: null,
     scanner: kind,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,

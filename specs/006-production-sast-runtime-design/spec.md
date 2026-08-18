@@ -436,11 +436,46 @@ incomplete, stale, quarantined, or security-blocked scan.
   transition through one immutable selection receipt before tenant policy and queue reservation.
   Queue reservation MUST lock and revalidate a database-maintained latest-transition projection
   and the exact receipt, making a concurrent lifecycle change serializable and fail closed. The
-  immutable plan MUST retain the receipt, while canonical scan-key v3 MUST commit only the stable
+  immutable plan MUST retain the receipt. T047 canonical scan-key v3 MUST commit only the stable
   lifecycle transition/evidence/approval projection and MUST exclude its evaluation-time-derived
-  receipt identity.
+  receipt identity; T048 MUST preserve that projection in v4.
 - **FR-056**: Canary assignment MUST be deterministic and tenant-safe; one tenant MUST NOT
   receive mixed bundle versions for the same canonical scan.
+- **FR-056a**: One immutable rollout MUST bind one candidate manifest/profile pair to the exact
+  latest `CANARY` candidate, distinct latest `ACTIVE` baseline, T045 manifests/bundles, T047
+  evidence/transition, profile, HMAC-key reference/version, eligibility policy, observation
+  source, and six non-skippable steps. A paused or completed candidate/profile MUST NOT be
+  re-enrolled; recovery MUST use a new signed candidate, evidence, approvals, and rollout.
+- **FR-056b**: Eligibility MUST be platform-managed with explicit contractual/residency
+  exclusions. Membership MUST use HMAC-SHA-256 over length-framed tenant, repository binding,
+  profile, and rollout identity, persist no key material/content/finding/customer attribute, and
+  require the key reference digest to equal the decoded key's SHA-256 fingerprint, and derive the
+  same 0-9,999 bucket in application and PostgreSQL. Planning MUST run compatibility,
+  lifecycle, canary, then tenant-policy gates. A supplied candidate that resolves outside the
+  cohort MUST be rejected, not rewritten after verification. Trusted orchestration MUST submit a
+  separately compatibility/lifecycle-verified exact `ACTIVE` baseline set for non-cohort
+  production; exclusion MUST NOT select the candidate.
+- **FR-056c**: Canonical scan-key v4 MUST preserve v3 and add only stable rollout,
+  membership, bucket, and candidate-assigned identity. Assignment receipt, rollout step, and
+  step-head identity MUST remain in the immutable plan but MUST NOT enter the key. Queue
+  reservation MUST lock/revalidate lifecycle heads, canary head, and exact assignment receipt.
+  Deployment MUST drain or cancel non-terminal v3 plans/reservations before v4 cutover.
+- **FR-056d**: Canary observations MUST be append-only and content-free and MUST rebind the exact
+  candidate/baseline plan, assignment where applicable, terminal attempt interval, profile/lane/
+  size bucket, durable coverage/publication authorities, rollout-fixed observation source, and
+  telemetry source. Collection callers MUST NOT provide cohort role or repository-size bucket;
+  the trusted source MUST derive both from durable authority. A decision MUST use trusted service
+  time as its cutoff, automatically bind
+  every committed observation in its exact closed window, and reject caller-selected cutoff or
+  observation IDs, omissions, and extra bindings.
+  Decisions MUST recompute all aggregates, including the completed-scan-normalized candidate/
+  baseline Critical/High rate. The first four steps MUST require
+  200 scans per arm and 24 hours; 25% and 100% MUST require 1,000 per arm and 48 hours. Missing
+  samples/time MUST be `PENDING`; telemetry, coverage, or size incompleteness, any quantitative
+  breach, or any zero-tolerance event MUST be terminal `PAUSED`. Only six ordered passes MAY issue
+  the exact
+  `CANARY_OBSERVATION` receipt for `CANARY -> ACTIVE`; the default production observation source
+  MUST remain unavailable until a qualified adapter is installed.
 - **FR-057**: Emergency kill switches MUST exist for scanner version, rule bundle, rule ID,
   tenant, repository, capability, and external publication.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
@@ -458,10 +493,11 @@ incomplete, stale, quarantined, or security-blocked scan.
   reservation. Missing, extra, mismatched, expired, unknown, cross-scope, mandatory-disable,
   persistence-unavailable, or trusted-clock-invalid state MUST fail closed and MUST create no
   successful receipt. The evaluation instant MUST come from a service-owned UTC clock, never
-  a caller request timestamp. The receipt and the verified T047 lifecycle selection MUST enter
-  `sast-canonical-scan-key-v3`; deployment MUST drain or explicitly cancel every non-terminal v2
-  SAST plan and reservation before the v3 cutover, while retaining terminal v2 rows as immutable
-  audit history.
+  a caller request timestamp. T047 introduced the lifecycle-bearing
+  `sast-canonical-scan-key-v3`; the receipt and verified lifecycle selection MUST remain in the
+  current `sast-canonical-scan-key-v4` preimage together with T048's stable canary projection.
+  Deployment MUST drain or explicitly cancel every non-terminal prior-version SAST plan and
+  reservation before each cutover while retaining terminal history as immutable audit records.
 
 ### Audit and Observability
 

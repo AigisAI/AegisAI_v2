@@ -15,7 +15,7 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040, T041, T042, T043, T044, T045, T046, and T047 independently and now proceeds to T048.
+T040 through T048 independently and now proceeds to T049.
 
 ## Target Boundaries
 
@@ -164,9 +164,36 @@ an immutable selection receipt before tenant-policy resolution. The immutable pl
 receipt for audit, while `sast-canonical-scan-key-v3` commits the stable lifecycle transition,
 evidence, and approval projection without the evaluation-time-derived receipt identity. Queue
 reservation locks and revalidates a trigger-maintained latest-transition head, closing the
-selection-to-admission race. External canary-observation, emergency-suspension, and rollback
-authorities remain fail-closed seams for T048, T049, and T050. T048 deterministic tenant-safe
-canary cohorts and observation gates are the next implementation task.
+selection-to-admission race. T048 now fixes one immutable rollout per candidate manifest and
+profile to the exact `CANARY` candidate, `ACTIVE` baseline, T047 evidence/transition, profile,
+cohort-key reference/version, eligibility policy, and observation-source digest. The planner
+applies T045 compatibility, T047 lifecycle, T048 canary assignment, and T046 tenant policy in
+that order. Stable HMAC-SHA-256 membership over length-framed tenant, repository binding,
+profile, and rollout identity expands monotonically through internal corpus, internal
+repositories, 1%, 5%, 25%, and 100%; only candidate assignment carries a canary descriptor.
+A supplied candidate that resolves outside the cohort is rejected rather than rewritten after
+compatibility/lifecycle verification, so trusted orchestration submits the separately verified
+exact `ACTIVE` baseline set for non-cohort production work. The descriptor's stable
+rollout/membership/bucket projection enters `sast-canonical-scan-key-v4`; evaluation-time
+assignment receipt, step, and mutable step-head identity remain in the immutable plan but out
+of the key. Queue admission locks both lifecycle and canary heads and revalidates the exact
+candidate receipt.
+
+T048 also records content-free terminal candidate/baseline observations only after rebinding
+the immutable plan, assignment, attempt interval, complete/explicit coverage, publication,
+fixed observation source, and telemetry source. The evaluator closes the step window at its own
+trusted time and loads/binds the entire committed window; it accepts no caller cutoff or selected
+observation list. Append-only decisions
+recompute every sample, window, false-positive, failure, latency, completed-scan-normalized
+Critical/High rate, resource, coverage, publication,
+egress, cleanup, quarantine, kill-switch, and zero-tolerance aggregate from the normalized
+ledger. Sample/window insufficiency stays `PENDING`; missing telemetry, incomplete coverage/size
+comparison, any threshold breach, or any zero-tolerance event seals that candidate/profile
+rollout `PAUSED`.
+Passing all six ordered steps creates the sole digest-bound `CANARY_OBSERVATION` authority for
+`CANARY -> ACTIVE`. The production observation source remains deliberately unavailable until a
+production-qualified adapter is installed; T049 emergency-suspension/kill-switch authority and
+T050 rollback authority remain fail closed. T049 is the next implementation task.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

@@ -195,6 +195,7 @@ function ruleBundle(
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${fixtureDigest(`${seed}-receipt`).slice('sha256:'.length)}`,
     compatibilityReceiptDigest: fixtureDigest(`${seed}-receipt`),
     lifecycle: verifiedRuleBundleLifecycle(seed),
+    canaryAssignment: null,
     scanner,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,

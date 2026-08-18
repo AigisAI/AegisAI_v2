@@ -17,6 +17,7 @@ import {
   type SastQueueUsageSnapshot,
   type SastScanPlanningInput,
   type SastScanPlan,
+  type CanaryQualifiedScannerSetDescriptor,
   type PromotionVerifiedScannerSetDescriptor,
   type ScannerSetDescriptor,
   type VerifiedScannerSetDescriptor,
@@ -28,6 +29,11 @@ import { SastPolicyEvaluationClock } from '../../src/control-plane/sast-policy-e
 import type { SastQueueReservationInput } from '../../src/control-plane/sast-queue-admission.store';
 import { SastQueueAdmissionService } from '../../src/control-plane/sast-queue-admission.service';
 import { SastScanPlannerService } from '../../src/control-plane/sast-scan-planner.service';
+import {
+  SastRuleBundleCanaryGate,
+  SastRuleBundleCanaryGateError,
+  type SastRuleBundleCanaryGateInput
+} from '../../src/rule-governance/sast-rule-bundle-canary.gate';
 import {
   SastRuleBundleCompatibilityGate,
   SastRuleBundleCompatibilityGateError
@@ -123,18 +129,20 @@ const verifiedRuleBundle = (
   ...ruleBundle(scanner, character),
   compatibilityReceiptId: `sast-rule-bundle-compatibility://${character.repeat(64)}`,
   compatibilityReceiptDigest: digest(character),
-  lifecycle: verifiedRuleBundleLifecycle(`${scanner.toLowerCase()}-${character}`)
+  lifecycle: verifiedRuleBundleLifecycle(`${scanner.toLowerCase()}-${character}`),
+  canaryAssignment: null
 });
 
 const buildVerifiedScannerSet = (
   scannerSet: ScannerSetDescriptor = buildScannerSet()
-): PromotionVerifiedScannerSetDescriptor => ({
+): CanaryQualifiedScannerSetDescriptor => ({
   ...scannerSet,
   ruleBundles: scannerSet.ruleBundles.map((bundle) => ({
     ...bundle,
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${bundle.digest.slice('sha256:'.length)}`,
     compatibilityReceiptDigest: bundle.manifestDigest,
-    lifecycle: verifiedRuleBundleLifecycle(bundle.scanner.toLowerCase())
+    lifecycle: verifiedRuleBundleLifecycle(bundle.scanner.toLowerCase()),
+    canaryAssignment: null
   }))
 });
 
@@ -155,6 +163,20 @@ class AcceptingRuleBundleLifecycleGate extends SastRuleBundleLifecycleGate {
       ruleBundles: input.scannerSet.ruleBundles.map((bundle) => ({
         ...structuredClone(bundle),
         lifecycle: verifiedRuleBundleLifecycle(bundle.scanner.toLowerCase())
+      }))
+    };
+  }
+}
+
+class AcceptingRuleBundleCanaryGate extends SastRuleBundleCanaryGate {
+  async verifyScannerSet(
+    input: SastRuleBundleCanaryGateInput
+  ): Promise<CanaryQualifiedScannerSetDescriptor> {
+    return {
+      ...structuredClone(input.scannerSet),
+      ruleBundles: input.scannerSet.ruleBundles.map((bundle) => ({
+        ...structuredClone(bundle),
+        canaryAssignment: null
       }))
     };
   }
@@ -346,7 +368,9 @@ async function createHarness(
   policyEvaluationClock: SastPolicyEvaluationClock =
     fixedPolicyEvaluationClock(),
   ruleBundleLifecycleGate: SastRuleBundleLifecycleGate =
-    new AcceptingRuleBundleLifecycleGate()
+    new AcceptingRuleBundleLifecycleGate(),
+  ruleBundleCanaryGate: SastRuleBundleCanaryGate =
+    new AcceptingRuleBundleCanaryGate()
 ) {
   const scanRequestStore = new InMemoryControlPlaneScanRequestStore();
   const queueStore = new InMemorySastQueueAdmissionStore();
@@ -395,12 +419,14 @@ async function createHarness(
     ruleBundleCompatibilityGate,
     tenantRulePolicyGate,
     ruleBundleLifecycleGate,
+    ruleBundleCanaryGate,
     policyEvaluationClock,
     planner: new SastScanPlannerService(
       controlPlane,
       queueAdmission,
       ruleBundleCompatibilityGate,
       ruleBundleLifecycleGate,
+      ruleBundleCanaryGate,
       tenantRulePolicyGate,
       policyEvaluationClock
     ),
@@ -470,6 +496,64 @@ describe('SastScanPlannerService', () => {
           reasonCodes: [planningReason]
         })
       });
+      expect(reserve).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([
+    [
+      'CANARY_ROLLOUT_UNAVAILABLE',
+      'RULE_BUNDLE_CANARY_ROLLOUT_UNAVAILABLE'
+    ],
+    [
+      'CANARY_ELIGIBILITY_UNAVAILABLE',
+      'RULE_BUNDLE_CANARY_ELIGIBILITY_UNAVAILABLE'
+    ],
+    [
+      'CANARY_ASSIGNMENT_INELIGIBLE',
+      'RULE_BUNDLE_CANARY_ASSIGNMENT_INELIGIBLE'
+    ],
+    [
+      'CANARY_ASSIGNMENT_STALE',
+      'RULE_BUNDLE_CANARY_ASSIGNMENT_STALE'
+    ],
+    ['CANARY_KEY_UNAVAILABLE', 'RULE_BUNDLE_CANARY_KEY_UNAVAILABLE'],
+    ['CANARY_STORE_UNAVAILABLE', 'RULE_BUNDLE_CANARY_STORE_UNAVAILABLE']
+  ] as const)(
+    'fails closed after lifecycle and before tenant policy for canary %s',
+    async (gateReason, planningReason) => {
+      const canaryGate = new (class extends SastRuleBundleCanaryGate {
+        async verifyScannerSet(): Promise<never> {
+          throw new SastRuleBundleCanaryGateError(gateReason);
+        }
+      })();
+      const tenantGate = new AcceptingTenantRulePolicyGate();
+      const tenantResolve = jest.spyOn(tenantGate, 'resolve');
+      const harness = await createHarness(
+        'FAST',
+        new AcceptingRuleBundleCompatibilityGate(),
+        tenantGate,
+        fixedPolicyEvaluationClock(),
+        new AcceptingRuleBundleLifecycleGate(),
+        canaryGate
+      );
+      const reserve = jest.spyOn(
+        harness.queueAdmission,
+        'reserveWithContext'
+      );
+
+      const result = await harness.planner.plan(
+        buildPlanningInput(
+          harness.repositoryBindingId,
+          harness.scanRequest.id
+        )
+      );
+
+      expect(result.planning).toMatchObject({
+        state: 'REJECTED',
+        reasonCodes: [planningReason]
+      });
+      expect(tenantResolve).not.toHaveBeenCalled();
       expect(reserve).not.toHaveBeenCalled();
     }
   );
@@ -714,6 +798,7 @@ describe('SastScanPlannerService', () => {
       restartedQueue,
       harness.ruleBundleCompatibilityGate,
       harness.ruleBundleLifecycleGate,
+      harness.ruleBundleCanaryGate,
       harness.tenantRulePolicyGate,
       harness.policyEvaluationClock
     );
@@ -957,7 +1042,7 @@ describe('SastScanPlannerService', () => {
       isolationClass: baselineResult.plan!.isolationClass
     };
     const keyFor = (
-      scannerSet: PromotionVerifiedScannerSetDescriptor,
+      scannerSet: CanaryQualifiedScannerSetDescriptor,
       inventoryDigest = baseCanonicalInput.inventoryDigest,
       attestationRef = baseCanonicalInput.attestationRef
     ): `sha256:${string}` =>
@@ -973,7 +1058,7 @@ describe('SastScanPlannerService', () => {
         )
         .digest('hex')}`;
     expect(keyFor(baselineResult.plan!.scannerSet)).toBe(baseline);
-    const variants: PromotionVerifiedScannerSetDescriptor[] = [
+    const variants: CanaryQualifiedScannerSetDescriptor[] = [
       { ...baselineResult.plan!.scannerSet, scannerSetDigest: digest('2') },
       {
         ...baselineResult.plan!.scannerSet,
@@ -1024,7 +1109,7 @@ describe('SastScanPlannerService', () => {
     expect(keys.every((key) => key !== baseline)).toBe(true);
     expect(new Set(keys).size).toBe(keys.length);
 
-    const receiptOnlyScannerSet: PromotionVerifiedScannerSetDescriptor = {
+    const receiptOnlyScannerSet: CanaryQualifiedScannerSetDescriptor = {
       ...baselineResult.plan!.scannerSet,
       ruleBundles: baselineResult.plan!.scannerSet.ruleBundles.map(
         (bundle, index) =>

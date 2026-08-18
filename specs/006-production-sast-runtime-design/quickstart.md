@@ -547,8 +547,9 @@ portion of Phase 6:
   Scan Platform or Security Operations approval.
 - `sast-rule-bundle-lifecycle-transition-v1` is an append-only, previous-digest-linked state
   ledger. Only `DRAFT -> VALIDATED -> CANARY -> ACTIVE -> RETIRED`, `CANARY|ACTIVE -> SUSPENDED`,
-  and `SUSPENDED -> ROLLED_BACK` are legal. The exact canary-observation, emergency-suspension,
-  and rollback seams default unavailable until T048, T049, and T050 install their authorities.
+  and `SUSPENDED -> ROLLED_BACK` are legal. T048 installs the exact canary-observation authority;
+  emergency suspension and rollback remain unavailable until T049 and T050 install their
+  independent authorities.
 - Before tenant policy, planning revalidates the latest lifecycle snapshot and persists a
   `sast-rule-bundle-lifecycle-selection-v1` receipt. Only latest `CANARY` or `ACTIVE` bundles are
   selectable. All selected bundle receipts are committed atomically under ordered manifest-row
@@ -557,8 +558,65 @@ portion of Phase 6:
   sequence, transition, evidence, and approval-set projection enters
   `sast-canonical-scan-key-v3`, while the evaluation-time-derived receipt ID/digest is excluded so
   exact retries remain idempotent. Queue reservation locks and revalidates a trigger-maintained
-  latest-transition head plus the receipt before insertion; the schema cutover refuses to proceed
-  while prior v2 SAST work is non-terminal.
+  latest-transition head plus the receipt before insertion; the T047 schema cutover refuses to
+  proceed while prior v2 SAST work is non-terminal.
+- T048 binds one immutable rollout per candidate manifest and profile to the exact `CANARY`
+  lifecycle head, distinct `ACTIVE` baseline, T047 evidence and transition, signed profile,
+  HMAC-key reference/version, eligibility policy, and observation-source digest. It persists no
+  key material, repository content, finding content, or generic JSON. A paused candidate/profile
+  cannot be resumed or re-enrolled; recovery requires a new candidate manifest, fresh evidence,
+  fresh approvals, and a new rollout.
+- Platform-managed eligibility permits only internal corpus, internal repository, or eligible
+  production scopes and records explicit contractual/residency exclusions. Stable cohort
+  membership is HMAC-SHA-256 over length-framed tenant, repository binding, profile, and rollout
+  identity. The first eight digest bytes map to one of 10,000 basis-point buckets and are
+  recomputed by PostgreSQL; customer attributes, repository content, findings, and severity do
+  not participate. The required key is supplied through
+  `SAST_CANARY_COHORT_HMAC_KEY_BASE64`, `SAST_CANARY_COHORT_HMAC_KEY_REF`, and
+  `SAST_CANARY_COHORT_HMAC_KEY_VERSION`; decoded key material must be at least 32 bytes and is
+  zeroed after use. The digest suffix of `KEY_REF` must equal SHA-256 of the decoded key, so a key
+  cannot silently change under an existing reference/version; only that non-secret fingerprint
+  is persisted.
+- Assignment progresses without skipping through `INTERNAL_CORPUS`,
+  `INTERNAL_REPOSITORIES`, `PERCENT_1`, `PERCENT_5`, `PERCENT_25`, and `PERCENT_100`. Only an
+  exact candidate assignment receives a canary descriptor. If a supplied `CANARY` descriptor
+  resolves to `BASELINE` or `EXCLUDED`, the gate rejects it instead of rewriting an already
+  compatibility/lifecycle-verified descriptor. Trusted orchestration must submit the separately
+  verified exact `ACTIVE` baseline scanner set for non-cohort production; excluded scopes are
+  never silently assigned to the candidate. The
+  planner order is compatibility -> lifecycle -> canary -> tenant policy. Queue admission locks
+  and revalidates both lifecycle and canary heads so a pause or step change cannot enqueue a
+  stale candidate plan.
+- `sast-canonical-scan-key-v4` adds only the stable rollout, membership, bucket, and
+  candidate-assigned projection. The immutable plan retains the assignment receipt, rollout
+  step, and step-head binding for admission/audit, but those evaluation-time values are excluded
+  from the key. The T048 migration drains or cancels non-terminal v3 work before cutover and
+  leaves terminal v3 history immutable.
+- T048 observations are append-only, content-free, and accepted only from the rollout's exact
+  observation-source digest after the immutable candidate/baseline plan, assignment, terminal
+  attempt interval, coverage decision, publication decision, and telemetry source are rebound.
+  The caller identifies only rollout/scope/scan/attempt; the trusted adapter derives candidate or
+  baseline role and repository-size bucket from durable plan/telemetry authority.
+  Coverage and publication denial counts are derived from their authoritative rows; missing
+  telemetry and incomplete coverage remain explicit rather than being omitted. Evaluation
+  automatically uses the trusted service clock as the window cutoff and binds every committed
+  observation in that exact closed step window; callers cannot supply a cutoff, observation IDs,
+  or omit an unfavorable scan.
+- Each step compares candidate and baseline by profile and all `SMALL|MEDIUM|LARGE` repository
+  size buckets. The first four steps require at least 200 completed scans per arm and 24 hours;
+  25% and 100% require at least 1,000 per arm and 48 hours. Gates enforce at most a two-point
+  false-positive increase, at most 2% candidate scanner failures, at most 20% p95 latency and
+  completed-scan-normalized Critical/High rate increase over baseline, absolute 10-minute Fast
+  or 45-minute Deep p95, complete telemetry/coverage/size comparison, and zero cross-tenant,
+  secret-leak, sandbox-escape,
+  stale-publication, unauthorized-egress, missing-destruction-evidence, evidence-policy, or
+  unsigned-artifact-execution events. Insufficient time/sample is `PENDING`; every hard failure
+  is terminal `PAUSED`.
+- Only six ordered `PASSED` decisions issue an immutable
+  `sast-rule-bundle-canary-observation-receipt-v1`, which the lifecycle authority router accepts
+  solely for the exact `CANARY -> ACTIVE` transition. The default production observation source
+  remains unavailable until a production-qualified adapter supplies the exact durable metrics;
+  it never fabricates evidence. T049 and T050 authorities remain unavailable.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -578,8 +636,11 @@ pre-queue fail-closed planning gate are complete. T046 reusable semantic rule me
 byte-exact signed-manifest bindings, monotonic non-executable tenant policy, immutable
 resolution receipts, and canonical-plan/queue gating are also complete. T047 quantitative
 promotion evidence, independent approvals, append-only lifecycle transitions, latest-state
-selection receipts, and canonical v3 planning gates are complete; T048 deterministic
-tenant-safe canary cohorts and observation gates are the next implementation task.
+selection receipts, and canonical v3 planning gates are complete. T048 deterministic
+tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step promotion
+authority, queue-head fencing, and canonical v4 planning gates are complete; T049 scanner,
+bundle, rule, profile, tenant, repository, capability, publication, and global kill switches
+are the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 

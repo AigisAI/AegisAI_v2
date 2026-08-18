@@ -28,6 +28,15 @@ new Function('module', 'exports', transpile(lifecycleSource).outputText)(
   lifecycleModule,
   lifecycleModule.exports
 );
+const canarySource = readFileSync(
+  new URL('../src/types/sast-rule-bundle-canary.ts', import.meta.url),
+  'utf8'
+);
+const canaryModule = { exports: {} };
+new Function('module', 'exports', transpile(canarySource).outputText)(
+  canaryModule,
+  canaryModule.exports
+);
 const source = readFileSync(new URL('../src/types/sast-runtime.ts', import.meta.url), 'utf8');
 const transpiled = transpile(source);
 const localModule = { exports: {} };
@@ -35,6 +44,7 @@ const evaluateModule = new Function('module', 'exports', 'require', transpiled.o
 evaluateModule(localModule, localModule.exports, (specifier) => {
   if (specifier === './sast-rule-semantic-policy') return semanticModule.exports;
   if (specifier === './sast-rule-promotion-lifecycle') return lifecycleModule.exports;
+  if (specifier === './sast-rule-bundle-canary') return canaryModule.exports;
   throw new Error(`unsupported local module: ${specifier}`);
 });
 const runtime = localModule.exports;
@@ -67,6 +77,30 @@ const signedArtifact = (character) => ({
   provenanceRef: `provenance://${character}`
 });
 
+const canaryAssignment = (character) => {
+  const rolloutDigest = digest(character);
+  const membershipDigest = digest(character === 'f' ? 'e' : 'f');
+  const assignmentReceiptDigest = digest(character === 'e' ? 'd' : 'e');
+  return {
+    rolloutId: `sast-rule-bundle-canary-rollout://${character.repeat(64)}`,
+    rolloutDigest,
+    membershipId: `sast-rule-bundle-canary-membership://${membershipDigest.slice(
+      'sha256:'.length
+    )}`,
+    membershipDigest,
+    bucketBasisPoints: 0,
+    step: 'INTERNAL_CORPUS',
+    stepHeadDecisionId: null,
+    stepHeadDecisionDigest: null,
+    assignmentReceiptId:
+      `sast-rule-bundle-canary-assignment://${assignmentReceiptDigest.slice(
+        'sha256:'.length
+      )}`,
+    assignmentReceiptDigest,
+    candidateAssigned: true
+  };
+};
+
 const ruleBundle = (scanner, character, state = 'ACTIVE') => ({
   bundleId: `${scanner.toLowerCase()}-rules`,
   version: '1.0.0',
@@ -95,6 +129,7 @@ const ruleBundle = (scanner, character, state = 'ACTIVE') => ({
     selectionReceiptId: `sast-rule-bundle-lifecycle-selection://${character.repeat(64)}`,
     selectionReceiptDigest: digest(character)
   },
+  canaryAssignment: state === 'CANARY' ? canaryAssignment(character) : null,
   scanner,
   source: 'PLATFORM_MANAGED',
   immutable: true,
