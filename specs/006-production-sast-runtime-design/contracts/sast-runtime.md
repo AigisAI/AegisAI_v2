@@ -1406,10 +1406,58 @@ fixed safety facts. The verified descriptor enters both the canonical scan key a
 `SastScanPlan` before queue reservation. All failure paths expose only bounded planning reasons,
 write no successful receipt, and invoke neither queue reservation nor scanner execution.
 
-The receipt-bearing preimage is versioned `sast-canonical-scan-key-v2`. Before deploying it,
-all non-terminal v1 SAST plans and reservations must finish or be explicitly canceled; the
-schema migration rejects a dirty cutover. Terminal v1 records remain immutable audit history
-and are never rewritten or dispatched under the v2 identity.
+The tenant-policy receipt remains part of the current canonical preimage. T047 advances that
+preimage to v3 as described below; terminal earlier-version records remain immutable audit
+history and are never rewritten under a newer identity.
+
+### Promotion evidence and lifecycle selection gate v1
+
+`sast-rule-bundle-promotion-evidence-v1` accepts only an exact candidate/baseline pair whose
+candidate manifest and supply-chain verification already exist in T045. The baseline must be
+distinct, its bundle digest must equal the rollback target, the profile must match, every
+environment/corpus reference must be immutable and digest-bound, and `measuredAt` must not be
+future relative to the trusted lifecycle clock. Evidence construction applies the quantitative
+thresholds in `quality-gates.md`; failed or incomplete metrics create no evidence row. Evidence
+is explicitly automated-only and has zero approval authority.
+
+`sast-rule-bundle-promotion-approval-v1` is an exact human decision bound to that evidence and
+candidate. Candidate authors cannot approve their own work. Approval roles and approvers are
+unique within a transition and ordered canonically. Security Engineering is mandatory on every
+edge; `ACTIVE` and `RETIRED` also require an independent Scan Platform or Security Operations
+approval. Approval time must lie between evidence measurement and transition time.
+
+`sast-rule-bundle-lifecycle-transition-v1` permits only:
+
+```text
+DRAFT -> VALIDATED -> CANARY -> ACTIVE -> RETIRED
+CANARY|ACTIVE -> SUSPENDED
+SUSPENDED -> ROLLED_BACK
+```
+
+Every row increments one bundle's sequence, binds the immediately previous transition and
+digest, revalidates the exact evidence and approvals, and is immutable after insertion. A
+`CANARY -> ACTIVE` transition requires `CANARY_OBSERVATION`; suspension requires
+`EMERGENCY_SUSPENSION`; rollback requires `ROLLBACK`. Each authority must return a matching
+digest-bound receipt. Their production defaults intentionally return unavailable until T048,
+T049, and T050 install the corresponding implementations; all other edges require `NONE` and
+must contain no external receipt.
+
+Before tenant-policy resolution, the lifecycle gate serializably reloads the latest transition,
+evidence, and approvals and accepts only `CANARY` or `ACTIVE`. It persists one content-free
+`sast-rule-bundle-lifecycle-selection-v1` receipt and enriches the immutable scanner-set
+descriptor with the lifecycle state, sequence, transition, evidence, approval-set, and selection
+receipt digests. Denial, stale selection, chain drift, unavailable persistence, or invalid clock
+creates no successful receipt and no queue reservation. Receipt replay rechecks latest state;
+ordered manifest-row locks and one serializable scanner-set transaction make all bundle receipts
+atomic, while database advisory locks and triggers independently reject transition/selection
+forks. Compatibility verification therefore precedes lifecycle selection, lifecycle selection
+precedes tenant policy, and both verified receipts precede canonical-key construction and queue
+admission.
+
+The lifecycle-bearing preimage is exactly `sast-canonical-scan-key-v3`. Before deployment, all
+non-terminal v2 SAST plans and reservations must finish or be explicitly canceled; the schema
+migration rejects a dirty cutover. Terminal v2 records remain immutable audit history and are
+never rewritten or dispatched under the v3 identity.
 
 ## Cleanup Contract
 

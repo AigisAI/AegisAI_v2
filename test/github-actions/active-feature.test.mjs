@@ -54,6 +54,8 @@ const files = {
   sharedSastRuleBundleManifestTest: new URL('../../packages/shared/test/sast-rule-bundle-manifest.test.mjs', import.meta.url),
   sharedSastRuleSemanticPolicy: new URL('../../packages/shared/src/types/sast-rule-semantic-policy.ts', import.meta.url),
   sharedSastRuleSemanticPolicyTest: new URL('../../packages/shared/test/sast-rule-semantic-policy.test.mjs', import.meta.url),
+  sharedSastRulePromotionLifecycle: new URL('../../packages/shared/src/types/sast-rule-promotion-lifecycle.ts', import.meta.url),
+  sharedSastRulePromotionLifecycleTest: new URL('../../packages/shared/test/sast-rule-promotion-lifecycle.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -135,6 +137,13 @@ const files = {
   apiTenantRulePolicyGate: new URL('../../apps/api/src/rule-governance/sast-tenant-rule-policy.gate.ts', import.meta.url),
   apiRuleSemanticPolicyServiceTest: new URL('../../apps/api/test/rule-governance/sast-rule-semantic-policy.service.e2e-spec.ts', import.meta.url),
   apiRuleSemanticPolicyPersistenceTest: new URL('../../apps/api/test/rule-governance/sast-rule-semantic-policy-persistence.e2e-spec.ts', import.meta.url),
+  apiRuleBundleLifecycleService: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-lifecycle.service.ts', import.meta.url),
+  apiRuleBundleLifecycleStore: new URL('../../apps/api/src/rule-governance/prisma-sast-rule-bundle-lifecycle.store.ts', import.meta.url),
+  apiRuleBundleLifecycleGate: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-lifecycle.gate.ts', import.meta.url),
+  apiRuleBundleLifecycleAuthority: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-lifecycle.authority.ts', import.meta.url),
+  apiRuleBundleLifecycleClock: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-lifecycle.clock.ts', import.meta.url),
+  apiRuleBundleLifecycleServiceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-lifecycle.service.e2e-spec.ts', import.meta.url),
+  apiRuleBundleLifecyclePersistenceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-lifecycle-persistence.e2e-spec.ts', import.meta.url),
   aiAdvisoryRuntime: new URL('../../apps/ai/src/advisory-runtime.ts', import.meta.url),
   aiModelGateway: new URL('../../apps/ai/src/model-gateway.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
@@ -149,6 +158,7 @@ const files = {
   apiSastAiAdvisoryAuthorityMigration: new URL('../../apps/api/prisma/migrations/20260811140000_sast_ai_advisory_authority_proof/migration.sql', import.meta.url),
   apiSastRuleBundleManifestMigration: new URL('../../apps/api/prisma/migrations/20260813120000_sast_rule_bundle_manifest/migration.sql', import.meta.url),
   apiSastRuleSemanticPolicyMigration: new URL('../../apps/api/prisma/migrations/20260813130000_sast_rule_semantic_policy/migration.sql', import.meta.url),
+  apiSastRuleBundleLifecycleMigration: new URL('../../apps/api/prisma/migrations/20260814120000_sast_rule_bundle_lifecycle/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -196,6 +206,20 @@ const assertScanPlaneExports = (scanPlaneModule) => {
   assert.doesNotMatch(exportsBlock, /OpenGrepSarifNormalizer/);
   assert.doesNotMatch(exportsBlock, /TrivyJsonNormalizer/);
   assert.doesNotMatch(exportsBlock, /SyftCycloneDxInventoryIngestor/);
+};
+
+const assertT047QuickstartHandoff = (quickstart) => {
+  assert.match(
+    quickstart,
+    /T045 signed immutable,[\s\S]{0,360}T046 reusable semantic rule metadata,[\s\S]{0,360}are also complete\. T047 quantitative[\s\S]{0,280}are complete; T048 deterministic/
+  );
+};
+
+const assertT047PlanHandoff = (plan) => {
+  assert.match(
+    plan,
+    /T040, T041, T042, T043, T044, T045, T046, and T047 independently and now proceeds to T048/
+  );
 };
 
 test('production SAST runtime design is the active feature package', () => {
@@ -1305,10 +1329,7 @@ test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () =
 
   assert.match(tasks, /- \[x\] T039\b/);
   assert.match(tasks, /- \[x\] T040\b/);
-  assert.match(
-    quickstart,
-    /T045 signed immutable,[\s\S]{0,320}T046 reusable semantic rule metadata,[\s\S]{0,320}are also complete; T047 promotion/
-  );
+  assertT047QuickstartHandoff(quickstart);
   assert.match(contract, /Scan coverage gate v1/);
   assert.match(contract, /Freshness and bounded retry gate v1/);
   assert.match(dataModel, /SastExternalPublicationDecision/);
@@ -1441,17 +1462,11 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
   assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T041\b/);
-  assert.match(
-    quickstart,
-    /T045 signed immutable,[\s\S]{0,320}T046 reusable semantic rule metadata,[\s\S]{0,320}are also complete; T047 promotion/
-  );
+  assertT047QuickstartHandoff(quickstart);
   assert.match(contract, /Accepted-finding evidence gate v1/);
   assert.match(dataModel, /SastEvidenceBuildDecision/);
   assert.match(dataModel, /SastAcceptedEvidencePack/);
-  assert.match(
-    plan,
-    /T040, T041, T042, T043, T044, T045, and T046 independently and now proceeds to T047/
-  );
+  assertT047PlanHandoff(plan);
   assert.match(spec, /FR-046a/);
   assert.match(
     research,
@@ -1624,10 +1639,7 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T042\b/);
-  assert.match(
-    quickstart,
-    /T045 signed immutable,[\s\S]{0,320}T046 reusable semantic rule metadata,[\s\S]{0,320}are also complete; T047 promotion/
-  );
+  assertT047QuickstartHandoff(quickstart);
   assert.match(contract, /Evidence access and deletion gate v1/);
   assert.match(dataModel, /SastEvidenceAccessDecision/);
   assert.match(dataModel, /SastEvidenceDeletionProof/);
@@ -1778,16 +1790,10 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   assert.doesNotMatch(migration, /"handoff" JSONB/);
 
   assert.match(tasks, /- \[x\] T043\b/);
-  assert.match(
-    quickstart,
-    /T045 signed immutable,[\s\S]{0,320}T046 reusable semantic rule metadata,[\s\S]{0,320}are also complete; T047 promotion/
-  );
+  assertT047QuickstartHandoff(quickstart);
   assert.match(contract, /Advisory AI handoff gate v1/);
   assert.match(dataModel, /### SastAiAdvisoryHandoff/);
-  assert.match(
-    plan,
-    /T040, T041, T042, T043, T044, T045, and T046 independently and now proceeds to T047/
-  );
+  assertT047PlanHandoff(plan);
   assert.match(spec, /FR-051a/);
   assert.match(
     research,
@@ -1922,16 +1928,10 @@ test('SAST T044 proves AI output has zero finding and policy authority', () => {
   );
 
   assert.match(tasks, /- \[x\] T044\b/);
-  assert.match(
-    quickstart,
-    /T045 signed immutable,[\s\S]{0,320}T046 reusable semantic rule metadata,[\s\S]{0,320}are also complete; T047 promotion/
-  );
+  assertT047QuickstartHandoff(quickstart);
   assert.match(contract, /Advisory output authority proof gate v1/);
   assert.match(dataModel, /### SastAiAdvisoryAuthorityProof/);
-  assert.match(
-    plan,
-    /T040, T041, T042, T043, T044, T045, and T046 independently and now proceeds to T047/
-  );
+  assertT047PlanHandoff(plan);
   assert.match(spec, /FR-052a/);
   assert.match(
     research,
@@ -2046,14 +2046,8 @@ test('SAST T045 requires signed immutable manifests and exact compatibility befo
   );
 
   assert.match(tasks, /- \[x\] T045\b/);
-  assert.match(
-    quickstart,
-    /T045 signed immutable,[\s\S]{0,320}T046 reusable semantic rule metadata,[\s\S]{0,320}are also complete; T047 promotion/
-  );
-  assert.match(
-    plan,
-    /T040, T041, T042, T043, T044, T045, and T046 independently and now proceeds to T047/
-  );
+  assertT047QuickstartHandoff(quickstart);
+  assertT047PlanHandoff(plan);
   assert.match(ruleGovernance, /A signed bundle manifest contains only/);
   assert.match(ruleGovernance, /mutable tags[\s\S]{0,40}invalid production inputs/);
   assert.match(contract, /Rule-bundle manifest and compatibility gate v1/);
@@ -2120,7 +2114,7 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   assert.match(sharedRuntime, /tenantRulePolicy/);
   assert.match(sharedPlanning, /TENANT_RULE_POLICY_INVALID/);
   assert.match(sharedPlanning, /tenantRulePolicy/);
-  assert.match(sharedPlanning, /sast-canonical-scan-key-v2/);
+  assert.match(sharedPlanning, /sast-canonical-scan-key-v3/);
   assert.match(sharedIndex, /sast-rule-semantic-policy/);
 
   assert.match(service, /registerRuleMetadataBinding/);
@@ -2205,14 +2199,8 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   );
 
   assert.match(tasks, /- \[x\] T046\b/);
-  assert.match(
-    quickstart,
-    /T046 reusable semantic rule metadata,[\s\S]{0,320}are also complete; T047 promotion/
-  );
-  assert.match(
-    plan,
-    /T040, T041, T042, T043, T044, T045, and T046 independently and now proceeds to T047/
-  );
+  assertT047QuickstartHandoff(quickstart);
+  assertT047PlanHandoff(plan);
   assert.match(contract, /Semantic metadata and tenant rule-policy gate v1/);
   assert.match(contract, /exact UTC millisecond form/);
   assert.match(dataModel, /### RuleDefinitionMetadata/);
@@ -2224,6 +2212,182 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   assert.match(threatModel, /Semantic identity reuse/);
   assert.match(qualityGates, /100% T046 semantic-identity invariant/);
   assert.match(qualityGates, /100% T046 policy\/planning invariant/);
+});
+
+test('SAST T047 binds promotion evidence and latest lifecycle state before queueing', () => {
+  const shared = readNormalizedText(files.sharedSastRulePromotionLifecycle);
+  const sharedTest = readNormalizedText(
+    files.sharedSastRulePromotionLifecycleTest
+  );
+  const sharedRuntime = readNormalizedText(files.sharedSastRuntime);
+  const sharedPlanning = readNormalizedText(files.sharedSastPlanning);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiRuleBundleLifecycleService);
+  const store = readNormalizedText(files.apiRuleBundleLifecycleStore);
+  const gate = readNormalizedText(files.apiRuleBundleLifecycleGate);
+  const authority = readNormalizedText(files.apiRuleBundleLifecycleAuthority);
+  const clock = readNormalizedText(files.apiRuleBundleLifecycleClock);
+  const moduleSource = readNormalizedText(files.apiRuleGovernanceModule);
+  const serviceTest = readNormalizedText(files.apiRuleBundleLifecycleServiceTest);
+  const persistenceTest = readNormalizedText(
+    files.apiRuleBundleLifecyclePersistenceTest
+  );
+  const planner = readNormalizedText(files.apiSastPlanner);
+  const plannerTest = readNormalizedText(files.apiSastPlannerTest);
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(files.apiSastRuleBundleLifecycleMigration);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(shared, /sast-rule-bundle-promotion-evidence-v1/);
+  assert.match(shared, /sast-rule-bundle-promotion-approval-v1/);
+  assert.match(shared, /sast-rule-bundle-lifecycle-transition-v1/);
+  assert.match(shared, /sast-rule-bundle-lifecycle-selection-v1/);
+  assert.match(shared, /minimumPositiveCases: 200/);
+  assert.match(shared, /minimumNegativeCases: 200/);
+  assert.match(shared, /minimumPerformanceRuns: 30/);
+  assert.match(shared, /minimumMustDetectRecallBasisPoints: 9_500/);
+  assert.match(shared, /minimumCriticalHighPrecisionBasisPoints: 9_000/);
+  assert.match(shared, /maximumFalsePositiveIncreaseBasisPoints: 200/);
+  assert.match(shared, /maximumScannerFailureRateBasisPoints: 200/);
+  assert.match(shared, /maximumP95LatencyIncreaseBasisPoints: 2_000/);
+  assert.match(shared, /automatedEvidenceOnly: true/);
+  assert.match(shared, /automatedApproval: false/);
+  assert.match(shared, /approvalSeparationVerified: true/);
+  assert.match(
+    sharedTest,
+    /rejects every quantitative gate independently and in stable order/
+  );
+  assert.match(
+    sharedTest,
+    /permits only the append-only lifecycle graph and required authorities/
+  );
+  assert.match(
+    sharedTest,
+    /validators return false for hostile nested shapes without throwing/
+  );
+  assert.match(sharedRuntime, /PromotionVerifiedScannerSetDescriptor/);
+  assert.match(sharedRuntime, /VerifiedSastRuleBundleLifecycleDescriptor/);
+  for (const reason of [
+    'RULE_BUNDLE_PROMOTION_EVIDENCE_UNVERIFIED',
+    'RULE_BUNDLE_PROMOTION_APPROVAL_INVALID',
+    'RULE_BUNDLE_LIFECYCLE_NOT_SELECTABLE',
+    'RULE_BUNDLE_LIFECYCLE_STALE',
+    'RULE_BUNDLE_LIFECYCLE_AUTHORITY_UNAVAILABLE',
+    'RULE_BUNDLE_LIFECYCLE_STORE_UNAVAILABLE'
+  ]) {
+    assert.match(sharedPlanning, new RegExp(reason));
+    assert.match(planner, new RegExp(reason));
+  }
+  assert.match(sharedPlanning, /sast-canonical-scan-key-v3/);
+  assert.match(sharedIndex, /sast-rule-promotion-lifecycle/);
+
+  assert.match(service, /registerPromotionEvidence/);
+  assert.match(service, /registerPromotionApproval/);
+  assert.match(service, /async transition/);
+  assert.match(service, /recordLifecycleSelections/);
+  assert.match(store, /Prisma\.TransactionIsolationLevel\.Serializable/);
+  assert.match(store, /FOR UPDATE/);
+  assert.match(store, /transitionExtendsLatest/);
+  assert.match(store, /selectionMatchesLatest/);
+  assert.match(gate, /PROMOTION_EVIDENCE_UNVERIFIED/);
+  assert.match(gate, /PROMOTION_APPROVAL_INVALID/);
+  assert.match(authority, /UnavailableSastRuleBundleLifecycleAuthority/);
+  assert.match(clock, /return new Date\(\)/);
+  assert.match(moduleSource, /SastRuleBundleLifecycleService/);
+  assert.match(moduleSource, /SastRuleBundleLifecycleGate/);
+  assert.match(moduleSource, /UnavailableSastRuleBundleLifecycleAuthority/);
+  assert.match(
+    serviceTest,
+    /promotes two verified bundles through the exact graph and binds latest ACTIVE receipts/
+  );
+  assert.match(
+    serviceTest,
+    /denies planning after an authoritative suspension transition/
+  );
+  assert.match(
+    serviceTest,
+    /persists no partial scanner-set selection when a later bundle is unverified/
+  );
+  assert.match(
+    persistenceTest,
+    /serializes append and latest-selection races with bounded retries/
+  );
+
+  const compatibilityGate = planner.indexOf(
+    'ruleBundleCompatibilityGate.verifyScannerSet'
+  );
+  const lifecycleGate = planner.indexOf(
+    'ruleBundleLifecycleGate.verifyScannerSet'
+  );
+  const policyGate = planner.indexOf('tenantRulePolicyGate.resolve');
+  const canonicalKey = planner.indexOf(
+    'buildSastCanonicalScanKeyPreimage',
+    policyGate
+  );
+  const queueReservation = planner.indexOf(
+    'assertSastQueueReservationAllowed'
+  );
+  assert.ok(compatibilityGate >= 0);
+  assert.ok(lifecycleGate > compatibilityGate);
+  assert.ok(policyGate > lifecycleGate);
+  assert.ok(canonicalKey > policyGate);
+  assert.ok(queueReservation > canonicalKey);
+  assert.match(
+    plannerTest,
+    /fails closed before tenant policy and queue reservation for lifecycle %s/
+  );
+  assert.match(
+    plannerTest,
+    /selectionReceiptDigest: digest\('a'\)/
+  );
+
+  for (const model of [
+    'SastRuleBundlePromotionEvidence',
+    'SastRuleBundlePromotionApproval',
+    'SastRuleBundleLifecycleTransition',
+    'SastRuleBundleLifecycleTransitionApproval',
+    'SastRuleBundleLifecycleSelectionReceipt'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(migration, new RegExp(`CREATE TABLE "${model}"`));
+    assert.match(migration, new RegExp(`${model}_immutable_update`));
+    assert.match(migration, new RegExp(`${model}_immutable_delete`));
+  }
+  assert.match(migration, /T047 canonical scan-key v3 cutover/);
+  assert.match(
+    migration,
+    /"positiveCases" BETWEEN 200 AND 1000000000[\s\S]{0,80}"negativeCases" BETWEEN 200 AND 1000000000/
+  );
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /DEFERRABLE INITIALLY DEFERRED/);
+  assert.match(migration, /SastRuleBundleLifecycleSelectionReceipt_latest/);
+  assert.doesNotMatch(migration, /JSONB/);
+  assert.doesNotMatch(
+    migration,
+    /"(?:ruleContent|sourceContent|repositoryContent|signatureBytes|provenancePayload|secretValue)"/
+  );
+
+  assert.match(tasks, /- \[x\] T047\b/);
+  assertT047QuickstartHandoff(quickstart);
+  assertT047PlanHandoff(plan);
+  assert.match(contract, /Promotion evidence and lifecycle selection gate v1/);
+  assert.match(dataModel, /### SastRuleBundlePromotionEvidence/);
+  assert.match(dataModel, /### SastRuleBundleLifecycleSelectionReceipt/);
+  assert.match(spec, /FR-055a/);
+  assert.match(spec, /FR-055b/);
+  assert.match(spec, /FR-055c/);
+  assert.match(ruleGovernance, /T047 Promotion and Lifecycle Boundary/);
+  assert.match(threatModel, /Lifecycle fork, stale replay, or partial scanner-set selection/);
+  assert.match(qualityGates, /100% T047 evidence invariant/);
+  assert.match(qualityGates, /100% T047 planning invariant/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

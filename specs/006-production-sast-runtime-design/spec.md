@@ -420,6 +420,19 @@ incomplete, stale, quarantined, or security-blocked scan.
   scans.
 - **FR-055**: Promotion MUST require signature/provenance verification, corpus results,
   compatibility evidence, security approval, and rollback reference.
+- **FR-055a**: Promotion evidence MUST bind one exact T045 candidate and distinct baseline,
+  profile, candidate author, tested rollback target, digest-bound environment/corpora, trusted
+  measurement time, sufficient sample counts, every quantitative threshold, and zero security
+  events. Automated evidence MUST NOT grant approval, and invalid evidence MUST create no row.
+- **FR-055b**: Lifecycle approvals MUST be immutable human decisions bound to the exact evidence
+  and candidate. Candidate self-approval, duplicate roles/approvers, and approvals outside the
+  evidence-to-transition interval MUST fail closed. Every edge MUST have Security Engineering;
+  `ACTIVE` and `RETIRED` MUST also have Scan Platform or Security Operations approval.
+- **FR-055c**: Lifecycle transitions MUST be append-only, strictly sequenced, and bound to the
+  immediately previous digest. Only the documented state graph is legal. `CANARY -> ACTIVE`,
+  suspension, and rollback MUST require matching digest-bound external-authority receipts; their
+  default providers MUST be unavailable. Planning MUST admit only the latest `CANARY` or `ACTIVE`
+  transition through one immutable selection receipt before tenant policy and queue reservation.
 - **FR-056**: Canary assignment MUST be deterministic and tenant-safe; one tenant MUST NOT
   receive mixed bundle versions for the same canonical scan.
 - **FR-057**: Emergency kill switches MUST exist for scanner version, rule bundle, rule ID,
@@ -439,9 +452,10 @@ incomplete, stale, quarantined, or security-blocked scan.
   reservation. Missing, extra, mismatched, expired, unknown, cross-scope, mandatory-disable,
   persistence-unavailable, or trusted-clock-invalid state MUST fail closed and MUST create no
   successful receipt. The evaluation instant MUST come from a service-owned UTC clock, never
-  a caller request timestamp. The receipt MUST enter `sast-canonical-scan-key-v2`; deployment
-  MUST drain or explicitly cancel every non-terminal v1 SAST plan and reservation before the
-  v2 cutover, while retaining terminal v1 rows as immutable audit history.
+  a caller request timestamp. The receipt and the verified T047 lifecycle selection MUST enter
+  `sast-canonical-scan-key-v3`; deployment MUST drain or explicitly cancel every non-terminal v2
+  SAST plan and reservation before the v3 cutover, while retaining terminal v2 rows as immutable
+  audit history.
 
 ### Audit and Observability
 

@@ -113,12 +113,39 @@ command-line flags, rule code, templates, post-processors, or executable configu
   path exclusions, and severity floors are frozen into `SastScanPlan`. Normalized immutable
   PostgreSQL ledgers, restrictive exact-projection foreign keys, mutation-rejection triggers,
   and serializable exact replay preserve the decision after process restart.
-- `sast-canonical-scan-key-v2` commits the verified tenant-policy receipt. Deployment is a
-  fail-closed cutover: every non-terminal v1 SAST plan and queue reservation must first finish
-  or be explicitly canceled. Terminal v1 rows remain immutable audit history and are never
-  rewritten or replayed as v2 work.
-- T046 grants no rule promotion, canary, kill-switch, rollback, scanner execution, waiver
-  creation, finding mutation, publication, AI, or SCM authority. Those remain T047-T050 and
+- The verified tenant-policy receipt remains committed to the current canonical plan. T047
+  advances the complete preimage to `sast-canonical-scan-key-v3` and adds the lifecycle receipt.
+- T046 grants no lifecycle transition, scanner execution, waiver creation, finding mutation,
+  publication, AI, or SCM authority. Those require their independently scoped runtime gates.
+
+### T047 Promotion and Lifecycle Boundary
+
+- `sast-rule-bundle-promotion-evidence-v1` binds a candidate and distinct last-known-good
+  baseline to the exact T045 manifest/verification records, profile, rollback digest, immutable
+  corpus/environment references, sufficient samples, all quantitative gates, and a trusted
+  measurement time. It is automated evidence only and cannot approve a transition.
+- `sast-rule-bundle-promotion-approval-v1` records one human approval from Security Engineering,
+  Scan Platform, or Security Operations. Candidate self-approval, duplicate roles, duplicate
+  approvers, pre-evidence approval, and post-transition approval fail closed.
+- Every append-only `sast-rule-bundle-lifecycle-transition-v1` edge requires Security Engineering.
+  `ACTIVE` and `RETIRED` additionally require an independent Scan Platform or Security Operations
+  approval. The sequence and previous digest form one immutable history per manifest/bundle.
+- `CANARY -> ACTIVE`, suspension, and rollback require exact digest-bound receipts from
+  `CANARY_OBSERVATION`, `EMERGENCY_SUSPENSION`, and `ROLLBACK` authorities respectively. The
+  installed defaults are unavailable: T048, T049, and T050 must provide them before those edges
+  can execute in production.
+- Planning first verifies T045 compatibility, then revalidates the latest lifecycle state and
+  persists `sast-rule-bundle-lifecycle-selection-v1`, then resolves T046 tenant policy. Only the
+  latest `CANARY` or `ACTIVE` state is selectable; every other state, stale transition, digest
+  drift, unavailable store, or invalid clock produces no successful receipt or queue reservation.
+  Exact replay rechecks latest state, and ordered manifest-row locks commit all scanner-set
+  selection receipts atomically so a concurrent or later-bundle failure leaves no partial set.
+- `sast-canonical-scan-key-v3` commits the verified lifecycle and tenant-policy receipts. The
+  migration rejects deployment while any v2 plan or reservation is non-terminal; terminal v2
+  history is retained and never rewritten or replayed as v3 work.
+- T047 does not assign tenant-safe canary cohorts, observe production canaries, actuate kill
+  switches, route last-known-good rollback execution, execute scanners, create waivers, mutate
+  findings, publish externally, grant AI authority, or write to SCM. Those remain T048-T050 and
   later runtime gates.
 
 ## Lifecycle

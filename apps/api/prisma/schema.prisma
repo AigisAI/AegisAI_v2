@@ -2045,8 +2045,13 @@ model SastRuleBundleManifest {
   supplyChainAttestation     SastRuleBundleSupplyChainAttestation?
   compatibilityReceipts      SastRuleBundleCompatibilityReceipt[]
   definitionMetadataBindings SastRuleDefinitionMetadataBinding[]
+  promotionCandidateEvidence SastRuleBundlePromotionEvidence[]     @relation("SastRuleBundlePromotionCandidateManifest")
+  promotionBaselineEvidence  SastRuleBundlePromotionEvidence[]     @relation("SastRuleBundlePromotionBaselineManifest")
+  lifecycleTransitions       SastRuleBundleLifecycleTransition[]
 
   @@unique([id, manifestDigest], map: "SastRuleBundleManifest_id_digest_key")
+  @@unique([id, manifestDigest, bundleDigest], map: "SastRuleBundleManifest_evidence_baseline_key")
+  @@unique([id, manifestDigest, bundleId, bundleDigest], map: "SastRuleBundleManifest_evidence_candidate_key")
   @@unique([id, manifestDigest, bundleId, bundleDigest, scanner], map: "SastRuleBundleManifest_metadata_binding_key")
   @@index([bundleId, bundleVersion])
   @@index([scanner, lifecycleState])
@@ -2116,6 +2121,9 @@ model SastRuleBundleSupplyChainAttestation {
 
   manifest              SastRuleBundleManifest               @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   compatibilityReceipts SastRuleBundleCompatibilityReceipt[]
+  promotionEvidence     SastRuleBundlePromotionEvidence[]
+
+  @@unique([id, manifestId, attestationDigest], map: "SastRuleBundleSupplyChainAttestation_evidence_key")
 }
 
 model SastRuleBundleCompatibilityReceipt {
@@ -2151,6 +2159,202 @@ model SastRuleBundleCompatibilityReceipt {
 
   @@unique([manifestId, scannerSetDigest, profileDigest], map: "SastRuleBundleCompatibilityReceipt_manifest_context_key")
   @@index([scannerSetDigest, profileId], map: "SastRuleBundleCompatibilityReceipt_scannerSet_profile_idx")
+}
+
+model SastRuleBundlePromotionEvidence {
+  id                               String   @id
+  contractVersion                  String
+  evidenceDigest                   String   @unique
+  manifestId                       String
+  manifestDigest                   String
+  verificationId                   String
+  verificationDigest               String
+  bundleId                         String
+  bundleDigest                     String
+  profileId                        String
+  candidateAuthorRef               String
+  baselineManifestId               String
+  baselineManifestDigest           String
+  baselineBundleDigest             String
+  rollbackTargetDigest             String
+  environmentRef                   String
+  goldenCorpusRef                  String
+  priorMustDetectCorpusRef         String
+  maliciousCorpusRef               String
+  parserCorpusRef                  String
+  fingerprintCorpusRef             String
+  coverageCorpusRef                String
+  performanceCorpusRef             String
+  corpusSetDigest                  String
+  positiveCases                    Int
+  negativeCases                    Int
+  performanceRuns                  Int
+  goldenPassedCases                Int
+  goldenTotalCases                 Int
+  priorMustDetectPassedCases       Int
+  priorMustDetectTotalCases        Int
+  mustDetectTruePositiveCases      Int
+  mustDetectExpectedCases          Int
+  criticalHighTruePositiveCases    Int
+  criticalHighReportedCases        Int
+  maliciousPassedCases             Int
+  maliciousTotalCases              Int
+  parserRejectedCases              Int
+  parserExpectedRejectCases        Int
+  fingerprintPassedCases           Int
+  fingerprintTotalCases            Int
+  coveragePassedCases              Int
+  coverageTotalCases               Int
+  falsePositiveIncreaseBasisPoints Int
+  scannerFailureRateBasisPoints    Int
+  p95LatencyIncreaseBasisPoints    Int
+  crossTenantEvents                Int
+  secretLeakEvents                 Int
+  sandboxEscapeEvents              Int
+  stalePublicationEvents           Int
+  measurementDigest                String
+  measuredAt                       DateTime
+  gatesPassed                      Boolean  @default(true)
+  automatedEvidenceOnly            Boolean  @default(true)
+  approvalGranted                  Boolean  @default(false)
+  customerInputAccepted            Boolean  @default(false)
+  executableRuleContentStored      Boolean  @default(false)
+  repositoryContentStored          Boolean  @default(false)
+  secretValueStored                Boolean  @default(false)
+  createdAt                        DateTime @default(now())
+
+  candidateManifest SastRuleBundleManifest               @relation("SastRuleBundlePromotionCandidateManifest", fields: [manifestId, manifestDigest, bundleId, bundleDigest], references: [id, manifestDigest, bundleId, bundleDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundlePromotionEvidence_candidate_manifest_fkey")
+  baselineManifest  SastRuleBundleManifest               @relation("SastRuleBundlePromotionBaselineManifest", fields: [baselineManifestId, baselineManifestDigest, baselineBundleDigest], references: [id, manifestDigest, bundleDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundlePromotionEvidence_baseline_manifest_fkey")
+  verification      SastRuleBundleSupplyChainAttestation @relation(fields: [verificationId, manifestId, verificationDigest], references: [id, manifestId, attestationDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundlePromotionEvidence_verification_fkey")
+  approvals         SastRuleBundlePromotionApproval[]
+  transitions       SastRuleBundleLifecycleTransition[]
+
+  @@unique([id, evidenceDigest, manifestId, manifestDigest, bundleDigest, candidateAuthorRef], map: "SastRuleBundlePromotionEvidence_binding_key")
+  @@index([manifestId, measuredAt], map: "SastRuleBundlePromotionEvidence_manifest_measured_idx")
+  @@index([baselineManifestId], map: "SastRuleBundlePromotionEvidence_baseline_idx")
+}
+
+model SastRuleBundlePromotionApproval {
+  id                    String   @id
+  contractVersion       String
+  approvalDigest        String   @unique
+  evidenceId            String
+  evidenceDigest        String
+  manifestId            String
+  manifestDigest        String
+  bundleDigest          String
+  candidateAuthorRef    String
+  role                  String
+  approverRef           String
+  approvalRef           String
+  approvedAt            DateTime
+  approved              Boolean  @default(true)
+  humanApproval         Boolean  @default(true)
+  automatedApproval     Boolean  @default(false)
+  customerInputAccepted Boolean  @default(false)
+  createdAt             DateTime @default(now())
+
+  evidence           SastRuleBundlePromotionEvidence             @relation(fields: [evidenceId, evidenceDigest, manifestId, manifestDigest, bundleDigest, candidateAuthorRef], references: [id, evidenceDigest, manifestId, manifestDigest, bundleDigest, candidateAuthorRef], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundlePromotionApproval_evidence_fkey")
+  transitionBindings SastRuleBundleLifecycleTransitionApproval[]
+
+  @@unique([evidenceId, role], map: "SastRuleBundlePromotionApproval_evidence_role_key")
+  @@unique([evidenceId, approverRef], map: "SastRuleBundlePromotionApproval_evidence_approver_key")
+  @@unique([id, approvalDigest, evidenceId, role, approverRef, approvedAt], map: "SastRuleBundlePromotionApproval_transition_key")
+  @@index([manifestId, approvedAt], map: "SastRuleBundlePromotionApproval_manifest_approved_idx")
+}
+
+model SastRuleBundleLifecycleTransition {
+  id                             String   @id
+  contractVersion                String
+  transitionDigest               String   @unique
+  manifestId                     String
+  manifestDigest                 String
+  bundleId                       String
+  bundleDigest                   String
+  sequence                       Int
+  fromState                      String
+  toState                        String
+  previousTransitionId           String?
+  previousTransitionDigest       String?
+  promotionEvidenceId            String
+  promotionEvidenceDigest        String
+  candidateAuthorRef             String
+  approvalSetDigest              String
+  externalAuthority              String
+  externalAuthorityReceiptRef    String?
+  externalAuthorityReceiptDigest String?
+  actorRef                       String
+  reasonRef                      String
+  auditRef                       String
+  transitionedAt                 DateTime
+  source                         String   @default("PLATFORM_RULE_GOVERNANCE")
+  immutable                      Boolean  @default(true)
+  customerInputAccepted          Boolean  @default(false)
+  executableRuleContentStored    Boolean  @default(false)
+  repositoryContentStored        Boolean  @default(false)
+  secretValueStored              Boolean  @default(false)
+  createdAt                      DateTime @default(now())
+
+  manifest           SastRuleBundleManifest                      @relation(fields: [manifestId, manifestDigest, bundleId, bundleDigest], references: [id, manifestDigest, bundleId, bundleDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleTransition_manifest_fkey")
+  promotionEvidence  SastRuleBundlePromotionEvidence             @relation(fields: [promotionEvidenceId, promotionEvidenceDigest, manifestId, manifestDigest, bundleDigest, candidateAuthorRef], references: [id, evidenceDigest, manifestId, manifestDigest, bundleDigest, candidateAuthorRef], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleTransition_evidence_fkey")
+  previousTransition SastRuleBundleLifecycleTransition?          @relation("SastRuleBundleLifecycleChain", fields: [previousTransitionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  nextTransitions    SastRuleBundleLifecycleTransition[]         @relation("SastRuleBundleLifecycleChain")
+  approvals          SastRuleBundleLifecycleTransitionApproval[]
+  selections         SastRuleBundleLifecycleSelectionReceipt[]
+
+  @@unique([manifestId, sequence], map: "SastRuleBundleLifecycleTransition_manifest_sequence_key")
+  @@unique([id, promotionEvidenceId], map: "SastRuleBundleLifecycleTransition_approval_evidence_key")
+  @@unique([id, transitionDigest, manifestId, manifestDigest, bundleId, bundleDigest, sequence, toState, promotionEvidenceId, promotionEvidenceDigest, approvalSetDigest], map: "SastRuleBundleLifecycleTransition_selection_key")
+  @@index([manifestId, transitionedAt], map: "SastRuleBundleLifecycleTransition_manifest_time_idx")
+  @@index([promotionEvidenceId], map: "SastRuleBundleLifecycleTransition_evidence_idx")
+}
+
+model SastRuleBundleLifecycleTransitionApproval {
+  transitionId   String
+  position       Int
+  approvalId     String
+  approvalDigest String
+  evidenceId     String
+  role           String
+  approverRef    String
+  approvedAt     DateTime
+
+  transition SastRuleBundleLifecycleTransition @relation(fields: [transitionId, evidenceId], references: [id, promotionEvidenceId], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleTransitionApproval_transition_fkey")
+  approval   SastRuleBundlePromotionApproval   @relation(fields: [approvalId, approvalDigest, evidenceId, role, approverRef, approvedAt], references: [id, approvalDigest, evidenceId, role, approverRef, approvedAt], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleTransitionApproval_approval_fkey")
+
+  @@id([transitionId, position])
+  @@unique([transitionId, approvalId], map: "SastRuleBundleLifecycleTransitionApproval_id_key")
+  @@unique([transitionId, role], map: "SastRuleBundleLifecycleTransitionApproval_role_key")
+  @@unique([transitionId, approverRef], map: "SastRuleBundleLifecycleTransitionApproval_approver_key")
+}
+
+model SastRuleBundleLifecycleSelectionReceipt {
+  id                          String   @id
+  contractVersion             String
+  receiptDigest               String   @unique
+  manifestId                  String
+  manifestDigest              String
+  bundleId                    String
+  bundleDigest                String
+  lifecycleState              String
+  lifecycleSequence           Int
+  transitionId                String
+  transitionDigest            String
+  promotionEvidenceId         String
+  promotionEvidenceDigest     String
+  approvalSetDigest           String
+  evaluatedAt                 DateTime
+  selectable                  Boolean  @default(true)
+  latestTransitionVerified    Boolean  @default(true)
+  approvalSeparationVerified  Boolean  @default(true)
+  customerInputAccepted       Boolean  @default(false)
+  executableRuleContentStored Boolean  @default(false)
+  createdAt                   DateTime @default(now())
+
+  transition SastRuleBundleLifecycleTransition @relation(fields: [transitionId, transitionDigest, manifestId, manifestDigest, bundleId, bundleDigest, lifecycleSequence, lifecycleState, promotionEvidenceId, promotionEvidenceDigest, approvalSetDigest], references: [id, transitionDigest, manifestId, manifestDigest, bundleId, bundleDigest, sequence, toState, promotionEvidenceId, promotionEvidenceDigest, approvalSetDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleLifecycleSelectionReceipt_transition_fkey")
+
+  @@unique([transitionId, evaluatedAt], map: "SastRuleBundleLifecycleSelectionReceipt_transition_time_key")
+  @@index([manifestId, evaluatedAt], map: "SastRuleBundleLifecycleSelectionReceipt_manifest_time_idx")
 }
 
 model SastRuleSemanticIdentity {

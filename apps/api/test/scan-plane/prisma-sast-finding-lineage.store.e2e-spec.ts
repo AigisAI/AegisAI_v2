@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
+import { verifiedRuleBundleLifecycle, verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
 
 import { Prisma } from '@prisma/client';
 import {
@@ -1568,6 +1568,7 @@ function ruleBundle(
     rollbackTargetDigest: batchIndependentDigest(`${seed}-rollback`),
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${batchIndependentDigest(`${seed}-receipt`).slice('sha256:'.length)}`,
     compatibilityReceiptDigest: batchIndependentDigest(`${seed}-receipt`),
+    lifecycle: verifiedRuleBundleLifecycle(seed),
     scanner,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,

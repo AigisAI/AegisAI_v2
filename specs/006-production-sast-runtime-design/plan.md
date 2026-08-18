@@ -15,7 +15,7 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040, T041, T042, T043, T044, T045, and T046 independently and now proceeds to T047.
+T040, T041, T042, T043, T044, T045, T046, and T047 independently and now proceeds to T048.
 
 ## Target Boundaries
 
@@ -157,7 +157,13 @@ scanner/image/wrapper/schema/normalizer/profile compatibility receipts. Planning
 unverified, drifted, unsupported, or unavailable verification before queue reservation. T046
 now separates reusable semantic metadata from byte-exact signed-manifest bindings, resolves
 only monotonic declarative tenant policy, and commits the immutable resolution receipt to the
-canonical plan before queue reservation. T047 promotion evidence and approvals are the next gate.
+canonical plan before queue reservation. T047 now binds quantitative candidate/baseline evidence
+to the exact T045 supply-chain records, enforces independent human approvals and the legal
+append-only lifecycle graph, and admits only the latest `CANARY` or `ACTIVE` transition through
+an immutable selection receipt before tenant-policy resolution. That receipt enters
+`sast-canonical-scan-key-v3`; external canary-observation, emergency-suspension, and rollback
+authorities remain fail-closed seams for T048, T049, and T050. T048 deterministic tenant-safe
+canary cohorts and observation gates are the next implementation task.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

@@ -19,6 +19,7 @@ import {
   type SastScanPlanningResult,
   type SastScanProfile,
   type SastUserVisiblePlanningState,
+  type PromotionVerifiedScannerSetDescriptor,
   type ScannerSetDescriptor,
   type VerifiedSastTenantRulePolicyDescriptor,
   type VerifiedScannerSetDescriptor
@@ -28,6 +29,10 @@ import {
   SastRuleBundleCompatibilityGate,
   SastRuleBundleCompatibilityGateError
 } from '../rule-governance/sast-rule-bundle-compatibility.gate';
+import {
+  SastRuleBundleLifecycleGate,
+  SastRuleBundleLifecycleGateError
+} from '../rule-governance/sast-rule-bundle-lifecycle.gate';
 import {
   SastTenantRulePolicyGate,
   SastTenantRulePolicyGateError
@@ -43,6 +48,7 @@ export class SastScanPlannerService {
     private readonly controlPlaneService: ControlPlaneService,
     private readonly queueAdmissionService: SastQueueAdmissionService,
     private readonly ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate,
+    private readonly ruleBundleLifecycleGate: SastRuleBundleLifecycleGate,
     private readonly tenantRulePolicyGate: SastTenantRulePolicyGate,
     private readonly policyEvaluationClock: SastPolicyEvaluationClock
   ) {}
@@ -155,14 +161,20 @@ export class SastScanPlannerService {
         profileSelection.profile
       );
     }
+    let promotionVerifiedScannerSet: PromotionVerifiedScannerSetDescriptor;
     let tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
     try {
       const policyEvaluatedAt = this.readPolicyEvaluationTime();
+      promotionVerifiedScannerSet =
+        await this.ruleBundleLifecycleGate.verifyScannerSet({
+          scannerSet: verifiedScannerSet,
+          evaluatedAt: policyEvaluatedAt
+        });
       tenantRulePolicy = await this.tenantRulePolicyGate.resolve({
         tenantId: scanRequest.tenantId,
         repositoryBindingId: scanRequest.repositoryBindingId,
         policyVersion: scanRequest.policyVersion,
-        scannerSet: verifiedScannerSet,
+        scannerSet: promotionVerifiedScannerSet,
         profile: profileSelection.profile,
         profileDigest,
         evaluatedAt: policyEvaluatedAt
@@ -171,7 +183,9 @@ export class SastScanPlannerService {
       return this.reject(
         scanRequest,
         requestedAt,
-        this.tenantRulePolicyReasonCode(error),
+        error instanceof SastRuleBundleLifecycleGateError
+          ? this.ruleBundleLifecycleReasonCode(error)
+          : this.tenantRulePolicyReasonCode(error),
         profileSelection.coverageClaim,
         profileSelection.profile
       );
@@ -190,7 +204,7 @@ export class SastScanPlannerService {
         policyVersion: scanRequest.policyVersion,
         profile: profileSelection.profile,
         profileDigest,
-        scannerSet: verifiedScannerSet,
+        scannerSet: promotionVerifiedScannerSet,
         tenantRulePolicy,
         isolationClass
       })
@@ -210,7 +224,7 @@ export class SastScanPlannerService {
       profileSelection.profile,
       profileDigest,
       canonicalScanKey,
-      verifiedScannerSet,
+      promotionVerifiedScannerSet,
       tenantRulePolicy,
       isolationClass,
       input.repositoryMetadata.inventoryDigest,
@@ -289,7 +303,7 @@ export class SastScanPlannerService {
               profileSelection.profile,
               profileDigest,
               canonicalScanKey,
-              verifiedScannerSet,
+              promotionVerifiedScannerSet,
               tenantRulePolicy,
               isolationClass,
               input.repositoryMetadata.inventoryDigest,
@@ -311,7 +325,7 @@ export class SastScanPlannerService {
     profile: SastScanProfile,
     profileDigest: `sha256:${string}`,
     canonicalScanKey: `sha256:${string}`,
-    scannerSet: VerifiedScannerSetDescriptor,
+    scannerSet: PromotionVerifiedScannerSetDescriptor,
     tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor,
     isolationClass: 'HARDENED' | 'RESTRICTED',
     inventoryDigest: `sha256:${string}`,
@@ -437,6 +451,25 @@ export class SastScanPlannerService {
         return 'TENANT_RULE_POLICY_INVALID';
       case 'POLICY_STORE_UNAVAILABLE':
         return 'TENANT_RULE_POLICY_UNAVAILABLE';
+    }
+  }
+
+  private ruleBundleLifecycleReasonCode(
+    error: SastRuleBundleLifecycleGateError
+  ): SastPlanningReasonCode {
+    switch (error.reason) {
+      case 'PROMOTION_EVIDENCE_UNVERIFIED':
+        return 'RULE_BUNDLE_PROMOTION_EVIDENCE_UNVERIFIED';
+      case 'PROMOTION_APPROVAL_INVALID':
+        return 'RULE_BUNDLE_PROMOTION_APPROVAL_INVALID';
+      case 'LIFECYCLE_STATE_NOT_SELECTABLE':
+        return 'RULE_BUNDLE_LIFECYCLE_NOT_SELECTABLE';
+      case 'LIFECYCLE_STATE_STALE':
+        return 'RULE_BUNDLE_LIFECYCLE_STALE';
+      case 'LIFECYCLE_AUTHORITY_UNAVAILABLE':
+        return 'RULE_BUNDLE_LIFECYCLE_AUTHORITY_UNAVAILABLE';
+      case 'LIFECYCLE_STORE_UNAVAILABLE':
+        return 'RULE_BUNDLE_LIFECYCLE_STORE_UNAVAILABLE';
     }
   }
 

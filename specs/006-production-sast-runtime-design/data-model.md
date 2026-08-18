@@ -164,21 +164,22 @@ Immutable execution plan produced from `ScanRequest`.
 
 - `tenantId`
 - `scanRequestId`
-- `canonicalScanKey` using `sast-canonical-scan-key-v2`
+- `canonicalScanKey` using `sast-canonical-scan-key-v3`
 - `repositoryBindingId`
 - fixed commit SHA and contextual target ref
 - trusted inventory digest and signed preflight attestation reference used for deterministic selection
 - profile snapshot and digest
 - scanner-set snapshot and digest
+- rule-bundle lifecycle state plus verified T047 transition/evidence/approval/selection descriptors
 - tenant rule-policy version plus verified T046 receipt descriptor/digests
 - isolation class
 - per-scan result ingress, evidence output, and audit references
 - creation timestamp
 
-The v2 key commits the verified tenant-policy receipt. Its deployment gate rejects a cutover
-while any pre-existing SAST plan or queue reservation is non-terminal. Operators must drain or
-explicitly cancel that v1 work; completed, failed, and canceled v1 rows remain immutable audit
-records and are not rewritten into v2 identities.
+The v3 key commits both the verified lifecycle selection receipt and the tenant-policy receipt.
+Its deployment gate rejects a cutover while any prior v2 SAST plan or queue reservation is
+non-terminal. Operators must drain or explicitly cancel that work; completed, failed, and
+canceled v2 rows remain immutable audit records and are not rewritten into v3 identities.
 
 ### TrustedSastRepositoryMetadata
 
@@ -962,15 +963,55 @@ must first revoke all access, complete provider deletion for any live pack, reta
 required external audit record, delete the proof ledger explicitly, and only then delete the
 tenant or another parent scope whose cascade removes schedule/access/build rows.
 
-### RuleBundlePromotionEvidence
+### SastRuleBundlePromotionEvidence
 
-- immutable bundle descriptor
-- signature and provenance verification
-- scanner compatibility matrix
-- corpus identifiers and digests
-- precision, recall, regression, malicious-input, parser, failure, and latency measurements
-- security approval and rollback references
-- measured timestamp
+Immutable, automated-only T047 qualification evidence bound to one exact candidate and one
+distinct T045 baseline:
+
+- candidate manifest, supply-chain verification, bundle, profile, and candidate-author identities
+- baseline manifest/bundle digests and an exact rollback target equal to the baseline bundle
+- digest-bound environment plus golden, prior-must-detect, malicious, parser, fingerprint,
+  coverage, and performance corpus references
+- at least 200 positive cases, 200 negative cases, and 30 performance runs
+- exact corpus pass counts, at least 95% must-detect recall and 90% Critical/High precision,
+  at most a two-percentage-point false-positive increase, 2% scanner failures, and 20% p95
+  latency increase
+- zero cross-tenant, secret-leak, sandbox-escape, and stale-publication events
+- canonical corpus-set, measurement, and evidence digests plus a trusted measurement timestamp
+
+The row fixes `automatedEvidenceOnly=true` and `approvalGranted=false`; it stores no rule body,
+repository content, customer executable configuration, secret, signature bytes, provenance
+payload, or generic JSON.
+
+### SastRuleBundlePromotionApproval
+
+One immutable, exact human approval bound to the evidence and candidate manifest/bundle.
+The approver must differ from the candidate author. Roles are limited to
+`SECURITY_ENGINEERING`, `SCAN_PLATFORM`, and `SECURITY_OPERATIONS`; one transition cannot reuse
+an approver or role. Approval time cannot precede evidence measurement or follow its transition.
+Automated approval and customer input flags are fixed false.
+
+### SastRuleBundleLifecycleTransition
+
+The authoritative append-only state ledger contains the candidate projection, monotonic
+sequence, previous transition ID/digest, promotion evidence ID/digest, canonical approval set,
+external-authority receipt binding, actor/reason/audit references, and trusted transition time.
+Every edge requires Security Engineering approval; transitions to `ACTIVE` or `RETIRED` also
+require Scan Platform or Security Operations. Exact external authority is mandatory only for
+`CANARY -> ACTIVE`, suspension, and rollback. Advisory locks, restrictive composite foreign
+keys, deferred approval-set validation, and mutation-rejection triggers prevent forked or
+partially approved histories. T048-T050 authority providers are unavailable by default.
+
+### SastRuleBundleLifecycleSelectionReceipt
+
+An immutable pre-planning decision bound to the latest transition. Only `CANARY` and `ACTIVE`
+may produce a successful receipt, after evidence, approval separation, chain position, and
+transition digests are revalidated with the service-owned clock. A valid replay returns the
+original row only after latest state is rechecked. All receipts for one scanner set are inserted
+atomically in one serializable transaction after ordered manifest-row locks, so a later invalid
+bundle or concurrent transition rolls back the complete set. The receipts and their verified
+descriptors enter the scanner set and canonical v3 plan before tenant-policy resolution and queue
+reservation; denial creates no receipt.
 
 ### SastQualityEvaluation
 

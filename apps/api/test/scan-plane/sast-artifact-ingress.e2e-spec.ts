@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
+import { verifiedRuleBundleLifecycle, verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
 
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
@@ -603,6 +603,7 @@ function buildPlan(): SastScanPlan {
     rollbackTargetDigest: digest(`rollback-${value}`),
     compatibilityReceiptId: `sast-rule-bundle-compatibility://${digest(`receipt-${value}`).slice('sha256:'.length)}`,
     compatibilityReceiptDigest: digest(`receipt-${value}`),
+    lifecycle: verifiedRuleBundleLifecycle(value),
     scanner: kind,
     source: 'PLATFORM_MANAGED' as const,
     immutable: true as const,

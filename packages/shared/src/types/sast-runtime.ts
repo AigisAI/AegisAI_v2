@@ -2,6 +2,10 @@ import {
   isVerifiedSastTenantRulePolicyDescriptorValid,
   type VerifiedSastTenantRulePolicyDescriptor
 } from './sast-rule-semantic-policy';
+import {
+  isVerifiedSastRuleBundleLifecycleDescriptorValid,
+  type VerifiedSastRuleBundleLifecycleDescriptor
+} from './sast-rule-promotion-lifecycle';
 
 export const PRODUCTION_SAST_RUNTIME_FEATURE_ID = '006-production-sast-runtime-design';
 
@@ -434,6 +438,16 @@ export interface VerifiedScannerSetDescriptor
   ruleBundles: VerifiedRuleBundleDescriptor[];
 }
 
+export interface PromotionVerifiedRuleBundleDescriptor
+  extends VerifiedRuleBundleDescriptor {
+  lifecycle: VerifiedSastRuleBundleLifecycleDescriptor;
+}
+
+export interface PromotionVerifiedScannerSetDescriptor
+  extends Omit<VerifiedScannerSetDescriptor, 'ruleBundles'> {
+  ruleBundles: PromotionVerifiedRuleBundleDescriptor[];
+}
+
 export interface SastRepositoryState {
   repositoryBindingId: string;
   fixedCommitSha: string;
@@ -454,7 +468,7 @@ export interface SastScanPlan {
   policyVersion: string;
   tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
   repositoryState: SastRepositoryState;
-  scannerSet: VerifiedScannerSetDescriptor;
+  scannerSet: PromotionVerifiedScannerSetDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
   resultIngressRef: string;
   evidenceOutputRef: string;
@@ -964,6 +978,26 @@ export function isVerifiedScannerSetDescriptorValid(
   );
 }
 
+export function isPromotionVerifiedRuleBundleDescriptorValid(
+  bundle: PromotionVerifiedRuleBundleDescriptor
+): boolean {
+  return (
+    isVerifiedRuleBundleDescriptorValid(bundle) &&
+    isVerifiedSastRuleBundleLifecycleDescriptorValid(bundle.lifecycle)
+  );
+}
+
+export function isPromotionVerifiedScannerSetDescriptorValid(
+  scannerSet: PromotionVerifiedScannerSetDescriptor
+): boolean {
+  return (
+    isVerifiedScannerSetDescriptorValid(scannerSet) &&
+    scannerSet.ruleBundles.every(
+      isPromotionVerifiedRuleBundleDescriptorValid
+    )
+  );
+}
+
 export function isSastScanProfileValid(profile: SastScanProfile): boolean {
   if (
     !profile ||
@@ -1076,7 +1110,7 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
       plan.repositoryState.shallowFetchPreferred === true &&
       plan.repositoryState.submodulesEnabled === false &&
       plan.repositoryState.lfsObjectsFetched === false &&
-      isVerifiedScannerSetDescriptorValid(plan.scannerSet) &&
+      isPromotionVerifiedScannerSetDescriptorValid(plan.scannerSet) &&
       (plan.isolationClass === 'HARDENED' || plan.isolationClass === 'RESTRICTED') &&
       isNonBlank(plan.resultIngressRef) &&
       isNonBlank(plan.evidenceOutputRef) &&

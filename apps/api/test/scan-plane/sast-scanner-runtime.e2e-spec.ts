@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
+import { verifiedRuleBundleLifecycle, verifiedTenantRulePolicy } from '../support/sast-scan-plan-fixtures';
 
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
@@ -1216,6 +1216,7 @@ function scanPlan(
           rollbackTargetDigest: digest('7'),
           compatibilityReceiptId: `sast-rule-bundle-compatibility://${'5'.repeat(64)}`,
           compatibilityReceiptDigest: digest('5'),
+          lifecycle: verifiedRuleBundleLifecycle('opengrep'),
           scanner: 'OPENGREP',
           source: 'PLATFORM_MANAGED',
           immutable: true,
@@ -1246,6 +1247,7 @@ function scanPlan(
           rollbackTargetDigest: digest('7'),
           compatibilityReceiptId: `sast-rule-bundle-compatibility://${'6'.repeat(64)}`,
           compatibilityReceiptDigest: digest('6'),
+          lifecycle: verifiedRuleBundleLifecycle('trivy'),
           scanner: 'TRIVY',
           source: 'PLATFORM_MANAGED',
           immutable: true,

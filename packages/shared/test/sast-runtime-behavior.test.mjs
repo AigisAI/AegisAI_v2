@@ -19,12 +19,22 @@ new Function('module', 'exports', transpile(semanticSource).outputText)(
   semanticModule,
   semanticModule.exports
 );
+const lifecycleSource = readFileSync(
+  new URL('../src/types/sast-rule-promotion-lifecycle.ts', import.meta.url),
+  'utf8'
+);
+const lifecycleModule = { exports: {} };
+new Function('module', 'exports', transpile(lifecycleSource).outputText)(
+  lifecycleModule,
+  lifecycleModule.exports
+);
 const source = readFileSync(new URL('../src/types/sast-runtime.ts', import.meta.url), 'utf8');
 const transpiled = transpile(source);
 const localModule = { exports: {} };
 const evaluateModule = new Function('module', 'exports', 'require', transpiled.outputText);
 evaluateModule(localModule, localModule.exports, (specifier) => {
   if (specifier === './sast-rule-semantic-policy') return semanticModule.exports;
+  if (specifier === './sast-rule-promotion-lifecycle') return lifecycleModule.exports;
   throw new Error(`unsupported local module: ${specifier}`);
 });
 const runtime = localModule.exports;
@@ -74,6 +84,17 @@ const ruleBundle = (scanner, character, state = 'ACTIVE') => ({
   rollbackTargetDigest: digest(character === 'f' ? 'e' : 'f'),
   compatibilityReceiptId: `sast-rule-bundle-compatibility://${character.repeat(64)}`,
   compatibilityReceiptDigest: digest(character),
+  lifecycle: {
+    lifecycleState: state === 'CANARY' ? 'CANARY' : 'ACTIVE',
+    lifecycleSequence: state === 'CANARY' ? 2 : 3,
+    lifecycleTransitionId: `sast-rule-bundle-lifecycle-transition://${character.repeat(64)}`,
+    lifecycleTransitionDigest: digest(character),
+    promotionEvidenceId: `sast-rule-bundle-promotion-evidence://${character.repeat(64)}`,
+    promotionEvidenceDigest: digest(character),
+    approvalSetDigest: digest(character),
+    selectionReceiptId: `sast-rule-bundle-lifecycle-selection://${character.repeat(64)}`,
+    selectionReceiptDigest: digest(character)
+  },
   scanner,
   source: 'PLATFORM_MANAGED',
   immutable: true,
