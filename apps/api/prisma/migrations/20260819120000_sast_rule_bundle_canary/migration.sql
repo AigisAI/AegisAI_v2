@@ -696,12 +696,14 @@ CREATE INDEX "SastRuleBundleCanaryAssignmentReceipt_step_head_idx" ON "SastRuleB
 
 CREATE UNIQUE INDEX "SastRuleBundleCanaryScanObservation_observationDigest_key" ON "SastRuleBundleCanaryScanObservation"("observationDigest");
 CREATE UNIQUE INDEX "SastRuleBundleCanaryScanObservation_scan_key" ON "SastRuleBundleCanaryScanObservation"("rolloutId","tenantId","scanRequestId","attemptId");
+CREATE UNIQUE INDEX "SastRuleBundleCanaryScanObservation_identity_key" ON "SastRuleBundleCanaryScanObservation"("id","observationDigest");
 CREATE UNIQUE INDEX "SastRuleBundleCanaryScanObservation_binding_key" ON "SastRuleBundleCanaryScanObservation"("id","observationDigest","rolloutId","rolloutDigest","step");
 CREATE INDEX "SastRuleBundleCanaryScanObservation_gate_idx" ON "SastRuleBundleCanaryScanObservation"("rolloutId","step","cohortRole","repositorySizeBucket","completedAt");
 CREATE INDEX "SastRuleBundleCanaryScanObservation_assignment_idx" ON "SastRuleBundleCanaryScanObservation"("assignmentReceiptId");
 
 CREATE UNIQUE INDEX "SastRuleBundleCanaryStepDecision_decisionDigest_key" ON "SastRuleBundleCanaryStepDecision"("decisionDigest");
 CREATE UNIQUE INDEX "SastRuleBundleCanaryStepDecision_rollout_sequence_key" ON "SastRuleBundleCanaryStepDecision"("rolloutId","sequence");
+CREATE UNIQUE INDEX "SastRuleBundleCanaryStepDecision_identity_key" ON "SastRuleBundleCanaryStepDecision"("id","decisionDigest");
 CREATE UNIQUE INDEX "SastRuleBundleCanaryStepDecision_binding_key" ON "SastRuleBundleCanaryStepDecision"("id","decisionDigest","rolloutId","rolloutDigest","sequence","step","outcome");
 CREATE INDEX "SastRuleBundleCanaryStepDecision_gate_idx" ON "SastRuleBundleCanaryStepDecision"("rolloutId","step","outcome","evaluatedAt");
 CREATE UNIQUE INDEX "SastRuleBundleCanaryStepDecisionReason_code_key" ON "SastRuleBundleCanaryStepDecisionReason"("decisionId","reasonCode");

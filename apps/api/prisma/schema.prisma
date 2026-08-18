@@ -2988,6 +2988,7 @@ model SastRuleBundleCanaryScanObservation {
   recordedAt                       DateTime @default(now())
 
   @@unique([rolloutId, tenantId, scanRequestId, attemptId], map: "SastRuleBundleCanaryScanObservation_scan_key")
+  @@unique([id, observationDigest], map: "SastRuleBundleCanaryScanObservation_identity_key")
   @@unique([id, observationDigest, rolloutId, rolloutDigest, step], map: "SastRuleBundleCanaryScanObservation_binding_key")
   @@index([rolloutId, step, cohortRole, repositorySizeBucket, completedAt], map: "SastRuleBundleCanaryScanObservation_gate_idx")
   @@index([assignmentReceiptId], map: "SastRuleBundleCanaryScanObservation_assignment_idx")
@@ -3080,6 +3081,7 @@ model SastRuleBundleCanaryStepDecision {
   recordedAt                            DateTime @default(now())
 
   @@unique([rolloutId, sequence], map: "SastRuleBundleCanaryStepDecision_rollout_sequence_key")
+  @@unique([id, decisionDigest], map: "SastRuleBundleCanaryStepDecision_identity_key")
   @@unique([id, decisionDigest, rolloutId, rolloutDigest, sequence, step, outcome], map: "SastRuleBundleCanaryStepDecision_binding_key")
   @@index([rolloutId, step, outcome, evaluatedAt], map: "SastRuleBundleCanaryStepDecision_gate_idx")
 }

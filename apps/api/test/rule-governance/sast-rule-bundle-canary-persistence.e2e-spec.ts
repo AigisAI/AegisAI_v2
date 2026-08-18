@@ -231,6 +231,18 @@ describe('T048 rule-bundle canary persistence contracts', () => {
   });
 
   it('serializes rollout, assignment, observation, and decision writes with replay-only conflicts', () => {
+    expect(schema).toContain(
+      '@@unique([id, observationDigest], map: "SastRuleBundleCanaryScanObservation_identity_key")'
+    );
+    expect(schema).toContain(
+      '@@unique([id, decisionDigest], map: "SastRuleBundleCanaryStepDecision_identity_key")'
+    );
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "SastRuleBundleCanaryScanObservation_identity_key" ON "SastRuleBundleCanaryScanObservation"("id","observationDigest")'
+    );
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "SastRuleBundleCanaryStepDecision_identity_key" ON "SastRuleBundleCanaryStepDecision"("id","decisionDigest")'
+    );
     expect(store).toContain('Prisma.TransactionIsolationLevel.Serializable');
     expect(store).toContain('SERIALIZABLE_RETRIES = 3');
     expect(store).toContain('SERIALIZABLE_MAX_WAIT_MILLISECONDS = 5_000');
