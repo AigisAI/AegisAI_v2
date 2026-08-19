@@ -303,18 +303,19 @@ async function lockLifecycleHeads(
   tx: Prisma.TransactionClient,
   manifestIds: readonly string[]
 ): Promise<void> {
-  const ordered = [...new Set(manifestIds)].sort(compareText);
-  if (ordered.length !== 2) throw persistenceError('INPUT_INVALID');
+  const unique = [...new Set(manifestIds)];
+  if (unique.length !== 2) throw persistenceError('INPUT_INVALID');
   const rows = await tx.$queryRaw<Array<{ manifestId: string }>>(Prisma.sql`
     SELECT "manifestId"
     FROM "SastRuleBundleLifecycleHead"
-    WHERE "manifestId" IN (${Prisma.join(ordered)})
+    WHERE "manifestId" IN (${Prisma.join(unique)})
     ORDER BY "manifestId" COLLATE "C"
     FOR UPDATE
   `);
+  const locked = new Set(rows.map((row) => row.manifestId));
   if (
-    rows.length !== ordered.length ||
-    rows.some((row, index) => row.manifestId !== ordered[index])
+    locked.size !== unique.length ||
+    unique.some((manifestId) => !locked.has(manifestId))
   ) {
     throw persistenceError('STATE_STALE');
   }
@@ -785,10 +786,6 @@ function roleOrder(role: SastRuleBundlePromotionApprovalRole): number {
     case 'SECURITY_OPERATIONS':
       return 2;
   }
-}
-
-function compareText(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 function persistenceError(

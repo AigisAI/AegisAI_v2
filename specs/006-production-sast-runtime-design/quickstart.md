@@ -774,8 +774,14 @@ corepack pnpm build
 corepack pnpm --filter @aegisai/api prisma:validate
 corepack pnpm --filter @aegisai/api prisma:migrate:deploy
 $env:RUN_SAST_ROLLBACK_POSTGRES_PROBE = "1"
-corepack pnpm --filter @aegisai/api test --runInBand test/rule-governance/sast-rule-bundle-rollback.postgres.e2e-spec.ts
-Remove-Item Env:RUN_SAST_ROLLBACK_POSTGRES_PROBE
+try {
+  corepack pnpm --filter @aegisai/api test --runInBand test/rule-governance/sast-rule-bundle-rollback.postgres.e2e-spec.ts
+  if ($LASTEXITCODE -ne 0) {
+    throw "T050 PostgreSQL rollback probe failed with exit code $LASTEXITCODE"
+  }
+} finally {
+  Remove-Item Env:RUN_SAST_ROLLBACK_POSTGRES_PROBE -ErrorAction SilentlyContinue
+}
 node --test test/runtime/*.test.mjs
 git diff --check
 ```

@@ -181,7 +181,7 @@ describePostgresProbe('T050 SAST rollback PostgreSQL 16 authority probe', () => 
     );
     await expect(
       lifecycleStore.appendLifecycleTransition(transition)
-    ).rejects.toBeDefined();
+    ).rejects.toThrow(/rollback baseline changed before lifecycle commit/u);
     await setLifecycleHeadState(
       prisma,
       fixture.baseline.manifest.manifestId,
@@ -195,7 +195,7 @@ describePostgresProbe('T050 SAST rollback PostgreSQL 16 authority probe', () => 
     );
     await expect(
       lifecycleStore.appendLifecycleTransition(transition)
-    ).rejects.toBeDefined();
+    ).rejects.toThrow(/rollback candidate changed before lifecycle commit/u);
     await setLifecycleHeadState(
       prisma,
       fixture.candidate.manifest.manifestId,
@@ -266,6 +266,18 @@ describePostgresProbe('T050 SAST rollback PostgreSQL 16 authority probe', () => 
         data: { auditRef: reference('mutated-audit') }
       })
     ).rejects.toThrow(/append-only/u);
+
+    for (const statement of [
+      'TRUNCATE "SastRuleBundleRollbackCommand" CASCADE',
+      'TRUNCATE "SastRuleBundleRollbackVerification" CASCADE',
+      'TRUNCATE "SastRuleBundleRollbackApproval" CASCADE',
+      'TRUNCATE "SastRuleBundleRollbackReceipt" CASCADE',
+      'TRUNCATE "SastRuleBundleRollbackReceiptApproval" CASCADE'
+    ]) {
+      await expect(prisma.$executeRawUnsafe(statement)).rejects.toThrow(
+        /append-only/u
+      );
+    }
   });
 });
 

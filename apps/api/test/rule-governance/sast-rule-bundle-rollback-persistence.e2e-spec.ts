@@ -31,6 +31,23 @@ describe('T050 SAST last-known-good rollback persistence contracts', () => {
     'SastRuleBundleRollbackReceipt',
     'SastRuleBundleRollbackReceiptApproval'
   ];
+  const rollbackForeignKeys = [
+    'SastRuleBundleRollbackCommand_candidate_manifest_fkey',
+    'SastRuleBundleRollbackCommand_baseline_manifest_fkey',
+    'SastRuleBundleRollbackCommand_candidate_verification_fkey',
+    'SastRuleBundleRollbackCommand_baseline_verification_fkey',
+    'SastRuleBundleRollbackCommand_suspended_transition_fkey',
+    'SastRuleBundleRollbackCommand_baseline_transition_fkey',
+    'SastRuleBundleRollbackCommand_evidence_id_fkey',
+    'SastRuleBundleRollbackCommand_evidence_digest_fkey',
+    'SastRuleBundleRollbackCommand_suspension_receipt_fkey',
+    'SastRuleBundleRollbackVerification_command_fkey',
+    'SastRuleBundleRollbackApproval_command_fkey',
+    'SastRuleBundleRollbackReceipt_command_fkey',
+    'SastRuleBundleRollbackReceipt_verification_fkey',
+    'SastRuleBundleRollbackReceiptApproval_receipt_fkey',
+    'SastRuleBundleRollbackReceiptApproval_approval_fkey'
+  ];
 
   it('keeps every rollback ledger normalized, content-free, and append-only', () => {
     for (const model of immutableModels) {
@@ -38,6 +55,7 @@ describe('T050 SAST last-known-good rollback persistence contracts', () => {
       expect(migration).toContain(`CREATE TABLE "${model}"`);
       expect(migration).toContain(`"${model}_immutable_update"`);
       expect(migration).toContain(`"${model}_immutable_delete"`);
+      expect(migration).toContain(`"${model}_immutable_truncate"`);
       expect(prismaModel(schema, model)).not.toMatch(/\b(?:Json|Bytes)\b/u);
       expect(sqlColumns(migration, model)).toEqual(
         prismaScalarColumns(schema, model)
@@ -47,6 +65,10 @@ describe('T050 SAST last-known-good rollback persistence contracts', () => {
     expect(migration).not.toMatch(
       /"(?:sourceContent|findingContent|ruleContent|secretValue|credential|signatureBytes|provenancePayload|arbitraryPayload)"/iu
     );
+    for (const foreignKey of rollbackForeignKeys) {
+      expect(schema).toContain(`map: "${foreignKey}"`);
+      expect(migration).toContain(`CONSTRAINT "${foreignKey}"`);
+    }
   });
 
   it('derives the target from original promotion evidence and locks both heads canonically', () => {
@@ -56,7 +78,7 @@ describe('T050 SAST last-known-good rollback persistence contracts', () => {
     expect(service).toContain('evidence.rollbackTargetDigest');
     expect(service).toContain('rollbackBaselineIsCurrent');
     expect(store).toContain('lockLifecycleHeads');
-    expect(store).toContain(".sort(compareText)");
+    expect(store).toContain('const locked = new Set');
     expect(store).toContain('runSastKillSwitchSerializable');
     expect(migration).toContain('ORDER BY "manifestId" COLLATE "C"');
     expect(migration).toContain(

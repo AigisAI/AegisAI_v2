@@ -498,10 +498,15 @@ BEGIN
 
   SELECT * INTO candidate_manifest FROM public."SastRuleBundleManifest"
   WHERE "id" = NEW."candidateManifestId";
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'SAST rollback candidate manifest is unavailable';
+  END IF;
   SELECT * INTO baseline_manifest FROM public."SastRuleBundleManifest"
   WHERE "id" = NEW."baselineManifestId";
-  IF NOT FOUND
-     OR candidate_manifest."manifestDigest" IS DISTINCT FROM NEW."candidateManifestDigest"
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'SAST rollback baseline manifest is unavailable';
+  END IF;
+  IF candidate_manifest."manifestDigest" IS DISTINCT FROM NEW."candidateManifestDigest"
      OR candidate_manifest."bundleId" IS DISTINCT FROM NEW."candidateBundleId"
      OR candidate_manifest."bundleDigest" IS DISTINCT FROM NEW."candidateBundleDigest"
      OR candidate_manifest."rollbackTargetDigest" IS DISTINCT FROM NEW."baselineBundleDigest"
@@ -523,11 +528,16 @@ BEGIN
   SELECT * INTO candidate_verification FROM public."SastRuleBundleSupplyChainAttestation"
   WHERE "id" = NEW."candidateVerificationId" AND "manifestId" = NEW."candidateManifestId"
     AND "attestationDigest" = NEW."candidateVerificationDigest";
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'SAST rollback candidate supply-chain verification is unavailable';
+  END IF;
   SELECT * INTO baseline_verification FROM public."SastRuleBundleSupplyChainAttestation"
   WHERE "id" = NEW."baselineVerificationId" AND "manifestId" = NEW."baselineManifestId"
     AND "attestationDigest" = NEW."baselineVerificationDigest";
-  IF NOT FOUND
-     OR candidate_verification."signatureVerified" IS NOT TRUE
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'SAST rollback baseline supply-chain verification is unavailable';
+  END IF;
+  IF candidate_verification."signatureVerified" IS NOT TRUE
      OR candidate_verification."provenanceVerified" IS NOT TRUE
      OR candidate_verification."trustedSigner" IS NOT TRUE
      OR baseline_verification."signatureVerified" IS NOT TRUE
@@ -868,14 +878,19 @@ CREATE TRIGGER "SastRuleBundleLifecycleTransition_rollback_authority" BEFORE INS
 
 CREATE TRIGGER "SastRuleBundleRollbackCommand_immutable_update" BEFORE UPDATE ON "SastRuleBundleRollbackCommand" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackCommand_immutable_delete" BEFORE DELETE ON "SastRuleBundleRollbackCommand" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
+CREATE TRIGGER "SastRuleBundleRollbackCommand_immutable_truncate" BEFORE TRUNCATE ON "SastRuleBundleRollbackCommand" FOR EACH STATEMENT EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackVerification_immutable_update" BEFORE UPDATE ON "SastRuleBundleRollbackVerification" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackVerification_immutable_delete" BEFORE DELETE ON "SastRuleBundleRollbackVerification" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
+CREATE TRIGGER "SastRuleBundleRollbackVerification_immutable_truncate" BEFORE TRUNCATE ON "SastRuleBundleRollbackVerification" FOR EACH STATEMENT EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackApproval_immutable_update" BEFORE UPDATE ON "SastRuleBundleRollbackApproval" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackApproval_immutable_delete" BEFORE DELETE ON "SastRuleBundleRollbackApproval" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
+CREATE TRIGGER "SastRuleBundleRollbackApproval_immutable_truncate" BEFORE TRUNCATE ON "SastRuleBundleRollbackApproval" FOR EACH STATEMENT EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackReceipt_immutable_update" BEFORE UPDATE ON "SastRuleBundleRollbackReceipt" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackReceipt_immutable_delete" BEFORE DELETE ON "SastRuleBundleRollbackReceipt" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
+CREATE TRIGGER "SastRuleBundleRollbackReceipt_immutable_truncate" BEFORE TRUNCATE ON "SastRuleBundleRollbackReceipt" FOR EACH STATEMENT EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackReceiptApproval_immutable_update" BEFORE UPDATE ON "SastRuleBundleRollbackReceiptApproval" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 CREATE TRIGGER "SastRuleBundleRollbackReceiptApproval_immutable_delete" BEFORE DELETE ON "SastRuleBundleRollbackReceiptApproval" FOR EACH ROW EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
+CREATE TRIGGER "SastRuleBundleRollbackReceiptApproval_immutable_truncate" BEFORE TRUNCATE ON "SastRuleBundleRollbackReceiptApproval" FOR EACH STATEMENT EXECUTE FUNCTION "reject_sast_rule_bundle_rollback_ledger_mutation"();
 
 COMMENT ON TABLE "SastRuleBundleRollbackCommand" IS 'T050 signed rollback command whose last-known-good target is derived only from original T047 promotion evidence.';
 COMMENT ON TABLE "SastRuleBundleRollbackApproval" IS 'T050 fresh independent Security Engineering plus Scan Platform or Security Operations human approval ledger.';

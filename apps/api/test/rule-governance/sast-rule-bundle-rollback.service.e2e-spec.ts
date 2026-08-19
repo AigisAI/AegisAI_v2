@@ -3,17 +3,17 @@ import { createHash } from 'node:crypto';
 import {
   SAST_RULE_BUNDLE_ROLLBACK_REQUEST_VERSION,
   buildSastRuleBundleLifecycleTransition,
+  buildSastRuleBundleManifest,
   buildSastRuleBundlePromotionApproval,
   buildSastRuleBundlePromotionEvidence,
+  buildSastRuleBundleSupplyChainAttestation,
   type SastRuleBundleLifecycleTransition,
-  type SastRuleBundleManifest,
   type SastRuleBundlePromotionApproval,
   type SastRuleBundlePromotionEvidence,
   type SastRuleBundleRollbackApproval,
   type SastRuleBundleRollbackCommand,
   type SastRuleBundleRollbackReceipt,
-  type SastRuleBundleRollbackVerification,
-  type SastRuleBundleSupplyChainAttestation
+  type SastRuleBundleRollbackVerification
 } from '@aegisai/shared';
 
 import type { SastRuleBundleLifecycleAuthorityInput } from '../../src/rule-governance/sast-rule-bundle-lifecycle.authority';
@@ -174,16 +174,101 @@ describe('SastRuleBundleRollbackService T050 authority', () => {
     expect(store.receipt).toBeNull();
   });
 
-  it('rejects commands and approvals after the fifteen-minute incident window', async () => {
+  it('issues no receipt when the baseline remains present but is no longer active', async () => {
     const fixture = fixtures();
-    const clock = new MutableClock('2026-08-19T01:46:00.001Z');
+    const clock = new MutableClock('2026-08-19T01:31:00.000Z');
     const store = new InMemoryRollbackStore();
     const service = rollbackService(fixture, store, clock);
+    const command = (await service.registerCommand(request(fixture))).command;
+    clock.value = '2026-08-19T01:32:00.000Z';
+    await service.registerApproval(
+      rollbackApproval(command, 'SECURITY_ENGINEERING', 'security', clock.value)
+    );
+    clock.value = '2026-08-19T01:33:00.000Z';
+    await service.registerApproval(
+      rollbackApproval(command, 'SECURITY_OPERATIONS', 'operations', clock.value)
+    );
+    const baselineSnapshot = fixture.lifecycle.snapshots.get(
+      fixture.baseline.manifest.manifestId
+    );
+    if (!baselineSnapshot) throw new Error('baseline fixture missing');
+    fixture.lifecycle.snapshots.set(fixture.baseline.manifest.manifestId, {
+      ...baselineSnapshot,
+      transition: lifecycleTransition({
+        evidence: baselineSnapshot.evidence,
+        approvals: baselineSnapshot.approvals,
+        sequence: baselineSnapshot.transition.sequence + 1,
+        fromState: 'ACTIVE',
+        toState: 'RETIRED',
+        transitionedAt: '2026-08-19T01:25:00.000Z',
+        previous: baselineSnapshot.transition,
+        externalAuthority: 'NONE'
+      })
+    });
+    clock.value = '2026-08-19T01:34:00.000Z';
 
-    await expect(service.registerCommand(request(fixture))).rejects.toMatchObject<
-      Partial<SastRuleBundleRollbackServiceError>
-    >({ reason: 'INPUT_INVALID' });
-    expect(store.command).toBeNull();
+    await expect(
+      service.authorizeLifecycleTransition(authorityInput(command, clock.value))
+    ).rejects.toMatchObject<Partial<SastRuleBundleRollbackServiceError>>({
+      reason: 'STATE_STALE'
+    });
+    expect(store.receipt).toBeNull();
+  });
+
+  it('accepts command and approval at the exact fifteen-minute boundary', async () => {
+    const fixture = fixtures();
+    const clock = new MutableClock('2026-08-19T01:45:00.000Z');
+    const store = new InMemoryRollbackStore();
+    const service = rollbackService(fixture, store, clock);
+    const command = (await service.registerCommand(request(fixture))).command;
+
+    await expect(
+      service.registerApproval(
+        rollbackApproval(command, 'SECURITY_ENGINEERING', 'security', clock.value)
+      )
+    ).resolves.toMatchObject({ replayed: false });
+  });
+
+  it('rejects command and approval one millisecond after the incident window', async () => {
+    const lateCommandFixture = fixtures();
+    const lateCommandStore = new InMemoryRollbackStore();
+    const lateCommandService = rollbackService(
+      lateCommandFixture,
+      lateCommandStore,
+      new MutableClock('2026-08-19T01:45:00.001Z')
+    );
+
+    await expect(
+      lateCommandService.registerCommand(request(lateCommandFixture))
+    ).rejects.toMatchObject<Partial<SastRuleBundleRollbackServiceError>>({
+      reason: 'INPUT_INVALID'
+    });
+    expect(lateCommandStore.command).toBeNull();
+
+    const lateApprovalFixture = fixtures();
+    const lateApprovalClock = new MutableClock('2026-08-19T01:31:00.000Z');
+    const lateApprovalService = rollbackService(
+      lateApprovalFixture,
+      new InMemoryRollbackStore(),
+      lateApprovalClock
+    );
+    const command = (
+      await lateApprovalService.registerCommand(request(lateApprovalFixture))
+    ).command;
+    lateApprovalClock.value = '2026-08-19T01:45:00.001Z';
+
+    await expect(
+      lateApprovalService.registerApproval(
+        rollbackApproval(
+          command,
+          'SECURITY_ENGINEERING',
+          'security',
+          lateApprovalClock.value
+        )
+      )
+    ).rejects.toMatchObject<Partial<SastRuleBundleRollbackServiceError>>({
+      reason: 'APPROVAL_INVALID'
+    });
   });
 });
 
@@ -364,18 +449,21 @@ function fixtures(): RollbackFixtures {
   const bundleId = 'sast-rule-bundle://opengrep/default';
   const candidate = verifiedBundle(
     'candidate',
+    '3.0.0',
     bundleId,
     sha('candidate-bundle'),
     sha('baseline-bundle')
   );
   const baseline = verifiedBundle(
     'baseline',
+    '2.0.0',
     bundleId,
     sha('baseline-bundle'),
     sha('older-bundle')
   );
   const older = verifiedBundle(
     'older',
+    '1.0.0',
     bundleId,
     sha('older-bundle'),
     sha('oldest-bundle')
@@ -517,33 +605,63 @@ function authorityInput(
 
 function verifiedBundle(
   slug: string,
+  bundleVersion: string,
   bundleId: string,
   bundleDigest: `sha256:${string}`,
   rollbackTargetDigest: `sha256:${string}`
 ): PersistedVerifiedSastRuleBundle {
-  const manifestDigest = sha(`${slug}-manifest`);
-  const manifestId =
-    `sast-rule-bundle-manifest://${manifestDigest.slice('sha256:'.length)}`;
-  const verificationDigest = sha(`${slug}-verification`);
-  const manifest = {
-    manifestId,
-    manifestDigest,
-    bundleId,
-    bundleDigest,
-    rollbackTargetDigest,
-    scanner: 'OPENGREP',
-    builtAt: '2026-08-19T00:00:00.000Z',
-    compatibility: { profileIds: ['JAVA_FAST_V1'] }
-  } as unknown as SastRuleBundleManifest;
-  const attestation = {
-    verificationId:
-      `sast-rule-bundle-verification://${manifestDigest.slice('sha256:'.length)}`,
-    attestationDigest: verificationDigest,
-    manifestId,
-    manifestDigest,
-    bundleDigest,
-    verifiedAt: '2026-08-19T00:05:00.000Z'
-  } as unknown as SastRuleBundleSupplyChainAttestation;
+  const manifest = buildSastRuleBundleManifest(
+    {
+      bundleId,
+      bundleVersion,
+      lifecycleState: 'ACTIVE',
+      scanner: 'OPENGREP',
+      builtAt: '2026-08-19T00:00:00.000Z',
+      sourceRevision: sha(`${slug}-revision`).slice('sha256:'.length),
+      bundleDigest,
+      members: [
+        { memberId: `rules/${slug}.yml`, digest: sha(`${slug}-member`) }
+      ],
+      rules: [
+        {
+          ruleId: `t050.rollback.${slug}`,
+          ruleRevision: bundleVersion,
+          ruleSemanticId: `aegis.t050.rollback.${slug}`,
+          metadataDigest: sha(`${slug}-metadata`)
+        }
+      ],
+      compatibility: {
+        scannerVersions: ['1.22.0'],
+        scannerImageDigests: [sha('scanner-image')],
+        wrapperDigests: [sha('wrapper')],
+        schemaBundleDigests: [sha('schema')],
+        normalizerBundleDigests: [sha('normalizer')],
+        profileIds: ['JAVA_FAST_V1']
+      },
+      qualityEvidence: {
+        goldenCorpusResultRef: reference(`${slug}-golden`),
+        regressionCorpusResultRef: reference(`${slug}-regression`),
+        maliciousCorpusResultRef: reference(`${slug}-malicious`),
+        performanceCorpusResultRef: reference(`${slug}-performance`)
+      },
+      signerIdentity: 'sast-signer://t050-tests/rules',
+      signatureRef: reference(`${slug}-signature`),
+      provenanceRef: reference(`${slug}-provenance`),
+      compatibilityRef: reference(`${slug}-compatibility`),
+      rolloutPolicyRef: reference(`${slug}-rollout`),
+      killSwitchNamespace: 'sast-kill-switch://rule-bundles/t050-tests',
+      killSwitchRef: reference(`${slug}-kill-switch`),
+      rollbackTargetDigest
+    },
+    digest
+  );
+  if (!manifest) throw new Error('manifest fixture invalid');
+  const attestation = buildSastRuleBundleSupplyChainAttestation({
+    manifest,
+    verifiedAt: '2026-08-19T00:05:00.000Z',
+    digestCanonical: digest
+  });
+  if (!attestation) throw new Error('attestation fixture invalid');
   return { manifest, attestation, replayed: false };
 }
 
@@ -645,11 +763,11 @@ function lifecycleTransition(input: {
   approvals: SastRuleBundlePromotionApproval[];
   sequence: number;
   fromState: 'CANARY' | 'ACTIVE';
-  toState: 'ACTIVE' | 'SUSPENDED';
+  toState: 'ACTIVE' | 'SUSPENDED' | 'RETIRED';
   transitionedAt: string;
   previous?: SastRuleBundleLifecycleTransition;
-  externalAuthority: 'CANARY_OBSERVATION' | 'EMERGENCY_SUSPENSION';
-  externalDigest: `sha256:${string}`;
+  externalAuthority: 'NONE' | 'CANARY_OBSERVATION' | 'EMERGENCY_SUSPENSION';
+  externalDigest?: `sha256:${string}`;
 }): SastRuleBundleLifecycleTransition {
   const value = buildSastRuleBundleLifecycleTransition(
     {
@@ -676,8 +794,11 @@ function lifecycleTransition(input: {
       })),
       externalAuthority: input.externalAuthority,
       externalAuthorityReceiptRef:
-        `sast-authority://${input.externalAuthority.toLowerCase()}/${input.externalDigest}`,
-      externalAuthorityReceiptDigest: input.externalDigest,
+        input.externalAuthority === 'NONE'
+          ? null
+          : `sast-authority://${input.externalAuthority.toLowerCase()}/${input.externalDigest}`,
+      externalAuthorityReceiptDigest:
+        input.externalAuthority === 'NONE' ? null : input.externalDigest ?? null,
       actorRef: 'sast-actor://rule-governance/controller',
       reasonRef: reference(`lifecycle-${input.sequence}-reason`),
       auditRef: reference(`lifecycle-${input.sequence}-audit`),

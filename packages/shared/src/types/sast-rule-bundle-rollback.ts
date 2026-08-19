@@ -3,7 +3,7 @@ import {
   type SastRuleBundlePromotionApprovalRole,
   type SastRuleBundlePromotionCanonicalDigester
 } from './sast-rule-promotion-lifecycle';
-import type { SastProfileId } from './sast-runtime';
+import { SAST_PROFILE_IDS, type SastProfileId } from './sast-runtime';
 
 export const SAST_RULE_BUNDLE_ROLLBACK_REQUEST_VERSION =
   'sast-rule-bundle-rollback-request-v1' as const;
@@ -32,6 +32,7 @@ export const SAST_RULE_BUNDLE_ROLLBACK_LIMITS = Object.freeze({
 });
 
 type Sha256Digest = `sha256:${string}`;
+const TEXT_ENCODER = new TextEncoder();
 
 export interface SastRuleBundleRollbackRequest {
   version: typeof SAST_RULE_BUNDLE_ROLLBACK_REQUEST_VERSION;
@@ -509,13 +510,16 @@ export function isSastRuleBundleRollbackReceiptValid(
     !isDigest(receipt.suspensionAuthorityReceiptDigest) ||
     !isEvidenceId(receipt.promotionEvidenceId) ||
     !isDigest(receipt.promotionEvidenceDigest) ||
-    !PROFILE_IDS.includes(receipt.profileId) ||
+    !SAST_PROFILE_IDS.includes(receipt.profileId) ||
     !isManifestId(receipt.baselineManifestId) ||
+    receipt.baselineManifestId === receipt.candidateManifestId ||
     !isDigest(receipt.baselineManifestDigest) ||
     !isSupplyChainVerificationId(receipt.baselineVerificationId) ||
     !isDigest(receipt.baselineVerificationDigest) ||
     !isSafeIdentifier(receipt.baselineBundleId) ||
+    receipt.baselineBundleId !== receipt.candidateBundleId ||
     !isDigest(receipt.baselineBundleDigest) ||
+    receipt.baselineBundleDigest === receipt.candidateBundleDigest ||
     !isTransitionId(receipt.baselineTransitionId) ||
     !isDigest(receipt.baselineTransitionDigest) ||
     !isSequence(receipt.baselineSequence) ||
@@ -588,7 +592,7 @@ function isRollbackCommandInputValid(
     isDigest(input.suspensionAuthorityReceiptDigest) &&
     isEvidenceId(input.promotionEvidenceId) &&
     isDigest(input.promotionEvidenceDigest) &&
-    PROFILE_IDS.includes(input.profileId) &&
+    SAST_PROFILE_IDS.includes(input.profileId) &&
     isManifestId(input.baselineManifestId) &&
     input.baselineManifestId !== input.candidateManifestId &&
     isDigest(input.baselineManifestDigest) &&
@@ -865,7 +869,7 @@ function isBoundedText(value: unknown, maximumBytes: number): value is string {
       const codePoint = character.codePointAt(0) ?? 0;
       return codePoint <= 31 || codePoint === 127;
     }) &&
-    new TextEncoder().encode(value).byteLength <= maximumBytes
+    TEXT_ENCODER.encode(value).byteLength <= maximumBytes
   );
 }
 
@@ -890,11 +894,6 @@ function stableJson(value: unknown): string {
     .join(',')}}`;
 }
 
-const PROFILE_IDS = [
-  'JAVA_FAST_V1',
-  'JAVA_DEEP_V1',
-  'COMMON_DEEP_V1'
-] as const satisfies readonly SastProfileId[];
 const APPROVAL_ROLE_ORDER = new Map(
   SAST_RULE_BUNDLE_PROMOTION_APPROVAL_ROLES.map((role, index) => [role, index])
 );

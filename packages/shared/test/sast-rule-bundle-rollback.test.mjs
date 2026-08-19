@@ -157,6 +157,9 @@ test('T050 validators reject malformed hostile shapes without throwing', () => {
     { ...value, receiptDigest: null },
     { ...value, approvals: null },
     { ...value, approvalCount: 3 },
+    { ...value, baselineManifestId: value.candidateManifestId },
+    { ...value, baselineBundleId: 'different-bundle' },
+    { ...value, baselineBundleDigest: value.candidateBundleDigest },
     { ...value, rawPayload: { source: 'forbidden' } }
   ]) {
     assert.doesNotThrow(() =>
@@ -189,7 +192,8 @@ function request(overrides = {}) {
 }
 
 function command(overrides = {}) {
-  const { version: _version, ...currentRequest } = request();
+  const currentRequest = { ...request() };
+  delete currentRequest.version;
   return buildSastRuleBundleRollbackCommand(
     {
       ...currentRequest,
