@@ -16,6 +16,8 @@ Control, Scan, AI, and Data/Security plane boundaries.
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
+- T040 through T050 are complete; the guarded next entry point is T051 production qualification
+  corpus work. Provider/Kubernetes execution remains deferred until all T051-T056 gates pass.
 - Issue #276 is explicitly reclassified by `spec.md` as a local-only Neo4j/MITRE CWE
   dev/demo bootstrap; it does not replace this package or advance T040.
 - `005-production-deployment-operations` remains the completed deployment-operations
@@ -548,9 +550,9 @@ portion of Phase 6:
   Scan Platform or Security Operations approval.
 - `sast-rule-bundle-lifecycle-transition-v1` is an append-only, previous-digest-linked state
   ledger. Only `DRAFT -> VALIDATED -> CANARY -> ACTIVE -> RETIRED`, `CANARY|ACTIVE -> SUSPENDED`,
-  and `SUSPENDED -> ROLLED_BACK` are legal. T048 installs the exact canary-observation authority;
-  T049 installs exact active-switch emergency suspension, while rollback remains unavailable
-  until T050 installs its independent authority.
+  and `SUSPENDED -> ROLLED_BACK` are legal. T048 installs the exact canary-observation authority,
+  T049 installs exact active-switch emergency suspension, and T050 installs the independent
+  last-known-good rollback authority.
 - Before tenant policy, planning revalidates the latest lifecycle snapshot and persists a
   `sast-rule-bundle-lifecycle-selection-v1` receipt. Only latest `CANARY` or `ACTIVE` bundles are
   selectable. All selected bundle receipts are committed atomically under ordered manifest-row
@@ -617,8 +619,8 @@ portion of Phase 6:
   `sast-rule-bundle-canary-observation-receipt-v1`, which the lifecycle authority router accepts
   solely for the exact `CANARY -> ACTIVE` transition. The default production observation source
   remains unavailable until a production-qualified adapter supplies the exact durable metrics;
-  it never fabricates evidence. T049 emergency suspension is installed; T050 rollback remains
-  unavailable.
+  it never fabricates evidence. T049 emergency suspension and T050 rollback are installed as
+  separate, non-interchangeable authorities.
 - T049 accepts only platform-managed, signed, append-only `ACTIVATE | DEACTIVATE` decisions for
   canonical global SAST, scanner/version, bundle digest, semantic rule, signed profile,
   tenant, repository-binding, capability, and scoped external-publication selectors. Decisions
@@ -657,11 +659,24 @@ portion of Phase 6:
   `CANARY | ACTIVE -> SUSPENDED` edge. Its reference ends in its exact receipt digest, matching
   the lifecycle authority contract. The lifecycle transition locks and recomputes the complete
   applicable active decision set and digest, so deactivation or replacement of any non-trigger
-  selector invalidates the receipt. It cannot authorize T050 rollback.
+  selector invalidates the receipt. It cannot authorize rollback.
 - Automatic canary input contains only the exact T048 step-decision ID/digest. A serializable
   lifecycle-then-canary lock derives the current `PAUSED`/zero-tolerance signal and all manifest,
   bundle, signed-profile, transition, reason, and time bindings from durable rows; caller targets
   and stale/non-paused decisions fail closed. The signal itself has zero mutation authority.
+- T050 accepts a candidate suspension reference and bounded incident/actor/reason/audit/signing
+  metadata only; the caller cannot supply a baseline or rollback target. The signed command
+  derives the distinct last-known-good manifest/bundle from the original T047 promotion evidence,
+  revalidates both T045 attestations, the exact T049 suspension receipt, common scanner/profile
+  compatibility, and current candidate `SUSPENDED` plus baseline `ACTIVE` heads. Within 15
+  minutes it requires fresh Security Engineering and independent Scan Platform or Security
+  Operations human approvals, excluding the command actor. Command, verification, approvals,
+  receipt, and receipt bindings are normalized append-only exact-replay ledgers.
+- Receipt issuance and lifecycle commit lock candidate and baseline heads in canonical manifest
+  order and recheck all bindings. The receipt authorizes only one candidate
+  `SUSPENDED -> ROLLED_BACK` append; every baseline/history/scanner-set/finding/policy/publication/
+  SCM authority bit is false. New work can use the handoff identity only after trusted scanner-set
+  ownership selects the still-current `ACTIVE` baseline and the normal planning gates pass.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -685,12 +700,14 @@ selection receipts, and canonical v3 planning gates are complete. T048 determini
 tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step promotion
   authority, queue-head fencing, and canonical v4 planning gates are complete. T049 signed
   scanner, bundle, rule, profile, tenant, repository, capability, publication, and global kill
-  switches, full runtime propagation, and emergency-suspension authority are complete; T050
-  last-known-good rollback without historical mutation is the next implementation task.
+  switches, full runtime propagation, and emergency-suspension authority are complete. T050
+  evidence-derived last-known-good rollback, signed dual control, two-head fencing, append-only
+  receipt/lifecycle persistence, and PostgreSQL direct-write/race enforcement are complete. T051
+  versioned qualification corpora are the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
-### T049 Validation Checkpoint
+### T049-T050 Validation Checkpoint
 
 - Shared kill-switch contract tests cover canonical selectors/context, decision and verification
   shape, complete evaluation/head/match sets, coverage effects, planning descriptors, active
@@ -703,6 +720,12 @@ still requires the 005 rollout and the remaining 006 gates.
   `20260819180000_sast_kill_switch_authority`; online-schema validation passes. Direct SQL proves
   signed activation, sequential signed deactivation, immutable-ledger rejection, and deferred
   rejection/rollback of an unsigned decision.
+- A clean PostgreSQL 16.15 database applies every migration through
+  `20260819220000_sast_rule_bundle_rollback`. The post-migration application probe creates exact
+  T045/T047 state, proves that a forged direct lifecycle insert is rejected, rechecks candidate
+  and baseline head drift, converges concurrent exact rollback attempts to one transition, keeps
+  the baseline and history unchanged, and rejects rollback-ledger mutation. CI runs this probe
+  immediately after migration deployment.
 - Repository completion still requires the standard commands below on the final branch. Live
   signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
   remain fail-closed rollout dependencies rather than fabricated local evidence.
@@ -738,6 +761,8 @@ Before claiming the 006 design milestone complete:
 9. Confirm all quantitative quality and security gates are explicit and testable.
 10. Confirm any language after Java follows `language-profile-extension.md` before the product
     claims SAST-complete coverage.
+11. Against a disposable PostgreSQL 16 database, apply every migration and run the opt-in T050
+    rollback probe; never aim the probe at a shared or production database.
 
 ## Validation Commands
 
@@ -747,6 +772,10 @@ corepack pnpm test
 corepack pnpm typecheck
 corepack pnpm build
 corepack pnpm --filter @aegisai/api prisma:validate
+corepack pnpm --filter @aegisai/api prisma:migrate:deploy
+$env:RUN_SAST_ROLLBACK_POSTGRES_PROBE = "1"
+corepack pnpm --filter @aegisai/api test --runInBand test/rule-governance/sast-rule-bundle-rollback.postgres.e2e-spec.ts
+Remove-Item Env:RUN_SAST_ROLLBACK_POSTGRES_PROBE
 node --test test/runtime/*.test.mjs
 git diff --check
 ```

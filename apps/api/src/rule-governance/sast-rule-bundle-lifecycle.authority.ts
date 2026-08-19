@@ -19,6 +19,9 @@ export interface SastRuleBundleLifecycleAuthorityInput {
   toState: RuleBundleState;
   promotionEvidenceId: string;
   promotionEvidenceDigest: `sha256:${string}`;
+  actorRef: string;
+  reasonRef: string;
+  auditRef: string;
   requestedAt: string;
 }
 

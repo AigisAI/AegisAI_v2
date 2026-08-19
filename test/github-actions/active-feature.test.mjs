@@ -60,6 +60,8 @@ const files = {
   sharedSastRuleBundleCanaryTest: new URL('../../packages/shared/test/sast-rule-bundle-canary.test.mjs', import.meta.url),
   sharedSastKillSwitch: new URL('../../packages/shared/src/types/sast-kill-switch.ts', import.meta.url),
   sharedSastKillSwitchTest: new URL('../../packages/shared/test/sast-kill-switch.test.mjs', import.meta.url),
+  sharedSastRuleBundleRollback: new URL('../../packages/shared/src/types/sast-rule-bundle-rollback.ts', import.meta.url),
+  sharedSastRuleBundleRollbackTest: new URL('../../packages/shared/test/sast-rule-bundle-rollback.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -165,6 +167,13 @@ const files = {
   apiSastKillSwitchCanarySuspension: new URL('../../apps/api/src/rule-governance/sast-kill-switch-canary-suspension.service.ts', import.meta.url),
   apiSastKillSwitchServiceTest: new URL('../../apps/api/test/rule-governance/sast-kill-switch.service.e2e-spec.ts', import.meta.url),
   apiSastKillSwitchPersistenceTest: new URL('../../apps/api/test/rule-governance/sast-kill-switch-persistence.e2e-spec.ts', import.meta.url),
+  apiSastRuleBundleRollbackService: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-rollback.service.ts', import.meta.url),
+  apiSastRuleBundleRollbackStore: new URL('../../apps/api/src/rule-governance/prisma-sast-rule-bundle-rollback.store.ts', import.meta.url),
+  apiSastRuleBundleRollbackSignatureAuthority: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-rollback-signature.authority.ts', import.meta.url),
+  apiSastRuleBundleRollbackClock: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-rollback.clock.ts', import.meta.url),
+  apiSastRuleBundleRollbackServiceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-rollback.service.e2e-spec.ts', import.meta.url),
+  apiSastRuleBundleRollbackPersistenceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-rollback-persistence.e2e-spec.ts', import.meta.url),
+  apiSastRuleBundleRollbackPostgresTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-rollback.postgres.e2e-spec.ts', import.meta.url),
   apiSastQueueKillSwitchFenceTest: new URL('../../apps/api/test/control-plane/sast-queue-kill-switch-fence.e2e-spec.ts', import.meta.url),
   apiSastKillSwitchArtifactGate: new URL('../../apps/api/src/scan-plane/sast-kill-switch-artifact-acceptance.gate.ts', import.meta.url),
   apiSastKillSwitchCoverageGate: new URL('../../apps/api/src/scan-plane/sast-kill-switch-finding-lifecycle-coverage.gate.ts', import.meta.url),
@@ -190,6 +199,7 @@ const files = {
   apiSastRuleBundleLifecycleMigration: new URL('../../apps/api/prisma/migrations/20260814120000_sast_rule_bundle_lifecycle/migration.sql', import.meta.url),
   apiSastRuleBundleCanaryMigration: new URL('../../apps/api/prisma/migrations/20260819120000_sast_rule_bundle_canary/migration.sql', import.meta.url),
   apiSastKillSwitchMigration: new URL('../../apps/api/prisma/migrations/20260819180000_sast_kill_switch_authority/migration.sql', import.meta.url),
+  apiSastRuleBundleRollbackMigration: new URL('../../apps/api/prisma/migrations/20260819220000_sast_rule_bundle_rollback/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -242,14 +252,14 @@ const assertScanPlaneExports = (scanPlaneModule) => {
 const assertT049QuickstartHandoff = (quickstart) => {
   assert.match(
     quickstart,
-    /T048 deterministic[\s\S]{0,420}are complete\. T049 signed[\s\S]{0,360}are complete; T050/
+    /T048 deterministic[\s\S]{0,480}are complete\. T049 signed[\s\S]{0,520}are complete\. T050[\s\S]{0,420}are complete\. T051/
   );
 };
 
 const assertT049PlanHandoff = (plan) => {
   assert.match(
     plan,
-    /T040 through T049 independently and now proceeds to T050/
+    /T040 through T050 independently and now proceeds to the T051 qualification corpus/
   );
 };
 
@@ -2816,6 +2826,123 @@ test('SAST T049 propagates signed kill switches through every production authori
     /First-activation, selector omission, and plan\/admission race/
   );
   assert.match(qualityGates, /T049 is release-blocking/);
+});
+
+test('SAST T050 derives and commits only last-known-good rollback authority', () => {
+  const shared = readNormalizedText(files.sharedSastRuleBundleRollback);
+  const sharedTest = readNormalizedText(files.sharedSastRuleBundleRollbackTest);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiSastRuleBundleRollbackService);
+  const store = readNormalizedText(files.apiSastRuleBundleRollbackStore);
+  const signatureAuthority = readNormalizedText(
+    files.apiSastRuleBundleRollbackSignatureAuthority
+  );
+  const clock = readNormalizedText(files.apiSastRuleBundleRollbackClock);
+  const serviceTest = readNormalizedText(
+    files.apiSastRuleBundleRollbackServiceTest
+  );
+  const persistenceTest = readNormalizedText(
+    files.apiSastRuleBundleRollbackPersistenceTest
+  );
+  const postgresTest = readNormalizedText(
+    files.apiSastRuleBundleRollbackPostgresTest
+  );
+  const lifecycleAuthority = readNormalizedText(
+    files.apiRuleBundleLifecycleAuthority
+  );
+  const authorityRouter = readNormalizedText(
+    files.apiRuleBundleLifecycleAuthorityRouter
+  );
+  const module = readNormalizedText(files.apiRuleGovernanceModule);
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(files.apiSastRuleBundleRollbackMigration);
+  const ci = readNormalizedText(files.ci);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  for (const version of [
+    'sast-rule-bundle-rollback-request-v1',
+    'sast-rule-bundle-rollback-command-v1',
+    'sast-rule-bundle-rollback-verification-v1',
+    'sast-rule-bundle-rollback-approval-v1',
+    'sast-rule-bundle-rollback-receipt-v1'
+  ]) {
+    assert.match(shared, new RegExp(version));
+  }
+  const requestContract = shared.match(
+    /export interface SastRuleBundleRollbackRequest \{[\s\S]*?\n\}/
+  )?.[0];
+  assert.ok(requestContract);
+  assert.match(requestContract, /suspendedTransitionId/);
+  assert.doesNotMatch(requestContract, /baseline|target/i);
+  assert.match(shared, /maximumCommandAgeMilliseconds: 15 \* 60 \* 1_000/);
+  assert.match(shared, /baselineMutationAuthorized: false/);
+  assert.match(shared, /historicalMutationAuthorized: false/);
+  assert.match(shared, /scannerSetMutationAuthorized: false/);
+  assert.match(sharedTest, /never a caller-selected target/);
+  assert.match(sharedTest, /fresh independent Security Engineering/);
+  assert.match(sharedIndex, /sast-rule-bundle-rollback/);
+
+  assert.doesNotMatch(service, /request\.baselineManifestId/);
+  assert.match(service, /evidence\.baselineManifestId/);
+  assert.match(service, /candidateSuspensionMatchesRequest/);
+  assert.match(service, /input\.authority !== 'ROLLBACK'/);
+  assert.match(service, /input\.fromState !== 'SUSPENDED'/);
+  assert.match(service, /input\.toState !== 'ROLLED_BACK'/);
+  assert.match(store, /runSastKillSwitchSerializable/);
+  assert.match(store, /ORDER BY "manifestId" COLLATE "C"/);
+  assert.match(store, /FOR UPDATE/);
+  assert.match(signatureAuthority, /UnavailableSastRuleBundleRollbackSignatureAuthority/);
+  assert.match(clock, /SystemSastRuleBundleRollbackClock/);
+  assert.match(serviceTest, /signature authority is not installed/);
+  assert.match(serviceTest, /active baseline changes before authorization/);
+  assert.match(persistenceTest, /locks both heads canonically/);
+  assert.match(persistenceTest, /only the ROLLBACK lifecycle seam/);
+  assert.match(postgresTest, /RUN_SAST_ROLLBACK_POSTGRES_PROBE/);
+  assert.match(postgresTest, /rejects forged, stale, duplicate, and mutable authority/);
+  assert.match(postgresTest, /Promise\.all/);
+
+  assert.match(lifecycleAuthority, /RequiredSastRuleBundleLifecycleExternalAuthority/);
+  assert.match(authorityRouter, /input\.authority === 'ROLLBACK'/);
+  assert.match(module, /SastRuleBundleRollbackService/);
+  assert.match(module, /UnavailableSastRuleBundleRollbackSignatureAuthority/);
+  for (const model of [
+    'SastRuleBundleRollbackCommand',
+    'SastRuleBundleRollbackVerification',
+    'SastRuleBundleRollbackApproval',
+    'SastRuleBundleRollbackReceipt',
+    'SastRuleBundleRollbackReceiptApproval'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(migration, new RegExp(`CREATE TABLE "${model}"`));
+  }
+  assert.match(migration, /reject_sast_rule_bundle_rollback_ledger_mutation/);
+  assert.match(migration, /enforce_sast_rule_bundle_rollback_command_state/);
+  assert.match(migration, /enforce_sast_rule_bundle_rollback_receipt_state/);
+  assert.match(migration, /enforce_sast_rule_bundle_rollback_lifecycle_authority/);
+  assert.match(migration, /ORDER BY "manifestId" COLLATE "C" FOR UPDATE/);
+  assert.doesNotMatch(migration, /ON DELETE CASCADE/);
+  assert.doesNotMatch(migration, /"[A-Za-z0-9_]+"\s+JSONB\b/i);
+  assert.match(ci, /Probe SAST rollback authority on PostgreSQL/);
+  assert.match(ci, /RUN_SAST_ROLLBACK_POSTGRES_PROBE: "1"/);
+
+  assert.match(tasks, /- \[x\] T050\b/);
+  assertT049QuickstartHandoff(quickstart);
+  assertT049PlanHandoff(plan);
+  assert.match(contract, /Last-known-good rollback authority v1/);
+  assert.match(dataModel, /SastRuleBundleRollbackCommand and SastRuleBundleRollbackVerification/);
+  assert.match(spec, /FR-057g/);
+  assert.match(spec, /FR-057h/);
+  assert.match(ruleGovernance, /T050 Last-Known-Good Rollback Boundary/);
+  assert.match(threatModel, /Rollback target substitution or race/);
+  assert.match(qualityGates, /T050 is release-blocking/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

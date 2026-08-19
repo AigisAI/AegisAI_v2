@@ -644,8 +644,9 @@ port and therefore cannot widen T031 authority.
 For a matching active global, bundle, scanner-version, semantic-rule, or signed-profile selector,
 the same authority may issue one digest-bound `EMERGENCY_SUSPENSION` receipt for the exact latest
 `CANARY | ACTIVE -> SUSPENDED` lifecycle edge. The receipt cannot authorize rollback, mutate an
-old plan/finding, or select a replacement bundle; last-known-good rollback remains T050. The
-transition commit locks and recomputes the complete applicable active decision set, rejecting
+old plan/finding, or select a replacement bundle; last-known-good rollback uses the separate T050
+authority in Decision 28. The transition commit locks and recomputes the complete applicable active
+decision set, rejecting
 deactivation or replacement of any captured non-trigger selector. A separate exact two-reference
 request can resolve a content-free automatic-suspension signal from
 the locked current T048 `PAUSED` decision, rollout, lifecycle head, and normalized reason set.
@@ -665,3 +666,42 @@ access begins, accepting artifacts from a killed run, deriving current coverage 
 T039, using external-publication scope to disable unrelated internal processing, or allowing a
 kill switch to perform T050 rollback, trusting a receipt's own head count without comparing it to
 the immutable plan, or trusting a caller-provided canary target/signal.
+
+## Decision 28: Derive Rollback Only from Original Promotion Evidence and Preserve History
+
+**Decision**: T050 accepts only an exact suspended candidate transition plus bounded operational
+and signing metadata. It deliberately has no caller-supplied baseline, rollback target, or scanner
+set. The service derives the one permitted last-known-good target from that candidate's original
+T047 promotion evidence, requires its rollback digest to equal the distinct baseline bundle,
+revalidates both T045 manifests and attestations, common bundle/scanner identity and signed
+profile, the exact T049 emergency-suspension receipt, and current candidate `SUSPENDED` plus
+baseline `ACTIVE` lifecycle heads.
+
+One content-free command is valid for 15 minutes and must have a matching verification from an
+independently qualified signature/provenance authority whose production default is unavailable.
+Receipt issuance requires exactly one fresh Security Engineering approval and exactly one fresh
+independent Scan Platform or Security Operations approval, excluding the command actor. Command,
+verification, approvals, receipt, and receipt-approval bindings are normalized append-only
+ledgers with exact replay only.
+
+The store locks candidate and baseline heads in canonical manifest-ID order under bounded
+serializable transactions. PostgreSQL repeats the evidence, attestation, suspension, signature,
+approval, and both-head checks at receipt and lifecycle insert boundaries. The resulting
+digest-bound receipt authorizes only the next candidate `SUSPENDED -> ROLLED_BACK` append. Every
+baseline/history/scanner-set/finding/policy/publication/SCM authority bit is false. Its baseline
+identity is merely a handoff: trusted scanner-set ownership must separately choose the exact
+still-`ACTIVE` baseline and pass the existing planning and queue chain. Concurrent exact retries
+converge on one receipt and one transition; head drift fails closed.
+
+**Rationale**: Choosing a target during an incident would turn operator, customer, AI, or scanner
+input into supply-chain authority. Binding rollback to the already qualified promotion baseline
+preserves deterministic recovery, while fresh dual control and commit-time two-head fencing close
+stale receipt and race windows. Separating the narrow lifecycle receipt from scanner-set routing
+prevents rollback authority from silently bypassing compatibility, canary, kill-switch, policy,
+or queue gates.
+
+**Rejected**: Caller-selected targets, using the current mutable manifest tag, allowing the T049
+receipt or canary signal to choose a replacement, reactivating or rewriting the baseline, editing
+the candidate's prior state, one-person or automated approval, approvals outside the 15-minute
+window, unsigned commands, one-head locking, receipt-only application checks, scanner-set mutation
+inside rollback, or rewriting historical plans, findings, coverage, evidence, or audit records.

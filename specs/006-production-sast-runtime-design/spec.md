@@ -517,6 +517,25 @@ incomplete, stale, quarantined, or security-blocked scan.
   failure reason set, and zero-tolerance status from locked durable authority. Callers MUST NOT
   supply or override those fields. The derived content-free signal MUST grant no decision,
   lifecycle, publication, AI, or rollback authority by itself.
+- **FR-057g**: A rollback request MUST identify only the exact latest suspended candidate and
+  bounded incident/actor/reason/audit/signature/provenance metadata; it MUST NOT accept a
+  baseline, target, or scanner set. The service MUST derive the distinct last-known-good baseline
+  solely from the candidate's original T047 promotion evidence, require the exact T049 suspension
+  provenance, reverify both T045 supply-chain attestations and common scanner/profile
+  compatibility, and require the candidate latest head to be `SUSPENDED` and the derived baseline
+  latest head to be `ACTIVE`. Caller, customer, AI, and scanner output MUST have zero target or
+  approval authority.
+- **FR-057h**: Rollback MUST require an exact signed command whose production signature provider
+  defaults unavailable and exactly two fresh independent human approvals within 15 minutes:
+  Security Engineering plus Scan Platform or Security Operations, excluding the command actor.
+  Command, verification, approval, receipt, and receipt-approval rows MUST be normalized,
+  content-free, append-only, and exact-replay only. Candidate and baseline heads MUST be locked in
+  canonical order and revalidated at receipt issuance and lifecycle commit. The receipt MUST
+  authorize only one candidate `SUSPENDED -> ROLLED_BACK` append and MUST grant no baseline,
+  historical, scanner-set, finding, policy, publication, AI, or SCM mutation authority. The
+  baseline and every historical manifest, transition, plan, finding, coverage, evidence, and
+  audit row MUST remain unchanged; new plans MAY use the baseline only after trusted scanner-set
+  selection and every existing planning/queue gate passes.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

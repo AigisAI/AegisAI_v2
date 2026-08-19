@@ -134,8 +134,9 @@ command-line flags, rule code, templates, post-processors, or executable configu
   approval. The sequence and previous digest form one immutable history per manifest/bundle.
 - `CANARY -> ACTIVE`, suspension, and rollback require exact digest-bound receipts from
   `CANARY_OBSERVATION`, `EMERGENCY_SUSPENSION`, and `ROLLBACK` authorities respectively. The
-  T048 canary authority and T049 emergency-suspension authority are installed. T050 rollback
-  remains unavailable before that edge can execute in production.
+  T048 canary authority, T049 emergency-suspension authority, and T050 rollback authority are
+  installed at separate router seams. Each production evidence/signature adapter retains its
+  explicit unavailable default until qualified.
 - Planning first verifies T045 compatibility, then revalidates the latest lifecycle state and
   persists `sast-rule-bundle-lifecycle-selection-v1`, then resolves T046 tenant policy. Only the
   latest `CANARY` or `ACTIVE` state is selectable; every other state, stale transition, digest
@@ -150,10 +151,11 @@ command-line flags, rule code, templates, post-processors, or executable configu
   lifecycle selection receipt, but the key excludes its evaluation-time-derived ID/digest. The
   migration rejects deployment while any v2 plan or reservation is non-terminal; terminal v2
   history is retained and never rewritten or replayed as v3 work.
-- T047 itself did not assign tenant-safe canary cohorts or observe production canaries. T048 now
-  owns those boundaries. T049 owns kill-switch actuation and emergency suspension; last-known-good
-  rollback remains T050. Scanner execution, waiver/finding mutation, external publication, AI
-  authority, and SCM writes remain independently gated elsewhere.
+- T047 itself did not assign tenant-safe canary cohorts or observe production canaries. T048 owns
+  those boundaries, T049 owns kill-switch actuation and emergency suspension, and T050 owns only
+  evidence-derived last-known-good rollback. Scanner execution, scanner-set mutation,
+  waiver/finding mutation, external publication, AI authority, and SCM writes remain independently
+  gated elsewhere.
 
 ### T048 Deterministic Canary and Observation Boundary
 
@@ -269,13 +271,40 @@ command-line flags, rule code, templates, post-processors, or executable configu
   bundle, transition, promotion evidence, active decision set, and time. At transition commit,
   PostgreSQL locks and recomputes the full applicable active selector set, count, and canonical
   digest; deactivation or replacement of any captured selector, including a non-trigger selector,
-  rejects the receipt. It cannot authorize `SUSPENDED -> ROLLED_BACK`; T050 remains a separate
-  authority.
+  rejects the receipt. It cannot authorize `SUSPENDED -> ROLLED_BACK`; the installed T050 path is
+  a separate signed and independently approved authority.
 - Canary automation accepts only a T048 step-decision ID/digest. Under lifecycle-then-canary head
   locks it reloads the current immutable `PAUSED` decision, rollout, and normalized hard-failure
   reasons and derives `CANARY_PAUSED` or `ZERO_TOLERANCE`. The manifest, bundle, signed profile,
   lifecycle target, reason set, and time are never caller fields, and the signal itself grants no
   activation, suspension, or rollback authority.
+
+### T050 Last-Known-Good Rollback Boundary
+
+- `sast-rule-bundle-rollback-request-v1` contains only the exact suspended candidate transition
+  plus bounded incident, actor, reason, audit, signature, provenance, and command-time metadata.
+  Baseline manifest/bundle/transition fields are forbidden caller input.
+- The service derives the distinct baseline solely from the candidate's original T047 promotion
+  evidence and rebinds `rollbackTargetDigest === baselineBundleDigest`. It then revalidates both
+  T045 manifests and attestations, common bundle/scanner identity, shared signed profile support,
+  the exact T049 emergency-suspension receipt, candidate latest `SUSPENDED` head, and baseline
+  latest `ACTIVE` head.
+- One signed `sast-rule-bundle-rollback-command-v1` has a 15-minute lifetime. Its signature and
+  provenance port defaults unavailable. Receipt issuance requires exactly one fresh Security
+  Engineering approval plus exactly one fresh independent Scan Platform or Security Operations
+  approval; the command actor, duplicate approver, duplicate role, and two platform-side roles are
+  rejected.
+- Command, verification, approval, receipt, and receipt-approval ledgers are normalized,
+  content-free, append-only, and exact-replay only. Candidate and baseline lifecycle heads are
+  locked in canonical manifest-ID order during command, receipt, and lifecycle checks. PostgreSQL
+  revalidates the suspension provenance, evidence-derived target, approvals, signature facts, and
+  both current heads at the direct lifecycle insert boundary.
+- The digest-bound receipt authorizes only the candidate's next
+  `SUSPENDED -> ROLLED_BACK` append. It cannot mutate the baseline, choose or write a scanner set,
+  alter historical manifests/plans/findings/coverage/evidence, change policy/waivers/suppressions,
+  publish externally, call AI, or write to SCM. The receipt's baseline identity is a handoff only;
+  trusted scanner-set ownership must separately select that still-`ACTIVE` baseline and pass the
+  normal planning and queue gates.
 
 ## Lifecycle
 
@@ -412,14 +441,20 @@ Every canary/active bundle records a tested last-known-good digest. Rollback cre
 rollout decision; it does not mutate old scan plans or rewrite historical findings.
 
 1. Activate the affected kill switch and stop new affected plans.
-2. Select the compatible last-known-good scanner set and verify signature/provenance again.
-3. Route new plans to that digest and invalidate reusable scan results whose canonical key
+2. Submit only the exact suspended candidate plus incident metadata. Derive the compatible
+   last-known-good target from its original promotion evidence and verify both supply chains.
+3. Verify the signed rollback command and collect fresh independent dual approval within the
+   15-minute window.
+4. Append only the faulty candidate's `ROLLED_BACK` transition through the exact T050 receipt.
+5. Have the trusted scanner-set owner route new plans to the still-current `ACTIVE` baseline and
+   re-run all compatibility, lifecycle, canary, kill-switch, policy, and queue gates. Invalidate
+   reusable scan results whose canonical key
    included the faulty digest.
-4. Mark the faulty bundle `ROLLED_BACK`, preserve artifacts and decisions under retention
+6. Preserve artifacts and decisions under retention
    policy, and identify affected scans/findings.
-5. Re-evaluate external policy decisions where the faulty bundle changed authority; never
+7. Re-evaluate external policy decisions where the faulty bundle changed authority; never
    erase history.
-6. Close rollback only after production gates remain healthy for the required window.
+8. Close rollback only after production gates remain healthy for the required window.
 
 ## Audit and Observability
 

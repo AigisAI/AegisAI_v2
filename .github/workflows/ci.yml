@@ -105,5 +105,12 @@ jobs:
       - name: Apply Prisma migrations to a clean database
         run: corepack pnpm --filter @aegisai/api prisma:migrate:deploy
 
+      - name: Probe SAST rollback authority on PostgreSQL
+        env:
+          RUN_SAST_ROLLBACK_POSTGRES_PROBE: "1"
+        run: >-
+          corepack pnpm --filter @aegisai/api test --runInBand
+          test/rule-governance/sast-rule-bundle-rollback.postgres.e2e-spec.ts
+
       - name: Check whitespace
         run: git diff --check

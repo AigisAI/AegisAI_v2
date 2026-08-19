@@ -9,6 +9,10 @@ import {
   SastRuleBundleCanaryServiceError
 } from './sast-rule-bundle-canary.service';
 import {
+  SastRuleBundleRollbackService,
+  SastRuleBundleRollbackServiceError
+} from './sast-rule-bundle-rollback.service';
+import {
   SastRuleBundleLifecycleAuthority,
   SastRuleBundleLifecycleAuthorityError,
   UnavailableSastRuleBundleLifecycleAuthority,
@@ -21,6 +25,7 @@ export class SastRuleBundleLifecycleAuthorityRouter extends SastRuleBundleLifecy
   constructor(
     private readonly canary: SastRuleBundleCanaryService,
     private readonly killSwitch: SastKillSwitchService,
+    private readonly rollback: SastRuleBundleRollbackService,
     private readonly unavailable: UnavailableSastRuleBundleLifecycleAuthority
   ) {
     super();
@@ -36,6 +41,22 @@ export class SastRuleBundleLifecycleAuthorityRouter extends SastRuleBundleLifecy
         if (error instanceof SastKillSwitchGateError) {
           throw new SastRuleBundleLifecycleAuthorityError(
             error.reason === 'STORE_UNAVAILABLE' ||
+              error.reason === 'AUTHORITY_UNAVAILABLE'
+              ? 'UNAVAILABLE'
+              : 'REJECTED'
+          );
+        }
+        throw new SastRuleBundleLifecycleAuthorityError('UNAVAILABLE');
+      }
+    }
+    if (input.authority === 'ROLLBACK') {
+      try {
+        return await this.rollback.authorizeLifecycleTransition(input);
+      } catch (error) {
+        if (error instanceof SastRuleBundleRollbackServiceError) {
+          throw new SastRuleBundleLifecycleAuthorityError(
+            error.reason === 'STORE_UNAVAILABLE' ||
+              error.reason === 'SIGNATURE_UNAVAILABLE' ||
               error.reason === 'AUTHORITY_UNAVAILABLE'
               ? 'UNAVAILABLE'
               : 'REJECTED'

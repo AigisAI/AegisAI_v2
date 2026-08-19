@@ -487,6 +487,40 @@ trusted decision time, rejection time, affected scope, zero forbidden side effec
 evaluation receipt. Authority-unavailable and active-expired drills have the same fail-closed
 expectation as an active switch; only an exact signed deactivation restores later eligibility.
 
+## T050 Last-Known-Good Rollback Gates
+
+T050 is release-blocking unless all of the following are proven against the shared contract,
+application services, Prisma persistence, and PostgreSQL 16 constraints:
+
+- the exact request rejects every unknown field and contains no baseline, target, scanner-set,
+  customer, AI, or scanner-selected authority;
+- command construction derives the distinct baseline only from the candidate's original T047
+  evidence and revalidates both T045 attestations, same bundle/scanner identity, common profile,
+  exact T049 suspension provenance, candidate latest `SUSPENDED`, and baseline latest `ACTIVE`;
+- the production signature authority defaults unavailable; only an exact signature/provenance
+  verification bound to the command can commit;
+- exactly two fresh approvals—Security Engineering plus independent Scan Platform or Security
+  Operations—arrive within 15 minutes, with no command-actor self-approval, duplicate approver,
+  duplicate role, two platform-side roles, automated approval, or post-receipt approval;
+- command, verification, approvals, receipt, and receipt bindings are normalized, content-free,
+  append-only, and exact-replay only, with restrictive composite keys and canonical digests;
+- candidate and baseline heads are locked in canonical manifest-ID order and revalidated at
+  command, receipt, and direct lifecycle insert boundaries; candidate or baseline drift produces
+  zero `ROLLED_BACK` transitions;
+- forged direct lifecycle insertion, cross-manifest/bundle/profile/evidence receipt, wrong edge,
+  stale time, changed replay, update/delete, and unavailable persistence all fail closed;
+- concurrent exact rollback attempts converge on one receipt and one candidate transition; the
+  baseline head and all prior manifests, transitions, plans, findings, coverage, evidence, and
+  audit records remain byte-for-byte authoritative history; and
+- every receipt authority bit for baseline/history/scanner-set/finding/policy/publication/SCM
+  mutation is false. Routing new work requires the trusted scanner-set owner to select the exact
+  still-`ACTIVE` baseline and pass all existing planning and queue gates.
+
+CI must apply every migration through `20260819220000_sast_rule_bundle_rollback` to a clean
+PostgreSQL 16 database, run the opt-in application/Prisma rollback probe after migration, and
+prove direct-write denial, both head-drift denials, concurrent exact replay, one append-only
+success, immutable-ledger rejection, and unchanged baseline/history state.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:

@@ -3368,3 +3368,181 @@ model SastKillSwitchEmergencySuspensionReceipt {
   @@index([manifestId, lifecycleSequence, verifiedAt], map: "SastKillSwitchEmergencySuspensionReceipt_lifecycle_idx")
   @@index([triggerDecisionId, triggerDecisionDigest], map: "SastKillSwitchEmergencySuspensionReceipt_decision_idx")
 }
+
+model SastRuleBundleRollbackCommand {
+  id                                 String   @id
+  contractVersion                    String
+  commandDigest                      String   @unique
+  candidateManifestId                String   @unique
+  candidateManifestDigest            String
+  candidateVerificationId            String
+  candidateVerificationDigest        String
+  candidateBundleId                  String
+  candidateBundleDigest              String
+  suspendedTransitionId              String   @unique
+  suspendedTransitionDigest          String
+  suspendedSequence                  Int
+  suspendedTransitionedAt            DateTime
+  suspensionAuthorityReceiptRef      String
+  suspensionAuthorityReceiptDigest   String
+  promotionEvidenceId                String
+  promotionEvidenceDigest            String
+  profileId                          String
+  baselineManifestId                 String
+  baselineManifestDigest             String
+  baselineVerificationId             String
+  baselineVerificationDigest         String
+  baselineBundleId                   String
+  baselineBundleDigest               String
+  baselineTransitionId               String
+  baselineTransitionDigest           String
+  baselineSequence                   Int
+  baselineTransitionedAt             DateTime
+  baselineState                      String   @default("ACTIVE")
+  incidentRef                        String
+  actorRef                           String
+  actorRole                          String
+  reasonRef                          String
+  auditRef                           String
+  signatureRef                       String
+  provenanceRef                      String
+  commandedAt                        DateTime
+  rollbackTargetDerived              Boolean  @default(true)
+  customerTargetAccepted             Boolean  @default(false)
+  source                             String   @default("PLATFORM_RULE_GOVERNANCE")
+  immutable                          Boolean  @default(true)
+  repositoryContentStored            Boolean  @default(false)
+  findingContentStored               Boolean  @default(false)
+  secretValueStored                  Boolean  @default(false)
+  arbitraryPayloadStored             Boolean  @default(false)
+  recordedAt                         DateTime @default(now())
+
+  @@unique([id, commandDigest], map: "SastRuleBundleRollbackCommand_binding_key")
+  @@index([candidateBundleId, candidateBundleDigest, commandedAt], map: "SastRuleBundleRollbackCommand_candidate_idx")
+  @@index([baselineManifestId, baselineBundleDigest], map: "SastRuleBundleRollbackCommand_baseline_idx")
+}
+
+model SastRuleBundleRollbackVerification {
+  id                       String   @id
+  contractVersion          String
+  verificationDigest       String   @unique
+  commandId                String   @unique
+  commandDigest            String
+  signerIdentity           String
+  signatureRef             String
+  provenanceRef            String
+  verifiedAt               DateTime
+  signatureVerified        Boolean  @default(true)
+  provenanceVerified       Boolean  @default(true)
+  trustedSigner            Boolean  @default(true)
+  signatureBytesStored     Boolean  @default(false)
+  provenancePayloadStored  Boolean  @default(false)
+  repositoryContentStored  Boolean  @default(false)
+  secretValueStored        Boolean  @default(false)
+  recordedAt               DateTime @default(now())
+
+  @@unique([id, verificationDigest, commandId, commandDigest], map: "SastRuleBundleRollbackVerification_binding_key")
+  @@index([signerIdentity, verifiedAt], map: "SastRuleBundleRollbackVerification_signer_idx")
+}
+
+model SastRuleBundleRollbackApproval {
+  id                    String   @id
+  contractVersion       String
+  approvalDigest        String   @unique
+  commandId             String
+  commandDigest         String
+  role                  String
+  approverRef           String
+  approvalRef           String
+  approvedAt            DateTime
+  approved              Boolean  @default(true)
+  humanApproval         Boolean  @default(true)
+  automatedApproval     Boolean  @default(false)
+  customerInputAccepted Boolean  @default(false)
+  recordedAt            DateTime @default(now())
+
+  @@unique([commandId, role], map: "SastRuleBundleRollbackApproval_command_role_key")
+  @@unique([commandId, approverRef], map: "SastRuleBundleRollbackApproval_command_approver_key")
+  @@unique([id, approvalDigest, commandId, commandDigest, role, approverRef, approvedAt], map: "SastRuleBundleRollbackApproval_binding_key")
+  @@index([commandId, approvedAt], map: "SastRuleBundleRollbackApproval_command_time_idx")
+}
+
+model SastRuleBundleRollbackReceipt {
+  id                                String   @id
+  contractVersion                   String
+  receiptDigest                     String   @unique
+  commandId                         String   @unique
+  commandDigest                     String
+  commandVerificationId             String
+  commandVerificationDigest         String
+  candidateManifestId               String   @unique
+  candidateManifestDigest           String
+  candidateBundleId                 String
+  candidateBundleDigest             String
+  suspendedTransitionId             String   @unique
+  suspendedTransitionDigest         String
+  suspendedSequence                 Int
+  suspendedTransitionedAt           DateTime
+  suspensionAuthorityReceiptRef     String
+  suspensionAuthorityReceiptDigest  String
+  promotionEvidenceId               String
+  promotionEvidenceDigest           String
+  profileId                         String
+  baselineManifestId                String
+  baselineManifestDigest            String
+  baselineVerificationId            String
+  baselineVerificationDigest        String
+  baselineBundleId                  String
+  baselineBundleDigest              String
+  baselineTransitionId              String
+  baselineTransitionDigest          String
+  baselineSequence                  Int
+  baselineTransitionedAt            DateTime
+  baselineState                     String   @default("ACTIVE")
+  approvalCount                     Int      @default(2)
+  approvalSetDigest                 String
+  actorRef                          String
+  reasonRef                         String
+  auditRef                          String
+  commandedAt                       DateTime
+  requestedAt                       DateTime
+  issuedAt                          DateTime
+  fromState                         String   @default("SUSPENDED")
+  toState                           String   @default("ROLLED_BACK")
+  rollbackTargetDerived             Boolean  @default(true)
+  baselineMutationAuthorized        Boolean  @default(false)
+  historicalMutationAuthorized      Boolean  @default(false)
+  scannerSetMutationAuthorized      Boolean  @default(false)
+  findingAuthority                  Boolean  @default(false)
+  policyAuthority                   Boolean  @default(false)
+  publicationAuthority              Boolean  @default(false)
+  scmWriteAuthority                 Boolean  @default(false)
+  customerInputAccepted             Boolean  @default(false)
+  repositoryContentStored           Boolean  @default(false)
+  findingContentStored              Boolean  @default(false)
+  secretValueStored                 Boolean  @default(false)
+  arbitraryPayloadStored            Boolean  @default(false)
+  recordedAt                        DateTime @default(now())
+
+  @@unique([id, receiptDigest, commandId, candidateManifestId, baselineManifestId], map: "SastRuleBundleRollbackReceipt_binding_key")
+  @@index([candidateManifestId, suspendedSequence, issuedAt], map: "SastRuleBundleRollbackReceipt_candidate_idx")
+  @@index([baselineManifestId, baselineSequence], map: "SastRuleBundleRollbackReceipt_baseline_idx")
+}
+
+model SastRuleBundleRollbackReceiptApproval {
+  receiptId       String
+  position        Int
+  approvalId      String
+  approvalDigest  String
+  commandId       String
+  commandDigest   String
+  role            String
+  approverRef     String
+  approvedAt      DateTime
+
+  @@id([receiptId, position])
+  @@unique([receiptId, approvalId], map: "SastRuleBundleRollbackReceiptApproval_id_key")
+  @@unique([receiptId, role], map: "SastRuleBundleRollbackReceiptApproval_role_key")
+  @@unique([receiptId, approverRef], map: "SastRuleBundleRollbackReceiptApproval_approver_key")
+  @@index([commandId, commandDigest], map: "SastRuleBundleRollbackReceiptApproval_command_idx")
+}
