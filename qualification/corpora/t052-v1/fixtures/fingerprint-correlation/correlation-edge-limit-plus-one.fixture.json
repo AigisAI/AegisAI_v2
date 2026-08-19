@@ -1,0 +1,64 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.fingerprint-correlation.correlation-edge-limit-plus-one",
+  "corpusClass": "FINGERPRINT_CORRELATION",
+  "scenario": "CORRELATION_EDGE_LIMIT_PLUS_ONE",
+  "materializationKind": "IDENTITY_SEQUENCE",
+  "parameters": [
+    {
+      "name": "EXPECTED_RELATION",
+      "valueType": "STRING",
+      "stringValue": "REJECT",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "IDENTITY_VECTOR",
+      "valueType": "STRING",
+      "stringValue": "sast-fingerprint-v1",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "SOURCE_OCCURRENCES",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 100001,
+      "booleanValue": null
+    }
+  ],
+  "segments": [],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "DECLARE_CORRELATION_INPUT",
+      "arguments": [
+        "edges=100001",
+        "topology=canonical-star"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "correlation=display-only"
+      ]
+    }
+  ],
+  "materializedBytes": 0,
+  "materializedEntries": 100001,
+  "materializedPathDepth": 0,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://283e19a7ae10e60a53bdc76aeb33743e951334d72f2876c637d660a1e6078cb8",
+  "fixtureDigest": "sha256:283e19a7ae10e60a53bdc76aeb33743e951334d72f2876c637d660a1e6078cb8"
+}

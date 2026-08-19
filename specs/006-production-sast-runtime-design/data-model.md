@@ -1272,6 +1272,39 @@ containment, canonical text, source-set membership, byte/digest/range/anchor fac
 Successful validation is input authority only and creates no finding, promotion, or deployment
 authority.
 
+### SastMultiClassQualificationFixture and SastMultiClassQualificationCase
+
+Repository-owned T052 artifacts, never customer or runtime database entities. A fixture is an
+exact-key `sast-multi-class-qualification-fixture-v1` object containing one class/scenario,
+allowlisted materialization kind, sorted typed scalar parameters, bounded base64 byte segments,
+ordered declarative steps, and bounded projected bytes/entries/path depth/duration. It carries no
+command, argv, environment, URL fetch, executable configuration, customer content, package
+installation, build, dynamic execution, scanner execution, host mutation, or network authority.
+Actual symlinks, FIFOs, devices, archive bombs, and expanded performance trees are never stored.
+For revision `1.0.1`, profile-relative boundary recipes carry one exact limit-plus-one value per
+supported profile and select only through the case profile; projected materialization totals are
+maximum reservation bounds. Cyclic links are separate directed declarations, binary/invalid UTF-8
+segments bind raw octets, and fingerprint invariance binds complete input vectors instead of an
+opaque scenario name.
+
+The corresponding case binds the fixture path/ID/digest/byte count, owner, license, digest-bound
+provenance, immutable revision, applicable profiles, expected control outcome, required
+`T053_ISOLATED_INTEGRATION | T054_END_TO_END | T054_PERFORMANCE` evidence stage, minimum run count,
+and optional performance hardware class. Every authority and prohibited-effect field is fixed
+false; performance alone requires 30 measured runs and one matching hardware reference.
+
+### SastMultiClassQualificationSnapshot
+
+One canonical T052 snapshot binds exactly 84 cases and 84 fixtures: 16 schema/parser, 25
+malicious-repository, 17 fingerprint/correlation, 17 evidence/privacy, and 9 performance cases.
+Every required scenario occurs exactly once. Derived class/scenario/profile indexes, case and
+fixture set digests, the three supported profiles, one digest-bound performance hardware class,
+and the 30-run floor are included in the snapshot digest. Each profile has small, medium, and
+exact-large-limit performance buckets. Reordering inputs preserves identity; a missing, duplicate,
+relabeled, widened, or byte-changed fixture fails closed. Validation returns immutable recipes for
+later stages but neither materializes them nor creates scanner, finding, evidence, correlation,
+lifecycle, policy, publication, promotion, or readiness authority.
+
 ### SastQualityEvaluation
 
 - scanner-set and rule-bundle versions

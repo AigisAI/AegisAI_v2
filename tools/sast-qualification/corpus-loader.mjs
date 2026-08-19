@@ -286,7 +286,7 @@ function ensureInside(root, candidate, reason) {
 function decodeCanonicalText(buffer, reason) {
   let value;
   try {
-    value = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+    value = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(buffer);
   } catch {
     reject(reason);
   }

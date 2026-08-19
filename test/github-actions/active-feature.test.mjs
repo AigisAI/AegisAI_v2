@@ -72,6 +72,13 @@ const files = {
   qualificationSnapshot: new URL('../../qualification/corpora/v1/golden-corpus.snapshot.json', import.meta.url),
   qualificationPriorReleaseManifest: new URL('../../qualification/corpora/v1/prior-release-must-detect.manifest.json', import.meta.url),
   qualificationReadme: new URL('../../qualification/corpora/v1/README.md', import.meta.url),
+  sharedSastMultiClassQualificationCorpus: new URL('../../packages/shared/src/types/sast-multi-class-qualification-corpus.ts', import.meta.url),
+  sharedSastMultiClassQualificationCorpusTest: new URL('../../packages/shared/test/sast-multi-class-qualification-corpus.test.mjs', import.meta.url),
+  multiClassQualificationGenerator: new URL('../../tools/sast-qualification/multi-class-corpus-assets.mjs', import.meta.url),
+  multiClassQualificationLoader: new URL('../../tools/sast-qualification/multi-class-corpus-loader.mjs', import.meta.url),
+  multiClassQualificationLoaderTest: new URL('../../test/qualification/sast-multi-class-qualification-corpus-loader.test.mjs', import.meta.url),
+  multiClassQualificationSnapshot: new URL('../../qualification/corpora/t052-v1/multi-class-corpus.snapshot.json', import.meta.url),
+  multiClassQualificationReadme: new URL('../../qualification/corpora/t052-v1/README.md', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -269,7 +276,7 @@ const assertT049QuickstartHandoff = (quickstart) => {
 const assertT049PlanHandoff = (plan) => {
   assert.match(
     plan,
-    /T040 through T051 independently and now proceeds to the T052 multi-class qualification corpora/
+    /T040 through T052 independently and now proceeds to T053 production-equivalent isolated integration/
   );
 };
 
@@ -3005,7 +3012,7 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   assert.match(generator, /writeStableRegularFile/);
   assert.match(generator, /O_NOFOLLOW/);
   assert.match(loaderTest, /rejects symlink or junction traversal/);
-  assert.match(loaderTest, /rejects source drift and CRLF ambiguity/);
+  assert.match(loaderTest, /rejects source drift, BOM, and CRLF ambiguity/);
   assert.match(loaderTest, /rejects unexpected corpus-root entries/);
   assert.match(corpusReadme, /platform-owned input snapshot/);
   assert.match(gitattributes, /qualification\/corpora\/v1\/\*\* text eol=lf/);
@@ -3055,12 +3062,12 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   );
 
   assert.match(rootPackage, /"qualification:validate"/);
-  assert.match(ci, /Validate T051 qualification corpus/);
+  assert.match(ci, /Validate T051-T052 qualification corpora/);
   assert.match(ci, /corepack pnpm qualification:validate/);
   assert.match(tasks, /- \[x\] T051\b/);
-  assert.match(tasks, /- \[ \] T052\b/);
   assert.match(quickstart, /T051\s+versioned golden qualification corpus is complete/);
-  assert.match(quickstart, /T052 multi-class qualification corpora are the next implementation task/);
+  assert.match(quickstart, /T052 multi-class qualification corpus is complete/);
+  assert.match(quickstart, /T053 is\s+the next implementation task/);
   assert.match(plan, /T051 immutable golden corpus is complete/);
   assert.match(contract, /Versioned golden qualification corpus v1/);
   assert.match(dataModel, /SastQualificationCorpusSnapshot/);
@@ -3069,6 +3076,110 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   assert.match(ruleGovernance, /T051 Golden Qualification Corpus Boundary/);
   assert.match(threatModel, /Qualification corpus substitution or path escape/);
   assert.match(qualityGates, /T051 is release-blocking/);
+});
+
+test('SAST T052 pins all multi-class qualification inputs without executing them', () => {
+  const shared = readNormalizedText(files.sharedSastMultiClassQualificationCorpus);
+  const sharedTest = readNormalizedText(
+    files.sharedSastMultiClassQualificationCorpusTest
+  );
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const generator = readNormalizedText(files.multiClassQualificationGenerator);
+  const loader = readNormalizedText(files.multiClassQualificationLoader);
+  const loaderTest = readNormalizedText(files.multiClassQualificationLoaderTest);
+  const corpusReadme = readNormalizedText(files.multiClassQualificationReadme);
+  const snapshot = JSON.parse(
+    readFileSync(files.multiClassQualificationSnapshot, 'utf8')
+  );
+  const gitattributes = readNormalizedText(files.gitattributes);
+  const rootPackage = readNormalizedText(files.rootPackage);
+  const ci = readNormalizedText(files.ci);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(shared, /sast-multi-class-qualification-fixture-v1/);
+  assert.match(shared, /sast-multi-class-qualification-case-v1/);
+  assert.match(shared, /sast-multi-class-qualification-snapshot-v1/);
+  assert.match(shared, /expectedCaseCount: 84/);
+  assert.match(shared, /minimumPerformanceRunsPerBucket: 30/);
+  assert.match(shared, /FORBIDDEN_RECIPE_PARAMETER_NAMES/);
+  assert.match(sharedIndex, /sast-multi-class-qualification-corpus/);
+  assert.match(sharedTest, /immutable 84-case five-class qualification corpus/);
+  assert.match(sharedTest, /rejects executable recipe fields/);
+  assert.match(sharedTest, /hostile cyclic and over-depth snapshots/);
+
+  assert.match(generator, /createMultiClassCorpusAssets/);
+  assert.match(generator, /refusing to overwrite existing T052 corpus root/);
+  assert.match(generator, /writeStableRegularFile/);
+  assert.match(generator, /O_NOFOLLOW/);
+  assert.match(loader, /EXPECTED_ROOT_ENTRIES/);
+  assert.match(loader, /assertExactFixtureTree/);
+  assert.match(loader, /sameStableIdentity/);
+  assert.match(loader, /ignoreBOM: true/);
+  assert.match(loader, /O_NOFOLLOW/);
+  assert.match(
+    loaderTest,
+    /rejects invalid encoding, CRLF, BOM, NUL, non-NFC, missing final LF, and oversize/
+  );
+  assert.match(loaderTest, /remain declarative and never contain executable fields/);
+  assert.match(corpusReadme, /authenticates inputs only/);
+  assert.match(gitattributes, /qualification\/corpora\/t052-v1\/\*\* text eol=lf/);
+
+  assert.equal(snapshot.caseCount, 84);
+  assert.equal(snapshot.fixtureCount, 84);
+  assert.deepEqual(
+    Object.fromEntries(
+      snapshot.classCounts.map((item) => [item.corpusClass, item.cases])
+    ),
+    {
+      SCHEMA_PARSER: 16,
+      MALICIOUS_REPOSITORY: 25,
+      FINGERPRINT_CORRELATION: 17,
+      EVIDENCE_PRIVACY: 17,
+      PERFORMANCE: 9
+    }
+  );
+  assert.ok(snapshot.scenarioCounts.every((item) => item.cases === 1));
+  assert.ok(snapshot.profileCounts.every((item) => item.performanceBuckets === 3));
+  assert.ok(
+    snapshot.cases.every(
+      (item) =>
+        item.minimumRuns === (item.corpusClass === 'PERFORMANCE' ? 30 : 1) &&
+        item.customerContentAccepted === false &&
+        item.scannerExecutionAuthorized === false &&
+        item.findingAuthority === false &&
+        item.policyAuthority === false &&
+        item.publicationAuthority === false &&
+        item.productionReadinessAuthority === false &&
+        item.packageInstallRequired === false &&
+        item.buildRequired === false &&
+        item.dynamicExecutionRequired === false &&
+        item.networkRequired === false
+    )
+  );
+
+  assert.match(rootPackage, /validate-golden-corpus\.mjs/);
+  assert.match(rootPackage, /validate-multi-class-corpus\.mjs/);
+  assert.match(ci, /Validate T051-T052 qualification corpora/);
+  assert.match(tasks, /- \[x\] T052\b/);
+  assert.match(tasks, /- \[ \] T053\b/);
+  assert.match(quickstart, /T052 multi-class qualification corpus is complete/);
+  assert.match(plan, /T052 multi-class qualification corpus is complete/);
+  assert.match(contract, /Multi-class qualification corpus v1/);
+  assert.match(dataModel, /SastMultiClassQualificationSnapshot/);
+  assert.match(spec, /FR-057j/);
+  assert.match(research, /Decision 30: Pin Multi-Class Qualification Inputs/);
+  assert.match(ruleGovernance, /T052 Multi-Class Qualification Corpus Boundary/);
+  assert.match(threatModel, /Multi-class qualification recipe substitution/);
+  assert.match(qualityGates, /T052 is release-blocking/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

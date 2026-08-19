@@ -1,0 +1,78 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.evidence-privacy.raw-artifact-leak-zero",
+  "corpusClass": "EVIDENCE_PRIVACY",
+  "scenario": "RAW_ARTIFACT_LEAK_ZERO",
+  "materializationKind": "EVIDENCE_SEQUENCE",
+  "parameters": [
+    {
+      "name": "EVIDENCE_POLICY",
+      "valueType": "STRING",
+      "stringValue": "sast-accepted-finding-evidence-v1",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "EXPECTED_DISPOSITION",
+      "valueType": "STRING",
+      "stringValue": "SAFE_SUCCESS",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "RETENTION_SECONDS",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 0,
+      "booleanValue": null
+    }
+  ],
+  "segments": [
+    {
+      "ordinal": 1,
+      "role": "PRIMARY",
+      "encoding": "BASE64",
+      "valueBase64": "cmF3LWFydGlmYWN0LXNlbnRpbmVsLW5ldmVyLXBlcnNpc3Q=",
+      "repeat": 1
+    }
+  ],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "DECLARE_EVIDENCE_FRAGMENT",
+      "arguments": [
+        "scenario=RAW_ARTIFACT_LEAK_ZERO"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "ASSERT_NO_SECRET_LEAK",
+      "arguments": [
+        "serialized-secret-count=0"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "authority=none"
+      ]
+    }
+  ],
+  "materializedBytes": 35,
+  "materializedEntries": 1,
+  "materializedPathDepth": 0,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://c527e19adefae1ce60c396d9b1ed4f3343e3b0ce9388e587f4aeb93a0e446c75",
+  "fixtureDigest": "sha256:c527e19adefae1ce60c396d9b1ed4f3343e3b0ce9388e587f4aeb93a0e446c75"
+}

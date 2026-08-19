@@ -1,0 +1,133 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.malicious-repository.file-count-limit-plus-one",
+  "corpusClass": "MALICIOUS_REPOSITORY",
+  "scenario": "FILE_COUNT_LIMIT_PLUS_ONE",
+  "materializationKind": "REPOSITORY_RECIPE",
+  "parameters": [
+    {
+      "name": "ATTACK_CLASS",
+      "valueType": "STRING",
+      "stringValue": "FILE_COUNT_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "ATTACK_VALUE",
+      "valueType": "STRING",
+      "stringValue": "FILE_COUNT_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maxFileCount",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "COMMON_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 250001,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 250001,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_FAST_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 25001,
+      "booleanValue": null
+    },
+    {
+      "name": "LIVE_SPECIAL_FILE_CHECKED_IN",
+      "valueType": "BOOLEAN",
+      "stringValue": null,
+      "integerValue": null,
+      "booleanValue": false
+    },
+    {
+      "name": "MATERIALIZED_PROJECTION_MODE",
+      "valueType": "STRING",
+      "stringValue": "MAXIMUM_APPLICABLE_PROFILE_BOUND",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_LIMIT_MODE",
+      "valueType": "STRING",
+      "stringValue": "SELECTED_PROFILE_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_SELECTION_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "CASE_PROFILE",
+      "integerValue": null,
+      "booleanValue": null
+    }
+  ],
+  "segments": [],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "DECLARE_TREE_ENTRY",
+      "arguments": [
+        "scenario=FILE_COUNT_LIMIT_PLUS_ONE"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "ASSERT_NO_EXECUTION",
+      "arguments": [
+        "customer-code=never-run"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "action": "ASSERT_NO_EGRESS",
+      "arguments": [
+        "network=denied"
+      ]
+    },
+    {
+      "ordinal": 4,
+      "action": "ASSERT_NO_SECRET_LEAK",
+      "arguments": [
+        "secret-sentinel=absent"
+      ]
+    },
+    {
+      "ordinal": 5,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "authority=none"
+      ]
+    }
+  ],
+  "materializedBytes": 1,
+  "materializedEntries": 250001,
+  "materializedPathDepth": 1,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://02b27fb4d7be7d5ce4272e79e747b7d4a01b34a2b4ab7b721471ecac4e0310a6",
+  "fixtureDigest": "sha256:02b27fb4d7be7d5ce4272e79e747b7d4a01b34a2b4ab7b721471ecac4e0310a6"
+}

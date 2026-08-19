@@ -555,6 +555,31 @@ incomplete, stale, quarantined, or security-blocked scan.
   executable configuration, dependency installation, builds, dynamic execution, and network
   requirements MUST fail closed. T051 corpus validity MUST grant no finding, policy, promotion, or
   production-readiness authority and MUST NOT substitute for T052-T056 execution evidence.
+- **FR-057j**: Multi-class qualification inputs MUST use exact versioned fixture, case, and
+  snapshot contracts for schema/parser, malicious-repository, fingerprint/correlation,
+  evidence/privacy, and performance classes. Every required `quality-gates.md` scenario MUST occur
+  exactly once in the reviewed v1 denominator. Hostile paths/bytes, special files, resource
+  pressure, identity sequences, privacy sentinels, and performance shapes MUST be encoded only as
+  bounded platform-owned declarative recipes with allowlisted actions and typed parameters/byte
+  segments; command, argv, environment, executable configuration, customer content, package
+  installation, build, dynamic execution, scanner execution, host mutation, and network authority
+  MUST be structurally absent or false. The corpus MUST contain no live symlink, FIFO, device, or
+  expanded bomb. All cases MUST bind their exact fixture ID/digest/bytes, expected control outcome,
+  responsible T053/T054 evidence stage, owner/license/provenance/revision, and zero prohibited
+  effects. Performance MUST provide small/medium/exact-large-limit buckets for all three v1
+  profiles, bind one immutable hardware-class reference/digest, and require at least 30 measured
+  runs per bucket after warm-up. Generation and loading MUST reject missing/extra scenarios,
+  unknown keys/actions, outcome/stage/profile/hardware drift, path or case-fold collision,
+  invalid/noncanonical base64/UTF-8/NFC/LF, BOM, NUL, oversize, extra/empty directories, links,
+  filesystem identity changes, and snapshot/fixture/count/digest tampering. T052 validation MUST
+  materialize or execute nothing and MUST grant no finding, correlation, lifecycle, evidence,
+  policy, publication, promotion, or production-readiness authority; T053 is the first isolated
+  materialization stage.
+  Profile-relative limit-plus-one recipes MUST bind the exact value for every supported immutable
+  profile and select it only from the case profile. Cycles MUST declare every directed link.
+  Binary and malformed-encoding cases MUST carry the intended raw octets, and fingerprint
+  invariance cases MUST contain complete identity vectors that differ only in the excluded field
+  under test; a runner MUST NOT infer any behavior from the scenario label.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

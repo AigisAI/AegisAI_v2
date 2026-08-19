@@ -1,0 +1,94 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.fingerprint-correlation.line-shift-invariant",
+  "corpusClass": "FINGERPRINT_CORRELATION",
+  "scenario": "LINE_SHIFT_INVARIANT",
+  "materializationKind": "IDENTITY_SEQUENCE",
+  "parameters": [
+    {
+      "name": "EXPECTED_RELATION",
+      "valueType": "STRING",
+      "stringValue": "IDENTITY_STABLE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "IDENTITY_VECTOR",
+      "valueType": "STRING",
+      "stringValue": "sast-fingerprint-v1",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "SOURCE_OCCURRENCES",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 2,
+      "booleanValue": null
+    }
+  ],
+  "segments": [],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "DECLARE_IDENTITY_INPUT",
+      "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
+        "ordinal=1",
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "DECLARE_IDENTITY_INPUT",
+      "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=18",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
+        "ordinal=2",
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "correlation=display-only"
+      ]
+    }
+  ],
+  "materializedBytes": 0,
+  "materializedEntries": 2,
+  "materializedPathDepth": 0,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://087cd8a96d0747e00fbad40bd75bd44279c5fcbeb9d0571bd3bebfde8bde177c",
+  "fixtureDigest": "sha256:087cd8a96d0747e00fbad40bd75bd44279c5fcbeb9d0571bd3bebfde8bde177c"
+}

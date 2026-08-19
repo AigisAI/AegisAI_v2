@@ -16,8 +16,8 @@ Control, Scan, AI, and Data/Security plane boundaries.
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
-- T040 through T051 are complete; the guarded next entry point is T052 multi-class production
-  qualification corpus work. Provider/Kubernetes execution remains deferred until all T052-T056
+- T040 through T052 are complete; the guarded next entry point is T053 production-equivalent
+  isolated integration and destruction-evidence work. Provider/Kubernetes execution remains deferred until all T053-T056
   gates pass.
 - Issue #276 is explicitly reclassified by `spec.md` as a local-only Neo4j/MITRE CWE
   dev/demo bootstrap; it does not replace this package or advance T040.
@@ -708,11 +708,14 @@ tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step p
   400 paired negative, and 400 prior Critical/High must-detect cases across 40 platform-owned
   source bundles. A separate overwrite-protected manifest authenticates the exact historical case
   identities and its reviewed digest is pinned in code.
-  T052 multi-class qualification corpora are the next implementation task.
+  T052 multi-class qualification corpus is complete: 84 immutable declarative cases bind every
+  required schema/parser, malicious-repository, fingerprint/correlation, evidence/privacy, and
+  profile/size performance scenario without materializing or executing hostile content. T053 is
+  the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
-### T049-T051 Validation Checkpoint
+### T049-T052 Validation Checkpoint
 
 - Shared kill-switch contract tests cover canonical selectors/context, decision and verification
   shape, complete evaluation/head/match sets, coverage effects, planning descriptors, active
@@ -742,9 +745,22 @@ still requires the 005 rollout and the remaining 006 gates.
   symlink/junction traversal, identity changes across guarded reads/writes, extra files, invalid
   UTF-8/NFC/LF, oversized input, range drift, authority widening, and mutable or executable corpus
   metadata.
-- T051 fixes qualification inputs only. It neither executes a scanner nor claims detection,
-  precision, latency, sandbox-destruction, or production readiness; T052 adds the remaining corpus
-  classes and T053 performs production-equivalent isolated scanner execution.
+- T051 fixes golden and prior-release qualification inputs only. T052 adds 84 exact recipe-bound
+  cases: 16 schema/parser, 25 malicious-repository, 17 fingerprint/correlation, 17
+  evidence/privacy, and 9 performance buckets. The recipes use allowlisted declarative actions,
+  inline bounded base64 segments, exact profile limits, one digest-bound hardware class, and 30
+  required measured runs per performance bucket. No fixture contains a live special file,
+  executable command, customer content, package install, build, dynamic test, scanner run, or
+  network requirement.
+- T052 validation regenerates the complete expected fixture set in memory, requires exact root and
+  class directory allowlists, byte-exact UTF-8/NFC/LF assets, no-follow reads where supported, and
+  stable before/open/after file and directory identity. It grants no finding, policy, publication,
+  or readiness authority. T053 is the first stage allowed to materialize the T053-designated
+  recipes and perform production-equivalent isolated scanner execution.
+- T052 revision `1.0.1` binds profile-relative cases to each selected profile's exact limit plus
+  one, declares both symlink-cycle edges, preserves binary/malformed UTF-8 as raw bytes, and gives
+  identity/correlation cases complete vectors and relations. Future runners consume those bound
+  declarations directly and never branch on scenario names to manufacture a pass.
 - Repository completion still requires the standard commands below on the final branch. Live
   signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
   remain fail-closed rollout dependencies rather than fabricated local evidence.

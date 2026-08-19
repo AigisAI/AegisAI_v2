@@ -1,2 +1,3 @@
-# T051 qualification assets are byte-exact on every checkout platform.
+# Qualification assets are byte-exact on every checkout platform.
 qualification/corpora/v1/** text eol=lf
+qualification/corpora/t052-v1/** text eol=lf

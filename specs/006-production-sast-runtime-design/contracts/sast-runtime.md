@@ -1818,9 +1818,106 @@ unregistered files, invalid UTF-8, BOM, CRLF, NUL, non-NFC text, missing final L
 sources, duplicate scan paths, digest/byte/range drift, and a missing exact anchor. The four root
 entries are allowlisted exactly; supported hosts use no-follow opens, and all hosts compare
 before/open/after file and directory identity plus canonical containment to reject substitution
-windows. T051 validation
-creates no scanner run or quality result. T052 supplies the other corpus classes, and only T053 may
-materialize these bounded ranges into production-equivalent isolated scan workspaces.
+windows. T051 validation creates no scanner run or quality result. T052 supplies the other corpus
+classes below, and only T053 may materialize T053-designated recipes into production-equivalent
+isolated scan workspaces.
+
+## Multi-class qualification corpus v1
+
+```text
+sast-multi-class-qualification-fixture-v1 {
+  fixtureId, fixtureDigest, caseKey,
+  corpusClass: SCHEMA_PARSER | MALICIOUS_REPOSITORY |
+               FINGERPRINT_CORRELATION | EVIDENCE_PRIVACY | PERFORMANCE,
+  scenario, materializationKind,
+  parameters[]: { name, valueType: STRING | INTEGER | BOOLEAN,
+                  stringValue | integerValue | booleanValue },
+  segments[]: { ordinal, role, encoding: BASE64, valueBase64, repeat },
+  steps[]: { ordinal, allowlistedAction, sortedArguments[] },
+  materializedBytes, materializedEntries,
+  materializedPathDepth, simulatedDurationSeconds,
+  source: PLATFORM_MANAGED,
+  sourcePlatformOwned: true,
+  customerContentAccepted: false,
+  executable: false,
+  packageInstallRequired: false,
+  buildRequired: false,
+  dynamicExecutionRequired: false,
+  networkRequired: false,
+  hostMutationAllowed: false,
+  immutable: true
+}
+
+sast-multi-class-qualification-case-v1 {
+  caseId, caseDigest, caseKey, caseRevision,
+  corpusClass, scenario, profiles[],
+  fixturePath, fixtureId, fixtureDigest, fixtureBytes,
+  materializationKind, expectedOutcome,
+  evidenceStage: T053_ISOLATED_INTEGRATION |
+                 T054_END_TO_END | T054_PERFORMANCE,
+  minimumRuns, hardwareClassRef?,
+  ownerRef, licenseExpression, provenanceRef,
+  zeroProhibitedEffectsRequired: true,
+  source: PLATFORM_MANAGED,
+  immutable: true,
+  customerContentAccepted: false,
+  customerExecutableConfigAccepted: false,
+  scannerExecutionAuthorized: false,
+  findingAuthority: false,
+  policyAuthority: false,
+  publicationAuthority: false,
+  productionReadinessAuthority: false,
+  packageInstallRequired: false,
+  buildRequired: false,
+  dynamicExecutionRequired: false,
+  networkRequired: false
+}
+
+sast-multi-class-qualification-snapshot-v1 {
+  corpusId, snapshotDigest, revision, publishedAt,
+  ownerRef, licenseExpression, provenanceRef,
+  performanceHardwareClassRef, performanceHardwareClassDigest,
+  profiles[], requiredClasses[], cases[],
+  caseCount, fixtureCount, caseSetDigest, fixtureSetDigest,
+  classCounts[], scenarioCounts[], profileCounts[],
+  minimumPerformanceRunsPerBucket: 30,
+  all execution/finding/policy/publication/readiness authority: false
+}
+```
+
+The v1 denominator is exact: 16 schema/parser, 25 malicious-repository, 17
+fingerprint/correlation, 17 evidence/privacy, and 9 performance cases, for 84 total. Every required
+scenario appears exactly once. The performance class provides small, medium, and exact-large-limit
+buckets for `JAVA_FAST_V1`, `JAVA_DEEP_V1`, and `COMMON_DEEP_V1`, all bound to one digest-qualified
+hardware class and 30 post-warm-up measurements. T052 records only the measurement requirement;
+T054 must produce the measurements.
+
+Recipes have no general command interpreter. Actions are a closed declaration enum, scalar
+parameters are typed and bounded, byte payloads are canonical base64 segments with bounded
+expansion, and command/argv/environment/executable/script/shell/URL parameter or argument names are
+rejected. Invalid paths and bytes are data inside a recipe, not host paths used by the loader.
+Actual symlinks, FIFOs, devices, expanded archives, large repositories, scanner output, and waits
+are absent from the checked-in corpus. T053/T054 must map each declaration through their own exact
+allowlist inside a fresh isolated environment.
+
+Revision `1.0.1` makes those declarations execution-complete without granting execution authority.
+Every limit-plus-one recipe names the immutable profile-limit field, fixes
+`PROFILE_SELECTION_SOURCE=CASE_PROFILE`, and binds the exact plus-one value for all three profiles;
+the projected materialization scalar is only the maximum reservation bound. A symlink cycle contains
+two explicit `DECLARE_SYMLINK` edges. Binary and malformed UTF-8 evidence use
+`DECLARE_EVIDENCE_BYTES` and base64 carries the intended raw octets rather than a descriptive UTF-8
+label. Line, branch, commit, and unknown-location-reason invariance each contains two complete
+seven-field fingerprint vectors with only the excluded test field changed. Rename, replay,
+collision, migration, and related-only cases likewise carry their concrete identity and relation
+inputs rather than deriving behavior from a scenario label.
+
+`tools/sast-qualification/multi-class-corpus-loader.mjs` regenerates the reviewed snapshot and all
+84 fixture files in memory. It requires the exact three root entries, exact five class directories,
+exact fixture filenames and canonical UTF-8/NFC/LF bytes, rejects BOM/NUL/CRLF/invalid UTF-8,
+oversize, links, real-path escape, file/directory substitution, unknown shape, scenario/count/
+outcome/stage/profile/hardware drift, and any authority widening. A successful load returns only
+immutable case/recipe inputs. It creates no workspace, scanner run, result, metric, finding,
+evidence, lifecycle event, policy decision, publication, promotion, or readiness decision.
 
 ## Cleanup Contract
 

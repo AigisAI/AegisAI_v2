@@ -746,3 +746,54 @@ floor, deriving prior must-detect cases from current positives, changing or over
 reviewed prior manifest, declaring inapplicable negative kinds, shared scan paths, following links, permissive text
 decoding, installing fixture dependencies, building or executing fixtures, or treating successful
 input validation as scanner accuracy, isolation, performance, or deployment proof.
+
+## Decision 30: Pin Multi-Class Qualification Inputs as Non-Executable Recipes
+
+**Decision**: T052 completes the pre-execution input authority with one exact 84-case snapshot:
+16 schema/parser, 25 malicious-repository, 17 fingerprint/correlation, 17 evidence/privacy, and 9
+performance cases. The required scenario arrays are shared contract constants and snapshot
+construction requires each member exactly once. Every case binds its fixture ID/digest/byte count,
+profiles, expected control outcome, owner/license/digest-bound provenance and revision, minimum
+run count, and the T053/T054 stage that must later supply evidence. Performance supplies three
+size buckets for each v1 profile, including exact profile limits, one digest-bound hardware class,
+three warm-up runs, and a 30-measurement floor.
+
+Hostile content is represented only by `sast-multi-class-qualification-fixture-v1`. It has typed
+bounded scalar parameters, canonical base64 byte segments with bounded repeat expansion, and a
+closed declaration-action set. It has no command interpreter and rejects command, argv,
+environment, executable, script, shell, or URL parameter/argument names. Path traversal, invalid
+UTF-8, special files, archive behavior, resource/output/time pressure, secret sentinels, identity
+sequences, evidence reconstruction, prompt injection, retention, and large synthetic repositories
+therefore remain inert reviewed data. No live symlink, FIFO, device, bomb, executable, customer
+repository, package installation, build, dynamic test, scanner, or network operation is stored or
+run by T052.
+
+Revision `1.0.1` closes four interpretation gaps before isolated execution: every profile-relative
+boundary carries the exact plus-one value for each immutable profile and selects through the case
+profile; a cycle contains both directed symlink declarations; binary and malformed UTF-8 cases bind
+the intended raw bytes; and fingerprint invariance cases contain complete vectors that differ only
+in the excluded line, branch, commit, or unknown-location reason. The remaining identity cases also
+bind concrete rename, migration, replay, collision, lifecycle, and related-only inputs so a future
+runner cannot pass by branching on the scenario label.
+
+The generator produces the snapshot and 84 canonical fixture files. Bootstrap is exclusive and
+refuses overwrite; normal generation requires the exact existing tree and performs no-follow
+writes where supported with file and directory identity checks. The loader regenerates all assets
+in memory, accepts only the exact three root entries, five class directories, and reviewed file
+set, and rejects invalid UTF-8, BOM, CRLF, NUL, non-NFC, oversize, path escape, links, filesystem
+substitution, unknown fields/actions, missing/duplicate scenarios, count/digest/outcome/stage/
+profile/hardware drift, or authority widening. CI validates T051 and T052 together.
+
+**Rationale**: Parser bombs and hostile repository shapes are necessary production qualification
+inputs, but checking dangerous live objects or hundreds of gigabytes into the repository would
+itself widen the attack surface. A small exact recipe language makes the denominator reviewable
+and deterministic while preserving a hard trust boundary: T053/T054 must explicitly map each
+allowlisted declaration inside fresh isolation and must produce independent execution evidence.
+Successful input validation cannot be mistaken for a scanner, privacy, performance, or readiness
+pass.
+
+**Rejected**: Executable fixture scripts, arbitrary command/argv/environment maps, downloading
+benchmarks, customer repositories, live special files or symlinks in Git, compressed bombs,
+pre-expanded 2 GiB/250,000-file trees, mutable hardware labels, fewer than 30 performance runs,
+empty or duplicate scenario denominators, opaque hand-authored snapshots, permissive extra files,
+following links, platform-default BOM stripping, and treating T052 as T053/T054 evidence.

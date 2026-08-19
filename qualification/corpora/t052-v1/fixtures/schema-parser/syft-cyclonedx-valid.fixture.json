@@ -1,0 +1,78 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.schema-parser.syft-cyclonedx-valid",
+  "corpusClass": "SCHEMA_PARSER",
+  "scenario": "SYFT_CYCLONEDX_VALID",
+  "materializationKind": "ARTIFACT_STREAM",
+  "parameters": [
+    {
+      "name": "ARTIFACT_SCHEMA",
+      "valueType": "STRING",
+      "stringValue": "SYFT_CYCLONEDX_1_6",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "BOUNDARY",
+      "valueType": "STRING",
+      "stringValue": "SYFT_CYCLONEDX_VALID",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "STREAMING_REQUIRED",
+      "valueType": "BOOLEAN",
+      "stringValue": null,
+      "integerValue": null,
+      "booleanValue": true
+    }
+  ],
+  "segments": [
+    {
+      "ordinal": 1,
+      "role": "PRIMARY",
+      "encoding": "BASE64",
+      "valueBase64": "eyJib21Gb3JtYXQiOiJDeWNsb25lRFgiLCJzcGVjVmVyc2lvbiI6IjEuNiIsInNlcmlhbE51bWJlciI6InVybjp1dWlkOjEyM2U0NTY3LWU4OWItNDJkMy1hNDU2LTQyNjYxNDE3NDA1MiIsInZlcnNpb24iOjEsIm1ldGFkYXRhIjp7InRpbWVzdGFtcCI6IjIwMjYtMDgtMTlUMTY6MzU6MDBaIn0sImNvbXBvbmVudHMiOltdLCJkZXBlbmRlbmNpZXMiOltdfQ==",
+      "repeat": 1
+    }
+  ],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "EMIT_ARTIFACT_BYTES",
+      "arguments": [
+        "schema=SYFT_CYCLONEDX_1_6"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "ASSERT_NO_EGRESS",
+      "arguments": [
+        "network=denied"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "authority=none"
+      ]
+    }
+  ],
+  "materializedBytes": 202,
+  "materializedEntries": 1,
+  "materializedPathDepth": 0,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://efee07f033b40dd7cad4ea739d6e8aa40f2d3de5b52c8cde6f1db99e4e8560d6",
+  "fixtureDigest": "sha256:efee07f033b40dd7cad4ea739d6e8aa40f2d3de5b52c8cde6f1db99e4e8560d6"
+}

@@ -151,7 +151,7 @@ test('T051 negative fixtures match their declared behavior class', async () => {
   }
 });
 
-test('T051 loader rejects source drift and CRLF ambiguity', async (t) => {
+test('T051 loader rejects source drift, BOM, and CRLF ambiguity', async (t) => {
   const driftRoot = await copyCorpus(t);
   const driftPath = join(driftRoot, representativeSource);
   await writeFile(driftPath, `${await readFile(driftPath, 'utf8')}# drift\n`, 'utf8');
@@ -162,6 +162,12 @@ test('T051 loader rejects source drift and CRLF ambiguity', async (t) => {
   const current = await readFile(crlfPath, 'utf8');
   await writeFile(crlfPath, current.replace('\n', '\r\n'), 'utf8');
   await assertLoadError(crlfRoot, 'SOURCE_INVALID');
+
+  const bomRoot = await copyCorpus(t);
+  const bomPath = join(bomRoot, representativeSource);
+  const bomSource = await readFile(bomPath);
+  await writeFile(bomPath, Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), bomSource]));
+  await assertLoadError(bomRoot, 'SOURCE_INVALID');
 });
 
 test('T051 loader rejects oversized source bundles', async (t) => {
