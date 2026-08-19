@@ -48,6 +48,7 @@
 
 - [x] Correctness, precision, recall, regression, parser, malicious, privacy, and supply-chain gates are measurable.
 - [x] Corpus sample sufficiency and exact metric denominators are defined.
+- [x] T052 pins exactly 84 non-executable multi-class qualification inputs and grants no execution or readiness authority.
 - [x] Fast/Deep absolute SLOs and relative candidate regression limits are defined.
 - [x] Cross-tenant leak, secret leak, sandbox escape, and stale publication tolerance is zero.
 - [x] Canary observation windows, minimum scans, automatic pause, and production rolling windows are defined.

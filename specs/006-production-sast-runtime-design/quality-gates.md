@@ -560,6 +560,52 @@ loader, tests, and documentation prove all of the following without provider or 
 authenticates only the input denominator; golden-case scanner conformance, precision/recall,
 isolation/destruction, latency/capacity, drills, and production go/no-go remain T052-T056 gates.
 
+## T052 Multi-Class Qualification Corpus Gates
+
+T052 is release-blocking unless the checked-in exact-shape contracts, generator, snapshot,
+fixtures, filesystem loader, tests, and documentation prove all of the following without
+provider, microVM, scanner, or Kubernetes execution:
+
+- exactly 84 cases and 84 immutable platform-owned fixtures exist: 16 schema/parser, 25
+  malicious-repository, 17 fingerprint/correlation, 17 evidence/privacy, and 9 performance
+  cases; every required scenario appears exactly once and no unknown class, scenario, fixture,
+  file, or directory is accepted;
+- schema/parser inputs cover all three accepted result schemas plus malformed JSON, total-size,
+  nesting-depth, record-count, string-size, Unicode, enum, version, foreign-attribution,
+  multi-run, unknown-field, and duplicate-key boundaries;
+- malicious-repository recipes cover traversal, absolute, backslash, case-fold and Unicode path
+  collisions, depth/count/size limits, symlink cycles and outside-root links, submodule/LFS/archive
+  non-expansion, FIFO/device declarations, output/findings/time limits, secret-bearing input, and
+  executable-file no-run behavior without creating a live hostile object;
+- fingerprint/correlation inputs cover line, branch, and commit invariance; attested rename and
+  rename-back; unknown locations; multi-tool related-only and cross-capability no-merge behavior;
+  distinct rule migration; fixed/reopen sequences; digest-collision and tampered-replay rejection;
+  duplicate replay, edge limits, complete zero-finding batches, and severity preservation;
+- evidence/privacy inputs cover known-format, registered, high-entropy, private-key, authorization,
+  and URL credentials; secret-bearing identity fields and reserved markers; full-file and overlap
+  reconstruction; prompt injection as inert data; binary and invalid encoding; retention expiry and
+  exact boundary; zero audit/raw-artifact leakage; and cross-tenant reference rejection;
+- the 9 performance cases bind small, medium, and large synthetic-repository recipes to each exact
+  resource limit, one immutable hardware-class reference and digest, and at least 30 measured runs
+  per bucket; T052 records the denominator only and does not manufacture latency or capacity
+  measurements;
+- recipes contain only allowlisted declarative actions and bounded typed parameters or canonical
+  byte segments; command, executable, argv, environment, shell, script, URL, dynamic execution,
+  package installation, build, network, customer-content, finding, policy, publication, SCM
+  mutation, and readiness authority are all absent or false;
+- exclusive initialization refuses overwrite, normal regeneration requires the exact reviewed
+  root and fixture set, and the loader regenerates every expected byte in memory before accepting
+  the corpus; and
+- the loader rejects missing, extra, empty, changed, noncanonical, malformed, oversized, or
+  duplicate inputs; invalid UTF-8, BOM, CRLF, NUL, non-NFC text; traversal, absolute, backslash,
+  symlink, junction, real-path escape, and file/directory identity drift; recipe, class, scenario,
+  outcome, stage, profile, hardware, run-count, limit, digest, and authority widening.
+
+Passing T052 authenticates only deterministic qualification inputs. T053 must materialize the
+parser and malicious-repository recipes inside production-equivalent isolated microVMs and prove
+destruction evidence. T054 must execute fingerprint/correlation, evidence/privacy, Fast/Deep,
+latency, reliability, and capacity gates. Neither task may infer a passing result from this corpus.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:

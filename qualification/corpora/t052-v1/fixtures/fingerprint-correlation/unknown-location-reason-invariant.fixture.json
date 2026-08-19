@@ -1,0 +1,72 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.fingerprint-correlation.unknown-location-reason-invariant",
+  "corpusClass": "FINGERPRINT_CORRELATION",
+  "scenario": "UNKNOWN_LOCATION_REASON_INVARIANT",
+  "materializationKind": "IDENTITY_SEQUENCE",
+  "parameters": [
+    {
+      "name": "EXPECTED_RELATION",
+      "valueType": "STRING",
+      "stringValue": "IDENTITY_STABLE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "IDENTITY_VECTOR",
+      "valueType": "STRING",
+      "stringValue": "sast-fingerprint-v1",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "SOURCE_OCCURRENCES",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 2,
+      "booleanValue": null
+    }
+  ],
+  "segments": [],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "DECLARE_IDENTITY_INPUT",
+      "arguments": [
+        "ordinal=1",
+        "scenario=UNKNOWN_LOCATION_REASON_INVARIANT"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "DECLARE_IDENTITY_INPUT",
+      "arguments": [
+        "ordinal=2",
+        "scenario=UNKNOWN_LOCATION_REASON_INVARIANT"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "correlation=display-only"
+      ]
+    }
+  ],
+  "materializedBytes": 0,
+  "materializedEntries": 2,
+  "materializedPathDepth": 0,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://d715fe5c48fed507b468957d7090f3633accd83319f64ae7f2514e8cce153809",
+  "fixtureDigest": "sha256:d715fe5c48fed507b468957d7090f3633accd83319f64ae7f2514e8cce153809"
+}

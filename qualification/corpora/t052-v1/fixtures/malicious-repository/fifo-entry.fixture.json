@@ -1,0 +1,92 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.malicious-repository.fifo-entry",
+  "corpusClass": "MALICIOUS_REPOSITORY",
+  "scenario": "FIFO_ENTRY",
+  "materializationKind": "REPOSITORY_RECIPE",
+  "parameters": [
+    {
+      "name": "ATTACK_CLASS",
+      "valueType": "STRING",
+      "stringValue": "FIFO_ENTRY",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "ATTACK_VALUE",
+      "valueType": "STRING",
+      "stringValue": "FIFO",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "LIVE_SPECIAL_FILE_CHECKED_IN",
+      "valueType": "BOOLEAN",
+      "stringValue": null,
+      "integerValue": null,
+      "booleanValue": false
+    },
+    {
+      "name": "PROFILE_LIMIT_MODE",
+      "valueType": "STRING",
+      "stringValue": "EXACT_SCENARIO",
+      "integerValue": null,
+      "booleanValue": null
+    }
+  ],
+  "segments": [],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "DECLARE_SPECIAL_ENTRY",
+      "arguments": [
+        "kind=FIFO",
+        "path=src/input.pipe"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "ASSERT_NO_EXECUTION",
+      "arguments": [
+        "customer-code=never-run"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "action": "ASSERT_NO_EGRESS",
+      "arguments": [
+        "network=denied"
+      ]
+    },
+    {
+      "ordinal": 4,
+      "action": "ASSERT_NO_SECRET_LEAK",
+      "arguments": [
+        "secret-sentinel=absent"
+      ]
+    },
+    {
+      "ordinal": 5,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "authority=none"
+      ]
+    }
+  ],
+  "materializedBytes": 1,
+  "materializedEntries": 1,
+  "materializedPathDepth": 1,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://e7d504a6f176ac0d31564139a345124a82e82d23fe784de1ccb49a10ec865730",
+  "fixtureDigest": "sha256:e7d504a6f176ac0d31564139a345124a82e82d23fe784de1ccb49a10ec865730"
+}

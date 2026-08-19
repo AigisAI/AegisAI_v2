@@ -32,6 +32,7 @@ export * from './types/sast-rule-promotion-lifecycle';
 export * from './types/sast-rule-bundle-canary';
 export * from './types/sast-rule-bundle-rollback';
 export * from './types/sast-qualification-corpus';
+export * from './types/sast-multi-class-qualification-corpus';
 export * from './types/sast-kill-switch';
 export * from './types/sast-kill-switch-plan-context';
 export * from './types/sast-kill-switch-scopes';

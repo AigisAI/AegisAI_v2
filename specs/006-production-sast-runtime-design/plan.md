@@ -14,8 +14,8 @@ microVM platform is live. Provider-specific deployment execution remains governe
 Issue #276 is an explicitly reclassified adjacent bootstrap, not a new production slice.
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
-  that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-  T040 through T051 independently and now proceeds to the T052 multi-class qualification corpora.
+that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
+T040 through T052 independently and now proceeds to T053 production-equivalent isolated integration.
 
 ## Target Boundaries
 
@@ -217,7 +217,12 @@ complete prior Critical/High must-detect set. A separate exact-key manifest auth
 historical bindings, pins its reviewed digest in code, refuses overwrite, and keeps later positives
 outside the historical denominator. Negative kinds use distinct applicable behavior rather than
 uniform labels. It grants no runtime or finding authority and does
-not execute source. T052 is the next implementation task.
+not execute source. T052 multi-class qualification corpus is complete: 84 exact declarative
+cases cover 16 schema/parser, 25 malicious-repository, 17 fingerprint/correlation, 17
+evidence/privacy, and 9 performance scenarios. The byte-bound fixtures contain no commands or
+live hostile filesystem objects; performance buckets bind one immutable hardware class and 30
+measured runs. T053 is the next implementation task and the first stage allowed to materialize
+the applicable recipes inside production-equivalent isolation.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 
@@ -241,8 +246,9 @@ gates. Produce a machine-readable go/no-go record. Hand live cluster/microVM rol
 T051 supplies only the immutable golden positive/negative and independently manifested prior
 must-detect input authority.
 T052 adds schema/parser, malicious-repository, fingerprint/correlation, evidence/privacy, and
-performance corpora. T053 is the first slice that materializes cases into a production-equivalent
-isolated scanner environment; no T051 artifact is customer content or an executable build input.
+performance corpora as immutable declarative recipes. T053 is the first slice that materializes
+cases into a production-equivalent isolated scanner environment; no T051 artifact is customer
+content or an executable build input.
 
 ## Key Interfaces
 

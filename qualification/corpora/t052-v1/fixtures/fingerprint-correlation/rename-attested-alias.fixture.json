@@ -1,0 +1,79 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.fingerprint-correlation.rename-attested-alias",
+  "corpusClass": "FINGERPRINT_CORRELATION",
+  "scenario": "RENAME_ATTESTED_ALIAS",
+  "materializationKind": "IDENTITY_SEQUENCE",
+  "parameters": [
+    {
+      "name": "EXPECTED_RELATION",
+      "valueType": "STRING",
+      "stringValue": "RELATED_ONLY",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "IDENTITY_VECTOR",
+      "valueType": "STRING",
+      "stringValue": "sast-fingerprint-v1",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "SOURCE_OCCURRENCES",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 2,
+      "booleanValue": null
+    }
+  ],
+  "segments": [],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "DECLARE_IDENTITY_INPUT",
+      "arguments": [
+        "ordinal=1",
+        "scenario=RENAME_ATTESTED_ALIAS"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "DECLARE_IDENTITY_INPUT",
+      "arguments": [
+        "ordinal=2",
+        "scenario=RENAME_ATTESTED_ALIAS"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "action": "DECLARE_CORRELATION_INPUT",
+      "arguments": [
+        "relation=RENAME_ATTESTED_ALIAS"
+      ]
+    },
+    {
+      "ordinal": 4,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "correlation=display-only"
+      ]
+    }
+  ],
+  "materializedBytes": 0,
+  "materializedEntries": 2,
+  "materializedPathDepth": 0,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://6ce6ece2eca51939786187949524c19199b4ce50afc333c8aba9984c818e3255",
+  "fixtureDigest": "sha256:6ce6ece2eca51939786187949524c19199b4ce50afc333c8aba9984c818e3255"
+}

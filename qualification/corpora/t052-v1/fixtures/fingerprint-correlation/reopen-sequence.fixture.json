@@ -1,0 +1,80 @@
+{
+  "version": "sast-multi-class-qualification-fixture-v1",
+  "caseKey": "t052.fingerprint-correlation.reopen-sequence",
+  "corpusClass": "FINGERPRINT_CORRELATION",
+  "scenario": "REOPEN_SEQUENCE",
+  "materializationKind": "IDENTITY_SEQUENCE",
+  "parameters": [
+    {
+      "name": "EXPECTED_RELATION",
+      "valueType": "STRING",
+      "stringValue": "REOPENED",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "IDENTITY_VECTOR",
+      "valueType": "STRING",
+      "stringValue": "sast-fingerprint-v1",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "SOURCE_OCCURRENCES",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 3,
+      "booleanValue": null
+    }
+  ],
+  "segments": [],
+  "steps": [
+    {
+      "ordinal": 1,
+      "action": "DECLARE_LIFECYCLE_EVENT",
+      "arguments": [
+        "sequence=1",
+        "state=OPEN"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "action": "DECLARE_LIFECYCLE_EVENT",
+      "arguments": [
+        "sequence=2",
+        "state=FIXED"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "action": "DECLARE_LIFECYCLE_EVENT",
+      "arguments": [
+        "sequence=3",
+        "state=REOPENED"
+      ]
+    },
+    {
+      "ordinal": 4,
+      "action": "ASSERT_NO_AUTHORITY",
+      "arguments": [
+        "correlation=display-only"
+      ]
+    }
+  ],
+  "materializedBytes": 0,
+  "materializedEntries": 3,
+  "materializedPathDepth": 0,
+  "simulatedDurationSeconds": 0,
+  "source": "PLATFORM_MANAGED",
+  "sourcePlatformOwned": true,
+  "customerContentAccepted": false,
+  "executable": false,
+  "packageInstallRequired": false,
+  "buildRequired": false,
+  "dynamicExecutionRequired": false,
+  "networkRequired": false,
+  "hostMutationAllowed": false,
+  "immutable": true,
+  "fixtureId": "sast-multi-class-qualification-fixture://5a4a2122d498f1c4b56936bbb5b3c71df18fc55266b793da21e46f86b1c0e03a",
+  "fixtureDigest": "sha256:5a4a2122d498f1c4b56936bbb5b3c71df18fc55266b793da21e46f86b1c0e03a"
+}

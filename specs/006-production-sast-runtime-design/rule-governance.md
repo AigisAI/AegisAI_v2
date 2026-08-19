@@ -329,9 +329,31 @@ command-line flags, rule code, templates, post-processors, or executable configu
   and rejects any manifest/snapshot/source-set/byte/digest/range drift, unsafe or duplicate path, link,
   non-canonical text, oversize, extra field/file, or authority widening. CI runs the validator and
   hostile contract/filesystem tests on every change.
-- A T051 pass means only that the qualification denominator is authentic and sufficient. T052 must
-  add every other required corpus class; T053-T056 must still produce isolated execution,
-  performance, supply-chain/drill, and immutable go/no-go evidence before rollout.
+- A T051 pass means only that the golden and historical denominator is authentic and sufficient.
+  T052 supplies the remaining corpus inputs below; T053-T056 must still produce isolated
+  execution, performance, supply-chain/drill, and immutable go/no-go evidence before rollout.
+
+### T052 Multi-Class Qualification Corpus Boundary
+
+- T052 freezes exactly 84 platform-owned declarative cases: 16 schema/parser, 25
+  malicious-repository, 17 fingerprint/correlation, 17 evidence/privacy, and 9 performance. Every
+  required scenario occurs exactly once and is bound to an exact expected control outcome and the
+  T053/T054 stage that must later provide evidence.
+- Fixtures contain only typed bounded parameters, canonical base64 byte segments, and allowlisted
+  declaration actions. General commands, argv, environment, executable configuration, customer
+  content, package installation, build, dynamic execution, scanner execution, host mutation,
+  network access, and all finding/policy/publication/promotion/readiness authority are rejected.
+  Live symlinks, FIFOs, devices, archive bombs, and expanded performance trees are not checked in.
+- The performance denominator has small, medium, and exact-large-limit buckets for each v1 profile,
+  binds one immutable hardware-class reference/digest, and requires 30 post-warm-up measurements
+  per bucket. T052 cannot claim a latency, reliability, or capacity result.
+- The deterministic generator and root-confined loader bind every fixture path/ID/digest/byte count,
+  case, class/scenario/profile index, hardware reference, and derived set digest. Exact root/class/
+  file allowlists, no-follow access where supported, before/open/after identity, canonical
+  UTF-8/NFC/LF, and hostile-shape tests fail closed on substitution or widening.
+- A T052 pass authenticates only inputs. It cannot qualify or transition a rule bundle, establish
+  detection/precision/privacy/isolation/performance success, or authorize production. T053 is the
+  first materialization and production-equivalent isolated execution stage.
 
 ## Lifecycle
 
