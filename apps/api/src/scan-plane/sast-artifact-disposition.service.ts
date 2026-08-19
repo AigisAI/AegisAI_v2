@@ -475,6 +475,7 @@ export class SastArtifactDispositionService {
     }
     const gate = await this.acceptanceGate.evaluate({
       scope: candidate.scope,
+      plan: durable.plan,
       scanner: durable.envelope.scanner,
       scannerVersion: durable.envelope.scannerVersion,
       scannerImageDigest:

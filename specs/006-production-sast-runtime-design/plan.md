@@ -15,7 +15,7 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040 through T048 independently and now proceeds to T049.
+T040 through T049 independently and now proceeds to T050.
 
 ## Target Boundaries
 
@@ -192,8 +192,15 @@ comparison, any threshold breach, or any zero-tolerance event seals that candida
 rollout `PAUSED`.
 Passing all six ordered steps creates the sole digest-bound `CANARY_OBSERVATION` authority for
 `CANARY -> ACTIVE`. The production observation source remains deliberately unavailable until a
-production-qualified adapter is installed; T049 emergency-suspension/kill-switch authority and
-T050 rollback authority remain fail closed. T049 is the next implementation task.
+production-qualified adapter is installed. T049 now supplies signed append-only global/scanner/
+bundle/rule/profile/tenant/repository/capability/publication controls, immutable evaluation
+receipts, planning plus locked queue fences, fresh scanner/artifact/retry/coverage/publication/AI
+gates, safe pre-provider cancellation, quarantine, effective-coverage projection, and exact
+`EMERGENCY_SUSPENSION` lifecycle authority. It also derives a zero-authority automatic suspension
+signal from only a locked current T048 pause-decision reference, never a caller target. Mutable
+switch state remains outside canonical key v4 and historical plans/findings/coverage remain
+immutable. The production signature authority defaults unavailable until a qualified adapter is
+installed. T050 rollback authority remains fail closed and is the next implementation task.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

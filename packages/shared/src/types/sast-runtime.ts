@@ -10,6 +10,10 @@ import {
   isVerifiedSastRuleBundleCanaryAssignmentDescriptorValid,
   type VerifiedSastRuleBundleCanaryAssignmentDescriptor
 } from './sast-rule-bundle-canary';
+import {
+  isSastKillSwitchPlanningDescriptorValid,
+  type SastKillSwitchPlanningDescriptor
+} from './sast-kill-switch';
 
 export const PRODUCTION_SAST_RUNTIME_FEATURE_ID = '006-production-sast-runtime-design';
 
@@ -483,6 +487,12 @@ export interface SastScanPlan {
   tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
   repositoryState: SastRepositoryState;
   scannerSet: CanaryQualifiedScannerSetDescriptor;
+  /**
+   * T049 mutable-runtime receipt. It is intentionally excluded from the v4
+   * canonical scan key and retained in the immutable plan for queue fencing.
+   * Historical terminal v4 plans may not contain this projection.
+   */
+  killSwitchEvaluation?: SastKillSwitchPlanningDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
   resultIngressRef: string;
   evidenceOutputRef: string;
@@ -1148,6 +1158,10 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
       plan.repositoryState.submodulesEnabled === false &&
       plan.repositoryState.lfsObjectsFetched === false &&
       isCanaryQualifiedScannerSetDescriptorValid(plan.scannerSet) &&
+      (plan.killSwitchEvaluation === undefined ||
+        isSastKillSwitchPlanningDescriptorValid(
+          plan.killSwitchEvaluation
+        )) &&
       (plan.isolationClass === 'HARDENED' || plan.isolationClass === 'RESTRICTED') &&
       isNonBlank(plan.resultIngressRef) &&
       isNonBlank(plan.evidenceOutputRef) &&

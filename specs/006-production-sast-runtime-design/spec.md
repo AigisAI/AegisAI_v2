@@ -476,8 +476,44 @@ incomplete, stale, quarantined, or security-blocked scan.
   the exact
   `CANARY_OBSERVATION` receipt for `CANARY -> ACTIVE`; the default production observation source
   MUST remain unavailable until a qualified adapter is installed.
-- **FR-057**: Emergency kill switches MUST exist for scanner version, rule bundle, rule ID,
-  tenant, repository, capability, and external publication.
+- **FR-057**: Emergency kill switches MUST exist for global SAST runtime, scanner version, rule
+  bundle digest, semantic rule ID, exact signed profile, tenant, repository binding, capability,
+  and global/tenant/repository external publication.
+- **FR-057a**: Every activation and deactivation MUST be a platform-managed, signed, immutable,
+  digest-bound decision in one monotonic predecessor chain per canonical selector. It MUST bind
+  actor role, reason, incident, effective/review/expiry times, rollback-target reference,
+  signature/provenance references, and audit reference. Exact trusted signature/provenance
+  verification MUST commit with the decision. A missing/invalid verification, fork, future
+  activation, expired active decision, invalid trusted clock, or unavailable authority MUST fail
+  closed and MUST NOT be interpreted as clear.
+- **FR-057b**: Planning MUST evaluate every applicable selector after lifecycle/canary and before
+  tenant policy and retain an immutable successful receipt in the plan without changing
+  `sast-canonical-scan-key-v4`. Queue admission MUST lock the complete selector-head set and
+  reconstruct and revalidate the plan-bound context digest and exact selector identity set in
+  both application and database paths. A missing, substituted, extra, or drifted selector MUST
+  reject. Durable inactive placeholders and trigger-owned heads MUST prevent a first-activation/
+  absent-row race.
+- **FR-057c**: Fresh purpose-bound evaluation MUST occur before scanner execution, artifact
+  acceptance, retry admission, effective-coverage use, external publication, and AI advisory. A
+  scanner MUST create its durable run before evaluation but MUST perform no provider repository
+  read or scanner execution after an active/unavailable result. Active affected runs MUST become
+  `KILLED`, artifacts MUST be quarantined, retries and AI/publication MUST be denied, and cleanup
+  MUST remain mandatory. A clear artifact kill-switch evaluation MUST delegate to, and MUST NOT
+  replace, the independent fail-closed Data/Security Plane acceptance authority.
+- **FR-057d**: Kill-switch evaluation MUST NOT rewrite historical plans, findings, or T039 factual
+  coverage. It MUST expose a separate current effective-coverage result: semantic-rule or
+  capability-only activation is `PARTIAL`, other affected runtime scopes are `FAILED`, and an
+  external-publication-only activation is `UNCHANGED` while publication and AI remain denied.
+- **FR-057e**: An active applicable global, bundle, scanner-version, semantic-rule, or exact
+  signed-profile decision MAY authorize only the exact latest
+  `CANARY | ACTIVE -> SUSPENDED` lifecycle edge through one immutable digest-bound
+  `EMERGENCY_SUSPENSION` receipt. It MUST NOT authorize rollback, select a replacement bundle, or
+  mutate historical state.
+- **FR-057f**: Automatic canary-suspension input MUST accept only an exact T048 step-decision
+  ID/digest and MUST derive the current `PAUSED` rollout, lifecycle target, signed profile, hard-
+  failure reason set, and zero-tolerance status from locked durable authority. Callers MUST NOT
+  supply or override those fields. The derived content-free signal MUST grant no decision,
+  lifecycle, publication, AI, or rollback authority by itself.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

@@ -18,6 +18,7 @@ import {
 } from './sast-artifact-object-store';
 import { SastArtifactValidationService } from './sast-artifact-validation.service';
 import {
+  SastArtifactAcceptanceAuthority,
   SastArtifactAcceptanceGate,
   UnavailableSastArtifactAcceptanceGate
 } from './sast-artifact-acceptance-gate';
@@ -57,6 +58,7 @@ import { SastScannerRuntimeStore } from './sast-scanner-runtime.store';
 import { SastAttemptReconciliationTask } from './sast-attempt-reconciliation.task';
 import { ConfigModule } from "../config/config.module";
 import { ControlPlaneModule } from '../control-plane/control-plane.module';
+import { RuleGovernanceModule } from '../rule-governance/rule-governance.module';
 import { TokenBrokerModule } from '../token-broker/token-broker.module';
 import {
   NodeRepositoryGitExecutor,
@@ -116,14 +118,17 @@ import {
 } from './sast-latest-target-authority';
 import {
   SastRetryRuntimeAuthority,
-  UnavailableSastRetryRuntimeAuthority
 } from './sast-retry-runtime-authority';
+import { SastKillSwitchRetryRuntimeAuthority } from './sast-kill-switch-retry-runtime.authority';
+import { SastKillSwitchArtifactAcceptanceGate } from './sast-kill-switch-artifact-acceptance.gate';
+import { SastKillSwitchFindingLifecycleCoverageGate } from './sast-kill-switch-finding-lifecycle-coverage.gate';
 import { SastRetryAdmissionGate } from './sast-retry-admission.gate';
 import {
   SastFindingRenameAttestationVerifier,
   UnavailableSastFindingRenameAttestationVerifier
 } from './sast-finding-rename-attestation.verifier';
 import {
+  SastFindingLifecycleCoverageAuthority,
   SastFindingLifecycleCoverageGate
 } from './sast-finding-lifecycle-coverage.gate';
 import {
@@ -154,7 +159,12 @@ import { SastEvidenceDeletionService } from './sast-evidence-deletion.service';
 import { SastEvidenceDeletionTask } from './sast-evidence-deletion.task';
 
 @Module({
-  imports: [ConfigModule, ControlPlaneModule, TokenBrokerModule],
+  imports: [
+    ConfigModule,
+    ControlPlaneModule,
+    RuleGovernanceModule,
+    TokenBrokerModule
+  ],
   controllers: [
     ScanPlaneController,
     SastArtifactIngressController,
@@ -175,6 +185,7 @@ import { SastEvidenceDeletionTask } from './sast-evidence-deletion.task';
     SastFindingCorrelationService,
     SastScanCoverageService,
     SastScanFreshnessService,
+    SastKillSwitchFindingLifecycleCoverageGate,
     SastAcceptedEvidenceService,
     SastEvidenceAccessService,
     SastEvidenceDeletionService,
@@ -230,10 +241,10 @@ import { SastEvidenceDeletionTask } from './sast-evidence-deletion.task';
       provide: SastLatestTargetAuthority,
       useExisting: UnavailableSastLatestTargetAuthority
     },
-    UnavailableSastRetryRuntimeAuthority,
+    SastKillSwitchRetryRuntimeAuthority,
     {
       provide: SastRetryRuntimeAuthority,
-      useExisting: UnavailableSastRetryRuntimeAuthority
+      useExisting: SastKillSwitchRetryRuntimeAuthority
     },
     UnavailableSastFindingRenameAttestationVerifier,
     {
@@ -242,8 +253,12 @@ import { SastEvidenceDeletionTask } from './sast-evidence-deletion.task';
         UnavailableSastFindingRenameAttestationVerifier
     },
     {
-      provide: SastFindingLifecycleCoverageGate,
+      provide: SastFindingLifecycleCoverageAuthority,
       useExisting: SastScanFreshnessService
+    },
+    {
+      provide: SastFindingLifecycleCoverageGate,
+      useExisting: SastKillSwitchFindingLifecycleCoverageGate
     },
     {
       provide: SastRetryAdmissionGate,
@@ -263,8 +278,13 @@ import { SastEvidenceDeletionTask } from './sast-evidence-deletion.task';
     },
     UnavailableSastArtifactAcceptanceGate,
     {
-      provide: SastArtifactAcceptanceGate,
+      provide: SastArtifactAcceptanceAuthority,
       useExisting: UnavailableSastArtifactAcceptanceGate
+    },
+    SastKillSwitchArtifactAcceptanceGate,
+    {
+      provide: SastArtifactAcceptanceGate,
+      useExisting: SastKillSwitchArtifactAcceptanceGate
     },
     UnavailableSastFileCoordinateAttestationProvider,
     {

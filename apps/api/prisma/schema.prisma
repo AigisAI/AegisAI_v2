@@ -3164,3 +3164,206 @@ model SastRuleBundleCanaryReceiptPassedStep {
   @@unique([receiptId, step], map: "SastRuleBundleCanaryReceiptPassedStep_step_key")
   @@unique([receiptId, decisionId], map: "SastRuleBundleCanaryReceiptPassedStep_decision_key")
 }
+
+model SastKillSwitchDecision {
+  id                      String   @id
+  contractVersion         String
+  decisionDigest          String   @unique
+  selectorKey             String
+  scope                   String
+  runtime                 String?
+  scanner                 String?
+  scannerVersion          String?
+  bundleDigest            String?
+  ruleSemanticId          String?
+  profileId               String?
+  profileDigest           String?
+  tenantId                String?
+  repositoryBindingId     String?
+  capability              String?
+  publicationTargetScope  String?
+  sequence                Int
+  previousDecisionId      String?
+  previousDecisionDigest  String?
+  action                  String
+  reasonCode              String
+  incidentRef             String
+  actorRef                String
+  actorRole               String
+  effectiveAt             DateTime
+  reviewBy                DateTime
+  expiresAt               DateTime
+  rollbackTargetRef       String
+  signatureRef            String
+  provenanceRef           String
+  auditRef                String
+  source                  String   @default("PLATFORM_MANAGED")
+  immutable               Boolean  @default(true)
+  customerInputAccepted   Boolean  @default(false)
+  repositoryContentStored Boolean  @default(false)
+  findingContentStored    Boolean  @default(false)
+  secretValueStored       Boolean  @default(false)
+  arbitraryPayloadStored  Boolean  @default(false)
+  recordedAt              DateTime @default(now())
+
+  @@unique([selectorKey, sequence], map: "SastKillSwitchDecision_selector_sequence_key")
+  @@unique([id, decisionDigest], map: "SastKillSwitchDecision_id_digest_key")
+  @@unique([id, decisionDigest, selectorKey], map: "SastKillSwitchDecision_identity_key")
+  @@unique([id, decisionDigest, selectorKey, sequence, action], map: "SastKillSwitchDecision_binding_key")
+  @@index([scope, action, effectiveAt], map: "SastKillSwitchDecision_scope_action_idx")
+  @@index([tenantId, repositoryBindingId, scope], map: "SastKillSwitchDecision_tenant_repository_idx")
+}
+
+model SastKillSwitchVerification {
+  id                      String   @id
+  contractVersion         String
+  verificationDigest      String   @unique
+  decisionId              String   @unique
+  decisionDigest          String
+  selectorKey             String
+  signerIdentity          String
+  signatureRef            String
+  provenanceRef           String
+  signatureVerified       Boolean  @default(true)
+  provenanceVerified      Boolean  @default(true)
+  trustedSigner           Boolean  @default(true)
+  signatureBytesStored    Boolean  @default(false)
+  provenancePayloadStored Boolean  @default(false)
+  repositoryContentStored Boolean  @default(false)
+  secretValueStored       Boolean  @default(false)
+  verifiedAt              DateTime
+  recordedAt              DateTime @default(now())
+
+  @@unique([id, verificationDigest, decisionId, decisionDigest], map: "SastKillSwitchVerification_binding_key")
+  @@index([signerIdentity, verifiedAt], map: "SastKillSwitchVerification_signer_idx")
+}
+
+model SastKillSwitchHead {
+  selectorKey            String    @id
+  scope                  String
+  runtime                String?
+  scanner                String?
+  scannerVersion         String?
+  bundleDigest           String?
+  ruleSemanticId         String?
+  profileId              String?
+  profileDigest          String?
+  tenantId               String?
+  repositoryBindingId    String?
+  capability             String?
+  publicationTargetScope String?
+  sequence               Int       @default(0)
+  currentDecisionId      String?   @unique
+  currentDecisionDigest  String?   @unique
+  currentAction          String?
+  active                 Boolean   @default(false)
+  effectiveAt            DateTime?
+  reviewBy               DateTime?
+  expiresAt              DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@unique([selectorKey, sequence, currentDecisionId, currentDecisionDigest, currentAction, active], map: "SastKillSwitchHead_binding_key")
+  @@index([scope, active, updatedAt], map: "SastKillSwitchHead_active_scope_idx")
+  @@index([tenantId, repositoryBindingId, active], map: "SastKillSwitchHead_tenant_repository_idx")
+}
+
+model SastKillSwitchEvaluation {
+  id                       String   @id
+  contractVersion          String
+  receiptDigest            String   @unique
+  gate                     String
+  tenantId                 String
+  repositoryBindingId      String
+  scanRequestId            String
+  profileId                String
+  profileDigest            String
+  scannerSetDigest         String
+  contextDigest            String
+  snapshotDigest           String
+  headCount                Int
+  headSetDigest            String
+  matchedDecisionCount     Int
+  matchedDecisionSetDigest String
+  outcome                  String
+  coverageEffect           String
+  evaluatedAt              DateTime
+  customerInputAccepted    Boolean  @default(false)
+  repositoryContentStored  Boolean  @default(false)
+  findingContentStored     Boolean  @default(false)
+  secretValueStored        Boolean  @default(false)
+  arbitraryPayloadStored   Boolean  @default(false)
+  recordedAt               DateTime @default(now())
+
+  @@unique([id, receiptDigest, contextDigest, snapshotDigest], map: "SastKillSwitchEvaluation_binding_key")
+  @@index([scanRequestId, gate, evaluatedAt], map: "SastKillSwitchEvaluation_scan_gate_idx")
+  @@index([tenantId, repositoryBindingId, outcome, evaluatedAt], map: "SastKillSwitchEvaluation_scope_outcome_idx")
+}
+
+model SastKillSwitchEvaluationHead {
+  evaluationId   String
+  position       Int
+  selectorKey    String
+  scope          String
+  sequence       Int
+  decisionId     String?
+  decisionDigest String?
+  action         String?
+  active         Boolean
+  effectiveAt    DateTime?
+  expiresAt      DateTime?
+  bindingDigest  String
+
+  @@id([evaluationId, position])
+  @@unique([evaluationId, selectorKey], map: "SastKillSwitchEvaluationHead_selector_key")
+  @@unique([evaluationId, bindingDigest], map: "SastKillSwitchEvaluationHead_digest_key")
+  @@index([selectorKey, sequence], map: "SastKillSwitchEvaluationHead_head_idx")
+}
+
+model SastKillSwitchEvaluationMatch {
+  evaluationId   String
+  position       Int
+  selectorKey    String
+  scope          String
+  decisionId     String
+  decisionDigest String
+  bindingDigest  String
+
+  @@id([evaluationId, position])
+  @@unique([evaluationId, selectorKey], map: "SastKillSwitchEvaluationMatch_selector_key")
+  @@unique([evaluationId, decisionId], map: "SastKillSwitchEvaluationMatch_decision_key")
+  @@index([decisionId, decisionDigest], map: "SastKillSwitchEvaluationMatch_decision_idx")
+}
+
+model SastKillSwitchEmergencySuspensionReceipt {
+  id                        String   @id
+  contractVersion           String
+  receiptDigest             String   @unique
+  manifestId                String
+  manifestDigest            String
+  bundleId                  String
+  bundleDigest              String
+  fromState                 String
+  toState                   String
+  lifecycleSequence         Int
+  lifecycleTransitionId     String
+  lifecycleTransitionDigest String
+  promotionEvidenceId       String
+  promotionEvidenceDigest   String
+  triggerSelectorKey        String
+  triggerDecisionId         String
+  triggerDecisionDigest     String
+  activeDecisionCount       Int
+  activeDecisionSetDigest   String
+  requestedAt               DateTime
+  verifiedAt                DateTime
+  customerInputAccepted     Boolean  @default(false)
+  repositoryContentStored   Boolean  @default(false)
+  findingContentStored      Boolean  @default(false)
+  secretValueStored         Boolean  @default(false)
+  recordedAt                DateTime @default(now())
+
+  @@unique([id, receiptDigest, manifestId, bundleDigest], map: "SastKillSwitchEmergencySuspensionReceipt_binding_key")
+  @@index([manifestId, lifecycleSequence, verifiedAt], map: "SastKillSwitchEmergencySuspensionReceipt_lifecycle_idx")
+  @@index([triggerDecisionId, triggerDecisionDigest], map: "SastKillSwitchEmergencySuspensionReceipt_decision_idx")
+}

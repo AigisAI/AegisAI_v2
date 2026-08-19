@@ -432,6 +432,53 @@ Raw artifact/evidence expiry is tested at seven days maximum and AI request payl
   authorizes the matching `CANARY -> ACTIVE` transition. The default production observation
   source remains unavailable and therefore cannot manufacture promotion evidence.
 
+## T049 Kill-Switch Authority and Propagation Gates
+
+T049 is release-blocking unless all of the following are proven against the shared contract,
+application services, and PostgreSQL constraints:
+
+- each global, scanner-version, bundle, semantic-rule, exact-profile, tenant, repository-binding,
+  capability, and global/tenant/repository publication selector has canonical, deterministic
+  matching and a content-free decision/evaluation representation;
+- valid signed activation and deactivation append in sequence, exact replay is idempotent, and
+  missing/mismatched signature, predecessor fork, future activation, mutation, or active expiry
+  yields zero successful authority;
+- a stale or future caller-selected boundary time outside the bounded service-owned trusted-clock
+  skew yields zero evaluation authority;
+- an inactive placeholder and ordered selector-head locks make first activation serialize with
+  planning/queue evaluation; a plan admitted from a stale/missing head set equals zero;
+- planning persists only `CLEAR`, leaves canonical key v4 unchanged, and queue admission
+  reconstructs the plan-bound context/selector set and rejects a missing, substituted, extra, or
+  later-drifted head in both the application transaction and direct database insert path;
+- a switch activated after queue admission creates the durable scanner-run record but reaches
+  zero provider repository reads and zero scanner executions, finishes `KILLED`, and still enters
+  mandatory cleanup;
+- affected artifact acceptance is `QUARANTINE` with zero downstream acceptance calls; a clear
+  switch still requires the independent fail-closed Data/Security acceptance authority; affected
+  retry admission is denied, and affected external-publication and AI paths make zero publisher/
+  model calls;
+- T037 lifecycle coverage first obtains a fresh `COVERAGE` evaluation and invokes the independent
+  T040 authority only for `CLEAR`/`UNCHANGED`; active or unavailable T049 authority invokes T040
+  zero times;
+- external comment planning and every dispatch-worker claim each obtain a fresh
+  `EXTERNAL_PUBLICATION` evaluation; activation between them creates zero claims and publisher
+  calls;
+- current coverage maps semantic-rule/capability-only matches to `PARTIAL`, other runtime matches
+  to `FAILED`, and publication-only matches to `UNCHANGED`, while the original T039 decision is
+  byte-for-byte unchanged; and
+- an exact active global/bundle/scanner-version/semantic-rule/profile decision set can authorize
+  only the matching latest `CANARY | ACTIVE -> SUSPENDED` edge. Cross-bundle, stale, deactivated,
+  expired, replay-substituted, or rollback use yields zero lifecycle transitions; and
+- the automatic canary input accepts only a T048 decision ID/digest, derives current `PAUSED` or
+  zero-tolerance status plus every target field under lifecycle/canary locks, and rejects an extra
+  caller target, stale head, non-pause outcome, incomplete reason set, or cross-rollout binding.
+
+The propagation drill activates one selector between every adjacent gate—planning/queue,
+queue/scanner, scanner/artifact, artifact/retry, and normalization/publication/AI—and records the
+trusted decision time, rejection time, affected scope, zero forbidden side effects, and immutable
+evaluation receipt. Authority-unavailable and active-expired drills have the same fail-closed
+expectation as an active switch; only an exact signed deactivation restores later eligibility.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:

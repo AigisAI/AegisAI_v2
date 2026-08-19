@@ -19,6 +19,7 @@ import {
 import { createHash } from 'node:crypto';
 
 import { ConfigService } from '../config/config.service';
+import { SastKillSwitchGate } from '../rule-governance/sast-kill-switch.gate';
 import { SastEvidenceAccessService } from '../scan-plane/sast-evidence-access.service';
 import { AiAdvisoryRuntimeClient } from './ai-advisory-runtime.client';
 import { SastAiAdvisoryStore } from './sast-ai-advisory.store';
@@ -44,7 +45,8 @@ export class AiAdvisoryService {
     private readonly config: ConfigService,
     private readonly runtimeClient: AiAdvisoryRuntimeClient,
     private readonly evidenceAccess: SastEvidenceAccessService,
-    private readonly store: SastAiAdvisoryStore
+    private readonly store: SastAiAdvisoryStore,
+    private readonly killSwitch: SastKillSwitchGate
   ) {}
 
   async createAdvisory(
@@ -67,6 +69,12 @@ export class AiAdvisoryService {
     };
     const firstAccess = await this.classify(scope, clock);
     if (firstAccess.outcome !== 'ALLOWED') throw unavailable();
+    await this.assertKillSwitchClear(
+      firstAccess.decision.scope.tenantId,
+      firstAccess.decision.scope.repositoryBindingId,
+      firstAccess.decision.scope.scanRequestId,
+      startedAt
+    );
 
     const normalizedFinding = await this.loadFinding(
       firstAccess.decision
@@ -112,7 +120,15 @@ export class AiAdvisoryService {
 
     const { persisted, existing } =
       await this.persistHandoffAndRead(handoff);
-    if (existing) return existing;
+    if (existing) {
+      await this.assertKillSwitchClear(
+        handoff.tenantId,
+        handoff.repositoryBindingId,
+        handoff.scanRequestId,
+        createdAt
+      );
+      return existing;
+    }
 
     const invokedAt = readClock(clock);
     if (
@@ -122,6 +138,13 @@ export class AiAdvisoryService {
     ) {
       throw unavailable();
     }
+
+    await this.assertKillSwitchClear(
+      handoff.tenantId,
+      handoff.repositoryBindingId,
+      handoff.scanRequestId,
+      invokedAt
+    );
 
     const runtimeOutput = await this.resolveRuntimeOutput(
       persisted.handoff
@@ -192,6 +215,27 @@ export class AiAdvisoryService {
       return await this.evidenceAccess.classifyForAi(scope, clock);
     } catch (error) {
       this.logFailure('access classification', error);
+      throw unavailable();
+    }
+  }
+
+  private async assertKillSwitchClear(
+    tenantId: string,
+    repositoryBindingId: string,
+    scanRequestId: string,
+    evaluatedAt: string
+  ): Promise<void> {
+    try {
+      const result = await this.killSwitch.evaluatePersistedScan({
+        gate: 'AI_ADVISORY',
+        tenantId,
+        repositoryBindingId,
+        scanRequestId,
+        evaluatedAt
+      });
+      if (result.receipt.outcome !== 'CLEAR') throw unavailable();
+    } catch (error) {
+      this.logFailure('kill-switch authorization', error);
       throw unavailable();
     }
   }

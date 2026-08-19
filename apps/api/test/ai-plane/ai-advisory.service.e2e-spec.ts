@@ -26,7 +26,8 @@ describe('AiAdvisoryService T043 handoff', () => {
       config(false),
       runtime as never,
       evidenceAccess as never,
-      store as never
+      store as never,
+      clearKillSwitch() as never
     );
 
     const advisory = await service.createAdvisory(
@@ -98,7 +99,8 @@ describe('AiAdvisoryService T043 handoff', () => {
       config(false),
       { createAdvisory: jest.fn() } as never,
       evidenceAccess as never,
-      store as never
+      store as never,
+      clearKillSwitch() as never
     );
 
     await expect(
@@ -135,7 +137,8 @@ describe('AiAdvisoryService T043 handoff', () => {
       config(false),
       { createAdvisory: jest.fn() } as never,
       evidenceAccess as never,
-      store as never
+      store as never,
+      clearKillSwitch() as never
     );
 
     await expect(
@@ -149,12 +152,38 @@ describe('AiAdvisoryService T043 handoff', () => {
       config(false),
       { createAdvisory: jest.fn() } as never,
       { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
-      missingStore as never
+      missingStore as never,
+      clearKillSwitch() as never
     );
     await expect(
       missingService.createAdvisory(aiAdvisoryIntent(), clock())
     ).rejects.toThrow('AI advisory source is unavailable.');
     expect(missingStore.persistHandoff).not.toHaveBeenCalled();
+  });
+
+  it('denies AI advisory construction before finding load when a kill switch is active', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const access = allowedAiAccess();
+    const store = memoryStore(access.decision);
+    const runtime = { createAdvisory: jest.fn() };
+    const service = new AiAdvisoryService(
+      config(true),
+      runtime as never,
+      { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
+      store as never,
+      {
+        evaluatePersistedScan: jest.fn().mockResolvedValue({
+          receipt: { outcome: 'ACTIVE' }
+        })
+      } as never
+    );
+
+    await expect(
+      service.createAdvisory(aiAdvisoryIntent(), clock())
+    ).rejects.toThrow('AI advisory source is unavailable.');
+    expect(store.loadNormalizedFinding).not.toHaveBeenCalled();
+    expect(store.persistHandoff).not.toHaveBeenCalled();
+    expect(runtime.createAdvisory).not.toHaveBeenCalled();
   });
 
   it('fails closed on handoff or result persistence conflicts', async () => {
@@ -171,7 +200,8 @@ describe('AiAdvisoryService T043 handoff', () => {
       config(false),
       runtime as never,
       { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
-      handoffStore as never
+      handoffStore as never,
+      clearKillSwitch() as never
     );
 
     await expect(
@@ -187,7 +217,8 @@ describe('AiAdvisoryService T043 handoff', () => {
       config(false),
       runtime as never,
       { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
-      resultStore as never
+      resultStore as never,
+      clearKillSwitch() as never
     );
     await expect(
       resultService.createAdvisory(aiAdvisoryIntent(), clock())
@@ -243,7 +274,8 @@ describe('AiAdvisoryService T043 handoff', () => {
       config(true),
       runtime as never,
       { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
-      store as never
+      store as never,
+      clearKillSwitch() as never
     );
 
     const advisory = await service.createAdvisory(
@@ -301,6 +333,17 @@ function config(enabled: boolean) {
       key === 'USE_INTERNAL_AI' ? String(enabled) : undefined
     )
   } as never;
+}
+
+function clearKillSwitch() {
+  return {
+    evaluatePersistedScan: jest.fn(async (input: { evaluatedAt: string }) => ({
+      receipt: {
+        outcome: 'CLEAR',
+        evaluatedAt: input.evaluatedAt
+      }
+    }))
+  };
 }
 
 function clock() {

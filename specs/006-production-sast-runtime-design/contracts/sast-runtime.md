@@ -1442,9 +1442,9 @@ Every row increments one bundle's sequence, binds the immediately previous trans
 digest, revalidates the exact evidence and approvals, and is immutable after insertion. A
 `CANARY -> ACTIVE` transition requires `CANARY_OBSERVATION`; suspension requires
 `EMERGENCY_SUSPENSION`; rollback requires `ROLLBACK`. Each authority must return a matching
-digest-bound receipt. T048 installs `CANARY_OBSERVATION`; `EMERGENCY_SUSPENSION` and `ROLLBACK`
-remain unavailable until T049 and T050 install their corresponding implementations. All other
-edges require `NONE` and must contain no external receipt.
+digest-bound receipt. T048 installs `CANARY_OBSERVATION`; T049 installs
+`EMERGENCY_SUSPENSION`; `ROLLBACK` remains unavailable until T050 installs its corresponding
+implementation. All other edges require `NONE` and must contain no external receipt.
 
 Before tenant-policy resolution, the lifecycle gate serializably reloads the latest transition,
 evidence, and approvals and accepts only `CANARY` or `ACTIVE`. It persists one content-free
@@ -1500,7 +1500,8 @@ bytes modulo 10,000 are the membership bucket; application and PostgreSQL
 derive the same value. Repository content, findings, severity, and customer attributes are
 forbidden inputs.
 
-The planner order is T045 compatibility -> T047 lifecycle -> T048 canary -> T046 tenant policy.
+The planner order is T045 compatibility -> T047 lifecycle -> T048 canary -> T049 kill switch ->
+T046 tenant policy.
 An exact candidate receipt enriches the rule-bundle descriptor with rollout, membership, bucket,
 step, step-head, and assignment identities. If a supplied `CANARY` bundle resolves to baseline or
 exclusion, this gate rejects it rather than rewriting a descriptor that already passed
@@ -1558,6 +1559,103 @@ ending at 100%, can issue one immutable
 only for the matching candidate's `CANARY -> ACTIVE` transition and no other edge. The production
 observation-source adapter intentionally defaults unavailable until production qualification can
 provide durable metrics; T048 never fabricates an observation to unlock promotion.
+
+### Signed SAST kill-switch authority v1
+
+T049 defines these exact selector families:
+
+```text
+GLOBAL(SAST)
+SCANNER_VERSION(scanner, version)
+RULE_BUNDLE(bundle digest)
+SEMANTIC_RULE(semantic rule ID)
+PROFILE(profile ID, signed profile digest)
+TENANT(tenant ID)
+REPOSITORY_BINDING(tenant ID, repository-binding ID)
+CAPABILITY(capability)
+EXTERNAL_PUBLICATION(GLOBAL | TENANT | REPOSITORY_BINDING)
+```
+
+Each selector has a canonical `sast-kill-switch-selector://<sha256>` identity and one immutable
+`sast-kill-switch-decision-v1` predecessor chain. A decision is exactly `ACTIVATE` or
+`DEACTIVATE` and binds sequence, previous ID/digest, reason, incident, Security On-Call or
+Platform On-Call actor, effective/review/expiry times, rollback-target reference, signature/
+provenance references, audit reference, and decision digest. Customer input and all content,
+secret, signature-byte, provenance-payload, and arbitrary-JSON fields are forbidden. A matching
+`sast-kill-switch-verification-v1` from the trusted signature authority must commit in the same
+transaction. The production authority defaults unavailable; no unsigned decision can commit.
+
+A trigger-owned head is the only mutable projection. The store materializes a durable inactive
+sequence-zero placeholder before locking every applicable selector in lexical key order, so a
+first activation cannot race an absent row. PostgreSQL verifies predecessor continuity, selector
+stability, no forks, no future activation, exact verification, and ledger immutability. An active
+head whose expiry is at or before trusted evaluation time is corrupt/unavailable authority and
+fails closed; expiry never acts as implicit deactivation.
+
+Every application boundary compares its supplied boundary time with a service-owned trusted
+clock under a bounded skew before evaluation. A stale or future caller-selected time is invalid
+authority rather than a way to reuse an earlier clear head set.
+
+`sast-kill-switch-evaluation-v1` binds one content-free trusted runtime context, purpose gate,
+trusted time, complete selector-head set, exact active-match set, outcome, and effective coverage.
+Normalized head children must cover all applicable selectors exactly once, while match children
+must equal the active subset. The only gates are `PLANNING`, `QUEUE_ADMISSION`, `SCANNER_START`,
+`ARTIFACT_ACCEPTANCE`, `RETRY_ADMISSION`, `COVERAGE`, `EXTERNAL_PUBLICATION`, and `AI_ADVISORY`.
+Global/tenant/repository publication selectors participate in publication and AI gates; unrelated
+internal processing does not include them.
+
+Only a `CLEAR` planning evaluation becomes `sast-kill-switch-planning-v1` in the immutable plan.
+Its evaluation time/head digest stays out of `sast-canonical-scan-key-v4`; no key cutover occurs.
+Immediately before reservation, application code and the database insertion trigger lock and
+revalidate the exact persisted planning receipt plus current head set after lifecycle/canary
+fences. Application code reconstructs the canonical context digest and selector keys from the
+immutable plan; PostgreSQL independently compares the exact normalized selector identities and
+closed-set count. Omitting an applicable head, even when the remaining receipt is internally
+consistent, rejects. Historical terminal plans may omit the descriptor, but every new queue
+insertion must have it and pass the current fence.
+
+Every later boundary obtains a fresh evaluation from durable plan state. `SCANNER_START` runs
+after durable run creation and before the first provider repository-manifest read or scanner
+execution. Active scope produces `KILLED`, zero provider/scanner calls, and mandatory cleanup.
+Artifact acceptance maps active to quarantine; retry admission denies a new attempt; publication
+and AI make zero downstream calls. Authority unavailable never becomes clear. Effective coverage
+is a separate current projection: semantic-rule/capability-only activation is `PARTIAL`, any
+other runtime selector is `FAILED`, and publication-only activation is `UNCHANGED`. T039 factual
+coverage, old plans, findings, and lifecycle history remain immutable.
+
+The T037 lifecycle coverage port is a two-authority composition. A fresh persisted-plan
+`COVERAGE` evaluation runs first; only `CLEAR` with `UNCHANGED` delegates to the independent T040
+freshness/comparability gate. Active scope returns rejected coverage and unavailable T049
+authority remains unavailable without invoking T040. External comment planning and each
+comment-dispatch worker claim likewise obtain separate fresh `EXTERNAL_PUBLICATION` evaluations;
+activation between planning and claim leaves the outbox unclaimed and makes zero publisher calls.
+
+The T049 artifact gate composes rather than replaces T031 acceptance authority. It evaluates the
+kill switch first, returns a kill-switch-bound denial without invoking downstream authority when
+active, and delegates a clear result to the independent Data/Security Plane acceptance port. That
+port retains its unavailable production default until a qualified storage/acceptance adapter is
+installed; a clear switch alone can never produce `ACCEPTED`.
+
+For `CANARY | ACTIVE -> SUSPENDED`, the lifecycle router asks T049 for one
+`sast-kill-switch-emergency-suspension-v1` receipt. Under lifecycle and selector locks it must
+rebind the exact latest manifest/bundle/transition/promotion evidence and at least one currently
+active applicable global, bundle, scanner-version, semantic-rule, or signed-profile selector.
+The complete active decision set and trigger decision are digest-bound. Cross-bundle, stale,
+deactivated, expired, changed-set, or replay-conflicting authority is rejected. Its reference is
+exactly `sast-kill-switch-suspension://authority/<receiptDigest>` so the pre-existing lifecycle
+authority contract can verify the reference without a circular digest. The receipt has no rollback
+authority; `SUSPENDED -> ROLLED_BACK` remains T050.
+
+The optional automation input is exactly
+`sast-kill-switch-canary-suspension-request-v1 { canaryDecisionId,
+canaryDecisionDigest }`. The resolver first derives manifest/rollout identity from that immutable
+row, then locks the matching lifecycle head before the canary head and reloads the exact current
+`PAUSED` decision, rollout, and complete normalized hard-failure reason set. Only then can it emit
+`sast-kill-switch-canary-suspension-signal-v1` with a derived `CANARY_PAUSED | ZERO_TOLERANCE`
+trigger. Manifest, bundle, profile, lifecycle transition, reasons, and time are output-only;
+unknown request fields fail exact validation and `customerTargetAccepted=false`. The signal alone
+cannot activate a switch or mutate lifecycle state; signing and the exact emergency receipt remain
+independent mandatory authorities.
 
 ## Cleanup Contract
 

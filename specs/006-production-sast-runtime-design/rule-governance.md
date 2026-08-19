@@ -134,8 +134,8 @@ command-line flags, rule code, templates, post-processors, or executable configu
   approval. The sequence and previous digest form one immutable history per manifest/bundle.
 - `CANARY -> ACTIVE`, suspension, and rollback require exact digest-bound receipts from
   `CANARY_OBSERVATION`, `EMERGENCY_SUSPENSION`, and `ROLLBACK` authorities respectively. The
-  T048 canary authority is installed. T049 emergency suspension and T050 rollback remain
-  unavailable before those edges can execute in production.
+  T048 canary authority and T049 emergency-suspension authority are installed. T050 rollback
+  remains unavailable before that edge can execute in production.
 - Planning first verifies T045 compatibility, then revalidates the latest lifecycle state and
   persists `sast-rule-bundle-lifecycle-selection-v1`, then resolves T046 tenant policy. Only the
   latest `CANARY` or `ACTIVE` state is selectable; every other state, stale transition, digest
@@ -151,9 +151,9 @@ command-line flags, rule code, templates, post-processors, or executable configu
   migration rejects deployment while any v2 plan or reservation is non-terminal; terminal v2
   history is retained and never rewritten or replayed as v3 work.
 - T047 itself did not assign tenant-safe canary cohorts or observe production canaries. T048 now
-  owns those boundaries. Kill-switch actuation and last-known-good rollback remain T049-T050;
-  scanner execution, waiver/finding mutation, external publication, AI authority, and SCM writes
-  remain independently gated elsewhere.
+  owns those boundaries. T049 owns kill-switch actuation and emergency suspension; last-known-good
+  rollback remains T050. Scanner execution, waiver/finding mutation, external publication, AI
+  authority, and SCM writes remain independently gated elsewhere.
 
 ### T048 Deterministic Canary and Observation Boundary
 
@@ -167,7 +167,7 @@ command-line flags, rule code, templates, post-processors, or executable configu
   HMAC-SHA-256 over length-framed tenant, repository binding, profile, and rollout identity. The
   first eight digest bytes modulo 10,000 define the bucket. Application and database recompute
   it; only digest and bucket persist.
-- Planning applies compatibility -> lifecycle -> canary -> tenant policy. Candidate selection
+- Planning applies compatibility -> lifecycle -> canary -> kill switch -> tenant policy. Candidate selection
   requires the exact current rollout step/head and membership. A supplied candidate resolving to
   baseline or exclusion is rejected rather than rewritten after compatibility/lifecycle
   verification. Trusted orchestration supplies a separately verified exact `ACTIVE` baseline set
@@ -199,6 +199,71 @@ command-line flags, rule code, templates, post-processors, or executable configu
   passes create the sole immutable receipt accepted for that candidate's `CANARY -> ACTIVE` edge.
   The production observation-source port defaults unavailable until production qualification
   installs an exact durable adapter; T048 never fabricates evidence.
+
+### T049 Signed Kill-Switch and Emergency-Suspension Boundary
+
+- Every control is one signed, platform-managed, append-only `ACTIVATE | DEACTIVATE` decision
+  chain. Its selector, sequence/predecessor, incident, actor/role, reason, effective/review/expiry
+  times, rollback-target reference, signature/provenance references, and audit reference are
+  digest-bound. Security On-Call and Platform On-Call are the only accepted actor roles.
+- Selector scope is exact: global SAST, scanner/version, rule-bundle digest, semantic rule ID,
+  signed profile ID/digest, tenant, repository binding, capability, or global/tenant/repository
+  external publication. Customer input, mutable tags, repository/finding content, signature
+  bytes, provenance payloads, secrets, and arbitrary JSON are absent.
+- A decision cannot commit without an exact immutable trusted-signature/provenance verification.
+  The default production signature authority is deliberately unavailable until a qualified
+  adapter is installed. Every gate compares its boundary time with a service-owned trusted clock
+  under a bounded skew; caller-selected stale or future time is rejected. An invalid clock,
+  missing verification, broken/forked chain, future activation, active expired head, or
+  unavailable store is authority failure and fails closed.
+- The only mutable state is a database-trigger-owned selector head. Durable inactive
+  placeholders are created before ordered locks, closing the first-activation/absent-head race.
+  Direct head mutation and update/delete of any decision, verification, evaluation, or
+  suspension receipt are rejected by PostgreSQL.
+- Planning evaluates the complete content-free runtime context after canary and before tenant
+  policy. Only `CLEAR` produces a `sast-kill-switch-planning-v1` descriptor. The descriptor is
+  retained in the immutable plan but excluded from `sast-canonical-scan-key-v4`, because switch
+  state is mutable operational authority rather than fixed source identity.
+- Queue admission locks every applicable selector head in canonical order after lifecycle and
+  canary fences, reconstructs the content-free context and selector keys from the immutable plan,
+  and revalidates the context digest plus exact planning evaluation/head set. The database
+  insertion trigger independently compares the normalized global, tenant, repository, profile,
+  scanner-version, bundle, semantic-rule, and capability identities and their exact total against
+  that plan. A direct writer cannot omit an active selector, and a concurrent activation therefore
+  wins before admission or serializes after an already-authorized reservation.
+- Fresh purpose-bound evaluations occur at `SCANNER_START`, `ARTIFACT_ACCEPTANCE`,
+  `RETRY_ADMISSION`, `COVERAGE`, `EXTERNAL_PUBLICATION`, and `AI_ADVISORY`. Scanner evaluation
+  occurs only after creating the durable run and before any provider repository read or scanner
+  process; an active switch records `KILLED` and cleanup remains mandatory. Artifact acceptance
+  quarantines affected output, retry denies another attempt, and AI/publication calls receive no
+  downstream authority. Authority unavailability is retryable only where the surrounding
+  operational contract explicitly permits a safe retry; it never becomes `CLEAR`.
+  At artifact acceptance, T049 is an outer short-circuit only: `ACTIVE` quarantines before any
+  downstream authority call, while `CLEAR` must still pass the independent Data/Security Plane
+  acceptance authority. Its production default remains unavailable, so enabling kill-switch
+  reads cannot accidentally authorize artifact retention.
+- T037 lifecycle coverage consumes a composite authority: a fresh T049 `COVERAGE` evaluation is
+  the outer gate, and only `CLEAR` with `UNCHANGED` delegates to the independent T040 freshness/
+  comparability authority. `ACTIVE` returns rejected coverage and unavailable T049 authority
+  remains unavailable; neither condition invokes T040.
+- External comment planning and every comment-dispatch worker claim each perform a fresh
+  `EXTERNAL_PUBLICATION` evaluation over the persisted scan. Activation after planning therefore
+  prevents claim mutation and produces zero publisher calls; an unavailable authority returns no
+  publication authority.
+- Current effective coverage is projected independently from immutable T039 factual coverage.
+  Semantic-rule/capability-only matches yield `PARTIAL`, publication-only matches yield
+  `UNCHANGED`, and any affected scanner, bundle, profile, tenant, repository, or global runtime
+  scope yields `FAILED`. Historical findings and coverage decisions are never rewritten.
+- An active applicable global, bundle, scanner-version, semantic-rule, or exact signed-profile
+  decision can issue one immutable `sast-kill-switch-emergency-suspension-v1` receipt for the
+  exact latest `CANARY | ACTIVE -> SUSPENDED` edge. The lifecycle trigger rebinds its manifest,
+  bundle, transition, promotion evidence, active decision set, and time. It cannot authorize
+  `SUSPENDED -> ROLLED_BACK`; T050 remains a separate authority.
+- Canary automation accepts only a T048 step-decision ID/digest. Under lifecycle-then-canary head
+  locks it reloads the current immutable `PAUSED` decision, rollout, and normalized hard-failure
+  reasons and derives `CANARY_PAUSED` or `ZERO_TOLERANCE`. The manifest, bundle, signed profile,
+  lifecycle target, reason set, and time are never caller fields, and the signal itself grants no
+  activation, suspension, or rollback authority.
 
 ## Lifecycle
 
@@ -306,9 +371,10 @@ authorization than a single-finding waiver.
 ## Kill Switches
 
 Kill switches exist at scanner version, bundle digest, semantic rule ID, tenant, repository
-binding, capability, profile, external publication, and global SAST runtime scope. A switch is a
-versioned, signed control-plane decision with actor, reason, incident reference, activation time,
-expiry/review time, and rollback target.
+binding, capability, signed profile identity, external publication, and global SAST runtime
+scope. A switch is a versioned, signed, immutable control-plane decision chain with actor, reason,
+incident reference, effective time, expiry/review time, rollback target, exact signature/
+provenance verification, and a trigger-owned current head.
 
 - A disabled required scanner or required rule capability makes coverage partial/failed;
   it never silently reports complete coverage.
@@ -319,11 +385,14 @@ expiry/review time, and rollback target.
 - An external-publication switch denies comments and blocking decisions at the selected target
   scope while allowing safe internal normalization and dashboard processing to continue.
 - A global or scanner kill switch stops new plans and cancels only attempts that have not
-  crossed the safe cancellation boundary.
+  crossed the safe cancellation boundary: the durable run exists, but no provider repository
+  read or scanner execution has started.
 - Accepted artifacts from a killed version are quarantined until reviewed.
 - External comments, blocking decisions, and AI requests are denied for affected scans.
-- Kill-switch evaluation occurs at planning, immediately before scanner start, artifact
-  acceptance, and external publication.
+- Kill-switch evaluation occurs at planning, queue admission, immediately before scanner start,
+  artifact acceptance, retry admission, effective-coverage use, external publication, and AI
+  advisory. Each later gate uses a fresh trusted-time snapshot; it never trusts the planning
+  receipt as current authority.
 
 ## Rollback
 

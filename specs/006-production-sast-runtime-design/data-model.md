@@ -1012,8 +1012,8 @@ Every edge requires Security Engineering approval; transitions to `ACTIVE` or `R
 require Scan Platform or Security Operations. Exact external authority is mandatory only for
 `CANARY -> ACTIVE`, suspension, and rollback. Advisory locks, restrictive composite foreign
 keys, deferred approval-set validation, and mutation-rejection triggers prevent forked or
-partially approved histories. T048 installs `CANARY_OBSERVATION`; T049 emergency suspension and
-T050 rollback remain unavailable by default.
+partially approved histories. T048 installs `CANARY_OBSERVATION`; T049 installs exact
+`EMERGENCY_SUSPENSION`; T050 rollback remains unavailable by default.
 
 ### SastRuleBundleLifecycleHead
 
@@ -1117,6 +1117,71 @@ the six contiguous `PASSED` decisions and exact total observation interval. The 
 candidate, baseline, profile, rollout, and T047 evidence, stores no content, and is the sole
 digest-bound `CANARY_OBSERVATION` authority accepted for the exact candidate's
 `CANARY -> ACTIVE` lifecycle transition.
+
+### SastKillSwitchDecision
+
+One immutable platform-managed `ACTIVATE | DEACTIVATE` decision belongs to one canonical selector
+key for global SAST, scanner version, rule-bundle digest, semantic rule ID, signed profile,
+tenant, repository binding, capability, or scoped external publication. It stores the exact
+selector projection, monotonic sequence and predecessor ID/digest, bounded incident/actor/reason,
+effective/review/expiry times, rollback-target reference, signature/provenance/audit references,
+and canonical decision digest. The actor is limited to Security On-Call or Platform On-Call.
+Future activation, missing predecessor, forks, changed selector, and mutation are rejected. The
+row contains no signature bytes, provenance payload, source, finding, secret, or generic JSON.
+
+### SastKillSwitchVerification
+
+One immutable verification binds the exact decision ID/digest and selector key to a trusted
+signer, signature/provenance references, and trusted verification time. All verification facts
+are true and signature bytes/provenance payloads are absent. A deferred database constraint
+requires an exact verification in the same transaction as every decision, so an unsigned ledger
+entry cannot commit and an exact replay cannot substitute a different attestation.
+
+### SastKillSwitchHead
+
+A trigger-maintained, content-free projection exists for every applicable selector, including a
+durable sequence-zero inactive placeholder before first activation. It records only the latest
+decision binding, sequence/action, active bit, effective/expiry times, and canonical binding
+digest. Direct insert/update/delete is prohibited. Placeholder creation followed by ordered row
+locks closes the absent-head/first-activation race; an active expired head is invalid authority,
+not an implicit clear state.
+
+### SastKillSwitchEvaluation, SastKillSwitchEvaluationHead, and SastKillSwitchEvaluationMatch
+
+One immutable purpose-bound evaluation rebinds tenant, repository, scan, signed profile,
+scanner-set, content-free runtime context, gate, trusted evaluation time, complete selector-head
+snapshot, exact active-match set, outcome, and effective coverage projection. Normalized head
+children must equal every applicable selector exactly once and normalized match children must be
+the active subset. Deferred closed-set checks recompute counts and digests. `CLEAR` has no match
+and `UNCHANGED` coverage; semantic-rule/capability-only matches are `PARTIAL`; other runtime
+matches are `FAILED`; publication-only matches leave factual coverage unchanged. Planning keeps
+only a verified `CLEAR` descriptor in the immutable plan, while queue and later gates use fresh
+evaluations. Queue admission reconstructs the planning context and canonical selector keys from
+that immutable plan, compares its context digest and exact selector set in application code, and
+has PostgreSQL independently compare every normalized selector identity and total count. A
+content-valid receipt that omits one applicable inactive or active head therefore cannot reserve
+work through either write path.
+
+### SastKillSwitchEmergencySuspensionReceipt
+
+One immutable receipt binds an active applicable global, bundle, scanner-version, semantic-rule,
+or exact signed-profile decision set to the latest matching manifest/bundle, promotion evidence,
+and `CANARY | ACTIVE -> SUSPENDED` lifecycle transition. Restrictive composite keys and the
+lifecycle trigger reject stale, cross-bundle, deactivated, expired, or replay-substituted
+authority. It grants no `SUSPENDED -> ROLLED_BACK` authority and stores no customer content or
+secret material. Its reference is exactly
+`sast-kill-switch-suspension://authority/<receiptDigest>`, satisfying the existing lifecycle
+digest-bound reference contract without a circular identity preimage.
+
+### T048 Canary Suspension Signal Projection
+
+This projection is deliberately not another mutable or persisted authority row. A caller may
+submit only the exact T048 step-decision ID/digest. A serializable resolver locks the current
+lifecycle head before the canary head, reloads the immutable `PAUSED` decision, rollout, and
+normalized reasons, and derives a content-free `CANARY_PAUSED | ZERO_TOLERANCE` signal. Manifest,
+bundle, signed profile, lifecycle transition, reason set, and observation time all come from those
+durable rows; `customerTargetAccepted=false`. Stale/non-current decisions and any caller-supplied
+target fail closed before a kill-switch decision or lifecycle transition is attempted.
 
 ### SastQualityEvaluation
 

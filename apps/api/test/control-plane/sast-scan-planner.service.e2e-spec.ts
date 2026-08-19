@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto';
 import {
+  SastKillSwitchGate,
+  SastKillSwitchGateError
+} from '../../src/rule-governance/sast-kill-switch.gate';
+import {
   verifiedRuleBundleLifecycle,
   verifiedTenantRulePolicy
 } from '../support/sast-scan-plan-fixtures';
@@ -58,6 +62,28 @@ const signedArtifact = (character: string) => ({
   signatureRef: `signature://${character}`,
   provenanceRef: `provenance://${character}`
 });
+
+function clearKillSwitchGate(): SastKillSwitchGate {
+  return {
+    evaluateContext: jest.fn(
+      async (input: {
+        context: { contextDigest: `sha256:${string}` };
+        evaluatedAt: string;
+      }) => ({
+        receipt: {
+          gate: 'PLANNING',
+          outcome: 'CLEAR',
+          evaluationId: `sast-kill-switch-evaluation://${'e'.repeat(64)}`,
+          receiptDigest: digest('e'),
+          contextDigest: input.context.contextDigest,
+          snapshotDigest: digest('f'),
+          headSetDigest: digest('a'),
+          evaluatedAt: input.evaluatedAt
+        }
+      })
+    )
+  } as unknown as SastKillSwitchGate;
+}
 
 const ruleBundle = (scanner: 'OPENGREP' | 'TRIVY', character: string) => ({
   bundleId: `${scanner.toLowerCase()}-rules`,
@@ -370,7 +396,8 @@ async function createHarness(
   ruleBundleLifecycleGate: SastRuleBundleLifecycleGate =
     new AcceptingRuleBundleLifecycleGate(),
   ruleBundleCanaryGate: SastRuleBundleCanaryGate =
-    new AcceptingRuleBundleCanaryGate()
+    new AcceptingRuleBundleCanaryGate(),
+  killSwitchGate: SastKillSwitchGate = clearKillSwitchGate()
 ) {
   const scanRequestStore = new InMemoryControlPlaneScanRequestStore();
   const queueStore = new InMemorySastQueueAdmissionStore();
@@ -420,6 +447,7 @@ async function createHarness(
     tenantRulePolicyGate,
     ruleBundleLifecycleGate,
     ruleBundleCanaryGate,
+    killSwitchGate,
     policyEvaluationClock,
     planner: new SastScanPlannerService(
       controlPlane,
@@ -427,6 +455,7 @@ async function createHarness(
       ruleBundleCompatibilityGate,
       ruleBundleLifecycleGate,
       ruleBundleCanaryGate,
+      killSwitchGate,
       tenantRulePolicyGate,
       policyEvaluationClock
     ),
@@ -799,6 +828,7 @@ describe('SastScanPlannerService', () => {
       harness.ruleBundleCompatibilityGate,
       harness.ruleBundleLifecycleGate,
       harness.ruleBundleCanaryGate,
+      harness.killSwitchGate as never,
       harness.tenantRulePolicyGate,
       harness.policyEvaluationClock
     );
@@ -1789,6 +1819,47 @@ describe('SastScanPlannerService', () => {
       state: 'ADMITTED',
       reasonCodes: []
     });
+  });
+
+  it('rejects planning before queue admission when a kill switch is active', async () => {
+    const harness = await createHarness('FAST');
+    jest.spyOn(harness.killSwitchGate, 'evaluateContext').mockResolvedValue({
+      receipt: { outcome: 'ACTIVE' }
+    } as never);
+
+    const result = await harness.planner.plan(
+      buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id)
+    );
+
+    expect(result).toMatchObject({
+      planning: {
+        state: 'REJECTED',
+        reasonCodes: ['SAST_KILL_SWITCH_ACTIVE']
+      }
+    });
+    expect(result.plan).toBeUndefined();
+    await expect(
+      harness.queueStore.findReservation(harness.scanRequest.id)
+    ).resolves.toBeNull();
+  });
+
+  it('fails closed before queue admission when kill-switch authority is unavailable', async () => {
+    const harness = await createHarness('FAST');
+    jest
+      .spyOn(harness.killSwitchGate, 'evaluateContext')
+      .mockRejectedValue(new SastKillSwitchGateError('AUTHORITY_UNAVAILABLE'));
+
+    const result = await harness.planner.plan(
+      buildPlanningInput(harness.repositoryBindingId, harness.scanRequest.id)
+    );
+
+    expect(result.planning).toMatchObject({
+      state: 'REJECTED',
+      reasonCodes: ['SAST_KILL_SWITCH_AUTHORITY_UNAVAILABLE']
+    });
+    await expect(
+      harness.queueStore.findReservation(harness.scanRequest.id)
+    ).resolves.toBeNull();
   });
 
   it('does not let late planning rewrite a running scan', async () => {

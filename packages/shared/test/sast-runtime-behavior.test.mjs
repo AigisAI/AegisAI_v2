@@ -37,6 +37,15 @@ new Function('module', 'exports', transpile(canarySource).outputText)(
   canaryModule,
   canaryModule.exports
 );
+const killSwitchSource = readFileSync(
+  new URL('../src/types/sast-kill-switch.ts', import.meta.url),
+  'utf8'
+);
+const killSwitchModule = { exports: {} };
+new Function('module', 'exports', transpile(killSwitchSource).outputText)(
+  killSwitchModule,
+  killSwitchModule.exports
+);
 const source = readFileSync(new URL('../src/types/sast-runtime.ts', import.meta.url), 'utf8');
 const transpiled = transpile(source);
 const localModule = { exports: {} };
@@ -45,6 +54,7 @@ evaluateModule(localModule, localModule.exports, (specifier) => {
   if (specifier === './sast-rule-semantic-policy') return semanticModule.exports;
   if (specifier === './sast-rule-promotion-lifecycle') return lifecycleModule.exports;
   if (specifier === './sast-rule-bundle-canary') return canaryModule.exports;
+  if (specifier === './sast-kill-switch') return killSwitchModule.exports;
   throw new Error(`unsupported local module: ${specifier}`);
 });
 const runtime = localModule.exports;

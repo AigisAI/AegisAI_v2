@@ -20,6 +20,7 @@ import {
 } from '@aegisai/shared';
 
 import { RepositoryPreflightAttestationService } from '../../src/scan-plane/repository-preflight-attestation.service';
+import { SastKillSwitchGate } from '../../src/rule-governance/sast-kill-switch.gate';
 import { RepositoryPreflightService } from '../../src/scan-plane/repository-preflight.service';
 import { SandboxRuntimeAttestationService } from '../../src/scan-plane/sandbox-runtime-attestation.service';
 import { SastScannerRuntimeService } from '../../src/scan-plane/sast-scanner-runtime.service';
@@ -883,6 +884,31 @@ describe('Pinned scanner wrapper and sandbox lifecycle', () => {
     expect(malformedHarness.provider.executeScanner).not.toHaveBeenCalled();
   });
 
+  it('kills a durable scanner run before any provider read or execution when the switch is active', async () => {
+    const harness = buildHarness({
+      killSwitchGate: {
+        evaluatePlan: jest.fn().mockResolvedValue({
+          receipt: { outcome: 'ACTIVE' }
+        })
+      } as unknown as SastKillSwitchGate
+    });
+
+    await expect(harness.runtime.execute(harness.request)).rejects.toMatchObject({
+      reasonCode: 'SAST_KILL_SWITCH_ACTIVE',
+      failureClass: 'SECURITY_VIOLATION'
+    });
+    expect(harness.store.begunScannerRunIds).toHaveLength(1);
+    expect(harness.store.failedScannerRunIds).toEqual(
+      harness.store.begunScannerRunIds
+    );
+    expect(harness.provider.readRepositoryManifest).not.toHaveBeenCalled();
+    expect(harness.provider.executeScanner).not.toHaveBeenCalled();
+    expect(harness.store.finished).toMatchObject({
+      stage: 'FAILED',
+      reasonCode: 'SAST_KILL_SWITCH_ACTIVE'
+    });
+  });
+
   it('fails cleanup when durable credential revocation evidence is absent', async () => {
     const harness = buildHarness();
     harness.store.credentialCleanupDurable = false;
@@ -902,6 +928,7 @@ interface BuildHarnessOptions {
   profile?: SastScanPlan['profile'];
   selection?: Readonly<SastRepositoryPreflightSelection>;
   retryAdmission?: SastRetryAdmissionGate;
+  killSwitchGate?: SastKillSwitchGate;
 }
 
 function buildHarness(options: BuildHarnessOptions = {}): RuntimeHarness {
@@ -1029,6 +1056,15 @@ function buildHarness(options: BuildHarnessOptions = {}): RuntimeHarness {
     manifestVerifier,
     provider as unknown as ScannerSandboxRuntimeProvider,
     store,
+    options.killSwitchGate ??
+      ({
+        evaluatePlan: jest.fn(async (input: { evaluatedAt: string }) => ({
+          receipt: {
+            outcome: 'CLEAR',
+            evaluatedAt: input.evaluatedAt
+          }
+        }))
+      } as unknown as SastKillSwitchGate),
     options.retryAdmission
   );
 

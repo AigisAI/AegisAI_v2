@@ -10,6 +10,7 @@ import { ControlPlaneScanRequestStore } from '../../src/control-plane/control-pl
 import { SastQueueAdmissionStore } from '../../src/control-plane/sast-queue-admission.store';
 import { SastRuleBundleCompatibilityGate } from '../../src/rule-governance/sast-rule-bundle-compatibility.gate';
 import { SastRuleBundleLifecycleGate } from '../../src/rule-governance/sast-rule-bundle-lifecycle.gate';
+import { SastKillSwitchGate } from '../../src/rule-governance/sast-kill-switch.gate';
 import { SastTenantRulePolicyGate } from '../../src/rule-governance/sast-tenant-rule-policy.gate';
 import { InMemoryControlPlaneScanRequestStore } from '../support/in-memory-control-plane-scan-request.store';
 import { InMemorySastQueueAdmissionStore } from '../support/in-memory-sast-queue-admission.store';
@@ -252,6 +253,29 @@ describe("Control Plane skeleton (e2e)", () => {
       .useValue({
         resolve: async (input: { policyVersion: string }) =>
           verifiedTenantRulePolicy(input.policyVersion)
+      })
+      .overrideProvider(SastKillSwitchGate)
+      .useValue({
+        evaluateContext: async (input: {
+          context: { contextDigest: `sha256:${string}` };
+          evaluatedAt: string;
+        }) => ({
+          receipt: {
+            gate: 'PLANNING',
+            outcome: 'CLEAR',
+            evaluationId: `sast-kill-switch-evaluation://${'e'.repeat(64)}`,
+            receiptDigest: digest('e'),
+            contextDigest: input.context.contextDigest,
+            snapshotDigest: digest('f'),
+            headSetDigest: digest('a'),
+            evaluatedAt: input.evaluatedAt
+          },
+          heads: [],
+          matches: [],
+          replayed: false
+        }),
+        evaluatePlan: jest.fn(),
+        evaluatePersistedScan: jest.fn()
       })
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)

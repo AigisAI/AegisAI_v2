@@ -498,7 +498,12 @@ export class PrismaSastScannerRuntimeStore extends SastScannerRuntimeStore {
           unavailable: true
         },
         artifactMetadata: Prisma.JsonNull,
-        status: timedOut ? 'TIMED_OUT' : 'FAILED',
+        status:
+          reasonCode === 'SAST_KILL_SWITCH_ACTIVE'
+            ? 'KILLED'
+            : timedOut
+              ? 'TIMED_OUT'
+              : 'FAILED',
         errorMessage: reasonCode,
         completedAt: terminalAt
       }

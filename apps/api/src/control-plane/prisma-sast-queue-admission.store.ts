@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
@@ -5,6 +7,9 @@ import {
   SAST_PLANNING_REASON_CODES,
   SAST_PLANNING_STATES,
   SAST_PROFILE_IDS,
+  SAST_SCANNER_KINDS,
+  buildApplicableSastKillSwitchSelectors,
+  buildSastKillSwitchEvaluationContext,
   isSastScanPlanValid,
   orderSastQueueCandidatesFairly,
   type SastPlanningReasonCode,
@@ -74,7 +79,34 @@ interface LockedRuleBundleCanaryHeadRow {
   assignmentReceiptExists: boolean;
 }
 
+interface LockedKillSwitchEvaluationRow {
+  headCount: number;
+  matchedDecisionCount: number;
+  actualHeadCount: bigint;
+}
+
+interface LockedKillSwitchHeadRow {
+  bindingSelectorKey: string;
+  bindingSequence: number;
+  bindingDecisionId: string | null;
+  bindingDecisionDigest: string | null;
+  bindingAction: string | null;
+  bindingActive: boolean;
+  bindingEffectiveAt: Date | null;
+  bindingExpiresAt: Date | null;
+  currentSequence: number;
+  currentDecisionId: string | null;
+  currentDecisionDigest: string | null;
+  currentAction: string | null;
+  currentActive: boolean;
+  currentEffectiveAt: Date | null;
+  currentExpiresAt: Date | null;
+}
+
 class RetryableDispatchClaimConflict extends Error {}
+
+const digestCanonical = (value: string): `sha256:${string}` =>
+  `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 
 @Injectable()
 export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
@@ -110,6 +142,10 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
 
       await this.assertCurrentRuleBundleLifecycleHeads(transaction, input.plan);
       await this.assertCurrentRuleBundleCanaryAssignments(
+        transaction,
+        input.plan
+      );
+      await this.assertCurrentSastKillSwitchEvaluation(
         transaction,
         input.plan
       );
@@ -808,6 +844,141 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
           'SAST rule-bundle lifecycle changed before queue admission.'
         );
       }
+    }
+  }
+
+  private async assertCurrentSastKillSwitchEvaluation(
+    transaction: Prisma.TransactionClient,
+    plan: Readonly<SastScanPlan>
+  ): Promise<void> {
+    const projection = plan.killSwitchEvaluation;
+    if (!projection) {
+      throw new ConflictException(
+        'SAST queue admission requires a clear kill-switch evaluation.'
+      );
+    }
+    const context = buildSastKillSwitchEvaluationContext(
+      {
+        tenantId: plan.tenantId,
+        repositoryBindingId: plan.repositoryState.repositoryBindingId,
+        scanRequestId: plan.scanRequestId,
+        profileId: plan.profile.id,
+        profileDigest: plan.profileDigest,
+        scannerSetDigest: plan.scannerSet.scannerSetDigest,
+        scanners: SAST_SCANNER_KINDS.map((scanner) => ({
+          scanner,
+          scannerVersion: plan.scannerSet.scanners[scanner].version
+        })).sort((left, right) => left.scanner.localeCompare(right.scanner)),
+        ruleBundles: plan.scannerSet.ruleBundles
+          .map((bundle) => ({
+            bundleDigest: bundle.digest,
+            ruleSemanticIds: [
+              ...new Set(bundle.rules.map((rule) => rule.ruleSemanticId))
+            ].sort()
+          }))
+          .sort((left, right) =>
+            left.bundleDigest.localeCompare(right.bundleDigest)
+          ),
+        requiredCapabilities: [...plan.profile.requiredCapabilities]
+      },
+      digestCanonical
+    );
+    if (!context || context.contextDigest !== projection.contextDigest) {
+      throw new ConflictException(
+        'SAST kill-switch evaluation context does not match the immutable plan.'
+      );
+    }
+    const expectedSelectorKeys = buildApplicableSastKillSwitchSelectors(
+      context,
+      'PLANNING',
+      digestCanonical
+    ).map((entry) => entry.selectorKey);
+    const evaluatedAt = new Date(projection.evaluatedAt);
+    const evaluations = await transaction.$queryRaw<
+      LockedKillSwitchEvaluationRow[]
+    >`
+      SELECT
+        evaluation."headCount",
+        evaluation."matchedDecisionCount",
+        (SELECT count(*) FROM "SastKillSwitchEvaluationHead" binding
+          WHERE binding."evaluationId" = evaluation."id") AS "actualHeadCount"
+      FROM "SastKillSwitchEvaluation" evaluation
+      WHERE evaluation."id" = ${projection.evaluationId}
+        AND evaluation."receiptDigest" = ${projection.evaluationReceiptDigest}
+        AND evaluation."contextDigest" = ${projection.contextDigest}
+        AND evaluation."snapshotDigest" = ${projection.snapshotDigest}
+        AND evaluation."headSetDigest" = ${projection.headSetDigest}
+        AND evaluation."evaluatedAt" = ${evaluatedAt}
+        AND evaluation."gate" = 'PLANNING'
+        AND evaluation."outcome" = 'CLEAR'
+        AND evaluation."tenantId" = ${plan.tenantId}
+        AND evaluation."repositoryBindingId" = ${plan.repositoryState.repositoryBindingId}
+        AND evaluation."scanRequestId" = ${plan.scanRequestId}
+        AND evaluation."profileId" = ${plan.profile.id}
+        AND evaluation."profileDigest" = ${plan.profileDigest}
+        AND evaluation."scannerSetDigest" = ${plan.scannerSet.scannerSetDigest}
+    `;
+    const evaluation = evaluations[0];
+    if (
+      evaluations.length !== 1 ||
+      !evaluation ||
+      evaluation.matchedDecisionCount !== 0 ||
+      BigInt(evaluation.headCount) !== evaluation.actualHeadCount
+    ) {
+      throw new ConflictException(
+        'SAST kill-switch evaluation is unavailable or incomplete.'
+      );
+    }
+
+    const heads = await transaction.$queryRaw<LockedKillSwitchHeadRow[]>`
+      SELECT
+        binding."selectorKey" AS "bindingSelectorKey",
+        binding."sequence" AS "bindingSequence",
+        binding."decisionId" AS "bindingDecisionId",
+        binding."decisionDigest" AS "bindingDecisionDigest",
+        binding."action" AS "bindingAction",
+        binding."active" AS "bindingActive",
+        binding."effectiveAt" AS "bindingEffectiveAt",
+        binding."expiresAt" AS "bindingExpiresAt",
+        head."sequence" AS "currentSequence",
+        head."currentDecisionId" AS "currentDecisionId",
+        head."currentDecisionDigest" AS "currentDecisionDigest",
+        head."currentAction" AS "currentAction",
+        head."active" AS "currentActive",
+        head."effectiveAt" AS "currentEffectiveAt",
+        head."expiresAt" AS "currentExpiresAt"
+      FROM "SastKillSwitchEvaluationHead" binding
+      JOIN "SastKillSwitchHead" head
+        ON head."selectorKey" = binding."selectorKey"
+      WHERE binding."evaluationId" = ${projection.evaluationId}
+      ORDER BY binding."selectorKey"
+      FOR UPDATE OF head
+    `;
+    if (
+      heads.length !== evaluation.headCount ||
+      heads.length !== expectedSelectorKeys.length ||
+      heads.some(
+        (head, index) =>
+          head.bindingSelectorKey !== expectedSelectorKeys[index] ||
+          head.bindingSequence !== head.currentSequence ||
+          head.bindingDecisionId !== head.currentDecisionId ||
+          head.bindingDecisionDigest !== head.currentDecisionDigest ||
+          head.bindingAction !== head.currentAction ||
+          head.bindingActive !== head.currentActive ||
+          !this.timestampsEqual(
+            head.bindingEffectiveAt,
+            head.currentEffectiveAt?.toISOString()
+          ) ||
+          !this.timestampsEqual(
+            head.bindingExpiresAt,
+            head.currentExpiresAt?.toISOString()
+          ) ||
+          head.currentActive
+      )
+    ) {
+      throw new ConflictException(
+        'SAST kill-switch state changed before queue admission.'
+      );
     }
   }
 

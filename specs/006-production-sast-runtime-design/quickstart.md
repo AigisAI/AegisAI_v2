@@ -245,9 +245,10 @@ portion of Phase 6:
   seven days, and cannot finalize acceptance or quarantine at or after expiry. Only accepted
   artifacts are normalization-eligible, and durable decisions/audits contain no raw payload,
   object key, secret, or key material.
-- The T049 kill-switch engine will supply the authoritative acceptance-gate adapter. Until
-  that adapter and the production Data/Security disposition adapter are installed, both
-  defaults fail closed and valid rows remain pending rather than being implicitly accepted.
+- The T049 kill-switch engine supplies the authoritative acceptance-gate adapter. An affected
+  artifact is quarantined and unavailable authority remains retryable/fail-closed; until the
+  production Data/Security disposition adapter is installed, its independent default still
+  fails closed and valid rows remain pending rather than being implicitly accepted.
   The online `ScannerRun_runtime_metadata_v3_check` accepts legacy digest-version rows during
   rolling deployment while enforcing semantic schema versions and separate schema/normalizer
   digests for new rows, and removes v1/v2 only after v3 validation succeeds.
@@ -548,8 +549,8 @@ portion of Phase 6:
 - `sast-rule-bundle-lifecycle-transition-v1` is an append-only, previous-digest-linked state
   ledger. Only `DRAFT -> VALIDATED -> CANARY -> ACTIVE -> RETIRED`, `CANARY|ACTIVE -> SUSPENDED`,
   and `SUSPENDED -> ROLLED_BACK` are legal. T048 installs the exact canary-observation authority;
-  emergency suspension and rollback remain unavailable until T049 and T050 install their
-  independent authorities.
+  T049 installs exact active-switch emergency suspension, while rollback remains unavailable
+  until T050 installs its independent authority.
 - Before tenant policy, planning revalidates the latest lifecycle snapshot and persists a
   `sast-rule-bundle-lifecycle-selection-v1` receipt. Only latest `CANARY` or `ACTIVE` bundles are
   selectable. All selected bundle receipts are committed atomically under ordered manifest-row
@@ -584,7 +585,7 @@ portion of Phase 6:
   compatibility/lifecycle-verified descriptor. Trusted orchestration must submit the separately
   verified exact `ACTIVE` baseline scanner set for non-cohort production; excluded scopes are
   never silently assigned to the candidate. The
-  planner order is compatibility -> lifecycle -> canary -> tenant policy. Queue admission locks
+  planner order is compatibility -> lifecycle -> canary -> kill switch -> tenant policy. Queue admission locks
   and revalidates both lifecycle and canary heads so a pause or step change cannot enqueue a
   stale candidate plan.
 - `sast-canonical-scan-key-v4` adds only the stable rollout, membership, bucket, and
@@ -616,7 +617,42 @@ portion of Phase 6:
   `sast-rule-bundle-canary-observation-receipt-v1`, which the lifecycle authority router accepts
   solely for the exact `CANARY -> ACTIVE` transition. The default production observation source
   remains unavailable until a production-qualified adapter supplies the exact durable metrics;
-  it never fabricates evidence. T049 and T050 authorities remain unavailable.
+  it never fabricates evidence. T049 emergency suspension is installed; T050 rollback remains
+  unavailable.
+- T049 accepts only platform-managed, signed, append-only `ACTIVATE | DEACTIVATE` decisions for
+  canonical global SAST, scanner/version, bundle digest, semantic rule, signed profile,
+  tenant, repository-binding, capability, and scoped external-publication selectors. Decisions
+  bind sequence/predecessor, actor role, incident/reason, effective/review/expiry times,
+  rollback-target, signature/provenance, and audit references. An exact immutable verification
+  must commit with each decision; invalid/future/forked/expired-active/unavailable authority fails
+  closed. Every boundary time must also remain within the bounded skew of the service-owned
+  trusted clock; a caller-selected stale or future time cannot replay a prior clear evaluation.
+  The production signature port deliberately defaults unavailable until qualified.
+- Trigger-owned selector heads and durable inactive placeholders close the absent-head first-
+  activation race. Planning runs after canary and before tenant policy and retains only a
+  `CLEAR` evaluation descriptor in the immutable plan. It does not change
+  `sast-canonical-scan-key-v4`. Queue admission reconstructs the plan context and canonical keys,
+  then locks/revalidates the exact complete head set; the database independently compares every
+  selector identity and the closed-set count before accepting a direct insert.
+- Fresh gates cover scanner start, artifact acceptance, retry, effective coverage, external
+  publication, and AI advisory. Scanner cancellation happens after its durable run is created
+  but before any provider repository read or scanner execution, records `KILLED`, and preserves
+  cleanup. Affected artifacts quarantine before downstream acceptance; a clear switch still
+  delegates to the independently unavailable-by-default Data/Security acceptance port. Retries,
+  publisher calls, and model calls are denied when affected. Effective lifecycle coverage first
+  requires a fresh T049 `COVERAGE` evaluation and delegates only a clear result to the independent
+  T040 coverage authority; active scope never reaches that authority. External comment planning
+  and every worker claim independently re-evaluate `EXTERNAL_PUBLICATION`, so activation between
+  those boundaries yields zero claims and publisher calls. Current `PARTIAL | FAILED` effective
+  coverage is separate from immutable T039 history.
+- An active applicable global/bundle/scanner-version/semantic-rule/exact-profile decision set can
+  issue the sole digest-bound `EMERGENCY_SUSPENSION` receipt for an exact latest
+  `CANARY | ACTIVE -> SUSPENDED` edge. Its reference ends in its exact receipt digest, matching
+  the lifecycle authority contract. It cannot authorize T050 rollback.
+- Automatic canary input contains only the exact T048 step-decision ID/digest. A serializable
+  lifecycle-then-canary lock derives the current `PAUSED`/zero-tolerance signal and all manifest,
+  bundle, signed-profile, transition, reason, and time bindings from durable rows; caller targets
+  and stale/non-paused decisions fail closed. The signal itself has zero mutation authority.
 
 This checkpoint proves the provider-facing execution contract but does not claim that the
 provider microVM platform is live. The non-production opaque credential issuer and test
@@ -638,11 +674,29 @@ resolution receipts, and canonical-plan/queue gating are also complete. T047 qua
 promotion evidence, independent approvals, append-only lifecycle transitions, latest-state
 selection receipts, and canonical v3 planning gates are complete. T048 deterministic
 tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step promotion
-authority, queue-head fencing, and canonical v4 planning gates are complete; T049 scanner,
-bundle, rule, profile, tenant, repository, capability, publication, and global kill switches
-are the next implementation task.
+  authority, queue-head fencing, and canonical v4 planning gates are complete. T049 signed
+  scanner, bundle, rule, profile, tenant, repository, capability, publication, and global kill
+  switches, full runtime propagation, and emergency-suspension authority are complete; T050
+  last-known-good rollback without historical mutation is the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
+
+### T049 Validation Checkpoint
+
+- Shared kill-switch contract tests cover canonical selectors/context, decision and verification
+  shape, complete evaluation/head/match sets, coverage effects, planning descriptors, active
+  expiry, and emergency-suspension receipts.
+- API boundary tests cover planning active/unavailable denial, plan-context and complete-selector
+  queue revalidation,
+  scanner cancellation before provider/scanner calls, artifact quarantine, retry denial, AI
+  denial, lifecycle routing, persistence structure, and database-trigger invariants.
+- A clean PostgreSQL 16.4 database applies every migration through
+  `20260819180000_sast_kill_switch_authority`; online-schema validation passes. Direct SQL proves
+  signed activation, sequential signed deactivation, immutable-ledger rejection, and deferred
+  rejection/rollback of an unsigned decision.
+- Repository completion still requires the standard commands below on the final branch. Live
+  signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
+  remain fail-closed rollout dependencies rather than fabricated local evidence.
 
 ## Deployment Position
 

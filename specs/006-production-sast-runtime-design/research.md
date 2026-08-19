@@ -462,9 +462,9 @@ AI payload.
 `sast-scan-retry-decision-v1` is written before attempt two. It rechecks the immediately
 preceding durable attempt-one failure/audit tuple plus mutable scanner-set and kill-switch
 authority, while preserving immutable scan intent and requiring new attempt, sandbox, and
-workload identities. The default target and mutable-runtime authorities are unavailable, so
-the repository remains fail closed until live read-only provider and T049 governance adapters
-are installed.
+workload identities. T049 installs the mutable-runtime gate, while the target provider and
+production signature authority default unavailable; the repository remains fail closed until
+qualified live adapters are installed.
 
 **Rationale**: Scanner completeness cannot prove that a provider target has not advanced,
 and an old retry-eligible bit cannot prove that current runtime assets remain safe. Separate
@@ -597,3 +597,61 @@ reads without a writer fence, storing advisory or policy JSON
 in the proof, allowing AI-suggested actions and merely ignoring them, regex-only lifecycle key
 blocking, mutating the authoritative row to mark it checked, creating more than one proof per
 advisory, or cascading normal tenant deletion through the immutable audit ledger.
+
+## Decision 27: Keep Kill-Switch Authority Mutable, Signed, and Outside Canonical Scan Identity
+
+**Decision**: T049 models every SAST kill switch as a platform-managed, signed, append-only
+`ACTIVATE | DEACTIVATE` decision chain over one canonical selector. Selectors cover global SAST,
+scanner version, rule-bundle digest, semantic rule ID, signed profile identity, tenant,
+repository binding, capability, and global/tenant/repository external-publication scope. Every
+decision binds its sequence and predecessor, actor role, reason, incident, effective/review/
+expiry times, rollback target, signature/provenance references, and audit reference. A separate
+immutable verification row attests the exact decision digest; a trigger-owned selector head is
+the only mutable projection. Missing verification, an invalid chain, a future activation, or an
+active decision at or after expiry is unavailable authority and fails closed.
+Every runtime boundary also validates its supplied time against a service-owned trusted clock
+with bounded skew, so a stale or future caller timestamp cannot preserve an earlier clear view.
+
+Planning evaluates the complete content-free selector set after compatibility, lifecycle, and
+canary selection but before tenant policy, persists an immutable `CLEAR` receipt in the plan,
+and leaves the `sast-canonical-scan-key-v4` preimage unchanged. Queue admission locks all
+applicable selector heads in canonical order, reconstructs the context digest and canonical keys
+from the immutable plan, and verifies that exact receipt/head snapshot again. PostgreSQL also
+derives every normalized planning selector identity and the closed-set count from the plan before
+a direct reservation insert, so an internally consistent receipt cannot omit an active head.
+Scanner start, artifact acceptance, retry admission, coverage, external publication, and AI
+advisory each obtain a fresh purpose-bound evaluation. An active switch cancels a scanner only
+after the durable run exists and before the first provider repository read or scanner execution;
+accepted output from an affected run is quarantined, retries are denied, and affected AI or
+publication side effects receive no authority. Historical T039 facts remain immutable; the
+current evaluation separately projects `UNCHANGED | PARTIAL | FAILED` effective coverage.
+T037 lifecycle coverage composes that fresh `COVERAGE` evaluation outside the independent T040
+freshness/comparability authority and delegates only a clear, unchanged result. External comment
+planning and each dispatch-worker claim separately evaluate `EXTERNAL_PUBLICATION`, preventing an
+activation between plan and claim from producing a claim or publisher call.
+Artifact acceptance remains a two-authority chain: T049 can short-circuit to quarantine, but a
+clear switch must still pass the independently unavailable-by-default Data/Security acceptance
+port and therefore cannot widen T031 authority.
+
+For a matching active global, bundle, scanner-version, semantic-rule, or signed-profile selector,
+the same authority may issue one digest-bound `EMERGENCY_SUSPENSION` receipt for the exact latest
+`CANARY | ACTIVE -> SUSPENDED` lifecycle edge. The receipt cannot authorize rollback, mutate an
+old plan/finding, or select a replacement bundle; last-known-good rollback remains T050. A
+separate exact two-reference request can resolve a content-free automatic-suspension signal from
+the locked current T048 `PAUSED` decision, rollout, lifecycle head, and normalized reason set.
+The caller cannot supply a manifest, bundle, profile, lifecycle target, pause reason, or
+zero-tolerance claim.
+
+**Rationale**: Including live switch state in the canonical key would split identical fixed-
+commit work whenever operations toggled a control, while checking it only once would admit a
+plan-to-execution race. An immutable planning receipt plus locked admission and fresh side-effect
+gates preserves stable scan identity and historical truth while making current operational
+authority fail closed and auditable.
+
+**Rejected**: Mutable database booleans, unsigned operator input, decision overwrite, expiry
+treated as deactivation, absent selector rows interpreted without a locked placeholder, changing
+canonical scan key v4, trusting only the planning-time receipt, killing a scanner after provider
+access begins, accepting artifacts from a killed run, deriving current coverage by rewriting
+T039, using external-publication scope to disable unrelated internal processing, or allowing a
+kill switch to perform T050 rollback, trusting a receipt's own head count without comparing it to
+the immutable plan, or trusting a caller-provided canary target/signal.
