@@ -14,8 +14,8 @@ microVM platform is live. Provider-specific deployment execution remains governe
 Issue #276 is an explicitly reclassified adjacent bootstrap, not a new production slice.
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
-that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040 through T050 independently and now proceeds to the T051 qualification corpus.
+  that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
+  T040 through T051 independently and now proceeds to the T052 multi-class qualification corpora.
 
 ## Target Boundaries
 
@@ -210,7 +210,14 @@ allow only the exact `SUSPENDED -> ROLLED_BACK` append. The receipt provides a b
 identity but no scanner-set mutation authority, so trusted orchestration must separately select
 the still-`ACTIVE` baseline and pass the existing T045 -> T047 -> T048 -> T049 -> T046 planning
 chain. Historical manifests, plans, findings, coverage, evidence, and the baseline are unchanged.
-T051 is the next implementation task.
+T051 immutable golden corpus is complete: an exact shared case/snapshot contract, deterministic
+generator, and root-confined loader bind 800 paired cases and 40 platform-owned source bundles
+to canonical digests, source ranges, unique materialization paths, profile/rule minima, and the
+complete prior Critical/High must-detect set. A separate exact-key manifest authenticates the 400
+historical bindings, pins its reviewed digest in code, refuses overwrite, and keeps later positives
+outside the historical denominator. Negative kinds use distinct applicable behavior rather than
+uniform labels. It grants no runtime or finding authority and does
+not execute source. T052 is the next implementation task.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 
@@ -230,6 +237,12 @@ kill switches, rollback, and audit. Scanner/database/schema assets are pre-mirro
 Run golden, regression, malicious, parser, privacy, performance, integration, and end-to-end
 gates. Produce a machine-readable go/no-go record. Hand live cluster/microVM rollout to the
 005 operations flow only after every 006 design/implementation gate is satisfied.
+
+T051 supplies only the immutable golden positive/negative and independently manifested prior
+must-detect input authority.
+T052 adds schema/parser, malicious-repository, fingerprint/correlation, evidence/privacy, and
+performance corpora. T053 is the first slice that materializes cases into a production-equivalent
+isolated scanner environment; no T051 artifact is customer content or an executable build input.
 
 ## Key Interfaces
 

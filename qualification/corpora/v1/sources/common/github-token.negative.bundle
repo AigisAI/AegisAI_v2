@@ -1,0 +1,139 @@
+<<<T051:t051.github-token.negative.001>>>
+# t051.github-token.negative.001
+# t051-negative-kind: PATCHED
+GITHUB_TOKEN_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.001>>>
+
+<<<T051:t051.github-token.negative.002>>>
+# t051.github-token.negative.002
+# t051-negative-kind: SANITIZER
+GITHUB_TOKEN=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.002>>>
+
+<<<T051:t051.github-token.negative.003>>>
+# t051.github-token.negative.003
+# t051-negative-kind: SAFE_API
+GITHUB_TOKEN_REF=secret://qualification/github_token
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.003>>>
+
+<<<T051:t051.github-token.negative.004>>>
+# t051.github-token.negative.004
+# t051-negative-kind: GENERATED_OR_VENDOR
+GITHUB_TOKEN=ghp_g34D78373B2451229EC6758F0279F7F1B9F1
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.004>>>
+
+<<<T051:t051.github-token.negative.005>>>
+# t051.github-token.negative.005
+# t051-negative-kind: PATCHED
+GITHUB_TOKEN_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.005>>>
+
+<<<T051:t051.github-token.negative.006>>>
+# t051.github-token.negative.006
+# t051-negative-kind: SANITIZER
+GITHUB_TOKEN=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.006>>>
+
+<<<T051:t051.github-token.negative.007>>>
+# t051.github-token.negative.007
+# t051-negative-kind: SAFE_API
+GITHUB_TOKEN_REF=secret://qualification/github_token
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.007>>>
+
+<<<T051:t051.github-token.negative.008>>>
+# t051.github-token.negative.008
+# t051-negative-kind: GENERATED_OR_VENDOR
+GITHUB_TOKEN=ghp_g8DB0868F779A1DF5C6675D6019C192D4E59
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.008>>>
+
+<<<T051:t051.github-token.negative.009>>>
+# t051.github-token.negative.009
+# t051-negative-kind: PATCHED
+GITHUB_TOKEN_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.009>>>
+
+<<<T051:t051.github-token.negative.010>>>
+# t051.github-token.negative.010
+# t051-negative-kind: SANITIZER
+GITHUB_TOKEN=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.010>>>
+
+<<<T051:t051.github-token.negative.011>>>
+# t051.github-token.negative.011
+# t051-negative-kind: SAFE_API
+GITHUB_TOKEN_REF=secret://qualification/github_token
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.011>>>
+
+<<<T051:t051.github-token.negative.012>>>
+# t051.github-token.negative.012
+# t051-negative-kind: GENERATED_OR_VENDOR
+GITHUB_TOKEN=ghp_gEE52038B74F900C7530509C4F2B729A58AA
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.012>>>
+
+<<<T051:t051.github-token.negative.013>>>
+# t051.github-token.negative.013
+# t051-negative-kind: PATCHED
+GITHUB_TOKEN_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.013>>>
+
+<<<T051:t051.github-token.negative.014>>>
+# t051.github-token.negative.014
+# t051-negative-kind: SANITIZER
+GITHUB_TOKEN=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.014>>>
+
+<<<T051:t051.github-token.negative.015>>>
+# t051.github-token.negative.015
+# t051-negative-kind: SAFE_API
+GITHUB_TOKEN_REF=secret://qualification/github_token
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.015>>>
+
+<<<T051:t051.github-token.negative.016>>>
+# t051.github-token.negative.016
+# t051-negative-kind: GENERATED_OR_VENDOR
+GITHUB_TOKEN=ghp_g3EB03C61E5DC988FDCD8DA9283962A7A3E5
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.016>>>
+
+<<<T051:t051.github-token.negative.017>>>
+# t051.github-token.negative.017
+# t051-negative-kind: PATCHED
+GITHUB_TOKEN_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.017>>>
+
+<<<T051:t051.github-token.negative.018>>>
+# t051.github-token.negative.018
+# t051-negative-kind: SANITIZER
+GITHUB_TOKEN=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.018>>>
+
+<<<T051:t051.github-token.negative.019>>>
+# t051.github-token.negative.019
+# t051-negative-kind: SAFE_API
+GITHUB_TOKEN_REF=secret://qualification/github_token
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.019>>>
+
+<<<T051:t051.github-token.negative.020>>>
+# t051.github-token.negative.020
+# t051-negative-kind: GENERATED_OR_VENDOR
+GITHUB_TOKEN=ghp_g7D164E6A455D6A5E6CE60D7C23F4C192426
+QUALIFICATION_FIXTURE=true
+<<<END:t051.github-token.negative.020>>>

@@ -63,6 +63,7 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Kill-switch downstream authority bypass | Affected work retries, reports complete effective coverage, calls AI, or publishes externally by trusting its old plan | Fresh retry/coverage/AI/publication evaluations; explicit effective-coverage projection; plan receipt is never current authority; external-publication selectors are independently scoped | Between-gate activation corpus asserts retry denial, partial/failed coverage, zero model/publisher calls, and unchanged T039 history |
 | Emergency-suspension receipt replay | A valid active switch suspends a different/stale bundle, is reused after deactivation/expiry, or authorizes rollback | Exact latest lifecycle/bundle/evidence and active-decision-set binding under locks and restrictive keys; authority limited to `CANARY\|ACTIVE -> SUSPENDED` | Cross-bundle/profile, stale transition, changed decision set, deactivated/expired, replay-conflict, and rollback denial tests |
 | Rollback target substitution or race | A caller, customer, AI output, scanner result, stale receipt, or concurrent head change selects another baseline, rolls back an unsuspended candidate, mutates history, or widens authority | No target in request; derive only from original T047 evidence; reverify both T045 attestations and T049 suspension provenance; fresh signed dual control; canonical two-head locks; append-only narrow receipt and commit-time trigger | Unknown target field, cross-evidence/bundle/profile, self/duplicate/stale approval, unavailable signature, forged direct insert, candidate/baseline drift, concurrent exact replay, mutation/delete, and unchanged baseline/history probes |
+| Qualification corpus substitution or path escape | A changed denominator, forged expected result, mutable source, duplicate materialization path, symlink/junction, encoding ambiguity, or oversized/extra file is accepted as reviewed golden input | Exact versioned case/snapshot contracts; deterministic in-memory regeneration; digest-derived identity; owner/license/digest-bound provenance; paired counts and floors; unique root-confined paths; byte-exact source set; canonical UTF-8/LF/NFC; no-link and bounded-input loader | Snapshot/count/digest/pair/path/authority tamper, source drift, CRLF/oversize/extra-file, symlink/junction, malformed nested shape, and deterministic reorder tests; zero scanner or promotion authority from validation |
 | Canary suspension-signal forgery | A caller labels a rollout paused/zero-tolerance or supplies a different manifest, bundle, profile, reason, or lifecycle target | Exact two-reference request; immutable T048 decision/rollout/reason reload; lifecycle-then-canary head locks; every target derived; signal has zero mutation authority | Extra-target, changed digest, non-current/non-paused head, reason omission/order, cross-rollout/lifecycle, and zero-authority tests |
 | Rule metadata/manifest digest cycle or drift | Metadata embeds a manifest digest while the signed manifest embeds the metadata digest, or a later bundle silently changes the binding | Separate reusable metadata content from an immutable exact manifest binding; composite manifest/rule/metadata foreign keys | Cross-manifest reuse and projection-tamper tests; insert rejection |
 | Coordinate-attestation downgrade | Supplied unverified or drifted attestation is treated as unavailable metadata | Distinguish provider absence from supplied drift; reject drift before artifact reads | Negative binding corpus; zero body-read assertion |
@@ -98,6 +99,8 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Cross-tenant object access | Object key or query omits tenant | Tenant/scan prefix, encryption context, tenant predicate, purpose-bound reads | Negative tests and access audit |
 | Cache poisoning | Customer content enters shared cache | Shared cache only for signed public tool/rule/database assets | Cache inventory and digest monitoring |
 | Rule supply-chain attack | Malicious rule or database promoted | Signed digest, provenance, two-person security approval, corpus gates, canary | Automatic rollback/kill switch |
+| Prior-release denominator erasure | A new corpus revision drops or changes a historical must-detect case and derives an apparently perfect denominator from remaining positives | Separate exact-binding prior-release manifest, canonical manifest/release digests, reviewed digest pin outside the file, overwrite refusal, and snapshot completeness rebind | Missing/changed case, forged manifest/reference, and later-positive fixtures fail closed |
+| Negative-class label forgery | A fixture claims sanitizer, safe-API, comment, or generated exclusion while reusing unrelated source behavior | Per-family applicable-kind policy, distinct source rendering, unsafe generated/vendor construct under excluded path, and source-range behavior assertions | All 400 negatives match declared behavior; inapplicable classes are absent |
 | Dependency database drift | Sandbox downloads latest data | Mirror and pin digest outside runtime | Audit version per finding/scan |
 | Retry replay | Same attempt/result is processed twice | Canonical scan identity, unique attempt, artifact digest idempotency | Duplicate events ignored and audited |
 | Stale publication | Old commit result comments on newer PR, or a worker claims an outbox item after a kill switch activates | Latest-context comparison plus fresh `EXTERNAL_PUBLICATION` evaluation at both comment planning and every worker claim | Target stale publication count = zero; between-plan-and-claim activation yields zero claims and publisher calls |
@@ -199,6 +202,12 @@ The following must always remain true:
     baseline plus fresh signed independent dual approval, locks both heads canonically, and
     appends only one `ROLLED_BACK` transition. The receipt has no scanner-set or downstream
     authority and every baseline and historical row remains unchanged.
+23. Golden qualification input cannot drift between review and use. T051 validates a separately
+    manifested and code-pinned historical denominator before regenerating one exact platform-owned
+    snapshot, requires complete paired profile/rule/prior denominators,
+    rebinds all source bytes, ranges, anchors, and unique root-confined materialization paths, and
+    rejects links, ambiguous text, extra files, mutable metadata, or executable/customer inputs.
+    Successful validation grants no detection, finding, promotion, or deployment authority.
 
 ## Required Security Test Corpus
 
@@ -206,6 +215,10 @@ The following must always remain true:
 - Unicode normalization and case-fold collisions
 - root-escaping, cyclic, and deeply nested symlinks
 - oversized files, excessive file count/depth, sparse files, inode exhaustion
+- T051 prior-manifest deletion/mutation/forgery, later-positive denominator separation,
+  negative-kind semantic mismatch, snapshot/count/digest/pair/profile/rule-floor drift, unknown
+  fields, duplicate scan paths, source-byte/range/anchor drift, CRLF/BOM/NUL/non-UTF-8/non-NFC
+  text, extra root/source entries, symlink/junction traversal, and filesystem identity substitution
 - archive and compression bombs even though expansion is disabled
 - malformed SARIF, Trivy JSON, CycloneDX JSON, deep nesting, duplicate keys, invalid UTF-8
 - foreign/multi-run OpenGrep SARIF, notification-bearing invocation, duplicate/missing rule

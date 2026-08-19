@@ -1,0 +1,247 @@
+<<<T051:t051.path-traversal.negative.001>>>
+// t051.path-traversal.negative.001
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class PathTraversalNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    java.nio.file.Path path001 = java.nio.file.Path.of("/srv/data/fixed.txt");
+    java.nio.file.Files.readString(path001);
+  }
+}
+<<<END:t051.path-traversal.negative.001>>>
+
+<<<T051:t051.path-traversal.negative.002>>>
+// t051.path-traversal.negative.002
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class PathTraversalNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    String sanitized002 = headerValue002.replaceAll("[^A-Za-z0-9._-]", "");
+    java.nio.file.Path path002 = java.nio.file.Path.of("/srv/data").resolve(sanitized002);
+    java.nio.file.Files.readString(path002);
+  }
+}
+<<<END:t051.path-traversal.negative.002>>>
+
+<<<T051:t051.path-traversal.negative.003>>>
+// t051.path-traversal.negative.003
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class PathTraversalNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    java.nio.file.Path root003 = java.nio.file.Path.of("/srv/data").normalize();
+    java.nio.file.Path path003 = root003.resolve(cookieValue003).normalize();
+    if (!path003.startsWith(root003)) throw new SecurityException();
+    java.nio.file.Files.readString(path003);
+  }
+}
+<<<END:t051.path-traversal.negative.003>>>
+
+<<<T051:t051.path-traversal.negative.004>>>
+// t051.path-traversal.negative.004
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class PathTraversalNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    // documentation only: java.nio.file.Path path004 = java.nio.file.Paths.get("/srv/data", pathVariable004);
+    System.out.print(pathVariable004.length());
+  }
+}
+<<<END:t051.path-traversal.negative.004>>>
+
+<<<T051:t051.path-traversal.negative.005>>>
+// t051.path-traversal.negative.005
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class PathTraversalNegative005 {
+  void evaluate(String formField005) throws Exception {
+    java.nio.file.Path path005 = java.nio.file.Paths.get("/srv/data", formField005);
+  }
+}
+<<<END:t051.path-traversal.negative.005>>>
+
+<<<T051:t051.path-traversal.negative.006>>>
+// t051.path-traversal.negative.006
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class PathTraversalNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    java.nio.file.Path path006 = java.nio.file.Path.of("/srv/data/fixed.txt");
+    java.nio.file.Files.readString(path006);
+  }
+}
+<<<END:t051.path-traversal.negative.006>>>
+
+<<<T051:t051.path-traversal.negative.007>>>
+// t051.path-traversal.negative.007
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class PathTraversalNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    String sanitized007 = xmlValue007.replaceAll("[^A-Za-z0-9._-]", "");
+    java.nio.file.Path path007 = java.nio.file.Path.of("/srv/data").resolve(sanitized007);
+    java.nio.file.Files.readString(path007);
+  }
+}
+<<<END:t051.path-traversal.negative.007>>>
+
+<<<T051:t051.path-traversal.negative.008>>>
+// t051.path-traversal.negative.008
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class PathTraversalNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    java.nio.file.Path root008 = java.nio.file.Path.of("/srv/data").normalize();
+    java.nio.file.Path path008 = root008.resolve(messageBody008).normalize();
+    if (!path008.startsWith(root008)) throw new SecurityException();
+    java.nio.file.Files.readString(path008);
+  }
+}
+<<<END:t051.path-traversal.negative.008>>>
+
+<<<T051:t051.path-traversal.negative.009>>>
+// t051.path-traversal.negative.009
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class PathTraversalNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    // documentation only: java.nio.file.Path path009 = java.nio.file.Paths.get("/srv/data", queueAttribute009);
+    System.out.print(queueAttribute009.length());
+  }
+}
+<<<END:t051.path-traversal.negative.009>>>
+
+<<<T051:t051.path-traversal.negative.010>>>
+// t051.path-traversal.negative.010
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class PathTraversalNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    java.nio.file.Path path010 = java.nio.file.Paths.get("/srv/data", rpcArgument010);
+  }
+}
+<<<END:t051.path-traversal.negative.010>>>
+
+<<<T051:t051.path-traversal.negative.011>>>
+// t051.path-traversal.negative.011
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class PathTraversalNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    java.nio.file.Path path011 = java.nio.file.Path.of("/srv/data/fixed.txt");
+    java.nio.file.Files.readString(path011);
+  }
+}
+<<<END:t051.path-traversal.negative.011>>>
+
+<<<T051:t051.path-traversal.negative.012>>>
+// t051.path-traversal.negative.012
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class PathTraversalNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    String sanitized012 = csvColumn012.replaceAll("[^A-Za-z0-9._-]", "");
+    java.nio.file.Path path012 = java.nio.file.Path.of("/srv/data").resolve(sanitized012);
+    java.nio.file.Files.readString(path012);
+  }
+}
+<<<END:t051.path-traversal.negative.012>>>
+
+<<<T051:t051.path-traversal.negative.013>>>
+// t051.path-traversal.negative.013
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class PathTraversalNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    java.nio.file.Path root013 = java.nio.file.Path.of("/srv/data").normalize();
+    java.nio.file.Path path013 = root013.resolve(yamlProperty013).normalize();
+    if (!path013.startsWith(root013)) throw new SecurityException();
+    java.nio.file.Files.readString(path013);
+  }
+}
+<<<END:t051.path-traversal.negative.013>>>
+
+<<<T051:t051.path-traversal.negative.014>>>
+// t051.path-traversal.negative.014
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class PathTraversalNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    // documentation only: java.nio.file.Path path014 = java.nio.file.Paths.get("/srv/data", configValue014);
+    System.out.print(configValue014.length());
+  }
+}
+<<<END:t051.path-traversal.negative.014>>>
+
+<<<T051:t051.path-traversal.negative.015>>>
+// t051.path-traversal.negative.015
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class PathTraversalNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    java.nio.file.Path path015 = java.nio.file.Paths.get("/srv/data", environmentValue015);
+  }
+}
+<<<END:t051.path-traversal.negative.015>>>
+
+<<<T051:t051.path-traversal.negative.016>>>
+// t051.path-traversal.negative.016
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class PathTraversalNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    java.nio.file.Path path016 = java.nio.file.Path.of("/srv/data/fixed.txt");
+    java.nio.file.Files.readString(path016);
+  }
+}
+<<<END:t051.path-traversal.negative.016>>>
+
+<<<T051:t051.path-traversal.negative.017>>>
+// t051.path-traversal.negative.017
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class PathTraversalNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    String sanitized017 = metadataValue017.replaceAll("[^A-Za-z0-9._-]", "");
+    java.nio.file.Path path017 = java.nio.file.Path.of("/srv/data").resolve(sanitized017);
+    java.nio.file.Files.readString(path017);
+  }
+}
+<<<END:t051.path-traversal.negative.017>>>
+
+<<<T051:t051.path-traversal.negative.018>>>
+// t051.path-traversal.negative.018
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class PathTraversalNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    java.nio.file.Path root018 = java.nio.file.Path.of("/srv/data").normalize();
+    java.nio.file.Path path018 = root018.resolve(recordField018).normalize();
+    if (!path018.startsWith(root018)) throw new SecurityException();
+    java.nio.file.Files.readString(path018);
+  }
+}
+<<<END:t051.path-traversal.negative.018>>>
+
+<<<T051:t051.path-traversal.negative.019>>>
+// t051.path-traversal.negative.019
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class PathTraversalNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    // documentation only: java.nio.file.Path path019 = java.nio.file.Paths.get("/srv/data", importedValue019);
+    System.out.print(importedValue019.length());
+  }
+}
+<<<END:t051.path-traversal.negative.019>>>
+
+<<<T051:t051.path-traversal.negative.020>>>
+// t051.path-traversal.negative.020
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class PathTraversalNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    java.nio.file.Path path020 = java.nio.file.Paths.get("/srv/data", requestAttribute020);
+  }
+}
+<<<END:t051.path-traversal.negative.020>>>

@@ -521,6 +521,45 @@ PostgreSQL 16 database, run the opt-in application/Prisma rollback probe after m
 prove direct-write denial, both head-drift denials, concurrent exact replay, one append-only
 success, immutable-ledger rejection, and unchanged baseline/history state.
 
+## T051 Golden Qualification Corpus Gates
+
+T051 is release-blocking unless the checked-in contract, prior-release manifest, generator, snapshot, source bundles,
+loader, tests, and documentation prove all of the following without provider or Kubernetes access:
+
+- one deterministic generation produces the byte-exact reviewed snapshot and source set; the
+  snapshot has an exact semantic revision, UTC publish time, owner, license, digest-bound
+  provenance and prior-release reference, derived corpus ID/digest, and no mutable reference;
+- the separately checked-in prior-release manifest binds each historical case ID/digest/key,
+  case/rule revision, semantic rule ID, and severity; its reviewed digest is pinned in code,
+  overwrite is refused, every binding is still exact, and new positives are not added implicitly;
+- exactly 800 cases form 400 compatible positive/negative pairs over 20 Critical/High semantic
+  rule families and 40 bounded platform-owned source bundles; IDs, digests, case keys, pair
+  polarities, and future materialization paths are complete and non-colliding;
+- every rule has exactly 20 positive and 20 negative cases, the initial manifest authenticates all
+  400 historical positives, and each of `JAVA_FAST_V1`, `JAVA_DEEP_V1`, and
+  `COMMON_DEEP_V1` has at least 200 positive and 200 negative cases;
+- `PATCHED`, `SANITIZER`, `SAFE_API`, `COMMENT_OR_STRING`, and `GENERATED_OR_VENDOR` each have a
+  non-empty, semantically applicable denominator and matching expected zero-finding behavior;
+  generated/vendor cases contain the actual unsafe construct under an excluded path, while
+  comment/string cases keep it inert;
+- every case binds the exact scanner/capability/profile, semantic rule/revision/severity, expected
+  outcome/count, source byte count/digest, bounded line range/anchor, and unique root-confined
+  materialization path;
+- exact-shape validators reject unknown or malformed nested fields, count/digest/pair/profile/rule
+  floor drift, duplicate scan paths, unsafe traversal/absolute/backslash paths, mutable ownership/
+  provenance/license facts, and any widened execution or content authority without throwing;
+- the filesystem loader rejects a missing, changed, noncanonical, or unpinned prior manifest,
+  any extra or missing root entry, changed snapshot/source bytes, extra or missing files, symlinks or
+  junctions, real-path escape, invalid UTF-8, BOM, CRLF, NUL, non-NFC text, missing final LF,
+  oversized input, digest/byte/range/anchor drift, duplicate materialization paths, and file or
+  directory identity changes across validation/read; and
+- corpus and case facts fix platform ownership/immutability true and customer content/config,
+  dependency installation, build, dynamic execution, and network requirements false.
+
+`corepack pnpm qualification:validate` is a mandatory CI and completion command. Passing T051
+authenticates only the input denominator; golden-case scanner conformance, precision/recall,
+isolation/destruction, latency/capacity, drills, and production go/no-go remain T052-T056 gates.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:

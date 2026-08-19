@@ -87,6 +87,9 @@ jobs:
       - name: Run tests
         run: corepack pnpm test
 
+      - name: Validate T051 qualification corpus
+        run: corepack pnpm qualification:validate
+
       - name: Test ontology importer
         run: python -m unittest discover -s ontology/tests -p 'test_*.py'
 

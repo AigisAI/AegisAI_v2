@@ -1,0 +1,139 @@
+<<<T051:t051.spring-gradle.positive.001>>>
+// t051.spring-gradle.positive.001
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.001>>>
+
+<<<T051:t051.spring-gradle.positive.002>>>
+// t051.spring-gradle.positive.002
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.002>>>
+
+<<<T051:t051.spring-gradle.positive.003>>>
+// t051.spring-gradle.positive.003
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.003>>>
+
+<<<T051:t051.spring-gradle.positive.004>>>
+// t051.spring-gradle.positive.004
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.004>>>
+
+<<<T051:t051.spring-gradle.positive.005>>>
+// t051.spring-gradle.positive.005
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.005>>>
+
+<<<T051:t051.spring-gradle.positive.006>>>
+// t051.spring-gradle.positive.006
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.006>>>
+
+<<<T051:t051.spring-gradle.positive.007>>>
+// t051.spring-gradle.positive.007
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.007>>>
+
+<<<T051:t051.spring-gradle.positive.008>>>
+// t051.spring-gradle.positive.008
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.008>>>
+
+<<<T051:t051.spring-gradle.positive.009>>>
+// t051.spring-gradle.positive.009
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.009>>>
+
+<<<T051:t051.spring-gradle.positive.010>>>
+// t051.spring-gradle.positive.010
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.010>>>
+
+<<<T051:t051.spring-gradle.positive.011>>>
+// t051.spring-gradle.positive.011
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.011>>>
+
+<<<T051:t051.spring-gradle.positive.012>>>
+// t051.spring-gradle.positive.012
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.012>>>
+
+<<<T051:t051.spring-gradle.positive.013>>>
+// t051.spring-gradle.positive.013
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.013>>>
+
+<<<T051:t051.spring-gradle.positive.014>>>
+// t051.spring-gradle.positive.014
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.014>>>
+
+<<<T051:t051.spring-gradle.positive.015>>>
+// t051.spring-gradle.positive.015
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.015>>>
+
+<<<T051:t051.spring-gradle.positive.016>>>
+// t051.spring-gradle.positive.016
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.016>>>
+
+<<<T051:t051.spring-gradle.positive.017>>>
+// t051.spring-gradle.positive.017
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.017>>>
+
+<<<T051:t051.spring-gradle.positive.018>>>
+// t051.spring-gradle.positive.018
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.018>>>
+
+<<<T051:t051.spring-gradle.positive.019>>>
+// t051.spring-gradle.positive.019
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.019>>>
+
+<<<T051:t051.spring-gradle.positive.020>>>
+// t051.spring-gradle.positive.020
+dependencies {
+  implementation("org.springframework:spring-core:5.3.17")
+}
+<<<END:t051.spring-gradle.positive.020>>>

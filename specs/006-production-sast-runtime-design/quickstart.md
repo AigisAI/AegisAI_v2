@@ -16,8 +16,9 @@ Control, Scan, AI, and Data/Security plane boundaries.
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
-- T040 through T050 are complete; the guarded next entry point is T051 production qualification
-  corpus work. Provider/Kubernetes execution remains deferred until all T051-T056 gates pass.
+- T040 through T051 are complete; the guarded next entry point is T052 multi-class production
+  qualification corpus work. Provider/Kubernetes execution remains deferred until all T052-T056
+  gates pass.
 - Issue #276 is explicitly reclassified by `spec.md` as a local-only Neo4j/MITRE CWE
   dev/demo bootstrap; it does not replace this package or advance T040.
 - `005-production-deployment-operations` remains the completed deployment-operations
@@ -703,11 +704,15 @@ tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step p
   switches, full runtime propagation, and emergency-suspension authority are complete. T050
   evidence-derived last-known-good rollback, signed dual control, two-head fencing, append-only
   receipt/lifecycle persistence, and PostgreSQL direct-write/race enforcement are complete. T051
-  versioned qualification corpora are the next implementation task.
+  versioned golden qualification corpus is complete: one immutable snapshot binds 400 positive,
+  400 paired negative, and 400 prior Critical/High must-detect cases across 40 platform-owned
+  source bundles. A separate overwrite-protected manifest authenticates the exact historical case
+  identities and its reviewed digest is pinned in code.
+  T052 multi-class qualification corpora are the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
-### T049-T050 Validation Checkpoint
+### T049-T051 Validation Checkpoint
 
 - Shared kill-switch contract tests cover canonical selectors/context, decision and verification
   shape, complete evaluation/head/match sets, coverage effects, planning descriptors, active
@@ -726,6 +731,20 @@ still requires the 005 rollout and the remaining 006 gates.
   and baseline head drift, converges concurrent exact rollback attempts to one transition, keeps
   the baseline and history unchanged, and rejects rollback-ledger mutation. CI runs this probe
   immediately after migration deployment.
+- T051's shared exact-shape contracts, deterministic generator, and root-confined loader bind all
+  800 cases to owner, license, digest-bound provenance, revision, source bytes/digest, exact line
+  range/anchor, and unique future materialization path. Every profile has at least 200 positive and
+  200 negative cases; every Critical/High rule has 20 of each. The prior-release manifest binds the
+  exact 400 historical positives and rejects deletion, mutation, forged references, or automatic
+  inclusion of later positives. Five negative classes are non-empty and use applicable, distinct
+  source behavior (95 patched, 35 sanitizer, 95 safe-API, 80 comment/string, 95 generated/vendor).
+  CI rejects manifest/snapshot/source drift, non-allowlisted root entries, path escape,
+  symlink/junction traversal, identity changes across guarded reads/writes, extra files, invalid
+  UTF-8/NFC/LF, oversized input, range drift, authority widening, and mutable or executable corpus
+  metadata.
+- T051 fixes qualification inputs only. It neither executes a scanner nor claims detection,
+  precision, latency, sandbox-destruction, or production readiness; T052 adds the remaining corpus
+  classes and T053 performs production-equivalent isolated scanner execution.
 - Repository completion still requires the standard commands below on the final branch. Live
   signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
   remain fail-closed rollout dependencies rather than fabricated local evidence.
@@ -763,6 +782,8 @@ Before claiming the 006 design milestone complete:
     claims SAST-complete coverage.
 11. Against a disposable PostgreSQL 16 database, apply every migration and run the opt-in T050
     rollback probe; never aim the probe at a shared or production database.
+12. Validate the checked-in T051 golden corpus from its deterministic generator before using it as
+    a qualification denominator.
 
 ## Validation Commands
 
@@ -771,6 +792,7 @@ corepack pnpm lint
 corepack pnpm test
 corepack pnpm typecheck
 corepack pnpm build
+corepack pnpm qualification:validate
 corepack pnpm --filter @aegisai/api prisma:validate
 corepack pnpm --filter @aegisai/api prisma:migrate:deploy
 $env:RUN_SAST_ROLLBACK_POSTGRES_PROBE = "1"

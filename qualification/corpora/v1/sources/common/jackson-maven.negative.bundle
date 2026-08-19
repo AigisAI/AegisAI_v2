@@ -1,0 +1,299 @@
+<<<T051:t051.jackson-maven.negative.001>>>
+<!-- t051.jackson-maven.negative.001 -->
+<!-- t051-negative-kind: PATCHED -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-001</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.4</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.001>>>
+
+<<<T051:t051.jackson-maven.negative.002>>>
+<!-- t051.jackson-maven.negative.002 -->
+<!-- t051-negative-kind: SAFE_API -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-002</artifactId>
+  <version>1.0.0</version>
+  <!-- SAFE_API: platform standard library; vulnerable dependency absent -->
+</project>
+<<<END:t051.jackson-maven.negative.002>>>
+
+<<<T051:t051.jackson-maven.negative.003>>>
+<!-- t051.jackson-maven.negative.003 -->
+<!-- t051-negative-kind: COMMENT_OR_STRING -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-003</artifactId>
+  <version>1.0.0</version>
+  <!-- documentation only: com.fasterxml.jackson.core:jackson-databind:2.9.9 -->
+</project>
+<<<END:t051.jackson-maven.negative.003>>>
+
+<<<T051:t051.jackson-maven.negative.004>>>
+<!-- t051.jackson-maven.negative.004 -->
+<!-- t051-negative-kind: GENERATED_OR_VENDOR -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-004</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.004>>>
+
+<<<T051:t051.jackson-maven.negative.005>>>
+<!-- t051.jackson-maven.negative.005 -->
+<!-- t051-negative-kind: PATCHED -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-005</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.4</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.005>>>
+
+<<<T051:t051.jackson-maven.negative.006>>>
+<!-- t051.jackson-maven.negative.006 -->
+<!-- t051-negative-kind: SAFE_API -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-006</artifactId>
+  <version>1.0.0</version>
+  <!-- SAFE_API: platform standard library; vulnerable dependency absent -->
+</project>
+<<<END:t051.jackson-maven.negative.006>>>
+
+<<<T051:t051.jackson-maven.negative.007>>>
+<!-- t051.jackson-maven.negative.007 -->
+<!-- t051-negative-kind: COMMENT_OR_STRING -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-007</artifactId>
+  <version>1.0.0</version>
+  <!-- documentation only: com.fasterxml.jackson.core:jackson-databind:2.9.9 -->
+</project>
+<<<END:t051.jackson-maven.negative.007>>>
+
+<<<T051:t051.jackson-maven.negative.008>>>
+<!-- t051.jackson-maven.negative.008 -->
+<!-- t051-negative-kind: GENERATED_OR_VENDOR -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-008</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.008>>>
+
+<<<T051:t051.jackson-maven.negative.009>>>
+<!-- t051.jackson-maven.negative.009 -->
+<!-- t051-negative-kind: PATCHED -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-009</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.4</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.009>>>
+
+<<<T051:t051.jackson-maven.negative.010>>>
+<!-- t051.jackson-maven.negative.010 -->
+<!-- t051-negative-kind: SAFE_API -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-010</artifactId>
+  <version>1.0.0</version>
+  <!-- SAFE_API: platform standard library; vulnerable dependency absent -->
+</project>
+<<<END:t051.jackson-maven.negative.010>>>
+
+<<<T051:t051.jackson-maven.negative.011>>>
+<!-- t051.jackson-maven.negative.011 -->
+<!-- t051-negative-kind: COMMENT_OR_STRING -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-011</artifactId>
+  <version>1.0.0</version>
+  <!-- documentation only: com.fasterxml.jackson.core:jackson-databind:2.9.9 -->
+</project>
+<<<END:t051.jackson-maven.negative.011>>>
+
+<<<T051:t051.jackson-maven.negative.012>>>
+<!-- t051.jackson-maven.negative.012 -->
+<!-- t051-negative-kind: GENERATED_OR_VENDOR -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-012</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.012>>>
+
+<<<T051:t051.jackson-maven.negative.013>>>
+<!-- t051.jackson-maven.negative.013 -->
+<!-- t051-negative-kind: PATCHED -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-013</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.4</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.013>>>
+
+<<<T051:t051.jackson-maven.negative.014>>>
+<!-- t051.jackson-maven.negative.014 -->
+<!-- t051-negative-kind: SAFE_API -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-014</artifactId>
+  <version>1.0.0</version>
+  <!-- SAFE_API: platform standard library; vulnerable dependency absent -->
+</project>
+<<<END:t051.jackson-maven.negative.014>>>
+
+<<<T051:t051.jackson-maven.negative.015>>>
+<!-- t051.jackson-maven.negative.015 -->
+<!-- t051-negative-kind: COMMENT_OR_STRING -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-015</artifactId>
+  <version>1.0.0</version>
+  <!-- documentation only: com.fasterxml.jackson.core:jackson-databind:2.9.9 -->
+</project>
+<<<END:t051.jackson-maven.negative.015>>>
+
+<<<T051:t051.jackson-maven.negative.016>>>
+<!-- t051.jackson-maven.negative.016 -->
+<!-- t051-negative-kind: GENERATED_OR_VENDOR -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-016</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.016>>>
+
+<<<T051:t051.jackson-maven.negative.017>>>
+<!-- t051.jackson-maven.negative.017 -->
+<!-- t051-negative-kind: PATCHED -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-017</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.4</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.017>>>
+
+<<<T051:t051.jackson-maven.negative.018>>>
+<!-- t051.jackson-maven.negative.018 -->
+<!-- t051-negative-kind: SAFE_API -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-018</artifactId>
+  <version>1.0.0</version>
+  <!-- SAFE_API: platform standard library; vulnerable dependency absent -->
+</project>
+<<<END:t051.jackson-maven.negative.018>>>
+
+<<<T051:t051.jackson-maven.negative.019>>>
+<!-- t051.jackson-maven.negative.019 -->
+<!-- t051-negative-kind: COMMENT_OR_STRING -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-019</artifactId>
+  <version>1.0.0</version>
+  <!-- documentation only: com.fasterxml.jackson.core:jackson-databind:2.9.9 -->
+</project>
+<<<END:t051.jackson-maven.negative.019>>>
+
+<<<T051:t051.jackson-maven.negative.020>>>
+<!-- t051.jackson-maven.negative.020 -->
+<!-- t051-negative-kind: GENERATED_OR_VENDOR -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-negative-020</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.negative.020>>>

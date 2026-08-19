@@ -6,6 +6,8 @@ const files = {
   agents: new URL('../../AGENTS.md', import.meta.url),
   readme: new URL('../../README.md', import.meta.url),
   conventions: new URL('../../docs/github-conventions.md', import.meta.url),
+  gitattributes: new URL('../../.gitattributes', import.meta.url),
+  rootPackage: new URL('../../package.json', import.meta.url),
   ci: new URL('../../.github/workflows/ci.yml', import.meta.url),
   quickstart: new URL('../../specs/006-production-sast-runtime-design/quickstart.md', import.meta.url),
   spec: new URL('../../specs/006-production-sast-runtime-design/spec.md', import.meta.url),
@@ -62,6 +64,14 @@ const files = {
   sharedSastKillSwitchTest: new URL('../../packages/shared/test/sast-kill-switch.test.mjs', import.meta.url),
   sharedSastRuleBundleRollback: new URL('../../packages/shared/src/types/sast-rule-bundle-rollback.ts', import.meta.url),
   sharedSastRuleBundleRollbackTest: new URL('../../packages/shared/test/sast-rule-bundle-rollback.test.mjs', import.meta.url),
+  sharedSastQualificationCorpus: new URL('../../packages/shared/src/types/sast-qualification-corpus.ts', import.meta.url),
+  sharedSastQualificationCorpusTest: new URL('../../packages/shared/test/sast-qualification-corpus.test.mjs', import.meta.url),
+  qualificationGenerator: new URL('../../tools/sast-qualification/golden-corpus-assets.mjs', import.meta.url),
+  qualificationLoader: new URL('../../tools/sast-qualification/corpus-loader.mjs', import.meta.url),
+  qualificationLoaderTest: new URL('../../test/qualification/sast-qualification-corpus-loader.test.mjs', import.meta.url),
+  qualificationSnapshot: new URL('../../qualification/corpora/v1/golden-corpus.snapshot.json', import.meta.url),
+  qualificationPriorReleaseManifest: new URL('../../qualification/corpora/v1/prior-release-must-detect.manifest.json', import.meta.url),
+  qualificationReadme: new URL('../../qualification/corpora/v1/README.md', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -252,14 +262,14 @@ const assertScanPlaneExports = (scanPlaneModule) => {
 const assertT049QuickstartHandoff = (quickstart) => {
   assert.match(
     quickstart,
-    /T048 deterministic[\s\S]{0,480}are complete\. T049 signed[\s\S]{0,520}are complete\. T050[\s\S]{0,420}are complete\. T051/
+    /T048 deterministic[\s\S]{0,480}are complete\. T049 signed[\s\S]{0,520}are complete\. T050[\s\S]{0,420}are complete\. T051[\s\S]{0,420}is complete:[\s\S]{0,420}T052/
   );
 };
 
 const assertT049PlanHandoff = (plan) => {
   assert.match(
     plan,
-    /T040 through T050 independently and now proceeds to the T051 qualification corpus/
+    /T040 through T051 independently and now proceeds to the T052 multi-class qualification corpora/
   );
 };
 
@@ -2945,6 +2955,122 @@ test('SAST T050 derives and commits only last-known-good rollback authority', ()
   assert.match(qualityGates, /T050 is release-blocking/);
 });
 
+test('SAST T051 pins versioned golden and prior must-detect qualification corpora', () => {
+  const shared = readNormalizedText(files.sharedSastQualificationCorpus);
+  const sharedTest = readNormalizedText(files.sharedSastQualificationCorpusTest);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const generator = readNormalizedText(files.qualificationGenerator);
+  const loader = readNormalizedText(files.qualificationLoader);
+  const loaderTest = readNormalizedText(files.qualificationLoaderTest);
+  const corpusReadme = readNormalizedText(files.qualificationReadme);
+  const gitattributes = readNormalizedText(files.gitattributes);
+  const rootPackage = readNormalizedText(files.rootPackage);
+  const ci = readNormalizedText(files.ci);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+  const snapshot = JSON.parse(readFileSync(files.qualificationSnapshot, 'utf8'));
+  const priorReleaseManifest = JSON.parse(
+    readFileSync(files.qualificationPriorReleaseManifest, 'utf8')
+  );
+
+  assert.match(shared, /sast-qualification-corpus-case-v1/);
+  assert.match(shared, /sast-qualification-corpus-snapshot-v1/);
+  assert.match(shared, /sast-qualification-prior-release-manifest-v1/);
+  assert.match(shared, /minimumPositiveCasesPerProfile: 200/);
+  assert.match(shared, /minimumNegativeCasesPerProfile: 200/);
+  assert.match(shared, /minimumCriticalHighCasesPerRule: 20/);
+  assert.match(shared, /!unique\(cases\.map\(\(item\) => item\.scanPath\)\)/);
+  assert.match(sharedIndex, /sast-qualification-corpus/);
+  assert.match(sharedTest, /immutable 800-case golden corpus/);
+  assert.match(sharedTest, /colliding scan paths/);
+  assert.match(sharedTest, /exact prior-release set/);
+
+  assert.match(generator, /createGoldenCorpusAssets/);
+  assert.match(generator, /refusing to overwrite immutable prior-release/);
+  assert.match(generator, /GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_DIGEST/);
+  assert.match(generator, /GOLDEN_CORPUS_REVISION = '1\.0\.0'/);
+  assert.match(loader, /SNAPSHOT_DRIFT/);
+  assert.match(loader, /SOURCE_PATH_INVALID/);
+  assert.match(loader, /decodeCanonicalText/);
+  assert.match(loader, /EXPECTED_ROOT_ENTRIES/);
+  assert.match(loader, /O_NOFOLLOW/);
+  assert.match(generator, /writeStableRegularFile/);
+  assert.match(generator, /O_NOFOLLOW/);
+  assert.match(loaderTest, /rejects symlink or junction traversal/);
+  assert.match(loaderTest, /rejects source drift and CRLF ambiguity/);
+  assert.match(loaderTest, /rejects unexpected corpus-root entries/);
+  assert.match(corpusReadme, /platform-owned input snapshot/);
+  assert.match(gitattributes, /qualification\/corpora\/v1\/\*\* text eol=lf/);
+
+  assert.equal(snapshot.caseCount, 800);
+  assert.equal(snapshot.positiveCaseCount, 400);
+  assert.equal(snapshot.negativeCaseCount, 400);
+  assert.equal(snapshot.priorMustDetectCaseCount, 400);
+  assert.equal(priorReleaseManifest.caseCount, 400);
+  assert.equal(snapshot.priorReleaseRef, priorReleaseManifest.releaseRef);
+  assert.equal(
+    snapshot.priorReleaseManifestDigest,
+    priorReleaseManifest.manifestDigest
+  );
+  assert.equal(
+    snapshot.priorMustDetectSetDigest,
+    priorReleaseManifest.caseSetDigest
+  );
+  assert.equal(snapshot.ruleCounts.length, 20);
+  assert.equal(new Set(snapshot.cases.map((item) => item.scanPath)).size, 800);
+  assert.equal(new Set(snapshot.cases.map((item) => item.sourcePath)).size, 40);
+  assert.ok(
+    snapshot.profileCounts.every(
+      (count) => count.positiveCases >= 200 && count.negativeCases >= 200
+    )
+  );
+  assert.ok(
+    snapshot.ruleCounts.every(
+      (count) =>
+        count.positiveCases === 20 &&
+        count.negativeCases === 20 &&
+        count.priorMustDetectCases === 20
+    )
+  );
+  assert.ok(
+    snapshot.cases.every(
+      (item) =>
+        item.sourcePlatformOwned === true &&
+        item.customerContentAccepted === false &&
+        item.executable === false &&
+        item.packageInstallRequired === false &&
+        item.buildRequired === false &&
+        item.dynamicExecutionRequired === false &&
+        item.networkRequired === false &&
+        item.immutable === true
+    )
+  );
+
+  assert.match(rootPackage, /"qualification:validate"/);
+  assert.match(ci, /Validate T051 qualification corpus/);
+  assert.match(ci, /corepack pnpm qualification:validate/);
+  assert.match(tasks, /- \[x\] T051\b/);
+  assert.match(tasks, /- \[ \] T052\b/);
+  assert.match(quickstart, /T051\s+versioned golden qualification corpus is complete/);
+  assert.match(quickstart, /T052 multi-class qualification corpora are the next implementation task/);
+  assert.match(plan, /T051 immutable golden corpus is complete/);
+  assert.match(contract, /Versioned golden qualification corpus v1/);
+  assert.match(dataModel, /SastQualificationCorpusSnapshot/);
+  assert.match(spec, /FR-057i/);
+  assert.match(research, /Decision 29: Pin Golden Qualification Inputs/);
+  assert.match(ruleGovernance, /T051 Golden Qualification Corpus Boundary/);
+  assert.match(threatModel, /Qualification corpus substitution or path escape/);
+  assert.match(qualityGates, /T051 is release-blocking/);
+});
+
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {
   const readme = readNormalizedText(files.readme);
   const ci = readNormalizedText(files.ci);
@@ -2957,6 +3083,7 @@ test('SAST design completion gate stays synchronized between quickstart and CI',
     'corepack pnpm test',
     'corepack pnpm typecheck',
     'corepack pnpm build',
+    'corepack pnpm qualification:validate',
     'corepack pnpm --filter @aegisai/api prisma:validate',
     'node --test test/runtime/*.test.mjs',
     'git diff --check'

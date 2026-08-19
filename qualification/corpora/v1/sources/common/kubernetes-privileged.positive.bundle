@@ -1,0 +1,319 @@
+<<<T051:t051.kubernetes-privileged.positive.001>>>
+# t051.kubernetes-privileged.positive.001
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-001
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.001>>>
+
+<<<T051:t051.kubernetes-privileged.positive.002>>>
+# t051.kubernetes-privileged.positive.002
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-002
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.002>>>
+
+<<<T051:t051.kubernetes-privileged.positive.003>>>
+# t051.kubernetes-privileged.positive.003
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-003
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.003>>>
+
+<<<T051:t051.kubernetes-privileged.positive.004>>>
+# t051.kubernetes-privileged.positive.004
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-004
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.004>>>
+
+<<<T051:t051.kubernetes-privileged.positive.005>>>
+# t051.kubernetes-privileged.positive.005
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-005
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.005>>>
+
+<<<T051:t051.kubernetes-privileged.positive.006>>>
+# t051.kubernetes-privileged.positive.006
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-006
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.006>>>
+
+<<<T051:t051.kubernetes-privileged.positive.007>>>
+# t051.kubernetes-privileged.positive.007
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-007
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.007>>>
+
+<<<T051:t051.kubernetes-privileged.positive.008>>>
+# t051.kubernetes-privileged.positive.008
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-008
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.008>>>
+
+<<<T051:t051.kubernetes-privileged.positive.009>>>
+# t051.kubernetes-privileged.positive.009
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-009
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.009>>>
+
+<<<T051:t051.kubernetes-privileged.positive.010>>>
+# t051.kubernetes-privileged.positive.010
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-010
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.010>>>
+
+<<<T051:t051.kubernetes-privileged.positive.011>>>
+# t051.kubernetes-privileged.positive.011
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-011
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.011>>>
+
+<<<T051:t051.kubernetes-privileged.positive.012>>>
+# t051.kubernetes-privileged.positive.012
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-012
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.012>>>
+
+<<<T051:t051.kubernetes-privileged.positive.013>>>
+# t051.kubernetes-privileged.positive.013
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-013
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.013>>>
+
+<<<T051:t051.kubernetes-privileged.positive.014>>>
+# t051.kubernetes-privileged.positive.014
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-014
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.014>>>
+
+<<<T051:t051.kubernetes-privileged.positive.015>>>
+# t051.kubernetes-privileged.positive.015
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-015
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.015>>>
+
+<<<T051:t051.kubernetes-privileged.positive.016>>>
+# t051.kubernetes-privileged.positive.016
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-016
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.016>>>
+
+<<<T051:t051.kubernetes-privileged.positive.017>>>
+# t051.kubernetes-privileged.positive.017
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-017
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.017>>>
+
+<<<T051:t051.kubernetes-privileged.positive.018>>>
+# t051.kubernetes-privileged.positive.018
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-018
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.018>>>
+
+<<<T051:t051.kubernetes-privileged.positive.019>>>
+# t051.kubernetes-privileged.positive.019
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-019
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.019>>>
+
+<<<T051:t051.kubernetes-privileged.positive.020>>>
+# t051.kubernetes-privileged.positive.020
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: t051-case-020
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          securityContext:
+            privileged: true
+<<<END:t051.kubernetes-privileged.positive.020>>>

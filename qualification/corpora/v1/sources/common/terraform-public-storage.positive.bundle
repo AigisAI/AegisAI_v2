@@ -1,0 +1,159 @@
+<<<T051:t051.terraform-public-storage.positive.001>>>
+# t051.terraform-public-storage.positive.001
+resource "aws_s3_bucket" "case_001" {
+  bucket = "t051-case-001"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.001>>>
+
+<<<T051:t051.terraform-public-storage.positive.002>>>
+# t051.terraform-public-storage.positive.002
+resource "aws_s3_bucket" "case_002" {
+  bucket = "t051-case-002"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.002>>>
+
+<<<T051:t051.terraform-public-storage.positive.003>>>
+# t051.terraform-public-storage.positive.003
+resource "aws_s3_bucket" "case_003" {
+  bucket = "t051-case-003"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.003>>>
+
+<<<T051:t051.terraform-public-storage.positive.004>>>
+# t051.terraform-public-storage.positive.004
+resource "aws_s3_bucket" "case_004" {
+  bucket = "t051-case-004"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.004>>>
+
+<<<T051:t051.terraform-public-storage.positive.005>>>
+# t051.terraform-public-storage.positive.005
+resource "aws_s3_bucket" "case_005" {
+  bucket = "t051-case-005"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.005>>>
+
+<<<T051:t051.terraform-public-storage.positive.006>>>
+# t051.terraform-public-storage.positive.006
+resource "aws_s3_bucket" "case_006" {
+  bucket = "t051-case-006"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.006>>>
+
+<<<T051:t051.terraform-public-storage.positive.007>>>
+# t051.terraform-public-storage.positive.007
+resource "aws_s3_bucket" "case_007" {
+  bucket = "t051-case-007"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.007>>>
+
+<<<T051:t051.terraform-public-storage.positive.008>>>
+# t051.terraform-public-storage.positive.008
+resource "aws_s3_bucket" "case_008" {
+  bucket = "t051-case-008"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.008>>>
+
+<<<T051:t051.terraform-public-storage.positive.009>>>
+# t051.terraform-public-storage.positive.009
+resource "aws_s3_bucket" "case_009" {
+  bucket = "t051-case-009"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.009>>>
+
+<<<T051:t051.terraform-public-storage.positive.010>>>
+# t051.terraform-public-storage.positive.010
+resource "aws_s3_bucket" "case_010" {
+  bucket = "t051-case-010"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.010>>>
+
+<<<T051:t051.terraform-public-storage.positive.011>>>
+# t051.terraform-public-storage.positive.011
+resource "aws_s3_bucket" "case_011" {
+  bucket = "t051-case-011"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.011>>>
+
+<<<T051:t051.terraform-public-storage.positive.012>>>
+# t051.terraform-public-storage.positive.012
+resource "aws_s3_bucket" "case_012" {
+  bucket = "t051-case-012"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.012>>>
+
+<<<T051:t051.terraform-public-storage.positive.013>>>
+# t051.terraform-public-storage.positive.013
+resource "aws_s3_bucket" "case_013" {
+  bucket = "t051-case-013"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.013>>>
+
+<<<T051:t051.terraform-public-storage.positive.014>>>
+# t051.terraform-public-storage.positive.014
+resource "aws_s3_bucket" "case_014" {
+  bucket = "t051-case-014"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.014>>>
+
+<<<T051:t051.terraform-public-storage.positive.015>>>
+# t051.terraform-public-storage.positive.015
+resource "aws_s3_bucket" "case_015" {
+  bucket = "t051-case-015"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.015>>>
+
+<<<T051:t051.terraform-public-storage.positive.016>>>
+# t051.terraform-public-storage.positive.016
+resource "aws_s3_bucket" "case_016" {
+  bucket = "t051-case-016"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.016>>>
+
+<<<T051:t051.terraform-public-storage.positive.017>>>
+# t051.terraform-public-storage.positive.017
+resource "aws_s3_bucket" "case_017" {
+  bucket = "t051-case-017"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.017>>>
+
+<<<T051:t051.terraform-public-storage.positive.018>>>
+# t051.terraform-public-storage.positive.018
+resource "aws_s3_bucket" "case_018" {
+  bucket = "t051-case-018"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.018>>>
+
+<<<T051:t051.terraform-public-storage.positive.019>>>
+# t051.terraform-public-storage.positive.019
+resource "aws_s3_bucket" "case_019" {
+  bucket = "t051-case-019"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.019>>>
+
+<<<T051:t051.terraform-public-storage.positive.020>>>
+# t051.terraform-public-storage.positive.020
+resource "aws_s3_bucket" "case_020" {
+  bucket = "t051-case-020"
+  acl = "public-read"
+}
+<<<END:t051.terraform-public-storage.positive.020>>>

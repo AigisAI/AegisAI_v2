@@ -1,0 +1,199 @@
+<<<T051:t051.path-traversal.positive.001>>>
+// t051.path-traversal.positive.001
+package qualification.corpus;
+final class PathTraversalPositive001 {
+  void evaluate(String queryParameter001) throws Exception {
+    java.nio.file.Path path001 = java.nio.file.Paths.get("/srv/data", queryParameter001);
+  }
+}
+<<<END:t051.path-traversal.positive.001>>>
+
+<<<T051:t051.path-traversal.positive.002>>>
+// t051.path-traversal.positive.002
+package qualification.corpus;
+final class PathTraversalPositive002 {
+  void evaluate(String headerValue002) throws Exception {
+    java.nio.file.Path path002 = java.nio.file.Paths.get("/srv/data", headerValue002);
+  }
+}
+<<<END:t051.path-traversal.positive.002>>>
+
+<<<T051:t051.path-traversal.positive.003>>>
+// t051.path-traversal.positive.003
+package qualification.corpus;
+final class PathTraversalPositive003 {
+  void evaluate(String cookieValue003) throws Exception {
+    java.nio.file.Path path003 = java.nio.file.Paths.get("/srv/data", cookieValue003);
+  }
+}
+<<<END:t051.path-traversal.positive.003>>>
+
+<<<T051:t051.path-traversal.positive.004>>>
+// t051.path-traversal.positive.004
+package qualification.corpus;
+final class PathTraversalPositive004 {
+  void evaluate(String pathVariable004) throws Exception {
+    java.nio.file.Path path004 = java.nio.file.Paths.get("/srv/data", pathVariable004);
+  }
+}
+<<<END:t051.path-traversal.positive.004>>>
+
+<<<T051:t051.path-traversal.positive.005>>>
+// t051.path-traversal.positive.005
+package qualification.corpus;
+final class PathTraversalPositive005 {
+  void evaluate(String formField005) throws Exception {
+    java.nio.file.Path path005 = java.nio.file.Paths.get("/srv/data", formField005);
+  }
+}
+<<<END:t051.path-traversal.positive.005>>>
+
+<<<T051:t051.path-traversal.positive.006>>>
+// t051.path-traversal.positive.006
+package qualification.corpus;
+final class PathTraversalPositive006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    java.nio.file.Path path006 = java.nio.file.Paths.get("/srv/data", jsonProperty006);
+  }
+}
+<<<END:t051.path-traversal.positive.006>>>
+
+<<<T051:t051.path-traversal.positive.007>>>
+// t051.path-traversal.positive.007
+package qualification.corpus;
+final class PathTraversalPositive007 {
+  void evaluate(String xmlValue007) throws Exception {
+    java.nio.file.Path path007 = java.nio.file.Paths.get("/srv/data", xmlValue007);
+  }
+}
+<<<END:t051.path-traversal.positive.007>>>
+
+<<<T051:t051.path-traversal.positive.008>>>
+// t051.path-traversal.positive.008
+package qualification.corpus;
+final class PathTraversalPositive008 {
+  void evaluate(String messageBody008) throws Exception {
+    java.nio.file.Path path008 = java.nio.file.Paths.get("/srv/data", messageBody008);
+  }
+}
+<<<END:t051.path-traversal.positive.008>>>
+
+<<<T051:t051.path-traversal.positive.009>>>
+// t051.path-traversal.positive.009
+package qualification.corpus;
+final class PathTraversalPositive009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    java.nio.file.Path path009 = java.nio.file.Paths.get("/srv/data", queueAttribute009);
+  }
+}
+<<<END:t051.path-traversal.positive.009>>>
+
+<<<T051:t051.path-traversal.positive.010>>>
+// t051.path-traversal.positive.010
+package qualification.corpus;
+final class PathTraversalPositive010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    java.nio.file.Path path010 = java.nio.file.Paths.get("/srv/data", rpcArgument010);
+  }
+}
+<<<END:t051.path-traversal.positive.010>>>
+
+<<<T051:t051.path-traversal.positive.011>>>
+// t051.path-traversal.positive.011
+package qualification.corpus;
+final class PathTraversalPositive011 {
+  void evaluate(String webhookField011) throws Exception {
+    java.nio.file.Path path011 = java.nio.file.Paths.get("/srv/data", webhookField011);
+  }
+}
+<<<END:t051.path-traversal.positive.011>>>
+
+<<<T051:t051.path-traversal.positive.012>>>
+// t051.path-traversal.positive.012
+package qualification.corpus;
+final class PathTraversalPositive012 {
+  void evaluate(String csvColumn012) throws Exception {
+    java.nio.file.Path path012 = java.nio.file.Paths.get("/srv/data", csvColumn012);
+  }
+}
+<<<END:t051.path-traversal.positive.012>>>
+
+<<<T051:t051.path-traversal.positive.013>>>
+// t051.path-traversal.positive.013
+package qualification.corpus;
+final class PathTraversalPositive013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    java.nio.file.Path path013 = java.nio.file.Paths.get("/srv/data", yamlProperty013);
+  }
+}
+<<<END:t051.path-traversal.positive.013>>>
+
+<<<T051:t051.path-traversal.positive.014>>>
+// t051.path-traversal.positive.014
+package qualification.corpus;
+final class PathTraversalPositive014 {
+  void evaluate(String configValue014) throws Exception {
+    java.nio.file.Path path014 = java.nio.file.Paths.get("/srv/data", configValue014);
+  }
+}
+<<<END:t051.path-traversal.positive.014>>>
+
+<<<T051:t051.path-traversal.positive.015>>>
+// t051.path-traversal.positive.015
+package qualification.corpus;
+final class PathTraversalPositive015 {
+  void evaluate(String environmentValue015) throws Exception {
+    java.nio.file.Path path015 = java.nio.file.Paths.get("/srv/data", environmentValue015);
+  }
+}
+<<<END:t051.path-traversal.positive.015>>>
+
+<<<T051:t051.path-traversal.positive.016>>>
+// t051.path-traversal.positive.016
+package qualification.corpus;
+final class PathTraversalPositive016 {
+  void evaluate(String cliArgument016) throws Exception {
+    java.nio.file.Path path016 = java.nio.file.Paths.get("/srv/data", cliArgument016);
+  }
+}
+<<<END:t051.path-traversal.positive.016>>>
+
+<<<T051:t051.path-traversal.positive.017>>>
+// t051.path-traversal.positive.017
+package qualification.corpus;
+final class PathTraversalPositive017 {
+  void evaluate(String metadataValue017) throws Exception {
+    java.nio.file.Path path017 = java.nio.file.Paths.get("/srv/data", metadataValue017);
+  }
+}
+<<<END:t051.path-traversal.positive.017>>>
+
+<<<T051:t051.path-traversal.positive.018>>>
+// t051.path-traversal.positive.018
+package qualification.corpus;
+final class PathTraversalPositive018 {
+  void evaluate(String recordField018) throws Exception {
+    java.nio.file.Path path018 = java.nio.file.Paths.get("/srv/data", recordField018);
+  }
+}
+<<<END:t051.path-traversal.positive.018>>>
+
+<<<T051:t051.path-traversal.positive.019>>>
+// t051.path-traversal.positive.019
+package qualification.corpus;
+final class PathTraversalPositive019 {
+  void evaluate(String importedValue019) throws Exception {
+    java.nio.file.Path path019 = java.nio.file.Paths.get("/srv/data", importedValue019);
+  }
+}
+<<<END:t051.path-traversal.positive.019>>>
+
+<<<T051:t051.path-traversal.positive.020>>>
+// t051.path-traversal.positive.020
+package qualification.corpus;
+final class PathTraversalPositive020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    java.nio.file.Path path020 = java.nio.file.Paths.get("/srv/data", requestAttribute020);
+  }
+}
+<<<END:t051.path-traversal.positive.020>>>

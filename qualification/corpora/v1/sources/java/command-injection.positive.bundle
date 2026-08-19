@@ -1,0 +1,199 @@
+<<<T051:t051.command-injection.positive.001>>>
+// t051.command-injection.positive.001
+package qualification.corpus;
+final class CommandInjectionPositive001 {
+  void evaluate(String queryParameter001) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + queryParameter001);
+  }
+}
+<<<END:t051.command-injection.positive.001>>>
+
+<<<T051:t051.command-injection.positive.002>>>
+// t051.command-injection.positive.002
+package qualification.corpus;
+final class CommandInjectionPositive002 {
+  void evaluate(String headerValue002) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + headerValue002);
+  }
+}
+<<<END:t051.command-injection.positive.002>>>
+
+<<<T051:t051.command-injection.positive.003>>>
+// t051.command-injection.positive.003
+package qualification.corpus;
+final class CommandInjectionPositive003 {
+  void evaluate(String cookieValue003) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + cookieValue003);
+  }
+}
+<<<END:t051.command-injection.positive.003>>>
+
+<<<T051:t051.command-injection.positive.004>>>
+// t051.command-injection.positive.004
+package qualification.corpus;
+final class CommandInjectionPositive004 {
+  void evaluate(String pathVariable004) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + pathVariable004);
+  }
+}
+<<<END:t051.command-injection.positive.004>>>
+
+<<<T051:t051.command-injection.positive.005>>>
+// t051.command-injection.positive.005
+package qualification.corpus;
+final class CommandInjectionPositive005 {
+  void evaluate(String formField005) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + formField005);
+  }
+}
+<<<END:t051.command-injection.positive.005>>>
+
+<<<T051:t051.command-injection.positive.006>>>
+// t051.command-injection.positive.006
+package qualification.corpus;
+final class CommandInjectionPositive006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + jsonProperty006);
+  }
+}
+<<<END:t051.command-injection.positive.006>>>
+
+<<<T051:t051.command-injection.positive.007>>>
+// t051.command-injection.positive.007
+package qualification.corpus;
+final class CommandInjectionPositive007 {
+  void evaluate(String xmlValue007) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + xmlValue007);
+  }
+}
+<<<END:t051.command-injection.positive.007>>>
+
+<<<T051:t051.command-injection.positive.008>>>
+// t051.command-injection.positive.008
+package qualification.corpus;
+final class CommandInjectionPositive008 {
+  void evaluate(String messageBody008) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + messageBody008);
+  }
+}
+<<<END:t051.command-injection.positive.008>>>
+
+<<<T051:t051.command-injection.positive.009>>>
+// t051.command-injection.positive.009
+package qualification.corpus;
+final class CommandInjectionPositive009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + queueAttribute009);
+  }
+}
+<<<END:t051.command-injection.positive.009>>>
+
+<<<T051:t051.command-injection.positive.010>>>
+// t051.command-injection.positive.010
+package qualification.corpus;
+final class CommandInjectionPositive010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + rpcArgument010);
+  }
+}
+<<<END:t051.command-injection.positive.010>>>
+
+<<<T051:t051.command-injection.positive.011>>>
+// t051.command-injection.positive.011
+package qualification.corpus;
+final class CommandInjectionPositive011 {
+  void evaluate(String webhookField011) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + webhookField011);
+  }
+}
+<<<END:t051.command-injection.positive.011>>>
+
+<<<T051:t051.command-injection.positive.012>>>
+// t051.command-injection.positive.012
+package qualification.corpus;
+final class CommandInjectionPositive012 {
+  void evaluate(String csvColumn012) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + csvColumn012);
+  }
+}
+<<<END:t051.command-injection.positive.012>>>
+
+<<<T051:t051.command-injection.positive.013>>>
+// t051.command-injection.positive.013
+package qualification.corpus;
+final class CommandInjectionPositive013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + yamlProperty013);
+  }
+}
+<<<END:t051.command-injection.positive.013>>>
+
+<<<T051:t051.command-injection.positive.014>>>
+// t051.command-injection.positive.014
+package qualification.corpus;
+final class CommandInjectionPositive014 {
+  void evaluate(String configValue014) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + configValue014);
+  }
+}
+<<<END:t051.command-injection.positive.014>>>
+
+<<<T051:t051.command-injection.positive.015>>>
+// t051.command-injection.positive.015
+package qualification.corpus;
+final class CommandInjectionPositive015 {
+  void evaluate(String environmentValue015) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + environmentValue015);
+  }
+}
+<<<END:t051.command-injection.positive.015>>>
+
+<<<T051:t051.command-injection.positive.016>>>
+// t051.command-injection.positive.016
+package qualification.corpus;
+final class CommandInjectionPositive016 {
+  void evaluate(String cliArgument016) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + cliArgument016);
+  }
+}
+<<<END:t051.command-injection.positive.016>>>
+
+<<<T051:t051.command-injection.positive.017>>>
+// t051.command-injection.positive.017
+package qualification.corpus;
+final class CommandInjectionPositive017 {
+  void evaluate(String metadataValue017) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + metadataValue017);
+  }
+}
+<<<END:t051.command-injection.positive.017>>>
+
+<<<T051:t051.command-injection.positive.018>>>
+// t051.command-injection.positive.018
+package qualification.corpus;
+final class CommandInjectionPositive018 {
+  void evaluate(String recordField018) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + recordField018);
+  }
+}
+<<<END:t051.command-injection.positive.018>>>
+
+<<<T051:t051.command-injection.positive.019>>>
+// t051.command-injection.positive.019
+package qualification.corpus;
+final class CommandInjectionPositive019 {
+  void evaluate(String importedValue019) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + importedValue019);
+  }
+}
+<<<END:t051.command-injection.positive.019>>>
+
+<<<T051:t051.command-injection.positive.020>>>
+// t051.command-injection.positive.020
+package qualification.corpus;
+final class CommandInjectionPositive020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + requestAttribute020);
+  }
+}
+<<<END:t051.command-injection.positive.020>>>

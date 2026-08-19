@@ -1,0 +1,199 @@
+<<<T051:t051.log-injection.positive.001>>>
+// t051.log-injection.positive.001
+package qualification.corpus;
+final class LogInjectionPositive001 {
+  void evaluate(String queryParameter001) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + queryParameter001);
+  }
+}
+<<<END:t051.log-injection.positive.001>>>
+
+<<<T051:t051.log-injection.positive.002>>>
+// t051.log-injection.positive.002
+package qualification.corpus;
+final class LogInjectionPositive002 {
+  void evaluate(String headerValue002) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + headerValue002);
+  }
+}
+<<<END:t051.log-injection.positive.002>>>
+
+<<<T051:t051.log-injection.positive.003>>>
+// t051.log-injection.positive.003
+package qualification.corpus;
+final class LogInjectionPositive003 {
+  void evaluate(String cookieValue003) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + cookieValue003);
+  }
+}
+<<<END:t051.log-injection.positive.003>>>
+
+<<<T051:t051.log-injection.positive.004>>>
+// t051.log-injection.positive.004
+package qualification.corpus;
+final class LogInjectionPositive004 {
+  void evaluate(String pathVariable004) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + pathVariable004);
+  }
+}
+<<<END:t051.log-injection.positive.004>>>
+
+<<<T051:t051.log-injection.positive.005>>>
+// t051.log-injection.positive.005
+package qualification.corpus;
+final class LogInjectionPositive005 {
+  void evaluate(String formField005) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + formField005);
+  }
+}
+<<<END:t051.log-injection.positive.005>>>
+
+<<<T051:t051.log-injection.positive.006>>>
+// t051.log-injection.positive.006
+package qualification.corpus;
+final class LogInjectionPositive006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + jsonProperty006);
+  }
+}
+<<<END:t051.log-injection.positive.006>>>
+
+<<<T051:t051.log-injection.positive.007>>>
+// t051.log-injection.positive.007
+package qualification.corpus;
+final class LogInjectionPositive007 {
+  void evaluate(String xmlValue007) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + xmlValue007);
+  }
+}
+<<<END:t051.log-injection.positive.007>>>
+
+<<<T051:t051.log-injection.positive.008>>>
+// t051.log-injection.positive.008
+package qualification.corpus;
+final class LogInjectionPositive008 {
+  void evaluate(String messageBody008) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + messageBody008);
+  }
+}
+<<<END:t051.log-injection.positive.008>>>
+
+<<<T051:t051.log-injection.positive.009>>>
+// t051.log-injection.positive.009
+package qualification.corpus;
+final class LogInjectionPositive009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + queueAttribute009);
+  }
+}
+<<<END:t051.log-injection.positive.009>>>
+
+<<<T051:t051.log-injection.positive.010>>>
+// t051.log-injection.positive.010
+package qualification.corpus;
+final class LogInjectionPositive010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + rpcArgument010);
+  }
+}
+<<<END:t051.log-injection.positive.010>>>
+
+<<<T051:t051.log-injection.positive.011>>>
+// t051.log-injection.positive.011
+package qualification.corpus;
+final class LogInjectionPositive011 {
+  void evaluate(String webhookField011) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + webhookField011);
+  }
+}
+<<<END:t051.log-injection.positive.011>>>
+
+<<<T051:t051.log-injection.positive.012>>>
+// t051.log-injection.positive.012
+package qualification.corpus;
+final class LogInjectionPositive012 {
+  void evaluate(String csvColumn012) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + csvColumn012);
+  }
+}
+<<<END:t051.log-injection.positive.012>>>
+
+<<<T051:t051.log-injection.positive.013>>>
+// t051.log-injection.positive.013
+package qualification.corpus;
+final class LogInjectionPositive013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + yamlProperty013);
+  }
+}
+<<<END:t051.log-injection.positive.013>>>
+
+<<<T051:t051.log-injection.positive.014>>>
+// t051.log-injection.positive.014
+package qualification.corpus;
+final class LogInjectionPositive014 {
+  void evaluate(String configValue014) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + configValue014);
+  }
+}
+<<<END:t051.log-injection.positive.014>>>
+
+<<<T051:t051.log-injection.positive.015>>>
+// t051.log-injection.positive.015
+package qualification.corpus;
+final class LogInjectionPositive015 {
+  void evaluate(String environmentValue015) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + environmentValue015);
+  }
+}
+<<<END:t051.log-injection.positive.015>>>
+
+<<<T051:t051.log-injection.positive.016>>>
+// t051.log-injection.positive.016
+package qualification.corpus;
+final class LogInjectionPositive016 {
+  void evaluate(String cliArgument016) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + cliArgument016);
+  }
+}
+<<<END:t051.log-injection.positive.016>>>
+
+<<<T051:t051.log-injection.positive.017>>>
+// t051.log-injection.positive.017
+package qualification.corpus;
+final class LogInjectionPositive017 {
+  void evaluate(String metadataValue017) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + metadataValue017);
+  }
+}
+<<<END:t051.log-injection.positive.017>>>
+
+<<<T051:t051.log-injection.positive.018>>>
+// t051.log-injection.positive.018
+package qualification.corpus;
+final class LogInjectionPositive018 {
+  void evaluate(String recordField018) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + recordField018);
+  }
+}
+<<<END:t051.log-injection.positive.018>>>
+
+<<<T051:t051.log-injection.positive.019>>>
+// t051.log-injection.positive.019
+package qualification.corpus;
+final class LogInjectionPositive019 {
+  void evaluate(String importedValue019) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + importedValue019);
+  }
+}
+<<<END:t051.log-injection.positive.019>>>
+
+<<<T051:t051.log-injection.positive.020>>>
+// t051.log-injection.positive.020
+package qualification.corpus;
+final class LogInjectionPositive020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + requestAttribute020);
+  }
+}
+<<<END:t051.log-injection.positive.020>>>

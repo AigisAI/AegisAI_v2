@@ -85,7 +85,7 @@
 
 ## Phase 10: Production Qualification
 
-- [ ] T051 Build versioned golden positive/negative and prior must-detect corpora
+- [x] T051 Build versioned golden positive/negative and prior must-detect corpora
 - [ ] T052 Build schema/parser, malicious-repository, fingerprint, evidence/privacy, and performance corpora
 - [ ] T053 Run production-equivalent microVM integration and destruction-evidence tests
 - [ ] T054 Run Fast/Deep end-to-end, latency, reliability, and capacity gates

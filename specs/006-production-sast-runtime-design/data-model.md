@@ -1227,6 +1227,51 @@ bundle, signed profile, lifecycle transition, reason set, and observation time a
 durable rows; `customerTargetAccepted=false`. Stale/non-current decisions and any caller-supplied
 target fail closed before a kill-switch decision or lifecycle transition is attempted.
 
+### SastQualificationCorpusCase
+
+Repository-owned T051 artifact, not a customer or runtime database entity. One immutable case
+contains its exact contract version, digest-derived ID/digest, unique case key and materialization
+path, positive/negative pair key, corpus and rule revisions, owner, license, digest-bound
+provenance, profile/language/scanner/capability and semantic-rule identity, severity, expected
+outcome/count, source path/digest/byte count, exact line range, and anchor. A positive case always
+expects one detection and has no negative kind; its paired negative expects zero findings and uses
+an applicable `PATCHED | SANITIZER | SAFE_API | COMMENT_OR_STRING | GENERATED_OR_VENDOR`
+behavior. A family does not claim a sanitizer or comment negative when that behavior would be
+semantically false.
+
+Every case fixes platform ownership and immutability true and customer content, execution, package
+installation, build, dynamic execution, and network requirements false. Case construction rejects
+unknown keys, malformed/mutable references, unsupported scanner/language/capability/profile
+combinations, unsafe paths, unbounded sources/ranges, and non-canonical metadata.
+
+### SastQualificationPriorReleaseManifest
+
+One separately checked-in immutable T051 authority authenticates the exact prior-release
+Critical/High must-detect denominator. Each binding contains the historical case ID/digest/key,
+case and rule revisions, semantic rule ID, and severity. Canonical binding and manifest digests
+derive the release reference; the reviewed manifest digest is pinned in generator code, and the
+bootstrap path refuses overwrite. Removing or changing a historical case therefore fails before
+snapshot use, while a newly added positive is not silently reclassified as prior-release.
+
+### SastQualificationCorpusSnapshot
+
+One canonical repository snapshot binds the complete case set and the prior-release must-detect
+set. It records its digest-derived corpus ID/digest, semantic revision and publish time, owner,
+license, digest-bound provenance, authenticated prior-release reference/manifest digest, canonical profile/language sets, exact cases,
+case/prior set digests, positive/negative/prior counts, per-profile counts, per-rule revision/
+severity counts, and per-negative-kind counts. All counts are derived; none are trusted caller
+claims.
+
+The builder requires unique IDs/digests/keys/materialization paths, exact positive/negative pairs,
+at least 200 positive and 200 negative cases per profile, at least 10 of each per rule and 20 of
+each for Critical/High, every separately manifested historical binding present and byte-identical,
+and every negative kind non-empty. Current positives are never used to derive the historical set.
+The checked-in v1 snapshot has 800 cases and 40 source bundles. The
+filesystem loader separately rebinds byte-exact generated snapshot/source content, real-path
+containment, canonical text, source-set membership, byte/digest/range/anchor facts, and link denial.
+Successful validation is input authority only and creates no finding, promotion, or deployment
+authority.
+
 ### SastQualityEvaluation
 
 - scanner-set and rule-bundle versions

@@ -536,6 +536,25 @@ incomplete, stale, quarantined, or security-blocked scan.
   baseline and every historical manifest, transition, plan, finding, coverage, evidence, and
   audit row MUST remain unchanged; new plans MAY use the baseline only after trusted scanner-set
   selection and every existing planning/queue gate passes.
+- **FR-057i**: Golden qualification inputs MUST use exact versioned case and snapshot contracts and
+  MUST be platform-owned, immutable, license/provenance/revision bound, and reproducible from a
+  reviewed deterministic generator. Every supported profile MUST contain at least 200 positive and
+  200 paired negative cases; every rule MUST meet the `quality-gates.md` case floor, every
+  Critical/High rule MUST contain at least 20 positive and 20 negative cases, and every released
+  Critical/High positive MUST be authenticated by a separately checked-in immutable prior-release
+  manifest that binds its exact case ID/digest/key, case/rule revision, semantic rule ID, and
+  severity. The reviewed manifest digest MUST be pinned outside the manifest, overwrite MUST be
+  refused, a missing/changed historical case MUST fail closed, and a new current positive MUST NOT
+  enter the prior denominator automatically. Patched, sanitizer, safe-API, comment/string, and
+  generated/vendor negative classes MUST all be non-empty and MUST be assigned only where their
+  source behavior is semantically applicable; generated/vendor cases MUST retain the unsafe
+  construct under the excluded path rather than masquerade as comment cases. Each case MUST bind
+  exact source bytes/digest, line range, anchor, and a unique root-confined materialization path.
+  Unknown fields, count/digest/range drift, duplicate paths, path escape, symlink/junction traversal,
+  invalid UTF-8/NFC/LF, oversized or extra source files, mutable metadata, customer content,
+  executable configuration, dependency installation, builds, dynamic execution, and network
+  requirements MUST fail closed. T051 corpus validity MUST grant no finding, policy, promotion, or
+  production-readiness authority and MUST NOT substitute for T052-T056 execution evidence.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

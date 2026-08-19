@@ -1,0 +1,139 @@
+<<<T051:t051.docker-root-user.positive.001>>>
+# t051.docker-root-user.positive.001
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.001>>>
+
+<<<T051:t051.docker-root-user.positive.002>>>
+# t051.docker-root-user.positive.002
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.002>>>
+
+<<<T051:t051.docker-root-user.positive.003>>>
+# t051.docker-root-user.positive.003
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.003>>>
+
+<<<T051:t051.docker-root-user.positive.004>>>
+# t051.docker-root-user.positive.004
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.004>>>
+
+<<<T051:t051.docker-root-user.positive.005>>>
+# t051.docker-root-user.positive.005
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.005>>>
+
+<<<T051:t051.docker-root-user.positive.006>>>
+# t051.docker-root-user.positive.006
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.006>>>
+
+<<<T051:t051.docker-root-user.positive.007>>>
+# t051.docker-root-user.positive.007
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.007>>>
+
+<<<T051:t051.docker-root-user.positive.008>>>
+# t051.docker-root-user.positive.008
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.008>>>
+
+<<<T051:t051.docker-root-user.positive.009>>>
+# t051.docker-root-user.positive.009
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.009>>>
+
+<<<T051:t051.docker-root-user.positive.010>>>
+# t051.docker-root-user.positive.010
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.010>>>
+
+<<<T051:t051.docker-root-user.positive.011>>>
+# t051.docker-root-user.positive.011
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.011>>>
+
+<<<T051:t051.docker-root-user.positive.012>>>
+# t051.docker-root-user.positive.012
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.012>>>
+
+<<<T051:t051.docker-root-user.positive.013>>>
+# t051.docker-root-user.positive.013
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.013>>>
+
+<<<T051:t051.docker-root-user.positive.014>>>
+# t051.docker-root-user.positive.014
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.014>>>
+
+<<<T051:t051.docker-root-user.positive.015>>>
+# t051.docker-root-user.positive.015
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.015>>>
+
+<<<T051:t051.docker-root-user.positive.016>>>
+# t051.docker-root-user.positive.016
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.016>>>
+
+<<<T051:t051.docker-root-user.positive.017>>>
+# t051.docker-root-user.positive.017
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.017>>>
+
+<<<T051:t051.docker-root-user.positive.018>>>
+# t051.docker-root-user.positive.018
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.018>>>
+
+<<<T051:t051.docker-root-user.positive.019>>>
+# t051.docker-root-user.positive.019
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.019>>>
+
+<<<T051:t051.docker-root-user.positive.020>>>
+# t051.docker-root-user.positive.020
+FROM scratch
+USER root
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.positive.020>>>

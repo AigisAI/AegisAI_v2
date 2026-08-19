@@ -1,0 +1,139 @@
+<<<T051:t051.aws-access-key.negative.001>>>
+# t051.aws-access-key.negative.001
+# t051-negative-kind: PATCHED
+AWS_ACCESS_KEY_ID_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.001>>>
+
+<<<T051:t051.aws-access-key.negative.002>>>
+# t051.aws-access-key.negative.002
+# t051-negative-kind: SANITIZER
+AWS_ACCESS_KEY_ID=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.002>>>
+
+<<<T051:t051.aws-access-key.negative.003>>>
+# t051.aws-access-key.negative.003
+# t051-negative-kind: SAFE_API
+AWS_ACCESS_KEY_ID_REF=secret://qualification/aws_access_key_id
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.003>>>
+
+<<<T051:t051.aws-access-key.negative.004>>>
+# t051.aws-access-key.negative.004
+# t051-negative-kind: GENERATED_OR_VENDOR
+AWS_ACCESS_KEY_ID=AKIAA8B7914A38A95A75
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.004>>>
+
+<<<T051:t051.aws-access-key.negative.005>>>
+# t051.aws-access-key.negative.005
+# t051-negative-kind: PATCHED
+AWS_ACCESS_KEY_ID_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.005>>>
+
+<<<T051:t051.aws-access-key.negative.006>>>
+# t051.aws-access-key.negative.006
+# t051-negative-kind: SANITIZER
+AWS_ACCESS_KEY_ID=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.006>>>
+
+<<<T051:t051.aws-access-key.negative.007>>>
+# t051.aws-access-key.negative.007
+# t051-negative-kind: SAFE_API
+AWS_ACCESS_KEY_ID_REF=secret://qualification/aws_access_key_id
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.007>>>
+
+<<<T051:t051.aws-access-key.negative.008>>>
+# t051.aws-access-key.negative.008
+# t051-negative-kind: GENERATED_OR_VENDOR
+AWS_ACCESS_KEY_ID=AKIAACAAA38A86574946
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.008>>>
+
+<<<T051:t051.aws-access-key.negative.009>>>
+# t051.aws-access-key.negative.009
+# t051-negative-kind: PATCHED
+AWS_ACCESS_KEY_ID_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.009>>>
+
+<<<T051:t051.aws-access-key.negative.010>>>
+# t051.aws-access-key.negative.010
+# t051-negative-kind: SANITIZER
+AWS_ACCESS_KEY_ID=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.010>>>
+
+<<<T051:t051.aws-access-key.negative.011>>>
+# t051.aws-access-key.negative.011
+# t051-negative-kind: SAFE_API
+AWS_ACCESS_KEY_ID_REF=secret://qualification/aws_access_key_id
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.011>>>
+
+<<<T051:t051.aws-access-key.negative.012>>>
+# t051.aws-access-key.negative.012
+# t051-negative-kind: GENERATED_OR_VENDOR
+AWS_ACCESS_KEY_ID=AKIAAA4424CA7B927FB3
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.012>>>
+
+<<<T051:t051.aws-access-key.negative.013>>>
+# t051.aws-access-key.negative.013
+# t051-negative-kind: PATCHED
+AWS_ACCESS_KEY_ID_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.013>>>
+
+<<<T051:t051.aws-access-key.negative.014>>>
+# t051.aws-access-key.negative.014
+# t051-negative-kind: SANITIZER
+AWS_ACCESS_KEY_ID=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.014>>>
+
+<<<T051:t051.aws-access-key.negative.015>>>
+# t051.aws-access-key.negative.015
+# t051-negative-kind: SAFE_API
+AWS_ACCESS_KEY_ID_REF=secret://qualification/aws_access_key_id
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.015>>>
+
+<<<T051:t051.aws-access-key.negative.016>>>
+# t051.aws-access-key.negative.016
+# t051-negative-kind: GENERATED_OR_VENDOR
+AWS_ACCESS_KEY_ID=AKIAA1D4A7F333C8E4B3
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.016>>>
+
+<<<T051:t051.aws-access-key.negative.017>>>
+# t051.aws-access-key.negative.017
+# t051-negative-kind: PATCHED
+AWS_ACCESS_KEY_ID_ROTATED=true
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.017>>>
+
+<<<T051:t051.aws-access-key.negative.018>>>
+# t051.aws-access-key.negative.018
+# t051-negative-kind: SANITIZER
+AWS_ACCESS_KEY_ID=[REDACTED]
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.018>>>
+
+<<<T051:t051.aws-access-key.negative.019>>>
+# t051.aws-access-key.negative.019
+# t051-negative-kind: SAFE_API
+AWS_ACCESS_KEY_ID_REF=secret://qualification/aws_access_key_id
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.019>>>
+
+<<<T051:t051.aws-access-key.negative.020>>>
+# t051.aws-access-key.negative.020
+# t051-negative-kind: GENERATED_OR_VENDOR
+AWS_ACCESS_KEY_ID=AKIAAD742B3DD0002EC3
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.020>>>

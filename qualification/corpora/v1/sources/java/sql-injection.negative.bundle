@@ -1,0 +1,255 @@
+<<<T051:t051.sql-injection.negative.001>>>
+// t051.sql-injection.negative.001
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class SqlInjectionNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    long accountId001 = Long.parseLong(queryParameter001);
+    java.sql.Statement statement001 = null;
+    statement001.executeQuery("SELECT * FROM account WHERE id=" + accountId001);
+  }
+}
+<<<END:t051.sql-injection.negative.001>>>
+
+<<<T051:t051.sql-injection.negative.002>>>
+// t051.sql-injection.negative.002
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class SqlInjectionNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    String sanitized002 = headerValue002.replaceAll("[^0-9]", "");
+    java.sql.Statement statement002 = null;
+    statement002.executeQuery("SELECT * FROM account WHERE id=" + sanitized002);
+  }
+}
+<<<END:t051.sql-injection.negative.002>>>
+
+<<<T051:t051.sql-injection.negative.003>>>
+// t051.sql-injection.negative.003
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class SqlInjectionNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    java.sql.PreparedStatement statement003 = null;
+    statement003.setString(1, cookieValue003);
+    statement003.executeQuery();
+  }
+}
+<<<END:t051.sql-injection.negative.003>>>
+
+<<<T051:t051.sql-injection.negative.004>>>
+// t051.sql-injection.negative.004
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class SqlInjectionNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    // documentation only: java.sql.Statement statement004 = null;
+    // documentation only: statement004.executeQuery("SELECT * FROM account WHERE id='" + pathVariable004 + "'");
+    System.out.print(pathVariable004.length());
+  }
+}
+<<<END:t051.sql-injection.negative.004>>>
+
+<<<T051:t051.sql-injection.negative.005>>>
+// t051.sql-injection.negative.005
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class SqlInjectionNegative005 {
+  void evaluate(String formField005) throws Exception {
+    java.sql.Statement statement005 = null;
+    statement005.executeQuery("SELECT * FROM account WHERE id='" + formField005 + "'");
+  }
+}
+<<<END:t051.sql-injection.negative.005>>>
+
+<<<T051:t051.sql-injection.negative.006>>>
+// t051.sql-injection.negative.006
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class SqlInjectionNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    long accountId006 = Long.parseLong(jsonProperty006);
+    java.sql.Statement statement006 = null;
+    statement006.executeQuery("SELECT * FROM account WHERE id=" + accountId006);
+  }
+}
+<<<END:t051.sql-injection.negative.006>>>
+
+<<<T051:t051.sql-injection.negative.007>>>
+// t051.sql-injection.negative.007
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class SqlInjectionNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    String sanitized007 = xmlValue007.replaceAll("[^0-9]", "");
+    java.sql.Statement statement007 = null;
+    statement007.executeQuery("SELECT * FROM account WHERE id=" + sanitized007);
+  }
+}
+<<<END:t051.sql-injection.negative.007>>>
+
+<<<T051:t051.sql-injection.negative.008>>>
+// t051.sql-injection.negative.008
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class SqlInjectionNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    java.sql.PreparedStatement statement008 = null;
+    statement008.setString(1, messageBody008);
+    statement008.executeQuery();
+  }
+}
+<<<END:t051.sql-injection.negative.008>>>
+
+<<<T051:t051.sql-injection.negative.009>>>
+// t051.sql-injection.negative.009
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class SqlInjectionNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    // documentation only: java.sql.Statement statement009 = null;
+    // documentation only: statement009.executeQuery("SELECT * FROM account WHERE id='" + queueAttribute009 + "'");
+    System.out.print(queueAttribute009.length());
+  }
+}
+<<<END:t051.sql-injection.negative.009>>>
+
+<<<T051:t051.sql-injection.negative.010>>>
+// t051.sql-injection.negative.010
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class SqlInjectionNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    java.sql.Statement statement010 = null;
+    statement010.executeQuery("SELECT * FROM account WHERE id='" + rpcArgument010 + "'");
+  }
+}
+<<<END:t051.sql-injection.negative.010>>>
+
+<<<T051:t051.sql-injection.negative.011>>>
+// t051.sql-injection.negative.011
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class SqlInjectionNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    long accountId011 = Long.parseLong(webhookField011);
+    java.sql.Statement statement011 = null;
+    statement011.executeQuery("SELECT * FROM account WHERE id=" + accountId011);
+  }
+}
+<<<END:t051.sql-injection.negative.011>>>
+
+<<<T051:t051.sql-injection.negative.012>>>
+// t051.sql-injection.negative.012
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class SqlInjectionNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    String sanitized012 = csvColumn012.replaceAll("[^0-9]", "");
+    java.sql.Statement statement012 = null;
+    statement012.executeQuery("SELECT * FROM account WHERE id=" + sanitized012);
+  }
+}
+<<<END:t051.sql-injection.negative.012>>>
+
+<<<T051:t051.sql-injection.negative.013>>>
+// t051.sql-injection.negative.013
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class SqlInjectionNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    java.sql.PreparedStatement statement013 = null;
+    statement013.setString(1, yamlProperty013);
+    statement013.executeQuery();
+  }
+}
+<<<END:t051.sql-injection.negative.013>>>
+
+<<<T051:t051.sql-injection.negative.014>>>
+// t051.sql-injection.negative.014
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class SqlInjectionNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    // documentation only: java.sql.Statement statement014 = null;
+    // documentation only: statement014.executeQuery("SELECT * FROM account WHERE id='" + configValue014 + "'");
+    System.out.print(configValue014.length());
+  }
+}
+<<<END:t051.sql-injection.negative.014>>>
+
+<<<T051:t051.sql-injection.negative.015>>>
+// t051.sql-injection.negative.015
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class SqlInjectionNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    java.sql.Statement statement015 = null;
+    statement015.executeQuery("SELECT * FROM account WHERE id='" + environmentValue015 + "'");
+  }
+}
+<<<END:t051.sql-injection.negative.015>>>
+
+<<<T051:t051.sql-injection.negative.016>>>
+// t051.sql-injection.negative.016
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class SqlInjectionNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    long accountId016 = Long.parseLong(cliArgument016);
+    java.sql.Statement statement016 = null;
+    statement016.executeQuery("SELECT * FROM account WHERE id=" + accountId016);
+  }
+}
+<<<END:t051.sql-injection.negative.016>>>
+
+<<<T051:t051.sql-injection.negative.017>>>
+// t051.sql-injection.negative.017
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class SqlInjectionNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    String sanitized017 = metadataValue017.replaceAll("[^0-9]", "");
+    java.sql.Statement statement017 = null;
+    statement017.executeQuery("SELECT * FROM account WHERE id=" + sanitized017);
+  }
+}
+<<<END:t051.sql-injection.negative.017>>>
+
+<<<T051:t051.sql-injection.negative.018>>>
+// t051.sql-injection.negative.018
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class SqlInjectionNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    java.sql.PreparedStatement statement018 = null;
+    statement018.setString(1, recordField018);
+    statement018.executeQuery();
+  }
+}
+<<<END:t051.sql-injection.negative.018>>>
+
+<<<T051:t051.sql-injection.negative.019>>>
+// t051.sql-injection.negative.019
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class SqlInjectionNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    // documentation only: java.sql.Statement statement019 = null;
+    // documentation only: statement019.executeQuery("SELECT * FROM account WHERE id='" + importedValue019 + "'");
+    System.out.print(importedValue019.length());
+  }
+}
+<<<END:t051.sql-injection.negative.019>>>
+
+<<<T051:t051.sql-injection.negative.020>>>
+// t051.sql-injection.negative.020
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class SqlInjectionNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    java.sql.Statement statement020 = null;
+    statement020.executeQuery("SELECT * FROM account WHERE id='" + requestAttribute020 + "'");
+  }
+}
+<<<END:t051.sql-injection.negative.020>>>

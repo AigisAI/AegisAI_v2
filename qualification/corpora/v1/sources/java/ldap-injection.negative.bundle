@@ -1,0 +1,247 @@
+<<<T051:t051.ldap-injection.negative.001>>>
+// t051.ldap-injection.negative.001
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class LdapInjectionNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    javax.naming.directory.DirContext context001 = null;
+    context001.search("ou=users", "(uid=service-account)", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.001>>>
+
+<<<T051:t051.ldap-injection.negative.002>>>
+// t051.ldap-injection.negative.002
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class LdapInjectionNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    String sanitized002 = headerValue002.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    javax.naming.directory.DirContext context002 = null;
+    context002.search("ou=users", "(uid=" + sanitized002 + ")", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.002>>>
+
+<<<T051:t051.ldap-injection.negative.003>>>
+// t051.ldap-injection.negative.003
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class LdapInjectionNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    javax.naming.directory.DirContext context003 = null;
+    context003.search("ou=users", "(uid={0})", new Object[] { cookieValue003 }, null);
+  }
+}
+<<<END:t051.ldap-injection.negative.003>>>
+
+<<<T051:t051.ldap-injection.negative.004>>>
+// t051.ldap-injection.negative.004
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class LdapInjectionNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    // documentation only: javax.naming.directory.DirContext context004 = null;
+    // documentation only: context004.search("ou=users", "(uid=" + pathVariable004 + ")", null);
+    System.out.print(pathVariable004.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.004>>>
+
+<<<T051:t051.ldap-injection.negative.005>>>
+// t051.ldap-injection.negative.005
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class LdapInjectionNegative005 {
+  void evaluate(String formField005) throws Exception {
+    javax.naming.directory.DirContext context005 = null;
+    context005.search("ou=users", "(uid=" + formField005 + ")", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.005>>>
+
+<<<T051:t051.ldap-injection.negative.006>>>
+// t051.ldap-injection.negative.006
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class LdapInjectionNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    javax.naming.directory.DirContext context006 = null;
+    context006.search("ou=users", "(uid=service-account)", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.006>>>
+
+<<<T051:t051.ldap-injection.negative.007>>>
+// t051.ldap-injection.negative.007
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class LdapInjectionNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    String sanitized007 = xmlValue007.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    javax.naming.directory.DirContext context007 = null;
+    context007.search("ou=users", "(uid=" + sanitized007 + ")", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.007>>>
+
+<<<T051:t051.ldap-injection.negative.008>>>
+// t051.ldap-injection.negative.008
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class LdapInjectionNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    javax.naming.directory.DirContext context008 = null;
+    context008.search("ou=users", "(uid={0})", new Object[] { messageBody008 }, null);
+  }
+}
+<<<END:t051.ldap-injection.negative.008>>>
+
+<<<T051:t051.ldap-injection.negative.009>>>
+// t051.ldap-injection.negative.009
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class LdapInjectionNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    // documentation only: javax.naming.directory.DirContext context009 = null;
+    // documentation only: context009.search("ou=users", "(uid=" + queueAttribute009 + ")", null);
+    System.out.print(queueAttribute009.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.009>>>
+
+<<<T051:t051.ldap-injection.negative.010>>>
+// t051.ldap-injection.negative.010
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class LdapInjectionNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    javax.naming.directory.DirContext context010 = null;
+    context010.search("ou=users", "(uid=" + rpcArgument010 + ")", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.010>>>
+
+<<<T051:t051.ldap-injection.negative.011>>>
+// t051.ldap-injection.negative.011
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class LdapInjectionNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    javax.naming.directory.DirContext context011 = null;
+    context011.search("ou=users", "(uid=service-account)", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.011>>>
+
+<<<T051:t051.ldap-injection.negative.012>>>
+// t051.ldap-injection.negative.012
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class LdapInjectionNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    String sanitized012 = csvColumn012.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    javax.naming.directory.DirContext context012 = null;
+    context012.search("ou=users", "(uid=" + sanitized012 + ")", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.012>>>
+
+<<<T051:t051.ldap-injection.negative.013>>>
+// t051.ldap-injection.negative.013
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class LdapInjectionNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    javax.naming.directory.DirContext context013 = null;
+    context013.search("ou=users", "(uid={0})", new Object[] { yamlProperty013 }, null);
+  }
+}
+<<<END:t051.ldap-injection.negative.013>>>
+
+<<<T051:t051.ldap-injection.negative.014>>>
+// t051.ldap-injection.negative.014
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class LdapInjectionNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    // documentation only: javax.naming.directory.DirContext context014 = null;
+    // documentation only: context014.search("ou=users", "(uid=" + configValue014 + ")", null);
+    System.out.print(configValue014.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.014>>>
+
+<<<T051:t051.ldap-injection.negative.015>>>
+// t051.ldap-injection.negative.015
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class LdapInjectionNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    javax.naming.directory.DirContext context015 = null;
+    context015.search("ou=users", "(uid=" + environmentValue015 + ")", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.015>>>
+
+<<<T051:t051.ldap-injection.negative.016>>>
+// t051.ldap-injection.negative.016
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class LdapInjectionNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    javax.naming.directory.DirContext context016 = null;
+    context016.search("ou=users", "(uid=service-account)", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.016>>>
+
+<<<T051:t051.ldap-injection.negative.017>>>
+// t051.ldap-injection.negative.017
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class LdapInjectionNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    String sanitized017 = metadataValue017.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    javax.naming.directory.DirContext context017 = null;
+    context017.search("ou=users", "(uid=" + sanitized017 + ")", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.017>>>
+
+<<<T051:t051.ldap-injection.negative.018>>>
+// t051.ldap-injection.negative.018
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class LdapInjectionNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    javax.naming.directory.DirContext context018 = null;
+    context018.search("ou=users", "(uid={0})", new Object[] { recordField018 }, null);
+  }
+}
+<<<END:t051.ldap-injection.negative.018>>>
+
+<<<T051:t051.ldap-injection.negative.019>>>
+// t051.ldap-injection.negative.019
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class LdapInjectionNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    // documentation only: javax.naming.directory.DirContext context019 = null;
+    // documentation only: context019.search("ou=users", "(uid=" + importedValue019 + ")", null);
+    System.out.print(importedValue019.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.019>>>
+
+<<<T051:t051.ldap-injection.negative.020>>>
+// t051.ldap-injection.negative.020
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class LdapInjectionNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    javax.naming.directory.DirContext context020 = null;
+    context020.search("ou=users", "(uid=" + requestAttribute020 + ")", null);
+  }
+}
+<<<END:t051.ldap-injection.negative.020>>>

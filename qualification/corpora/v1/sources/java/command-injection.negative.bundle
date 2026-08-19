@@ -1,0 +1,231 @@
+<<<T051:t051.command-injection.negative.001>>>
+// t051.command-injection.negative.001
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class CommandInjectionNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    new ProcessBuilder("/usr/bin/tool", "status").start();
+  }
+}
+<<<END:t051.command-injection.negative.001>>>
+
+<<<T051:t051.command-injection.negative.002>>>
+// t051.command-injection.negative.002
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class CommandInjectionNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    String sanitized002 = headerValue002.replaceAll("[^A-Za-z0-9_-]", "");
+    new ProcessBuilder("/usr/bin/tool", sanitized002).start();
+  }
+}
+<<<END:t051.command-injection.negative.002>>>
+
+<<<T051:t051.command-injection.negative.003>>>
+// t051.command-injection.negative.003
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class CommandInjectionNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    java.util.List<String> allowed003 = java.util.List.of("status", "version");
+    new ProcessBuilder("/usr/bin/tool", allowed003.contains(cookieValue003) ? cookieValue003 : "status").start();
+  }
+}
+<<<END:t051.command-injection.negative.003>>>
+
+<<<T051:t051.command-injection.negative.004>>>
+// t051.command-injection.negative.004
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class CommandInjectionNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    // documentation only: Runtime.getRuntime().exec("/usr/bin/tool " + pathVariable004);
+    System.out.print(pathVariable004.length());
+  }
+}
+<<<END:t051.command-injection.negative.004>>>
+
+<<<T051:t051.command-injection.negative.005>>>
+// t051.command-injection.negative.005
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class CommandInjectionNegative005 {
+  void evaluate(String formField005) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + formField005);
+  }
+}
+<<<END:t051.command-injection.negative.005>>>
+
+<<<T051:t051.command-injection.negative.006>>>
+// t051.command-injection.negative.006
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class CommandInjectionNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    new ProcessBuilder("/usr/bin/tool", "status").start();
+  }
+}
+<<<END:t051.command-injection.negative.006>>>
+
+<<<T051:t051.command-injection.negative.007>>>
+// t051.command-injection.negative.007
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class CommandInjectionNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    String sanitized007 = xmlValue007.replaceAll("[^A-Za-z0-9_-]", "");
+    new ProcessBuilder("/usr/bin/tool", sanitized007).start();
+  }
+}
+<<<END:t051.command-injection.negative.007>>>
+
+<<<T051:t051.command-injection.negative.008>>>
+// t051.command-injection.negative.008
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class CommandInjectionNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    java.util.List<String> allowed008 = java.util.List.of("status", "version");
+    new ProcessBuilder("/usr/bin/tool", allowed008.contains(messageBody008) ? messageBody008 : "status").start();
+  }
+}
+<<<END:t051.command-injection.negative.008>>>
+
+<<<T051:t051.command-injection.negative.009>>>
+// t051.command-injection.negative.009
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class CommandInjectionNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    // documentation only: Runtime.getRuntime().exec("/usr/bin/tool " + queueAttribute009);
+    System.out.print(queueAttribute009.length());
+  }
+}
+<<<END:t051.command-injection.negative.009>>>
+
+<<<T051:t051.command-injection.negative.010>>>
+// t051.command-injection.negative.010
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class CommandInjectionNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + rpcArgument010);
+  }
+}
+<<<END:t051.command-injection.negative.010>>>
+
+<<<T051:t051.command-injection.negative.011>>>
+// t051.command-injection.negative.011
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class CommandInjectionNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    new ProcessBuilder("/usr/bin/tool", "status").start();
+  }
+}
+<<<END:t051.command-injection.negative.011>>>
+
+<<<T051:t051.command-injection.negative.012>>>
+// t051.command-injection.negative.012
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class CommandInjectionNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    String sanitized012 = csvColumn012.replaceAll("[^A-Za-z0-9_-]", "");
+    new ProcessBuilder("/usr/bin/tool", sanitized012).start();
+  }
+}
+<<<END:t051.command-injection.negative.012>>>
+
+<<<T051:t051.command-injection.negative.013>>>
+// t051.command-injection.negative.013
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class CommandInjectionNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    java.util.List<String> allowed013 = java.util.List.of("status", "version");
+    new ProcessBuilder("/usr/bin/tool", allowed013.contains(yamlProperty013) ? yamlProperty013 : "status").start();
+  }
+}
+<<<END:t051.command-injection.negative.013>>>
+
+<<<T051:t051.command-injection.negative.014>>>
+// t051.command-injection.negative.014
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class CommandInjectionNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    // documentation only: Runtime.getRuntime().exec("/usr/bin/tool " + configValue014);
+    System.out.print(configValue014.length());
+  }
+}
+<<<END:t051.command-injection.negative.014>>>
+
+<<<T051:t051.command-injection.negative.015>>>
+// t051.command-injection.negative.015
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class CommandInjectionNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + environmentValue015);
+  }
+}
+<<<END:t051.command-injection.negative.015>>>
+
+<<<T051:t051.command-injection.negative.016>>>
+// t051.command-injection.negative.016
+// t051-negative-kind: PATCHED
+package qualification.corpus;
+final class CommandInjectionNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    new ProcessBuilder("/usr/bin/tool", "status").start();
+  }
+}
+<<<END:t051.command-injection.negative.016>>>
+
+<<<T051:t051.command-injection.negative.017>>>
+// t051.command-injection.negative.017
+// t051-negative-kind: SANITIZER
+package qualification.corpus;
+final class CommandInjectionNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    String sanitized017 = metadataValue017.replaceAll("[^A-Za-z0-9_-]", "");
+    new ProcessBuilder("/usr/bin/tool", sanitized017).start();
+  }
+}
+<<<END:t051.command-injection.negative.017>>>
+
+<<<T051:t051.command-injection.negative.018>>>
+// t051.command-injection.negative.018
+// t051-negative-kind: SAFE_API
+package qualification.corpus;
+final class CommandInjectionNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    java.util.List<String> allowed018 = java.util.List.of("status", "version");
+    new ProcessBuilder("/usr/bin/tool", allowed018.contains(recordField018) ? recordField018 : "status").start();
+  }
+}
+<<<END:t051.command-injection.negative.018>>>
+
+<<<T051:t051.command-injection.negative.019>>>
+// t051.command-injection.negative.019
+// t051-negative-kind: COMMENT_OR_STRING
+package qualification.corpus;
+final class CommandInjectionNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    // documentation only: Runtime.getRuntime().exec("/usr/bin/tool " + importedValue019);
+    System.out.print(importedValue019.length());
+  }
+}
+<<<END:t051.command-injection.negative.019>>>
+
+<<<T051:t051.command-injection.negative.020>>>
+// t051.command-injection.negative.020
+// t051-negative-kind: GENERATED_OR_VENDOR
+package qualification.corpus;
+final class CommandInjectionNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    Runtime.getRuntime().exec("/usr/bin/tool " + requestAttribute020);
+  }
+}
+<<<END:t051.command-injection.negative.020>>>
