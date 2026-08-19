@@ -15,8 +15,10 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040 through T052 independently. The T053 repository-side provider handoff is package-ready, and
-the guarded next action is real production-equivalent microVM execution and destruction evidence.
+T040 through T052 independently. The T053 repository-side provider handoff is package-ready.
+The T054 repository-side end-to-end qualification contract is package-ready. The guarded next action remains real
+production-equivalent T053 microVM execution and destruction evidence; T054 plan issuance is
+cryptographically blocked until that result passes.
 
 ## Target Boundaries
 
@@ -259,6 +261,18 @@ binds all provider and supply-chain dependencies, requires detached dual approva
 per-cell receipts, and rejects any reuse, egress, prohibited effect, or cleanup beyond 60 seconds.
 Actual T053 completion remains blocked on external provider evidence; T054 cannot start from a
 repository-only or partial result.
+
+The T054 repository package then expands T051/T052 into exactly 3,462 candidate/baseline cells,
+binds candidate and last-known-good scanner sets plus one performance hardware class, preserves an
+infrastructure retry as a measured attempt, and requires three independently signed receipts per
+cell. Plan issuance also requires the exact T053 dependency/provider/adapter and a process-pinned
+trust bundle digest. The verifier loads every artifact signature and provenance statement,
+recomputes both envelope digests, verifies both per-artifact `SUPPLY_CHAIN_AUTHORITY` Ed25519
+signatures and provenance subject/source/materials, then verifies the signed closed set. It
+recomputes all denominators, p50/p95 values, correctness, precision, recall,
+false-positive, failure, capacity, resource, and zero-tolerance gates. A partial valid run stays
+`PENDING_PROVIDER_EXECUTION`; repository-only validation stays `BLOCKED_T053_QUALIFICATION`; only
+a complete pass may authorize T055, never rollout or production readiness.
 
 ## Key Interfaces
 

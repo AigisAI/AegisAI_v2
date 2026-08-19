@@ -1345,6 +1345,50 @@ approvals are `PASSED`. Its evaluation instant is supplied only by the verifier'
 clock; callers cannot submit or replay an evaluation time. A pass authorizes entry to T054 only. It never authorizes rollout or marks
 production ready, and T053 remains incomplete until those external receipts actually exist.
 
+### SastEndToEndQualificationManifest, DependencySet, and ExecutionPlan
+
+The repository-owned T054 manifest contains exactly 3,462 immutable cells. Candidate execution
+covers all 1,880 T051 case-profile combinations; the same 940 negative combinations are repeated
+against the last-known-good baseline; 102 T052 fingerprint/correlation and evidence/privacy
+case-profile cells exercise queue through cleanup; and 540 performance cells provide 30 candidate
+and 30 baseline runs for each of nine profile-size buckets. Every performance cell shares one
+digest-bound hardware class. The manifest binds T051, its prior-must-detect manifest, T052, T053,
+and the closed measurement policy but contains no live evidence.
+
+An external dependency set binds distinct candidate and baseline scanner-set digests, their
+images/wrappers/rules/checks/databases, and the shared ingress, normalization, correlation,
+coverage, policy, evidence, queue, cleanup, microVM, runner, provider, telemetry, and trust assets.
+All carry digest/signature/provenance references within an at-most-seven-day window. An immutable
+artifact-verification set mirrors every binding and includes each complete artifact signature plus
+a signed provenance statement containing the exact subject, source, builder, materials, and
+generation time. Validation recomputes both envelope digests and verifies both per-artifact
+Ed25519 signatures before verifying the `SUPPLY_CHAIN_AUTHORITY` set signature. Its trust bundle
+must match the independently configured `SAST_T054_TRUST_POLICY_DIGEST`; the dependency set cannot
+select its own trust root. A
+canonical execution plan can be built only after a valid T053 `PASSED` result, its exact dependency
+set, and a Qualification Authority Ed25519 entry attestation bind the exact T053/T054 manifests.
+The T053 and T054 provider IDs and adapter refs must be identical. Detached Security Engineering
+and Scan Platform approvals must strictly predate the first attempt.
+
+### SastEndToEndQualificationReceipt and Result
+
+One receipt binds one manifest cell and its complete attempt chain. Each attempt has globally
+unique attempt, sandbox, workload, provider-attestation, runtime-attestation, and telemetry-
+attestation identities; exact start/completion/cleanup instants; latency/CPU/memory/disk; all eight
+zero-tolerance counters; and all six cleanup controls completed within 60 seconds. At most one
+retry is permitted and only after an infrastructure failure; the first attempt remains in the
+reliability denominator. Nine ordered queue-to-cleanup phase observations and normalized,
+fingerprint, correlation, coverage, policy, and evidence decision digests bind a successful cell.
+Provider, qualification-runtime, and telemetry signatures cover the receipt digest.
+
+The result never accepts caller metrics. It recomputes exact golden conformance, must-detect and
+prior recall, Critical/High precision, candidate/baseline false positives, all attempt failures,
+per-bucket p50/p95 and resource maxima, absolute lane p95, fingerprint/privacy/capacity pass rates,
+and zero-tolerance sums from the signed receipts. It is
+`BLOCKED_T053_QUALIFICATION | PENDING_PROVIDER_EXECUTION | FAILED | PASSED`; only `PASSED` sets
+`t055EntryAuthorized=true`. Finding, policy, publication, deployment, and production-readiness
+authority are always false.
+
 ### SastQualityEvaluation
 
 - scanner-set and rule-bundle versions
