@@ -1416,7 +1416,7 @@ export function evaluateSastIsolatedQualificationEvidence(
         input.signedReceipts.length >
         SAST_ISOLATED_QUALIFICATION_LIMITS.maximumIdentifierSetSize
       ) {
-        failureReasons.push('RECEIPT_DUPLICATE');
+        failureReasons.push('RECEIPT_INVALID');
       }
 
       for (const signedReceipt of input.signedReceipts.slice(

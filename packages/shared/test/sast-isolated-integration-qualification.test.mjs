@@ -38,8 +38,12 @@ const provisioningContract = readFileSync(
   new URL('../../../deploy/scanner-sandbox/provisioning-contract.json', import.meta.url),
   'utf8'
 );
+const materializationPolicy = readFileSync(
+  new URL('../../../qualification/t053-v1/materialization-policy.json', import.meta.url),
+  'utf8'
+);
 const provisioningContractDigest = digest(provisioningContract);
-const materializationPolicyDigest = digest('t053-materialization-policy-v1');
+const materializationPolicyDigest = digest(materializationPolicy);
 
 const manifest = buildSastIsolatedQualificationManifest(
   {
@@ -303,6 +307,25 @@ test('T053 fails closed on duplicate cells and sandbox or attestation reuse', ()
   assert.ok(duplicated.failureReasons.includes('SANDBOX_REUSED'));
   assert.ok(duplicated.failureReasons.includes('WORKLOAD_REUSED'));
   assert.ok(duplicated.failureReasons.includes('ATTESTATION_REUSED'));
+});
+
+test('T053 reports an over-count receipt set as invalid', () => {
+  const bundle = completeEvidenceBundle();
+  const overCounted = evaluateSastIsolatedQualificationEvidence(
+    {
+      manifest,
+      dependencySet: bundle.dependencySet,
+      plan: bundle.plan,
+      approvals: bundle.approvals,
+      signedReceipts: [...bundle.signedReceipts, bundle.signedReceipts[0]],
+      trustedEvaluatedAt: '2026-08-20T00:10:00.000Z',
+      verifySignature: () => true
+    },
+    digest
+  );
+  assert.ok(overCounted);
+  assert.equal(overCounted.status, 'FAILED');
+  assert.ok(overCounted.failureReasons.includes('RECEIPT_INVALID'));
 });
 
 test('T053 reports outcome, egress, cleanup, and signature violations', () => {
@@ -602,7 +625,10 @@ function signature(role, payloadDigest, signedAt) {
 }
 
 function receiptInput(value) {
-  const { receiptId: _receiptId, receiptDigest: _receiptDigest, version: _version, ...input } = value;
+  const input = { ...value };
+  delete input.receiptId;
+  delete input.receiptDigest;
+  delete input.version;
   return input;
 }
 

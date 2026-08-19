@@ -369,8 +369,26 @@ function runNode(script, args) {
     child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
-    child.once('error', rejectPromise);
-    child.once('close', (code) => resolvePromise({ code, stdout, stderr }));
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill();
+      rejectPromise(new Error(`T053 tool timed out after 120 seconds: ${script}`));
+    }, 120_000);
+    timeout.unref();
+    child.once('error', (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      rejectPromise(error);
+    });
+    child.once('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolvePromise({ code, stdout, stderr });
+    });
   });
 }
 

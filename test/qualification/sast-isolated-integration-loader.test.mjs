@@ -17,6 +17,8 @@ import {
 
 const repositoryRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const canonicalRoot = join(repositoryRoot, 'qualification', 't053-v1');
+const EXPECTED_MANIFEST_DIGEST =
+  'sha256:dda19ac6bd431dd3a6b0be1d52b17942dc01c0e57c3c71f06521c8c07718ffe4';
 
 test('T053 loader accepts the exact immutable provider handoff only', async () => {
   const result = await loadAndValidateIsolatedIntegrationPackage();
@@ -27,7 +29,7 @@ test('T053 loader accepts the exact immutable provider handoff only', async () =
   assert.equal(Object.isFrozen(result.manifest.cells[0]), true);
   assert.equal(result.providerExecutionStatus, 'PENDING_PROVIDER_EXECUTION');
   assert.equal(result.productionReadinessAuthority, false);
-  assert.match(result.manifestDigest, /^sha256:[a-f0-9]{64}$/u);
+  assert.equal(result.manifestDigest, EXPECTED_MANIFEST_DIGEST);
 });
 
 test('T053 generator is deterministic and bootstrap refuses overwrite', async () => {
@@ -154,6 +156,14 @@ async function copyPackage(t) {
   const root = join(temporaryRoot, 'qualification');
   await cp(canonicalRoot, root, { recursive: true });
   t.after(() => rm(temporaryRoot, { recursive: true, force: true }));
+  const committedManifest = JSON.parse(
+    await readFile(join(root, 'isolated-integration.manifest.json'), 'utf8')
+  );
+  assert.equal(committedManifest.manifestDigest, EXPECTED_MANIFEST_DIGEST);
+  assert.equal(
+    createIsolatedIntegrationAssets().manifest.manifestDigest,
+    EXPECTED_MANIFEST_DIGEST
+  );
   return root;
 }
 

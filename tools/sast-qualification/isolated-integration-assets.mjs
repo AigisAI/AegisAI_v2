@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { constants, readFileSync } from 'node:fs';
-import { lstat, mkdir, open, readdir, realpath } from 'node:fs/promises';
+import { lstat, mkdir, open, readdir, realpath, rm } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -247,16 +247,25 @@ async function assertExactRootEntries(root) {
 
 async function createExclusiveFile(path, text) {
   let handle;
+  let created = false;
+  let failure;
   try {
     handle = await open(
       path,
       constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | noFollowFlag(),
       0o600
     );
+    created = true;
     await handle.writeFile(text, 'utf8');
     await handle.sync();
+  } catch (error) {
+    failure = error;
   } finally {
     await handle?.close().catch(() => undefined);
+  }
+  if (failure) {
+    if (created) await rm(path, { force: true }).catch(() => undefined);
+    throw failure;
   }
 }
 

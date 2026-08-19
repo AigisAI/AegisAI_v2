@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { lstat, open, readdir, realpath } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 
 import {
   isSastIsolatedQualificationManifestValid
