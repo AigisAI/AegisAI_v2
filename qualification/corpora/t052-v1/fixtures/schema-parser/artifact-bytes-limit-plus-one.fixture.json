@@ -20,6 +20,90 @@
       "booleanValue": null
     },
     {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maxArtifactBytes",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "COMMON_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 268435457,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 268435457,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_FAST_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 67108865,
+      "booleanValue": null
+    },
+    {
+      "name": "MATERIALIZED_PROJECTION_MODE",
+      "valueType": "STRING",
+      "stringValue": "MAXIMUM_APPLICABLE_PROFILE_BOUND",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_BOUND_FIXED_CONTRIBUTION",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 2,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_BOUND_MATERIALIZATION_METRIC",
+      "valueType": "STRING",
+      "stringValue": "MATERIALIZED_BYTES",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_BOUND_REPEAT_FORMULA",
+      "valueType": "STRING",
+      "stringValue": "SELECTED_LIMIT_PLUS_ONE_MINUS_FIXED_CONTRIBUTION",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_BOUND_SEGMENT_ORDINAL",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 2,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_BOUND_UNIT_CONTRIBUTION",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 1,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_LIMIT_MODE",
+      "valueType": "STRING",
+      "stringValue": "SELECTED_PROFILE_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_SELECTION_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "CASE_PROFILE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
       "name": "STREAMING_REQUIRED",
       "valueType": "BOOLEAN",
       "stringValue": null,
@@ -87,6 +171,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://8de3b23abeb0c1843295570e361b8b596b778c59aa4312946f6f640c9fcfd500",
-  "fixtureDigest": "sha256:8de3b23abeb0c1843295570e361b8b596b778c59aa4312946f6f640c9fcfd500"
+  "fixtureId": "sast-multi-class-qualification-fixture://7fb8bbc8c0bee20e26813a945d4a17cfe1dfd90ac9ae29e4b54c34315a83f48e",
+  "fixtureDigest": "sha256:7fb8bbc8c0bee20e26813a945d4a17cfe1dfd90ac9ae29e4b54c34315a83f48e"
 }

@@ -568,7 +568,10 @@ incomplete, stale, quarantined, or security-blocked scan.
   responsible T053/T054 evidence stage, owner/license/provenance/revision, and zero prohibited
   effects. Performance MUST provide small/medium/exact-large-limit buckets for all three v1
   profiles, bind one immutable hardware-class reference/digest, and require at least 30 measured
-  runs per bucket after warm-up. Generation and loading MUST reject missing/extra scenarios,
+  runs per bucket after warm-up. Every profile-relative boundary MUST bind the selected profile's
+  exact limit plus one through data-driven materialization metadata; parser-wide depth and string
+  boundaries MUST bind the shared validator's exact limit plus one. Generation and loading MUST
+  reject missing/extra scenarios,
   unknown keys/actions, outcome/stage/profile/hardware drift, path or case-fold collision,
   invalid/noncanonical base64/UTF-8/NFC/LF, BOM, NUL, oversize, extra/empty directories, links,
   filesystem identity changes, and snapshot/fixture/count/digest tampering. T052 validation MUST

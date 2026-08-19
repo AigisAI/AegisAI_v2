@@ -572,7 +572,9 @@ provider, microVM, scanner, or Kubernetes execution:
   file, or directory is accepted;
 - schema/parser inputs cover all three accepted result schemas plus malformed JSON, total-size,
   nesting-depth, record-count, string-size, Unicode, enum, version, foreign-attribution,
-  multi-run, unknown-field, and duplicate-key boundaries;
+  multi-run, unknown-field, and duplicate-key boundaries. Artifact-byte and record-count cases
+  bind each selected profile's exact limit plus one, while nesting and string cases bind the
+  shared validator's exact limit plus one;
 - malicious-repository recipes cover traversal, absolute, backslash, case-fold and Unicode path
   collisions, depth/count/size limits, symlink cycles and outside-root links, submodule/LFS/archive
   non-expansion, FIFO/device declarations, output/findings/time limits, secret-bearing input, and
@@ -596,8 +598,9 @@ provider, microVM, scanner, or Kubernetes execution:
   byte segments; command, executable, argv, environment, shell, script, URL, dynamic execution,
   package installation, build, network, customer-content, finding, policy, publication, SCM
   mutation, and readiness authority are all absent or false;
-- each malicious limit-plus-one case names the selected immutable profile-limit field and binds its
-  exact value for every supported profile, while a symlink cycle declares both directed edges;
+- each profile-relative schema/parser or malicious limit-plus-one case names the selected immutable
+  profile-limit field and binds its exact value for every supported profile, while a symlink cycle
+  declares both directed edges;
 - exclusive initialization refuses overwrite, normal regeneration requires the exact reviewed
   root and fixture set, and the loader regenerates every expected byte in memory before accepting
   the corpus; and

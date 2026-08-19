@@ -20,6 +20,34 @@
       "booleanValue": null
     },
     {
+      "name": "BOUNDARY_LIMIT",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 4096,
+      "booleanValue": null
+    },
+    {
+      "name": "BOUNDARY_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 4097,
+      "booleanValue": null
+    },
+    {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maximumStringBytes",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "BOUNDARY_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "SAST_ARTIFACT_VALIDATION_LIMITS",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
       "name": "STREAMING_REQUIRED",
       "valueType": "BOOLEAN",
       "stringValue": null,
@@ -40,7 +68,7 @@
       "role": "UNIT",
       "encoding": "BASE64",
       "valueBase64": "QQ==",
-      "repeat": 1048577
+      "repeat": 4097
     },
     {
       "ordinal": 3,
@@ -73,7 +101,7 @@
       ]
     }
   ],
-  "materializedBytes": 1048591,
+  "materializedBytes": 4111,
   "materializedEntries": 1,
   "materializedPathDepth": 0,
   "simulatedDurationSeconds": 0,
@@ -87,6 +115,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://4c9eb5bce1949275d6927de481cb2d932d5e53607db85794b6df6fa4b1499ab6",
-  "fixtureDigest": "sha256:4c9eb5bce1949275d6927de481cb2d932d5e53607db85794b6df6fa4b1499ab6"
+  "fixtureId": "sast-multi-class-qualification-fixture://a2fc9a62a04db6f281ef3522d6a5dabac5fdca7931d8fa53aee1f598940c3295",
+  "fixtureDigest": "sha256:a2fc9a62a04db6f281ef3522d6a5dabac5fdca7931d8fa53aee1f598940c3295"
 }

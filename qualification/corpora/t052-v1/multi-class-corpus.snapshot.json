@@ -1,7 +1,7 @@
 {
   "version": "sast-multi-class-qualification-snapshot-v1",
-  "revision": "1.0.1",
-  "publishedAt": "2026-08-19T17:30:00.000Z",
+  "revision": "1.0.2",
+  "publishedAt": "2026-08-19T17:55:00.000Z",
   "ownerRef": "team://security-engineering/sast-qualification",
   "licenseExpression": "Apache-2.0",
   "provenanceRef": "sast-corpus-provenance://aegisai/t052/multi-class-v1/sha256:13c23a74676ceda368b92f7a53051bf37a243ba6edc46768a47025ce008a25e3",
@@ -23,7 +23,7 @@
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.audit-leak-zero",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "AUDIT_LEAK_ZERO",
       "profiles": [
@@ -57,13 +57,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://f447228895b4da8e532ebce575d5e787961b83ac66e7abd458e13778f8f30046",
-      "caseDigest": "sha256:f447228895b4da8e532ebce575d5e787961b83ac66e7abd458e13778f8f30046"
+      "caseId": "sast-multi-class-qualification-case://a8f78d7ff731ede8e9a6cf4efca2d5877956bb7d780d996dc6a3aba7b3af88b4",
+      "caseDigest": "sha256:a8f78d7ff731ede8e9a6cf4efca2d5877956bb7d780d996dc6a3aba7b3af88b4"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.authorization-url-credential-redact",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "AUTHORIZATION_URL_CREDENTIAL_REDACT",
       "profiles": [
@@ -97,13 +97,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://fabd92f046349dbba001a7db9e84590b918ebdab8ddaf31b98e9970aed5da4eb",
-      "caseDigest": "sha256:fabd92f046349dbba001a7db9e84590b918ebdab8ddaf31b98e9970aed5da4eb"
+      "caseId": "sast-multi-class-qualification-case://70312ffaeffef533411550e6fb1ef46e77b49030a27ca03effe82d50f3069806",
+      "caseDigest": "sha256:70312ffaeffef533411550e6fb1ef46e77b49030a27ca03effe82d50f3069806"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.binary-input-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "BINARY_INPUT_REJECT",
       "profiles": [
@@ -137,13 +137,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://0cbb955f871012667d68a6a270a60d3ff0570c0364c3eeef072a5690a976a055",
-      "caseDigest": "sha256:0cbb955f871012667d68a6a270a60d3ff0570c0364c3eeef072a5690a976a055"
+      "caseId": "sast-multi-class-qualification-case://edb20679f7493f22951a07c4b9ade2fd5b367fc391139240d2010529c7b1bd9d",
+      "caseDigest": "sha256:edb20679f7493f22951a07c4b9ade2fd5b367fc391139240d2010529c7b1bd9d"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.cross-tenant-reference-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "CROSS_TENANT_REFERENCE_REJECT",
       "profiles": [
@@ -177,13 +177,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://f7a1dfbe110cfa905ec7bd8c7a13ea307b46452ec602cf5bd5a531685afc1892",
-      "caseDigest": "sha256:f7a1dfbe110cfa905ec7bd8c7a13ea307b46452ec602cf5bd5a531685afc1892"
+      "caseId": "sast-multi-class-qualification-case://c2d6f7fb34ee4a654910364e366367d01c1d75f9569f3c32551eb8e1ffe867ea",
+      "caseDigest": "sha256:c2d6f7fb34ee4a654910364e366367d01c1d75f9569f3c32551eb8e1ffe867ea"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.high-entropy-secret-redact",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "HIGH_ENTROPY_SECRET_REDACT",
       "profiles": [
@@ -217,13 +217,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://252a733bdd1fb6197279d1383c92797ad12b1da1c39bdc126aece2fd75a417f7",
-      "caseDigest": "sha256:252a733bdd1fb6197279d1383c92797ad12b1da1c39bdc126aece2fd75a417f7"
+      "caseId": "sast-multi-class-qualification-case://8ba6382db9e84d06dd38023ebe3c6d1b2e9aecfdd44e90805986b26c05281604",
+      "caseDigest": "sha256:8ba6382db9e84d06dd38023ebe3c6d1b2e9aecfdd44e90805986b26c05281604"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.identity-field-secret-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "IDENTITY_FIELD_SECRET_REJECT",
       "profiles": [
@@ -257,13 +257,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://9c867365c44890204287612f5682ef2ab57b954604ff87815394c528ba0c4058",
-      "caseDigest": "sha256:9c867365c44890204287612f5682ef2ab57b954604ff87815394c528ba0c4058"
+      "caseId": "sast-multi-class-qualification-case://e835a6974c2917abc92453f03448e3dd3ac0fd890e09f08b7a7ff38ee7ebfd55",
+      "caseDigest": "sha256:e835a6974c2917abc92453f03448e3dd3ac0fd890e09f08b7a7ff38ee7ebfd55"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.invalid-encoding-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "INVALID_ENCODING_REJECT",
       "profiles": [
@@ -297,13 +297,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://eb1c94e8f76f870fac773c442e4f91a7b87c57077dc16fedba0b86161a9677fd",
-      "caseDigest": "sha256:eb1c94e8f76f870fac773c442e4f91a7b87c57077dc16fedba0b86161a9677fd"
+      "caseId": "sast-multi-class-qualification-case://1922a9ed4bd45e82784997dec7ec7d4dba9b304b4baeaaca31771294f0ed7c9d",
+      "caseDigest": "sha256:1922a9ed4bd45e82784997dec7ec7d4dba9b304b4baeaaca31771294f0ed7c9d"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.known-format-secret-redact",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "KNOWN_FORMAT_SECRET_REDACT",
       "profiles": [
@@ -337,13 +337,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://6685dd5d12313bf9bf12075657179a7b12212450a6a1dc9abd00427bb747116d",
-      "caseDigest": "sha256:6685dd5d12313bf9bf12075657179a7b12212450a6a1dc9abd00427bb747116d"
+      "caseId": "sast-multi-class-qualification-case://8e399e7ad75b72c0be3241db90792c9b34e5d20d9a53656e3c75b99b8c17f13b",
+      "caseDigest": "sha256:8e399e7ad75b72c0be3241db90792c9b34e5d20d9a53656e3c75b99b8c17f13b"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.private-key-redact",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "PRIVATE_KEY_REDACT",
       "profiles": [
@@ -377,13 +377,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://243ce5cdf2aeb863f55bd3fee1ca2f2b526b40af8d6636a8858ef2d55984ad52",
-      "caseDigest": "sha256:243ce5cdf2aeb863f55bd3fee1ca2f2b526b40af8d6636a8858ef2d55984ad52"
+      "caseId": "sast-multi-class-qualification-case://1a7059af35a7cc6099ffa9c0f4dca7e6e1abe105b79fc550f3b6ac96cba117c2",
+      "caseDigest": "sha256:1a7059af35a7cc6099ffa9c0f4dca7e6e1abe105b79fc550f3b6ac96cba117c2"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.prompt-injection-treated-as-data",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "PROMPT_INJECTION_TREATED_AS_DATA",
       "profiles": [
@@ -417,13 +417,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://a8530377c40e9708c5d01f68519dea8288fd4751c6a6adc1fd281d8e3914d0b8",
-      "caseDigest": "sha256:a8530377c40e9708c5d01f68519dea8288fd4751c6a6adc1fd281d8e3914d0b8"
+      "caseId": "sast-multi-class-qualification-case://07e2cb15c9fa3269640eaf084234e4e178c9cb75dd7f31e7b2d6891466d54cdc",
+      "caseDigest": "sha256:07e2cb15c9fa3269640eaf084234e4e178c9cb75dd7f31e7b2d6891466d54cdc"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.raw-artifact-leak-zero",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "RAW_ARTIFACT_LEAK_ZERO",
       "profiles": [
@@ -457,13 +457,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://a0f1823e2df68721c66f6060fa0178d27ce7d95243b174e6758b82de356ff0d7",
-      "caseDigest": "sha256:a0f1823e2df68721c66f6060fa0178d27ce7d95243b174e6758b82de356ff0d7"
+      "caseId": "sast-multi-class-qualification-case://08bbf810ee427ee056b37ea96f2238e9a4879be808b35dc527cead1e27c944d5",
+      "caseDigest": "sha256:08bbf810ee427ee056b37ea96f2238e9a4879be808b35dc527cead1e27c944d5"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.reconstruction-full-file-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "RECONSTRUCTION_FULL_FILE_REJECT",
       "profiles": [
@@ -497,13 +497,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://258ef5afeb92139de753b42f9e1f3de5c3c6e3bfe38863d767b4c4a610c13e09",
-      "caseDigest": "sha256:258ef5afeb92139de753b42f9e1f3de5c3c6e3bfe38863d767b4c4a610c13e09"
+      "caseId": "sast-multi-class-qualification-case://2dbb87c58144f4ac6608b76f615395c769a759d66dcb12814e0e7eccd32eb8eb",
+      "caseDigest": "sha256:2dbb87c58144f4ac6608b76f615395c769a759d66dcb12814e0e7eccd32eb8eb"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.reconstruction-overlap-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "RECONSTRUCTION_OVERLAP_REJECT",
       "profiles": [
@@ -537,13 +537,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://52720bd390bb8e8b570ceea667308ff0718e0f03f8526d928125a953c8476a6e",
-      "caseDigest": "sha256:52720bd390bb8e8b570ceea667308ff0718e0f03f8526d928125a953c8476a6e"
+      "caseId": "sast-multi-class-qualification-case://548a27bc336ddf8f2557078708ed8f51f36114a46d971c6b3912d9edec793fbb",
+      "caseDigest": "sha256:548a27bc336ddf8f2557078708ed8f51f36114a46d971c6b3912d9edec793fbb"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.registered-value-redact",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "REGISTERED_VALUE_REDACT",
       "profiles": [
@@ -577,13 +577,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://de8f631b04d35a5750ef1253914093c8a44aec8505c75ec474101962bbb47eac",
-      "caseDigest": "sha256:de8f631b04d35a5750ef1253914093c8a44aec8505c75ec474101962bbb47eac"
+      "caseId": "sast-multi-class-qualification-case://37cc6b414115fd455abcd77f24815bcb4a9f0135b54ab108c31caed3fcef1883",
+      "caseDigest": "sha256:37cc6b414115fd455abcd77f24815bcb4a9f0135b54ab108c31caed3fcef1883"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.reserved-marker-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "RESERVED_MARKER_REJECT",
       "profiles": [
@@ -617,13 +617,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://ae690b044fe278bda59db0a7fdae84d228311fe8ff8c86926cc0032d43ef40ea",
-      "caseDigest": "sha256:ae690b044fe278bda59db0a7fdae84d228311fe8ff8c86926cc0032d43ef40ea"
+      "caseId": "sast-multi-class-qualification-case://31b74d4a97ac7ae836a41725661261ef141e2df972558f6fd19df881c91fcc91",
+      "caseDigest": "sha256:31b74d4a97ac7ae836a41725661261ef141e2df972558f6fd19df881c91fcc91"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.retention-boundary-accept",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "RETENTION_BOUNDARY_ACCEPT",
       "profiles": [
@@ -657,13 +657,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://0e9c2806d55428797a49d0c238920688ee027f50d27f43a22a3e9e08b96912e9",
-      "caseDigest": "sha256:0e9c2806d55428797a49d0c238920688ee027f50d27f43a22a3e9e08b96912e9"
+      "caseId": "sast-multi-class-qualification-case://24833ea7b11e157b0ae4e45189f1522098d3016bee68c457062c5561f75b72b1",
+      "caseDigest": "sha256:24833ea7b11e157b0ae4e45189f1522098d3016bee68c457062c5561f75b72b1"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.evidence-privacy.retention-expires",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "EVIDENCE_PRIVACY",
       "scenario": "RETENTION_EXPIRES",
       "profiles": [
@@ -697,13 +697,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://aa32b652443e3dd1cd523d0e2bbba539f790005ce56a993678e0023de3aa9aab",
-      "caseDigest": "sha256:aa32b652443e3dd1cd523d0e2bbba539f790005ce56a993678e0023de3aa9aab"
+      "caseId": "sast-multi-class-qualification-case://213ad20ad33c7f5dcfd23592299b530a00b06e5663b56a1a4b01e3b75d41a046",
+      "caseDigest": "sha256:213ad20ad33c7f5dcfd23592299b530a00b06e5663b56a1a4b01e3b75d41a046"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.branch-change-invariant",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "BRANCH_CHANGE_INVARIANT",
       "profiles": [
@@ -737,13 +737,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://46578148c23fa293817e89af4f3dd85494a0eafd3d1f31360986bf738a14ec7d",
-      "caseDigest": "sha256:46578148c23fa293817e89af4f3dd85494a0eafd3d1f31360986bf738a14ec7d"
+      "caseId": "sast-multi-class-qualification-case://be5c4feab59d792c070fb88de97ec66e5496c8d53d29f4ebc78bf324aabe08fa",
+      "caseDigest": "sha256:be5c4feab59d792c070fb88de97ec66e5496c8d53d29f4ebc78bf324aabe08fa"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.commit-change-invariant",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "COMMIT_CHANGE_INVARIANT",
       "profiles": [
@@ -777,13 +777,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://cc83177821e211a1d1485df275459bfb949198921afef70a8855cddaa594d417",
-      "caseDigest": "sha256:cc83177821e211a1d1485df275459bfb949198921afef70a8855cddaa594d417"
+      "caseId": "sast-multi-class-qualification-case://b859b41d4b112cddbc927bdf9b6bd6f7f60023b3edcde5ac03b1a3b906862b2a",
+      "caseDigest": "sha256:b859b41d4b112cddbc927bdf9b6bd6f7f60023b3edcde5ac03b1a3b906862b2a"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.correlation-edge-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "CORRELATION_EDGE_LIMIT_PLUS_ONE",
       "profiles": [
@@ -817,13 +817,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://60f17f0ff20ba6b5992b3e2f9429508f1cfa00597608aa346b21041da30c33cb",
-      "caseDigest": "sha256:60f17f0ff20ba6b5992b3e2f9429508f1cfa00597608aa346b21041da30c33cb"
+      "caseId": "sast-multi-class-qualification-case://c58a1c784f69938a2b1aeccc3f2a8abb797474483b81c79ac65a51ee75d9f452",
+      "caseDigest": "sha256:c58a1c784f69938a2b1aeccc3f2a8abb797474483b81c79ac65a51ee75d9f452"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.cross-capability-no-merge",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "CROSS_CAPABILITY_NO_MERGE",
       "profiles": [
@@ -857,13 +857,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://cac87b66f9f5ad696141a5021a40c4914c0bd1080a1f4dfc0fb3beb5a07e648d",
-      "caseDigest": "sha256:cac87b66f9f5ad696141a5021a40c4914c0bd1080a1f4dfc0fb3beb5a07e648d"
+      "caseId": "sast-multi-class-qualification-case://cf5b8c1416a9297970d17dbaa8ea853ecd2b0c5eacbbf9f117b09e63ba8a9c65",
+      "caseDigest": "sha256:cf5b8c1416a9297970d17dbaa8ea853ecd2b0c5eacbbf9f117b09e63ba8a9c65"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.duplicate-replay-equal",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "DUPLICATE_REPLAY_EQUAL",
       "profiles": [
@@ -897,13 +897,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://240eae91ee3fd2dba03b29a0483a2f40cb75b82bc3242f720318c8aa74e44c55",
-      "caseDigest": "sha256:240eae91ee3fd2dba03b29a0483a2f40cb75b82bc3242f720318c8aa74e44c55"
+      "caseId": "sast-multi-class-qualification-case://6a6c5c91013d16bf9e15b580eef494362393feda6972463d73cd0d4ef66cac0d",
+      "caseDigest": "sha256:6a6c5c91013d16bf9e15b580eef494362393feda6972463d73cd0d4ef66cac0d"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.fixed-sequence",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "FIXED_SEQUENCE",
       "profiles": [
@@ -937,13 +937,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://88df31b1dcfe5e3d45542ecdfd3b77ad875a4e5019122214881faacae7cb9c36",
-      "caseDigest": "sha256:88df31b1dcfe5e3d45542ecdfd3b77ad875a4e5019122214881faacae7cb9c36"
+      "caseId": "sast-multi-class-qualification-case://47cf3c9aefd63e6d96fd23d16fbfed0f142cd0edd9c661adc7eb2b3ca9226cb9",
+      "caseDigest": "sha256:47cf3c9aefd63e6d96fd23d16fbfed0f142cd0edd9c661adc7eb2b3ca9226cb9"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.forced-digest-collision-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "FORCED_DIGEST_COLLISION_REJECT",
       "profiles": [
@@ -977,13 +977,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://312c8d2af68ba5958aa15b6da826a6e9d221016da1a74389f68642bf9b6a2a21",
-      "caseDigest": "sha256:312c8d2af68ba5958aa15b6da826a6e9d221016da1a74389f68642bf9b6a2a21"
+      "caseId": "sast-multi-class-qualification-case://b7739e0c72dc7aaedcb11837b74cbb494511ed8e1e99759b7c1396342bdc3ffd",
+      "caseDigest": "sha256:b7739e0c72dc7aaedcb11837b74cbb494511ed8e1e99759b7c1396342bdc3ffd"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.line-shift-invariant",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "LINE_SHIFT_INVARIANT",
       "profiles": [
@@ -1017,13 +1017,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://0ffa0bc7decb2885dc481c982b7cf40451e6afb7ab6f381190c42f30f0e74ae8",
-      "caseDigest": "sha256:0ffa0bc7decb2885dc481c982b7cf40451e6afb7ab6f381190c42f30f0e74ae8"
+      "caseId": "sast-multi-class-qualification-case://f1fd817bcf0d9af4f34c9b1fae0ed5a1febb10593caec18d3ad0dff44e4ec12d",
+      "caseDigest": "sha256:f1fd817bcf0d9af4f34c9b1fae0ed5a1febb10593caec18d3ad0dff44e4ec12d"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.multi-tool-overlap-related-only",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "MULTI_TOOL_OVERLAP_RELATED_ONLY",
       "profiles": [
@@ -1057,13 +1057,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://6ecc8716e04e1a6c0a4635799161873854eda62066c020257fc00b7d3486f793",
-      "caseDigest": "sha256:6ecc8716e04e1a6c0a4635799161873854eda62066c020257fc00b7d3486f793"
+      "caseId": "sast-multi-class-qualification-case://b56a917b22614b0508e644a6f5fe609d1ad3ecdeb04b54ae75530cda6c70f4a5",
+      "caseDigest": "sha256:b56a917b22614b0508e644a6f5fe609d1ad3ecdeb04b54ae75530cda6c70f4a5"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.rename-attested-alias",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "RENAME_ATTESTED_ALIAS",
       "profiles": [
@@ -1097,13 +1097,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://f8fed6af0df84af1e5687dece6443f13c925178c94cbb3cef6e288f08ea9cda3",
-      "caseDigest": "sha256:f8fed6af0df84af1e5687dece6443f13c925178c94cbb3cef6e288f08ea9cda3"
+      "caseId": "sast-multi-class-qualification-case://ff35fa402f396579aa7e5c1c8f020f1b5fcd3cc4bd63fdfffbad7f00829bf365",
+      "caseDigest": "sha256:ff35fa402f396579aa7e5c1c8f020f1b5fcd3cc4bd63fdfffbad7f00829bf365"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.rename-back-sequence",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "RENAME_BACK_SEQUENCE",
       "profiles": [
@@ -1137,13 +1137,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://59ff9b9f8311f1c2222784751825ae6d1194faaaf655df281b608ae493ef0d6c",
-      "caseDigest": "sha256:59ff9b9f8311f1c2222784751825ae6d1194faaaf655df281b608ae493ef0d6c"
+      "caseId": "sast-multi-class-qualification-case://351870dfe1e4875cc6ba0de7698000f192e3724aa14503fe885338fc8884397d",
+      "caseDigest": "sha256:351870dfe1e4875cc6ba0de7698000f192e3724aa14503fe885338fc8884397d"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.reopen-sequence",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "REOPEN_SEQUENCE",
       "profiles": [
@@ -1177,13 +1177,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://4ed952d8f877f2cbb3cf71ae162e800bfde61cedc631f35008d520c5c720e7d0",
-      "caseDigest": "sha256:4ed952d8f877f2cbb3cf71ae162e800bfde61cedc631f35008d520c5c720e7d0"
+      "caseId": "sast-multi-class-qualification-case://ce0d861ffaf520fd7ae719dbea12a0c6cb220bdbcce8fa16a38f4c1bf1fdff92",
+      "caseDigest": "sha256:ce0d861ffaf520fd7ae719dbea12a0c6cb220bdbcce8fa16a38f4c1bf1fdff92"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.rule-migration-distinct",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "RULE_MIGRATION_DISTINCT",
       "profiles": [
@@ -1217,13 +1217,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://bea2cb2ddd727d94d9b60fa05159155074075768856485017e4f6add393a446b",
-      "caseDigest": "sha256:bea2cb2ddd727d94d9b60fa05159155074075768856485017e4f6add393a446b"
+      "caseId": "sast-multi-class-qualification-case://f65fa352003942c5e9c2b5017474d5ffc58e679954fa8397fe0b86cbe7e634e8",
+      "caseDigest": "sha256:f65fa352003942c5e9c2b5017474d5ffc58e679954fa8397fe0b86cbe7e634e8"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.severity-preserved",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "SEVERITY_PRESERVED",
       "profiles": [
@@ -1257,13 +1257,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://4ce761497c15b71d0fec0b8c0b84970e7904c81b30e6d1b9ff4bab399ab91f4a",
-      "caseDigest": "sha256:4ce761497c15b71d0fec0b8c0b84970e7904c81b30e6d1b9ff4bab399ab91f4a"
+      "caseId": "sast-multi-class-qualification-case://ea8d928b509b3dad50b27217f839701eb271009dac9ef9f3f7a047b01fa19c01",
+      "caseDigest": "sha256:ea8d928b509b3dad50b27217f839701eb271009dac9ef9f3f7a047b01fa19c01"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.tampered-replay-reject",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "TAMPERED_REPLAY_REJECT",
       "profiles": [
@@ -1297,13 +1297,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://50b2cfafd70bf3d27d142497d9096a13510f859e7a460933e5be29adf1b0f7db",
-      "caseDigest": "sha256:50b2cfafd70bf3d27d142497d9096a13510f859e7a460933e5be29adf1b0f7db"
+      "caseId": "sast-multi-class-qualification-case://d9233918f653c7c132f793fca3affad48f4293b5cb2afe2c210a7b0316c5836f",
+      "caseDigest": "sha256:d9233918f653c7c132f793fca3affad48f4293b5cb2afe2c210a7b0316c5836f"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.unknown-location-reason-invariant",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "UNKNOWN_LOCATION_REASON_INVARIANT",
       "profiles": [
@@ -1337,13 +1337,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://392585972ec4dd6a9505bb0533b7c3d4267b2ed3cf9f7e45aa34dadaad535efd",
-      "caseDigest": "sha256:392585972ec4dd6a9505bb0533b7c3d4267b2ed3cf9f7e45aa34dadaad535efd"
+      "caseId": "sast-multi-class-qualification-case://1ec58c895e21b9c0c5130e6a4db43a99137bb697d7a38b5d5648151e2aee84bf",
+      "caseDigest": "sha256:1ec58c895e21b9c0c5130e6a4db43a99137bb697d7a38b5d5648151e2aee84bf"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.fingerprint-correlation.zero-finding-batch-complete",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "FINGERPRINT_CORRELATION",
       "scenario": "ZERO_FINDING_BATCH_COMPLETE",
       "profiles": [
@@ -1377,13 +1377,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://f328d7e3fca65e73aab71302cfae3c1167a9a7d28f5afa38e9dd56c72d60bce1",
-      "caseDigest": "sha256:f328d7e3fca65e73aab71302cfae3c1167a9a7d28f5afa38e9dd56c72d60bce1"
+      "caseId": "sast-multi-class-qualification-case://b4e3f6489f0316f26c6e9e750110a57bc0f41e24ba330691fa12a1c0de651c6a",
+      "caseDigest": "sha256:b4e3f6489f0316f26c6e9e750110a57bc0f41e24ba330691fa12a1c0de651c6a"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.archive-present-no-expansion",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "ARCHIVE_PRESENT_NO_EXPANSION",
       "profiles": [
@@ -1417,13 +1417,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://244799511a2e196216fbbf281022bb784b776c9825cd0cf95fa532dfa0b9f841",
-      "caseDigest": "sha256:244799511a2e196216fbbf281022bb784b776c9825cd0cf95fa532dfa0b9f841"
+      "caseId": "sast-multi-class-qualification-case://b04631b9226c0b131d99a9ea59f7b2f60311186543c37c8a99fb8662500d5d43",
+      "caseDigest": "sha256:b04631b9226c0b131d99a9ea59f7b2f60311186543c37c8a99fb8662500d5d43"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.device-entry",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "DEVICE_ENTRY",
       "profiles": [
@@ -1457,13 +1457,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://5893cf4cf061bc13f6625327ef90ca7ac3c47f7bdb61e08e9df28d975afee90a",
-      "caseDigest": "sha256:5893cf4cf061bc13f6625327ef90ca7ac3c47f7bdb61e08e9df28d975afee90a"
+      "caseId": "sast-multi-class-qualification-case://0764dede8f1e9dd5113f46f7e667654b7b0b16c54367819b6d76f75458a53335",
+      "caseDigest": "sha256:0764dede8f1e9dd5113f46f7e667654b7b0b16c54367819b6d76f75458a53335"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.executable-file-no-run",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "EXECUTABLE_FILE_NO_RUN",
       "profiles": [
@@ -1497,13 +1497,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://370020f28070aef89086d5b989c09af72973a87f7d71fe0b69ca3b9004b9b90a",
-      "caseDigest": "sha256:370020f28070aef89086d5b989c09af72973a87f7d71fe0b69ca3b9004b9b90a"
+      "caseId": "sast-multi-class-qualification-case://6ad65efde8a0ef8a6331a753825469b415fb8127ad03afa87a173f6570309278",
+      "caseDigest": "sha256:6ad65efde8a0ef8a6331a753825469b415fb8127ad03afa87a173f6570309278"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.fifo-entry",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "FIFO_ENTRY",
       "profiles": [
@@ -1537,13 +1537,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://8293853da7d0630df930279304dbb5ef319d8cd2215d657b3203b185e5531845",
-      "caseDigest": "sha256:8293853da7d0630df930279304dbb5ef319d8cd2215d657b3203b185e5531845"
+      "caseId": "sast-multi-class-qualification-case://635f35f8b300da31b4fa3519f15894ddf582ad41936bef2618099b2beea27300",
+      "caseDigest": "sha256:635f35f8b300da31b4fa3519f15894ddf582ad41936bef2618099b2beea27300"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.file-count-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "FILE_COUNT_LIMIT_PLUS_ONE",
       "profiles": [
@@ -1577,13 +1577,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://c577adfc9adab42cc33fb579edd3581eee38b53cbd381853f3ab1a126452dffe",
-      "caseDigest": "sha256:c577adfc9adab42cc33fb579edd3581eee38b53cbd381853f3ab1a126452dffe"
+      "caseId": "sast-multi-class-qualification-case://cd5b6a5d39fd93250c4bce8e91ce04dcdca5cd5ec9d5380036d37ce975ed6ef5",
+      "caseDigest": "sha256:cd5b6a5d39fd93250c4bce8e91ce04dcdca5cd5ec9d5380036d37ce975ed6ef5"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.finding-count-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "FINDING_COUNT_LIMIT_PLUS_ONE",
       "profiles": [
@@ -1617,13 +1617,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://9180134e239855b40860bab0255d899249183e325b75a60a959856d441a28f4a",
-      "caseDigest": "sha256:9180134e239855b40860bab0255d899249183e325b75a60a959856d441a28f4a"
+      "caseId": "sast-multi-class-qualification-case://daea4aba9a7fea46f257afb33eb984faf42fc845b83e4b2753b5b26133e41d08",
+      "caseDigest": "sha256:daea4aba9a7fea46f257afb33eb984faf42fc845b83e4b2753b5b26133e41d08"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.lfs-pointer-present",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "LFS_POINTER_PRESENT",
       "profiles": [
@@ -1657,13 +1657,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://12c2ddb404627e584e43717c503dbda97f89c850217600dd432b6fae40fafa28",
-      "caseDigest": "sha256:12c2ddb404627e584e43717c503dbda97f89c850217600dd432b6fae40fafa28"
+      "caseId": "sast-multi-class-qualification-case://95e36981df57016557f94e9e7453d1abe8208fc73d2fcb366161fa0798c2459c",
+      "caseDigest": "sha256:95e36981df57016557f94e9e7453d1abe8208fc73d2fcb366161fa0798c2459c"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.output-bytes-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "OUTPUT_BYTES_LIMIT_PLUS_ONE",
       "profiles": [
@@ -1697,13 +1697,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://218e8f36174ab9f3cc5ea27048fb73a93046e0da726540abb756afbfd9d0ce1c",
-      "caseDigest": "sha256:218e8f36174ab9f3cc5ea27048fb73a93046e0da726540abb756afbfd9d0ce1c"
+      "caseId": "sast-multi-class-qualification-case://14fba30dbff1b3123dcdde4054c8ecb1b2d043969e9046cd3f9b9bcabf8d0c84",
+      "caseDigest": "sha256:14fba30dbff1b3123dcdde4054c8ecb1b2d043969e9046cd3f9b9bcabf8d0c84"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-absolute",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_ABSOLUTE",
       "profiles": [
@@ -1737,13 +1737,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://cda14f4c818817b3810cdae537feb3653d8cb0ee085f53991254b51e113c9c53",
-      "caseDigest": "sha256:cda14f4c818817b3810cdae537feb3653d8cb0ee085f53991254b51e113c9c53"
+      "caseId": "sast-multi-class-qualification-case://e993ab1e5ee5583fba77277106c03145664876c477f04a7f325e2a120784fe7e",
+      "caseDigest": "sha256:e993ab1e5ee5583fba77277106c03145664876c477f04a7f325e2a120784fe7e"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-case-collision",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_CASE_COLLISION",
       "profiles": [
@@ -1777,13 +1777,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://c94bbf14cfed9a6a7f89a8b30846054f23e84991a950e856b0714cfe47cf2cb5",
-      "caseDigest": "sha256:c94bbf14cfed9a6a7f89a8b30846054f23e84991a950e856b0714cfe47cf2cb5"
+      "caseId": "sast-multi-class-qualification-case://0b184cc58541eae8efc9e3db85fa9eb8ee8fee4f4f2d7f79cd87516312d0eb9d",
+      "caseDigest": "sha256:0b184cc58541eae8efc9e3db85fa9eb8ee8fee4f4f2d7f79cd87516312d0eb9d"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-depth-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_DEPTH_LIMIT_PLUS_ONE",
       "profiles": [
@@ -1817,13 +1817,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://662da3271593e8cb67b65fd8d99fd5f391c618de4b0bca0d0331b9d59203ffde",
-      "caseDigest": "sha256:662da3271593e8cb67b65fd8d99fd5f391c618de4b0bca0d0331b9d59203ffde"
+      "caseId": "sast-multi-class-qualification-case://c3c485c82c30aa987fb889c832cbb18477fb490ee3d8a7b6c9407b889e4ac9fa",
+      "caseDigest": "sha256:c3c485c82c30aa987fb889c832cbb18477fb490ee3d8a7b6c9407b889e4ac9fa"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-drive-or-unc",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_DRIVE_OR_UNC",
       "profiles": [
@@ -1857,13 +1857,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://1563848c66b4cd7dbcecd4091b6aa3a3e1f053a4000ba1069d9969682c6ccd13",
-      "caseDigest": "sha256:1563848c66b4cd7dbcecd4091b6aa3a3e1f053a4000ba1069d9969682c6ccd13"
+      "caseId": "sast-multi-class-qualification-case://86c8e89e49d1e8051fe2706ca80c4fb320510a5c6e6d2ae669d1ced6a5dbddb0",
+      "caseDigest": "sha256:86c8e89e49d1e8051fe2706ca80c4fb320510a5c6e6d2ae669d1ced6a5dbddb0"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-duplicate",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_DUPLICATE",
       "profiles": [
@@ -1897,13 +1897,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://a6bca95d1515e4c8f7312f955d17717620cbbfd802faff5bc010a305af808ac2",
-      "caseDigest": "sha256:a6bca95d1515e4c8f7312f955d17717620cbbfd802faff5bc010a305af808ac2"
+      "caseId": "sast-multi-class-qualification-case://03bb8822485e70b581bb00f28034a1f8af225121eacf80b3b38e3e268592d61a",
+      "caseDigest": "sha256:03bb8822485e70b581bb00f28034a1f8af225121eacf80b3b38e3e268592d61a"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-invalid-utf8",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_INVALID_UTF8",
       "profiles": [
@@ -1937,13 +1937,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://3a8cc3c92c0f9b7932c3590bb93f9815371aa19dc19266de3984c5e24946d0df",
-      "caseDigest": "sha256:3a8cc3c92c0f9b7932c3590bb93f9815371aa19dc19266de3984c5e24946d0df"
+      "caseId": "sast-multi-class-qualification-case://4481da4b267a421deb532609c3562c74143f969ad768220a049fd62769170ebd",
+      "caseDigest": "sha256:4481da4b267a421deb532609c3562c74143f969ad768220a049fd62769170ebd"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-nul-or-control",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_NUL_OR_CONTROL",
       "profiles": [
@@ -1977,13 +1977,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://00478e0b30d28c30bb22470d87e07c9cf4a2ecfa38734bf220b2446246981c1a",
-      "caseDigest": "sha256:00478e0b30d28c30bb22470d87e07c9cf4a2ecfa38734bf220b2446246981c1a"
+      "caseId": "sast-multi-class-qualification-case://d276be40ca54a9d337b2ac261c57ef83599c5572d0b9b912325665deb0869158",
+      "caseDigest": "sha256:d276be40ca54a9d337b2ac261c57ef83599c5572d0b9b912325665deb0869158"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-parent-traversal",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_PARENT_TRAVERSAL",
       "profiles": [
@@ -2017,13 +2017,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://50dcae6d33efb79fec752c7dde08a383c041612eb850dfa0494e4620c5336bf3",
-      "caseDigest": "sha256:50dcae6d33efb79fec752c7dde08a383c041612eb850dfa0494e4620c5336bf3"
+      "caseId": "sast-multi-class-qualification-case://24b6239805962d4b9e9a7d29cc02e35782a8fa2f77258f0f16de16ea2735edb6",
+      "caseDigest": "sha256:24b6239805962d4b9e9a7d29cc02e35782a8fa2f77258f0f16de16ea2735edb6"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.path-unicode-collision",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "PATH_UNICODE_COLLISION",
       "profiles": [
@@ -2057,13 +2057,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://6386c5498d7484978fe6ebe4a3e625031de0e59b22d6f722bcf152f623a9b34b",
-      "caseDigest": "sha256:6386c5498d7484978fe6ebe4a3e625031de0e59b22d6f722bcf152f623a9b34b"
+      "caseId": "sast-multi-class-qualification-case://de776137e5ddc0bf748b383c413ab5a4a2d23903b1d7830f84e10f4a5ea53ddb",
+      "caseDigest": "sha256:de776137e5ddc0bf748b383c413ab5a4a2d23903b1d7830f84e10f4a5ea53ddb"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.repository-bytes-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "REPOSITORY_BYTES_LIMIT_PLUS_ONE",
       "profiles": [
@@ -2097,13 +2097,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://3206dbe5f885d163dc52d1c91cbd544b7ca36c32f7080311a178b4685ce8d8c8",
-      "caseDigest": "sha256:3206dbe5f885d163dc52d1c91cbd544b7ca36c32f7080311a178b4685ce8d8c8"
+      "caseId": "sast-multi-class-qualification-case://d5bac2bda1c69afc16fc43a78e3e421c38a1cc1210fcc76898535c6cadf4b4fc",
+      "caseDigest": "sha256:d5bac2bda1c69afc16fc43a78e3e421c38a1cc1210fcc76898535c6cadf4b4fc"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.secret-sentinel-no-leak",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "SECRET_SENTINEL_NO_LEAK",
       "profiles": [
@@ -2137,13 +2137,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://f0284eb9bd53f4bbb5082db9e1ffe8d096c2ad7c9197e0cb573dc688bd993626",
-      "caseDigest": "sha256:f0284eb9bd53f4bbb5082db9e1ffe8d096c2ad7c9197e0cb573dc688bd993626"
+      "caseId": "sast-multi-class-qualification-case://00ba6de79f9dd3038a568c01a74ed88d916fd9f18f5e9fa2e65b494dedda1c9d",
+      "caseDigest": "sha256:00ba6de79f9dd3038a568c01a74ed88d916fd9f18f5e9fa2e65b494dedda1c9d"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.selected-bytes-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "SELECTED_BYTES_LIMIT_PLUS_ONE",
       "profiles": [
@@ -2177,13 +2177,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://546ea1881346beaf61e0689f1ace3f6d18f1e51422e7dddc13b35a6a6698f30f",
-      "caseDigest": "sha256:546ea1881346beaf61e0689f1ace3f6d18f1e51422e7dddc13b35a6a6698f30f"
+      "caseId": "sast-multi-class-qualification-case://3ebb65db56c4edab125d45985746d502ba3887cfc12cdf1682ba9274924434fa",
+      "caseDigest": "sha256:3ebb65db56c4edab125d45985746d502ba3887cfc12cdf1682ba9274924434fa"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.single-file-bytes-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "SINGLE_FILE_BYTES_LIMIT_PLUS_ONE",
       "profiles": [
@@ -2217,13 +2217,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://4b48673942d2e5d44f94eedee1a4869ce526e176b1b420e80ed47e78b119727c",
-      "caseDigest": "sha256:4b48673942d2e5d44f94eedee1a4869ce526e176b1b420e80ed47e78b119727c"
+      "caseId": "sast-multi-class-qualification-case://b2b0dcbeb823b26847e3cd3e2fcf117b2d2532327c1f9dda889b6af4f7349f06",
+      "caseDigest": "sha256:b2b0dcbeb823b26847e3cd3e2fcf117b2d2532327c1f9dda889b6af4f7349f06"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.submodule-present",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "SUBMODULE_PRESENT",
       "profiles": [
@@ -2257,13 +2257,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://5d6766900b31c86d49f9eedee40489603febb161408c48bd15cb1b12f3e4b1e9",
-      "caseDigest": "sha256:5d6766900b31c86d49f9eedee40489603febb161408c48bd15cb1b12f3e4b1e9"
+      "caseId": "sast-multi-class-qualification-case://acff877e03c4bd57c63af771ca3e62201d427967e30aea1da2d9e213c691f40c",
+      "caseDigest": "sha256:acff877e03c4bd57c63af771ca3e62201d427967e30aea1da2d9e213c691f40c"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.symlink-cycle",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "SYMLINK_CYCLE",
       "profiles": [
@@ -2297,13 +2297,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://3911231488f1933f030b0a1d6804ea04a2b1e2c72678ab46e8fdc87d569d9c1b",
-      "caseDigest": "sha256:3911231488f1933f030b0a1d6804ea04a2b1e2c72678ab46e8fdc87d569d9c1b"
+      "caseId": "sast-multi-class-qualification-case://3886b221f3dac7e52a6f20a759eaba3a7e117536ab6d6d91114e35b4134eba67",
+      "caseDigest": "sha256:3886b221f3dac7e52a6f20a759eaba3a7e117536ab6d6d91114e35b4134eba67"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.symlink-outside-root",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "SYMLINK_OUTSIDE_ROOT",
       "profiles": [
@@ -2337,13 +2337,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://c36d1b51ec72b4dafe21ba684df6f9e186205d34b2bc530a3956007d2edc1c99",
-      "caseDigest": "sha256:c36d1b51ec72b4dafe21ba684df6f9e186205d34b2bc530a3956007d2edc1c99"
+      "caseId": "sast-multi-class-qualification-case://5c01490418a6506fc5c380837f4bfe8202db77e87fbdc3a8c075053cbdfac5a6",
+      "caseDigest": "sha256:5c01490418a6506fc5c380837f4bfe8202db77e87fbdc3a8c075053cbdfac5a6"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.malicious-repository.timeout-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "MALICIOUS_REPOSITORY",
       "scenario": "TIMEOUT_PLUS_ONE",
       "profiles": [
@@ -2377,13 +2377,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://6dad4bf95d0b76e30b3094251a0416fd827808959962656d664626a7d757e7a3",
-      "caseDigest": "sha256:6dad4bf95d0b76e30b3094251a0416fd827808959962656d664626a7d757e7a3"
+      "caseId": "sast-multi-class-qualification-case://89bd247a2c9c3054d9cc71ef6c26b24896390ff7c5a7d7c604e7954dba45f789",
+      "caseDigest": "sha256:89bd247a2c9c3054d9cc71ef6c26b24896390ff7c5a7d7c604e7954dba45f789"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.common-deep-large-limit",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "COMMON_DEEP_LARGE_LIMIT",
       "profiles": [
@@ -2415,13 +2415,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://518a6db46b2dfd83018d87ac86dba0eec479f1ffdb0c602dfb462c74524ab952",
-      "caseDigest": "sha256:518a6db46b2dfd83018d87ac86dba0eec479f1ffdb0c602dfb462c74524ab952"
+      "caseId": "sast-multi-class-qualification-case://7002992b2da813fffed967e9a6defa5a4a3ef4251418ba25b1f42fcd2338a027",
+      "caseDigest": "sha256:7002992b2da813fffed967e9a6defa5a4a3ef4251418ba25b1f42fcd2338a027"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.common-deep-medium",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "COMMON_DEEP_MEDIUM",
       "profiles": [
@@ -2453,13 +2453,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://a9c75f040e24062e25f32a153aecd35b0bfd206af28b9c740335378326f1f543",
-      "caseDigest": "sha256:a9c75f040e24062e25f32a153aecd35b0bfd206af28b9c740335378326f1f543"
+      "caseId": "sast-multi-class-qualification-case://37f7149c56a7b1a7adfaaf5b3c814f45f56c231efa08903259f758586a84e5b3",
+      "caseDigest": "sha256:37f7149c56a7b1a7adfaaf5b3c814f45f56c231efa08903259f758586a84e5b3"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.common-deep-small",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "COMMON_DEEP_SMALL",
       "profiles": [
@@ -2491,13 +2491,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://aad7214a0eaa2126b0e21818a4e8e827e58fb72b9836e3287a9d0aa171f67767",
-      "caseDigest": "sha256:aad7214a0eaa2126b0e21818a4e8e827e58fb72b9836e3287a9d0aa171f67767"
+      "caseId": "sast-multi-class-qualification-case://dd7a92b05e703eb5805c27dd5f5600fcb04bf490bd8edf8c05ab39ee6dfe2b2e",
+      "caseDigest": "sha256:dd7a92b05e703eb5805c27dd5f5600fcb04bf490bd8edf8c05ab39ee6dfe2b2e"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.java-deep-large-limit",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "JAVA_DEEP_LARGE_LIMIT",
       "profiles": [
@@ -2529,13 +2529,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://b955ad4c895eb4cd97d5c94fd08236a319789717138206b92dcb3fbd4093ed05",
-      "caseDigest": "sha256:b955ad4c895eb4cd97d5c94fd08236a319789717138206b92dcb3fbd4093ed05"
+      "caseId": "sast-multi-class-qualification-case://853ee1ebd610cbd3d093c2cf50e33875f23ebcad478c773bfe8de406be8bd28b",
+      "caseDigest": "sha256:853ee1ebd610cbd3d093c2cf50e33875f23ebcad478c773bfe8de406be8bd28b"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.java-deep-medium",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "JAVA_DEEP_MEDIUM",
       "profiles": [
@@ -2567,13 +2567,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://b65db92a80eb58a61b288bd1bf16766033d8d105306cec0c2c1aedcf63a97d12",
-      "caseDigest": "sha256:b65db92a80eb58a61b288bd1bf16766033d8d105306cec0c2c1aedcf63a97d12"
+      "caseId": "sast-multi-class-qualification-case://12a4f106cee27918e09bc0bed1692e0c6847fc8c9904d79dde8c8baaa1a07208",
+      "caseDigest": "sha256:12a4f106cee27918e09bc0bed1692e0c6847fc8c9904d79dde8c8baaa1a07208"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.java-deep-small",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "JAVA_DEEP_SMALL",
       "profiles": [
@@ -2605,13 +2605,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://26f2e85d36ba5b80a8cba09dfece77588347594f45e05d02ed237ed7b9693cc7",
-      "caseDigest": "sha256:26f2e85d36ba5b80a8cba09dfece77588347594f45e05d02ed237ed7b9693cc7"
+      "caseId": "sast-multi-class-qualification-case://f7480edd121be2b0176cc0c9db5daf7840a9ce7f11cdbd1497d6e7e7b818cc8b",
+      "caseDigest": "sha256:f7480edd121be2b0176cc0c9db5daf7840a9ce7f11cdbd1497d6e7e7b818cc8b"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.java-fast-large-limit",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "JAVA_FAST_LARGE_LIMIT",
       "profiles": [
@@ -2643,13 +2643,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://0109cf71a1189bc7320227178d5178981b4723f24601f8e69e7733cf670cd00a",
-      "caseDigest": "sha256:0109cf71a1189bc7320227178d5178981b4723f24601f8e69e7733cf670cd00a"
+      "caseId": "sast-multi-class-qualification-case://d0eecf54948e41a9415fcdbd3fecf01a79fb6c8d238b3b5bf534dd32160a2c37",
+      "caseDigest": "sha256:d0eecf54948e41a9415fcdbd3fecf01a79fb6c8d238b3b5bf534dd32160a2c37"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.java-fast-medium",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "JAVA_FAST_MEDIUM",
       "profiles": [
@@ -2681,13 +2681,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://159dda64aa9a880d3f5e29ed8853308a51229d1a4c7cb15ca8047a9c42871932",
-      "caseDigest": "sha256:159dda64aa9a880d3f5e29ed8853308a51229d1a4c7cb15ca8047a9c42871932"
+      "caseId": "sast-multi-class-qualification-case://3f384f8ead2c36ff562d4d6473987a8948fac5b7295b208aadc37c4e172b659f",
+      "caseDigest": "sha256:3f384f8ead2c36ff562d4d6473987a8948fac5b7295b208aadc37c4e172b659f"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.performance.java-fast-small",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "PERFORMANCE",
       "scenario": "JAVA_FAST_SMALL",
       "profiles": [
@@ -2719,13 +2719,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://33412323de0cbc8b11e9fb55219aeb5ae7ef2815466c4557bebc9c537bb65a62",
-      "caseDigest": "sha256:33412323de0cbc8b11e9fb55219aeb5ae7ef2815466c4557bebc9c537bb65a62"
+      "caseId": "sast-multi-class-qualification-case://15b2cce5b96c50b37cce0771621246e38ba0838336d52dbcd001cc0cc828de66",
+      "caseDigest": "sha256:15b2cce5b96c50b37cce0771621246e38ba0838336d52dbcd001cc0cc828de66"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.artifact-bytes-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "ARTIFACT_BYTES_LIMIT_PLUS_ONE",
       "profiles": [
@@ -2734,9 +2734,9 @@
         "JAVA_FAST_V1"
       ],
       "fixturePath": "fixtures/schema-parser/artifact-bytes-limit-plus-one.fixture.json",
-      "fixtureId": "sast-multi-class-qualification-fixture://8de3b23abeb0c1843295570e361b8b596b778c59aa4312946f6f640c9fcfd500",
-      "fixtureDigest": "sha256:8de3b23abeb0c1843295570e361b8b596b778c59aa4312946f6f640c9fcfd500",
-      "fixtureBytes": 2253,
+      "fixtureId": "sast-multi-class-qualification-fixture://7fb8bbc8c0bee20e26813a945d4a17cfe1dfd90ac9ae29e4b54c34315a83f48e",
+      "fixtureDigest": "sha256:7fb8bbc8c0bee20e26813a945d4a17cfe1dfd90ac9ae29e4b54c34315a83f48e",
+      "fixtureBytes": 4437,
       "materializationKind": "ARTIFACT_STREAM",
       "expectedOutcome": "REJECT",
       "evidenceStage": "T053_ISOLATED_INTEGRATION",
@@ -2759,13 +2759,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://f81ce6ce8e2579b838f41b8ae1158e4d4e4d13cefc0db52e0fb759176db03ddc",
-      "caseDigest": "sha256:f81ce6ce8e2579b838f41b8ae1158e4d4e4d13cefc0db52e0fb759176db03ddc"
+      "caseId": "sast-multi-class-qualification-case://9250b6596fe8c5c5310427df4e34b76fd9f48f01132317dbac6e8cf83d9a6c1a",
+      "caseDigest": "sha256:9250b6596fe8c5c5310427df4e34b76fd9f48f01132317dbac6e8cf83d9a6c1a"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.duplicate-json-key",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "DUPLICATE_JSON_KEY",
       "profiles": [
@@ -2799,13 +2799,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://c7347aea2d7890a2e340876ee9a94db911779f634823d5836986248d26c8e0c7",
-      "caseDigest": "sha256:c7347aea2d7890a2e340876ee9a94db911779f634823d5836986248d26c8e0c7"
+      "caseId": "sast-multi-class-qualification-case://04707d135f9b64f6f4854970adb07afe6190161b6d123f784411adf7ee630fbb",
+      "caseDigest": "sha256:04707d135f9b64f6f4854970adb07afe6190161b6d123f784411adf7ee630fbb"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.foreign-run",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "FOREIGN_RUN",
       "profiles": [
@@ -2839,13 +2839,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://ac9cc2594d894d7cde011249b6cc4d9ba42dfa9160f29ae93ef472f363ac98ed",
-      "caseDigest": "sha256:ac9cc2594d894d7cde011249b6cc4d9ba42dfa9160f29ae93ef472f363ac98ed"
+      "caseId": "sast-multi-class-qualification-case://941a107b70d190b6f9924a41117eeefc4901534f51ea7f447d07f6de4a765cab",
+      "caseDigest": "sha256:941a107b70d190b6f9924a41117eeefc4901534f51ea7f447d07f6de4a765cab"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.invalid-utf8",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "INVALID_UTF8",
       "profiles": [
@@ -2879,13 +2879,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://afe2817f68e9efe9e9e5b54fb9033f392109b90f0377ed4467acac6b3416dbba",
-      "caseDigest": "sha256:afe2817f68e9efe9e9e5b54fb9033f392109b90f0377ed4467acac6b3416dbba"
+      "caseId": "sast-multi-class-qualification-case://c5856ad8b02e6fc9bdf53ce503b24e5c0075121d6e2268937f0f4a97409f89ff",
+      "caseDigest": "sha256:c5856ad8b02e6fc9bdf53ce503b24e5c0075121d6e2268937f0f4a97409f89ff"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.malformed-syntax",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "MALFORMED_SYNTAX",
       "profiles": [
@@ -2919,13 +2919,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://471af6769b90253f2fa68ecfc32d11f39afe19796792b3895ea4ac295bd5eae7",
-      "caseDigest": "sha256:471af6769b90253f2fa68ecfc32d11f39afe19796792b3895ea4ac295bd5eae7"
+      "caseId": "sast-multi-class-qualification-case://6a64a2ce56e3674b3c336328ff9c5e58783865123d9b09c6d4a8dc5129d68701",
+      "caseDigest": "sha256:6a64a2ce56e3674b3c336328ff9c5e58783865123d9b09c6d4a8dc5129d68701"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.multiple-runs",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "MULTIPLE_RUNS",
       "profiles": [
@@ -2959,13 +2959,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://aa39a55bbc5b5e4e3aa17d29e0e63ccf31c5c1c693cb7e57e5b72e8506edd576",
-      "caseDigest": "sha256:aa39a55bbc5b5e4e3aa17d29e0e63ccf31c5c1c693cb7e57e5b72e8506edd576"
+      "caseId": "sast-multi-class-qualification-case://4f0ae18dd68a9844c5a22255103d5cb7afc6720d9b81f6b63c52986f3d76d02e",
+      "caseDigest": "sha256:4f0ae18dd68a9844c5a22255103d5cb7afc6720d9b81f6b63c52986f3d76d02e"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.nesting-depth-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "NESTING_DEPTH_LIMIT_PLUS_ONE",
       "profiles": [
@@ -2974,9 +2974,9 @@
         "JAVA_FAST_V1"
       ],
       "fixturePath": "fixtures/schema-parser/nesting-depth-limit-plus-one.fixture.json",
-      "fixtureId": "sast-multi-class-qualification-fixture://600aefe1fc05386944503f3876cb6a62496addfa7e7cd886af9431b2663d2df8",
-      "fixtureDigest": "sha256:600aefe1fc05386944503f3876cb6a62496addfa7e7cd886af9431b2663d2df8",
-      "fixtureBytes": 2231,
+      "fixtureId": "sast-multi-class-qualification-fixture://5bd41cd4ce7977d91b964b696e0f8ec9fe27303a3a49010d3ad76ff273b91ad7",
+      "fixtureDigest": "sha256:5bd41cd4ce7977d91b964b696e0f8ec9fe27303a3a49010d3ad76ff273b91ad7",
+      "fixtureBytes": 2905,
       "materializationKind": "ARTIFACT_STREAM",
       "expectedOutcome": "REJECT",
       "evidenceStage": "T053_ISOLATED_INTEGRATION",
@@ -2999,13 +2999,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://9be663c0bbed8c1f9a13be0ea73b22cf7ee6d24287fbf7b786be736979e8ebfa",
-      "caseDigest": "sha256:9be663c0bbed8c1f9a13be0ea73b22cf7ee6d24287fbf7b786be736979e8ebfa"
+      "caseId": "sast-multi-class-qualification-case://7b815e005e28193ba9d778cef7c7a9671778f38c4e68d55d5d4b6b8539b5e24a",
+      "caseDigest": "sha256:7b815e005e28193ba9d778cef7c7a9671778f38c4e68d55d5d4b6b8539b5e24a"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.opengrep-sarif-valid",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "OPENGREP_SARIF_VALID",
       "profiles": [
@@ -3039,13 +3039,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://a60451c496241a74b49054bd14a00d97edb2d102b7864ca892550f920e576b6e",
-      "caseDigest": "sha256:a60451c496241a74b49054bd14a00d97edb2d102b7864ca892550f920e576b6e"
+      "caseId": "sast-multi-class-qualification-case://69d6b3aff9ee14dfc6f208eba83f37184152b4c6504ed082182ea5826a3ae978",
+      "caseDigest": "sha256:69d6b3aff9ee14dfc6f208eba83f37184152b4c6504ed082182ea5826a3ae978"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.record-count-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "RECORD_COUNT_LIMIT_PLUS_ONE",
       "profiles": [
@@ -3054,9 +3054,9 @@
         "JAVA_FAST_V1"
       ],
       "fixturePath": "fixtures/schema-parser/record-count-limit-plus-one.fixture.json",
-      "fixtureId": "sast-multi-class-qualification-fixture://90b466ff02ce3eac95e0393f604f0843d089c83a1f5f0d1ddbe0b55e66a7d855",
-      "fixtureDigest": "sha256:90b466ff02ce3eac95e0393f604f0843d089c83a1f5f0d1ddbe0b55e66a7d855",
-      "fixtureBytes": 2266,
+      "fixtureId": "sast-multi-class-qualification-fixture://66bee967c1600b263042737db31a823e3dffedadd158ebae0d58647ea7c00fac",
+      "fixtureDigest": "sha256:66bee967c1600b263042737db31a823e3dffedadd158ebae0d58647ea7c00fac",
+      "fixtureBytes": 4445,
       "materializationKind": "ARTIFACT_STREAM",
       "expectedOutcome": "REJECT",
       "evidenceStage": "T053_ISOLATED_INTEGRATION",
@@ -3079,13 +3079,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://3cca493d9511f30fdf470fc376d1a074e0c25a1e56528a70efedb8db8a76c2b7",
-      "caseDigest": "sha256:3cca493d9511f30fdf470fc376d1a074e0c25a1e56528a70efedb8db8a76c2b7"
+      "caseId": "sast-multi-class-qualification-case://d1b81c9e6c93d2e28eeb28165b1e7fd4b587a2afd1a35b020cb6e4089b72a5ad",
+      "caseDigest": "sha256:d1b81c9e6c93d2e28eeb28165b1e7fd4b587a2afd1a35b020cb6e4089b72a5ad"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.string-bytes-limit-plus-one",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "STRING_BYTES_LIMIT_PLUS_ONE",
       "profiles": [
@@ -3094,9 +3094,9 @@
         "JAVA_FAST_V1"
       ],
       "fixturePath": "fixtures/schema-parser/string-bytes-limit-plus-one.fixture.json",
-      "fixtureId": "sast-multi-class-qualification-fixture://4c9eb5bce1949275d6927de481cb2d932d5e53607db85794b6df6fa4b1499ab6",
-      "fixtureDigest": "sha256:4c9eb5bce1949275d6927de481cb2d932d5e53607db85794b6df6fa4b1499ab6",
-      "fixtureBytes": 2259,
+      "fixtureId": "sast-multi-class-qualification-fixture://a2fc9a62a04db6f281ef3522d6a5dabac5fdca7931d8fa53aee1f598940c3295",
+      "fixtureDigest": "sha256:a2fc9a62a04db6f281ef3522d6a5dabac5fdca7931d8fa53aee1f598940c3295",
+      "fixtureBytes": 2935,
       "materializationKind": "ARTIFACT_STREAM",
       "expectedOutcome": "REJECT",
       "evidenceStage": "T053_ISOLATED_INTEGRATION",
@@ -3119,13 +3119,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://5cf77876dfcb054c9a4934c2f36a5a224ae93cde88ce0de6c4f3af13fda66f36",
-      "caseDigest": "sha256:5cf77876dfcb054c9a4934c2f36a5a224ae93cde88ce0de6c4f3af13fda66f36"
+      "caseId": "sast-multi-class-qualification-case://16a8e30831503063736efaf63d5f7e25c4d66856d8ba7981e9fdfc25e8bcc85a",
+      "caseDigest": "sha256:16a8e30831503063736efaf63d5f7e25c4d66856d8ba7981e9fdfc25e8bcc85a"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.syft-cyclonedx-valid",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "SYFT_CYCLONEDX_VALID",
       "profiles": [
@@ -3159,13 +3159,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://195d7f25f42bf897bdd88dfb1c99461bec48d530032587573dc8c59847c5db18",
-      "caseDigest": "sha256:195d7f25f42bf897bdd88dfb1c99461bec48d530032587573dc8c59847c5db18"
+      "caseId": "sast-multi-class-qualification-case://f442b0a50cee9055adf262165fb05231dcf6580e4d61f8b0184a4902857b90d5",
+      "caseDigest": "sha256:f442b0a50cee9055adf262165fb05231dcf6580e4d61f8b0184a4902857b90d5"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.trivy-json-valid",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "TRIVY_JSON_VALID",
       "profiles": [
@@ -3199,13 +3199,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://f360a288dd67ef79fd5d0aeb7cb0ad47fad1bd096e8e89b0ca2737e2f7ca8608",
-      "caseDigest": "sha256:f360a288dd67ef79fd5d0aeb7cb0ad47fad1bd096e8e89b0ca2737e2f7ca8608"
+      "caseId": "sast-multi-class-qualification-case://46c3d82e364f008fe804769c1d1128f38ca7e95e2666eba9a1eedd46569ccae0",
+      "caseDigest": "sha256:46c3d82e364f008fe804769c1d1128f38ca7e95e2666eba9a1eedd46569ccae0"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.unknown-enum",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "UNKNOWN_ENUM",
       "profiles": [
@@ -3239,13 +3239,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://8f76696be4050afa9089b8bfc1d0ff32d124670bde2ff48ecf0d741d4fb617d5",
-      "caseDigest": "sha256:8f76696be4050afa9089b8bfc1d0ff32d124670bde2ff48ecf0d741d4fb617d5"
+      "caseId": "sast-multi-class-qualification-case://ec99eb803fef7cb5a2a10a605f092b150220013ba98b5deeefba25a7c5c3b887",
+      "caseDigest": "sha256:ec99eb803fef7cb5a2a10a605f092b150220013ba98b5deeefba25a7c5c3b887"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.unknown-field",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "UNKNOWN_FIELD",
       "profiles": [
@@ -3279,13 +3279,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://eb02bd10d3949c4724f61be1c5c91702969169426773344c44650f5a7fd03859",
-      "caseDigest": "sha256:eb02bd10d3949c4724f61be1c5c91702969169426773344c44650f5a7fd03859"
+      "caseId": "sast-multi-class-qualification-case://bc36512b5fd888e84e49de09f21b6094a54a0e1632b91fad84ed65f0298e5b43",
+      "caseDigest": "sha256:bc36512b5fd888e84e49de09f21b6094a54a0e1632b91fad84ed65f0298e5b43"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.unpaired-surrogate",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "UNPAIRED_SURROGATE",
       "profiles": [
@@ -3319,13 +3319,13 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://9638fdd4f1bedce80a769dc2dc69f1081d95b7483ef941026cabe1b51433f545",
-      "caseDigest": "sha256:9638fdd4f1bedce80a769dc2dc69f1081d95b7483ef941026cabe1b51433f545"
+      "caseId": "sast-multi-class-qualification-case://f6de1812ba56d760b0d6700a9b32c2ad32a945705cff977557479a532ccb31dd",
+      "caseDigest": "sha256:f6de1812ba56d760b0d6700a9b32c2ad32a945705cff977557479a532ccb31dd"
     },
     {
       "version": "sast-multi-class-qualification-case-v1",
       "caseKey": "t052.schema-parser.unsupported-schema-version",
-      "caseRevision": "1.0.1",
+      "caseRevision": "1.0.2",
       "corpusClass": "SCHEMA_PARSER",
       "scenario": "UNSUPPORTED_SCHEMA_VERSION",
       "profiles": [
@@ -3359,14 +3359,14 @@
       "buildRequired": false,
       "dynamicExecutionRequired": false,
       "networkRequired": false,
-      "caseId": "sast-multi-class-qualification-case://c4c2e15ae36d9ea798fe5823b037af9aaec9831d97c2354608f3c1b6ca39d8d1",
-      "caseDigest": "sha256:c4c2e15ae36d9ea798fe5823b037af9aaec9831d97c2354608f3c1b6ca39d8d1"
+      "caseId": "sast-multi-class-qualification-case://7c121bdb16abc7f0aea6d02a5dae32b97eb577dd29a2ba4b617f282b0c25c969",
+      "caseDigest": "sha256:7c121bdb16abc7f0aea6d02a5dae32b97eb577dd29a2ba4b617f282b0c25c969"
     }
   ],
   "caseCount": 84,
   "fixtureCount": 84,
-  "caseSetDigest": "sha256:f6752a879c45229bf0efd182c4fb02ba7ffebf3e405b04edb2f9c502a13edbb1",
-  "fixtureSetDigest": "sha256:63b6042990af4340c4b4d7d5582612d0ac7432c32df7029e47066b4f6ab8a5e7",
+  "caseSetDigest": "sha256:a8eae69dc1781831051ddfd43a84361909e5db9385db0d8eb34c860001521037",
+  "fixtureSetDigest": "sha256:7f74667f0a69fd7863dc59ee38c77f52ea75a2938f7db7a193a8c743758b1e8e",
   "classCounts": [
     {
       "corpusClass": "SCHEMA_PARSER",
@@ -3842,6 +3842,6 @@
   "buildRequired": false,
   "dynamicExecutionRequired": false,
   "networkRequired": false,
-  "corpusId": "sast-multi-class-qualification-corpus://2049b30cfc9bf84f3f9286a37b53716cd87310fbf364ea3b551705e5c8b57b79",
-  "snapshotDigest": "sha256:2049b30cfc9bf84f3f9286a37b53716cd87310fbf364ea3b551705e5c8b57b79"
+  "corpusId": "sast-multi-class-qualification-corpus://8daee3b29765ff85f74819acec75f2bb803ba423585af6b4d12c3803e5460f92",
+  "snapshotDigest": "sha256:8daee3b29765ff85f74819acec75f2bb803ba423585af6b4d12c3803e5460f92"
 }
