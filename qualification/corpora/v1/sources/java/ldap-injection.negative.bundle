@@ -1,0 +1,219 @@
+<<<T051:t051.ldap-injection.negative.001>>>
+// t051.ldap-injection.negative.001
+package qualification.corpus;
+final class LdapInjectionNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    String escaped001 = queryParameter001.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped001.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.001>>>
+
+<<<T051:t051.ldap-injection.negative.002>>>
+// t051.ldap-injection.negative.002
+package qualification.corpus;
+final class LdapInjectionNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    String escaped002 = headerValue002.replaceAll("[^A-Za-z0-9._-]", "").replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped002.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.002>>>
+
+<<<T051:t051.ldap-injection.negative.003>>>
+// t051.ldap-injection.negative.003
+package qualification.corpus;
+final class LdapInjectionNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    String escaped003 = cookieValue003.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped003.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.003>>>
+
+<<<T051:t051.ldap-injection.negative.004>>>
+// t051.ldap-injection.negative.004
+package qualification.corpus;
+final class LdapInjectionNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    String documentation004 = "unsafe example for ldap-injection: " + pathVariable004.length();
+    System.out.print(documentation004.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.004>>>
+
+<<<T051:t051.ldap-injection.negative.005>>>
+// t051.ldap-injection.negative.005
+package qualification.corpus;
+final class LdapInjectionNegative005 {
+  void evaluate(String formField005) throws Exception {
+    String documentation005 = "unsafe example for ldap-injection: " + formField005.length();
+    System.out.print(documentation005.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.005>>>
+
+<<<T051:t051.ldap-injection.negative.006>>>
+// t051.ldap-injection.negative.006
+package qualification.corpus;
+final class LdapInjectionNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    String escaped006 = jsonProperty006.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped006.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.006>>>
+
+<<<T051:t051.ldap-injection.negative.007>>>
+// t051.ldap-injection.negative.007
+package qualification.corpus;
+final class LdapInjectionNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    String escaped007 = xmlValue007.replaceAll("[^A-Za-z0-9._-]", "").replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped007.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.007>>>
+
+<<<T051:t051.ldap-injection.negative.008>>>
+// t051.ldap-injection.negative.008
+package qualification.corpus;
+final class LdapInjectionNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    String escaped008 = messageBody008.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped008.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.008>>>
+
+<<<T051:t051.ldap-injection.negative.009>>>
+// t051.ldap-injection.negative.009
+package qualification.corpus;
+final class LdapInjectionNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    String documentation009 = "unsafe example for ldap-injection: " + queueAttribute009.length();
+    System.out.print(documentation009.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.009>>>
+
+<<<T051:t051.ldap-injection.negative.010>>>
+// t051.ldap-injection.negative.010
+package qualification.corpus;
+final class LdapInjectionNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    String documentation010 = "unsafe example for ldap-injection: " + rpcArgument010.length();
+    System.out.print(documentation010.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.010>>>
+
+<<<T051:t051.ldap-injection.negative.011>>>
+// t051.ldap-injection.negative.011
+package qualification.corpus;
+final class LdapInjectionNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    String escaped011 = webhookField011.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped011.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.011>>>
+
+<<<T051:t051.ldap-injection.negative.012>>>
+// t051.ldap-injection.negative.012
+package qualification.corpus;
+final class LdapInjectionNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    String escaped012 = csvColumn012.replaceAll("[^A-Za-z0-9._-]", "").replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped012.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.012>>>
+
+<<<T051:t051.ldap-injection.negative.013>>>
+// t051.ldap-injection.negative.013
+package qualification.corpus;
+final class LdapInjectionNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    String escaped013 = yamlProperty013.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped013.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.013>>>
+
+<<<T051:t051.ldap-injection.negative.014>>>
+// t051.ldap-injection.negative.014
+package qualification.corpus;
+final class LdapInjectionNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    String documentation014 = "unsafe example for ldap-injection: " + configValue014.length();
+    System.out.print(documentation014.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.014>>>
+
+<<<T051:t051.ldap-injection.negative.015>>>
+// t051.ldap-injection.negative.015
+package qualification.corpus;
+final class LdapInjectionNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    String documentation015 = "unsafe example for ldap-injection: " + environmentValue015.length();
+    System.out.print(documentation015.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.015>>>
+
+<<<T051:t051.ldap-injection.negative.016>>>
+// t051.ldap-injection.negative.016
+package qualification.corpus;
+final class LdapInjectionNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    String escaped016 = cliArgument016.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped016.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.016>>>
+
+<<<T051:t051.ldap-injection.negative.017>>>
+// t051.ldap-injection.negative.017
+package qualification.corpus;
+final class LdapInjectionNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    String escaped017 = metadataValue017.replaceAll("[^A-Za-z0-9._-]", "").replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped017.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.017>>>
+
+<<<T051:t051.ldap-injection.negative.018>>>
+// t051.ldap-injection.negative.018
+package qualification.corpus;
+final class LdapInjectionNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    String escaped018 = recordField018.replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29");
+    System.out.print(escaped018.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.018>>>
+
+<<<T051:t051.ldap-injection.negative.019>>>
+// t051.ldap-injection.negative.019
+package qualification.corpus;
+final class LdapInjectionNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    String documentation019 = "unsafe example for ldap-injection: " + importedValue019.length();
+    System.out.print(documentation019.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.019>>>
+
+<<<T051:t051.ldap-injection.negative.020>>>
+// t051.ldap-injection.negative.020
+package qualification.corpus;
+final class LdapInjectionNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    String documentation020 = "unsafe example for ldap-injection: " + requestAttribute020.length();
+    System.out.print(documentation020.length());
+  }
+}
+<<<END:t051.ldap-injection.negative.020>>>

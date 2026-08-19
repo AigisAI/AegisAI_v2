@@ -1,0 +1,119 @@
+<<<T051:t051.aws-access-key.negative.001>>>
+# t051.aws-access-key.negative.001
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.001>>>
+
+<<<T051:t051.aws-access-key.negative.002>>>
+# t051.aws-access-key.negative.002
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.002>>>
+
+<<<T051:t051.aws-access-key.negative.003>>>
+# t051.aws-access-key.negative.003
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.003>>>
+
+<<<T051:t051.aws-access-key.negative.004>>>
+# t051.aws-access-key.negative.004
+# AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.004>>>
+
+<<<T051:t051.aws-access-key.negative.005>>>
+# t051.aws-access-key.negative.005
+# AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.005>>>
+
+<<<T051:t051.aws-access-key.negative.006>>>
+# t051.aws-access-key.negative.006
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.006>>>
+
+<<<T051:t051.aws-access-key.negative.007>>>
+# t051.aws-access-key.negative.007
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.007>>>
+
+<<<T051:t051.aws-access-key.negative.008>>>
+# t051.aws-access-key.negative.008
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.008>>>
+
+<<<T051:t051.aws-access-key.negative.009>>>
+# t051.aws-access-key.negative.009
+# AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.009>>>
+
+<<<T051:t051.aws-access-key.negative.010>>>
+# t051.aws-access-key.negative.010
+# AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.010>>>
+
+<<<T051:t051.aws-access-key.negative.011>>>
+# t051.aws-access-key.negative.011
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.011>>>
+
+<<<T051:t051.aws-access-key.negative.012>>>
+# t051.aws-access-key.negative.012
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.012>>>
+
+<<<T051:t051.aws-access-key.negative.013>>>
+# t051.aws-access-key.negative.013
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.013>>>
+
+<<<T051:t051.aws-access-key.negative.014>>>
+# t051.aws-access-key.negative.014
+# AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.014>>>
+
+<<<T051:t051.aws-access-key.negative.015>>>
+# t051.aws-access-key.negative.015
+# AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.015>>>
+
+<<<T051:t051.aws-access-key.negative.016>>>
+# t051.aws-access-key.negative.016
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.016>>>
+
+<<<T051:t051.aws-access-key.negative.017>>>
+# t051.aws-access-key.negative.017
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.017>>>
+
+<<<T051:t051.aws-access-key.negative.018>>>
+# t051.aws-access-key.negative.018
+AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.018>>>
+
+<<<T051:t051.aws-access-key.negative.019>>>
+# t051.aws-access-key.negative.019
+# AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.019>>>
+
+<<<T051:t051.aws-access-key.negative.020>>>
+# t051.aws-access-key.negative.020
+# AWS_ACCESS_KEY_ID=EXAMPLE_AWS_KEY
+QUALIFICATION_FIXTURE=true
+<<<END:t051.aws-access-key.negative.020>>>

@@ -1,0 +1,339 @@
+<<<T051:t051.jackson-maven.positive.001>>>
+<!-- t051.jackson-maven.positive.001 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-001</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.001>>>
+
+<<<T051:t051.jackson-maven.positive.002>>>
+<!-- t051.jackson-maven.positive.002 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-002</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.002>>>
+
+<<<T051:t051.jackson-maven.positive.003>>>
+<!-- t051.jackson-maven.positive.003 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-003</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.003>>>
+
+<<<T051:t051.jackson-maven.positive.004>>>
+<!-- t051.jackson-maven.positive.004 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-004</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.004>>>
+
+<<<T051:t051.jackson-maven.positive.005>>>
+<!-- t051.jackson-maven.positive.005 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-005</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.005>>>
+
+<<<T051:t051.jackson-maven.positive.006>>>
+<!-- t051.jackson-maven.positive.006 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-006</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.006>>>
+
+<<<T051:t051.jackson-maven.positive.007>>>
+<!-- t051.jackson-maven.positive.007 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-007</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.007>>>
+
+<<<T051:t051.jackson-maven.positive.008>>>
+<!-- t051.jackson-maven.positive.008 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-008</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.008>>>
+
+<<<T051:t051.jackson-maven.positive.009>>>
+<!-- t051.jackson-maven.positive.009 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-009</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.009>>>
+
+<<<T051:t051.jackson-maven.positive.010>>>
+<!-- t051.jackson-maven.positive.010 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-010</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.010>>>
+
+<<<T051:t051.jackson-maven.positive.011>>>
+<!-- t051.jackson-maven.positive.011 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-011</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.011>>>
+
+<<<T051:t051.jackson-maven.positive.012>>>
+<!-- t051.jackson-maven.positive.012 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-012</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.012>>>
+
+<<<T051:t051.jackson-maven.positive.013>>>
+<!-- t051.jackson-maven.positive.013 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-013</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.013>>>
+
+<<<T051:t051.jackson-maven.positive.014>>>
+<!-- t051.jackson-maven.positive.014 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-014</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.014>>>
+
+<<<T051:t051.jackson-maven.positive.015>>>
+<!-- t051.jackson-maven.positive.015 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-015</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.015>>>
+
+<<<T051:t051.jackson-maven.positive.016>>>
+<!-- t051.jackson-maven.positive.016 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-016</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.016>>>
+
+<<<T051:t051.jackson-maven.positive.017>>>
+<!-- t051.jackson-maven.positive.017 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-017</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.017>>>
+
+<<<T051:t051.jackson-maven.positive.018>>>
+<!-- t051.jackson-maven.positive.018 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-018</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.018>>>
+
+<<<T051:t051.jackson-maven.positive.019>>>
+<!-- t051.jackson-maven.positive.019 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-019</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.019>>>
+
+<<<T051:t051.jackson-maven.positive.020>>>
+<!-- t051.jackson-maven.positive.020 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>test.aegis.qualification</groupId>
+  <artifactId>t051-jackson-maven-positive-020</artifactId>
+  <version>1.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9</version>
+    </dependency>
+  </dependencies>
+</project>
+<<<END:t051.jackson-maven.positive.020>>>

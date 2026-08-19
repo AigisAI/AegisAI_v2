@@ -1,0 +1,219 @@
+<<<T051:t051.sql-injection.negative.001>>>
+// t051.sql-injection.negative.001
+package qualification.corpus;
+final class SqlInjectionNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    java.sql.PreparedStatement statement001 = null;
+    statement001.setString(1, queryParameter001);
+  }
+}
+<<<END:t051.sql-injection.negative.001>>>
+
+<<<T051:t051.sql-injection.negative.002>>>
+// t051.sql-injection.negative.002
+package qualification.corpus;
+final class SqlInjectionNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    java.sql.PreparedStatement statement002 = null;
+    statement002.setString(1, headerValue002.replaceAll("[^A-Za-z0-9._-]", ""));
+  }
+}
+<<<END:t051.sql-injection.negative.002>>>
+
+<<<T051:t051.sql-injection.negative.003>>>
+// t051.sql-injection.negative.003
+package qualification.corpus;
+final class SqlInjectionNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    java.sql.PreparedStatement statement003 = null;
+    statement003.setString(1, cookieValue003);
+  }
+}
+<<<END:t051.sql-injection.negative.003>>>
+
+<<<T051:t051.sql-injection.negative.004>>>
+// t051.sql-injection.negative.004
+package qualification.corpus;
+final class SqlInjectionNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    String documentation004 = "unsafe example for sql-injection: " + pathVariable004.length();
+    System.out.print(documentation004.length());
+  }
+}
+<<<END:t051.sql-injection.negative.004>>>
+
+<<<T051:t051.sql-injection.negative.005>>>
+// t051.sql-injection.negative.005
+package qualification.corpus;
+final class SqlInjectionNegative005 {
+  void evaluate(String formField005) throws Exception {
+    String documentation005 = "unsafe example for sql-injection: " + formField005.length();
+    System.out.print(documentation005.length());
+  }
+}
+<<<END:t051.sql-injection.negative.005>>>
+
+<<<T051:t051.sql-injection.negative.006>>>
+// t051.sql-injection.negative.006
+package qualification.corpus;
+final class SqlInjectionNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    java.sql.PreparedStatement statement006 = null;
+    statement006.setString(1, jsonProperty006);
+  }
+}
+<<<END:t051.sql-injection.negative.006>>>
+
+<<<T051:t051.sql-injection.negative.007>>>
+// t051.sql-injection.negative.007
+package qualification.corpus;
+final class SqlInjectionNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    java.sql.PreparedStatement statement007 = null;
+    statement007.setString(1, xmlValue007.replaceAll("[^A-Za-z0-9._-]", ""));
+  }
+}
+<<<END:t051.sql-injection.negative.007>>>
+
+<<<T051:t051.sql-injection.negative.008>>>
+// t051.sql-injection.negative.008
+package qualification.corpus;
+final class SqlInjectionNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    java.sql.PreparedStatement statement008 = null;
+    statement008.setString(1, messageBody008);
+  }
+}
+<<<END:t051.sql-injection.negative.008>>>
+
+<<<T051:t051.sql-injection.negative.009>>>
+// t051.sql-injection.negative.009
+package qualification.corpus;
+final class SqlInjectionNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    String documentation009 = "unsafe example for sql-injection: " + queueAttribute009.length();
+    System.out.print(documentation009.length());
+  }
+}
+<<<END:t051.sql-injection.negative.009>>>
+
+<<<T051:t051.sql-injection.negative.010>>>
+// t051.sql-injection.negative.010
+package qualification.corpus;
+final class SqlInjectionNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    String documentation010 = "unsafe example for sql-injection: " + rpcArgument010.length();
+    System.out.print(documentation010.length());
+  }
+}
+<<<END:t051.sql-injection.negative.010>>>
+
+<<<T051:t051.sql-injection.negative.011>>>
+// t051.sql-injection.negative.011
+package qualification.corpus;
+final class SqlInjectionNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    java.sql.PreparedStatement statement011 = null;
+    statement011.setString(1, webhookField011);
+  }
+}
+<<<END:t051.sql-injection.negative.011>>>
+
+<<<T051:t051.sql-injection.negative.012>>>
+// t051.sql-injection.negative.012
+package qualification.corpus;
+final class SqlInjectionNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    java.sql.PreparedStatement statement012 = null;
+    statement012.setString(1, csvColumn012.replaceAll("[^A-Za-z0-9._-]", ""));
+  }
+}
+<<<END:t051.sql-injection.negative.012>>>
+
+<<<T051:t051.sql-injection.negative.013>>>
+// t051.sql-injection.negative.013
+package qualification.corpus;
+final class SqlInjectionNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    java.sql.PreparedStatement statement013 = null;
+    statement013.setString(1, yamlProperty013);
+  }
+}
+<<<END:t051.sql-injection.negative.013>>>
+
+<<<T051:t051.sql-injection.negative.014>>>
+// t051.sql-injection.negative.014
+package qualification.corpus;
+final class SqlInjectionNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    String documentation014 = "unsafe example for sql-injection: " + configValue014.length();
+    System.out.print(documentation014.length());
+  }
+}
+<<<END:t051.sql-injection.negative.014>>>
+
+<<<T051:t051.sql-injection.negative.015>>>
+// t051.sql-injection.negative.015
+package qualification.corpus;
+final class SqlInjectionNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    String documentation015 = "unsafe example for sql-injection: " + environmentValue015.length();
+    System.out.print(documentation015.length());
+  }
+}
+<<<END:t051.sql-injection.negative.015>>>
+
+<<<T051:t051.sql-injection.negative.016>>>
+// t051.sql-injection.negative.016
+package qualification.corpus;
+final class SqlInjectionNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    java.sql.PreparedStatement statement016 = null;
+    statement016.setString(1, cliArgument016);
+  }
+}
+<<<END:t051.sql-injection.negative.016>>>
+
+<<<T051:t051.sql-injection.negative.017>>>
+// t051.sql-injection.negative.017
+package qualification.corpus;
+final class SqlInjectionNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    java.sql.PreparedStatement statement017 = null;
+    statement017.setString(1, metadataValue017.replaceAll("[^A-Za-z0-9._-]", ""));
+  }
+}
+<<<END:t051.sql-injection.negative.017>>>
+
+<<<T051:t051.sql-injection.negative.018>>>
+// t051.sql-injection.negative.018
+package qualification.corpus;
+final class SqlInjectionNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    java.sql.PreparedStatement statement018 = null;
+    statement018.setString(1, recordField018);
+  }
+}
+<<<END:t051.sql-injection.negative.018>>>
+
+<<<T051:t051.sql-injection.negative.019>>>
+// t051.sql-injection.negative.019
+package qualification.corpus;
+final class SqlInjectionNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    String documentation019 = "unsafe example for sql-injection: " + importedValue019.length();
+    System.out.print(documentation019.length());
+  }
+}
+<<<END:t051.sql-injection.negative.019>>>
+
+<<<T051:t051.sql-injection.negative.020>>>
+// t051.sql-injection.negative.020
+package qualification.corpus;
+final class SqlInjectionNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    String documentation020 = "unsafe example for sql-injection: " + requestAttribute020.length();
+    System.out.print(documentation020.length());
+  }
+}
+<<<END:t051.sql-injection.negative.020>>>

@@ -1,0 +1,231 @@
+<<<T051:t051.xxe.negative.001>>>
+// t051.xxe.negative.001
+package qualification.corpus;
+final class XxeNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory001 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory001.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory001.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.001>>>
+
+<<<T051:t051.xxe.negative.002>>>
+// t051.xxe.negative.002
+package qualification.corpus;
+final class XxeNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory002 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory002.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory002.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.002>>>
+
+<<<T051:t051.xxe.negative.003>>>
+// t051.xxe.negative.003
+package qualification.corpus;
+final class XxeNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory003 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory003.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory003.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.003>>>
+
+<<<T051:t051.xxe.negative.004>>>
+// t051.xxe.negative.004
+package qualification.corpus;
+final class XxeNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    String documentation004 = "unsafe example for xxe: " + pathVariable004.length();
+    System.out.print(documentation004.length());
+  }
+}
+<<<END:t051.xxe.negative.004>>>
+
+<<<T051:t051.xxe.negative.005>>>
+// t051.xxe.negative.005
+package qualification.corpus;
+final class XxeNegative005 {
+  void evaluate(String formField005) throws Exception {
+    String documentation005 = "unsafe example for xxe: " + formField005.length();
+    System.out.print(documentation005.length());
+  }
+}
+<<<END:t051.xxe.negative.005>>>
+
+<<<T051:t051.xxe.negative.006>>>
+// t051.xxe.negative.006
+package qualification.corpus;
+final class XxeNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory006 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory006.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory006.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.006>>>
+
+<<<T051:t051.xxe.negative.007>>>
+// t051.xxe.negative.007
+package qualification.corpus;
+final class XxeNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory007 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory007.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory007.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.007>>>
+
+<<<T051:t051.xxe.negative.008>>>
+// t051.xxe.negative.008
+package qualification.corpus;
+final class XxeNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory008 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory008.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory008.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.008>>>
+
+<<<T051:t051.xxe.negative.009>>>
+// t051.xxe.negative.009
+package qualification.corpus;
+final class XxeNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    String documentation009 = "unsafe example for xxe: " + queueAttribute009.length();
+    System.out.print(documentation009.length());
+  }
+}
+<<<END:t051.xxe.negative.009>>>
+
+<<<T051:t051.xxe.negative.010>>>
+// t051.xxe.negative.010
+package qualification.corpus;
+final class XxeNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    String documentation010 = "unsafe example for xxe: " + rpcArgument010.length();
+    System.out.print(documentation010.length());
+  }
+}
+<<<END:t051.xxe.negative.010>>>
+
+<<<T051:t051.xxe.negative.011>>>
+// t051.xxe.negative.011
+package qualification.corpus;
+final class XxeNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory011 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory011.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory011.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.011>>>
+
+<<<T051:t051.xxe.negative.012>>>
+// t051.xxe.negative.012
+package qualification.corpus;
+final class XxeNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory012 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory012.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory012.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.012>>>
+
+<<<T051:t051.xxe.negative.013>>>
+// t051.xxe.negative.013
+package qualification.corpus;
+final class XxeNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory013 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory013.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory013.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.013>>>
+
+<<<T051:t051.xxe.negative.014>>>
+// t051.xxe.negative.014
+package qualification.corpus;
+final class XxeNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    String documentation014 = "unsafe example for xxe: " + configValue014.length();
+    System.out.print(documentation014.length());
+  }
+}
+<<<END:t051.xxe.negative.014>>>
+
+<<<T051:t051.xxe.negative.015>>>
+// t051.xxe.negative.015
+package qualification.corpus;
+final class XxeNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    String documentation015 = "unsafe example for xxe: " + environmentValue015.length();
+    System.out.print(documentation015.length());
+  }
+}
+<<<END:t051.xxe.negative.015>>>
+
+<<<T051:t051.xxe.negative.016>>>
+// t051.xxe.negative.016
+package qualification.corpus;
+final class XxeNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory016 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory016.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory016.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.016>>>
+
+<<<T051:t051.xxe.negative.017>>>
+// t051.xxe.negative.017
+package qualification.corpus;
+final class XxeNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory017 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory017.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory017.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.017>>>
+
+<<<T051:t051.xxe.negative.018>>>
+// t051.xxe.negative.018
+package qualification.corpus;
+final class XxeNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    javax.xml.parsers.DocumentBuilderFactory factory018 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory018.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory018.setExpandEntityReferences(false);
+  }
+}
+<<<END:t051.xxe.negative.018>>>
+
+<<<T051:t051.xxe.negative.019>>>
+// t051.xxe.negative.019
+package qualification.corpus;
+final class XxeNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    String documentation019 = "unsafe example for xxe: " + importedValue019.length();
+    System.out.print(documentation019.length());
+  }
+}
+<<<END:t051.xxe.negative.019>>>
+
+<<<T051:t051.xxe.negative.020>>>
+// t051.xxe.negative.020
+package qualification.corpus;
+final class XxeNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    String documentation020 = "unsafe example for xxe: " + requestAttribute020.length();
+    System.out.print(documentation020.length());
+  }
+}
+<<<END:t051.xxe.negative.020>>>

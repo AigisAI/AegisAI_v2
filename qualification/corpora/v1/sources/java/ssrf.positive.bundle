@@ -1,0 +1,199 @@
+<<<T051:t051.ssrf.positive.001>>>
+// t051.ssrf.positive.001
+package qualification.corpus;
+final class SsrfPositive001 {
+  void evaluate(String queryParameter001) throws Exception {
+    new java.net.URL(queryParameter001).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.001>>>
+
+<<<T051:t051.ssrf.positive.002>>>
+// t051.ssrf.positive.002
+package qualification.corpus;
+final class SsrfPositive002 {
+  void evaluate(String headerValue002) throws Exception {
+    new java.net.URL(headerValue002).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.002>>>
+
+<<<T051:t051.ssrf.positive.003>>>
+// t051.ssrf.positive.003
+package qualification.corpus;
+final class SsrfPositive003 {
+  void evaluate(String cookieValue003) throws Exception {
+    new java.net.URL(cookieValue003).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.003>>>
+
+<<<T051:t051.ssrf.positive.004>>>
+// t051.ssrf.positive.004
+package qualification.corpus;
+final class SsrfPositive004 {
+  void evaluate(String pathVariable004) throws Exception {
+    new java.net.URL(pathVariable004).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.004>>>
+
+<<<T051:t051.ssrf.positive.005>>>
+// t051.ssrf.positive.005
+package qualification.corpus;
+final class SsrfPositive005 {
+  void evaluate(String formField005) throws Exception {
+    new java.net.URL(formField005).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.005>>>
+
+<<<T051:t051.ssrf.positive.006>>>
+// t051.ssrf.positive.006
+package qualification.corpus;
+final class SsrfPositive006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    new java.net.URL(jsonProperty006).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.006>>>
+
+<<<T051:t051.ssrf.positive.007>>>
+// t051.ssrf.positive.007
+package qualification.corpus;
+final class SsrfPositive007 {
+  void evaluate(String xmlValue007) throws Exception {
+    new java.net.URL(xmlValue007).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.007>>>
+
+<<<T051:t051.ssrf.positive.008>>>
+// t051.ssrf.positive.008
+package qualification.corpus;
+final class SsrfPositive008 {
+  void evaluate(String messageBody008) throws Exception {
+    new java.net.URL(messageBody008).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.008>>>
+
+<<<T051:t051.ssrf.positive.009>>>
+// t051.ssrf.positive.009
+package qualification.corpus;
+final class SsrfPositive009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    new java.net.URL(queueAttribute009).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.009>>>
+
+<<<T051:t051.ssrf.positive.010>>>
+// t051.ssrf.positive.010
+package qualification.corpus;
+final class SsrfPositive010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    new java.net.URL(rpcArgument010).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.010>>>
+
+<<<T051:t051.ssrf.positive.011>>>
+// t051.ssrf.positive.011
+package qualification.corpus;
+final class SsrfPositive011 {
+  void evaluate(String webhookField011) throws Exception {
+    new java.net.URL(webhookField011).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.011>>>
+
+<<<T051:t051.ssrf.positive.012>>>
+// t051.ssrf.positive.012
+package qualification.corpus;
+final class SsrfPositive012 {
+  void evaluate(String csvColumn012) throws Exception {
+    new java.net.URL(csvColumn012).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.012>>>
+
+<<<T051:t051.ssrf.positive.013>>>
+// t051.ssrf.positive.013
+package qualification.corpus;
+final class SsrfPositive013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    new java.net.URL(yamlProperty013).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.013>>>
+
+<<<T051:t051.ssrf.positive.014>>>
+// t051.ssrf.positive.014
+package qualification.corpus;
+final class SsrfPositive014 {
+  void evaluate(String configValue014) throws Exception {
+    new java.net.URL(configValue014).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.014>>>
+
+<<<T051:t051.ssrf.positive.015>>>
+// t051.ssrf.positive.015
+package qualification.corpus;
+final class SsrfPositive015 {
+  void evaluate(String environmentValue015) throws Exception {
+    new java.net.URL(environmentValue015).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.015>>>
+
+<<<T051:t051.ssrf.positive.016>>>
+// t051.ssrf.positive.016
+package qualification.corpus;
+final class SsrfPositive016 {
+  void evaluate(String cliArgument016) throws Exception {
+    new java.net.URL(cliArgument016).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.016>>>
+
+<<<T051:t051.ssrf.positive.017>>>
+// t051.ssrf.positive.017
+package qualification.corpus;
+final class SsrfPositive017 {
+  void evaluate(String metadataValue017) throws Exception {
+    new java.net.URL(metadataValue017).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.017>>>
+
+<<<T051:t051.ssrf.positive.018>>>
+// t051.ssrf.positive.018
+package qualification.corpus;
+final class SsrfPositive018 {
+  void evaluate(String recordField018) throws Exception {
+    new java.net.URL(recordField018).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.018>>>
+
+<<<T051:t051.ssrf.positive.019>>>
+// t051.ssrf.positive.019
+package qualification.corpus;
+final class SsrfPositive019 {
+  void evaluate(String importedValue019) throws Exception {
+    new java.net.URL(importedValue019).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.019>>>
+
+<<<T051:t051.ssrf.positive.020>>>
+// t051.ssrf.positive.020
+package qualification.corpus;
+final class SsrfPositive020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    new java.net.URL(requestAttribute020).openConnection();
+  }
+}
+<<<END:t051.ssrf.positive.020>>>

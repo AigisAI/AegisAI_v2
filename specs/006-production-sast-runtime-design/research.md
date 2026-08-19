@@ -705,3 +705,35 @@ receipt or canary signal to choose a replacement, reactivating or rewriting the 
 the candidate's prior state, one-person or automated approval, approvals outside the 15-minute
 window, unsigned commands, one-head locking, receipt-only application checks, scanner-set mutation
 inside rollback, or rewriting historical plans, findings, coverage, evidence, or audit records.
+
+## Decision 29: Pin Golden Qualification Inputs Before Scanner Execution
+
+**Decision**: T051 establishes a code-reviewed, deterministic, versioned golden input authority
+before any production-equivalent scanner run. The checked-in v1 snapshot contains 800 exact cases:
+400 positives, 400 one-to-one negatives, and all 400 Critical/High positives in the digest-bound
+prior must-detect set. Twenty semantic rule families each contribute 20 positive and 20 negative
+cases. `JAVA_FAST_V1`, `JAVA_DEEP_V1`, and `COMMON_DEEP_V1` each meet the 200/200 profile floor,
+and the five negative classes each contain 80 cases.
+
+Every case binds the corpus owner, Apache-2.0 license, digest-bound provenance, semantic revision,
+scanner/capability/profile tuple, expected result, exact source bundle bytes and digest, bounded
+line range and anchor, and one unique future workspace path. The 40 UTF-8/LF/NFC source bundles are
+platform-authored static inputs only. Their contract fixes customer-content acceptance, execution,
+package installation, build, dynamic execution, and network use to false.
+
+The loader first regenerates the expected snapshot in memory, then requires byte-exact snapshot
+and source equality, exact source-set membership, real-path containment, no symbolic links or
+junctions, bounded bytes/lines, and matching range anchors. This makes reviewable source the
+authority instead of trusting a mutable JSON count or directory. CI runs both shared hostile-shape
+tests and filesystem tampering tests plus the explicit corpus validator.
+
+**Rationale**: Qualification metrics are meaningless if their denominator, expected outcome, or
+source material can drift between review and execution. Separating immutable input construction
+from T052's other attack/performance corpora and T053's isolated scanner execution makes each
+claim auditable and prevents a generated sample from being mistaken for production evidence.
+
+**Rejected**: Downloading benchmarks at CI/runtime, mutable branches or tags, customer repository
+fixtures, hand-edited snapshots, unpaired negatives, a denominator below the per-profile/per-rule
+floor, caller-selected prior must-detect cases, shared scan paths, following links, permissive text
+decoding, installing fixture dependencies, building or executing fixtures, or treating successful
+input validation as scanner accuracy, isolation, performance, or deployment proof.

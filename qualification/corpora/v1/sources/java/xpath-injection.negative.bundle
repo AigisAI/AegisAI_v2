@@ -1,0 +1,219 @@
+<<<T051:t051.xpath-injection.negative.001>>>
+// t051.xpath-injection.negative.001
+package qualification.corpus;
+final class XpathInjectionNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    javax.xml.xpath.XPath xpath001 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath001.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.001>>>
+
+<<<T051:t051.xpath-injection.negative.002>>>
+// t051.xpath-injection.negative.002
+package qualification.corpus;
+final class XpathInjectionNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    javax.xml.xpath.XPath xpath002 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath002.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.002>>>
+
+<<<T051:t051.xpath-injection.negative.003>>>
+// t051.xpath-injection.negative.003
+package qualification.corpus;
+final class XpathInjectionNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    javax.xml.xpath.XPath xpath003 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath003.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.003>>>
+
+<<<T051:t051.xpath-injection.negative.004>>>
+// t051.xpath-injection.negative.004
+package qualification.corpus;
+final class XpathInjectionNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    String documentation004 = "unsafe example for xpath-injection: " + pathVariable004.length();
+    System.out.print(documentation004.length());
+  }
+}
+<<<END:t051.xpath-injection.negative.004>>>
+
+<<<T051:t051.xpath-injection.negative.005>>>
+// t051.xpath-injection.negative.005
+package qualification.corpus;
+final class XpathInjectionNegative005 {
+  void evaluate(String formField005) throws Exception {
+    String documentation005 = "unsafe example for xpath-injection: " + formField005.length();
+    System.out.print(documentation005.length());
+  }
+}
+<<<END:t051.xpath-injection.negative.005>>>
+
+<<<T051:t051.xpath-injection.negative.006>>>
+// t051.xpath-injection.negative.006
+package qualification.corpus;
+final class XpathInjectionNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    javax.xml.xpath.XPath xpath006 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath006.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.006>>>
+
+<<<T051:t051.xpath-injection.negative.007>>>
+// t051.xpath-injection.negative.007
+package qualification.corpus;
+final class XpathInjectionNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    javax.xml.xpath.XPath xpath007 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath007.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.007>>>
+
+<<<T051:t051.xpath-injection.negative.008>>>
+// t051.xpath-injection.negative.008
+package qualification.corpus;
+final class XpathInjectionNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    javax.xml.xpath.XPath xpath008 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath008.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.008>>>
+
+<<<T051:t051.xpath-injection.negative.009>>>
+// t051.xpath-injection.negative.009
+package qualification.corpus;
+final class XpathInjectionNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    String documentation009 = "unsafe example for xpath-injection: " + queueAttribute009.length();
+    System.out.print(documentation009.length());
+  }
+}
+<<<END:t051.xpath-injection.negative.009>>>
+
+<<<T051:t051.xpath-injection.negative.010>>>
+// t051.xpath-injection.negative.010
+package qualification.corpus;
+final class XpathInjectionNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    String documentation010 = "unsafe example for xpath-injection: " + rpcArgument010.length();
+    System.out.print(documentation010.length());
+  }
+}
+<<<END:t051.xpath-injection.negative.010>>>
+
+<<<T051:t051.xpath-injection.negative.011>>>
+// t051.xpath-injection.negative.011
+package qualification.corpus;
+final class XpathInjectionNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    javax.xml.xpath.XPath xpath011 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath011.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.011>>>
+
+<<<T051:t051.xpath-injection.negative.012>>>
+// t051.xpath-injection.negative.012
+package qualification.corpus;
+final class XpathInjectionNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    javax.xml.xpath.XPath xpath012 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath012.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.012>>>
+
+<<<T051:t051.xpath-injection.negative.013>>>
+// t051.xpath-injection.negative.013
+package qualification.corpus;
+final class XpathInjectionNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    javax.xml.xpath.XPath xpath013 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath013.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.013>>>
+
+<<<T051:t051.xpath-injection.negative.014>>>
+// t051.xpath-injection.negative.014
+package qualification.corpus;
+final class XpathInjectionNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    String documentation014 = "unsafe example for xpath-injection: " + configValue014.length();
+    System.out.print(documentation014.length());
+  }
+}
+<<<END:t051.xpath-injection.negative.014>>>
+
+<<<T051:t051.xpath-injection.negative.015>>>
+// t051.xpath-injection.negative.015
+package qualification.corpus;
+final class XpathInjectionNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    String documentation015 = "unsafe example for xpath-injection: " + environmentValue015.length();
+    System.out.print(documentation015.length());
+  }
+}
+<<<END:t051.xpath-injection.negative.015>>>
+
+<<<T051:t051.xpath-injection.negative.016>>>
+// t051.xpath-injection.negative.016
+package qualification.corpus;
+final class XpathInjectionNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    javax.xml.xpath.XPath xpath016 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath016.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.016>>>
+
+<<<T051:t051.xpath-injection.negative.017>>>
+// t051.xpath-injection.negative.017
+package qualification.corpus;
+final class XpathInjectionNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    javax.xml.xpath.XPath xpath017 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath017.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.017>>>
+
+<<<T051:t051.xpath-injection.negative.018>>>
+// t051.xpath-injection.negative.018
+package qualification.corpus;
+final class XpathInjectionNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    javax.xml.xpath.XPath xpath018 = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+    xpath018.evaluate("//user[@active='true']", (Object) null);
+  }
+}
+<<<END:t051.xpath-injection.negative.018>>>
+
+<<<T051:t051.xpath-injection.negative.019>>>
+// t051.xpath-injection.negative.019
+package qualification.corpus;
+final class XpathInjectionNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    String documentation019 = "unsafe example for xpath-injection: " + importedValue019.length();
+    System.out.print(documentation019.length());
+  }
+}
+<<<END:t051.xpath-injection.negative.019>>>
+
+<<<T051:t051.xpath-injection.negative.020>>>
+// t051.xpath-injection.negative.020
+package qualification.corpus;
+final class XpathInjectionNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    String documentation020 = "unsafe example for xpath-injection: " + requestAttribute020.length();
+    System.out.print(documentation020.length());
+  }
+}
+<<<END:t051.xpath-injection.negative.020>>>

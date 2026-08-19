@@ -1,0 +1,219 @@
+<<<T051:t051.unsafe-deserialization.positive.001>>>
+// t051.unsafe-deserialization.positive.001
+package qualification.corpus;
+final class UnsafeDeserializationPositive001 {
+  void evaluate(String queryParameter001) throws Exception {
+    java.io.ObjectInputStream stream001 = null;
+    stream001.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.001>>>
+
+<<<T051:t051.unsafe-deserialization.positive.002>>>
+// t051.unsafe-deserialization.positive.002
+package qualification.corpus;
+final class UnsafeDeserializationPositive002 {
+  void evaluate(String headerValue002) throws Exception {
+    java.io.ObjectInputStream stream002 = null;
+    stream002.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.002>>>
+
+<<<T051:t051.unsafe-deserialization.positive.003>>>
+// t051.unsafe-deserialization.positive.003
+package qualification.corpus;
+final class UnsafeDeserializationPositive003 {
+  void evaluate(String cookieValue003) throws Exception {
+    java.io.ObjectInputStream stream003 = null;
+    stream003.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.003>>>
+
+<<<T051:t051.unsafe-deserialization.positive.004>>>
+// t051.unsafe-deserialization.positive.004
+package qualification.corpus;
+final class UnsafeDeserializationPositive004 {
+  void evaluate(String pathVariable004) throws Exception {
+    java.io.ObjectInputStream stream004 = null;
+    stream004.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.004>>>
+
+<<<T051:t051.unsafe-deserialization.positive.005>>>
+// t051.unsafe-deserialization.positive.005
+package qualification.corpus;
+final class UnsafeDeserializationPositive005 {
+  void evaluate(String formField005) throws Exception {
+    java.io.ObjectInputStream stream005 = null;
+    stream005.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.005>>>
+
+<<<T051:t051.unsafe-deserialization.positive.006>>>
+// t051.unsafe-deserialization.positive.006
+package qualification.corpus;
+final class UnsafeDeserializationPositive006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    java.io.ObjectInputStream stream006 = null;
+    stream006.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.006>>>
+
+<<<T051:t051.unsafe-deserialization.positive.007>>>
+// t051.unsafe-deserialization.positive.007
+package qualification.corpus;
+final class UnsafeDeserializationPositive007 {
+  void evaluate(String xmlValue007) throws Exception {
+    java.io.ObjectInputStream stream007 = null;
+    stream007.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.007>>>
+
+<<<T051:t051.unsafe-deserialization.positive.008>>>
+// t051.unsafe-deserialization.positive.008
+package qualification.corpus;
+final class UnsafeDeserializationPositive008 {
+  void evaluate(String messageBody008) throws Exception {
+    java.io.ObjectInputStream stream008 = null;
+    stream008.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.008>>>
+
+<<<T051:t051.unsafe-deserialization.positive.009>>>
+// t051.unsafe-deserialization.positive.009
+package qualification.corpus;
+final class UnsafeDeserializationPositive009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    java.io.ObjectInputStream stream009 = null;
+    stream009.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.009>>>
+
+<<<T051:t051.unsafe-deserialization.positive.010>>>
+// t051.unsafe-deserialization.positive.010
+package qualification.corpus;
+final class UnsafeDeserializationPositive010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    java.io.ObjectInputStream stream010 = null;
+    stream010.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.010>>>
+
+<<<T051:t051.unsafe-deserialization.positive.011>>>
+// t051.unsafe-deserialization.positive.011
+package qualification.corpus;
+final class UnsafeDeserializationPositive011 {
+  void evaluate(String webhookField011) throws Exception {
+    java.io.ObjectInputStream stream011 = null;
+    stream011.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.011>>>
+
+<<<T051:t051.unsafe-deserialization.positive.012>>>
+// t051.unsafe-deserialization.positive.012
+package qualification.corpus;
+final class UnsafeDeserializationPositive012 {
+  void evaluate(String csvColumn012) throws Exception {
+    java.io.ObjectInputStream stream012 = null;
+    stream012.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.012>>>
+
+<<<T051:t051.unsafe-deserialization.positive.013>>>
+// t051.unsafe-deserialization.positive.013
+package qualification.corpus;
+final class UnsafeDeserializationPositive013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    java.io.ObjectInputStream stream013 = null;
+    stream013.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.013>>>
+
+<<<T051:t051.unsafe-deserialization.positive.014>>>
+// t051.unsafe-deserialization.positive.014
+package qualification.corpus;
+final class UnsafeDeserializationPositive014 {
+  void evaluate(String configValue014) throws Exception {
+    java.io.ObjectInputStream stream014 = null;
+    stream014.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.014>>>
+
+<<<T051:t051.unsafe-deserialization.positive.015>>>
+// t051.unsafe-deserialization.positive.015
+package qualification.corpus;
+final class UnsafeDeserializationPositive015 {
+  void evaluate(String environmentValue015) throws Exception {
+    java.io.ObjectInputStream stream015 = null;
+    stream015.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.015>>>
+
+<<<T051:t051.unsafe-deserialization.positive.016>>>
+// t051.unsafe-deserialization.positive.016
+package qualification.corpus;
+final class UnsafeDeserializationPositive016 {
+  void evaluate(String cliArgument016) throws Exception {
+    java.io.ObjectInputStream stream016 = null;
+    stream016.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.016>>>
+
+<<<T051:t051.unsafe-deserialization.positive.017>>>
+// t051.unsafe-deserialization.positive.017
+package qualification.corpus;
+final class UnsafeDeserializationPositive017 {
+  void evaluate(String metadataValue017) throws Exception {
+    java.io.ObjectInputStream stream017 = null;
+    stream017.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.017>>>
+
+<<<T051:t051.unsafe-deserialization.positive.018>>>
+// t051.unsafe-deserialization.positive.018
+package qualification.corpus;
+final class UnsafeDeserializationPositive018 {
+  void evaluate(String recordField018) throws Exception {
+    java.io.ObjectInputStream stream018 = null;
+    stream018.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.018>>>
+
+<<<T051:t051.unsafe-deserialization.positive.019>>>
+// t051.unsafe-deserialization.positive.019
+package qualification.corpus;
+final class UnsafeDeserializationPositive019 {
+  void evaluate(String importedValue019) throws Exception {
+    java.io.ObjectInputStream stream019 = null;
+    stream019.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.019>>>
+
+<<<T051:t051.unsafe-deserialization.positive.020>>>
+// t051.unsafe-deserialization.positive.020
+package qualification.corpus;
+final class UnsafeDeserializationPositive020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    java.io.ObjectInputStream stream020 = null;
+    stream020.readObject();
+  }
+}
+<<<END:t051.unsafe-deserialization.positive.020>>>

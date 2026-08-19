@@ -1,0 +1,139 @@
+<<<T051:t051.docker-root-user.negative.001>>>
+# t051.docker-root-user.negative.001
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.001>>>
+
+<<<T051:t051.docker-root-user.negative.002>>>
+# t051.docker-root-user.negative.002
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.002>>>
+
+<<<T051:t051.docker-root-user.negative.003>>>
+# t051.docker-root-user.negative.003
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.003>>>
+
+<<<T051:t051.docker-root-user.negative.004>>>
+# t051.docker-root-user.negative.004
+FROM scratch
+# USER root appears only in documentation
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.004>>>
+
+<<<T051:t051.docker-root-user.negative.005>>>
+# t051.docker-root-user.negative.005
+FROM scratch
+# USER root appears only in documentation
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.005>>>
+
+<<<T051:t051.docker-root-user.negative.006>>>
+# t051.docker-root-user.negative.006
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.006>>>
+
+<<<T051:t051.docker-root-user.negative.007>>>
+# t051.docker-root-user.negative.007
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.007>>>
+
+<<<T051:t051.docker-root-user.negative.008>>>
+# t051.docker-root-user.negative.008
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.008>>>
+
+<<<T051:t051.docker-root-user.negative.009>>>
+# t051.docker-root-user.negative.009
+FROM scratch
+# USER root appears only in documentation
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.009>>>
+
+<<<T051:t051.docker-root-user.negative.010>>>
+# t051.docker-root-user.negative.010
+FROM scratch
+# USER root appears only in documentation
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.010>>>
+
+<<<T051:t051.docker-root-user.negative.011>>>
+# t051.docker-root-user.negative.011
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.011>>>
+
+<<<T051:t051.docker-root-user.negative.012>>>
+# t051.docker-root-user.negative.012
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.012>>>
+
+<<<T051:t051.docker-root-user.negative.013>>>
+# t051.docker-root-user.negative.013
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.013>>>
+
+<<<T051:t051.docker-root-user.negative.014>>>
+# t051.docker-root-user.negative.014
+FROM scratch
+# USER root appears only in documentation
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.014>>>
+
+<<<T051:t051.docker-root-user.negative.015>>>
+# t051.docker-root-user.negative.015
+FROM scratch
+# USER root appears only in documentation
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.015>>>
+
+<<<T051:t051.docker-root-user.negative.016>>>
+# t051.docker-root-user.negative.016
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.016>>>
+
+<<<T051:t051.docker-root-user.negative.017>>>
+# t051.docker-root-user.negative.017
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.017>>>
+
+<<<T051:t051.docker-root-user.negative.018>>>
+# t051.docker-root-user.negative.018
+FROM scratch
+USER 65532
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.018>>>
+
+<<<T051:t051.docker-root-user.negative.019>>>
+# t051.docker-root-user.negative.019
+FROM scratch
+# USER root appears only in documentation
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.019>>>
+
+<<<T051:t051.docker-root-user.negative.020>>>
+# t051.docker-root-user.negative.020
+FROM scratch
+# USER root appears only in documentation
+ENTRYPOINT ["/app"]
+<<<END:t051.docker-root-user.negative.020>>>

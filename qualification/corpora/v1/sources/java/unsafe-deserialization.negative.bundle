@@ -1,0 +1,219 @@
+<<<T051:t051.unsafe-deserialization.negative.001>>>
+// t051.unsafe-deserialization.negative.001
+package qualification.corpus;
+final class UnsafeDeserializationNegative001 {
+  void evaluate(String queryParameter001) throws Exception {
+    java.io.ObjectInputStream stream001 = null;
+    stream001.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.001>>>
+
+<<<T051:t051.unsafe-deserialization.negative.002>>>
+// t051.unsafe-deserialization.negative.002
+package qualification.corpus;
+final class UnsafeDeserializationNegative002 {
+  void evaluate(String headerValue002) throws Exception {
+    java.io.ObjectInputStream stream002 = null;
+    stream002.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.002>>>
+
+<<<T051:t051.unsafe-deserialization.negative.003>>>
+// t051.unsafe-deserialization.negative.003
+package qualification.corpus;
+final class UnsafeDeserializationNegative003 {
+  void evaluate(String cookieValue003) throws Exception {
+    java.io.ObjectInputStream stream003 = null;
+    stream003.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.003>>>
+
+<<<T051:t051.unsafe-deserialization.negative.004>>>
+// t051.unsafe-deserialization.negative.004
+package qualification.corpus;
+final class UnsafeDeserializationNegative004 {
+  void evaluate(String pathVariable004) throws Exception {
+    String documentation004 = "unsafe example for unsafe-deserialization: " + pathVariable004.length();
+    System.out.print(documentation004.length());
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.004>>>
+
+<<<T051:t051.unsafe-deserialization.negative.005>>>
+// t051.unsafe-deserialization.negative.005
+package qualification.corpus;
+final class UnsafeDeserializationNegative005 {
+  void evaluate(String formField005) throws Exception {
+    String documentation005 = "unsafe example for unsafe-deserialization: " + formField005.length();
+    System.out.print(documentation005.length());
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.005>>>
+
+<<<T051:t051.unsafe-deserialization.negative.006>>>
+// t051.unsafe-deserialization.negative.006
+package qualification.corpus;
+final class UnsafeDeserializationNegative006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    java.io.ObjectInputStream stream006 = null;
+    stream006.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.006>>>
+
+<<<T051:t051.unsafe-deserialization.negative.007>>>
+// t051.unsafe-deserialization.negative.007
+package qualification.corpus;
+final class UnsafeDeserializationNegative007 {
+  void evaluate(String xmlValue007) throws Exception {
+    java.io.ObjectInputStream stream007 = null;
+    stream007.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.007>>>
+
+<<<T051:t051.unsafe-deserialization.negative.008>>>
+// t051.unsafe-deserialization.negative.008
+package qualification.corpus;
+final class UnsafeDeserializationNegative008 {
+  void evaluate(String messageBody008) throws Exception {
+    java.io.ObjectInputStream stream008 = null;
+    stream008.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.008>>>
+
+<<<T051:t051.unsafe-deserialization.negative.009>>>
+// t051.unsafe-deserialization.negative.009
+package qualification.corpus;
+final class UnsafeDeserializationNegative009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    String documentation009 = "unsafe example for unsafe-deserialization: " + queueAttribute009.length();
+    System.out.print(documentation009.length());
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.009>>>
+
+<<<T051:t051.unsafe-deserialization.negative.010>>>
+// t051.unsafe-deserialization.negative.010
+package qualification.corpus;
+final class UnsafeDeserializationNegative010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    String documentation010 = "unsafe example for unsafe-deserialization: " + rpcArgument010.length();
+    System.out.print(documentation010.length());
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.010>>>
+
+<<<T051:t051.unsafe-deserialization.negative.011>>>
+// t051.unsafe-deserialization.negative.011
+package qualification.corpus;
+final class UnsafeDeserializationNegative011 {
+  void evaluate(String webhookField011) throws Exception {
+    java.io.ObjectInputStream stream011 = null;
+    stream011.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.011>>>
+
+<<<T051:t051.unsafe-deserialization.negative.012>>>
+// t051.unsafe-deserialization.negative.012
+package qualification.corpus;
+final class UnsafeDeserializationNegative012 {
+  void evaluate(String csvColumn012) throws Exception {
+    java.io.ObjectInputStream stream012 = null;
+    stream012.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.012>>>
+
+<<<T051:t051.unsafe-deserialization.negative.013>>>
+// t051.unsafe-deserialization.negative.013
+package qualification.corpus;
+final class UnsafeDeserializationNegative013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    java.io.ObjectInputStream stream013 = null;
+    stream013.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.013>>>
+
+<<<T051:t051.unsafe-deserialization.negative.014>>>
+// t051.unsafe-deserialization.negative.014
+package qualification.corpus;
+final class UnsafeDeserializationNegative014 {
+  void evaluate(String configValue014) throws Exception {
+    String documentation014 = "unsafe example for unsafe-deserialization: " + configValue014.length();
+    System.out.print(documentation014.length());
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.014>>>
+
+<<<T051:t051.unsafe-deserialization.negative.015>>>
+// t051.unsafe-deserialization.negative.015
+package qualification.corpus;
+final class UnsafeDeserializationNegative015 {
+  void evaluate(String environmentValue015) throws Exception {
+    String documentation015 = "unsafe example for unsafe-deserialization: " + environmentValue015.length();
+    System.out.print(documentation015.length());
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.015>>>
+
+<<<T051:t051.unsafe-deserialization.negative.016>>>
+// t051.unsafe-deserialization.negative.016
+package qualification.corpus;
+final class UnsafeDeserializationNegative016 {
+  void evaluate(String cliArgument016) throws Exception {
+    java.io.ObjectInputStream stream016 = null;
+    stream016.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.016>>>
+
+<<<T051:t051.unsafe-deserialization.negative.017>>>
+// t051.unsafe-deserialization.negative.017
+package qualification.corpus;
+final class UnsafeDeserializationNegative017 {
+  void evaluate(String metadataValue017) throws Exception {
+    java.io.ObjectInputStream stream017 = null;
+    stream017.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.017>>>
+
+<<<T051:t051.unsafe-deserialization.negative.018>>>
+// t051.unsafe-deserialization.negative.018
+package qualification.corpus;
+final class UnsafeDeserializationNegative018 {
+  void evaluate(String recordField018) throws Exception {
+    java.io.ObjectInputStream stream018 = null;
+    stream018.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.018>>>
+
+<<<T051:t051.unsafe-deserialization.negative.019>>>
+// t051.unsafe-deserialization.negative.019
+package qualification.corpus;
+final class UnsafeDeserializationNegative019 {
+  void evaluate(String importedValue019) throws Exception {
+    String documentation019 = "unsafe example for unsafe-deserialization: " + importedValue019.length();
+    System.out.print(documentation019.length());
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.019>>>
+
+<<<T051:t051.unsafe-deserialization.negative.020>>>
+// t051.unsafe-deserialization.negative.020
+package qualification.corpus;
+final class UnsafeDeserializationNegative020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    String documentation020 = "unsafe example for unsafe-deserialization: " + requestAttribute020.length();
+    System.out.print(documentation020.length());
+  }
+}
+<<<END:t051.unsafe-deserialization.negative.020>>>

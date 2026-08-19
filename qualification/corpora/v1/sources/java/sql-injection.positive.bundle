@@ -1,0 +1,219 @@
+<<<T051:t051.sql-injection.positive.001>>>
+// t051.sql-injection.positive.001
+package qualification.corpus;
+final class SqlInjectionPositive001 {
+  void evaluate(String queryParameter001) throws Exception {
+    java.sql.Statement statement001 = null;
+    statement001.executeQuery("SELECT * FROM account WHERE id='" + queryParameter001 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.001>>>
+
+<<<T051:t051.sql-injection.positive.002>>>
+// t051.sql-injection.positive.002
+package qualification.corpus;
+final class SqlInjectionPositive002 {
+  void evaluate(String headerValue002) throws Exception {
+    java.sql.Statement statement002 = null;
+    statement002.executeQuery("SELECT * FROM account WHERE id='" + headerValue002 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.002>>>
+
+<<<T051:t051.sql-injection.positive.003>>>
+// t051.sql-injection.positive.003
+package qualification.corpus;
+final class SqlInjectionPositive003 {
+  void evaluate(String cookieValue003) throws Exception {
+    java.sql.Statement statement003 = null;
+    statement003.executeQuery("SELECT * FROM account WHERE id='" + cookieValue003 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.003>>>
+
+<<<T051:t051.sql-injection.positive.004>>>
+// t051.sql-injection.positive.004
+package qualification.corpus;
+final class SqlInjectionPositive004 {
+  void evaluate(String pathVariable004) throws Exception {
+    java.sql.Statement statement004 = null;
+    statement004.executeQuery("SELECT * FROM account WHERE id='" + pathVariable004 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.004>>>
+
+<<<T051:t051.sql-injection.positive.005>>>
+// t051.sql-injection.positive.005
+package qualification.corpus;
+final class SqlInjectionPositive005 {
+  void evaluate(String formField005) throws Exception {
+    java.sql.Statement statement005 = null;
+    statement005.executeQuery("SELECT * FROM account WHERE id='" + formField005 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.005>>>
+
+<<<T051:t051.sql-injection.positive.006>>>
+// t051.sql-injection.positive.006
+package qualification.corpus;
+final class SqlInjectionPositive006 {
+  void evaluate(String jsonProperty006) throws Exception {
+    java.sql.Statement statement006 = null;
+    statement006.executeQuery("SELECT * FROM account WHERE id='" + jsonProperty006 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.006>>>
+
+<<<T051:t051.sql-injection.positive.007>>>
+// t051.sql-injection.positive.007
+package qualification.corpus;
+final class SqlInjectionPositive007 {
+  void evaluate(String xmlValue007) throws Exception {
+    java.sql.Statement statement007 = null;
+    statement007.executeQuery("SELECT * FROM account WHERE id='" + xmlValue007 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.007>>>
+
+<<<T051:t051.sql-injection.positive.008>>>
+// t051.sql-injection.positive.008
+package qualification.corpus;
+final class SqlInjectionPositive008 {
+  void evaluate(String messageBody008) throws Exception {
+    java.sql.Statement statement008 = null;
+    statement008.executeQuery("SELECT * FROM account WHERE id='" + messageBody008 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.008>>>
+
+<<<T051:t051.sql-injection.positive.009>>>
+// t051.sql-injection.positive.009
+package qualification.corpus;
+final class SqlInjectionPositive009 {
+  void evaluate(String queueAttribute009) throws Exception {
+    java.sql.Statement statement009 = null;
+    statement009.executeQuery("SELECT * FROM account WHERE id='" + queueAttribute009 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.009>>>
+
+<<<T051:t051.sql-injection.positive.010>>>
+// t051.sql-injection.positive.010
+package qualification.corpus;
+final class SqlInjectionPositive010 {
+  void evaluate(String rpcArgument010) throws Exception {
+    java.sql.Statement statement010 = null;
+    statement010.executeQuery("SELECT * FROM account WHERE id='" + rpcArgument010 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.010>>>
+
+<<<T051:t051.sql-injection.positive.011>>>
+// t051.sql-injection.positive.011
+package qualification.corpus;
+final class SqlInjectionPositive011 {
+  void evaluate(String webhookField011) throws Exception {
+    java.sql.Statement statement011 = null;
+    statement011.executeQuery("SELECT * FROM account WHERE id='" + webhookField011 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.011>>>
+
+<<<T051:t051.sql-injection.positive.012>>>
+// t051.sql-injection.positive.012
+package qualification.corpus;
+final class SqlInjectionPositive012 {
+  void evaluate(String csvColumn012) throws Exception {
+    java.sql.Statement statement012 = null;
+    statement012.executeQuery("SELECT * FROM account WHERE id='" + csvColumn012 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.012>>>
+
+<<<T051:t051.sql-injection.positive.013>>>
+// t051.sql-injection.positive.013
+package qualification.corpus;
+final class SqlInjectionPositive013 {
+  void evaluate(String yamlProperty013) throws Exception {
+    java.sql.Statement statement013 = null;
+    statement013.executeQuery("SELECT * FROM account WHERE id='" + yamlProperty013 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.013>>>
+
+<<<T051:t051.sql-injection.positive.014>>>
+// t051.sql-injection.positive.014
+package qualification.corpus;
+final class SqlInjectionPositive014 {
+  void evaluate(String configValue014) throws Exception {
+    java.sql.Statement statement014 = null;
+    statement014.executeQuery("SELECT * FROM account WHERE id='" + configValue014 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.014>>>
+
+<<<T051:t051.sql-injection.positive.015>>>
+// t051.sql-injection.positive.015
+package qualification.corpus;
+final class SqlInjectionPositive015 {
+  void evaluate(String environmentValue015) throws Exception {
+    java.sql.Statement statement015 = null;
+    statement015.executeQuery("SELECT * FROM account WHERE id='" + environmentValue015 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.015>>>
+
+<<<T051:t051.sql-injection.positive.016>>>
+// t051.sql-injection.positive.016
+package qualification.corpus;
+final class SqlInjectionPositive016 {
+  void evaluate(String cliArgument016) throws Exception {
+    java.sql.Statement statement016 = null;
+    statement016.executeQuery("SELECT * FROM account WHERE id='" + cliArgument016 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.016>>>
+
+<<<T051:t051.sql-injection.positive.017>>>
+// t051.sql-injection.positive.017
+package qualification.corpus;
+final class SqlInjectionPositive017 {
+  void evaluate(String metadataValue017) throws Exception {
+    java.sql.Statement statement017 = null;
+    statement017.executeQuery("SELECT * FROM account WHERE id='" + metadataValue017 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.017>>>
+
+<<<T051:t051.sql-injection.positive.018>>>
+// t051.sql-injection.positive.018
+package qualification.corpus;
+final class SqlInjectionPositive018 {
+  void evaluate(String recordField018) throws Exception {
+    java.sql.Statement statement018 = null;
+    statement018.executeQuery("SELECT * FROM account WHERE id='" + recordField018 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.018>>>
+
+<<<T051:t051.sql-injection.positive.019>>>
+// t051.sql-injection.positive.019
+package qualification.corpus;
+final class SqlInjectionPositive019 {
+  void evaluate(String importedValue019) throws Exception {
+    java.sql.Statement statement019 = null;
+    statement019.executeQuery("SELECT * FROM account WHERE id='" + importedValue019 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.019>>>
+
+<<<T051:t051.sql-injection.positive.020>>>
+// t051.sql-injection.positive.020
+package qualification.corpus;
+final class SqlInjectionPositive020 {
+  void evaluate(String requestAttribute020) throws Exception {
+    java.sql.Statement statement020 = null;
+    statement020.executeQuery("SELECT * FROM account WHERE id='" + requestAttribute020 + "'");
+  }
+}
+<<<END:t051.sql-injection.positive.020>>>

@@ -1733,6 +1733,72 @@ compatibility, T047 lifecycle, T048 canary, T049 kill-switch, T046 policy, and q
 The rolled-back candidate remains non-selectable and no historical plan, finding, coverage,
 evidence, manifest, or baseline row is rewritten.
 
+### Versioned golden qualification corpus v1
+
+T051 defines two exact, canonical repository contracts before production-equivalent execution:
+
+```text
+sast-qualification-corpus-case-v1 {
+  caseId, caseDigest, caseKey, pairKey, caseRevision,
+  corpusClass: GOLDEN_POSITIVE | GOLDEN_NEGATIVE,
+  negativeKind: null | PATCHED | SANITIZER | SAFE_API |
+                COMMENT_OR_STRING | GENERATED_OR_VENDOR,
+  ownerRef, licenseExpression, provenanceRef,
+  profiles[], language, scanner, capability,
+  ruleSemanticId, ruleRevision, severity,
+  expectedOutcome: DETECT | NO_FINDING,
+  expectedFindingCount: 1 | 0,
+  sourcePath, scanPath, sourceDigest, sourceBytes,
+  expectedAnchor, startLine, endLine,
+  sourcePlatformOwned: true,
+  customerContentAccepted: false,
+  executable: false,
+  packageInstallRequired: false,
+  buildRequired: false,
+  dynamicExecutionRequired: false,
+  networkRequired: false,
+  immutable: true
+}
+
+sast-qualification-corpus-snapshot-v1 {
+  corpusId, snapshotDigest, revision, publishedAt,
+  ownerRef, licenseExpression, provenanceRef, priorReleaseRef,
+  profiles[], languages[], cases[],
+  caseCount, positiveCaseCount, negativeCaseCount,
+  priorMustDetectCaseCount,
+  caseSetDigest, priorMustDetectSetDigest, priorMustDetectCaseIds[],
+  profileCounts[], ruleCounts[], negativeKindCounts[],
+  source: PLATFORM_MANAGED,
+  immutable: true,
+  customerContentAccepted: false,
+  customerExecutableConfigAccepted: false,
+  networkRequired: false,
+  packageInstallRequired: false,
+  buildRequired: false,
+  dynamicExecutionRequired: false
+}
+```
+
+Exact-key validation rejects unknown fields. Case identity covers every expected-result, rule,
+profile, provenance, source, range, path, and fixed safety field. Snapshot identity covers the
+canonically case-key-sorted complete case set, the digest-bound prior release and Critical/High
+must-detect set, all derived counts, and fixed platform-only safety facts. Case IDs, case keys,
+digests, and materialization `scanPath` values are unique; every `pairKey` has exactly one compatible
+positive and one negative case.
+
+The v1 checked-in snapshot contains 800 cases over 20 Critical/High semantic rule families and 40
+bounded source bundles. Each rule has 20 positive and 20 negative cases. Profile positive/negative
+counts are `JAVA_FAST_V1=340/340`, `JAVA_DEEP_V1=400/400`, and
+`COMMON_DEEP_V1=200/200`. All 400 positives form the prior must-detect set, and each of the five
+negative classes has 80 cases.
+
+`tools/sast-qualification/corpus-loader.mjs` regenerates the expected assets in memory and accepts
+only byte-exact checked-in snapshot/source content. It rejects root/source links, path escape,
+unregistered files, invalid UTF-8, BOM, CRLF, NUL, non-NFC text, missing final LF, oversized
+sources, duplicate scan paths, digest/byte/range drift, and a missing exact anchor. T051 validation
+creates no scanner run or quality result. T052 supplies the other corpus classes, and only T053 may
+materialize these bounded ranges into production-equivalent isolated scan workspaces.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:

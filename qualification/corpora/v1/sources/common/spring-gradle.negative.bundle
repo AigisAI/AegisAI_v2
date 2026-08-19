@@ -1,0 +1,139 @@
+<<<T051:t051.spring-gradle.negative.001>>>
+// t051.spring-gradle.negative.001
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.001>>>
+
+<<<T051:t051.spring-gradle.negative.002>>>
+// t051.spring-gradle.negative.002
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.002>>>
+
+<<<T051:t051.spring-gradle.negative.003>>>
+// t051.spring-gradle.negative.003
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.003>>>
+
+<<<T051:t051.spring-gradle.negative.004>>>
+// t051.spring-gradle.negative.004
+// implementation("org.springframework:spring-core:5.3.17")
+// generated/vendor documentation only
+// no dependency declaration
+<<<END:t051.spring-gradle.negative.004>>>
+
+<<<T051:t051.spring-gradle.negative.005>>>
+// t051.spring-gradle.negative.005
+// implementation("org.springframework:spring-core:5.3.17")
+// generated/vendor documentation only
+// no dependency declaration
+<<<END:t051.spring-gradle.negative.005>>>
+
+<<<T051:t051.spring-gradle.negative.006>>>
+// t051.spring-gradle.negative.006
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.006>>>
+
+<<<T051:t051.spring-gradle.negative.007>>>
+// t051.spring-gradle.negative.007
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.007>>>
+
+<<<T051:t051.spring-gradle.negative.008>>>
+// t051.spring-gradle.negative.008
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.008>>>
+
+<<<T051:t051.spring-gradle.negative.009>>>
+// t051.spring-gradle.negative.009
+// implementation("org.springframework:spring-core:5.3.17")
+// generated/vendor documentation only
+// no dependency declaration
+<<<END:t051.spring-gradle.negative.009>>>
+
+<<<T051:t051.spring-gradle.negative.010>>>
+// t051.spring-gradle.negative.010
+// implementation("org.springframework:spring-core:5.3.17")
+// generated/vendor documentation only
+// no dependency declaration
+<<<END:t051.spring-gradle.negative.010>>>
+
+<<<T051:t051.spring-gradle.negative.011>>>
+// t051.spring-gradle.negative.011
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.011>>>
+
+<<<T051:t051.spring-gradle.negative.012>>>
+// t051.spring-gradle.negative.012
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.012>>>
+
+<<<T051:t051.spring-gradle.negative.013>>>
+// t051.spring-gradle.negative.013
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.013>>>
+
+<<<T051:t051.spring-gradle.negative.014>>>
+// t051.spring-gradle.negative.014
+// implementation("org.springframework:spring-core:5.3.17")
+// generated/vendor documentation only
+// no dependency declaration
+<<<END:t051.spring-gradle.negative.014>>>
+
+<<<T051:t051.spring-gradle.negative.015>>>
+// t051.spring-gradle.negative.015
+// implementation("org.springframework:spring-core:5.3.17")
+// generated/vendor documentation only
+// no dependency declaration
+<<<END:t051.spring-gradle.negative.015>>>
+
+<<<T051:t051.spring-gradle.negative.016>>>
+// t051.spring-gradle.negative.016
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.016>>>
+
+<<<T051:t051.spring-gradle.negative.017>>>
+// t051.spring-gradle.negative.017
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.017>>>
+
+<<<T051:t051.spring-gradle.negative.018>>>
+// t051.spring-gradle.negative.018
+dependencies {
+  implementation("org.springframework:spring-core:5.3.20")
+}
+<<<END:t051.spring-gradle.negative.018>>>
+
+<<<T051:t051.spring-gradle.negative.019>>>
+// t051.spring-gradle.negative.019
+// implementation("org.springframework:spring-core:5.3.17")
+// generated/vendor documentation only
+// no dependency declaration
+<<<END:t051.spring-gradle.negative.019>>>
+
+<<<T051:t051.spring-gradle.negative.020>>>
+// t051.spring-gradle.negative.020
+// implementation("org.springframework:spring-core:5.3.17")
+// generated/vendor documentation only
+// no dependency declaration
+<<<END:t051.spring-gradle.negative.020>>>
