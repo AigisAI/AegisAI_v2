@@ -1,0 +1,3615 @@
+{
+  "version": "sast-qualification-prior-release-manifest-v1",
+  "releaseRevision": "0.9.0",
+  "publishedAt": "2026-08-19T00:00:00.000Z",
+  "ownerRef": "team://security-engineering/sast-qualification",
+  "provenanceRef": "sast-corpus-provenance://aegisai/t051/prior-release-import-v1/sha256:88bed834146a55fcddf993849a4835d4639c5bb22e6d72ccae0fe8ed5054e20f",
+  "bindings": [
+    {
+      "caseId": "sast-qualification-case://7f59b0899e3a56023e81705d23caff50e3eb1b670d0e636cbb78975cd027a912",
+      "caseDigest": "sha256:7f59b0899e3a56023e81705d23caff50e3eb1b670d0e636cbb78975cd027a912",
+      "caseKey": "common.aws-access-key.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://4c7922faee34d1a805cb195ff9615ee159ce59985891e02927fa0a1a2de694e6",
+      "caseDigest": "sha256:4c7922faee34d1a805cb195ff9615ee159ce59985891e02927fa0a1a2de694e6",
+      "caseKey": "common.aws-access-key.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a9d81f898741517cf0ff8e96a72498d9a68ac64c32b6bc281461c1b8c36bbcd2",
+      "caseDigest": "sha256:a9d81f898741517cf0ff8e96a72498d9a68ac64c32b6bc281461c1b8c36bbcd2",
+      "caseKey": "common.aws-access-key.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://49941ef05eb79acc69c91e7d609ad968addcf40e49d2bc2387302b7e8d3a9d60",
+      "caseDigest": "sha256:49941ef05eb79acc69c91e7d609ad968addcf40e49d2bc2387302b7e8d3a9d60",
+      "caseKey": "common.aws-access-key.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://fe5b4574d469b9d5063610f94d85df81f94992bcfa416ed69bbb37ab59771524",
+      "caseDigest": "sha256:fe5b4574d469b9d5063610f94d85df81f94992bcfa416ed69bbb37ab59771524",
+      "caseKey": "common.aws-access-key.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ac2dc93c92422aebbe1d7f5e3f2ccdd0ac663f78796b6d35da549d7fc12af0d4",
+      "caseDigest": "sha256:ac2dc93c92422aebbe1d7f5e3f2ccdd0ac663f78796b6d35da549d7fc12af0d4",
+      "caseKey": "common.aws-access-key.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://662f06cc5e547b4747fe0fdbe65d654ef52a29b658dc352f703fe5674d638f69",
+      "caseDigest": "sha256:662f06cc5e547b4747fe0fdbe65d654ef52a29b658dc352f703fe5674d638f69",
+      "caseKey": "common.aws-access-key.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://02ba49c8d5b282755e1d1a75c097a25c9c580635c41772f82a128961cb3bd627",
+      "caseDigest": "sha256:02ba49c8d5b282755e1d1a75c097a25c9c580635c41772f82a128961cb3bd627",
+      "caseKey": "common.aws-access-key.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://30f08d39936997ae16e57ac66f87cbceb6c724f9d23469e095efb458284e18d5",
+      "caseDigest": "sha256:30f08d39936997ae16e57ac66f87cbceb6c724f9d23469e095efb458284e18d5",
+      "caseKey": "common.aws-access-key.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://2698f67520ad220a81913baa1a52632698fdd1a670501249a41b09b9d5319b2b",
+      "caseDigest": "sha256:2698f67520ad220a81913baa1a52632698fdd1a670501249a41b09b9d5319b2b",
+      "caseKey": "common.aws-access-key.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f662d3fa2c679caf21b164438b8846d587bb6e18166a01ed1a3978c760873b96",
+      "caseDigest": "sha256:f662d3fa2c679caf21b164438b8846d587bb6e18166a01ed1a3978c760873b96",
+      "caseKey": "common.aws-access-key.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://e2c89b2d504069d3114dd7a74d35cc11714f83b94948fcd44217e42dd784a772",
+      "caseDigest": "sha256:e2c89b2d504069d3114dd7a74d35cc11714f83b94948fcd44217e42dd784a772",
+      "caseKey": "common.aws-access-key.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f9eba1b7cb849c7aaba9b8d6c12f23a54131a8ace84e408be92703b031449c6b",
+      "caseDigest": "sha256:f9eba1b7cb849c7aaba9b8d6c12f23a54131a8ace84e408be92703b031449c6b",
+      "caseKey": "common.aws-access-key.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f25c5e6699cd74b9f6e181e960b883090de21bd7e8679fd800cffa79afcd825c",
+      "caseDigest": "sha256:f25c5e6699cd74b9f6e181e960b883090de21bd7e8679fd800cffa79afcd825c",
+      "caseKey": "common.aws-access-key.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f1adcbe1fb58afea0b17d54cf0410d0f9e5d41d04823ffbc56377b4a814afb1e",
+      "caseDigest": "sha256:f1adcbe1fb58afea0b17d54cf0410d0f9e5d41d04823ffbc56377b4a814afb1e",
+      "caseKey": "common.aws-access-key.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://e905070173faaa249318ab3318af670d090879d7ff75643184ab4c8e16c0ff51",
+      "caseDigest": "sha256:e905070173faaa249318ab3318af670d090879d7ff75643184ab4c8e16c0ff51",
+      "caseKey": "common.aws-access-key.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://055337b7721f3d607485a14ce4273d627e18b59c0b77e77a74100c144f29c951",
+      "caseDigest": "sha256:055337b7721f3d607485a14ce4273d627e18b59c0b77e77a74100c144f29c951",
+      "caseKey": "common.aws-access-key.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://633caff15ff8b8b87473ff5977335064d0e0430c65f7780080d36832b86a3cab",
+      "caseDigest": "sha256:633caff15ff8b8b87473ff5977335064d0e0430c65f7780080d36832b86a3cab",
+      "caseKey": "common.aws-access-key.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a4f776740e0c1d7303be82e18e57d907fcab80d59cbba3291990bdae39c08b44",
+      "caseDigest": "sha256:a4f776740e0c1d7303be82e18e57d907fcab80d59cbba3291990bdae39c08b44",
+      "caseKey": "common.aws-access-key.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://e28179edb5ad685fa7848602d32794eb911aa1ab3e2b80feaa15d67a7da07dbf",
+      "caseDigest": "sha256:e28179edb5ad685fa7848602d32794eb911aa1ab3e2b80feaa15d67a7da07dbf",
+      "caseKey": "common.aws-access-key.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.aws-access-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://cfdac31a1d59b5c63d95e20455505c843fb0a68366046a70c4d6192be8b4b71e",
+      "caseDigest": "sha256:cfdac31a1d59b5c63d95e20455505c843fb0a68366046a70c4d6192be8b4b71e",
+      "caseKey": "common.docker-root-user.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://8c73074d44bbeabdbd6b5e1513cb2697a3a80489e534999faa92d6a7ae588655",
+      "caseDigest": "sha256:8c73074d44bbeabdbd6b5e1513cb2697a3a80489e534999faa92d6a7ae588655",
+      "caseKey": "common.docker-root-user.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://0e877182922244c5a5578b27633af2542454ac3be6dc224758f5e25a233ae89d",
+      "caseDigest": "sha256:0e877182922244c5a5578b27633af2542454ac3be6dc224758f5e25a233ae89d",
+      "caseKey": "common.docker-root-user.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://1ab24b338d1190bc49bbaff455613949483d0f4ebc81fdb9b9556799e33afe11",
+      "caseDigest": "sha256:1ab24b338d1190bc49bbaff455613949483d0f4ebc81fdb9b9556799e33afe11",
+      "caseKey": "common.docker-root-user.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://8dee641beda2986ab51ddf12922af4f49cf59077392b611343bdfcab950515f7",
+      "caseDigest": "sha256:8dee641beda2986ab51ddf12922af4f49cf59077392b611343bdfcab950515f7",
+      "caseKey": "common.docker-root-user.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://b5b790f337b7ec92ce3e02a2b313c06534de1d5e336a68103bc50485536a7252",
+      "caseDigest": "sha256:b5b790f337b7ec92ce3e02a2b313c06534de1d5e336a68103bc50485536a7252",
+      "caseKey": "common.docker-root-user.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c547ee174d8701216665b507b3c309d09c08cbb0a91f257834a82a6f9047e6a7",
+      "caseDigest": "sha256:c547ee174d8701216665b507b3c309d09c08cbb0a91f257834a82a6f9047e6a7",
+      "caseKey": "common.docker-root-user.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a53f2859cdd21d79ee6f370db4983b51216c0abfcccc55b80c2d6d7fc8c0e563",
+      "caseDigest": "sha256:a53f2859cdd21d79ee6f370db4983b51216c0abfcccc55b80c2d6d7fc8c0e563",
+      "caseKey": "common.docker-root-user.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://8056a4b6ab2ee9f47826440fbfbb65a27d77f409c8c1a687db4e28cfd96b6646",
+      "caseDigest": "sha256:8056a4b6ab2ee9f47826440fbfbb65a27d77f409c8c1a687db4e28cfd96b6646",
+      "caseKey": "common.docker-root-user.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://3fac73165c954872b33884e3e18c0a2efedc7c34cc8b4805acfbd1168bbc0086",
+      "caseDigest": "sha256:3fac73165c954872b33884e3e18c0a2efedc7c34cc8b4805acfbd1168bbc0086",
+      "caseKey": "common.docker-root-user.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://45359d7432c62cab30a62f4349209ad5c82f63360584d3afb735422c5b6bd066",
+      "caseDigest": "sha256:45359d7432c62cab30a62f4349209ad5c82f63360584d3afb735422c5b6bd066",
+      "caseKey": "common.docker-root-user.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://d0f5533ad7796112517d2aa1dcc7045991cbae619711c49293a571be46a4722a",
+      "caseDigest": "sha256:d0f5533ad7796112517d2aa1dcc7045991cbae619711c49293a571be46a4722a",
+      "caseKey": "common.docker-root-user.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://1ba859651df9016b8a7b54601fda0c0ca14dd9dd8613b917c80ff124caae6ddf",
+      "caseDigest": "sha256:1ba859651df9016b8a7b54601fda0c0ca14dd9dd8613b917c80ff124caae6ddf",
+      "caseKey": "common.docker-root-user.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://0e9472827c30285d574b3392580493f5371cc8e7cde9e09a019f3c49cd9c116d",
+      "caseDigest": "sha256:0e9472827c30285d574b3392580493f5371cc8e7cde9e09a019f3c49cd9c116d",
+      "caseKey": "common.docker-root-user.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9aedbdbdee56e375b8ee290c08883e27ba63cd7530bf36c5950b005bab66a846",
+      "caseDigest": "sha256:9aedbdbdee56e375b8ee290c08883e27ba63cd7530bf36c5950b005bab66a846",
+      "caseKey": "common.docker-root-user.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://4a7ac37ee8c8c21d0e0e6aa365384b76eb105face2e74e619fca403be9dec6a6",
+      "caseDigest": "sha256:4a7ac37ee8c8c21d0e0e6aa365384b76eb105face2e74e619fca403be9dec6a6",
+      "caseKey": "common.docker-root-user.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://5a88fd2adc25fc0c4b31344d290c985659d13ac1ebfd3807e4d2f0e89cb69b81",
+      "caseDigest": "sha256:5a88fd2adc25fc0c4b31344d290c985659d13ac1ebfd3807e4d2f0e89cb69b81",
+      "caseKey": "common.docker-root-user.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://2715366fc030e12674034ad9ebf13f0cf02d26e1d9b21cb7a06e55f14c17f626",
+      "caseDigest": "sha256:2715366fc030e12674034ad9ebf13f0cf02d26e1d9b21cb7a06e55f14c17f626",
+      "caseKey": "common.docker-root-user.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://64b93023eff70ad58b9f055d1d54eebc6ba60db6db6aeba8eff6b93e13274b28",
+      "caseDigest": "sha256:64b93023eff70ad58b9f055d1d54eebc6ba60db6db6aeba8eff6b93e13274b28",
+      "caseKey": "common.docker-root-user.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://aaaf5c91d123d2d1645335788a665ca2083a11a7ab976ae916b42c0ec13d84c3",
+      "caseDigest": "sha256:aaaf5c91d123d2d1645335788a665ca2083a11a7ab976ae916b42c0ec13d84c3",
+      "caseKey": "common.docker-root-user.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.docker-root-user",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://12891a2333d74ab600484a1d1211b603e502ad39cf5b85f02a320b44af8535fb",
+      "caseDigest": "sha256:12891a2333d74ab600484a1d1211b603e502ad39cf5b85f02a320b44af8535fb",
+      "caseKey": "common.github-token.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://cf6e2f2985ee6647568e934317885b7f3b81556e37111cf62c8a39fb69270ea4",
+      "caseDigest": "sha256:cf6e2f2985ee6647568e934317885b7f3b81556e37111cf62c8a39fb69270ea4",
+      "caseKey": "common.github-token.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5ae1650c7b1d13a57f8ee6f2f7b93e947f08d1b3ad2d3c6227747ff77e8e409d",
+      "caseDigest": "sha256:5ae1650c7b1d13a57f8ee6f2f7b93e947f08d1b3ad2d3c6227747ff77e8e409d",
+      "caseKey": "common.github-token.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://9324ca503543f7ce23863de65c9524fb6219d61fd3ccf195441957d2a38f1b65",
+      "caseDigest": "sha256:9324ca503543f7ce23863de65c9524fb6219d61fd3ccf195441957d2a38f1b65",
+      "caseKey": "common.github-token.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f419c0ae59c176aed7e54a0da6efcd60ae3c9050ed57a6828a871d10a26a4378",
+      "caseDigest": "sha256:f419c0ae59c176aed7e54a0da6efcd60ae3c9050ed57a6828a871d10a26a4378",
+      "caseKey": "common.github-token.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://feeaa70a3cd57d2a7b85f2c39dcc9e8da322b61d13c78111faedb5c1790243a5",
+      "caseDigest": "sha256:feeaa70a3cd57d2a7b85f2c39dcc9e8da322b61d13c78111faedb5c1790243a5",
+      "caseKey": "common.github-token.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5d57b7138e464a5db4c879a204ed715adf377bd8b3a3fb6efdb6fcc46728b819",
+      "caseDigest": "sha256:5d57b7138e464a5db4c879a204ed715adf377bd8b3a3fb6efdb6fcc46728b819",
+      "caseKey": "common.github-token.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f9bcc605a9696b06798eb30741f82a24f80ad4271e8cdc02b0463a33ca7bbfbf",
+      "caseDigest": "sha256:f9bcc605a9696b06798eb30741f82a24f80ad4271e8cdc02b0463a33ca7bbfbf",
+      "caseKey": "common.github-token.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://275a5b4289f8509a64b6e91d6fdaf4b4dac990998531ca657081864e09c80527",
+      "caseDigest": "sha256:275a5b4289f8509a64b6e91d6fdaf4b4dac990998531ca657081864e09c80527",
+      "caseKey": "common.github-token.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ef7fdc754bbe6635906f1da2e47cf35c33871453802a45297c1aa30186f117e5",
+      "caseDigest": "sha256:ef7fdc754bbe6635906f1da2e47cf35c33871453802a45297c1aa30186f117e5",
+      "caseKey": "common.github-token.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://4d87c61e80be4766304d20abf40fb3f83ebffe56a8ade828f4cb22abe3bc2c45",
+      "caseDigest": "sha256:4d87c61e80be4766304d20abf40fb3f83ebffe56a8ade828f4cb22abe3bc2c45",
+      "caseKey": "common.github-token.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5097059779e438e23476cc5c36bdd7c5aec1e38a896203e6f17ce106c06b6859",
+      "caseDigest": "sha256:5097059779e438e23476cc5c36bdd7c5aec1e38a896203e6f17ce106c06b6859",
+      "caseKey": "common.github-token.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://4e809e3242ad0fd6e5b6876424e79880451aa185c2cccb02092497590ae213d4",
+      "caseDigest": "sha256:4e809e3242ad0fd6e5b6876424e79880451aa185c2cccb02092497590ae213d4",
+      "caseKey": "common.github-token.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ec614dc2d9f6687221eee7c1a70c46700651041b0832d7ec15099fb86463f853",
+      "caseDigest": "sha256:ec614dc2d9f6687221eee7c1a70c46700651041b0832d7ec15099fb86463f853",
+      "caseKey": "common.github-token.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://b615f4cc36955a499bfbf1cd455ed25b97d260aab67c4d893ac6dfa4d4d526ca",
+      "caseDigest": "sha256:b615f4cc36955a499bfbf1cd455ed25b97d260aab67c4d893ac6dfa4d4d526ca",
+      "caseKey": "common.github-token.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://4f89261b9e702cbb7e9a1f178a68b4f1f7dd36df593c2dc2ac9abc04b6358037",
+      "caseDigest": "sha256:4f89261b9e702cbb7e9a1f178a68b4f1f7dd36df593c2dc2ac9abc04b6358037",
+      "caseKey": "common.github-token.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://71f55ab516bf55d1a5f8a1451f0864ca19fc0022e56d3806adfa2fdbbbd97553",
+      "caseDigest": "sha256:71f55ab516bf55d1a5f8a1451f0864ca19fc0022e56d3806adfa2fdbbbd97553",
+      "caseKey": "common.github-token.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://d332259d5bc54fde225d8bce8647a0b93a1be0678f2b894a3c7c399f2b42aa92",
+      "caseDigest": "sha256:d332259d5bc54fde225d8bce8647a0b93a1be0678f2b894a3c7c399f2b42aa92",
+      "caseKey": "common.github-token.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5765dbbbb637f59e18cb558f0dd180f65127f75e737cf9c759b76ccc53cfc404",
+      "caseDigest": "sha256:5765dbbbb637f59e18cb558f0dd180f65127f75e737cf9c759b76ccc53cfc404",
+      "caseKey": "common.github-token.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://bfe790badeffc0e34e45ae766f2e8fe275f4691020297d711a6f29247cd25ce6",
+      "caseDigest": "sha256:bfe790badeffc0e34e45ae766f2e8fe275f4691020297d711a6f29247cd25ce6",
+      "caseKey": "common.github-token.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.github-pat",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://3572f63b6d7bab43b68f994fc7b6c0421f8942244a3f7c6ff1cf0e992ab3160b",
+      "caseDigest": "sha256:3572f63b6d7bab43b68f994fc7b6c0421f8942244a3f7c6ff1cf0e992ab3160b",
+      "caseKey": "common.jackson-maven.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://1fec7fc5a1e824365e3734df79529a33dc2759511accf8577ef8657b0bc82e99",
+      "caseDigest": "sha256:1fec7fc5a1e824365e3734df79529a33dc2759511accf8577ef8657b0bc82e99",
+      "caseKey": "common.jackson-maven.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://7dffb86cf52675d44f71b9b13540d082db02d0911a6e92d479a48957d1bfe798",
+      "caseDigest": "sha256:7dffb86cf52675d44f71b9b13540d082db02d0911a6e92d479a48957d1bfe798",
+      "caseKey": "common.jackson-maven.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9700311940e4c63482560a51c996e60d3649d8fbf17eb38ad6009575f3a8302b",
+      "caseDigest": "sha256:9700311940e4c63482560a51c996e60d3649d8fbf17eb38ad6009575f3a8302b",
+      "caseKey": "common.jackson-maven.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://2f9ea8434580b4f644f98e77d00d24f79fcfefeb74ae95a28cc8ba5a721e0eb9",
+      "caseDigest": "sha256:2f9ea8434580b4f644f98e77d00d24f79fcfefeb74ae95a28cc8ba5a721e0eb9",
+      "caseKey": "common.jackson-maven.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://2179511edd5d99452a5e3d3abde0353097f0efe58009213ddb01d6381f5759b6",
+      "caseDigest": "sha256:2179511edd5d99452a5e3d3abde0353097f0efe58009213ddb01d6381f5759b6",
+      "caseKey": "common.jackson-maven.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://04ae82076918752b4d8cc563db04add50014d12aa1f7ec26632e6fa075eb9f5e",
+      "caseDigest": "sha256:04ae82076918752b4d8cc563db04add50014d12aa1f7ec26632e6fa075eb9f5e",
+      "caseKey": "common.jackson-maven.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://0ab2cbceda4c3bb6a4652ddb31d6f13556c48542a004ba98a82f8a810c339f3a",
+      "caseDigest": "sha256:0ab2cbceda4c3bb6a4652ddb31d6f13556c48542a004ba98a82f8a810c339f3a",
+      "caseKey": "common.jackson-maven.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://895db7b06d287480048a15ea6350462523bc6af1dcc04eef200f0389627269a2",
+      "caseDigest": "sha256:895db7b06d287480048a15ea6350462523bc6af1dcc04eef200f0389627269a2",
+      "caseKey": "common.jackson-maven.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://7fbaf26b4fa9d9cc2999cd3c0074ffb95e362bdf8ae33386e69428239c12aaf2",
+      "caseDigest": "sha256:7fbaf26b4fa9d9cc2999cd3c0074ffb95e362bdf8ae33386e69428239c12aaf2",
+      "caseKey": "common.jackson-maven.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://6d0195ca605e2de00f02e6c70aaea3f6c960b9f18da9dfe52cdd2820d8fea3c4",
+      "caseDigest": "sha256:6d0195ca605e2de00f02e6c70aaea3f6c960b9f18da9dfe52cdd2820d8fea3c4",
+      "caseKey": "common.jackson-maven.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://050c4142ea80b70bef42a5c6b749ed65103452b4d105715638936bd3491d379f",
+      "caseDigest": "sha256:050c4142ea80b70bef42a5c6b749ed65103452b4d105715638936bd3491d379f",
+      "caseKey": "common.jackson-maven.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://52444c72fee7f7796f0eab9e7ef2ed634e8a444e092a677a86cadf949fe4b149",
+      "caseDigest": "sha256:52444c72fee7f7796f0eab9e7ef2ed634e8a444e092a677a86cadf949fe4b149",
+      "caseKey": "common.jackson-maven.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://22910abeb2e365322f26dec25803b16f6b02f78faca170a0570bd1ea1bbc77e9",
+      "caseDigest": "sha256:22910abeb2e365322f26dec25803b16f6b02f78faca170a0570bd1ea1bbc77e9",
+      "caseKey": "common.jackson-maven.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://fef8c3c3d9807c8e9c0f91d72ce66782cdd1d0c924e842eea5251c54aa8af451",
+      "caseDigest": "sha256:fef8c3c3d9807c8e9c0f91d72ce66782cdd1d0c924e842eea5251c54aa8af451",
+      "caseKey": "common.jackson-maven.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://b070409a6166e07facb0fdf0c9fa70ada49cccfd866457c04014ca54c9ddb757",
+      "caseDigest": "sha256:b070409a6166e07facb0fdf0c9fa70ada49cccfd866457c04014ca54c9ddb757",
+      "caseKey": "common.jackson-maven.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://1e8ea435c8a7d7050a5fb5c044c41da6afde374545e578465dc183cd2c8f0515",
+      "caseDigest": "sha256:1e8ea435c8a7d7050a5fb5c044c41da6afde374545e578465dc183cd2c8f0515",
+      "caseKey": "common.jackson-maven.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://02c9c6e34f967618b929d51893715078e24474a1734df9c98f7fe4cb6773e7bc",
+      "caseDigest": "sha256:02c9c6e34f967618b929d51893715078e24474a1734df9c98f7fe4cb6773e7bc",
+      "caseKey": "common.jackson-maven.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://2b0dd4a083d899d7ee73dc81b44e869392e628a8e89da1bc0f2f57b191abd656",
+      "caseDigest": "sha256:2b0dd4a083d899d7ee73dc81b44e869392e628a8e89da1bc0f2f57b191abd656",
+      "caseKey": "common.jackson-maven.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://638b2765f51a10cbd21c33073de8cf82fffbf8253d172bf8911fc226e7aefcba",
+      "caseDigest": "sha256:638b2765f51a10cbd21c33073de8cf82fffbf8253d172bf8911fc226e7aefcba",
+      "caseKey": "common.jackson-maven.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.jackson-databind-legacy",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://78b26b3d9d83e5e40fa2d1c8ca5d46af9428940bcd8da55707be23b676edb800",
+      "caseDigest": "sha256:78b26b3d9d83e5e40fa2d1c8ca5d46af9428940bcd8da55707be23b676edb800",
+      "caseKey": "common.kubernetes-privileged.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://601ca5e9b09e0bffde9ebf2b0a2023ee1956d1ac3532193f89b6ecbf95fad116",
+      "caseDigest": "sha256:601ca5e9b09e0bffde9ebf2b0a2023ee1956d1ac3532193f89b6ecbf95fad116",
+      "caseKey": "common.kubernetes-privileged.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a8fe614982978bd167f16624b054131b75ac6d2152fb82fafb99c1a34c3546d4",
+      "caseDigest": "sha256:a8fe614982978bd167f16624b054131b75ac6d2152fb82fafb99c1a34c3546d4",
+      "caseKey": "common.kubernetes-privileged.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://9ebb8a96f061c7dd9faa88ada5816497ca0aacc7cea838d1c22aaab5878f264c",
+      "caseDigest": "sha256:9ebb8a96f061c7dd9faa88ada5816497ca0aacc7cea838d1c22aaab5878f264c",
+      "caseKey": "common.kubernetes-privileged.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a5dcafaa4b3605191624c219d12160c0b068dbdbb4371c4404c6800405bff0dc",
+      "caseDigest": "sha256:a5dcafaa4b3605191624c219d12160c0b068dbdbb4371c4404c6800405bff0dc",
+      "caseKey": "common.kubernetes-privileged.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://9ae6255d84dd126230618205a44ada982e7fba444db77eb7d60baecc31db94b4",
+      "caseDigest": "sha256:9ae6255d84dd126230618205a44ada982e7fba444db77eb7d60baecc31db94b4",
+      "caseKey": "common.kubernetes-privileged.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://0760795eec12daeb77490454c6ce23c7fef75d8746ccd7047bbaeb89b0ed16d3",
+      "caseDigest": "sha256:0760795eec12daeb77490454c6ce23c7fef75d8746ccd7047bbaeb89b0ed16d3",
+      "caseKey": "common.kubernetes-privileged.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://82bb5d402113db1a2d45470071eaa021db7998dd2a19da85abd227e5945b71e9",
+      "caseDigest": "sha256:82bb5d402113db1a2d45470071eaa021db7998dd2a19da85abd227e5945b71e9",
+      "caseKey": "common.kubernetes-privileged.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://e75b81557730e18fa158247cfafcef77e5b9e9a7febf1138246c294edce4a27b",
+      "caseDigest": "sha256:e75b81557730e18fa158247cfafcef77e5b9e9a7febf1138246c294edce4a27b",
+      "caseKey": "common.kubernetes-privileged.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://56ec18d12c4594a01f4b2512da4e8c629d96f5c3f78782a430bbddc9c1ff7f55",
+      "caseDigest": "sha256:56ec18d12c4594a01f4b2512da4e8c629d96f5c3f78782a430bbddc9c1ff7f55",
+      "caseKey": "common.kubernetes-privileged.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://6b085ae479d533ce513945c39a28b7890de331720ad45da1240357345cafee92",
+      "caseDigest": "sha256:6b085ae479d533ce513945c39a28b7890de331720ad45da1240357345cafee92",
+      "caseKey": "common.kubernetes-privileged.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://7be10be802955c56f74190fd831de20e91d2899677d690d57870a285d1285ea4",
+      "caseDigest": "sha256:7be10be802955c56f74190fd831de20e91d2899677d690d57870a285d1285ea4",
+      "caseKey": "common.kubernetes-privileged.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://0a24a99a4014be003f63759542204edbe617b488922226ce305ba4d8e6376ee3",
+      "caseDigest": "sha256:0a24a99a4014be003f63759542204edbe617b488922226ce305ba4d8e6376ee3",
+      "caseKey": "common.kubernetes-privileged.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://20a90270f582af70050532c098118aec9c8c72fda3c9a3af7c1d4474a0dad93e",
+      "caseDigest": "sha256:20a90270f582af70050532c098118aec9c8c72fda3c9a3af7c1d4474a0dad93e",
+      "caseKey": "common.kubernetes-privileged.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f10cb40b6f8c541165ae04054b2e2b6d60c04708de6f8c8a8e5d9e0845cf394e",
+      "caseDigest": "sha256:f10cb40b6f8c541165ae04054b2e2b6d60c04708de6f8c8a8e5d9e0845cf394e",
+      "caseKey": "common.kubernetes-privileged.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://611622e8be2fab4abef5047aead685b69072089fb8e83853198e1a78d8fe32b1",
+      "caseDigest": "sha256:611622e8be2fab4abef5047aead685b69072089fb8e83853198e1a78d8fe32b1",
+      "caseKey": "common.kubernetes-privileged.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://c45c01be5b36098f3700625f7eff40e31e711d0d8d5fbbc0faff58682865c8bb",
+      "caseDigest": "sha256:c45c01be5b36098f3700625f7eff40e31e711d0d8d5fbbc0faff58682865c8bb",
+      "caseKey": "common.kubernetes-privileged.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://08ee3f8e17917f7bf3149d06ed65f0683b1b224e6dd0c78290103b866ed236e1",
+      "caseDigest": "sha256:08ee3f8e17917f7bf3149d06ed65f0683b1b224e6dd0c78290103b866ed236e1",
+      "caseKey": "common.kubernetes-privileged.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f55d8fc42bfb4dc767e669f0efb291e2e8ab8093c014014c32ddcaeef0fc4a03",
+      "caseDigest": "sha256:f55d8fc42bfb4dc767e669f0efb291e2e8ab8093c014014c32ddcaeef0fc4a03",
+      "caseKey": "common.kubernetes-privileged.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://845bab3449f970f775efc515ae98bd4436dc4d917a0f09aaeabdb2f3f6c0b580",
+      "caseDigest": "sha256:845bab3449f970f775efc515ae98bd4436dc4d917a0f09aaeabdb2f3f6c0b580",
+      "caseKey": "common.kubernetes-privileged.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.kubernetes-privileged",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://cfd1ad637a5f85679d07e12ef83125e73e29c219624e1ac2dc4a500d4818651a",
+      "caseDigest": "sha256:cfd1ad637a5f85679d07e12ef83125e73e29c219624e1ac2dc4a500d4818651a",
+      "caseKey": "common.lodash-npm.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://d25717364ed88313c25873b1f338dea414380a0178c2dc1b5ddf4d4f9836a827",
+      "caseDigest": "sha256:d25717364ed88313c25873b1f338dea414380a0178c2dc1b5ddf4d4f9836a827",
+      "caseKey": "common.lodash-npm.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://92aad03de051ec86568c4b6d1cea3ad112bb7f591d1d7634f22ca5f384c7ab63",
+      "caseDigest": "sha256:92aad03de051ec86568c4b6d1cea3ad112bb7f591d1d7634f22ca5f384c7ab63",
+      "caseKey": "common.lodash-npm.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://154e1fca1515c7808e5c180e64dc1d13db63ea2a9d2225d7791f31da8bcd0f1c",
+      "caseDigest": "sha256:154e1fca1515c7808e5c180e64dc1d13db63ea2a9d2225d7791f31da8bcd0f1c",
+      "caseKey": "common.lodash-npm.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://017ade2eb3c19bfd3ca31ff514108ba9fb4237a82feb5ef1af5716396ce8dd80",
+      "caseDigest": "sha256:017ade2eb3c19bfd3ca31ff514108ba9fb4237a82feb5ef1af5716396ce8dd80",
+      "caseKey": "common.lodash-npm.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://1293528a1e219bc00cac8b4ae46768e07a748130ffbfbca64bd35cce16476b55",
+      "caseDigest": "sha256:1293528a1e219bc00cac8b4ae46768e07a748130ffbfbca64bd35cce16476b55",
+      "caseKey": "common.lodash-npm.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://fc5fd0ff36c210d0d07d387d598bdd02f6959c16b5e024af675f39bce4f3990f",
+      "caseDigest": "sha256:fc5fd0ff36c210d0d07d387d598bdd02f6959c16b5e024af675f39bce4f3990f",
+      "caseKey": "common.lodash-npm.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://d3adfbe0073fbfb470039e32857d1375b98f34dcaade380b1d42476deb325412",
+      "caseDigest": "sha256:d3adfbe0073fbfb470039e32857d1375b98f34dcaade380b1d42476deb325412",
+      "caseKey": "common.lodash-npm.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://8477096c63f312ca1a385433156a0de1e6fbcace8f7925b34118429b98035eda",
+      "caseDigest": "sha256:8477096c63f312ca1a385433156a0de1e6fbcace8f7925b34118429b98035eda",
+      "caseKey": "common.lodash-npm.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://296459f3b7c3f411ec02ec0e676b0380e666236565b46633dd7df68045fab404",
+      "caseDigest": "sha256:296459f3b7c3f411ec02ec0e676b0380e666236565b46633dd7df68045fab404",
+      "caseKey": "common.lodash-npm.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://503f8d2c27f1a1fb3d362421dfcd12dc49f436814f3311a24fe791db41d32d58",
+      "caseDigest": "sha256:503f8d2c27f1a1fb3d362421dfcd12dc49f436814f3311a24fe791db41d32d58",
+      "caseKey": "common.lodash-npm.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://cf507de7e7143d392a4f92b8af308edeabd8ce8062b952311933fb82456bcd78",
+      "caseDigest": "sha256:cf507de7e7143d392a4f92b8af308edeabd8ce8062b952311933fb82456bcd78",
+      "caseKey": "common.lodash-npm.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://8db6b07ec1d246dc0884f09c6cca1c044f4078d3ae793ecb0f35d4d70852d399",
+      "caseDigest": "sha256:8db6b07ec1d246dc0884f09c6cca1c044f4078d3ae793ecb0f35d4d70852d399",
+      "caseKey": "common.lodash-npm.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://785d7842c00785b98fbb4304a12443bae50aa343ae5863a1088d0657c7589569",
+      "caseDigest": "sha256:785d7842c00785b98fbb4304a12443bae50aa343ae5863a1088d0657c7589569",
+      "caseKey": "common.lodash-npm.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://348f3f7f98f399233cde0b0c1dac65c3aa39d5820458f3fe9bf8b31d10cc6c72",
+      "caseDigest": "sha256:348f3f7f98f399233cde0b0c1dac65c3aa39d5820458f3fe9bf8b31d10cc6c72",
+      "caseKey": "common.lodash-npm.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://44e13e8be1122805d2e424976cd93d335e0e8a621541f074bb418fb5e2fa3e06",
+      "caseDigest": "sha256:44e13e8be1122805d2e424976cd93d335e0e8a621541f074bb418fb5e2fa3e06",
+      "caseKey": "common.lodash-npm.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://27b4cf85024f6edfc72830e9e04451108609baa5ee53b2dfd9c6e5de772eed76",
+      "caseDigest": "sha256:27b4cf85024f6edfc72830e9e04451108609baa5ee53b2dfd9c6e5de772eed76",
+      "caseKey": "common.lodash-npm.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f61af2f49ba6c98749978fb32a50e5df8efa1b74885a15bbe0b75aacec8b7e60",
+      "caseDigest": "sha256:f61af2f49ba6c98749978fb32a50e5df8efa1b74885a15bbe0b75aacec8b7e60",
+      "caseKey": "common.lodash-npm.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://b43ad22b3bb2051042865e39b407561657a8d930321f4774c18ed9a80abe14d0",
+      "caseDigest": "sha256:b43ad22b3bb2051042865e39b407561657a8d930321f4774c18ed9a80abe14d0",
+      "caseKey": "common.lodash-npm.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c035e974556c8bfd6ab17ce445b2fa6e5a3b4848ae22c477ef25527c09bf5334",
+      "caseDigest": "sha256:c035e974556c8bfd6ab17ce445b2fa6e5a3b4848ae22c477ef25527c09bf5334",
+      "caseKey": "common.lodash-npm.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-23337",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://162543d95f9f1bbc97a12cc66026774f4002e401eb1986fee50ad0a9216f4df9",
+      "caseDigest": "sha256:162543d95f9f1bbc97a12cc66026774f4002e401eb1986fee50ad0a9216f4df9",
+      "caseKey": "common.log4shell-maven.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ccbb0b8fc1533ecf902aed6fa0666cb23bb63d20a4ca1a87b1fa45855019e8eb",
+      "caseDigest": "sha256:ccbb0b8fc1533ecf902aed6fa0666cb23bb63d20a4ca1a87b1fa45855019e8eb",
+      "caseKey": "common.log4shell-maven.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://0dc758821e1b397ac004f0c4d0570b8fca29e628c1a1c906da7aafc6f794cabc",
+      "caseDigest": "sha256:0dc758821e1b397ac004f0c4d0570b8fca29e628c1a1c906da7aafc6f794cabc",
+      "caseKey": "common.log4shell-maven.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://bfbfc25534213189de4556bdd38a7cc7d0c610cb5f29337602336c6fdf8789ae",
+      "caseDigest": "sha256:bfbfc25534213189de4556bdd38a7cc7d0c610cb5f29337602336c6fdf8789ae",
+      "caseKey": "common.log4shell-maven.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5e73ee40ff0a08db4666a99174b9c213cb2e892565eac45f14e049e50721d21b",
+      "caseDigest": "sha256:5e73ee40ff0a08db4666a99174b9c213cb2e892565eac45f14e049e50721d21b",
+      "caseKey": "common.log4shell-maven.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://65bc382fedb6ce7228c02c3becbb1e0d737670b1fd52b44b2d0a031b1f78ff6f",
+      "caseDigest": "sha256:65bc382fedb6ce7228c02c3becbb1e0d737670b1fd52b44b2d0a031b1f78ff6f",
+      "caseKey": "common.log4shell-maven.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://3b56b48c8b021525cf2a21ed0527a06082754f10e6589987ba568798bfae39b2",
+      "caseDigest": "sha256:3b56b48c8b021525cf2a21ed0527a06082754f10e6589987ba568798bfae39b2",
+      "caseKey": "common.log4shell-maven.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://4ea73031f81de5f23e91004d5a6919a4637506f5406d3938a99394fb55b44099",
+      "caseDigest": "sha256:4ea73031f81de5f23e91004d5a6919a4637506f5406d3938a99394fb55b44099",
+      "caseKey": "common.log4shell-maven.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a7c3aa49b1a5540e863e37b6b0b5206812caaf110ed5ac1c1de6d4a4b3cbd102",
+      "caseDigest": "sha256:a7c3aa49b1a5540e863e37b6b0b5206812caaf110ed5ac1c1de6d4a4b3cbd102",
+      "caseKey": "common.log4shell-maven.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5c0c71a256a84393aa6838e61090864c427915b2d62b781c3e4065afae1ab3a4",
+      "caseDigest": "sha256:5c0c71a256a84393aa6838e61090864c427915b2d62b781c3e4065afae1ab3a4",
+      "caseKey": "common.log4shell-maven.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://1f150a0918b895859b4853647c9b8d759721f5ab785e3568705c825334408fd3",
+      "caseDigest": "sha256:1f150a0918b895859b4853647c9b8d759721f5ab785e3568705c825334408fd3",
+      "caseKey": "common.log4shell-maven.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://1528fadc65e363656f05a9a40c652b62b734288a4edcd53d7b2d6f27e79811d6",
+      "caseDigest": "sha256:1528fadc65e363656f05a9a40c652b62b734288a4edcd53d7b2d6f27e79811d6",
+      "caseKey": "common.log4shell-maven.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ce6d811f83103a5fe19dcd96396fbac69a84aa0ab1424dbebf21da81e458e54e",
+      "caseDigest": "sha256:ce6d811f83103a5fe19dcd96396fbac69a84aa0ab1424dbebf21da81e458e54e",
+      "caseKey": "common.log4shell-maven.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://9ee1999f872c4409161fc4bf22df785c124428188b3c49991a10a567dedd1c01",
+      "caseDigest": "sha256:9ee1999f872c4409161fc4bf22df785c124428188b3c49991a10a567dedd1c01",
+      "caseKey": "common.log4shell-maven.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f18087ce8187c560720f6b07d8161fb24d9325e2a8ddbae7811cab5d25f83238",
+      "caseDigest": "sha256:f18087ce8187c560720f6b07d8161fb24d9325e2a8ddbae7811cab5d25f83238",
+      "caseKey": "common.log4shell-maven.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://68d3c0d13e9d863d84a7baac4a1bd089e73356451d6c9ad489e67f01c4057e00",
+      "caseDigest": "sha256:68d3c0d13e9d863d84a7baac4a1bd089e73356451d6c9ad489e67f01c4057e00",
+      "caseKey": "common.log4shell-maven.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://8ba4194b23d0dda73cad7043f58f95b2eec3a9f7e8ad655b0dff4144eaa6f706",
+      "caseDigest": "sha256:8ba4194b23d0dda73cad7043f58f95b2eec3a9f7e8ad655b0dff4144eaa6f706",
+      "caseKey": "common.log4shell-maven.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://37d0ca951d33bc991a5a65b8970ceacc3f0dddf738f3ece65a405901b405b224",
+      "caseDigest": "sha256:37d0ca951d33bc991a5a65b8970ceacc3f0dddf738f3ece65a405901b405b224",
+      "caseKey": "common.log4shell-maven.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://14d1af02e57cf5a1df60e070c5a81133699309e375c7112e80b7d7dc5cdc8715",
+      "caseDigest": "sha256:14d1af02e57cf5a1df60e070c5a81133699309e375c7112e80b7d7dc5cdc8715",
+      "caseKey": "common.log4shell-maven.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://2dd5da008bad22b30b2af7d1630dab36e38a715372f94ed442386c489500eb7a",
+      "caseDigest": "sha256:2dd5da008bad22b30b2af7d1630dab36e38a715372f94ed442386c489500eb7a",
+      "caseKey": "common.log4shell-maven.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2021-44228",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://947b43d326a7808e05af0e81cb04b8ce2b6dedbe656ffd0ceab441c990116f7f",
+      "caseDigest": "sha256:947b43d326a7808e05af0e81cb04b8ce2b6dedbe656ffd0ceab441c990116f7f",
+      "caseKey": "common.private-key.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://9d9957ffd7a087431adbc3e863deec48b2b41236ac44d8f536f90aa9364180b9",
+      "caseDigest": "sha256:9d9957ffd7a087431adbc3e863deec48b2b41236ac44d8f536f90aa9364180b9",
+      "caseKey": "common.private-key.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://92bba52517a2b40a1b896217056c977f0567e14c0903cf5f7a15b5b0d40b50b2",
+      "caseDigest": "sha256:92bba52517a2b40a1b896217056c977f0567e14c0903cf5f7a15b5b0d40b50b2",
+      "caseKey": "common.private-key.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://7fd8a8d703a2cbe08911bd5c1b1624476a0badad1a0da3f0e46a107baa0d2787",
+      "caseDigest": "sha256:7fd8a8d703a2cbe08911bd5c1b1624476a0badad1a0da3f0e46a107baa0d2787",
+      "caseKey": "common.private-key.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://869defe64d62f32f5c10f686a451906594bb28996ff462d511fcca852b8b6a05",
+      "caseDigest": "sha256:869defe64d62f32f5c10f686a451906594bb28996ff462d511fcca852b8b6a05",
+      "caseKey": "common.private-key.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://cb5596431ea7d259937446e11aadee1a2bc8b2284e208e6f1e0ba564c1436b6d",
+      "caseDigest": "sha256:cb5596431ea7d259937446e11aadee1a2bc8b2284e208e6f1e0ba564c1436b6d",
+      "caseKey": "common.private-key.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a2031395ed04be97c076977a07a7d2b48c190921dac68bb8c43895bf14ae94ec",
+      "caseDigest": "sha256:a2031395ed04be97c076977a07a7d2b48c190921dac68bb8c43895bf14ae94ec",
+      "caseKey": "common.private-key.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f74b783f1f3c97780c401e3b5036762ed49da068c201fb6329ab6f014b9f8182",
+      "caseDigest": "sha256:f74b783f1f3c97780c401e3b5036762ed49da068c201fb6329ab6f014b9f8182",
+      "caseKey": "common.private-key.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://1f6794cd04427b001e81cf2b83026808a43a6537bd232696dc86b3480228e4ea",
+      "caseDigest": "sha256:1f6794cd04427b001e81cf2b83026808a43a6537bd232696dc86b3480228e4ea",
+      "caseKey": "common.private-key.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://e4662b8fd039d5c1901ea58f08c8ff58ef53da0ba8d19f72456a518c9f1f422c",
+      "caseDigest": "sha256:e4662b8fd039d5c1901ea58f08c8ff58ef53da0ba8d19f72456a518c9f1f422c",
+      "caseKey": "common.private-key.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://10a70133385c8bd699497acd51e10e6e587d9a13672dcbb491d462383d945925",
+      "caseDigest": "sha256:10a70133385c8bd699497acd51e10e6e587d9a13672dcbb491d462383d945925",
+      "caseKey": "common.private-key.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://63f6f1985356f9db4b92c25aab3ef41a84f57f977243fac04430bb62ed52503f",
+      "caseDigest": "sha256:63f6f1985356f9db4b92c25aab3ef41a84f57f977243fac04430bb62ed52503f",
+      "caseKey": "common.private-key.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://6c7b01770ab6716cbf056f9a16a6f169f703a2b9731da263e832c75a2248f74f",
+      "caseDigest": "sha256:6c7b01770ab6716cbf056f9a16a6f169f703a2b9731da263e832c75a2248f74f",
+      "caseKey": "common.private-key.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://8cc9bca209dcee33401e6a684aafb85efc44951d42b9f6cd1c211a644a0e4a6a",
+      "caseDigest": "sha256:8cc9bca209dcee33401e6a684aafb85efc44951d42b9f6cd1c211a644a0e4a6a",
+      "caseKey": "common.private-key.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://728c972ba097f43ffe68b5fb246566a063b7f9bb777e37ad323fb1daa05c09f8",
+      "caseDigest": "sha256:728c972ba097f43ffe68b5fb246566a063b7f9bb777e37ad323fb1daa05c09f8",
+      "caseKey": "common.private-key.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://290d47bf2e634c261321eafaabb7f45ae0adc48e491a958020394ea86655e5d4",
+      "caseDigest": "sha256:290d47bf2e634c261321eafaabb7f45ae0adc48e491a958020394ea86655e5d4",
+      "caseKey": "common.private-key.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f8810a3fcfccf017a2145ac899c8bd3cdaef0afe8117afa04009ad3f49385bc4",
+      "caseDigest": "sha256:f8810a3fcfccf017a2145ac899c8bd3cdaef0afe8117afa04009ad3f49385bc4",
+      "caseKey": "common.private-key.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://c036bdfb3cf460780b6a63ff4818d9ab8fbcbc097a13b55997a0572b0231df39",
+      "caseDigest": "sha256:c036bdfb3cf460780b6a63ff4818d9ab8fbcbc097a13b55997a0572b0231df39",
+      "caseKey": "common.private-key.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://6b3e24bc20e064ac815fc5571fa21b7f930691ffbd3bc222588557b1c1d88eb9",
+      "caseDigest": "sha256:6b3e24bc20e064ac815fc5571fa21b7f930691ffbd3bc222588557b1c1d88eb9",
+      "caseKey": "common.private-key.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ccccbb489b5a9acb369bd2cfbe6ea30d800e021fc479bb766246bf0ded919af0",
+      "caseDigest": "sha256:ccccbb489b5a9acb369bd2cfbe6ea30d800e021fc479bb766246bf0ded919af0",
+      "caseKey": "common.private-key.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.secret.private-key",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://86c064e8916f9b6e04dd1a5d454e76bd689b504a2e7869955ae8dc450ff2e57f",
+      "caseDigest": "sha256:86c064e8916f9b6e04dd1a5d454e76bd689b504a2e7869955ae8dc450ff2e57f",
+      "caseKey": "common.spring-gradle.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://86c524264ccf3163fba1dcdd330f7305b86266f6a819850fb6b160dfea824cfa",
+      "caseDigest": "sha256:86c524264ccf3163fba1dcdd330f7305b86266f6a819850fb6b160dfea824cfa",
+      "caseKey": "common.spring-gradle.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a23247e31a41da442f8cabdeb8e4dc0fd17b2a14cdeba0ca966087ecd9820b4b",
+      "caseDigest": "sha256:a23247e31a41da442f8cabdeb8e4dc0fd17b2a14cdeba0ca966087ecd9820b4b",
+      "caseKey": "common.spring-gradle.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://097bb286e8d47e4c941bd4c3cc17f38ba8da7eef12f9dc2357ab60719cae6290",
+      "caseDigest": "sha256:097bb286e8d47e4c941bd4c3cc17f38ba8da7eef12f9dc2357ab60719cae6290",
+      "caseKey": "common.spring-gradle.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5442260beb1dc720d66b0027b715a3c5c5e5718459e2c98a65776ab4496dda0e",
+      "caseDigest": "sha256:5442260beb1dc720d66b0027b715a3c5c5e5718459e2c98a65776ab4496dda0e",
+      "caseKey": "common.spring-gradle.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://0c3b637efa41a4bd698b6137849c00ed0a1dd4a60050d02dce295c8dd92a3dc9",
+      "caseDigest": "sha256:0c3b637efa41a4bd698b6137849c00ed0a1dd4a60050d02dce295c8dd92a3dc9",
+      "caseKey": "common.spring-gradle.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://7a10f8d44048b5805fa67ef83b2a33b0759832338292a9bdc794af99dd0f967c",
+      "caseDigest": "sha256:7a10f8d44048b5805fa67ef83b2a33b0759832338292a9bdc794af99dd0f967c",
+      "caseKey": "common.spring-gradle.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a3ffc2fb25a37e6a1dc84cb769fc38e0a6fd399921c79608790f4245f332d842",
+      "caseDigest": "sha256:a3ffc2fb25a37e6a1dc84cb769fc38e0a6fd399921c79608790f4245f332d842",
+      "caseKey": "common.spring-gradle.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://7510f17c8ced5641d9592329f871f0bed645896203c45a6c4b5f70b44b49ee4a",
+      "caseDigest": "sha256:7510f17c8ced5641d9592329f871f0bed645896203c45a6c4b5f70b44b49ee4a",
+      "caseKey": "common.spring-gradle.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://d9fcc8bae5e2aec12c822bd91f6e9f1ada829789f88807455902f04a02166e70",
+      "caseDigest": "sha256:d9fcc8bae5e2aec12c822bd91f6e9f1ada829789f88807455902f04a02166e70",
+      "caseKey": "common.spring-gradle.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://b8b099c6cd08f1ac8bab6f71387d5f166e2591e1ce66a55f69c42f6eb56e2c8c",
+      "caseDigest": "sha256:b8b099c6cd08f1ac8bab6f71387d5f166e2591e1ce66a55f69c42f6eb56e2c8c",
+      "caseKey": "common.spring-gradle.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://fa4a45e2549210587064246537e39335825c6836a7fe419e0e6cb1a6efb79e59",
+      "caseDigest": "sha256:fa4a45e2549210587064246537e39335825c6836a7fe419e0e6cb1a6efb79e59",
+      "caseKey": "common.spring-gradle.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f279ab27c928d57b26ed8f5761396a803176f03afba0b9ac8a8d9b3e8978ae0a",
+      "caseDigest": "sha256:f279ab27c928d57b26ed8f5761396a803176f03afba0b9ac8a8d9b3e8978ae0a",
+      "caseKey": "common.spring-gradle.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://8bded3aca0a5d6fb1e006a7446f8d3355752d649919341df99f115a4c8b64cbb",
+      "caseDigest": "sha256:8bded3aca0a5d6fb1e006a7446f8d3355752d649919341df99f115a4c8b64cbb",
+      "caseKey": "common.spring-gradle.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://8f349be118ae9b63ea10ea39469e05bd255d30430aee60616233885edaabaefa",
+      "caseDigest": "sha256:8f349be118ae9b63ea10ea39469e05bd255d30430aee60616233885edaabaefa",
+      "caseKey": "common.spring-gradle.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://42f67c1408f89801b1815e7658a8bbdf08185862255d216eef8fd9b2f923f44e",
+      "caseDigest": "sha256:42f67c1408f89801b1815e7658a8bbdf08185862255d216eef8fd9b2f923f44e",
+      "caseKey": "common.spring-gradle.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://c93fd516893c87992e8809f414afc6536ce74837e7bcf356300593abc197984f",
+      "caseDigest": "sha256:c93fd516893c87992e8809f414afc6536ce74837e7bcf356300593abc197984f",
+      "caseKey": "common.spring-gradle.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://2dc41a91f9115d2af2658075cb19166cc035b3df681d3b89f2b2b71c4ff55c88",
+      "caseDigest": "sha256:2dc41a91f9115d2af2658075cb19166cc035b3df681d3b89f2b2b71c4ff55c88",
+      "caseKey": "common.spring-gradle.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://1e1d25f5fce50fda33781382f77f1d67c01fa8442629bf393243af36e5602afd",
+      "caseDigest": "sha256:1e1d25f5fce50fda33781382f77f1d67c01fa8442629bf393243af36e5602afd",
+      "caseKey": "common.spring-gradle.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://92b717e7f734ac270d0dae1c03026737654f74ac61449db6acf1cfc62252908e",
+      "caseDigest": "sha256:92b717e7f734ac270d0dae1c03026737654f74ac61449db6acf1cfc62252908e",
+      "caseKey": "common.spring-gradle.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.dependency.cve-2022-22965",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://6cb5520670347870e1bbb53f829529adc8a814bf26e665e6efc4a1d1e57c29e1",
+      "caseDigest": "sha256:6cb5520670347870e1bbb53f829529adc8a814bf26e665e6efc4a1d1e57c29e1",
+      "caseKey": "common.terraform-public-storage.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://1451b1ee236de21d99a79a2fcb32eb7e13ba8c6de05d0db66bd050200eec28a3",
+      "caseDigest": "sha256:1451b1ee236de21d99a79a2fcb32eb7e13ba8c6de05d0db66bd050200eec28a3",
+      "caseKey": "common.terraform-public-storage.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://105ad47fb793efdf65b618f945f89eef75f452134f4f93b458f47b4b376d6847",
+      "caseDigest": "sha256:105ad47fb793efdf65b618f945f89eef75f452134f4f93b458f47b4b376d6847",
+      "caseKey": "common.terraform-public-storage.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://13ab61e81215dd6a84870969905e88962060be179f8dda7400769583bca1c9d6",
+      "caseDigest": "sha256:13ab61e81215dd6a84870969905e88962060be179f8dda7400769583bca1c9d6",
+      "caseKey": "common.terraform-public-storage.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://14c9c344e39064c9a7e5c43f7c80133275fb34b26f00b83e51157ff39052bb94",
+      "caseDigest": "sha256:14c9c344e39064c9a7e5c43f7c80133275fb34b26f00b83e51157ff39052bb94",
+      "caseKey": "common.terraform-public-storage.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://63bb81220bbc1c0d84b5decc28ef3ddecd85d932499fe5385fd43e9684866382",
+      "caseDigest": "sha256:63bb81220bbc1c0d84b5decc28ef3ddecd85d932499fe5385fd43e9684866382",
+      "caseKey": "common.terraform-public-storage.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://9e4c106c71e7b9b30d8e9c6c143a9465ce526232f25ccf52681e28ccb592e0c9",
+      "caseDigest": "sha256:9e4c106c71e7b9b30d8e9c6c143a9465ce526232f25ccf52681e28ccb592e0c9",
+      "caseKey": "common.terraform-public-storage.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://23f9eb807559df88e927709ae165c9405d142dd2fba1304dae48b3e10256f950",
+      "caseDigest": "sha256:23f9eb807559df88e927709ae165c9405d142dd2fba1304dae48b3e10256f950",
+      "caseKey": "common.terraform-public-storage.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f6c0d92721dc632e7b82d7405473e19ec2c03dc30620e0fb551d9b877883c126",
+      "caseDigest": "sha256:f6c0d92721dc632e7b82d7405473e19ec2c03dc30620e0fb551d9b877883c126",
+      "caseKey": "common.terraform-public-storage.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://9693de3cc4a90d518534719df2ac191454ba973c8de800180456e591e46a4169",
+      "caseDigest": "sha256:9693de3cc4a90d518534719df2ac191454ba973c8de800180456e591e46a4169",
+      "caseKey": "common.terraform-public-storage.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://6e80bdf77c1b7f206178ccb0b74784fe9d167278a972ad26a78311edeaac48c6",
+      "caseDigest": "sha256:6e80bdf77c1b7f206178ccb0b74784fe9d167278a972ad26a78311edeaac48c6",
+      "caseKey": "common.terraform-public-storage.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://42a99b65cac237de2c79a2bb18ea8c282a12e9ba26c04054ce3e0ff9022f9be0",
+      "caseDigest": "sha256:42a99b65cac237de2c79a2bb18ea8c282a12e9ba26c04054ce3e0ff9022f9be0",
+      "caseKey": "common.terraform-public-storage.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://45f80f7ac03cd52212bfcb8e84822bab389b8a8a2a86581216039cce1f27a0f5",
+      "caseDigest": "sha256:45f80f7ac03cd52212bfcb8e84822bab389b8a8a2a86581216039cce1f27a0f5",
+      "caseKey": "common.terraform-public-storage.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ec6c2869b84fb4e7d20ed8221458e685a64e4b499d223539f803d04db705743f",
+      "caseDigest": "sha256:ec6c2869b84fb4e7d20ed8221458e685a64e4b499d223539f803d04db705743f",
+      "caseKey": "common.terraform-public-storage.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://06e9cb278c2bc010051785380095161267f90e759e92421c8da0012599267cc6",
+      "caseDigest": "sha256:06e9cb278c2bc010051785380095161267f90e759e92421c8da0012599267cc6",
+      "caseKey": "common.terraform-public-storage.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://de6b6da591b6974c79e2b67b623042b4b9d10047b57ee3534f820f41a28f174a",
+      "caseDigest": "sha256:de6b6da591b6974c79e2b67b623042b4b9d10047b57ee3534f820f41a28f174a",
+      "caseKey": "common.terraform-public-storage.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://cbf2bf68c6bfdcc42a78201c5f3827a1c6a353d23f3c428c3421aa4fe2cd5034",
+      "caseDigest": "sha256:cbf2bf68c6bfdcc42a78201c5f3827a1c6a353d23f3c428c3421aa4fe2cd5034",
+      "caseKey": "common.terraform-public-storage.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f4df96c8fc04423a94c4c3b19d4194606cc1e22277ea79a4a3c72bb2df57db64",
+      "caseDigest": "sha256:f4df96c8fc04423a94c4c3b19d4194606cc1e22277ea79a4a3c72bb2df57db64",
+      "caseKey": "common.terraform-public-storage.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://b8fb339f86d1a47c909c62c6e2baec12df439b043eac28dfa07b75fd49e928d1",
+      "caseDigest": "sha256:b8fb339f86d1a47c909c62c6e2baec12df439b043eac28dfa07b75fd49e928d1",
+      "caseKey": "common.terraform-public-storage.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ee5b2ffb3fd795875116ae89c24599387e0dde2a36ffbcd75ec7f47af630059c",
+      "caseDigest": "sha256:ee5b2ffb3fd795875116ae89c24599387e0dde2a36ffbcd75ec7f47af630059c",
+      "caseKey": "common.terraform-public-storage.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.trivy.iac.terraform-public-storage",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://84a948f225976bab92255fb1338b673333f58e7604f6af374bbc0d681d956df8",
+      "caseDigest": "sha256:84a948f225976bab92255fb1338b673333f58e7604f6af374bbc0d681d956df8",
+      "caseKey": "java.command-injection.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://0eb059ec11049f95672bcb5c05135ace128955c9671c345ecff9f99b77c82a87",
+      "caseDigest": "sha256:0eb059ec11049f95672bcb5c05135ace128955c9671c345ecff9f99b77c82a87",
+      "caseKey": "java.command-injection.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://7f3c96893897bd25a3c4656959f2bc43d3e6d1f35fc87d47323fa2869b6809b1",
+      "caseDigest": "sha256:7f3c96893897bd25a3c4656959f2bc43d3e6d1f35fc87d47323fa2869b6809b1",
+      "caseKey": "java.command-injection.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://eb22023184204c1657ce84264b3e924a8256dc9b8d189d9eae96f1278afa5106",
+      "caseDigest": "sha256:eb22023184204c1657ce84264b3e924a8256dc9b8d189d9eae96f1278afa5106",
+      "caseKey": "java.command-injection.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://cded113f4b5f415fbcbb61005a0368f65912795b71d399c937b25c46d7c3c958",
+      "caseDigest": "sha256:cded113f4b5f415fbcbb61005a0368f65912795b71d399c937b25c46d7c3c958",
+      "caseKey": "java.command-injection.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://63f93f82bf2de56265db519998b8f1275dfe6d6a3caae8cab24670e0f9434c32",
+      "caseDigest": "sha256:63f93f82bf2de56265db519998b8f1275dfe6d6a3caae8cab24670e0f9434c32",
+      "caseKey": "java.command-injection.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://195348ccda9db25528b4e46d07e47b2466f246bf172aa268cf8438dfe91a6234",
+      "caseDigest": "sha256:195348ccda9db25528b4e46d07e47b2466f246bf172aa268cf8438dfe91a6234",
+      "caseKey": "java.command-injection.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://2041a93474d1b4e1cc7e0ad0509cc83c71309e1da434bd3963ee7304315a5a97",
+      "caseDigest": "sha256:2041a93474d1b4e1cc7e0ad0509cc83c71309e1da434bd3963ee7304315a5a97",
+      "caseKey": "java.command-injection.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://808551583b4830f2c11d467944c501a10ceb988d876380f7c5cc8568d5ad5dae",
+      "caseDigest": "sha256:808551583b4830f2c11d467944c501a10ceb988d876380f7c5cc8568d5ad5dae",
+      "caseKey": "java.command-injection.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://e83e1949833c89a179814141ae004889d291e9ad403cb90603086700515d7a34",
+      "caseDigest": "sha256:e83e1949833c89a179814141ae004889d291e9ad403cb90603086700515d7a34",
+      "caseKey": "java.command-injection.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://53f7bd22d3d2691dde58c9180d0e58595349927d03a78aa50d6d963cf214f015",
+      "caseDigest": "sha256:53f7bd22d3d2691dde58c9180d0e58595349927d03a78aa50d6d963cf214f015",
+      "caseKey": "java.command-injection.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://d534a902823f24aa1290e089ac6880cbd59606e71b9d84af8ffe04544f71ca24",
+      "caseDigest": "sha256:d534a902823f24aa1290e089ac6880cbd59606e71b9d84af8ffe04544f71ca24",
+      "caseKey": "java.command-injection.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://80396700b5452c044a68d422841050b7dc78fc0919fd3d17a3509ad33c33afb4",
+      "caseDigest": "sha256:80396700b5452c044a68d422841050b7dc78fc0919fd3d17a3509ad33c33afb4",
+      "caseKey": "java.command-injection.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://af678a901c043cb79e2739a1ef427854d01f9e21fd4c6d69854e2914963070cc",
+      "caseDigest": "sha256:af678a901c043cb79e2739a1ef427854d01f9e21fd4c6d69854e2914963070cc",
+      "caseKey": "java.command-injection.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://bc284598d298744a4046b31417f769c6ae6f5e981051a3e48470489ae53e848c",
+      "caseDigest": "sha256:bc284598d298744a4046b31417f769c6ae6f5e981051a3e48470489ae53e848c",
+      "caseKey": "java.command-injection.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://be6bf9ddc8bcdb476c397f04e9c13b592bc7c2f3d7b4e264bc96006e44d64aae",
+      "caseDigest": "sha256:be6bf9ddc8bcdb476c397f04e9c13b592bc7c2f3d7b4e264bc96006e44d64aae",
+      "caseKey": "java.command-injection.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://cef30f9be7d1da53a09ea992f81467b6e8112817947c37513a620fdd9eddfb88",
+      "caseDigest": "sha256:cef30f9be7d1da53a09ea992f81467b6e8112817947c37513a620fdd9eddfb88",
+      "caseKey": "java.command-injection.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://92f04f4ae8c103b54bfd31fca083d2574eb05da76c5094a92fae0074fd3fdfec",
+      "caseDigest": "sha256:92f04f4ae8c103b54bfd31fca083d2574eb05da76c5094a92fae0074fd3fdfec",
+      "caseKey": "java.command-injection.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://e754b6f6ae685339657ad52968d41ba5819f7836540d5a6a3244af4590453815",
+      "caseDigest": "sha256:e754b6f6ae685339657ad52968d41ba5819f7836540d5a6a3244af4590453815",
+      "caseKey": "java.command-injection.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f27d5bb80579322c5021636ce5185cd71a305da8ff1d5642fd3adc908a1e438b",
+      "caseDigest": "sha256:f27d5bb80579322c5021636ce5185cd71a305da8ff1d5642fd3adc908a1e438b",
+      "caseKey": "java.command-injection.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-78.command-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://6fcef79a383862fb5397e84421f4e0c366586f71580f66ef3f14f58ce03d3e2d",
+      "caseDigest": "sha256:6fcef79a383862fb5397e84421f4e0c366586f71580f66ef3f14f58ce03d3e2d",
+      "caseKey": "java.ldap-injection.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9b732a58a8c11ce1665c42b302427a41afbddbde00d7a2f1350796889b2a21e7",
+      "caseDigest": "sha256:9b732a58a8c11ce1665c42b302427a41afbddbde00d7a2f1350796889b2a21e7",
+      "caseKey": "java.ldap-injection.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://0b1ce767ad88485fd45f7e3497eca23aaee65eed6af792340a5ac70c3282aba0",
+      "caseDigest": "sha256:0b1ce767ad88485fd45f7e3497eca23aaee65eed6af792340a5ac70c3282aba0",
+      "caseKey": "java.ldap-injection.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://744894952b633255a9ba78658be305983d0fa64886d9a626307435256558cb1d",
+      "caseDigest": "sha256:744894952b633255a9ba78658be305983d0fa64886d9a626307435256558cb1d",
+      "caseKey": "java.ldap-injection.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://279593c15e17052abaca1991af23175c9a720cf3c290c4543461512c1a497fca",
+      "caseDigest": "sha256:279593c15e17052abaca1991af23175c9a720cf3c290c4543461512c1a497fca",
+      "caseKey": "java.ldap-injection.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://217441a4e48dbfe85198bc4efed479a4513ae0fa330ef6ed5b52eb9cea1b5245",
+      "caseDigest": "sha256:217441a4e48dbfe85198bc4efed479a4513ae0fa330ef6ed5b52eb9cea1b5245",
+      "caseKey": "java.ldap-injection.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c972e2d5b6cb50db62602b476f5626e37f9cdb4945444ee7f8a3cb3f48932a9b",
+      "caseDigest": "sha256:c972e2d5b6cb50db62602b476f5626e37f9cdb4945444ee7f8a3cb3f48932a9b",
+      "caseKey": "java.ldap-injection.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9f96f9de50a3733fd3c3d0ad362fb0280ae39cd62ab2e3caff3d341d74cf645e",
+      "caseDigest": "sha256:9f96f9de50a3733fd3c3d0ad362fb0280ae39cd62ab2e3caff3d341d74cf645e",
+      "caseKey": "java.ldap-injection.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a800d667fa3b5764ac13300fc4ed692a9a2f4664bba9a435385dfc962db3fc2f",
+      "caseDigest": "sha256:a800d667fa3b5764ac13300fc4ed692a9a2f4664bba9a435385dfc962db3fc2f",
+      "caseKey": "java.ldap-injection.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c28635a4a17b29390d3b8db1e63b8b4a097d06733187de5e0d4fd2298f72b6c5",
+      "caseDigest": "sha256:c28635a4a17b29390d3b8db1e63b8b4a097d06733187de5e0d4fd2298f72b6c5",
+      "caseKey": "java.ldap-injection.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://354b8e0def48e56ce584efb9338a70c68d12f79bd9fcb6841a9d26d498c83ca4",
+      "caseDigest": "sha256:354b8e0def48e56ce584efb9338a70c68d12f79bd9fcb6841a9d26d498c83ca4",
+      "caseKey": "java.ldap-injection.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://7f72808c38083a126943401db652aee71133db737eeab7a099122c1b8348a4ab",
+      "caseDigest": "sha256:7f72808c38083a126943401db652aee71133db737eeab7a099122c1b8348a4ab",
+      "caseKey": "java.ldap-injection.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9251c410e1bdb00a9e95fbd88c7b58da47c58c28f37d163bf42b5464f8dae9f3",
+      "caseDigest": "sha256:9251c410e1bdb00a9e95fbd88c7b58da47c58c28f37d163bf42b5464f8dae9f3",
+      "caseKey": "java.ldap-injection.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://ab9710e81dbc51c61bf39c0946400c67d6c5379b89b43ebd68368f26c65126dd",
+      "caseDigest": "sha256:ab9710e81dbc51c61bf39c0946400c67d6c5379b89b43ebd68368f26c65126dd",
+      "caseKey": "java.ldap-injection.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://d689e6d058def749b785fdad7793a720d3e2bd6bb13c783e520baea73adc3493",
+      "caseDigest": "sha256:d689e6d058def749b785fdad7793a720d3e2bd6bb13c783e520baea73adc3493",
+      "caseKey": "java.ldap-injection.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://bafad48b76e3944fe8df0944c45f313f466121b3480e80809042ffbc041722fa",
+      "caseDigest": "sha256:bafad48b76e3944fe8df0944c45f313f466121b3480e80809042ffbc041722fa",
+      "caseKey": "java.ldap-injection.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f2cc21877fc46a738725c8efe593f956962be0d58d23839e895935e3052b7dd2",
+      "caseDigest": "sha256:f2cc21877fc46a738725c8efe593f956962be0d58d23839e895935e3052b7dd2",
+      "caseKey": "java.ldap-injection.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://bade0aff70b20a267a899110e86718aea17e8f24dd7a84737c9e6b3cfb856986",
+      "caseDigest": "sha256:bade0aff70b20a267a899110e86718aea17e8f24dd7a84737c9e6b3cfb856986",
+      "caseKey": "java.ldap-injection.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://2397c3ddbeff739c60508a00dc7051c9e64185eaf9abb7579c670a0c4c51de17",
+      "caseDigest": "sha256:2397c3ddbeff739c60508a00dc7051c9e64185eaf9abb7579c670a0c4c51de17",
+      "caseKey": "java.ldap-injection.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://0598c00f903143e55d59896c84c4e4b347de744d1d35e3373978eee20cc214ec",
+      "caseDigest": "sha256:0598c00f903143e55d59896c84c4e4b347de744d1d35e3373978eee20cc214ec",
+      "caseKey": "java.ldap-injection.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-90.ldap-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://00640628bd3e1ae7f267629cffade6f353ea1195c6bddaaaac17375f125d1cdc",
+      "caseDigest": "sha256:00640628bd3e1ae7f267629cffade6f353ea1195c6bddaaaac17375f125d1cdc",
+      "caseKey": "java.log-injection.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://56e4a2927f1bbdb3354f3be03df6f9d3a66cdc0cadfaa0ff74b636e6becd3e11",
+      "caseDigest": "sha256:56e4a2927f1bbdb3354f3be03df6f9d3a66cdc0cadfaa0ff74b636e6becd3e11",
+      "caseKey": "java.log-injection.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9d12c9b84cb0e58c8f298763a79f4dddf96ada03da611d9446a70558ddf1e904",
+      "caseDigest": "sha256:9d12c9b84cb0e58c8f298763a79f4dddf96ada03da611d9446a70558ddf1e904",
+      "caseKey": "java.log-injection.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://adbff236c91394659d7b48049689b7180d968a15fcb1accda399f7775c4e85f4",
+      "caseDigest": "sha256:adbff236c91394659d7b48049689b7180d968a15fcb1accda399f7775c4e85f4",
+      "caseKey": "java.log-injection.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://3739607e5eb5ab8fc6be8e1053c20c37899d1a91c28b684b400c26f80c0421e6",
+      "caseDigest": "sha256:3739607e5eb5ab8fc6be8e1053c20c37899d1a91c28b684b400c26f80c0421e6",
+      "caseKey": "java.log-injection.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://02da940f88e253151536a513cd78fc3d1f82d7ba9aa1e7be3d79dbb015a16b41",
+      "caseDigest": "sha256:02da940f88e253151536a513cd78fc3d1f82d7ba9aa1e7be3d79dbb015a16b41",
+      "caseKey": "java.log-injection.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://ab2b7c92cfe80286bc37a2f9c19803b83b23b3be7e849a3ec6868e388be2ede6",
+      "caseDigest": "sha256:ab2b7c92cfe80286bc37a2f9c19803b83b23b3be7e849a3ec6868e388be2ede6",
+      "caseKey": "java.log-injection.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://741042bca3d1595de18ce89337c78aef6bc2ecb59fce9198c9408cddfc95c543",
+      "caseDigest": "sha256:741042bca3d1595de18ce89337c78aef6bc2ecb59fce9198c9408cddfc95c543",
+      "caseKey": "java.log-injection.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://fa8f13df5603b1d3b9a781fcd483b79763e2f1c1623c97a4233a7d95d4406a29",
+      "caseDigest": "sha256:fa8f13df5603b1d3b9a781fcd483b79763e2f1c1623c97a4233a7d95d4406a29",
+      "caseKey": "java.log-injection.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://32ac39a5ffd39ed04244111c00201eafd5ecd0c9cf86b96a047b06b033c5ee78",
+      "caseDigest": "sha256:32ac39a5ffd39ed04244111c00201eafd5ecd0c9cf86b96a047b06b033c5ee78",
+      "caseKey": "java.log-injection.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9faf607a96eb181095bd81581072d9c4dcbe0e37a32f725bb134ce04f3bc77cd",
+      "caseDigest": "sha256:9faf607a96eb181095bd81581072d9c4dcbe0e37a32f725bb134ce04f3bc77cd",
+      "caseKey": "java.log-injection.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://10636e27dc4b7177934c11d02b2d4eb7f3c2520cc946ebd5c332c92815cd9b24",
+      "caseDigest": "sha256:10636e27dc4b7177934c11d02b2d4eb7f3c2520cc946ebd5c332c92815cd9b24",
+      "caseKey": "java.log-injection.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://310e50274191c6f056eab8685e274672623094e7d624c8ac5b86e5eb9bd36b34",
+      "caseDigest": "sha256:310e50274191c6f056eab8685e274672623094e7d624c8ac5b86e5eb9bd36b34",
+      "caseKey": "java.log-injection.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://85aa33f4d9e183d2bf1441d0df76f5d97d2758b48df2296ce246cd9390cfc294",
+      "caseDigest": "sha256:85aa33f4d9e183d2bf1441d0df76f5d97d2758b48df2296ce246cd9390cfc294",
+      "caseKey": "java.log-injection.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://65c68bcdd805a8483d2da7d092cdd895e1b9af379fc632e8190b6e9ab587e661",
+      "caseDigest": "sha256:65c68bcdd805a8483d2da7d092cdd895e1b9af379fc632e8190b6e9ab587e661",
+      "caseKey": "java.log-injection.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://0233eca1d702cd18ea399e01d0b41e9c8f53d96bbf6b3e6e1b6b16e685fcfccb",
+      "caseDigest": "sha256:0233eca1d702cd18ea399e01d0b41e9c8f53d96bbf6b3e6e1b6b16e685fcfccb",
+      "caseKey": "java.log-injection.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://47bb9350b921e0f8b416a00c638b3b196ec19f3db658471b74ca8867a9fc9597",
+      "caseDigest": "sha256:47bb9350b921e0f8b416a00c638b3b196ec19f3db658471b74ca8867a9fc9597",
+      "caseKey": "java.log-injection.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a4db165b59e5f845a1cae05629c62a5cde3905002696cfb029fdb6efeb43137e",
+      "caseDigest": "sha256:a4db165b59e5f845a1cae05629c62a5cde3905002696cfb029fdb6efeb43137e",
+      "caseKey": "java.log-injection.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c282c797e53652daf8eba17fba1e412e9e18b8b2e42bd769a18fbf75a73c1537",
+      "caseDigest": "sha256:c282c797e53652daf8eba17fba1e412e9e18b8b2e42bd769a18fbf75a73c1537",
+      "caseKey": "java.log-injection.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://e1b11cecc21ae9fa83f79e109160182e596fc9c561e8b4348c49848fd269082e",
+      "caseDigest": "sha256:e1b11cecc21ae9fa83f79e109160182e596fc9c561e8b4348c49848fd269082e",
+      "caseKey": "java.log-injection.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-117.log-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://04baa43a6f101c677bd348bffd362ff3a3357dc0a5ffbe254f04f51d8bf64aa7",
+      "caseDigest": "sha256:04baa43a6f101c677bd348bffd362ff3a3357dc0a5ffbe254f04f51d8bf64aa7",
+      "caseKey": "java.path-traversal.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://6ef85dc81a0d19bcd58fe0cc942aef66bb1ff967abb1d244c6be54af07f5831e",
+      "caseDigest": "sha256:6ef85dc81a0d19bcd58fe0cc942aef66bb1ff967abb1d244c6be54af07f5831e",
+      "caseKey": "java.path-traversal.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://dad21cd70d7ac8b776bcb470c3f2b9d169088df802337386403d708c0ab9e8c9",
+      "caseDigest": "sha256:dad21cd70d7ac8b776bcb470c3f2b9d169088df802337386403d708c0ab9e8c9",
+      "caseKey": "java.path-traversal.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://e9ac8c07a210c65c832d9be35686a2fbaa7296c1fe06d4bb6adca79220f70b9b",
+      "caseDigest": "sha256:e9ac8c07a210c65c832d9be35686a2fbaa7296c1fe06d4bb6adca79220f70b9b",
+      "caseKey": "java.path-traversal.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f461496adede9a7a51ad3fbb2ac99df6e0441bbe184f30758d57646ab6e7bf0e",
+      "caseDigest": "sha256:f461496adede9a7a51ad3fbb2ac99df6e0441bbe184f30758d57646ab6e7bf0e",
+      "caseKey": "java.path-traversal.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f9b96598a690e171d96c812964d0a42334b1e6954d3c52fee692d19da3ab6275",
+      "caseDigest": "sha256:f9b96598a690e171d96c812964d0a42334b1e6954d3c52fee692d19da3ab6275",
+      "caseKey": "java.path-traversal.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f2387d4aef685ac5054c4664a953865407898eb936ca88e570cc69c9eabcb8f4",
+      "caseDigest": "sha256:f2387d4aef685ac5054c4664a953865407898eb936ca88e570cc69c9eabcb8f4",
+      "caseKey": "java.path-traversal.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://1c967080719e3d1096c76de01902e813cc2bb58309038b4093c76cccd372ab9f",
+      "caseDigest": "sha256:1c967080719e3d1096c76de01902e813cc2bb58309038b4093c76cccd372ab9f",
+      "caseKey": "java.path-traversal.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://73f342ce0e6c1270edef9fca1becf201bfdf34111b1ba99727e10446a3146a91",
+      "caseDigest": "sha256:73f342ce0e6c1270edef9fca1becf201bfdf34111b1ba99727e10446a3146a91",
+      "caseKey": "java.path-traversal.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://05a5c4fb74786c5f90f65d534929815f9113719c0b7fa408814c80f4d049eaa5",
+      "caseDigest": "sha256:05a5c4fb74786c5f90f65d534929815f9113719c0b7fa408814c80f4d049eaa5",
+      "caseKey": "java.path-traversal.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f1dc82ebe6f3e5e6a89733e5900834000f47e45905cbad5ddb01a3d4cb60c3c5",
+      "caseDigest": "sha256:f1dc82ebe6f3e5e6a89733e5900834000f47e45905cbad5ddb01a3d4cb60c3c5",
+      "caseKey": "java.path-traversal.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://ed4b04c80d0e37ade0a1ddf47097e24fda21b72c75b6b9fa67b031890c76661a",
+      "caseDigest": "sha256:ed4b04c80d0e37ade0a1ddf47097e24fda21b72c75b6b9fa67b031890c76661a",
+      "caseKey": "java.path-traversal.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a82ae09f3e7048d03d8973a9ec21ae9a71d0b2d66b28a9041e391ce5a39cec49",
+      "caseDigest": "sha256:a82ae09f3e7048d03d8973a9ec21ae9a71d0b2d66b28a9041e391ce5a39cec49",
+      "caseKey": "java.path-traversal.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://574ac4e070d5be40787dde45a4ed71e8f918d8fec2b08f053a1b6c5e5f5b44da",
+      "caseDigest": "sha256:574ac4e070d5be40787dde45a4ed71e8f918d8fec2b08f053a1b6c5e5f5b44da",
+      "caseKey": "java.path-traversal.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://292c9158b4e56db77170794a0a7dc83f12af69715fa427652e39d9acf7800036",
+      "caseDigest": "sha256:292c9158b4e56db77170794a0a7dc83f12af69715fa427652e39d9acf7800036",
+      "caseKey": "java.path-traversal.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://e9c02a6a51172c9a0b68e7f595961ae2fc15a734a4b133256c9f791384cab718",
+      "caseDigest": "sha256:e9c02a6a51172c9a0b68e7f595961ae2fc15a734a4b133256c9f791384cab718",
+      "caseKey": "java.path-traversal.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9a091af2b68fbc70abe71a149814823ab8ba630dfff215916d2cf71d6c094859",
+      "caseDigest": "sha256:9a091af2b68fbc70abe71a149814823ab8ba630dfff215916d2cf71d6c094859",
+      "caseKey": "java.path-traversal.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://fdbeee0c52876c6308c7ba042abf7eb34efa6db061de53f292980e6690ae338d",
+      "caseDigest": "sha256:fdbeee0c52876c6308c7ba042abf7eb34efa6db061de53f292980e6690ae338d",
+      "caseKey": "java.path-traversal.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://0244bd459641493144eeb6ca85a21a9cab64edb2339560d3a4c63f228261c65d",
+      "caseDigest": "sha256:0244bd459641493144eeb6ca85a21a9cab64edb2339560d3a4c63f228261c65d",
+      "caseKey": "java.path-traversal.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://bfc3f387de9fbd8438a7b9e402d9f89d35e90d3c81abc42b482960063405d7fa",
+      "caseDigest": "sha256:bfc3f387de9fbd8438a7b9e402d9f89d35e90d3c81abc42b482960063405d7fa",
+      "caseKey": "java.path-traversal.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-22.path-traversal",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://317b895b6548e1a2a22e76a3b5dc2cb06245df821334c81c946d0a5b14f886cd",
+      "caseDigest": "sha256:317b895b6548e1a2a22e76a3b5dc2cb06245df821334c81c946d0a5b14f886cd",
+      "caseKey": "java.sql-injection.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9cd83fb780d031b6cee19046ab23aa36752ddaf223af57293df12616cbc34fd5",
+      "caseDigest": "sha256:9cd83fb780d031b6cee19046ab23aa36752ddaf223af57293df12616cbc34fd5",
+      "caseKey": "java.sql-injection.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://817592241b3ff7d0aef25b478c4c861469e907070a03a7fb5218ca3c540e243b",
+      "caseDigest": "sha256:817592241b3ff7d0aef25b478c4c861469e907070a03a7fb5218ca3c540e243b",
+      "caseKey": "java.sql-injection.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://278a51254e24ece1b3ade32524667fd332734531314635ac1ea51b20412e9f99",
+      "caseDigest": "sha256:278a51254e24ece1b3ade32524667fd332734531314635ac1ea51b20412e9f99",
+      "caseKey": "java.sql-injection.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://460824ea171dc9dde622238114a46794a9876cf38d0f8c7347138fff039dba02",
+      "caseDigest": "sha256:460824ea171dc9dde622238114a46794a9876cf38d0f8c7347138fff039dba02",
+      "caseKey": "java.sql-injection.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://83ab4cc4df27dce30c6b35d7879e1aa9731c924b13152839b2fa73e90c73886b",
+      "caseDigest": "sha256:83ab4cc4df27dce30c6b35d7879e1aa9731c924b13152839b2fa73e90c73886b",
+      "caseKey": "java.sql-injection.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://d70fa8f759c3440a1f0fbc06eb380eca9d6b7a6756d40c2590b2f3e22be0aa5b",
+      "caseDigest": "sha256:d70fa8f759c3440a1f0fbc06eb380eca9d6b7a6756d40c2590b2f3e22be0aa5b",
+      "caseKey": "java.sql-injection.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://4c3598a81d7c679261437d215c27ba96cedb33443c64e6813c384cddd8e70e44",
+      "caseDigest": "sha256:4c3598a81d7c679261437d215c27ba96cedb33443c64e6813c384cddd8e70e44",
+      "caseKey": "java.sql-injection.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://210383aaca705373a4db83836b79c497106e8f45ffdb5f0873da9bd874420150",
+      "caseDigest": "sha256:210383aaca705373a4db83836b79c497106e8f45ffdb5f0873da9bd874420150",
+      "caseKey": "java.sql-injection.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://5b272aec194d1f573a87dbf4b83be5e488cf5c63a0bb01c5a94f9cac5d90abb9",
+      "caseDigest": "sha256:5b272aec194d1f573a87dbf4b83be5e488cf5c63a0bb01c5a94f9cac5d90abb9",
+      "caseKey": "java.sql-injection.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://33a09924843e0d80bb5788b1eff3f1dc86df6bb84c6f5fb28e77b0712caa10d0",
+      "caseDigest": "sha256:33a09924843e0d80bb5788b1eff3f1dc86df6bb84c6f5fb28e77b0712caa10d0",
+      "caseKey": "java.sql-injection.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f57544b4e86b1effdbe3ee385ef814ef69ff2e0bbf366711de569b5ac71043c8",
+      "caseDigest": "sha256:f57544b4e86b1effdbe3ee385ef814ef69ff2e0bbf366711de569b5ac71043c8",
+      "caseKey": "java.sql-injection.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f05e19f893224ca0c9e0f34bfb5be950df088bb32dd85aad7562d5b36d366fad",
+      "caseDigest": "sha256:f05e19f893224ca0c9e0f34bfb5be950df088bb32dd85aad7562d5b36d366fad",
+      "caseKey": "java.sql-injection.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://385d2c04b757070ec55005c6f1bf6f03910a19cd8a659a0a66402b31810175d2",
+      "caseDigest": "sha256:385d2c04b757070ec55005c6f1bf6f03910a19cd8a659a0a66402b31810175d2",
+      "caseKey": "java.sql-injection.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://2cb1aacd49d3f40371283dd140c8128b101fb1ffb148bea660da1f45f9534c0e",
+      "caseDigest": "sha256:2cb1aacd49d3f40371283dd140c8128b101fb1ffb148bea660da1f45f9534c0e",
+      "caseKey": "java.sql-injection.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://15cf3bfbf9983ed1031234ddf460ed6861b36e755fe9f06072ead9607546e490",
+      "caseDigest": "sha256:15cf3bfbf9983ed1031234ddf460ed6861b36e755fe9f06072ead9607546e490",
+      "caseKey": "java.sql-injection.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://95869fcec58756a40c9f3604c0b4196c1ac1bf5038de8c5775719b679b92d792",
+      "caseDigest": "sha256:95869fcec58756a40c9f3604c0b4196c1ac1bf5038de8c5775719b679b92d792",
+      "caseKey": "java.sql-injection.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://16f7159d20f86dca2e2ffaea7af998f3d4c6de1a26b2929e3b3767ea7174b4dd",
+      "caseDigest": "sha256:16f7159d20f86dca2e2ffaea7af998f3d4c6de1a26b2929e3b3767ea7174b4dd",
+      "caseKey": "java.sql-injection.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://7e13c5f3d05eef9a8c784718d7f8708f4a72497eed5563a6cc0d845c19151ae2",
+      "caseDigest": "sha256:7e13c5f3d05eef9a8c784718d7f8708f4a72497eed5563a6cc0d845c19151ae2",
+      "caseKey": "java.sql-injection.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://cb37026b596ce714215af2c5457f7c53481d6822bd42576a65f508cc8273efb2",
+      "caseDigest": "sha256:cb37026b596ce714215af2c5457f7c53481d6822bd42576a65f508cc8273efb2",
+      "caseKey": "java.sql-injection.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-89.sql-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a5db852fdb4d431b239f3d61954a8e912fb1fc86ae76dfbff1a571e3e220600a",
+      "caseDigest": "sha256:a5db852fdb4d431b239f3d61954a8e912fb1fc86ae76dfbff1a571e3e220600a",
+      "caseKey": "java.ssrf.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9d8330febcce218d34f35002ff958e70df69b30c5e85af0a3f35866724ecd659",
+      "caseDigest": "sha256:9d8330febcce218d34f35002ff958e70df69b30c5e85af0a3f35866724ecd659",
+      "caseKey": "java.ssrf.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://fc40e2ade241c862951dac144759d469ce3223f2c1c3d32d2318d4e7c451988b",
+      "caseDigest": "sha256:fc40e2ade241c862951dac144759d469ce3223f2c1c3d32d2318d4e7c451988b",
+      "caseKey": "java.ssrf.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a76a05b27030031e283a0ad5b98e17a132c9b310349cb7513e1b1f1487fd13d4",
+      "caseDigest": "sha256:a76a05b27030031e283a0ad5b98e17a132c9b310349cb7513e1b1f1487fd13d4",
+      "caseKey": "java.ssrf.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://24cdb0d54bd0d0a9964616d8cada50bcea286c12805ffb7756b8e3f3f10fe3ac",
+      "caseDigest": "sha256:24cdb0d54bd0d0a9964616d8cada50bcea286c12805ffb7756b8e3f3f10fe3ac",
+      "caseKey": "java.ssrf.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://ddbb90b7b92e52970208a18ff7b447e4184daaeeaa41a80c1ffda75ae6eecf72",
+      "caseDigest": "sha256:ddbb90b7b92e52970208a18ff7b447e4184daaeeaa41a80c1ffda75ae6eecf72",
+      "caseKey": "java.ssrf.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://24e1c3232d47c87a01666adf498a1b6213a277f544d8af5e67a941f75b3978ad",
+      "caseDigest": "sha256:24e1c3232d47c87a01666adf498a1b6213a277f544d8af5e67a941f75b3978ad",
+      "caseKey": "java.ssrf.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f5bc955fa72bde6fb523647ed2bef422b2b7aed2531756900907d3812be3b494",
+      "caseDigest": "sha256:f5bc955fa72bde6fb523647ed2bef422b2b7aed2531756900907d3812be3b494",
+      "caseKey": "java.ssrf.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9420cf0e7a98aa2821145100cc710c9e492c950dfe0ccca8ca9ca10db49febab",
+      "caseDigest": "sha256:9420cf0e7a98aa2821145100cc710c9e492c950dfe0ccca8ca9ca10db49febab",
+      "caseKey": "java.ssrf.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://dead1fd0081507f423dabcb6c3d7596274bd8b3e701dac8c87dd7611c1550c23",
+      "caseDigest": "sha256:dead1fd0081507f423dabcb6c3d7596274bd8b3e701dac8c87dd7611c1550c23",
+      "caseKey": "java.ssrf.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c1414a4586cf71f28b9cc1b03747bb087a2b1deff8088a0947fccfaf9803dd43",
+      "caseDigest": "sha256:c1414a4586cf71f28b9cc1b03747bb087a2b1deff8088a0947fccfaf9803dd43",
+      "caseKey": "java.ssrf.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c744872fbace8bb96ffef980d45fbe4129b4ebdc4504b47ee07de820b59efdb6",
+      "caseDigest": "sha256:c744872fbace8bb96ffef980d45fbe4129b4ebdc4504b47ee07de820b59efdb6",
+      "caseKey": "java.ssrf.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://7cd06628790b9a7c16e4f5c66b97fe394a2afb6cb0ee36f6c680ba2508fcf11a",
+      "caseDigest": "sha256:7cd06628790b9a7c16e4f5c66b97fe394a2afb6cb0ee36f6c680ba2508fcf11a",
+      "caseKey": "java.ssrf.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://b584e26dfdf70f7aa98a3d0437365f60976925fb4f06b44f921774f72dc72199",
+      "caseDigest": "sha256:b584e26dfdf70f7aa98a3d0437365f60976925fb4f06b44f921774f72dc72199",
+      "caseKey": "java.ssrf.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://4cc37a6dff7ec0c45c8877eaf0d958b823b01bb712cb9edcd21e5f1063c2fc6d",
+      "caseDigest": "sha256:4cc37a6dff7ec0c45c8877eaf0d958b823b01bb712cb9edcd21e5f1063c2fc6d",
+      "caseKey": "java.ssrf.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://aa0f1579b0e28d7269e4a72d5d70577a41d2b5971021b152677677deddb3d6ce",
+      "caseDigest": "sha256:aa0f1579b0e28d7269e4a72d5d70577a41d2b5971021b152677677deddb3d6ce",
+      "caseKey": "java.ssrf.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://84a4cdc8a686bb47708c4cd60896efac03524279b618a081bee25dfe09719587",
+      "caseDigest": "sha256:84a4cdc8a686bb47708c4cd60896efac03524279b618a081bee25dfe09719587",
+      "caseKey": "java.ssrf.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://4f650067b1ca6dbb6f012b854837c0d9c8d15c1417afd254f7754929ea27ce47",
+      "caseDigest": "sha256:4f650067b1ca6dbb6f012b854837c0d9c8d15c1417afd254f7754929ea27ce47",
+      "caseKey": "java.ssrf.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://e6433048dc7e08c74336ac49d38d92af89fc288d517b09985bbe1cbc76659169",
+      "caseDigest": "sha256:e6433048dc7e08c74336ac49d38d92af89fc288d517b09985bbe1cbc76659169",
+      "caseKey": "java.ssrf.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://06d4be829e05ba635141bdb1e683471bc1702d16cd2910182b37e63049c6ae43",
+      "caseDigest": "sha256:06d4be829e05ba635141bdb1e683471bc1702d16cd2910182b37e63049c6ae43",
+      "caseKey": "java.ssrf.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-918.ssrf",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9e3518caaaf43e9cb69d7b99c537c76e752c0daa28f07dae6cb03c94c1900679",
+      "caseDigest": "sha256:9e3518caaaf43e9cb69d7b99c537c76e752c0daa28f07dae6cb03c94c1900679",
+      "caseKey": "java.unsafe-deserialization.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5bda05431e5b7854d1fffdf06ab636d2642bce4d31fdda4de639ddd3f5eddc41",
+      "caseDigest": "sha256:5bda05431e5b7854d1fffdf06ab636d2642bce4d31fdda4de639ddd3f5eddc41",
+      "caseKey": "java.unsafe-deserialization.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://449f9e91a8a49a712839bd9ec3df15f3fc7a834be140926b86ce4b7fd2366a89",
+      "caseDigest": "sha256:449f9e91a8a49a712839bd9ec3df15f3fc7a834be140926b86ce4b7fd2366a89",
+      "caseKey": "java.unsafe-deserialization.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://8513084fcedf2087d75209122062d12f08582f3f0acd9540a791932ff5442f53",
+      "caseDigest": "sha256:8513084fcedf2087d75209122062d12f08582f3f0acd9540a791932ff5442f53",
+      "caseKey": "java.unsafe-deserialization.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://5891b7e8c83555f5966765c417e89f35dd879a1d063e0fe1a5b18a3adca753e4",
+      "caseDigest": "sha256:5891b7e8c83555f5966765c417e89f35dd879a1d063e0fe1a5b18a3adca753e4",
+      "caseKey": "java.unsafe-deserialization.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://f3cf751495c69522e1a3e60ffb79c79a1eca20cb723bd524d2c6dc6025a6efe7",
+      "caseDigest": "sha256:f3cf751495c69522e1a3e60ffb79c79a1eca20cb723bd524d2c6dc6025a6efe7",
+      "caseKey": "java.unsafe-deserialization.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://58d8e2859b325eb80bc8fcc2175030b851bcb9a5ee2999bc32dda1770ba58a33",
+      "caseDigest": "sha256:58d8e2859b325eb80bc8fcc2175030b851bcb9a5ee2999bc32dda1770ba58a33",
+      "caseKey": "java.unsafe-deserialization.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://11a29c12ded371f5e7b0150938faa64474efac2b10795cd91c330b5fbdb65af9",
+      "caseDigest": "sha256:11a29c12ded371f5e7b0150938faa64474efac2b10795cd91c330b5fbdb65af9",
+      "caseKey": "java.unsafe-deserialization.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://058ec72508d78fec92766bdecc2e848cdc98da96c427add3cb9e327abb3f553b",
+      "caseDigest": "sha256:058ec72508d78fec92766bdecc2e848cdc98da96c427add3cb9e327abb3f553b",
+      "caseKey": "java.unsafe-deserialization.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://591167ea8d6437ecb06eaf9c943610a65b5af4a850fe09436c3a98a41c0b4ba9",
+      "caseDigest": "sha256:591167ea8d6437ecb06eaf9c943610a65b5af4a850fe09436c3a98a41c0b4ba9",
+      "caseKey": "java.unsafe-deserialization.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://75fb885a3a7e58f04a76b87d189d5d10f0c1fd5f8fa0794752182772feb0a22c",
+      "caseDigest": "sha256:75fb885a3a7e58f04a76b87d189d5d10f0c1fd5f8fa0794752182772feb0a22c",
+      "caseKey": "java.unsafe-deserialization.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://ec469b98c520c2a233d790d1fa25728d21cab81565ebe73b0d972f445f028600",
+      "caseDigest": "sha256:ec469b98c520c2a233d790d1fa25728d21cab81565ebe73b0d972f445f028600",
+      "caseKey": "java.unsafe-deserialization.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://c80047644b8ff0f1a3eae0de406e912745ccb6917cbea737cf0378d5d1931cea",
+      "caseDigest": "sha256:c80047644b8ff0f1a3eae0de406e912745ccb6917cbea737cf0378d5d1931cea",
+      "caseKey": "java.unsafe-deserialization.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://d46a90019170ba5a696a9c5d7eda2e9b13f24c62e4a24be4ad49a3909de07cad",
+      "caseDigest": "sha256:d46a90019170ba5a696a9c5d7eda2e9b13f24c62e4a24be4ad49a3909de07cad",
+      "caseKey": "java.unsafe-deserialization.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a24ccc3dcdd7c1c2238928b91c891f6e2fd5074bee90cfcf3c54e3fb6349121a",
+      "caseDigest": "sha256:a24ccc3dcdd7c1c2238928b91c891f6e2fd5074bee90cfcf3c54e3fb6349121a",
+      "caseKey": "java.unsafe-deserialization.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://17872228ba7a4c550014406dce06fa3e86101bc9fc8448261de70531d83633ca",
+      "caseDigest": "sha256:17872228ba7a4c550014406dce06fa3e86101bc9fc8448261de70531d83633ca",
+      "caseKey": "java.unsafe-deserialization.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://d32ffdb5c834db5d1169f1bb5d3dc7fdc3ab3710d3af84e4aa238bddfd3a1934",
+      "caseDigest": "sha256:d32ffdb5c834db5d1169f1bb5d3dc7fdc3ab3710d3af84e4aa238bddfd3a1934",
+      "caseKey": "java.unsafe-deserialization.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://89fac8228f2ec0663907dc255eb2c3fd780f6ede0c77373fa2de146aabb0904f",
+      "caseDigest": "sha256:89fac8228f2ec0663907dc255eb2c3fd780f6ede0c77373fa2de146aabb0904f",
+      "caseKey": "java.unsafe-deserialization.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://a55304e40ac08052d6555f5b8d3c23643f739634cc6b6d81c7b4a2f75bf3ef4f",
+      "caseDigest": "sha256:a55304e40ac08052d6555f5b8d3c23643f739634cc6b6d81c7b4a2f75bf3ef4f",
+      "caseKey": "java.unsafe-deserialization.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://b2d73fa414518dd77447de39f4d57b9bcee957cf78719bd44e60b913bf01a8af",
+      "caseDigest": "sha256:b2d73fa414518dd77447de39f4d57b9bcee957cf78719bd44e60b913bf01a8af",
+      "caseKey": "java.unsafe-deserialization.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-502.unsafe-deserialization",
+      "ruleRevision": "1.0.0",
+      "severity": "CRITICAL"
+    },
+    {
+      "caseId": "sast-qualification-case://682c40f4289c40b7bef94812197b86867c40e205cfeb8fea6f03735c60953ae1",
+      "caseDigest": "sha256:682c40f4289c40b7bef94812197b86867c40e205cfeb8fea6f03735c60953ae1",
+      "caseKey": "java.weak-crypto.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://b28decd993c0353e1f420ce32553a75f25e86be8db554247221ae3c19ef284cf",
+      "caseDigest": "sha256:b28decd993c0353e1f420ce32553a75f25e86be8db554247221ae3c19ef284cf",
+      "caseKey": "java.weak-crypto.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://34a5f6de6825b4537d278bb49ae302364b70df7d275ecc61ab5601d16f3a755c",
+      "caseDigest": "sha256:34a5f6de6825b4537d278bb49ae302364b70df7d275ecc61ab5601d16f3a755c",
+      "caseKey": "java.weak-crypto.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://89d7adc1778bd3ab5cc6c238bce065128013537dea24956d4fbfbed7a03af581",
+      "caseDigest": "sha256:89d7adc1778bd3ab5cc6c238bce065128013537dea24956d4fbfbed7a03af581",
+      "caseKey": "java.weak-crypto.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://90a8dbdc15440ba7d3bf240136fe721b85830d67df72df0c8d0ff9f6582b758b",
+      "caseDigest": "sha256:90a8dbdc15440ba7d3bf240136fe721b85830d67df72df0c8d0ff9f6582b758b",
+      "caseKey": "java.weak-crypto.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://adfc825fc90e18d25cb917cd7ad26638cd0276cd88b03e9ded44f5f28a6414b2",
+      "caseDigest": "sha256:adfc825fc90e18d25cb917cd7ad26638cd0276cd88b03e9ded44f5f28a6414b2",
+      "caseKey": "java.weak-crypto.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://4e0aadad43fd7122b9bb4c54c50fbd0e7044c8bcf55822f60b468aff68d4b79f",
+      "caseDigest": "sha256:4e0aadad43fd7122b9bb4c54c50fbd0e7044c8bcf55822f60b468aff68d4b79f",
+      "caseKey": "java.weak-crypto.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f91b4c30f1ed6a8e56394864e852cc86dc0c842e4da374046bc3861fb45f4b4f",
+      "caseDigest": "sha256:f91b4c30f1ed6a8e56394864e852cc86dc0c842e4da374046bc3861fb45f4b4f",
+      "caseKey": "java.weak-crypto.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://9d442accc50ceef84e5eb4f0a9f2c279bd6106452de1f51de8cb50ea9ed2e2be",
+      "caseDigest": "sha256:9d442accc50ceef84e5eb4f0a9f2c279bd6106452de1f51de8cb50ea9ed2e2be",
+      "caseKey": "java.weak-crypto.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://cf48e8f566042db5b96e492aa7a0fe1c4a90b8dd3bc7cd796aaf0f8569c4a406",
+      "caseDigest": "sha256:cf48e8f566042db5b96e492aa7a0fe1c4a90b8dd3bc7cd796aaf0f8569c4a406",
+      "caseKey": "java.weak-crypto.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f0fa2b5455e515fd95d1e7272b26d104f14a502ad1e5a02dda35e218f1e8cf66",
+      "caseDigest": "sha256:f0fa2b5455e515fd95d1e7272b26d104f14a502ad1e5a02dda35e218f1e8cf66",
+      "caseKey": "java.weak-crypto.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://869f7a8ce4c361e0be28f5648de5f89f9017c25b4d70a96158382b28e8450495",
+      "caseDigest": "sha256:869f7a8ce4c361e0be28f5648de5f89f9017c25b4d70a96158382b28e8450495",
+      "caseKey": "java.weak-crypto.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://40b91d29e87dd19b6cf6d398ff3b2035c8b31cff008170bfae66108ac7630527",
+      "caseDigest": "sha256:40b91d29e87dd19b6cf6d398ff3b2035c8b31cff008170bfae66108ac7630527",
+      "caseKey": "java.weak-crypto.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://72dc48e207d6e00e15e989b4608d0af77170b23f2f5f20bf96aeeb4b236aa854",
+      "caseDigest": "sha256:72dc48e207d6e00e15e989b4608d0af77170b23f2f5f20bf96aeeb4b236aa854",
+      "caseKey": "java.weak-crypto.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://cee725f171ccccca11a00668be16850e60721807e472ed0d578a52f840fea9c4",
+      "caseDigest": "sha256:cee725f171ccccca11a00668be16850e60721807e472ed0d578a52f840fea9c4",
+      "caseKey": "java.weak-crypto.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://cb9a484fa56a5c51843ec82838ff04bc2d03e6412a9d34a12da2d68550d75e56",
+      "caseDigest": "sha256:cb9a484fa56a5c51843ec82838ff04bc2d03e6412a9d34a12da2d68550d75e56",
+      "caseKey": "java.weak-crypto.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://41e796074b285adad2c605a5069a5c49b519531b152b512407d8e33d5831ead0",
+      "caseDigest": "sha256:41e796074b285adad2c605a5069a5c49b519531b152b512407d8e33d5831ead0",
+      "caseKey": "java.weak-crypto.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://ac77dab13b4f15334dcb881bea962599ad6ca367e5d1e712cf5ea01888d6de39",
+      "caseDigest": "sha256:ac77dab13b4f15334dcb881bea962599ad6ca367e5d1e712cf5ea01888d6de39",
+      "caseKey": "java.weak-crypto.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://25d73cdf0b024c5e5a67bb09beb93d0bdbd72d272b1ec555320e1f8ae7dd7607",
+      "caseDigest": "sha256:25d73cdf0b024c5e5a67bb09beb93d0bdbd72d272b1ec555320e1f8ae7dd7607",
+      "caseKey": "java.weak-crypto.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f88854461b68dd6c22e89a22168eb303d77f39c668d7664ad2113bbb3f7e148e",
+      "caseDigest": "sha256:f88854461b68dd6c22e89a22168eb303d77f39c668d7664ad2113bbb3f7e148e",
+      "caseKey": "java.weak-crypto.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-327.weak-crypto",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://984c12e921cb6b0a94d2d83ccc5678844230c6deab5be92dad980f9ed6a07a39",
+      "caseDigest": "sha256:984c12e921cb6b0a94d2d83ccc5678844230c6deab5be92dad980f9ed6a07a39",
+      "caseKey": "java.xpath-injection.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://5ae1e5c125b41c1a33139d6f407f6d11e36d0813b478295cf1a6f51279c68912",
+      "caseDigest": "sha256:5ae1e5c125b41c1a33139d6f407f6d11e36d0813b478295cf1a6f51279c68912",
+      "caseKey": "java.xpath-injection.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://623799f39d19dc97187fd0a5d62a2758356429594280cfaff2d1b567d48c1500",
+      "caseDigest": "sha256:623799f39d19dc97187fd0a5d62a2758356429594280cfaff2d1b567d48c1500",
+      "caseKey": "java.xpath-injection.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c9426d37fb0e13f9f8daaa006325a1a5c1fe413b4a0896ec0338388f4f7aae6c",
+      "caseDigest": "sha256:c9426d37fb0e13f9f8daaa006325a1a5c1fe413b4a0896ec0338388f4f7aae6c",
+      "caseKey": "java.xpath-injection.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://8302d804971d7c442f09719cfea1ea3239f5b6f9341f0c17700604f176d2e345",
+      "caseDigest": "sha256:8302d804971d7c442f09719cfea1ea3239f5b6f9341f0c17700604f176d2e345",
+      "caseKey": "java.xpath-injection.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://269615a68fa7989e0b48ab53550c554782f41e4affd4097887ade2fee4c174fa",
+      "caseDigest": "sha256:269615a68fa7989e0b48ab53550c554782f41e4affd4097887ade2fee4c174fa",
+      "caseKey": "java.xpath-injection.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://2ecb6c26eeefa0a749eb3a3e65a1ab7ed03067b92ab06faf5b9da8fdc27fa74c",
+      "caseDigest": "sha256:2ecb6c26eeefa0a749eb3a3e65a1ab7ed03067b92ab06faf5b9da8fdc27fa74c",
+      "caseKey": "java.xpath-injection.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f4f6ffea1781ffabf0fc361f32425e06066ce64bba6cb5b1b29a749df73a82a3",
+      "caseDigest": "sha256:f4f6ffea1781ffabf0fc361f32425e06066ce64bba6cb5b1b29a749df73a82a3",
+      "caseKey": "java.xpath-injection.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://337ec69c80aaf0cc06c3405542c8ceb435dc43fd60bdb4dc1430534aa7ae240a",
+      "caseDigest": "sha256:337ec69c80aaf0cc06c3405542c8ceb435dc43fd60bdb4dc1430534aa7ae240a",
+      "caseKey": "java.xpath-injection.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://ea2923415f4d9b177f433c11a934532b488ec49edc913e699ba0a16deeb9ee0c",
+      "caseDigest": "sha256:ea2923415f4d9b177f433c11a934532b488ec49edc913e699ba0a16deeb9ee0c",
+      "caseKey": "java.xpath-injection.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://5f75eca7b5ced1895b9af0b2681666d3607e08b8da419fff1c4d844857004fb0",
+      "caseDigest": "sha256:5f75eca7b5ced1895b9af0b2681666d3607e08b8da419fff1c4d844857004fb0",
+      "caseKey": "java.xpath-injection.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://97518543b75b200ec0a3ab993445a0eb49779f3cb469b1df7a9215db7847a143",
+      "caseDigest": "sha256:97518543b75b200ec0a3ab993445a0eb49779f3cb469b1df7a9215db7847a143",
+      "caseKey": "java.xpath-injection.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://97257bd1be55800fe43da1daa82e561f5839b2237b3fa35a507cb2b7d9a6e18a",
+      "caseDigest": "sha256:97257bd1be55800fe43da1daa82e561f5839b2237b3fa35a507cb2b7d9a6e18a",
+      "caseKey": "java.xpath-injection.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://ed0be7200a5439e5a6bf441e3ae7ec9415f99844aa823d7aa1c4042b903e1ff8",
+      "caseDigest": "sha256:ed0be7200a5439e5a6bf441e3ae7ec9415f99844aa823d7aa1c4042b903e1ff8",
+      "caseKey": "java.xpath-injection.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a06d43cb79b6216a26d6fbdeb5974383713165c69c2923ab4b167c9ccc1aec20",
+      "caseDigest": "sha256:a06d43cb79b6216a26d6fbdeb5974383713165c69c2923ab4b167c9ccc1aec20",
+      "caseKey": "java.xpath-injection.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://1da70fbf585e84de34164cb9302aaeada2f3a22a16a3408258c0acec8638b534",
+      "caseDigest": "sha256:1da70fbf585e84de34164cb9302aaeada2f3a22a16a3408258c0acec8638b534",
+      "caseKey": "java.xpath-injection.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://5dcecdc1f003eea238dc65d1de7c942323cfe3f3891e05ac230a32223dc2cb04",
+      "caseDigest": "sha256:5dcecdc1f003eea238dc65d1de7c942323cfe3f3891e05ac230a32223dc2cb04",
+      "caseKey": "java.xpath-injection.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://bf33c7cdde15d2556cedf812e25957fda7961f3f9455a9cad11f565ed50e3c21",
+      "caseDigest": "sha256:bf33c7cdde15d2556cedf812e25957fda7961f3f9455a9cad11f565ed50e3c21",
+      "caseKey": "java.xpath-injection.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://32f3e29a348f0a427d3b7c9ba6ddc4e4b5e421bef1db795b9751324e751e95ce",
+      "caseDigest": "sha256:32f3e29a348f0a427d3b7c9ba6ddc4e4b5e421bef1db795b9751324e751e95ce",
+      "caseKey": "java.xpath-injection.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a6b4e9f21f39553c15ed02c6ea12d3eb3e41022702a20404373967324b4e7d37",
+      "caseDigest": "sha256:a6b4e9f21f39553c15ed02c6ea12d3eb3e41022702a20404373967324b4e7d37",
+      "caseKey": "java.xpath-injection.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-643.xpath-injection",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://4f2d346092b940291038f59dd299dc124524fdaac1599a5c4dc89b40a45ff8db",
+      "caseDigest": "sha256:4f2d346092b940291038f59dd299dc124524fdaac1599a5c4dc89b40a45ff8db",
+      "caseKey": "java.xxe.001.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a443eed16b27b0a9fdf6cca9a82728f67fd7a12014ef6d80766afa062249856d",
+      "caseDigest": "sha256:a443eed16b27b0a9fdf6cca9a82728f67fd7a12014ef6d80766afa062249856d",
+      "caseKey": "java.xxe.002.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://182256345630951a553dcfab88464a5ddd9418a94dc1a8da85ba89ac53ae2340",
+      "caseDigest": "sha256:182256345630951a553dcfab88464a5ddd9418a94dc1a8da85ba89ac53ae2340",
+      "caseKey": "java.xxe.003.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c0774aaed79e48c6381a89062b9d055994a1e780360d18afaaa8d67f5839172a",
+      "caseDigest": "sha256:c0774aaed79e48c6381a89062b9d055994a1e780360d18afaaa8d67f5839172a",
+      "caseKey": "java.xxe.004.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://ff18302518f5ac188bf20560b88e828e4b549cc8ef73140e5ae3f6c4bed93df1",
+      "caseDigest": "sha256:ff18302518f5ac188bf20560b88e828e4b549cc8ef73140e5ae3f6c4bed93df1",
+      "caseKey": "java.xxe.005.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://324f6f1a13ab4687dc4cc35f68c346ae2d4d12b9d8557cf9fbb00ca83ef1aab5",
+      "caseDigest": "sha256:324f6f1a13ab4687dc4cc35f68c346ae2d4d12b9d8557cf9fbb00ca83ef1aab5",
+      "caseKey": "java.xxe.006.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://808892cd1b6129785085f15b3ce45983dda121e15925cb8804a52913b814a598",
+      "caseDigest": "sha256:808892cd1b6129785085f15b3ce45983dda121e15925cb8804a52913b814a598",
+      "caseKey": "java.xxe.007.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://5febd04824f40146d400096c9076789a4c333df27ce65b0699c84668c18eadad",
+      "caseDigest": "sha256:5febd04824f40146d400096c9076789a4c333df27ce65b0699c84668c18eadad",
+      "caseKey": "java.xxe.008.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://4da75e8efcf4f1f1b0c4f8b41dbde275aa0cff4d2ea04d780c826a8eb1798ccd",
+      "caseDigest": "sha256:4da75e8efcf4f1f1b0c4f8b41dbde275aa0cff4d2ea04d780c826a8eb1798ccd",
+      "caseKey": "java.xxe.009.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://55dd2d5e3fc283a4846e82744e57b359e989784bc568a315abac906b3951cf2a",
+      "caseDigest": "sha256:55dd2d5e3fc283a4846e82744e57b359e989784bc568a315abac906b3951cf2a",
+      "caseKey": "java.xxe.010.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://6e0b63497e651ae6c8cbf766dd3cbc9b98fc9df0c8535bcd33abb43dd54dcea3",
+      "caseDigest": "sha256:6e0b63497e651ae6c8cbf766dd3cbc9b98fc9df0c8535bcd33abb43dd54dcea3",
+      "caseKey": "java.xxe.011.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://440eed2a9016e6a7f3c8af14e74fd1535a753bd1338feff4003251bc220e0adf",
+      "caseDigest": "sha256:440eed2a9016e6a7f3c8af14e74fd1535a753bd1338feff4003251bc220e0adf",
+      "caseKey": "java.xxe.012.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://d53603e8aa14203b92ec9204d5a231969ffaad3b9e0d00f57c590bf9fc553e75",
+      "caseDigest": "sha256:d53603e8aa14203b92ec9204d5a231969ffaad3b9e0d00f57c590bf9fc553e75",
+      "caseKey": "java.xxe.013.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://14d72dd4192dbe927c9a26a8f195b8e54b523d9ca50dbe232af69bf5abd8e529",
+      "caseDigest": "sha256:14d72dd4192dbe927c9a26a8f195b8e54b523d9ca50dbe232af69bf5abd8e529",
+      "caseKey": "java.xxe.014.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://c8e51f1b23bb36ace7ed2c18cfcddd1fb25f9a1902790bed59a9583d944e64d6",
+      "caseDigest": "sha256:c8e51f1b23bb36ace7ed2c18cfcddd1fb25f9a1902790bed59a9583d944e64d6",
+      "caseKey": "java.xxe.015.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://249efc5916a871c1a461e0af5fd09c8355a34a94028c28dd53e24cbe72d11131",
+      "caseDigest": "sha256:249efc5916a871c1a461e0af5fd09c8355a34a94028c28dd53e24cbe72d11131",
+      "caseKey": "java.xxe.016.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://fcf9ba7c2e173f98a6411a37414eb12e6273fdbe817d260c403fd423c36457ec",
+      "caseDigest": "sha256:fcf9ba7c2e173f98a6411a37414eb12e6273fdbe817d260c403fd423c36457ec",
+      "caseKey": "java.xxe.017.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://f98eef7c6ca2946e41e3b31702cd28811287010db2fe7653dc8c5018bdaed1fd",
+      "caseDigest": "sha256:f98eef7c6ca2946e41e3b31702cd28811287010db2fe7653dc8c5018bdaed1fd",
+      "caseKey": "java.xxe.018.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://7f4ad168302d6c40a964a8fc5108f8fb92d54f3463d45760b8904dc5c1da9a34",
+      "caseDigest": "sha256:7f4ad168302d6c40a964a8fc5108f8fb92d54f3463d45760b8904dc5c1da9a34",
+      "caseKey": "java.xxe.019.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    },
+    {
+      "caseId": "sast-qualification-case://a43ad6e1655404255db5e002c2c94f2453c692c82ba6af5124919dfd15c37254",
+      "caseDigest": "sha256:a43ad6e1655404255db5e002c2c94f2453c692c82ba6af5124919dfd15c37254",
+      "caseKey": "java.xxe.020.positive",
+      "caseRevision": "1.0.0",
+      "ruleSemanticId": "aegis.java.cwe-611.xxe",
+      "ruleRevision": "1.0.0",
+      "severity": "HIGH"
+    }
+  ],
+  "caseCount": 400,
+  "caseSetDigest": "sha256:1d003fa54f7afdd7c8dc58606a2a0977c2e8a6cb50a57271cde311321db27fb9",
+  "source": "PLATFORM_MANAGED",
+  "immutable": true,
+  "releaseRef": "sast-release://aegisai/sast/0.9.0/sha256:6082809f216fda869790940a16cab9de32f6c5fcb4a6208611b51f65b79e1d17",
+  "manifestDigest": "sha256:6082809f216fda869790940a16cab9de32f6c5fcb4a6208611b51f65b79e1d17"
+}

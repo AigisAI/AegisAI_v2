@@ -1,12 +1,14 @@
 import { createHash } from 'node:crypto';
-import { lstat, mkdir, readdir, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   SAST_QUALIFICATION_NEGATIVE_KINDS,
   buildSastQualificationCorpusCase,
-  buildSastQualificationCorpusSnapshot
+  buildSastQualificationCorpusSnapshot,
+  buildSastQualificationPriorReleaseManifest,
+  isSastQualificationPriorReleaseManifestValid
 } from '../../packages/shared/dist/index.js';
 
 export const GOLDEN_CORPUS_REVISION = '1.0.0';
@@ -24,15 +26,37 @@ export const GOLDEN_CORPUS_SNAPSHOT_PATH = join(
   GOLDEN_CORPUS_ROOT,
   'golden-corpus.snapshot.json'
 );
+export const GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH = join(
+  GOLDEN_CORPUS_ROOT,
+  'prior-release-must-detect.manifest.json'
+);
+export const GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_DIGEST =
+  'sha256:6082809f216fda869790940a16cab9de32f6c5fcb4a6208611b51f65b79e1d17';
 
 const GOLDEN_CORPUS_PROVENANCE = digestBoundReference(
   'sast-corpus-provenance://aegisai/t051/golden-v1',
   'aegisai-t051-golden-corpus-provenance-v1'
 );
-const PRIOR_RELEASE_REFERENCE = digestBoundReference(
-  'sast-release://aegisai/sast/2026.08.0',
-  'aegisai-sast-release-2026.08.0'
+const PRIOR_RELEASE_REVISION = '0.9.0';
+const PRIOR_RELEASE_PUBLISHED_AT = '2026-08-19T00:00:00.000Z';
+const PRIOR_RELEASE_PROVENANCE = digestBoundReference(
+  'sast-corpus-provenance://aegisai/t051/prior-release-import-v1',
+  'aegisai-t051-prior-release-import-v1'
 );
+
+const NEGATIVE_KINDS_WITH_SANITIZER = [...SAST_QUALIFICATION_NEGATIVE_KINDS];
+const NEGATIVE_KINDS_WITHOUT_SANITIZER = [
+  'PATCHED',
+  'SAFE_API',
+  'COMMENT_OR_STRING',
+  'GENERATED_OR_VENDOR'
+];
+const SECRET_NEGATIVE_KINDS = [
+  'PATCHED',
+  'SANITIZER',
+  'SAFE_API',
+  'GENERATED_OR_VENDOR'
+];
 
 const JAVA_CONTEXTS = [
   'queryParameter',
@@ -58,11 +82,16 @@ const JAVA_CONTEXTS = [
 ];
 
 const JAVA_FAMILIES = [
-  javaFamily('sql-injection', 'aegis.java.cwe-89.sql-injection', 'HIGH'),
-  javaFamily('command-injection', 'aegis.java.cwe-78.command-injection', 'CRITICAL'),
-  javaFamily('path-traversal', 'aegis.java.cwe-22.path-traversal', 'HIGH'),
+  javaFamily('sql-injection', 'aegis.java.cwe-89.sql-injection', 'HIGH', true),
+  javaFamily(
+    'command-injection',
+    'aegis.java.cwe-78.command-injection',
+    'CRITICAL',
+    true
+  ),
+  javaFamily('path-traversal', 'aegis.java.cwe-22.path-traversal', 'HIGH', true),
   javaFamily('ssrf', 'aegis.java.cwe-918.ssrf', 'HIGH'),
-  javaFamily('ldap-injection', 'aegis.java.cwe-90.ldap-injection', 'HIGH'),
+  javaFamily('ldap-injection', 'aegis.java.cwe-90.ldap-injection', 'HIGH', true),
   javaFamily('xpath-injection', 'aegis.java.cwe-643.xpath-injection', 'HIGH'),
   javaFamily(
     'unsafe-deserialization',
@@ -71,7 +100,7 @@ const JAVA_FAMILIES = [
   ),
   javaFamily('xxe', 'aegis.java.cwe-611.xxe', 'HIGH'),
   javaFamily('weak-crypto', 'aegis.java.cwe-327.weak-crypto', 'HIGH'),
-  javaFamily('log-injection', 'aegis.java.cwe-117.log-injection', 'HIGH')
+  javaFamily('log-injection', 'aegis.java.cwe-117.log-injection', 'HIGH', true)
 ];
 
 const COMMON_FAMILIES = [
@@ -147,7 +176,7 @@ const COMMON_FAMILIES = [
   )
 ];
 
-export function createGoldenCorpusAssets() {
+function createGoldenCorpusCaseAssets() {
   const sources = new Map();
   const cases = [];
   for (const family of [...JAVA_FAMILIES, ...COMMON_FAMILIES]) {
@@ -192,6 +221,14 @@ export function createGoldenCorpusAssets() {
       }
     }
   }
+  return { cases, sources };
+}
+
+export function createGoldenCorpusAssets(priorReleaseManifest) {
+  if (!isSastQualificationPriorReleaseManifestValid(priorReleaseManifest, digest)) {
+    throw new Error('invalid prior-release must-detect manifest');
+  }
+  const { cases, sources } = createGoldenCorpusCaseAssets();
   const snapshot = buildSastQualificationCorpusSnapshot(
     {
       revision: GOLDEN_CORPUS_REVISION,
@@ -199,7 +236,7 @@ export function createGoldenCorpusAssets() {
       ownerRef: GOLDEN_CORPUS_OWNER,
       licenseExpression: GOLDEN_CORPUS_LICENSE,
       provenanceRef: GOLDEN_CORPUS_PROVENANCE,
-      priorReleaseRef: PRIOR_RELEASE_REFERENCE,
+      priorReleaseManifest,
       cases
     },
     digest
@@ -208,8 +245,40 @@ export function createGoldenCorpusAssets() {
   return { snapshot, sources };
 }
 
+export function createInitialPriorReleaseManifest() {
+  const { cases } = createGoldenCorpusCaseAssets();
+  const bindings = cases
+    .filter(
+      (item) =>
+        item.corpusClass === 'GOLDEN_POSITIVE' &&
+        (item.severity === 'CRITICAL' || item.severity === 'HIGH')
+    )
+    .map((item) => ({
+      caseId: item.caseId,
+      caseDigest: item.caseDigest,
+      caseKey: item.caseKey,
+      caseRevision: item.caseRevision,
+      ruleSemanticId: item.ruleSemanticId,
+      ruleRevision: item.ruleRevision,
+      severity: item.severity
+    }));
+  const manifest = buildSastQualificationPriorReleaseManifest(
+    {
+      releaseRevision: PRIOR_RELEASE_REVISION,
+      publishedAt: PRIOR_RELEASE_PUBLISHED_AT,
+      ownerRef: GOLDEN_CORPUS_OWNER,
+      provenanceRef: PRIOR_RELEASE_PROVENANCE,
+      bindings
+    },
+    digest
+  );
+  if (!manifest) throw new Error('invalid initial prior-release manifest');
+  return manifest;
+}
+
 export async function writeGoldenCorpusAssets() {
-  const assets = createGoldenCorpusAssets();
+  const priorReleaseManifest = await readPriorReleaseManifestForGeneration();
+  const assets = createGoldenCorpusAssets(priorReleaseManifest);
   await assertSafeCorpusWriteTargets();
   const expectedPaths = new Set(assets.sources.keys());
   const existingPaths = await listSourceFiles(join(GOLDEN_CORPUS_ROOT, 'sources'));
@@ -230,7 +299,37 @@ export async function writeGoldenCorpusAssets() {
   return assets;
 }
 
+export async function initializePriorReleaseManifest() {
+  await mkdir(GOLDEN_CORPUS_ROOT, { recursive: true });
+  await assertPlainDirectory(GOLDEN_CORPUS_ROOT);
+  if (await optionalLstat(GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH)) {
+    throw new Error(
+      'refusing to overwrite immutable prior-release must-detect manifest'
+    );
+  }
+  const manifest = createInitialPriorReleaseManifest();
+  if (manifest.manifestDigest !== GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_DIGEST) {
+    throw new Error('initial prior-release manifest does not match the reviewed digest');
+  }
+  await writeFile(
+    GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH,
+    `${JSON.stringify(manifest, null, 2)}\n`,
+    { encoding: 'utf8', flag: 'wx' }
+  );
+  return manifest;
+}
+
 function renderBundle(family, corpusClass) {
+  if (
+    !Array.isArray(family.negativeKinds) ||
+    family.negativeKinds.length === 0 ||
+    new Set(family.negativeKinds).size !== family.negativeKinds.length ||
+    family.negativeKinds.some(
+      (kind) => !SAST_QUALIFICATION_NEGATIVE_KINDS.includes(kind)
+    )
+  ) {
+    throw new Error(`invalid negative-kind policy for ${family.slug}`);
+  }
   const polarity = corpusClass === 'GOLDEN_POSITIVE' ? 'positive' : 'negative';
   const sourcePath = `sources/${family.language.toLowerCase()}/${family.slug}.${polarity}.bundle`;
   const lines = [];
@@ -239,9 +338,7 @@ function renderBundle(family, corpusClass) {
     const ordinal = String(index + 1).padStart(3, '0');
     const negativeKind =
       corpusClass === 'GOLDEN_NEGATIVE'
-        ? SAST_QUALIFICATION_NEGATIVE_KINDS[
-            index % SAST_QUALIFICATION_NEGATIVE_KINDS.length
-          ]
+        ? family.negativeKinds[index % family.negativeKinds.length]
         : null;
     const anchor = `t051.${family.slug}.${polarity}.${ordinal}`;
     const pairKey = `${family.language.toLowerCase()}.${family.slug}.${ordinal}`;
@@ -273,12 +370,20 @@ function renderBundle(family, corpusClass) {
 function javaSnippet(slug, polarity, ordinal, anchor, negativeKind) {
   const input = `${JAVA_CONTEXTS[Number(ordinal) - 1]}${ordinal}`;
   const className = `${pascal(slug)}${polarity === 'positive' ? 'Positive' : 'Negative'}${ordinal}`;
-  const unsafeAsData =
-    negativeKind === 'COMMENT_OR_STRING' ||
-    negativeKind === 'GENERATED_OR_VENDOR';
-  const body = javaBody(slug, polarity, input, ordinal, negativeKind, unsafeAsData);
+  const body =
+    polarity === 'positive' || negativeKind === 'GENERATED_OR_VENDOR'
+      ? javaUnsafeBody(slug, input, ordinal)
+      : negativeKind === 'COMMENT_OR_STRING'
+        ? [
+            ...javaUnsafeBody(slug, input, ordinal).map(
+              (line) => `// documentation only: ${line}`
+            ),
+            `System.out.print(${input}.length());`
+          ]
+        : javaNegativeBody(slug, input, ordinal, negativeKind);
   return [
     `// ${anchor}`,
+    ...(negativeKind ? [`// t051-negative-kind: ${negativeKind}`] : []),
     'package qualification.corpus;',
     `final class ${className} {`,
     `  void evaluate(String ${input}) throws Exception {`,
@@ -288,100 +393,197 @@ function javaSnippet(slug, polarity, ordinal, anchor, negativeKind) {
   ].join('\n');
 }
 
-function javaBody(slug, polarity, input, ordinal, negativeKind, unsafeAsData) {
-  if (unsafeAsData) {
-    return [
-      `String documentation${ordinal} = "unsafe example for ${slug}: " + ${input}.length();`,
-      `System.out.print(documentation${ordinal}.length());`
-    ];
-  }
-  const positive = polarity === 'positive';
+function javaUnsafeBody(slug, input, ordinal) {
   switch (slug) {
     case 'sql-injection':
-      return positive
-        ? [
-            `java.sql.Statement statement${ordinal} = null;`,
-            `statement${ordinal}.executeQuery("SELECT * FROM account WHERE id='" + ${input} + "'");`
-          ]
-        : [
-            `java.sql.PreparedStatement statement${ordinal} = null;`,
-            `statement${ordinal}.setString(1, ${safeValue(input, negativeKind)});`
-          ];
+      return [
+        `java.sql.Statement statement${ordinal} = null;`,
+        `statement${ordinal}.executeQuery("SELECT * FROM account WHERE id='" + ${input} + "'");`
+      ];
     case 'command-injection':
-      return positive
-        ? [`Runtime.getRuntime().exec("/usr/bin/tool " + ${input});`]
-        : [
-            `java.util.List<String> allowed${ordinal} = java.util.List.of("status", "version");`,
-            `new ProcessBuilder("/usr/bin/tool", allowed${ordinal}.contains(${input}) ? ${input} : "status");`
-          ];
+      return [`Runtime.getRuntime().exec("/usr/bin/tool " + ${input});`];
     case 'path-traversal':
-      return positive
-        ? [`java.nio.file.Path path${ordinal} = java.nio.file.Paths.get("/srv/data", ${input});`]
-        : [
-            `java.nio.file.Path root${ordinal} = java.nio.file.Paths.get("/srv/data").normalize();`,
-            `java.nio.file.Path path${ordinal} = root${ordinal}.resolve(${safeValue(input, negativeKind)}).normalize();`,
-            `if (!path${ordinal}.startsWith(root${ordinal})) throw new SecurityException();`
-          ];
+      return [
+        `java.nio.file.Path path${ordinal} = java.nio.file.Paths.get("/srv/data", ${input});`
+      ];
     case 'ssrf':
-      return positive
-        ? [`new java.net.URL(${input}).openConnection();`]
-        : [
-            `java.net.URI uri${ordinal} = java.net.URI.create(${safeValue(input, negativeKind)});`,
-            `if (!"https".equals(uri${ordinal}.getScheme()) || !"api.example.test".equals(uri${ordinal}.getHost())) throw new SecurityException();`
-          ];
+      return [`new java.net.URL(${input}).openConnection();`];
     case 'ldap-injection':
-      return positive
-        ? [
-            `javax.naming.directory.DirContext context${ordinal} = null;`,
-            `context${ordinal}.search("ou=users", "(uid=" + ${input} + ")", null);`
-          ]
-        : [
-            `String escaped${ordinal} = ${safeValue(input, negativeKind)}.replace("*", "\\\\2a").replace("(", "\\\\28").replace(")", "\\\\29");`,
-            `System.out.print(escaped${ordinal}.length());`
-          ];
+      return [
+        `javax.naming.directory.DirContext context${ordinal} = null;`,
+        `context${ordinal}.search("ou=users", "(uid=" + ${input} + ")", null);`
+      ];
     case 'xpath-injection':
-      return positive
-        ? [
-            `javax.xml.xpath.XPath xpath${ordinal} = javax.xml.xpath.XPathFactory.newInstance().newXPath();`,
-            `xpath${ordinal}.evaluate("//user[name='" + ${input} + "']", (Object) null);`
-          ]
-        : [
-            `javax.xml.xpath.XPath xpath${ordinal} = javax.xml.xpath.XPathFactory.newInstance().newXPath();`,
-            `xpath${ordinal}.evaluate("//user[@active='true']", (Object) null);`
-          ];
+      return [
+        `javax.xml.xpath.XPath xpath${ordinal} = javax.xml.xpath.XPathFactory.newInstance().newXPath();`,
+        `xpath${ordinal}.evaluate("//user[name='" + ${input} + "']", (Object) null);`
+      ];
     case 'unsafe-deserialization':
-      return positive
-        ? [
-            `java.io.ObjectInputStream stream${ordinal} = null;`,
-            `stream${ordinal}.readObject();`
-          ]
-        : [
-            `java.io.ObjectInputStream stream${ordinal} = null;`,
-            `stream${ordinal}.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));`
-          ];
+      return [
+        `java.io.ObjectInputStream stream${ordinal} = null;`,
+        `stream${ordinal}.readObject();`
+      ];
     case 'xxe':
-      return positive
-        ? [
-            `javax.xml.parsers.DocumentBuilderFactory factory${ordinal} = javax.xml.parsers.DocumentBuilderFactory.newInstance();`,
-            `factory${ordinal}.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8)));`
-          ]
-        : [
-            `javax.xml.parsers.DocumentBuilderFactory factory${ordinal} = javax.xml.parsers.DocumentBuilderFactory.newInstance();`,
-            `factory${ordinal}.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);`,
-            `factory${ordinal}.setExpandEntityReferences(false);`
-          ];
+      return [
+        `javax.xml.parsers.DocumentBuilderFactory factory${ordinal} = javax.xml.parsers.DocumentBuilderFactory.newInstance();`,
+        `factory${ordinal}.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8)));`
+      ];
     case 'weak-crypto':
       return [
-        `java.security.MessageDigest digest${ordinal} = java.security.MessageDigest.getInstance("${positive ? 'MD5' : 'SHA-256'}");`,
+        `java.security.MessageDigest digest${ordinal} = java.security.MessageDigest.getInstance("MD5");`,
         `digest${ordinal}.digest(${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8));`
       ];
     case 'log-injection':
-      return positive
-        ? [`System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + ${input});`]
+      return [
+        `System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + ${input});`
+      ];
+    default:
+      throw new Error(`unknown Java corpus family: ${slug}`);
+  }
+}
+
+function javaNegativeBody(slug, input, ordinal, negativeKind) {
+  if (!['PATCHED', 'SANITIZER', 'SAFE_API'].includes(negativeKind)) {
+    throw new Error(`unsupported Java negative kind: ${slug}/${negativeKind}`);
+  }
+  switch (slug) {
+    case 'sql-injection':
+      if (negativeKind === 'PATCHED') {
+        return [
+          `long accountId${ordinal} = Long.parseLong(${input});`,
+          `java.sql.Statement statement${ordinal} = null;`,
+          `statement${ordinal}.executeQuery("SELECT * FROM account WHERE id=" + accountId${ordinal});`
+        ];
+      }
+      if (negativeKind === 'SANITIZER') {
+        return [
+          `String sanitized${ordinal} = ${input}.replaceAll("[^0-9]", "");`,
+          `java.sql.Statement statement${ordinal} = null;`,
+          `statement${ordinal}.executeQuery("SELECT * FROM account WHERE id=" + sanitized${ordinal});`
+        ];
+      }
+      return [
+        `java.sql.PreparedStatement statement${ordinal} = null;`,
+        `statement${ordinal}.setString(1, ${input});`
+      ];
+    case 'command-injection':
+      if (negativeKind === 'PATCHED') {
+        return [`new ProcessBuilder("/usr/bin/tool", "status");`];
+      }
+      if (negativeKind === 'SANITIZER') {
+        return [
+          `String sanitized${ordinal} = ${input}.replaceAll("[^A-Za-z0-9_-]", "");`,
+          `new ProcessBuilder("/usr/bin/tool", sanitized${ordinal});`
+        ];
+      }
+      return [
+        `java.util.List<String> allowed${ordinal} = java.util.List.of("status", "version");`,
+        `new ProcessBuilder("/usr/bin/tool", allowed${ordinal}.contains(${input}) ? ${input} : "status");`
+      ];
+    case 'path-traversal':
+      if (negativeKind === 'PATCHED') {
+        return [
+          `java.nio.file.Path path${ordinal} = java.nio.file.Path.of("/srv/data/fixed.txt");`
+        ];
+      }
+      if (negativeKind === 'SANITIZER') {
+        return [
+          `String sanitized${ordinal} = ${input}.replaceAll("[^A-Za-z0-9._-]", "");`,
+          `java.nio.file.Path path${ordinal} = java.nio.file.Path.of("/srv/data").resolve(sanitized${ordinal});`
+        ];
+      }
+      return [
+        `java.nio.file.Path root${ordinal} = java.nio.file.Path.of("/srv/data").normalize();`,
+        `java.nio.file.Path path${ordinal} = root${ordinal}.resolve(${input}).normalize();`,
+        `if (!path${ordinal}.startsWith(root${ordinal})) throw new SecurityException();`
+      ];
+    case 'ssrf':
+      return negativeKind === 'PATCHED'
+        ? [`java.net.URI uri${ordinal} = java.net.URI.create("https://api.example.test/status");`]
         : [
-            `String safe${ordinal} = ${safeValue(input, negativeKind)}.replace("\\r", "_").replace("\\n", "_");`,
-            `System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe${ordinal});`
+            `java.net.URI uri${ordinal} = java.net.URI.create(${input});`,
+            `if (!"https".equals(uri${ordinal}.getScheme()) || !"api.example.test".equals(uri${ordinal}.getHost())) throw new SecurityException();`
           ];
+    case 'ldap-injection':
+      if (negativeKind === 'PATCHED') {
+        return [
+          `javax.naming.directory.DirContext context${ordinal} = null;`,
+          `context${ordinal}.search("ou=users", "(uid=service-account)", null);`
+        ];
+      }
+      if (negativeKind === 'SANITIZER') {
+        return [
+          `String sanitized${ordinal} = ${input}.replace("*", "\\\\2a").replace("(", "\\\\28").replace(")", "\\\\29");`,
+          `javax.naming.directory.DirContext context${ordinal} = null;`,
+          `context${ordinal}.search("ou=users", "(uid=" + sanitized${ordinal} + ")", null);`
+        ];
+      }
+      return [
+        `javax.naming.directory.DirContext context${ordinal} = null;`,
+        `context${ordinal}.search("ou=users", "(uid={0})", new Object[] { ${input} }, null);`
+      ];
+    case 'xpath-injection':
+      if (negativeKind === 'PATCHED') {
+        return [
+          `javax.xml.xpath.XPath xpath${ordinal} = javax.xml.xpath.XPathFactory.newInstance().newXPath();`,
+          `xpath${ordinal}.evaluate("//user[@active='true']", (Object) null);`
+        ];
+      }
+      return [
+        `javax.xml.xpath.XPath xpath${ordinal} = javax.xml.xpath.XPathFactory.newInstance().newXPath();`,
+        `xpath${ordinal}.setXPathVariableResolver(name -> ${input});`,
+        `xpath${ordinal}.evaluate("//user[name=$name]", (Object) null);`
+      ];
+    case 'unsafe-deserialization':
+      return negativeKind === 'PATCHED'
+        ? [
+            `java.io.ObjectInputStream stream${ordinal} = null;`,
+            `stream${ordinal}.setObjectInputFilter(java.io.ObjectInputFilter.Config.createFilter("java.base/*;!*"));`,
+            `stream${ordinal}.readObject();`
+          ]
+        : [
+            `java.io.DataInputStream stream${ordinal} = null;`,
+            `String value${ordinal} = stream${ordinal}.readUTF();`
+          ];
+    case 'xxe':
+      if (negativeKind === 'PATCHED') {
+        return [
+          `javax.xml.parsers.DocumentBuilderFactory factory${ordinal} = javax.xml.parsers.DocumentBuilderFactory.newInstance();`,
+          `factory${ordinal}.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);`,
+          `factory${ordinal}.setExpandEntityReferences(false);`
+        ];
+      }
+      return [
+        `javax.xml.parsers.SAXParserFactory factory${ordinal} = javax.xml.parsers.SAXParserFactory.newInstance();`,
+        `factory${ordinal}.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);`
+      ];
+    case 'weak-crypto':
+      return negativeKind === 'PATCHED'
+        ? [
+            `java.security.MessageDigest digest${ordinal} = java.security.MessageDigest.getInstance("SHA-256");`,
+            `digest${ordinal}.digest(${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8));`
+          ]
+        : [
+            `javax.crypto.Mac mac${ordinal} = javax.crypto.Mac.getInstance("HmacSHA256");`,
+            `byte[] value${ordinal} = ${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8);`
+          ];
+    case 'log-injection':
+      if (negativeKind === 'PATCHED') {
+        return [
+          `String identifier${ordinal} = Integer.toHexString(${input}.hashCode());`,
+          `System.getLogger("audit").log(System.Logger.Level.INFO, "user-id=" + identifier${ordinal});`
+        ];
+      }
+      if (negativeKind === 'SANITIZER') {
+        return [
+          `String sanitized${ordinal} = ${input}.replace("\\r", "_").replace("\\n", "_");`,
+          `System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + sanitized${ordinal});`
+        ];
+      }
+      return [
+        `java.util.logging.LogRecord record${ordinal} = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");`,
+        `record${ordinal}.setParameters(new Object[] { Integer.toHexString(${input}.hashCode()) });`
+      ];
     default:
       throw new Error(`unknown Java corpus family: ${slug}`);
   }
@@ -389,45 +591,95 @@ function javaBody(slug, polarity, input, ordinal, negativeKind, unsafeAsData) {
 
 function commonSnippet(slug, polarity, ordinal, anchor, negativeKind) {
   const positive = polarity === 'positive';
-  const inert =
-    !positive &&
-    (negativeKind === 'COMMENT_OR_STRING' ||
-      negativeKind === 'GENERATED_OR_VENDOR');
+  const generated = negativeKind === 'GENERATED_OR_VENDOR';
   switch (slug) {
     case 'log4shell-maven':
       return mavenSnippet(
         anchor,
         'org.apache.logging.log4j',
         'log4j-core',
-        positive && !inert ? '2.14.1' : '2.17.1',
-        inert
+        '2.14.1',
+        '2.17.1',
+        positive ? null : negativeKind
       );
     case 'jackson-maven':
       return mavenSnippet(
         anchor,
         'com.fasterxml.jackson.core',
         'jackson-databind',
-        positive && !inert ? '2.9.9' : '2.15.4',
-        inert
+        '2.9.9',
+        '2.15.4',
+        positive ? null : negativeKind
       );
     case 'spring-gradle':
+      if (positive || generated) {
+        return [
+          `// ${anchor}`,
+          ...(negativeKind ? [`// t051-negative-kind: ${negativeKind}`] : []),
+          'dependencies {',
+          '  implementation("org.springframework:spring-core:5.3.17")',
+          '}'
+        ].join('\n');
+      }
+      if (negativeKind === 'COMMENT_OR_STRING') {
+        return [
+          `// ${anchor}`,
+          '// t051-negative-kind: COMMENT_OR_STRING',
+          '// documentation only: implementation("org.springframework:spring-core:5.3.17")'
+        ].join('\n');
+      }
+      if (negativeKind === 'SAFE_API') {
+        return [
+          `// ${anchor}`,
+          '// t051-negative-kind: SAFE_API',
+          '// Platform JDK implementation; no Spring dependency is declared.',
+          'dependencies {}'
+        ].join('\n');
+      }
       return [
         `// ${anchor}`,
-        inert ? '// implementation("org.springframework:spring-core:5.3.17")' : 'dependencies {',
-        inert
-          ? '// generated/vendor documentation only'
-          : `  implementation("org.springframework:spring-core:${positive ? '5.3.17' : '5.3.20'}")`,
-        inert ? '// no dependency declaration' : '}'
+        '// t051-negative-kind: PATCHED',
+        'dependencies {',
+        '  implementation("org.springframework:spring-core:5.3.20")',
+        '}'
       ].join('\n');
     case 'lodash-npm':
+      if (positive) {
+        return JSON.stringify(
+          {
+            name: `t051-${anchor.replaceAll('.', '-')}`,
+            version: '1.0.0',
+            description: anchor,
+            dependencies: { lodash: '4.17.20' }
+          },
+          null,
+          2
+        );
+      }
+      if (generated) {
+        return JSON.stringify(
+          {
+            name: `t051-${anchor.replaceAll('.', '-')}`,
+            version: '1.0.0',
+            qualificationAnchor: anchor,
+            qualificationNegativeKind: negativeKind,
+            dependencies: { lodash: '4.17.20' }
+          },
+          null,
+          2
+        );
+      }
       return JSON.stringify(
         {
           name: `t051-${anchor.replaceAll('.', '-')}`,
           version: '1.0.0',
-          description: inert
-            ? `${anchor}: lodash 4.17.20 appears only in documentation`
-            : anchor,
-          dependencies: inert ? {} : { lodash: positive ? '4.17.20' : '4.17.21' }
+          qualificationAnchor: anchor,
+          qualificationNegativeKind: negativeKind,
+          ...(negativeKind === 'COMMENT_OR_STRING'
+            ? { description: 'documentation only: lodash 4.17.20' }
+            : negativeKind === 'SAFE_API'
+              ? { safeAlternative: 'ECMAScript standard library', dependencies: {} }
+              : { dependencies: { lodash: '4.17.21' } })
         },
         null,
         2
@@ -436,75 +688,154 @@ function commonSnippet(slug, polarity, ordinal, anchor, negativeKind) {
       return envSecretSnippet(
         anchor,
         'AWS_ACCESS_KEY_ID',
-        positive && !inert ? `AKIA${syntheticToken(ordinal, 16, 'A')}` : 'EXAMPLE_AWS_KEY',
-        inert
+        `AKIA${syntheticToken(ordinal, 16, 'A')}`,
+        positive ? null : negativeKind
       );
     case 'github-token':
       return envSecretSnippet(
         anchor,
         'GITHUB_TOKEN',
-        positive && !inert ? `ghp_${syntheticToken(ordinal, 36, 'g')}` : 'EXAMPLE_GITHUB_TOKEN',
-        inert
+        `ghp_${syntheticToken(ordinal, 36, 'g')}`,
+        positive ? null : negativeKind
       );
     case 'private-key':
       return envSecretSnippet(
         anchor,
         'PRIVATE_KEY',
-        positive && !inert
-          ? `-----BEGIN PRIVATE KEY-----${syntheticToken(ordinal, 48, 'K')}-----END PRIVATE KEY-----`
-          : 'EXAMPLE_PRIVATE_KEY_REFERENCE',
-        inert
+        `-----BEGIN PRIVATE KEY-----${syntheticToken(ordinal, 48, 'K')}-----END PRIVATE KEY-----`,
+        positive ? null : negativeKind
       );
     case 'docker-root-user':
+      if (positive || generated) {
+        return [
+          `# ${anchor}`,
+          ...(negativeKind ? [`# t051-negative-kind: ${negativeKind}`] : []),
+          'FROM scratch',
+          'USER root',
+          'ENTRYPOINT ["/app"]'
+        ].join('\n');
+      }
+      if (negativeKind === 'COMMENT_OR_STRING') {
+        return [
+          `# ${anchor}`,
+          '# t051-negative-kind: COMMENT_OR_STRING',
+          'FROM scratch',
+          '# documentation only: USER root',
+          'USER 65532'
+        ].join('\n');
+      }
+      if (negativeKind === 'SAFE_API') {
+        return [
+          `# ${anchor}`,
+          '# t051-negative-kind: SAFE_API',
+          'FROM gcr.io/distroless/static-debian12:nonroot',
+          'ENTRYPOINT ["/app"]'
+        ].join('\n');
+      }
       return [
         `# ${anchor}`,
+        '# t051-negative-kind: PATCHED',
         'FROM scratch',
-        inert ? '# USER root appears only in documentation' : `USER ${positive ? 'root' : '65532'}`,
+        'USER 65532',
         'ENTRYPOINT ["/app"]'
       ].join('\n');
     case 'terraform-public-storage':
+      if (positive || generated) {
+        return [
+          `# ${anchor}`,
+          ...(negativeKind ? [`# t051-negative-kind: ${negativeKind}`] : []),
+          `resource "aws_s3_bucket" "case_${ordinal}" {`,
+          `  bucket = "t051-case-${ordinal}"`,
+          '  acl = "public-read"',
+          '}'
+        ].join('\n');
+      }
+      if (negativeKind === 'COMMENT_OR_STRING') {
+        return [
+          `# ${anchor}`,
+          '# t051-negative-kind: COMMENT_OR_STRING',
+          `resource "aws_s3_bucket" "case_${ordinal}" {`,
+          `  bucket = "t051-case-${ordinal}"`,
+          '  # documentation only: acl = "public-read"',
+          '  acl = "private"',
+          '}'
+        ].join('\n');
+      }
+      if (negativeKind === 'SAFE_API') {
+        return [
+          `# ${anchor}`,
+          '# t051-negative-kind: SAFE_API',
+          `resource "aws_s3_bucket_public_access_block" "case_${ordinal}" {`,
+          `  bucket = "t051-case-${ordinal}"`,
+          '  block_public_acls = true',
+          '  block_public_policy = true',
+          '  ignore_public_acls = true',
+          '  restrict_public_buckets = true',
+          '}'
+        ].join('\n');
+      }
       return [
         `# ${anchor}`,
+        '# t051-negative-kind: PATCHED',
         `resource "aws_s3_bucket" "case_${ordinal}" {`,
         `  bucket = "t051-case-${ordinal}"`,
-        inert ? '  # acl = "public-read" is documentation only' : `  acl = "${positive ? 'public-read' : 'private'}"`,
+        '  acl = "private"',
         '}'
       ].join('\n');
     case 'kubernetes-privileged':
-      return [
-        `# ${anchor}`,
-        'apiVersion: apps/v1',
-        'kind: Deployment',
-        'metadata:',
-        `  name: t051-case-${ordinal}`,
-        'spec:',
-        '  template:',
-        '    spec:',
-        '      containers:',
-        '        - name: app',
-        '          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        '          securityContext:',
-        inert ? '            # privileged: true is documentation only' : `            privileged: ${positive ? 'true' : 'false'}`,
-        ...(positive || inert
-          ? []
-          : ['            runAsNonRoot: true', '            allowPrivilegeEscalation: false'])
-      ].join('\n');
+      if (positive || generated) {
+        return kubernetesSnippet(anchor, ordinal, negativeKind, [
+          '            privileged: true'
+        ]);
+      }
+      if (negativeKind === 'COMMENT_OR_STRING') {
+        return kubernetesSnippet(anchor, ordinal, negativeKind, [
+          '            # documentation only: privileged: true',
+          '            privileged: false'
+        ]);
+      }
+      if (negativeKind === 'SAFE_API') {
+        return kubernetesSnippet(anchor, ordinal, negativeKind, [
+          '            runAsNonRoot: true',
+          '            readOnlyRootFilesystem: true',
+          '            allowPrivilegeEscalation: false',
+          '            capabilities:',
+          '              drop: ["ALL"]'
+        ]);
+      }
+      return kubernetesSnippet(anchor, ordinal, negativeKind, [
+        '            privileged: false',
+        '            runAsNonRoot: true',
+        '            allowPrivilegeEscalation: false'
+      ]);
     default:
       throw new Error(`unknown common corpus family: ${slug}`);
   }
 }
 
-function mavenSnippet(anchor, groupId, artifactId, version, inert) {
+function mavenSnippet(
+  anchor,
+  groupId,
+  artifactId,
+  vulnerableVersion,
+  patchedVersion,
+  negativeKind
+) {
+  const dependency =
+    negativeKind !== 'SAFE_API' && negativeKind !== 'COMMENT_OR_STRING';
+  const version = negativeKind === 'PATCHED' ? patchedVersion : vulnerableVersion;
   return [
     `<!-- ${anchor} -->`,
+    ...(negativeKind ? [`<!-- t051-negative-kind: ${negativeKind} -->`] : []),
     '<project xmlns="http://maven.apache.org/POM/4.0.0">',
     '  <modelVersion>4.0.0</modelVersion>',
     '  <groupId>test.aegis.qualification</groupId>',
     `  <artifactId>${anchor.replaceAll('.', '-')}</artifactId>`,
     '  <version>1.0.0</version>',
-    ...(inert
-      ? [`  <!-- ${groupId}:${artifactId}:2.14.1 is documentation only -->`]
-      : [
+    ...(negativeKind === 'COMMENT_OR_STRING'
+      ? [`  <!-- documentation only: ${groupId}:${artifactId}:${vulnerableVersion} -->`]
+      : dependency
+        ? [
           '  <dependencies>',
           '    <dependency>',
           `      <groupId>${groupId}</groupId>`,
@@ -512,23 +843,46 @@ function mavenSnippet(anchor, groupId, artifactId, version, inert) {
           `      <version>${version}</version>`,
           '    </dependency>',
           '  </dependencies>'
-        ]),
+          ]
+        : ['  <!-- SAFE_API: platform standard library; vulnerable dependency absent -->']),
     '</project>'
   ].join('\n');
 }
 
-function envSecretSnippet(anchor, key, value, inert) {
+function envSecretSnippet(anchor, key, unsafeValue, negativeKind) {
+  const value =
+    negativeKind === 'PATCHED'
+      ? `${key}_ROTATED=true`
+      : negativeKind === 'SANITIZER'
+        ? `${key}=[REDACTED]`
+        : negativeKind === 'SAFE_API'
+          ? `${key}_REF=secret://qualification/${key.toLowerCase()}`
+          : `${key}=${unsafeValue}`;
   return [
     `# ${anchor}`,
-    inert ? `# ${key}=${value}` : `${key}=${value}`,
+    ...(negativeKind ? [`# t051-negative-kind: ${negativeKind}`] : []),
+    value,
     'QUALIFICATION_FIXTURE=true'
   ].join('\n');
 }
 
-function safeValue(input, negativeKind) {
-  return negativeKind === 'SANITIZER'
-    ? `${input}.replaceAll("[^A-Za-z0-9._-]", "")`
-    : input;
+function kubernetesSnippet(anchor, ordinal, negativeKind, securityContext) {
+  return [
+    `# ${anchor}`,
+    ...(negativeKind ? [`# t051-negative-kind: ${negativeKind}`] : []),
+    'apiVersion: apps/v1',
+    'kind: Deployment',
+    'metadata:',
+    `  name: t051-case-${ordinal}`,
+    'spec:',
+    '  template:',
+    '    spec:',
+    '      containers:',
+    '        - name: app',
+    '          image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    '          securityContext:',
+    ...securityContext
+  ].join('\n');
 }
 
 function scanPathFor(family, polarity, ordinal, negativeKind) {
@@ -556,14 +910,17 @@ function profilesFor(capability) {
   return ['JAVA_DEEP_V1', 'COMMON_DEEP_V1'];
 }
 
-function javaFamily(slug, ruleSemanticId, severity) {
+function javaFamily(slug, ruleSemanticId, severity, sanitizerApplicable = false) {
   return {
     slug,
     ruleSemanticId,
     severity,
     capability: 'SAST',
     scanner: 'OPENGREP',
-    language: 'JAVA'
+    language: 'JAVA',
+    negativeKinds: sanitizerApplicable
+      ? NEGATIVE_KINDS_WITH_SANITIZER
+      : NEGATIVE_KINDS_WITHOUT_SANITIZER
   };
 }
 
@@ -581,7 +938,11 @@ function commonFamily(
     capability,
     fileName,
     scanner: 'TRIVY',
-    language: 'COMMON'
+    language: 'COMMON',
+    negativeKinds:
+      capability === 'SECRET_DETECTION'
+        ? SECRET_NEGATIVE_KINDS
+        : NEGATIVE_KINDS_WITHOUT_SANITIZER
   };
 }
 
@@ -606,6 +967,36 @@ function digest(value) {
 
 function digestBoundReference(prefix, value) {
   return `${prefix}/${digest(value)}`;
+}
+
+async function readPriorReleaseManifestForGeneration() {
+  const stat = await optionalLstat(GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH);
+  if (!stat || !stat.isFile() || stat.isSymbolicLink()) {
+    throw new Error('prior-release must-detect manifest must be a regular file');
+  }
+  const text = await readFile(GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH, 'utf8');
+  if (
+    text.startsWith('\uFEFF') ||
+    text.includes('\r') ||
+    !text.endsWith('\n') ||
+    text !== text.normalize('NFC')
+  ) {
+    throw new Error('prior-release must-detect manifest is not canonical UTF-8/LF');
+  }
+  let manifest;
+  try {
+    manifest = JSON.parse(text);
+  } catch {
+    throw new Error('prior-release must-detect manifest is invalid JSON');
+  }
+  if (
+    !isSastQualificationPriorReleaseManifestValid(manifest, digest) ||
+    manifest.manifestDigest !== GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_DIGEST ||
+    text !== `${JSON.stringify(manifest, null, 2)}\n`
+  ) {
+    throw new Error('prior-release must-detect manifest is invalid or noncanonical');
+  }
+  return manifest;
 }
 
 function safeCorpusPath(sourcePath) {
@@ -645,6 +1036,12 @@ async function assertSafeCorpusWriteTargets() {
   ) {
     throw new Error('golden corpus snapshot write target must be a regular file');
   }
+  const manifestStat = await optionalLstat(
+    GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH
+  );
+  if (!manifestStat || !manifestStat.isFile() || manifestStat.isSymbolicLink()) {
+    throw new Error('prior-release manifest write dependency must be a regular file');
+  }
 }
 
 async function assertPlainDirectory(path) {
@@ -681,8 +1078,15 @@ async function walk(directory, output) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const { snapshot, sources } = await writeGoldenCorpusAssets();
-  process.stdout.write(
-    `generated ${snapshot.caseCount} cases in ${sources.size} source bundles (${snapshot.snapshotDigest})\n`
-  );
+  if (process.argv.includes('--initialize-prior-release-manifest')) {
+    const manifest = await initializePriorReleaseManifest();
+    process.stdout.write(
+      `initialized ${manifest.caseCount} immutable prior-release cases (${manifest.manifestDigest})\n`
+    );
+  } else {
+    const { snapshot, sources } = await writeGoldenCorpusAssets();
+    process.stdout.write(
+      `generated ${snapshot.caseCount} cases in ${sources.size} source bundles (${snapshot.snapshotDigest})\n`
+    );
+  }
 }

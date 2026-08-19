@@ -1,20 +1,21 @@
 <<<T051:t051.ssrf.negative.001>>>
 // t051.ssrf.negative.001
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class SsrfNegative001 {
   void evaluate(String queryParameter001) throws Exception {
-    java.net.URI uri001 = java.net.URI.create(queryParameter001);
-    if (!"https".equals(uri001.getScheme()) || !"api.example.test".equals(uri001.getHost())) throw new SecurityException();
+    java.net.URI uri001 = java.net.URI.create("https://api.example.test/status");
   }
 }
 <<<END:t051.ssrf.negative.001>>>
 
 <<<T051:t051.ssrf.negative.002>>>
 // t051.ssrf.negative.002
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class SsrfNegative002 {
   void evaluate(String headerValue002) throws Exception {
-    java.net.URI uri002 = java.net.URI.create(headerValue002.replaceAll("[^A-Za-z0-9._-]", ""));
+    java.net.URI uri002 = java.net.URI.create(headerValue002);
     if (!"https".equals(uri002.getScheme()) || !"api.example.test".equals(uri002.getHost())) throw new SecurityException();
   }
 }
@@ -22,39 +23,41 @@ final class SsrfNegative002 {
 
 <<<T051:t051.ssrf.negative.003>>>
 // t051.ssrf.negative.003
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class SsrfNegative003 {
   void evaluate(String cookieValue003) throws Exception {
-    java.net.URI uri003 = java.net.URI.create(cookieValue003);
-    if (!"https".equals(uri003.getScheme()) || !"api.example.test".equals(uri003.getHost())) throw new SecurityException();
+    // documentation only: new java.net.URL(cookieValue003).openConnection();
+    System.out.print(cookieValue003.length());
   }
 }
 <<<END:t051.ssrf.negative.003>>>
 
 <<<T051:t051.ssrf.negative.004>>>
 // t051.ssrf.negative.004
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class SsrfNegative004 {
   void evaluate(String pathVariable004) throws Exception {
-    String documentation004 = "unsafe example for ssrf: " + pathVariable004.length();
-    System.out.print(documentation004.length());
+    new java.net.URL(pathVariable004).openConnection();
   }
 }
 <<<END:t051.ssrf.negative.004>>>
 
 <<<T051:t051.ssrf.negative.005>>>
 // t051.ssrf.negative.005
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class SsrfNegative005 {
   void evaluate(String formField005) throws Exception {
-    String documentation005 = "unsafe example for ssrf: " + formField005.length();
-    System.out.print(documentation005.length());
+    java.net.URI uri005 = java.net.URI.create("https://api.example.test/status");
   }
 }
 <<<END:t051.ssrf.negative.005>>>
 
 <<<T051:t051.ssrf.negative.006>>>
 // t051.ssrf.negative.006
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class SsrfNegative006 {
   void evaluate(String jsonProperty006) throws Exception {
@@ -66,127 +69,133 @@ final class SsrfNegative006 {
 
 <<<T051:t051.ssrf.negative.007>>>
 // t051.ssrf.negative.007
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class SsrfNegative007 {
   void evaluate(String xmlValue007) throws Exception {
-    java.net.URI uri007 = java.net.URI.create(xmlValue007.replaceAll("[^A-Za-z0-9._-]", ""));
-    if (!"https".equals(uri007.getScheme()) || !"api.example.test".equals(uri007.getHost())) throw new SecurityException();
+    // documentation only: new java.net.URL(xmlValue007).openConnection();
+    System.out.print(xmlValue007.length());
   }
 }
 <<<END:t051.ssrf.negative.007>>>
 
 <<<T051:t051.ssrf.negative.008>>>
 // t051.ssrf.negative.008
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class SsrfNegative008 {
   void evaluate(String messageBody008) throws Exception {
-    java.net.URI uri008 = java.net.URI.create(messageBody008);
-    if (!"https".equals(uri008.getScheme()) || !"api.example.test".equals(uri008.getHost())) throw new SecurityException();
+    new java.net.URL(messageBody008).openConnection();
   }
 }
 <<<END:t051.ssrf.negative.008>>>
 
 <<<T051:t051.ssrf.negative.009>>>
 // t051.ssrf.negative.009
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class SsrfNegative009 {
   void evaluate(String queueAttribute009) throws Exception {
-    String documentation009 = "unsafe example for ssrf: " + queueAttribute009.length();
-    System.out.print(documentation009.length());
+    java.net.URI uri009 = java.net.URI.create("https://api.example.test/status");
   }
 }
 <<<END:t051.ssrf.negative.009>>>
 
 <<<T051:t051.ssrf.negative.010>>>
 // t051.ssrf.negative.010
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class SsrfNegative010 {
   void evaluate(String rpcArgument010) throws Exception {
-    String documentation010 = "unsafe example for ssrf: " + rpcArgument010.length();
-    System.out.print(documentation010.length());
+    java.net.URI uri010 = java.net.URI.create(rpcArgument010);
+    if (!"https".equals(uri010.getScheme()) || !"api.example.test".equals(uri010.getHost())) throw new SecurityException();
   }
 }
 <<<END:t051.ssrf.negative.010>>>
 
 <<<T051:t051.ssrf.negative.011>>>
 // t051.ssrf.negative.011
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class SsrfNegative011 {
   void evaluate(String webhookField011) throws Exception {
-    java.net.URI uri011 = java.net.URI.create(webhookField011);
-    if (!"https".equals(uri011.getScheme()) || !"api.example.test".equals(uri011.getHost())) throw new SecurityException();
+    // documentation only: new java.net.URL(webhookField011).openConnection();
+    System.out.print(webhookField011.length());
   }
 }
 <<<END:t051.ssrf.negative.011>>>
 
 <<<T051:t051.ssrf.negative.012>>>
 // t051.ssrf.negative.012
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class SsrfNegative012 {
   void evaluate(String csvColumn012) throws Exception {
-    java.net.URI uri012 = java.net.URI.create(csvColumn012.replaceAll("[^A-Za-z0-9._-]", ""));
-    if (!"https".equals(uri012.getScheme()) || !"api.example.test".equals(uri012.getHost())) throw new SecurityException();
+    new java.net.URL(csvColumn012).openConnection();
   }
 }
 <<<END:t051.ssrf.negative.012>>>
 
 <<<T051:t051.ssrf.negative.013>>>
 // t051.ssrf.negative.013
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class SsrfNegative013 {
   void evaluate(String yamlProperty013) throws Exception {
-    java.net.URI uri013 = java.net.URI.create(yamlProperty013);
-    if (!"https".equals(uri013.getScheme()) || !"api.example.test".equals(uri013.getHost())) throw new SecurityException();
+    java.net.URI uri013 = java.net.URI.create("https://api.example.test/status");
   }
 }
 <<<END:t051.ssrf.negative.013>>>
 
 <<<T051:t051.ssrf.negative.014>>>
 // t051.ssrf.negative.014
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class SsrfNegative014 {
   void evaluate(String configValue014) throws Exception {
-    String documentation014 = "unsafe example for ssrf: " + configValue014.length();
-    System.out.print(documentation014.length());
+    java.net.URI uri014 = java.net.URI.create(configValue014);
+    if (!"https".equals(uri014.getScheme()) || !"api.example.test".equals(uri014.getHost())) throw new SecurityException();
   }
 }
 <<<END:t051.ssrf.negative.014>>>
 
 <<<T051:t051.ssrf.negative.015>>>
 // t051.ssrf.negative.015
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class SsrfNegative015 {
   void evaluate(String environmentValue015) throws Exception {
-    String documentation015 = "unsafe example for ssrf: " + environmentValue015.length();
-    System.out.print(documentation015.length());
+    // documentation only: new java.net.URL(environmentValue015).openConnection();
+    System.out.print(environmentValue015.length());
   }
 }
 <<<END:t051.ssrf.negative.015>>>
 
 <<<T051:t051.ssrf.negative.016>>>
 // t051.ssrf.negative.016
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class SsrfNegative016 {
   void evaluate(String cliArgument016) throws Exception {
-    java.net.URI uri016 = java.net.URI.create(cliArgument016);
-    if (!"https".equals(uri016.getScheme()) || !"api.example.test".equals(uri016.getHost())) throw new SecurityException();
+    new java.net.URL(cliArgument016).openConnection();
   }
 }
 <<<END:t051.ssrf.negative.016>>>
 
 <<<T051:t051.ssrf.negative.017>>>
 // t051.ssrf.negative.017
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class SsrfNegative017 {
   void evaluate(String metadataValue017) throws Exception {
-    java.net.URI uri017 = java.net.URI.create(metadataValue017.replaceAll("[^A-Za-z0-9._-]", ""));
-    if (!"https".equals(uri017.getScheme()) || !"api.example.test".equals(uri017.getHost())) throw new SecurityException();
+    java.net.URI uri017 = java.net.URI.create("https://api.example.test/status");
   }
 }
 <<<END:t051.ssrf.negative.017>>>
 
 <<<T051:t051.ssrf.negative.018>>>
 // t051.ssrf.negative.018
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class SsrfNegative018 {
   void evaluate(String recordField018) throws Exception {
@@ -198,22 +207,23 @@ final class SsrfNegative018 {
 
 <<<T051:t051.ssrf.negative.019>>>
 // t051.ssrf.negative.019
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class SsrfNegative019 {
   void evaluate(String importedValue019) throws Exception {
-    String documentation019 = "unsafe example for ssrf: " + importedValue019.length();
-    System.out.print(documentation019.length());
+    // documentation only: new java.net.URL(importedValue019).openConnection();
+    System.out.print(importedValue019.length());
   }
 }
 <<<END:t051.ssrf.negative.019>>>
 
 <<<T051:t051.ssrf.negative.020>>>
 // t051.ssrf.negative.020
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class SsrfNegative020 {
   void evaluate(String requestAttribute020) throws Exception {
-    String documentation020 = "unsafe example for ssrf: " + requestAttribute020.length();
-    System.out.print(documentation020.length());
+    new java.net.URL(requestAttribute020).openConnection();
   }
 }
 <<<END:t051.ssrf.negative.020>>>

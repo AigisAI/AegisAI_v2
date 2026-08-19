@@ -1760,9 +1760,22 @@ sast-qualification-corpus-case-v1 {
   immutable: true
 }
 
+sast-qualification-prior-release-manifest-v1 {
+  releaseRef, manifestDigest, releaseRevision, publishedAt,
+  ownerRef, provenanceRef,
+  bindings[]: {
+    caseId, caseDigest, caseKey, caseRevision,
+    ruleSemanticId, ruleRevision, severity: CRITICAL | HIGH
+  },
+  caseCount, caseSetDigest,
+  source: PLATFORM_MANAGED,
+  immutable: true
+}
+
 sast-qualification-corpus-snapshot-v1 {
   corpusId, snapshotDigest, revision, publishedAt,
-  ownerRef, licenseExpression, provenanceRef, priorReleaseRef,
+  ownerRef, licenseExpression, provenanceRef,
+  priorReleaseRef, priorReleaseManifestDigest,
   profiles[], languages[], cases[],
   caseCount, positiveCaseCount, negativeCaseCount,
   priorMustDetectCaseCount,
@@ -1781,19 +1794,26 @@ sast-qualification-corpus-snapshot-v1 {
 
 Exact-key validation rejects unknown fields. Case identity covers every expected-result, rule,
 profile, provenance, source, range, path, and fixed safety field. Snapshot identity covers the
-canonically case-key-sorted complete case set, the digest-bound prior release and Critical/High
-must-detect set, all derived counts, and fixed platform-only safety facts. Case IDs, case keys,
+canonically case-key-sorted complete case set, the independently supplied prior-release manifest,
+its exact Critical/High must-detect bindings, all derived counts, and fixed platform-only safety
+facts. The manifest digest authenticates every historical case ID, digest, key, corpus/rule
+revision, and severity; the generator pins that reviewed digest and refuses overwrite. Case IDs, case keys,
 digests, and materialization `scanPath` values are unique; every `pairKey` has exactly one compatible
-positive and one negative case.
+positive and one negative case. Snapshot revision/provenance describe the container; carried-forward
+historical cases retain their own immutable revision/provenance so their case digests never need to
+be rewritten.
 
 The v1 checked-in snapshot contains 800 cases over 20 Critical/High semantic rule families and 40
 bounded source bundles. Each rule has 20 positive and 20 negative cases. Profile positive/negative
 counts are `JAVA_FAST_V1=340/340`, `JAVA_DEEP_V1=400/400`, and
-`COMMON_DEEP_V1=200/200`. All 400 positives form the prior must-detect set, and each of the five
-negative classes has 80 cases.
+`COMMON_DEEP_V1=200/200`. The imported prior-release manifest names the exact 400 historical
+positives. New positives remain outside that denominator until a later reviewed release manifest.
+Negative kinds are semantically applicable rather than artificially balanced: patched 95,
+sanitizer 35, safe-API 95, comment/string 80, and generated/vendor 95.
 
-`tools/sast-qualification/corpus-loader.mjs` regenerates the expected assets in memory and accepts
-only byte-exact checked-in snapshot/source content. It rejects root/source links, path escape,
+`tools/sast-qualification/corpus-loader.mjs` first validates the canonical manifest and its pinned
+digest, then regenerates the expected assets in memory and accepts only byte-exact checked-in
+snapshot/source content. It rejects missing/changed historical cases, root/source links, path escape,
 unregistered files, invalid UTF-8, BOM, CRLF, NUL, non-NFC text, missing final LF, oversized
 sources, duplicate scan paths, digest/byte/range drift, and a missing exact anchor. T051 validation
 creates no scanner run or quality result. T052 supplies the other corpus classes, and only T053 may

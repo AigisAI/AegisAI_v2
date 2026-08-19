@@ -4,9 +4,11 @@ import { join, relative, resolve } from 'node:path';
 
 import {
   SAST_QUALIFICATION_CORPUS_LIMITS,
-  isSastQualificationCorpusSnapshotValid
+  isSastQualificationCorpusSnapshotValid,
+  isSastQualificationPriorReleaseManifestValid
 } from '../../packages/shared/dist/index.js';
 import {
+  GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_DIGEST,
   GOLDEN_CORPUS_ROOT,
   createGoldenCorpusAssets
 } from './golden-corpus-assets.mjs';
@@ -25,7 +27,56 @@ export async function loadAndValidateGoldenCorpus(corpusRoot = GOLDEN_CORPUS_ROO
   if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) reject('ROOT_INVALID');
   const canonicalRoot = await guardedRealpath(root, 'ROOT_INVALID');
 
-  const expected = createGoldenCorpusAssets();
+  const priorReleaseManifestPath = resolveInside(
+    root,
+    'prior-release-must-detect.manifest.json'
+  );
+  const priorReleaseManifestStat = await guardedLstat(
+    priorReleaseManifestPath,
+    'PRIOR_RELEASE_MANIFEST_INVALID'
+  );
+  if (
+    !priorReleaseManifestStat.isFile() ||
+    priorReleaseManifestStat.isSymbolicLink()
+  ) {
+    reject('PRIOR_RELEASE_MANIFEST_INVALID');
+  }
+  const priorReleaseManifestBuffer = await guardedRead(
+    priorReleaseManifestPath,
+    'PRIOR_RELEASE_MANIFEST_INVALID'
+  );
+  if (
+    priorReleaseManifestBuffer.byteLength === 0 ||
+    priorReleaseManifestBuffer.byteLength > 4 * 1024 * 1024
+  ) {
+    reject('PRIOR_RELEASE_MANIFEST_INVALID');
+  }
+  const priorReleaseManifestText = decodeCanonicalText(
+    priorReleaseManifestBuffer,
+    'PRIOR_RELEASE_MANIFEST_INVALID'
+  );
+  let priorReleaseManifest;
+  try {
+    priorReleaseManifest = JSON.parse(priorReleaseManifestText);
+  } catch {
+    reject('PRIOR_RELEASE_MANIFEST_INVALID');
+  }
+  if (
+    !isSastQualificationPriorReleaseManifestValid(priorReleaseManifest, digest) ||
+    priorReleaseManifest.manifestDigest !==
+      GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_DIGEST ||
+    priorReleaseManifestText !==
+      `${JSON.stringify(priorReleaseManifest, null, 2)}\n`
+  ) {
+    reject('PRIOR_RELEASE_MANIFEST_INVALID');
+  }
+
+  let expected;
+  try {
+    expected = createGoldenCorpusAssets(priorReleaseManifest);
+  } catch {
+    reject('PRIOR_RELEASE_SET_INCOMPLETE');
+  }
   const snapshotPath = resolveInside(root, 'golden-corpus.snapshot.json');
   const snapshotStat = await guardedLstat(snapshotPath, 'SNAPSHOT_INVALID');
   if (!snapshotStat.isFile() || snapshotStat.isSymbolicLink()) {
@@ -45,7 +96,13 @@ export async function loadAndValidateGoldenCorpus(corpusRoot = GOLDEN_CORPUS_ROO
   } catch {
     reject('SNAPSHOT_INVALID');
   }
-  if (!isSastQualificationCorpusSnapshotValid(snapshot, digest)) {
+  if (
+    !isSastQualificationCorpusSnapshotValid(
+      snapshot,
+      digest,
+      priorReleaseManifest
+    )
+  ) {
     reject('SNAPSHOT_INVALID');
   }
 
@@ -111,6 +168,8 @@ export async function loadAndValidateGoldenCorpus(corpusRoot = GOLDEN_CORPUS_ROO
     positiveCaseCount: snapshot.positiveCaseCount,
     negativeCaseCount: snapshot.negativeCaseCount,
     priorMustDetectCaseCount: snapshot.priorMustDetectCaseCount,
+    priorReleaseRef: snapshot.priorReleaseRef,
+    priorReleaseManifestDigest: snapshot.priorReleaseManifestDigest,
     sourceBundleCount: expectedSourcePaths.length,
     profileCounts: snapshot.profileCounts.map((item) => Object.freeze({ ...item }))
   });

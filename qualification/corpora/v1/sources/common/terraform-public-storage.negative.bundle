@@ -1,5 +1,6 @@
 <<<T051:t051.terraform-public-storage.negative.001>>>
 # t051.terraform-public-storage.negative.001
+# t051-negative-kind: PATCHED
 resource "aws_s3_bucket" "case_001" {
   bucket = "t051-case-001"
   acl = "private"
@@ -8,94 +9,118 @@ resource "aws_s3_bucket" "case_001" {
 
 <<<T051:t051.terraform-public-storage.negative.002>>>
 # t051.terraform-public-storage.negative.002
-resource "aws_s3_bucket" "case_002" {
+# t051-negative-kind: SAFE_API
+resource "aws_s3_bucket_public_access_block" "case_002" {
   bucket = "t051-case-002"
-  acl = "private"
+  block_public_acls = true
+  block_public_policy = true
+  ignore_public_acls = true
+  restrict_public_buckets = true
 }
 <<<END:t051.terraform-public-storage.negative.002>>>
 
 <<<T051:t051.terraform-public-storage.negative.003>>>
 # t051.terraform-public-storage.negative.003
+# t051-negative-kind: COMMENT_OR_STRING
 resource "aws_s3_bucket" "case_003" {
   bucket = "t051-case-003"
+  # documentation only: acl = "public-read"
   acl = "private"
 }
 <<<END:t051.terraform-public-storage.negative.003>>>
 
 <<<T051:t051.terraform-public-storage.negative.004>>>
 # t051.terraform-public-storage.negative.004
+# t051-negative-kind: GENERATED_OR_VENDOR
 resource "aws_s3_bucket" "case_004" {
   bucket = "t051-case-004"
-  # acl = "public-read" is documentation only
+  acl = "public-read"
 }
 <<<END:t051.terraform-public-storage.negative.004>>>
 
 <<<T051:t051.terraform-public-storage.negative.005>>>
 # t051.terraform-public-storage.negative.005
+# t051-negative-kind: PATCHED
 resource "aws_s3_bucket" "case_005" {
   bucket = "t051-case-005"
-  # acl = "public-read" is documentation only
+  acl = "private"
 }
 <<<END:t051.terraform-public-storage.negative.005>>>
 
 <<<T051:t051.terraform-public-storage.negative.006>>>
 # t051.terraform-public-storage.negative.006
-resource "aws_s3_bucket" "case_006" {
+# t051-negative-kind: SAFE_API
+resource "aws_s3_bucket_public_access_block" "case_006" {
   bucket = "t051-case-006"
-  acl = "private"
+  block_public_acls = true
+  block_public_policy = true
+  ignore_public_acls = true
+  restrict_public_buckets = true
 }
 <<<END:t051.terraform-public-storage.negative.006>>>
 
 <<<T051:t051.terraform-public-storage.negative.007>>>
 # t051.terraform-public-storage.negative.007
+# t051-negative-kind: COMMENT_OR_STRING
 resource "aws_s3_bucket" "case_007" {
   bucket = "t051-case-007"
+  # documentation only: acl = "public-read"
   acl = "private"
 }
 <<<END:t051.terraform-public-storage.negative.007>>>
 
 <<<T051:t051.terraform-public-storage.negative.008>>>
 # t051.terraform-public-storage.negative.008
+# t051-negative-kind: GENERATED_OR_VENDOR
 resource "aws_s3_bucket" "case_008" {
   bucket = "t051-case-008"
-  acl = "private"
+  acl = "public-read"
 }
 <<<END:t051.terraform-public-storage.negative.008>>>
 
 <<<T051:t051.terraform-public-storage.negative.009>>>
 # t051.terraform-public-storage.negative.009
+# t051-negative-kind: PATCHED
 resource "aws_s3_bucket" "case_009" {
   bucket = "t051-case-009"
-  # acl = "public-read" is documentation only
+  acl = "private"
 }
 <<<END:t051.terraform-public-storage.negative.009>>>
 
 <<<T051:t051.terraform-public-storage.negative.010>>>
 # t051.terraform-public-storage.negative.010
-resource "aws_s3_bucket" "case_010" {
+# t051-negative-kind: SAFE_API
+resource "aws_s3_bucket_public_access_block" "case_010" {
   bucket = "t051-case-010"
-  # acl = "public-read" is documentation only
+  block_public_acls = true
+  block_public_policy = true
+  ignore_public_acls = true
+  restrict_public_buckets = true
 }
 <<<END:t051.terraform-public-storage.negative.010>>>
 
 <<<T051:t051.terraform-public-storage.negative.011>>>
 # t051.terraform-public-storage.negative.011
+# t051-negative-kind: COMMENT_OR_STRING
 resource "aws_s3_bucket" "case_011" {
   bucket = "t051-case-011"
+  # documentation only: acl = "public-read"
   acl = "private"
 }
 <<<END:t051.terraform-public-storage.negative.011>>>
 
 <<<T051:t051.terraform-public-storage.negative.012>>>
 # t051.terraform-public-storage.negative.012
+# t051-negative-kind: GENERATED_OR_VENDOR
 resource "aws_s3_bucket" "case_012" {
   bucket = "t051-case-012"
-  acl = "private"
+  acl = "public-read"
 }
 <<<END:t051.terraform-public-storage.negative.012>>>
 
 <<<T051:t051.terraform-public-storage.negative.013>>>
 # t051.terraform-public-storage.negative.013
+# t051-negative-kind: PATCHED
 resource "aws_s3_bucket" "case_013" {
   bucket = "t051-case-013"
   acl = "private"
@@ -104,30 +129,38 @@ resource "aws_s3_bucket" "case_013" {
 
 <<<T051:t051.terraform-public-storage.negative.014>>>
 # t051.terraform-public-storage.negative.014
-resource "aws_s3_bucket" "case_014" {
+# t051-negative-kind: SAFE_API
+resource "aws_s3_bucket_public_access_block" "case_014" {
   bucket = "t051-case-014"
-  # acl = "public-read" is documentation only
+  block_public_acls = true
+  block_public_policy = true
+  ignore_public_acls = true
+  restrict_public_buckets = true
 }
 <<<END:t051.terraform-public-storage.negative.014>>>
 
 <<<T051:t051.terraform-public-storage.negative.015>>>
 # t051.terraform-public-storage.negative.015
+# t051-negative-kind: COMMENT_OR_STRING
 resource "aws_s3_bucket" "case_015" {
   bucket = "t051-case-015"
-  # acl = "public-read" is documentation only
+  # documentation only: acl = "public-read"
+  acl = "private"
 }
 <<<END:t051.terraform-public-storage.negative.015>>>
 
 <<<T051:t051.terraform-public-storage.negative.016>>>
 # t051.terraform-public-storage.negative.016
+# t051-negative-kind: GENERATED_OR_VENDOR
 resource "aws_s3_bucket" "case_016" {
   bucket = "t051-case-016"
-  acl = "private"
+  acl = "public-read"
 }
 <<<END:t051.terraform-public-storage.negative.016>>>
 
 <<<T051:t051.terraform-public-storage.negative.017>>>
 # t051.terraform-public-storage.negative.017
+# t051-negative-kind: PATCHED
 resource "aws_s3_bucket" "case_017" {
   bucket = "t051-case-017"
   acl = "private"
@@ -136,24 +169,31 @@ resource "aws_s3_bucket" "case_017" {
 
 <<<T051:t051.terraform-public-storage.negative.018>>>
 # t051.terraform-public-storage.negative.018
-resource "aws_s3_bucket" "case_018" {
+# t051-negative-kind: SAFE_API
+resource "aws_s3_bucket_public_access_block" "case_018" {
   bucket = "t051-case-018"
-  acl = "private"
+  block_public_acls = true
+  block_public_policy = true
+  ignore_public_acls = true
+  restrict_public_buckets = true
 }
 <<<END:t051.terraform-public-storage.negative.018>>>
 
 <<<T051:t051.terraform-public-storage.negative.019>>>
 # t051.terraform-public-storage.negative.019
+# t051-negative-kind: COMMENT_OR_STRING
 resource "aws_s3_bucket" "case_019" {
   bucket = "t051-case-019"
-  # acl = "public-read" is documentation only
+  # documentation only: acl = "public-read"
+  acl = "private"
 }
 <<<END:t051.terraform-public-storage.negative.019>>>
 
 <<<T051:t051.terraform-public-storage.negative.020>>>
 # t051.terraform-public-storage.negative.020
+# t051-negative-kind: GENERATED_OR_VENDOR
 resource "aws_s3_bucket" "case_020" {
   bucket = "t051-case-020"
-  # acl = "public-read" is documentation only
+  acl = "public-read"
 }
 <<<END:t051.terraform-public-storage.negative.020>>>

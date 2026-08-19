@@ -1,219 +1,235 @@
 <<<T051:t051.log-injection.negative.001>>>
 // t051.log-injection.negative.001
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class LogInjectionNegative001 {
   void evaluate(String queryParameter001) throws Exception {
-    String safe001 = queryParameter001.replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe001);
+    String identifier001 = Integer.toHexString(queryParameter001.hashCode());
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user-id=" + identifier001);
   }
 }
 <<<END:t051.log-injection.negative.001>>>
 
 <<<T051:t051.log-injection.negative.002>>>
 // t051.log-injection.negative.002
+// t051-negative-kind: SANITIZER
 package qualification.corpus;
 final class LogInjectionNegative002 {
   void evaluate(String headerValue002) throws Exception {
-    String safe002 = headerValue002.replaceAll("[^A-Za-z0-9._-]", "").replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe002);
+    String sanitized002 = headerValue002.replace("\r", "_").replace("\n", "_");
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + sanitized002);
   }
 }
 <<<END:t051.log-injection.negative.002>>>
 
 <<<T051:t051.log-injection.negative.003>>>
 // t051.log-injection.negative.003
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class LogInjectionNegative003 {
   void evaluate(String cookieValue003) throws Exception {
-    String safe003 = cookieValue003.replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe003);
+    java.util.logging.LogRecord record003 = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");
+    record003.setParameters(new Object[] { Integer.toHexString(cookieValue003.hashCode()) });
   }
 }
 <<<END:t051.log-injection.negative.003>>>
 
 <<<T051:t051.log-injection.negative.004>>>
 // t051.log-injection.negative.004
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class LogInjectionNegative004 {
   void evaluate(String pathVariable004) throws Exception {
-    String documentation004 = "unsafe example for log-injection: " + pathVariable004.length();
-    System.out.print(documentation004.length());
+    // documentation only: System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + pathVariable004);
+    System.out.print(pathVariable004.length());
   }
 }
 <<<END:t051.log-injection.negative.004>>>
 
 <<<T051:t051.log-injection.negative.005>>>
 // t051.log-injection.negative.005
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class LogInjectionNegative005 {
   void evaluate(String formField005) throws Exception {
-    String documentation005 = "unsafe example for log-injection: " + formField005.length();
-    System.out.print(documentation005.length());
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + formField005);
   }
 }
 <<<END:t051.log-injection.negative.005>>>
 
 <<<T051:t051.log-injection.negative.006>>>
 // t051.log-injection.negative.006
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class LogInjectionNegative006 {
   void evaluate(String jsonProperty006) throws Exception {
-    String safe006 = jsonProperty006.replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe006);
+    String identifier006 = Integer.toHexString(jsonProperty006.hashCode());
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user-id=" + identifier006);
   }
 }
 <<<END:t051.log-injection.negative.006>>>
 
 <<<T051:t051.log-injection.negative.007>>>
 // t051.log-injection.negative.007
+// t051-negative-kind: SANITIZER
 package qualification.corpus;
 final class LogInjectionNegative007 {
   void evaluate(String xmlValue007) throws Exception {
-    String safe007 = xmlValue007.replaceAll("[^A-Za-z0-9._-]", "").replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe007);
+    String sanitized007 = xmlValue007.replace("\r", "_").replace("\n", "_");
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + sanitized007);
   }
 }
 <<<END:t051.log-injection.negative.007>>>
 
 <<<T051:t051.log-injection.negative.008>>>
 // t051.log-injection.negative.008
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class LogInjectionNegative008 {
   void evaluate(String messageBody008) throws Exception {
-    String safe008 = messageBody008.replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe008);
+    java.util.logging.LogRecord record008 = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");
+    record008.setParameters(new Object[] { Integer.toHexString(messageBody008.hashCode()) });
   }
 }
 <<<END:t051.log-injection.negative.008>>>
 
 <<<T051:t051.log-injection.negative.009>>>
 // t051.log-injection.negative.009
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class LogInjectionNegative009 {
   void evaluate(String queueAttribute009) throws Exception {
-    String documentation009 = "unsafe example for log-injection: " + queueAttribute009.length();
-    System.out.print(documentation009.length());
+    // documentation only: System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + queueAttribute009);
+    System.out.print(queueAttribute009.length());
   }
 }
 <<<END:t051.log-injection.negative.009>>>
 
 <<<T051:t051.log-injection.negative.010>>>
 // t051.log-injection.negative.010
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class LogInjectionNegative010 {
   void evaluate(String rpcArgument010) throws Exception {
-    String documentation010 = "unsafe example for log-injection: " + rpcArgument010.length();
-    System.out.print(documentation010.length());
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + rpcArgument010);
   }
 }
 <<<END:t051.log-injection.negative.010>>>
 
 <<<T051:t051.log-injection.negative.011>>>
 // t051.log-injection.negative.011
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class LogInjectionNegative011 {
   void evaluate(String webhookField011) throws Exception {
-    String safe011 = webhookField011.replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe011);
+    String identifier011 = Integer.toHexString(webhookField011.hashCode());
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user-id=" + identifier011);
   }
 }
 <<<END:t051.log-injection.negative.011>>>
 
 <<<T051:t051.log-injection.negative.012>>>
 // t051.log-injection.negative.012
+// t051-negative-kind: SANITIZER
 package qualification.corpus;
 final class LogInjectionNegative012 {
   void evaluate(String csvColumn012) throws Exception {
-    String safe012 = csvColumn012.replaceAll("[^A-Za-z0-9._-]", "").replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe012);
+    String sanitized012 = csvColumn012.replace("\r", "_").replace("\n", "_");
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + sanitized012);
   }
 }
 <<<END:t051.log-injection.negative.012>>>
 
 <<<T051:t051.log-injection.negative.013>>>
 // t051.log-injection.negative.013
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class LogInjectionNegative013 {
   void evaluate(String yamlProperty013) throws Exception {
-    String safe013 = yamlProperty013.replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe013);
+    java.util.logging.LogRecord record013 = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");
+    record013.setParameters(new Object[] { Integer.toHexString(yamlProperty013.hashCode()) });
   }
 }
 <<<END:t051.log-injection.negative.013>>>
 
 <<<T051:t051.log-injection.negative.014>>>
 // t051.log-injection.negative.014
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class LogInjectionNegative014 {
   void evaluate(String configValue014) throws Exception {
-    String documentation014 = "unsafe example for log-injection: " + configValue014.length();
-    System.out.print(documentation014.length());
+    // documentation only: System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + configValue014);
+    System.out.print(configValue014.length());
   }
 }
 <<<END:t051.log-injection.negative.014>>>
 
 <<<T051:t051.log-injection.negative.015>>>
 // t051.log-injection.negative.015
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class LogInjectionNegative015 {
   void evaluate(String environmentValue015) throws Exception {
-    String documentation015 = "unsafe example for log-injection: " + environmentValue015.length();
-    System.out.print(documentation015.length());
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + environmentValue015);
   }
 }
 <<<END:t051.log-injection.negative.015>>>
 
 <<<T051:t051.log-injection.negative.016>>>
 // t051.log-injection.negative.016
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class LogInjectionNegative016 {
   void evaluate(String cliArgument016) throws Exception {
-    String safe016 = cliArgument016.replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe016);
+    String identifier016 = Integer.toHexString(cliArgument016.hashCode());
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user-id=" + identifier016);
   }
 }
 <<<END:t051.log-injection.negative.016>>>
 
 <<<T051:t051.log-injection.negative.017>>>
 // t051.log-injection.negative.017
+// t051-negative-kind: SANITIZER
 package qualification.corpus;
 final class LogInjectionNegative017 {
   void evaluate(String metadataValue017) throws Exception {
-    String safe017 = metadataValue017.replaceAll("[^A-Za-z0-9._-]", "").replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe017);
+    String sanitized017 = metadataValue017.replace("\r", "_").replace("\n", "_");
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + sanitized017);
   }
 }
 <<<END:t051.log-injection.negative.017>>>
 
 <<<T051:t051.log-injection.negative.018>>>
 // t051.log-injection.negative.018
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class LogInjectionNegative018 {
   void evaluate(String recordField018) throws Exception {
-    String safe018 = recordField018.replace("\r", "_").replace("\n", "_");
-    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + safe018);
+    java.util.logging.LogRecord record018 = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");
+    record018.setParameters(new Object[] { Integer.toHexString(recordField018.hashCode()) });
   }
 }
 <<<END:t051.log-injection.negative.018>>>
 
 <<<T051:t051.log-injection.negative.019>>>
 // t051.log-injection.negative.019
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class LogInjectionNegative019 {
   void evaluate(String importedValue019) throws Exception {
-    String documentation019 = "unsafe example for log-injection: " + importedValue019.length();
-    System.out.print(documentation019.length());
+    // documentation only: System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + importedValue019);
+    System.out.print(importedValue019.length());
   }
 }
 <<<END:t051.log-injection.negative.019>>>
 
 <<<T051:t051.log-injection.negative.020>>>
 // t051.log-injection.negative.020
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class LogInjectionNegative020 {
   void evaluate(String requestAttribute020) throws Exception {
-    String documentation020 = "unsafe example for log-injection: " + requestAttribute020.length();
-    System.out.print(documentation020.length());
+    System.getLogger("audit").log(System.Logger.Level.INFO, "user=" + requestAttribute020);
   }
 }
 <<<END:t051.log-injection.negative.020>>>

@@ -99,6 +99,8 @@ exfiltrate data, or gain Control/AI/Data-Security authority.
 | Cross-tenant object access | Object key or query omits tenant | Tenant/scan prefix, encryption context, tenant predicate, purpose-bound reads | Negative tests and access audit |
 | Cache poisoning | Customer content enters shared cache | Shared cache only for signed public tool/rule/database assets | Cache inventory and digest monitoring |
 | Rule supply-chain attack | Malicious rule or database promoted | Signed digest, provenance, two-person security approval, corpus gates, canary | Automatic rollback/kill switch |
+| Prior-release denominator erasure | A new corpus revision drops or changes a historical must-detect case and derives an apparently perfect denominator from remaining positives | Separate exact-binding prior-release manifest, canonical manifest/release digests, reviewed digest pin outside the file, overwrite refusal, and snapshot completeness rebind | Missing/changed case, forged manifest/reference, and later-positive fixtures fail closed |
+| Negative-class label forgery | A fixture claims sanitizer, safe-API, comment, or generated exclusion while reusing unrelated source behavior | Per-family applicable-kind policy, distinct source rendering, unsafe generated/vendor construct under excluded path, and source-range behavior assertions | All 400 negatives match declared behavior; inapplicable classes are absent |
 | Dependency database drift | Sandbox downloads latest data | Mirror and pin digest outside runtime | Audit version per finding/scan |
 | Retry replay | Same attempt/result is processed twice | Canonical scan identity, unique attempt, artifact digest idempotency | Duplicate events ignored and audited |
 | Stale publication | Old commit result comments on newer PR, or a worker claims an outbox item after a kill switch activates | Latest-context comparison plus fresh `EXTERNAL_PUBLICATION` evaluation at both comment planning and every worker claim | Target stale publication count = zero; between-plan-and-claim activation yields zero claims and publisher calls |
@@ -200,8 +202,9 @@ The following must always remain true:
     baseline plus fresh signed independent dual approval, locks both heads canonically, and
     appends only one `ROLLED_BACK` transition. The receipt has no scanner-set or downstream
     authority and every baseline and historical row remains unchanged.
-23. Golden qualification input cannot drift between review and use. T051 regenerates and validates
-    one exact platform-owned snapshot, requires complete paired profile/rule/prior denominators,
+23. Golden qualification input cannot drift between review and use. T051 validates a separately
+    manifested and code-pinned historical denominator before regenerating one exact platform-owned
+    snapshot, requires complete paired profile/rule/prior denominators,
     rebinds all source bytes, ranges, anchors, and unique root-confined materialization paths, and
     rejects links, ambiguous text, extra files, mutable metadata, or executable/customer inputs.
     Successful validation grants no detection, finding, promotion, or deployment authority.
@@ -212,8 +215,9 @@ The following must always remain true:
 - Unicode normalization and case-fold collisions
 - root-escaping, cyclic, and deeply nested symlinks
 - oversized files, excessive file count/depth, sparse files, inode exhaustion
-- T051 snapshot/count/digest/pair/profile/rule-floor drift, unknown fields, duplicate scan paths,
-  source-byte/range/anchor drift, CRLF/BOM/NUL/non-UTF-8/non-NFC text, extra files, and
+- T051 prior-manifest deletion/mutation/forgery, later-positive denominator separation,
+  negative-kind semantic mismatch, snapshot/count/digest/pair/profile/rule-floor drift, unknown
+  fields, duplicate scan paths, source-byte/range/anchor drift, CRLF/BOM/NUL/non-UTF-8/non-NFC text, extra files, and
   symlink/junction traversal
 - archive and compression bombs even though expansion is disabled
 - malformed SARIF, Trivy JSON, CycloneDX JSON, deep nesting, duplicate keys, invalid UTF-8

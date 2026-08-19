@@ -1,5 +1,6 @@
 <<<T051:t051.kubernetes-privileged.negative.001>>>
 # t051.kubernetes-privileged.negative.001
+# t051-negative-kind: PATCHED
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,6 +19,7 @@ spec:
 
 <<<T051:t051.kubernetes-privileged.negative.002>>>
 # t051.kubernetes-privileged.negative.002
+# t051-negative-kind: SAFE_API
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,13 +31,16 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            privileged: false
             runAsNonRoot: true
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
 <<<END:t051.kubernetes-privileged.negative.002>>>
 
 <<<T051:t051.kubernetes-privileged.negative.003>>>
 # t051.kubernetes-privileged.negative.003
+# t051-negative-kind: COMMENT_OR_STRING
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -47,13 +52,13 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
+            # documentation only: privileged: true
             privileged: false
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
 <<<END:t051.kubernetes-privileged.negative.003>>>
 
 <<<T051:t051.kubernetes-privileged.negative.004>>>
 # t051.kubernetes-privileged.negative.004
+# t051-negative-kind: GENERATED_OR_VENDOR
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -65,11 +70,12 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            # privileged: true is documentation only
+            privileged: true
 <<<END:t051.kubernetes-privileged.negative.004>>>
 
 <<<T051:t051.kubernetes-privileged.negative.005>>>
 # t051.kubernetes-privileged.negative.005
+# t051-negative-kind: PATCHED
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -81,11 +87,14 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            # privileged: true is documentation only
+            privileged: false
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
 <<<END:t051.kubernetes-privileged.negative.005>>>
 
 <<<T051:t051.kubernetes-privileged.negative.006>>>
 # t051.kubernetes-privileged.negative.006
+# t051-negative-kind: SAFE_API
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -97,13 +106,16 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            privileged: false
             runAsNonRoot: true
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
 <<<END:t051.kubernetes-privileged.negative.006>>>
 
 <<<T051:t051.kubernetes-privileged.negative.007>>>
 # t051.kubernetes-privileged.negative.007
+# t051-negative-kind: COMMENT_OR_STRING
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -115,13 +127,13 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
+            # documentation only: privileged: true
             privileged: false
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
 <<<END:t051.kubernetes-privileged.negative.007>>>
 
 <<<T051:t051.kubernetes-privileged.negative.008>>>
 # t051.kubernetes-privileged.negative.008
+# t051-negative-kind: GENERATED_OR_VENDOR
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -133,13 +145,12 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            privileged: false
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
+            privileged: true
 <<<END:t051.kubernetes-privileged.negative.008>>>
 
 <<<T051:t051.kubernetes-privileged.negative.009>>>
 # t051.kubernetes-privileged.negative.009
+# t051-negative-kind: PATCHED
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -151,11 +162,14 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            # privileged: true is documentation only
+            privileged: false
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
 <<<END:t051.kubernetes-privileged.negative.009>>>
 
 <<<T051:t051.kubernetes-privileged.negative.010>>>
 # t051.kubernetes-privileged.negative.010
+# t051-negative-kind: SAFE_API
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -167,11 +181,16 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            # privileged: true is documentation only
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
 <<<END:t051.kubernetes-privileged.negative.010>>>
 
 <<<T051:t051.kubernetes-privileged.negative.011>>>
 # t051.kubernetes-privileged.negative.011
+# t051-negative-kind: COMMENT_OR_STRING
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -183,13 +202,13 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
+            # documentation only: privileged: true
             privileged: false
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
 <<<END:t051.kubernetes-privileged.negative.011>>>
 
 <<<T051:t051.kubernetes-privileged.negative.012>>>
 # t051.kubernetes-privileged.negative.012
+# t051-negative-kind: GENERATED_OR_VENDOR
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -201,13 +220,12 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            privileged: false
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
+            privileged: true
 <<<END:t051.kubernetes-privileged.negative.012>>>
 
 <<<T051:t051.kubernetes-privileged.negative.013>>>
 # t051.kubernetes-privileged.negative.013
+# t051-negative-kind: PATCHED
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -226,6 +244,7 @@ spec:
 
 <<<T051:t051.kubernetes-privileged.negative.014>>>
 # t051.kubernetes-privileged.negative.014
+# t051-negative-kind: SAFE_API
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -237,11 +256,16 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            # privileged: true is documentation only
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
 <<<END:t051.kubernetes-privileged.negative.014>>>
 
 <<<T051:t051.kubernetes-privileged.negative.015>>>
 # t051.kubernetes-privileged.negative.015
+# t051-negative-kind: COMMENT_OR_STRING
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -253,11 +277,13 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            # privileged: true is documentation only
+            # documentation only: privileged: true
+            privileged: false
 <<<END:t051.kubernetes-privileged.negative.015>>>
 
 <<<T051:t051.kubernetes-privileged.negative.016>>>
 # t051.kubernetes-privileged.negative.016
+# t051-negative-kind: GENERATED_OR_VENDOR
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -269,13 +295,12 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            privileged: false
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
+            privileged: true
 <<<END:t051.kubernetes-privileged.negative.016>>>
 
 <<<T051:t051.kubernetes-privileged.negative.017>>>
 # t051.kubernetes-privileged.negative.017
+# t051-negative-kind: PATCHED
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -294,6 +319,7 @@ spec:
 
 <<<T051:t051.kubernetes-privileged.negative.018>>>
 # t051.kubernetes-privileged.negative.018
+# t051-negative-kind: SAFE_API
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -305,13 +331,16 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            privileged: false
             runAsNonRoot: true
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
 <<<END:t051.kubernetes-privileged.negative.018>>>
 
 <<<T051:t051.kubernetes-privileged.negative.019>>>
 # t051.kubernetes-privileged.negative.019
+# t051-negative-kind: COMMENT_OR_STRING
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -323,11 +352,13 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            # privileged: true is documentation only
+            # documentation only: privileged: true
+            privileged: false
 <<<END:t051.kubernetes-privileged.negative.019>>>
 
 <<<T051:t051.kubernetes-privileged.negative.020>>>
 # t051.kubernetes-privileged.negative.020
+# t051-negative-kind: GENERATED_OR_VENDOR
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -339,5 +370,5 @@ spec:
         - name: app
           image: registry.example.test/aegis/t051@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           securityContext:
-            # privileged: true is documentation only
+            privileged: true
 <<<END:t051.kubernetes-privileged.negative.020>>>

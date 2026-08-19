@@ -706,7 +706,9 @@ tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step p
   receipt/lifecycle persistence, and PostgreSQL direct-write/race enforcement are complete. T051
   versioned golden qualification corpus is complete: one immutable snapshot binds 400 positive,
   400 paired negative, and 400 prior Critical/High must-detect cases across 40 platform-owned
-  source bundles. T052 multi-class qualification corpora are the next implementation task.
+  source bundles. A separate overwrite-protected manifest authenticates the exact historical case
+  identities and its reviewed digest is pinned in code.
+  T052 multi-class qualification corpora are the next implementation task.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
@@ -732,8 +734,11 @@ still requires the 005 rollout and the remaining 006 gates.
 - T051's shared exact-shape contracts, deterministic generator, and root-confined loader bind all
   800 cases to owner, license, digest-bound provenance, revision, source bytes/digest, exact line
   range/anchor, and unique future materialization path. Every profile has at least 200 positive and
-  200 negative cases; every Critical/High rule has 20 of each, and every such positive is in the
-  prior must-detect set. Five negative classes are non-empty. CI rejects snapshot/source drift,
+  200 negative cases; every Critical/High rule has 20 of each. The prior-release manifest binds the
+  exact 400 historical positives and rejects deletion, mutation, forged references, or automatic
+  inclusion of later positives. Five negative classes are non-empty and use applicable, distinct
+  source behavior (95 patched, 35 sanitizer, 95 safe-API, 80 comment/string, 95 generated/vendor).
+  CI rejects manifest/snapshot/source drift,
   path escape, symlink/junction traversal, extra files, invalid UTF-8/NFC/LF, oversized input,
   range drift, authority widening, and mutable or executable corpus metadata.
 - T051 fixes qualification inputs only. It neither executes a scanner nor claims detection,

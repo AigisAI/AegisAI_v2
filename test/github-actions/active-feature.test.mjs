@@ -70,6 +70,7 @@ const files = {
   qualificationLoader: new URL('../../tools/sast-qualification/corpus-loader.mjs', import.meta.url),
   qualificationLoaderTest: new URL('../../test/qualification/sast-qualification-corpus-loader.test.mjs', import.meta.url),
   qualificationSnapshot: new URL('../../qualification/corpora/v1/golden-corpus.snapshot.json', import.meta.url),
+  qualificationPriorReleaseManifest: new URL('../../qualification/corpora/v1/prior-release-must-detect.manifest.json', import.meta.url),
   qualificationReadme: new URL('../../qualification/corpora/v1/README.md', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
@@ -2976,9 +2977,13 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   const threatModel = readNormalizedText(files.threatModel);
   const qualityGates = readNormalizedText(files.qualityGates);
   const snapshot = JSON.parse(readFileSync(files.qualificationSnapshot, 'utf8'));
+  const priorReleaseManifest = JSON.parse(
+    readFileSync(files.qualificationPriorReleaseManifest, 'utf8')
+  );
 
   assert.match(shared, /sast-qualification-corpus-case-v1/);
   assert.match(shared, /sast-qualification-corpus-snapshot-v1/);
+  assert.match(shared, /sast-qualification-prior-release-manifest-v1/);
   assert.match(shared, /minimumPositiveCasesPerProfile: 200/);
   assert.match(shared, /minimumNegativeCasesPerProfile: 200/);
   assert.match(shared, /minimumCriticalHighCasesPerRule: 20/);
@@ -2986,8 +2991,11 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   assert.match(sharedIndex, /sast-qualification-corpus/);
   assert.match(sharedTest, /immutable 800-case golden corpus/);
   assert.match(sharedTest, /colliding scan paths/);
+  assert.match(sharedTest, /exact prior-release set/);
 
   assert.match(generator, /createGoldenCorpusAssets/);
+  assert.match(generator, /refusing to overwrite immutable prior-release/);
+  assert.match(generator, /GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_DIGEST/);
   assert.match(generator, /GOLDEN_CORPUS_REVISION = '1\.0\.0'/);
   assert.match(loader, /SNAPSHOT_DRIFT/);
   assert.match(loader, /SOURCE_PATH_INVALID/);
@@ -3001,6 +3009,16 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   assert.equal(snapshot.positiveCaseCount, 400);
   assert.equal(snapshot.negativeCaseCount, 400);
   assert.equal(snapshot.priorMustDetectCaseCount, 400);
+  assert.equal(priorReleaseManifest.caseCount, 400);
+  assert.equal(snapshot.priorReleaseRef, priorReleaseManifest.releaseRef);
+  assert.equal(
+    snapshot.priorReleaseManifestDigest,
+    priorReleaseManifest.manifestDigest
+  );
+  assert.equal(
+    snapshot.priorMustDetectSetDigest,
+    priorReleaseManifest.caseSetDigest
+  );
   assert.equal(snapshot.ruleCounts.length, 20);
   assert.equal(new Set(snapshot.cases.map((item) => item.scanPath)).size, 800);
   assert.equal(new Set(snapshot.cases.map((item) => item.sourcePath)).size, 40);

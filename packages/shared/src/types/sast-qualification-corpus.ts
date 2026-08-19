@@ -12,6 +12,8 @@ export const SAST_QUALIFICATION_CORPUS_CASE_VERSION =
   'sast-qualification-corpus-case-v1' as const;
 export const SAST_QUALIFICATION_CORPUS_SNAPSHOT_VERSION =
   'sast-qualification-corpus-snapshot-v1' as const;
+export const SAST_QUALIFICATION_PRIOR_RELEASE_MANIFEST_VERSION =
+  'sast-qualification-prior-release-manifest-v1' as const;
 
 export const SAST_QUALIFICATION_CORPUS_CLASSES = [
   'GOLDEN_POSITIVE',
@@ -134,6 +136,43 @@ export interface SastQualificationCorpusNegativeKindCount {
   cases: number;
 }
 
+export interface SastQualificationPriorReleaseCaseBinding {
+  caseId: string;
+  caseDigest: Sha256Digest;
+  caseKey: string;
+  caseRevision: string;
+  ruleSemanticId: string;
+  ruleRevision: string;
+  severity: Extract<FindingSeverity, 'CRITICAL' | 'HIGH'>;
+}
+
+export interface SastQualificationPriorReleaseManifestCore {
+  version: typeof SAST_QUALIFICATION_PRIOR_RELEASE_MANIFEST_VERSION;
+  releaseRevision: string;
+  publishedAt: string;
+  ownerRef: string;
+  provenanceRef: string;
+  bindings: SastQualificationPriorReleaseCaseBinding[];
+  caseCount: number;
+  caseSetDigest: Sha256Digest;
+  source: 'PLATFORM_MANAGED';
+  immutable: true;
+}
+
+export interface SastQualificationPriorReleaseManifest
+  extends SastQualificationPriorReleaseManifestCore {
+  releaseRef: string;
+  manifestDigest: Sha256Digest;
+}
+
+export interface SastQualificationPriorReleaseManifestInput {
+  releaseRevision: string;
+  publishedAt: string;
+  ownerRef: string;
+  provenanceRef: string;
+  bindings: readonly SastQualificationPriorReleaseCaseBinding[];
+}
+
 export interface SastQualificationCorpusSnapshotCore {
   version: typeof SAST_QUALIFICATION_CORPUS_SNAPSHOT_VERSION;
   revision: string;
@@ -142,6 +181,7 @@ export interface SastQualificationCorpusSnapshotCore {
   licenseExpression: string;
   provenanceRef: string;
   priorReleaseRef: string;
+  priorReleaseManifestDigest: Sha256Digest;
   profiles: SastProfileId[];
   languages: SastQualificationLanguage[];
   cases: SastQualificationCorpusCase[];
@@ -177,7 +217,7 @@ export interface SastQualificationCorpusSnapshotInput {
   ownerRef: string;
   licenseExpression: string;
   provenanceRef: string;
-  priorReleaseRef: string;
+  priorReleaseManifest: SastQualificationPriorReleaseManifest;
   cases: readonly SastQualificationCorpusCase[];
 }
 
@@ -185,6 +225,8 @@ const TEXT_ENCODER = new TextEncoder();
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const CASE_ID_PATTERN = /^sast-qualification-case:\/\/[a-f0-9]{64}$/u;
 const CORPUS_ID_PATTERN = /^sast-qualification-corpus:\/\/golden\/[a-f0-9]{64}$/u;
+const PRIOR_RELEASE_REF_PATTERN =
+  /^sast-release:\/\/aegisai\/sast\/(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?\/sha256:[a-f0-9]{64}$/u;
 const SEMANTIC_VERSION_PATTERN =
   /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
 const CASE_KEY_PATTERN = /^[a-z0-9][a-z0-9._-]{0,159}$/u;
@@ -252,6 +294,7 @@ const SNAPSHOT_KEYS = [
   'licenseExpression',
   'provenanceRef',
   'priorReleaseRef',
+  'priorReleaseManifestDigest',
   'profiles',
   'languages',
   'cases',
@@ -273,6 +316,31 @@ const SNAPSHOT_KEYS = [
   'packageInstallRequired',
   'buildRequired',
   'dynamicExecutionRequired'
+] as const;
+
+const PRIOR_RELEASE_BINDING_KEYS = [
+  'caseId',
+  'caseDigest',
+  'caseKey',
+  'caseRevision',
+  'ruleSemanticId',
+  'ruleRevision',
+  'severity'
+] as const;
+
+const PRIOR_RELEASE_MANIFEST_KEYS = [
+  'version',
+  'releaseRef',
+  'manifestDigest',
+  'releaseRevision',
+  'publishedAt',
+  'ownerRef',
+  'provenanceRef',
+  'bindings',
+  'caseCount',
+  'caseSetDigest',
+  'source',
+  'immutable'
 ] as const;
 
 export function buildSastQualificationCorpusCase(
@@ -346,6 +414,88 @@ export function isSastQualificationCorpusCaseValid(
   return rebuilt !== null && stableJson(rebuilt) === stableJson(candidate);
 }
 
+export function buildSastQualificationPriorReleaseManifest(
+  input: Readonly<SastQualificationPriorReleaseManifestInput>,
+  digestCanonical: SastQualificationCorpusCanonicalDigester
+): SastQualificationPriorReleaseManifest | null {
+  if (
+    !hasExactKeys(input, [
+      'releaseRevision',
+      'publishedAt',
+      'ownerRef',
+      'provenanceRef',
+      'bindings'
+    ]) ||
+    !Array.isArray(input.bindings) ||
+    !isSemanticVersion(input.releaseRevision) ||
+    !isIsoInstant(input.publishedAt) ||
+    !isOwnerRef(input.ownerRef) ||
+    !isDigestBoundReference(input.provenanceRef) ||
+    input.bindings.length === 0 ||
+    input.bindings.length > SAST_QUALIFICATION_CORPUS_LIMITS.maximumCases ||
+    input.bindings.some((item) => !isPriorReleaseBindingValid(item))
+  ) {
+    return null;
+  }
+  const bindings = input.bindings
+    .map((item) => ({ ...item }))
+    .sort((left, right) => compareText(left.caseKey, right.caseKey));
+  if (
+    !unique(bindings.map((item) => item.caseId)) ||
+    !unique(bindings.map((item) => item.caseDigest)) ||
+    !unique(bindings.map((item) => item.caseKey))
+  ) {
+    return null;
+  }
+  const caseSetDigest = digestCanonical(stableJson(bindings));
+  if (!isDigest(caseSetDigest)) return null;
+  const core: SastQualificationPriorReleaseManifestCore = {
+    version: SAST_QUALIFICATION_PRIOR_RELEASE_MANIFEST_VERSION,
+    releaseRevision: input.releaseRevision,
+    publishedAt: input.publishedAt,
+    ownerRef: input.ownerRef,
+    provenanceRef: input.provenanceRef,
+    bindings,
+    caseCount: bindings.length,
+    caseSetDigest,
+    source: 'PLATFORM_MANAGED',
+    immutable: true
+  };
+  const manifestDigest = digestCanonical(stableJson(core));
+  if (!isDigest(manifestDigest)) return null;
+  return {
+    ...core,
+    releaseRef: `sast-release://aegisai/sast/${input.releaseRevision}/${manifestDigest}`,
+    manifestDigest
+  };
+}
+
+export function isSastQualificationPriorReleaseManifestValid(
+  value: unknown,
+  digestCanonical: SastQualificationCorpusCanonicalDigester
+): value is SastQualificationPriorReleaseManifest {
+  if (!hasExactKeys(value, PRIOR_RELEASE_MANIFEST_KEYS)) return false;
+  const candidate = value as SastQualificationPriorReleaseManifest;
+  if (
+    !PRIOR_RELEASE_REF_PATTERN.test(candidate.releaseRef) ||
+    !isDigest(candidate.manifestDigest) ||
+    !Array.isArray(candidate.bindings)
+  ) {
+    return false;
+  }
+  const rebuilt = buildSastQualificationPriorReleaseManifest(
+    {
+      releaseRevision: candidate.releaseRevision,
+      publishedAt: candidate.publishedAt,
+      ownerRef: candidate.ownerRef,
+      provenanceRef: candidate.provenanceRef,
+      bindings: candidate.bindings
+    },
+    digestCanonical
+  );
+  return rebuilt !== null && stableJson(rebuilt) === stableJson(candidate);
+}
+
 export function buildSastQualificationCorpusSnapshot(
   input: Readonly<SastQualificationCorpusSnapshotInput>,
   digestCanonical: SastQualificationCorpusCanonicalDigester
@@ -357,7 +507,7 @@ export function buildSastQualificationCorpusSnapshot(
       'ownerRef',
       'licenseExpression',
       'provenanceRef',
-      'priorReleaseRef',
+      'priorReleaseManifest',
       'cases'
     ]) ||
     !Array.isArray(input.cases) ||
@@ -366,7 +516,10 @@ export function buildSastQualificationCorpusSnapshot(
     !isOwnerRef(input.ownerRef) ||
     !isLicenseExpression(input.licenseExpression) ||
     !isDigestBoundReference(input.provenanceRef) ||
-    !isDigestBoundReference(input.priorReleaseRef) ||
+    !isSastQualificationPriorReleaseManifestValid(
+      input.priorReleaseManifest,
+      digestCanonical
+    ) ||
     input.cases.length === 0 ||
     input.cases.length > SAST_QUALIFICATION_CORPUS_LIMITS.maximumCases ||
     input.cases.some(
@@ -392,24 +545,26 @@ export function buildSastQualificationCorpusSnapshot(
     ) ||
     cases.some(
       (item) =>
-        item.caseRevision !== input.revision ||
         item.ownerRef !== input.ownerRef ||
-        item.licenseExpression !== input.licenseExpression ||
-        item.provenanceRef !== input.provenanceRef
+        item.licenseExpression !== input.licenseExpression
     ) ||
     !pairsAreComplete(cases)
   ) {
     return null;
   }
 
-  const priorMustDetectCases = cases.filter(
-    (item) =>
-      item.corpusClass === 'GOLDEN_POSITIVE' &&
-      (item.severity === 'CRITICAL' || item.severity === 'HIGH')
+  const casesById = new Map(cases.map((item) => [item.caseId, item]));
+  const priorMustDetectCases = input.priorReleaseManifest.bindings.map((binding) => {
+    const item = casesById.get(binding.caseId);
+    return item && priorReleaseBindingMatchesCase(binding, item) ? item : null;
+  });
+  if (priorMustDetectCases.some((item) => item === null)) return null;
+  const authenticatedPriorCases = priorMustDetectCases as SastQualificationCorpusCase[];
+  const priorMustDetectCaseIds = input.priorReleaseManifest.bindings.map(
+    (item) => item.caseId
   );
-  const priorMustDetectCaseIds = priorMustDetectCases.map((item) => item.caseId);
-  const profileCounts = buildProfileCounts(cases, priorMustDetectCases);
-  const ruleCounts = buildRuleCounts(cases, priorMustDetectCases);
+  const profileCounts = buildProfileCounts(cases, authenticatedPriorCases);
+  const ruleCounts = buildRuleCounts(cases, authenticatedPriorCases);
   const negativeKindCounts = SAST_QUALIFICATION_NEGATIVE_KINDS.map(
     (negativeKind) => ({
       negativeKind,
@@ -432,10 +587,7 @@ export function buildSastQualificationCorpusSnapshot(
           : SAST_QUALIFICATION_CORPUS_LIMITS.minimumCasesPerRule;
       return (
         count.positiveCases < minimum ||
-        count.negativeCases < minimum ||
-        (count.severity === 'CRITICAL' || count.severity === 'HIGH'
-          ? count.priorMustDetectCases !== count.positiveCases
-          : count.priorMustDetectCases !== 0)
+        count.negativeCases < minimum
       );
     }) ||
     negativeKindCounts.some((count) => count.cases === 0)
@@ -444,10 +596,6 @@ export function buildSastQualificationCorpusSnapshot(
   }
 
   const caseBindings = cases.map((item) => ({
-    caseId: item.caseId,
-    caseDigest: item.caseDigest
-  }));
-  const priorBindings = priorMustDetectCases.map((item) => ({
     caseId: item.caseId,
     caseDigest: item.caseDigest
   }));
@@ -462,18 +610,17 @@ export function buildSastQualificationCorpusSnapshot(
     ownerRef: input.ownerRef,
     licenseExpression: input.licenseExpression,
     provenanceRef: input.provenanceRef,
-    priorReleaseRef: input.priorReleaseRef,
+    priorReleaseRef: input.priorReleaseManifest.releaseRef,
+    priorReleaseManifestDigest: input.priorReleaseManifest.manifestDigest,
     profiles: [...SAST_PROFILE_IDS],
     languages: [...SAST_QUALIFICATION_LANGUAGES],
     cases,
     caseCount: cases.length,
     positiveCaseCount,
     negativeCaseCount,
-    priorMustDetectCaseCount: priorMustDetectCases.length,
+    priorMustDetectCaseCount: authenticatedPriorCases.length,
     caseSetDigest: digestCanonical(stableJson(caseBindings)),
-    priorMustDetectSetDigest: digestCanonical(
-      stableJson({ releaseRef: input.priorReleaseRef, cases: priorBindings })
-    ),
+    priorMustDetectSetDigest: input.priorReleaseManifest.caseSetDigest,
     priorMustDetectCaseIds,
     profileCounts,
     ruleCounts,
@@ -504,9 +651,18 @@ export function buildSastQualificationCorpusSnapshot(
 
 export function isSastQualificationCorpusSnapshotValid(
   value: unknown,
-  digestCanonical: SastQualificationCorpusCanonicalDigester
+  digestCanonical: SastQualificationCorpusCanonicalDigester,
+  priorReleaseManifest: unknown
 ): value is SastQualificationCorpusSnapshot {
-  if (!hasExactKeys(value, SNAPSHOT_KEYS)) return false;
+  if (
+    !hasExactKeys(value, SNAPSHOT_KEYS) ||
+    !isSastQualificationPriorReleaseManifestValid(
+      priorReleaseManifest,
+      digestCanonical
+    )
+  ) {
+    return false;
+  }
   const candidate = value as SastQualificationCorpusSnapshot;
   if (
     !CORPUS_ID_PATTERN.test(candidate.corpusId) ||
@@ -528,12 +684,49 @@ export function isSastQualificationCorpusSnapshotValid(
       ownerRef: candidate.ownerRef,
       licenseExpression: candidate.licenseExpression,
       provenanceRef: candidate.provenanceRef,
-      priorReleaseRef: candidate.priorReleaseRef,
+      priorReleaseManifest,
       cases: candidate.cases
     },
     digestCanonical
   );
   return rebuilt !== null && stableJson(rebuilt) === stableJson(candidate);
+}
+
+function isPriorReleaseBindingValid(
+  value: unknown
+): value is SastQualificationPriorReleaseCaseBinding {
+  if (!hasExactKeys(value, PRIOR_RELEASE_BINDING_KEYS)) return false;
+  const binding = value as SastQualificationPriorReleaseCaseBinding;
+  return (
+    CASE_ID_PATTERN.test(binding.caseId) &&
+    isDigest(binding.caseDigest) &&
+    binding.caseId ===
+      `sast-qualification-case://${binding.caseDigest.slice('sha256:'.length)}` &&
+    CASE_KEY_PATTERN.test(binding.caseKey) &&
+    isSemanticVersion(binding.caseRevision) &&
+    RULE_SEMANTIC_ID_PATTERN.test(binding.ruleSemanticId) &&
+    isSemanticVersion(binding.ruleRevision) &&
+    (binding.severity === 'CRITICAL' || binding.severity === 'HIGH')
+  );
+}
+
+function priorReleaseBindingMatchesCase(
+  binding: SastQualificationPriorReleaseCaseBinding,
+  item: SastQualificationCorpusCase
+): boolean {
+  return (
+    item.caseId === binding.caseId &&
+    item.caseDigest === binding.caseDigest &&
+    item.caseKey === binding.caseKey &&
+    item.caseRevision === binding.caseRevision &&
+    item.ruleSemanticId === binding.ruleSemanticId &&
+    item.ruleRevision === binding.ruleRevision &&
+    item.severity === binding.severity &&
+    item.corpusClass === 'GOLDEN_POSITIVE' &&
+    item.negativeKind === null &&
+    item.expectedOutcome === 'DETECT' &&
+    item.expectedFindingCount === 1
+  );
 }
 
 function isCaseCoreValid(value: SastQualificationCorpusCaseCore): boolean {

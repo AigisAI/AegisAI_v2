@@ -309,19 +309,24 @@ command-line flags, rule code, templates, post-processors, or executable configu
 ### T051 Golden Qualification Corpus Boundary
 
 - T051 freezes only the versioned golden positive/negative and prior must-detect inputs. Its
-  `sast-qualification-corpus-case-v1` and `sast-qualification-corpus-snapshot-v1` contracts are
-  exact-key, canonical, digest-derived, and platform-owned; corpus validity cannot transition a
+  `sast-qualification-corpus-case-v1`, `sast-qualification-prior-release-manifest-v1`, and
+  `sast-qualification-corpus-snapshot-v1` contracts are exact-key, canonical, digest-derived, and
+  platform-owned; corpus validity cannot transition a
   rule bundle or create finding, policy, AI, publication, SCM, or deployment authority.
 - The v1 snapshot contains 400 one-to-one positive/negative pairs across 20 Critical/High semantic
   rule families. Every rule has 20 of each polarity, every positive belongs to the prior
-  must-detect set, every supported profile meets the 200/200 floor, and patched, sanitizer,
-  safe-API, comment/string, and generated/vendor negatives each have a non-zero denominator.
+  must-detect set in the initial imported release manifest, every supported profile meets the
+  200/200 floor, and patched, sanitizer, safe-API, comment/string, and generated/vendor negatives
+  each have a non-zero, semantically applicable denominator. Later positives do not become prior
+  cases until a separately reviewed release manifest authenticates them.
 - Every case binds owner, license, digest-bound provenance, corpus/rule revision, exact scanner and
   profile scope, expected result, source bytes/digest/range/anchor, and a unique root-confined
   future materialization path. Customer content/configuration, package installation, builds,
   dynamic execution, network use, and mutability are structurally forbidden.
-- The deterministic generator is reviewed code. The loader regenerates expected assets in memory
-  and rejects any snapshot/source-set/byte/digest/range drift, unsafe or duplicate path, link,
+- The deterministic generator is reviewed code. The prior manifest binds each historical case
+  ID/digest/key/revision/rule/severity, its digest is pinned in code, and bootstrap refuses
+  overwrite. The loader validates that authority before regenerating expected assets in memory
+  and rejects any manifest/snapshot/source-set/byte/digest/range drift, unsafe or duplicate path, link,
   non-canonical text, oversize, extra field/file, or authority widening. CI runs the validator and
   hostile contract/filesystem tests on every change.
 - A T051 pass means only that the qualification denominator is authentic and sufficient. T052 must

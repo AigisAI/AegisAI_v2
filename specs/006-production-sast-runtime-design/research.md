@@ -710,10 +710,15 @@ inside rollback, or rewriting historical plans, findings, coverage, evidence, or
 
 **Decision**: T051 establishes a code-reviewed, deterministic, versioned golden input authority
 before any production-equivalent scanner run. The checked-in v1 snapshot contains 800 exact cases:
-400 positives, 400 one-to-one negatives, and all 400 Critical/High positives in the digest-bound
-prior must-detect set. Twenty semantic rule families each contribute 20 positive and 20 negative
+400 positives and 400 one-to-one negatives. A separate immutable prior-release manifest
+authenticates the exact 400 historical Critical/High positives by case ID/digest/key, case/rule
+revision, semantic rule, and severity. Its reviewed digest is pinned in generator code and its
+initializer refuses overwrite, so the snapshot cannot silently derive a smaller historical set
+from current positives. Twenty semantic rule families each contribute 20 positive and 20 negative
 cases. `JAVA_FAST_V1`, `JAVA_DEEP_V1`, and `COMMON_DEEP_V1` each meet the 200/200 profile floor,
-and the five negative classes each contain 80 cases.
+with negative behavior counts of 95 patched, 35 sanitizer, 95 safe-API, 80 comment/string, and 95
+generated/vendor. Each family receives only applicable classes, and generated/vendor fixtures
+keep the actual unsafe construct under an excluded path.
 
 Every case binds the corpus owner, Apache-2.0 license, digest-bound provenance, semantic revision,
 scanner/capability/profile tuple, expected result, exact source bundle bytes and digest, bounded
@@ -721,8 +726,9 @@ line range and anchor, and one unique future workspace path. The 40 UTF-8/LF/NFC
 platform-authored static inputs only. Their contract fixes customer-content acceptance, execution,
 package installation, build, dynamic execution, and network use to false.
 
-The loader first regenerates the expected snapshot in memory, then requires byte-exact snapshot
-and source equality, exact source-set membership, real-path containment, no symbolic links or
+The loader first verifies the canonical manifest and pinned digest, then regenerates the expected
+snapshot in memory and requires byte-exact snapshot and source equality, exact source-set
+membership, real-path containment, no symbolic links or
 junctions, bounded bytes/lines, and matching range anchors. This makes reviewable source the
 authority instead of trusting a mutable JSON count or directory. CI runs both shared hostile-shape
 tests and filesystem tampering tests plus the explicit corpus validator.
@@ -734,6 +740,7 @@ claim auditable and prevents a generated sample from being mistaken for producti
 
 **Rejected**: Downloading benchmarks at CI/runtime, mutable branches or tags, customer repository
 fixtures, hand-edited snapshots, unpaired negatives, a denominator below the per-profile/per-rule
-floor, caller-selected prior must-detect cases, shared scan paths, following links, permissive text
+floor, deriving prior must-detect cases from current positives, changing or overwriting the
+reviewed prior manifest, declaring inapplicable negative kinds, shared scan paths, following links, permissive text
 decoding, installing fixture dependencies, building or executing fixtures, or treating successful
 input validation as scanner accuracy, isolation, performance, or deployment proof.

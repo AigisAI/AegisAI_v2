@@ -9,8 +9,10 @@ import {
   SAST_QUALIFICATION_NEGATIVE_KINDS,
   buildSastQualificationCorpusCase,
   buildSastQualificationCorpusSnapshot,
+  buildSastQualificationPriorReleaseManifest,
   isSastQualificationCorpusCaseValid,
-  isSastQualificationCorpusSnapshotValid
+  isSastQualificationCorpusSnapshotValid,
+  isSastQualificationPriorReleaseManifestValid
 } from '../dist/index.js';
 
 const snapshot = JSON.parse(
@@ -22,9 +24,29 @@ const snapshot = JSON.parse(
     'utf8'
   )
 );
+const priorReleaseManifest = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../../qualification/corpora/v1/prior-release-must-detect.manifest.json',
+      import.meta.url
+    ),
+    'utf8'
+  )
+);
 
 test('T051 accepts the immutable 800-case golden corpus and its release floor', () => {
-  assert.equal(isSastQualificationCorpusSnapshotValid(snapshot, digest), true);
+  assert.equal(
+    isSastQualificationPriorReleaseManifestValid(priorReleaseManifest, digest),
+    true
+  );
+  assert.equal(
+    isSastQualificationCorpusSnapshotValid(
+      snapshot,
+      digest,
+      priorReleaseManifest
+    ),
+    true
+  );
   assert.equal(snapshot.caseCount, 800);
   assert.equal(snapshot.positiveCaseCount, 400);
   assert.equal(snapshot.negativeCaseCount, 400);
@@ -52,7 +74,20 @@ test('T051 accepts the immutable 800-case golden corpus and its release floor', 
     snapshot.negativeKindCounts.map((count) => count.negativeKind),
     [...SAST_QUALIFICATION_NEGATIVE_KINDS]
   );
-  assert.ok(snapshot.negativeKindCounts.every((count) => count.cases === 80));
+  assert.ok(snapshot.negativeKindCounts.every((count) => count.cases > 0));
+  assert.equal(
+    snapshot.negativeKindCounts.reduce((total, count) => total + count.cases, 0),
+    snapshot.negativeCaseCount
+  );
+  assert.equal(snapshot.priorReleaseRef, priorReleaseManifest.releaseRef);
+  assert.equal(
+    snapshot.priorReleaseManifestDigest,
+    priorReleaseManifest.manifestDigest
+  );
+  assert.equal(
+    snapshot.priorMustDetectSetDigest,
+    priorReleaseManifest.caseSetDigest
+  );
 
   const scanPaths = new Set();
   for (const corpusCase of snapshot.cases) {
@@ -84,6 +119,116 @@ test('T051 canonicalizes case order to the same corpus identity', () => {
     rebuilt.priorMustDetectSetDigest,
     snapshot.priorMustDetectSetDigest
   );
+});
+
+test('T051 authenticates the exact prior-release set instead of deriving it from current positives', () => {
+  const cases = structuredClone(snapshot.cases);
+  const replacedPairKey = cases.find(
+    (item) => item.corpusClass === 'GOLDEN_POSITIVE'
+  ).pairKey;
+  for (const [index, corpusCase] of cases.entries()) {
+    if (corpusCase.pairKey !== replacedPairKey) continue;
+    cases[index] = rebuildCaseWithSuffix(corpusCase, 'replacement');
+  }
+
+  assert.equal(
+    buildSastQualificationCorpusSnapshot(snapshotInput(cases), digest),
+    null,
+    'replacing a released case must fail even when all current floors and pairs remain complete'
+  );
+
+  const derivedFromCurrent = buildSastQualificationPriorReleaseManifest(
+    manifestInput(
+      cases
+        .filter((item) => item.corpusClass === 'GOLDEN_POSITIVE')
+        .map(priorBinding)
+    ),
+    digest
+  );
+  assert.ok(derivedFromCurrent);
+  assert.ok(
+    buildSastQualificationCorpusSnapshot(
+      { ...snapshotInput(cases), priorReleaseManifest: derivedFromCurrent },
+      digest
+    ),
+    'the replacement corpus itself is complete; only the immutable release authority rejects it'
+  );
+});
+
+test('T051 keeps new positives outside the prior-release denominator', () => {
+  const positive = snapshot.cases.find(
+    (item) => item.corpusClass === 'GOLDEN_POSITIVE'
+  );
+  const negative = snapshot.cases.find(
+    (item) =>
+      item.pairKey === positive.pairKey && item.corpusClass === 'GOLDEN_NEGATIVE'
+  );
+  assert.ok(positive);
+  assert.ok(negative);
+  const futureCases = [
+    ...snapshot.cases,
+    rebuildCaseWithSuffix(positive, 'future', 9_999),
+    rebuildCaseWithSuffix(negative, 'future', 9_999)
+  ];
+  const futureSnapshot = buildSastQualificationCorpusSnapshot(
+    {
+      ...snapshotInput(futureCases),
+      revision: '1.1.0',
+      publishedAt: '2026-08-21T00:00:00.000Z'
+    },
+    digest
+  );
+
+  assert.ok(futureSnapshot);
+  assert.equal(futureSnapshot.positiveCaseCount, 401);
+  assert.equal(futureSnapshot.priorMustDetectCaseCount, 400);
+  assert.equal(
+    futureSnapshot.priorReleaseManifestDigest,
+    priorReleaseManifest.manifestDigest
+  );
+});
+
+test('T051 rejects changed prior case bytes and forged prior manifests', () => {
+  const cases = structuredClone(snapshot.cases);
+  const priorIndex = cases.findIndex(
+    (item) => item.caseId === priorReleaseManifest.bindings[0].caseId
+  );
+  assert.notEqual(priorIndex, -1);
+  const changedInput = caseInput(cases[priorIndex]);
+  changedInput.sourceDigest = digest('changed-prior-source');
+  const changed = buildSastQualificationCorpusCase(changedInput, digest);
+  assert.ok(changed);
+  cases[priorIndex] = changed;
+  assert.equal(
+    buildSastQualificationCorpusSnapshot(snapshotInput(cases), digest),
+    null
+  );
+
+  for (const hostile of [
+    null,
+    [],
+    { ...priorReleaseManifest, unknown: true },
+    { ...priorReleaseManifest, bindings: null },
+    { ...priorReleaseManifest, bindings: [null] },
+    {
+      ...priorReleaseManifest,
+      bindings: [
+        { ...priorReleaseManifest.bindings[0], caseDigest: digest('forged') },
+        ...priorReleaseManifest.bindings.slice(1)
+      ]
+    },
+    { ...priorReleaseManifest, releaseRef: snapshot.provenanceRef },
+    { ...priorReleaseManifest, manifestDigest: digest('forged') },
+    { ...priorReleaseManifest, immutable: false }
+  ]) {
+    assert.doesNotThrow(() =>
+      isSastQualificationPriorReleaseManifestValid(hostile, digest)
+    );
+    assert.equal(
+      isSastQualificationPriorReleaseManifestValid(hostile, digest),
+      false
+    );
+  }
 });
 
 test('T051 case builders reject hostile metadata and materialization paths', () => {
@@ -229,9 +374,20 @@ test('T051 validators reject tampering and malformed hostile shapes without thro
     { ...snapshot, dynamicExecutionRequired: true }
   ]) {
     assert.doesNotThrow(() =>
-      isSastQualificationCorpusSnapshotValid(hostile, digest)
+      isSastQualificationCorpusSnapshotValid(
+        hostile,
+        digest,
+        priorReleaseManifest
+      )
     );
-    assert.equal(isSastQualificationCorpusSnapshotValid(hostile, digest), false);
+    assert.equal(
+      isSastQualificationCorpusSnapshotValid(
+        hostile,
+        digest,
+        priorReleaseManifest
+      ),
+      false
+    );
   }
 });
 
@@ -242,9 +398,47 @@ function snapshotInput(cases) {
     ownerRef: snapshot.ownerRef,
     licenseExpression: snapshot.licenseExpression,
     provenanceRef: snapshot.provenanceRef,
-    priorReleaseRef: snapshot.priorReleaseRef,
+    priorReleaseManifest,
     cases
   };
+}
+
+function manifestInput(bindings) {
+  return {
+    releaseRevision: priorReleaseManifest.releaseRevision,
+    publishedAt: priorReleaseManifest.publishedAt,
+    ownerRef: priorReleaseManifest.ownerRef,
+    provenanceRef: priorReleaseManifest.provenanceRef,
+    bindings
+  };
+}
+
+function priorBinding(value) {
+  return {
+    caseId: value.caseId,
+    caseDigest: value.caseDigest,
+    caseKey: value.caseKey,
+    caseRevision: value.caseRevision,
+    ruleSemanticId: value.ruleSemanticId,
+    ruleRevision: value.ruleRevision,
+    severity: value.severity
+  };
+}
+
+function rebuildCaseWithSuffix(value, suffix, line = value.startLine) {
+  const input = caseInput(value);
+  input.caseKey = `${input.caseKey}.${suffix}`;
+  input.pairKey = `${input.pairKey}.${suffix}`;
+  input.scanPath = input.scanPath.replace(
+    /^(workspace\/(?:java|common)\/)/u,
+    `$1${suffix}/`
+  );
+  input.expectedAnchor = `${input.expectedAnchor}.${suffix}`;
+  input.startLine = line;
+  input.endLine = line;
+  const rebuilt = buildSastQualificationCorpusCase(input, digest);
+  assert.ok(rebuilt);
+  return rebuilt;
 }
 
 function caseInput(value) {

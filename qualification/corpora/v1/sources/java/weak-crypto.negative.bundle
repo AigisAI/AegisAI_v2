@@ -1,5 +1,6 @@
 <<<T051:t051.weak-crypto.negative.001>>>
 // t051.weak-crypto.negative.001
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class WeakCryptoNegative001 {
   void evaluate(String queryParameter001) throws Exception {
@@ -11,76 +12,85 @@ final class WeakCryptoNegative001 {
 
 <<<T051:t051.weak-crypto.negative.002>>>
 // t051.weak-crypto.negative.002
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class WeakCryptoNegative002 {
   void evaluate(String headerValue002) throws Exception {
-    java.security.MessageDigest digest002 = java.security.MessageDigest.getInstance("SHA-256");
-    digest002.digest(headerValue002.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    javax.crypto.Mac mac002 = javax.crypto.Mac.getInstance("HmacSHA256");
+    byte[] value002 = headerValue002.getBytes(java.nio.charset.StandardCharsets.UTF_8);
   }
 }
 <<<END:t051.weak-crypto.negative.002>>>
 
 <<<T051:t051.weak-crypto.negative.003>>>
 // t051.weak-crypto.negative.003
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class WeakCryptoNegative003 {
   void evaluate(String cookieValue003) throws Exception {
-    java.security.MessageDigest digest003 = java.security.MessageDigest.getInstance("SHA-256");
-    digest003.digest(cookieValue003.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    // documentation only: java.security.MessageDigest digest003 = java.security.MessageDigest.getInstance("MD5");
+    // documentation only: digest003.digest(cookieValue003.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    System.out.print(cookieValue003.length());
   }
 }
 <<<END:t051.weak-crypto.negative.003>>>
 
 <<<T051:t051.weak-crypto.negative.004>>>
 // t051.weak-crypto.negative.004
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class WeakCryptoNegative004 {
   void evaluate(String pathVariable004) throws Exception {
-    String documentation004 = "unsafe example for weak-crypto: " + pathVariable004.length();
-    System.out.print(documentation004.length());
+    java.security.MessageDigest digest004 = java.security.MessageDigest.getInstance("MD5");
+    digest004.digest(pathVariable004.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   }
 }
 <<<END:t051.weak-crypto.negative.004>>>
 
 <<<T051:t051.weak-crypto.negative.005>>>
 // t051.weak-crypto.negative.005
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class WeakCryptoNegative005 {
   void evaluate(String formField005) throws Exception {
-    String documentation005 = "unsafe example for weak-crypto: " + formField005.length();
-    System.out.print(documentation005.length());
+    java.security.MessageDigest digest005 = java.security.MessageDigest.getInstance("SHA-256");
+    digest005.digest(formField005.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   }
 }
 <<<END:t051.weak-crypto.negative.005>>>
 
 <<<T051:t051.weak-crypto.negative.006>>>
 // t051.weak-crypto.negative.006
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class WeakCryptoNegative006 {
   void evaluate(String jsonProperty006) throws Exception {
-    java.security.MessageDigest digest006 = java.security.MessageDigest.getInstance("SHA-256");
-    digest006.digest(jsonProperty006.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    javax.crypto.Mac mac006 = javax.crypto.Mac.getInstance("HmacSHA256");
+    byte[] value006 = jsonProperty006.getBytes(java.nio.charset.StandardCharsets.UTF_8);
   }
 }
 <<<END:t051.weak-crypto.negative.006>>>
 
 <<<T051:t051.weak-crypto.negative.007>>>
 // t051.weak-crypto.negative.007
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class WeakCryptoNegative007 {
   void evaluate(String xmlValue007) throws Exception {
-    java.security.MessageDigest digest007 = java.security.MessageDigest.getInstance("SHA-256");
-    digest007.digest(xmlValue007.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    // documentation only: java.security.MessageDigest digest007 = java.security.MessageDigest.getInstance("MD5");
+    // documentation only: digest007.digest(xmlValue007.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    System.out.print(xmlValue007.length());
   }
 }
 <<<END:t051.weak-crypto.negative.007>>>
 
 <<<T051:t051.weak-crypto.negative.008>>>
 // t051.weak-crypto.negative.008
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class WeakCryptoNegative008 {
   void evaluate(String messageBody008) throws Exception {
-    java.security.MessageDigest digest008 = java.security.MessageDigest.getInstance("SHA-256");
+    java.security.MessageDigest digest008 = java.security.MessageDigest.getInstance("MD5");
     digest008.digest(messageBody008.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   }
 }
@@ -88,43 +98,48 @@ final class WeakCryptoNegative008 {
 
 <<<T051:t051.weak-crypto.negative.009>>>
 // t051.weak-crypto.negative.009
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class WeakCryptoNegative009 {
   void evaluate(String queueAttribute009) throws Exception {
-    String documentation009 = "unsafe example for weak-crypto: " + queueAttribute009.length();
-    System.out.print(documentation009.length());
+    java.security.MessageDigest digest009 = java.security.MessageDigest.getInstance("SHA-256");
+    digest009.digest(queueAttribute009.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   }
 }
 <<<END:t051.weak-crypto.negative.009>>>
 
 <<<T051:t051.weak-crypto.negative.010>>>
 // t051.weak-crypto.negative.010
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class WeakCryptoNegative010 {
   void evaluate(String rpcArgument010) throws Exception {
-    String documentation010 = "unsafe example for weak-crypto: " + rpcArgument010.length();
-    System.out.print(documentation010.length());
+    javax.crypto.Mac mac010 = javax.crypto.Mac.getInstance("HmacSHA256");
+    byte[] value010 = rpcArgument010.getBytes(java.nio.charset.StandardCharsets.UTF_8);
   }
 }
 <<<END:t051.weak-crypto.negative.010>>>
 
 <<<T051:t051.weak-crypto.negative.011>>>
 // t051.weak-crypto.negative.011
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class WeakCryptoNegative011 {
   void evaluate(String webhookField011) throws Exception {
-    java.security.MessageDigest digest011 = java.security.MessageDigest.getInstance("SHA-256");
-    digest011.digest(webhookField011.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    // documentation only: java.security.MessageDigest digest011 = java.security.MessageDigest.getInstance("MD5");
+    // documentation only: digest011.digest(webhookField011.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    System.out.print(webhookField011.length());
   }
 }
 <<<END:t051.weak-crypto.negative.011>>>
 
 <<<T051:t051.weak-crypto.negative.012>>>
 // t051.weak-crypto.negative.012
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class WeakCryptoNegative012 {
   void evaluate(String csvColumn012) throws Exception {
-    java.security.MessageDigest digest012 = java.security.MessageDigest.getInstance("SHA-256");
+    java.security.MessageDigest digest012 = java.security.MessageDigest.getInstance("MD5");
     digest012.digest(csvColumn012.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   }
 }
@@ -132,6 +147,7 @@ final class WeakCryptoNegative012 {
 
 <<<T051:t051.weak-crypto.negative.013>>>
 // t051.weak-crypto.negative.013
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class WeakCryptoNegative013 {
   void evaluate(String yamlProperty013) throws Exception {
@@ -143,32 +159,36 @@ final class WeakCryptoNegative013 {
 
 <<<T051:t051.weak-crypto.negative.014>>>
 // t051.weak-crypto.negative.014
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class WeakCryptoNegative014 {
   void evaluate(String configValue014) throws Exception {
-    String documentation014 = "unsafe example for weak-crypto: " + configValue014.length();
-    System.out.print(documentation014.length());
+    javax.crypto.Mac mac014 = javax.crypto.Mac.getInstance("HmacSHA256");
+    byte[] value014 = configValue014.getBytes(java.nio.charset.StandardCharsets.UTF_8);
   }
 }
 <<<END:t051.weak-crypto.negative.014>>>
 
 <<<T051:t051.weak-crypto.negative.015>>>
 // t051.weak-crypto.negative.015
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class WeakCryptoNegative015 {
   void evaluate(String environmentValue015) throws Exception {
-    String documentation015 = "unsafe example for weak-crypto: " + environmentValue015.length();
-    System.out.print(documentation015.length());
+    // documentation only: java.security.MessageDigest digest015 = java.security.MessageDigest.getInstance("MD5");
+    // documentation only: digest015.digest(environmentValue015.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    System.out.print(environmentValue015.length());
   }
 }
 <<<END:t051.weak-crypto.negative.015>>>
 
 <<<T051:t051.weak-crypto.negative.016>>>
 // t051.weak-crypto.negative.016
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class WeakCryptoNegative016 {
   void evaluate(String cliArgument016) throws Exception {
-    java.security.MessageDigest digest016 = java.security.MessageDigest.getInstance("SHA-256");
+    java.security.MessageDigest digest016 = java.security.MessageDigest.getInstance("MD5");
     digest016.digest(cliArgument016.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   }
 }
@@ -176,6 +196,7 @@ final class WeakCryptoNegative016 {
 
 <<<T051:t051.weak-crypto.negative.017>>>
 // t051.weak-crypto.negative.017
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class WeakCryptoNegative017 {
   void evaluate(String metadataValue017) throws Exception {
@@ -187,33 +208,37 @@ final class WeakCryptoNegative017 {
 
 <<<T051:t051.weak-crypto.negative.018>>>
 // t051.weak-crypto.negative.018
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class WeakCryptoNegative018 {
   void evaluate(String recordField018) throws Exception {
-    java.security.MessageDigest digest018 = java.security.MessageDigest.getInstance("SHA-256");
-    digest018.digest(recordField018.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    javax.crypto.Mac mac018 = javax.crypto.Mac.getInstance("HmacSHA256");
+    byte[] value018 = recordField018.getBytes(java.nio.charset.StandardCharsets.UTF_8);
   }
 }
 <<<END:t051.weak-crypto.negative.018>>>
 
 <<<T051:t051.weak-crypto.negative.019>>>
 // t051.weak-crypto.negative.019
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class WeakCryptoNegative019 {
   void evaluate(String importedValue019) throws Exception {
-    String documentation019 = "unsafe example for weak-crypto: " + importedValue019.length();
-    System.out.print(documentation019.length());
+    // documentation only: java.security.MessageDigest digest019 = java.security.MessageDigest.getInstance("MD5");
+    // documentation only: digest019.digest(importedValue019.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    System.out.print(importedValue019.length());
   }
 }
 <<<END:t051.weak-crypto.negative.019>>>
 
 <<<T051:t051.weak-crypto.negative.020>>>
 // t051.weak-crypto.negative.020
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class WeakCryptoNegative020 {
   void evaluate(String requestAttribute020) throws Exception {
-    String documentation020 = "unsafe example for weak-crypto: " + requestAttribute020.length();
-    System.out.print(documentation020.length());
+    java.security.MessageDigest digest020 = java.security.MessageDigest.getInstance("MD5");
+    digest020.digest(requestAttribute020.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   }
 }
 <<<END:t051.weak-crypto.negative.020>>>

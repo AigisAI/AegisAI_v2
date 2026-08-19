@@ -1,5 +1,6 @@
 <<<T051:t051.xxe.negative.001>>>
 // t051.xxe.negative.001
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class XxeNegative001 {
   void evaluate(String queryParameter001) throws Exception {
@@ -12,134 +13,144 @@ final class XxeNegative001 {
 
 <<<T051:t051.xxe.negative.002>>>
 // t051.xxe.negative.002
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class XxeNegative002 {
   void evaluate(String headerValue002) throws Exception {
-    javax.xml.parsers.DocumentBuilderFactory factory002 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    javax.xml.parsers.SAXParserFactory factory002 = javax.xml.parsers.SAXParserFactory.newInstance();
     factory002.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory002.setExpandEntityReferences(false);
   }
 }
 <<<END:t051.xxe.negative.002>>>
 
 <<<T051:t051.xxe.negative.003>>>
 // t051.xxe.negative.003
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class XxeNegative003 {
   void evaluate(String cookieValue003) throws Exception {
-    javax.xml.parsers.DocumentBuilderFactory factory003 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-    factory003.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory003.setExpandEntityReferences(false);
+    // documentation only: javax.xml.parsers.DocumentBuilderFactory factory003 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    // documentation only: factory003.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(cookieValue003.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    System.out.print(cookieValue003.length());
   }
 }
 <<<END:t051.xxe.negative.003>>>
 
 <<<T051:t051.xxe.negative.004>>>
 // t051.xxe.negative.004
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class XxeNegative004 {
   void evaluate(String pathVariable004) throws Exception {
-    String documentation004 = "unsafe example for xxe: " + pathVariable004.length();
-    System.out.print(documentation004.length());
+    javax.xml.parsers.DocumentBuilderFactory factory004 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory004.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(pathVariable004.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.004>>>
 
 <<<T051:t051.xxe.negative.005>>>
 // t051.xxe.negative.005
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class XxeNegative005 {
   void evaluate(String formField005) throws Exception {
-    String documentation005 = "unsafe example for xxe: " + formField005.length();
-    System.out.print(documentation005.length());
+    javax.xml.parsers.DocumentBuilderFactory factory005 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory005.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory005.setExpandEntityReferences(false);
   }
 }
 <<<END:t051.xxe.negative.005>>>
 
 <<<T051:t051.xxe.negative.006>>>
 // t051.xxe.negative.006
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class XxeNegative006 {
   void evaluate(String jsonProperty006) throws Exception {
-    javax.xml.parsers.DocumentBuilderFactory factory006 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    javax.xml.parsers.SAXParserFactory factory006 = javax.xml.parsers.SAXParserFactory.newInstance();
     factory006.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory006.setExpandEntityReferences(false);
   }
 }
 <<<END:t051.xxe.negative.006>>>
 
 <<<T051:t051.xxe.negative.007>>>
 // t051.xxe.negative.007
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class XxeNegative007 {
   void evaluate(String xmlValue007) throws Exception {
-    javax.xml.parsers.DocumentBuilderFactory factory007 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-    factory007.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory007.setExpandEntityReferences(false);
+    // documentation only: javax.xml.parsers.DocumentBuilderFactory factory007 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    // documentation only: factory007.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(xmlValue007.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    System.out.print(xmlValue007.length());
   }
 }
 <<<END:t051.xxe.negative.007>>>
 
 <<<T051:t051.xxe.negative.008>>>
 // t051.xxe.negative.008
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class XxeNegative008 {
   void evaluate(String messageBody008) throws Exception {
     javax.xml.parsers.DocumentBuilderFactory factory008 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-    factory008.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory008.setExpandEntityReferences(false);
+    factory008.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(messageBody008.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.008>>>
 
 <<<T051:t051.xxe.negative.009>>>
 // t051.xxe.negative.009
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class XxeNegative009 {
   void evaluate(String queueAttribute009) throws Exception {
-    String documentation009 = "unsafe example for xxe: " + queueAttribute009.length();
-    System.out.print(documentation009.length());
+    javax.xml.parsers.DocumentBuilderFactory factory009 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory009.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory009.setExpandEntityReferences(false);
   }
 }
 <<<END:t051.xxe.negative.009>>>
 
 <<<T051:t051.xxe.negative.010>>>
 // t051.xxe.negative.010
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class XxeNegative010 {
   void evaluate(String rpcArgument010) throws Exception {
-    String documentation010 = "unsafe example for xxe: " + rpcArgument010.length();
-    System.out.print(documentation010.length());
+    javax.xml.parsers.SAXParserFactory factory010 = javax.xml.parsers.SAXParserFactory.newInstance();
+    factory010.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
   }
 }
 <<<END:t051.xxe.negative.010>>>
 
 <<<T051:t051.xxe.negative.011>>>
 // t051.xxe.negative.011
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class XxeNegative011 {
   void evaluate(String webhookField011) throws Exception {
-    javax.xml.parsers.DocumentBuilderFactory factory011 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-    factory011.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory011.setExpandEntityReferences(false);
+    // documentation only: javax.xml.parsers.DocumentBuilderFactory factory011 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    // documentation only: factory011.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(webhookField011.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    System.out.print(webhookField011.length());
   }
 }
 <<<END:t051.xxe.negative.011>>>
 
 <<<T051:t051.xxe.negative.012>>>
 // t051.xxe.negative.012
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class XxeNegative012 {
   void evaluate(String csvColumn012) throws Exception {
     javax.xml.parsers.DocumentBuilderFactory factory012 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-    factory012.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory012.setExpandEntityReferences(false);
+    factory012.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(csvColumn012.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.012>>>
 
 <<<T051:t051.xxe.negative.013>>>
 // t051.xxe.negative.013
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class XxeNegative013 {
   void evaluate(String yamlProperty013) throws Exception {
@@ -152,40 +163,44 @@ final class XxeNegative013 {
 
 <<<T051:t051.xxe.negative.014>>>
 // t051.xxe.negative.014
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class XxeNegative014 {
   void evaluate(String configValue014) throws Exception {
-    String documentation014 = "unsafe example for xxe: " + configValue014.length();
-    System.out.print(documentation014.length());
+    javax.xml.parsers.SAXParserFactory factory014 = javax.xml.parsers.SAXParserFactory.newInstance();
+    factory014.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
   }
 }
 <<<END:t051.xxe.negative.014>>>
 
 <<<T051:t051.xxe.negative.015>>>
 // t051.xxe.negative.015
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class XxeNegative015 {
   void evaluate(String environmentValue015) throws Exception {
-    String documentation015 = "unsafe example for xxe: " + environmentValue015.length();
-    System.out.print(documentation015.length());
+    // documentation only: javax.xml.parsers.DocumentBuilderFactory factory015 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    // documentation only: factory015.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(environmentValue015.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    System.out.print(environmentValue015.length());
   }
 }
 <<<END:t051.xxe.negative.015>>>
 
 <<<T051:t051.xxe.negative.016>>>
 // t051.xxe.negative.016
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class XxeNegative016 {
   void evaluate(String cliArgument016) throws Exception {
     javax.xml.parsers.DocumentBuilderFactory factory016 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-    factory016.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory016.setExpandEntityReferences(false);
+    factory016.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(cliArgument016.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.016>>>
 
 <<<T051:t051.xxe.negative.017>>>
 // t051.xxe.negative.017
+// t051-negative-kind: PATCHED
 package qualification.corpus;
 final class XxeNegative017 {
   void evaluate(String metadataValue017) throws Exception {
@@ -198,34 +213,37 @@ final class XxeNegative017 {
 
 <<<T051:t051.xxe.negative.018>>>
 // t051.xxe.negative.018
+// t051-negative-kind: SAFE_API
 package qualification.corpus;
 final class XxeNegative018 {
   void evaluate(String recordField018) throws Exception {
-    javax.xml.parsers.DocumentBuilderFactory factory018 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    javax.xml.parsers.SAXParserFactory factory018 = javax.xml.parsers.SAXParserFactory.newInstance();
     factory018.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory018.setExpandEntityReferences(false);
   }
 }
 <<<END:t051.xxe.negative.018>>>
 
 <<<T051:t051.xxe.negative.019>>>
 // t051.xxe.negative.019
+// t051-negative-kind: COMMENT_OR_STRING
 package qualification.corpus;
 final class XxeNegative019 {
   void evaluate(String importedValue019) throws Exception {
-    String documentation019 = "unsafe example for xxe: " + importedValue019.length();
-    System.out.print(documentation019.length());
+    // documentation only: javax.xml.parsers.DocumentBuilderFactory factory019 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    // documentation only: factory019.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(importedValue019.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    System.out.print(importedValue019.length());
   }
 }
 <<<END:t051.xxe.negative.019>>>
 
 <<<T051:t051.xxe.negative.020>>>
 // t051.xxe.negative.020
+// t051-negative-kind: GENERATED_OR_VENDOR
 package qualification.corpus;
 final class XxeNegative020 {
   void evaluate(String requestAttribute020) throws Exception {
-    String documentation020 = "unsafe example for xxe: " + requestAttribute020.length();
-    System.out.print(documentation020.length());
+    javax.xml.parsers.DocumentBuilderFactory factory020 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+    factory020.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(requestAttribute020.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.020>>>

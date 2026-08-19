@@ -1,119 +1,139 @@
 <<<T051:t051.private-key.negative.001>>>
 # t051.private-key.negative.001
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: PATCHED
+PRIVATE_KEY_ROTATED=true
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.001>>>
 
 <<<T051:t051.private-key.negative.002>>>
 # t051.private-key.negative.002
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SANITIZER
+PRIVATE_KEY=[REDACTED]
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.002>>>
 
 <<<T051:t051.private-key.negative.003>>>
 # t051.private-key.negative.003
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SAFE_API
+PRIVATE_KEY_REF=secret://qualification/private_key
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.003>>>
 
 <<<T051:t051.private-key.negative.004>>>
 # t051.private-key.negative.004
-# PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: GENERATED_OR_VENDOR
+PRIVATE_KEY=-----BEGIN PRIVATE KEY-----K70B7937A12E2776543C544D91C9CDC117725AE84DEAA4A0-----END PRIVATE KEY-----
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.004>>>
 
 <<<T051:t051.private-key.negative.005>>>
 # t051.private-key.negative.005
-# PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: PATCHED
+PRIVATE_KEY_ROTATED=true
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.005>>>
 
 <<<T051:t051.private-key.negative.006>>>
 # t051.private-key.negative.006
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SANITIZER
+PRIVATE_KEY=[REDACTED]
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.006>>>
 
 <<<T051:t051.private-key.negative.007>>>
 # t051.private-key.negative.007
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SAFE_API
+PRIVATE_KEY_REF=secret://qualification/private_key
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.007>>>
 
 <<<T051:t051.private-key.negative.008>>>
 # t051.private-key.negative.008
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: GENERATED_OR_VENDOR
+PRIVATE_KEY=-----BEGIN PRIVATE KEY-----KE708AE6CB3517DDD0D2D94C56538CB6AB842B83720D5BB2-----END PRIVATE KEY-----
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.008>>>
 
 <<<T051:t051.private-key.negative.009>>>
 # t051.private-key.negative.009
-# PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: PATCHED
+PRIVATE_KEY_ROTATED=true
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.009>>>
 
 <<<T051:t051.private-key.negative.010>>>
 # t051.private-key.negative.010
-# PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SANITIZER
+PRIVATE_KEY=[REDACTED]
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.010>>>
 
 <<<T051:t051.private-key.negative.011>>>
 # t051.private-key.negative.011
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SAFE_API
+PRIVATE_KEY_REF=secret://qualification/private_key
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.011>>>
 
 <<<T051:t051.private-key.negative.012>>>
 # t051.private-key.negative.012
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: GENERATED_OR_VENDOR
+PRIVATE_KEY=-----BEGIN PRIVATE KEY-----K97086E3840607BA5218D8C36845075677DE1F025E2A71A3-----END PRIVATE KEY-----
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.012>>>
 
 <<<T051:t051.private-key.negative.013>>>
 # t051.private-key.negative.013
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: PATCHED
+PRIVATE_KEY_ROTATED=true
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.013>>>
 
 <<<T051:t051.private-key.negative.014>>>
 # t051.private-key.negative.014
-# PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SANITIZER
+PRIVATE_KEY=[REDACTED]
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.014>>>
 
 <<<T051:t051.private-key.negative.015>>>
 # t051.private-key.negative.015
-# PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SAFE_API
+PRIVATE_KEY_REF=secret://qualification/private_key
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.015>>>
 
 <<<T051:t051.private-key.negative.016>>>
 # t051.private-key.negative.016
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: GENERATED_OR_VENDOR
+PRIVATE_KEY=-----BEGIN PRIVATE KEY-----KF7D182F088C01D77D6962D0C3A4588A08844C5AAAE3B049-----END PRIVATE KEY-----
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.016>>>
 
 <<<T051:t051.private-key.negative.017>>>
 # t051.private-key.negative.017
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: PATCHED
+PRIVATE_KEY_ROTATED=true
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.017>>>
 
 <<<T051:t051.private-key.negative.018>>>
 # t051.private-key.negative.018
-PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SANITIZER
+PRIVATE_KEY=[REDACTED]
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.018>>>
 
 <<<T051:t051.private-key.negative.019>>>
 # t051.private-key.negative.019
-# PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: SAFE_API
+PRIVATE_KEY_REF=secret://qualification/private_key
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.019>>>
 
 <<<T051:t051.private-key.negative.020>>>
 # t051.private-key.negative.020
-# PRIVATE_KEY=EXAMPLE_PRIVATE_KEY_REFERENCE
+# t051-negative-kind: GENERATED_OR_VENDOR
+PRIVATE_KEY=-----BEGIN PRIVATE KEY-----K6EA987D60E5C1F67D01FE2018FC660DB896130D47E300AB-----END PRIVATE KEY-----
 QUALIFICATION_FIXTURE=true
 <<<END:t051.private-key.negative.020>>>

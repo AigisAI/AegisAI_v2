@@ -2,7 +2,8 @@
 {
   "name": "t051-t051-lodash-npm-negative-001",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.001",
+  "qualificationAnchor": "t051.lodash-npm.negative.001",
+  "qualificationNegativeKind": "PATCHED",
   "dependencies": {
     "lodash": "4.17.21"
   }
@@ -13,10 +14,10 @@
 {
   "name": "t051-t051-lodash-npm-negative-002",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.002",
-  "dependencies": {
-    "lodash": "4.17.21"
-  }
+  "qualificationAnchor": "t051.lodash-npm.negative.002",
+  "qualificationNegativeKind": "SAFE_API",
+  "safeAlternative": "ECMAScript standard library",
+  "dependencies": {}
 }
 <<<END:t051.lodash-npm.negative.002>>>
 
@@ -24,10 +25,9 @@
 {
   "name": "t051-t051-lodash-npm-negative-003",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.003",
-  "dependencies": {
-    "lodash": "4.17.21"
-  }
+  "qualificationAnchor": "t051.lodash-npm.negative.003",
+  "qualificationNegativeKind": "COMMENT_OR_STRING",
+  "description": "documentation only: lodash 4.17.20"
 }
 <<<END:t051.lodash-npm.negative.003>>>
 
@@ -35,8 +35,11 @@
 {
   "name": "t051-t051-lodash-npm-negative-004",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.004: lodash 4.17.20 appears only in documentation",
-  "dependencies": {}
+  "qualificationAnchor": "t051.lodash-npm.negative.004",
+  "qualificationNegativeKind": "GENERATED_OR_VENDOR",
+  "dependencies": {
+    "lodash": "4.17.20"
+  }
 }
 <<<END:t051.lodash-npm.negative.004>>>
 
@@ -44,8 +47,11 @@
 {
   "name": "t051-t051-lodash-npm-negative-005",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.005: lodash 4.17.20 appears only in documentation",
-  "dependencies": {}
+  "qualificationAnchor": "t051.lodash-npm.negative.005",
+  "qualificationNegativeKind": "PATCHED",
+  "dependencies": {
+    "lodash": "4.17.21"
+  }
 }
 <<<END:t051.lodash-npm.negative.005>>>
 
@@ -53,10 +59,10 @@
 {
   "name": "t051-t051-lodash-npm-negative-006",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.006",
-  "dependencies": {
-    "lodash": "4.17.21"
-  }
+  "qualificationAnchor": "t051.lodash-npm.negative.006",
+  "qualificationNegativeKind": "SAFE_API",
+  "safeAlternative": "ECMAScript standard library",
+  "dependencies": {}
 }
 <<<END:t051.lodash-npm.negative.006>>>
 
@@ -64,10 +70,9 @@
 {
   "name": "t051-t051-lodash-npm-negative-007",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.007",
-  "dependencies": {
-    "lodash": "4.17.21"
-  }
+  "qualificationAnchor": "t051.lodash-npm.negative.007",
+  "qualificationNegativeKind": "COMMENT_OR_STRING",
+  "description": "documentation only: lodash 4.17.20"
 }
 <<<END:t051.lodash-npm.negative.007>>>
 
@@ -75,9 +80,10 @@
 {
   "name": "t051-t051-lodash-npm-negative-008",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.008",
+  "qualificationAnchor": "t051.lodash-npm.negative.008",
+  "qualificationNegativeKind": "GENERATED_OR_VENDOR",
   "dependencies": {
-    "lodash": "4.17.21"
+    "lodash": "4.17.20"
   }
 }
 <<<END:t051.lodash-npm.negative.008>>>
@@ -86,8 +92,11 @@
 {
   "name": "t051-t051-lodash-npm-negative-009",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.009: lodash 4.17.20 appears only in documentation",
-  "dependencies": {}
+  "qualificationAnchor": "t051.lodash-npm.negative.009",
+  "qualificationNegativeKind": "PATCHED",
+  "dependencies": {
+    "lodash": "4.17.21"
+  }
 }
 <<<END:t051.lodash-npm.negative.009>>>
 
@@ -95,7 +104,9 @@
 {
   "name": "t051-t051-lodash-npm-negative-010",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.010: lodash 4.17.20 appears only in documentation",
+  "qualificationAnchor": "t051.lodash-npm.negative.010",
+  "qualificationNegativeKind": "SAFE_API",
+  "safeAlternative": "ECMAScript standard library",
   "dependencies": {}
 }
 <<<END:t051.lodash-npm.negative.010>>>
@@ -104,10 +115,9 @@
 {
   "name": "t051-t051-lodash-npm-negative-011",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.011",
-  "dependencies": {
-    "lodash": "4.17.21"
-  }
+  "qualificationAnchor": "t051.lodash-npm.negative.011",
+  "qualificationNegativeKind": "COMMENT_OR_STRING",
+  "description": "documentation only: lodash 4.17.20"
 }
 <<<END:t051.lodash-npm.negative.011>>>
 
@@ -115,9 +125,10 @@
 {
   "name": "t051-t051-lodash-npm-negative-012",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.012",
+  "qualificationAnchor": "t051.lodash-npm.negative.012",
+  "qualificationNegativeKind": "GENERATED_OR_VENDOR",
   "dependencies": {
-    "lodash": "4.17.21"
+    "lodash": "4.17.20"
   }
 }
 <<<END:t051.lodash-npm.negative.012>>>
@@ -126,7 +137,8 @@
 {
   "name": "t051-t051-lodash-npm-negative-013",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.013",
+  "qualificationAnchor": "t051.lodash-npm.negative.013",
+  "qualificationNegativeKind": "PATCHED",
   "dependencies": {
     "lodash": "4.17.21"
   }
@@ -137,7 +149,9 @@
 {
   "name": "t051-t051-lodash-npm-negative-014",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.014: lodash 4.17.20 appears only in documentation",
+  "qualificationAnchor": "t051.lodash-npm.negative.014",
+  "qualificationNegativeKind": "SAFE_API",
+  "safeAlternative": "ECMAScript standard library",
   "dependencies": {}
 }
 <<<END:t051.lodash-npm.negative.014>>>
@@ -146,8 +160,9 @@
 {
   "name": "t051-t051-lodash-npm-negative-015",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.015: lodash 4.17.20 appears only in documentation",
-  "dependencies": {}
+  "qualificationAnchor": "t051.lodash-npm.negative.015",
+  "qualificationNegativeKind": "COMMENT_OR_STRING",
+  "description": "documentation only: lodash 4.17.20"
 }
 <<<END:t051.lodash-npm.negative.015>>>
 
@@ -155,9 +170,10 @@
 {
   "name": "t051-t051-lodash-npm-negative-016",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.016",
+  "qualificationAnchor": "t051.lodash-npm.negative.016",
+  "qualificationNegativeKind": "GENERATED_OR_VENDOR",
   "dependencies": {
-    "lodash": "4.17.21"
+    "lodash": "4.17.20"
   }
 }
 <<<END:t051.lodash-npm.negative.016>>>
@@ -166,7 +182,8 @@
 {
   "name": "t051-t051-lodash-npm-negative-017",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.017",
+  "qualificationAnchor": "t051.lodash-npm.negative.017",
+  "qualificationNegativeKind": "PATCHED",
   "dependencies": {
     "lodash": "4.17.21"
   }
@@ -177,10 +194,10 @@
 {
   "name": "t051-t051-lodash-npm-negative-018",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.018",
-  "dependencies": {
-    "lodash": "4.17.21"
-  }
+  "qualificationAnchor": "t051.lodash-npm.negative.018",
+  "qualificationNegativeKind": "SAFE_API",
+  "safeAlternative": "ECMAScript standard library",
+  "dependencies": {}
 }
 <<<END:t051.lodash-npm.negative.018>>>
 
@@ -188,8 +205,9 @@
 {
   "name": "t051-t051-lodash-npm-negative-019",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.019: lodash 4.17.20 appears only in documentation",
-  "dependencies": {}
+  "qualificationAnchor": "t051.lodash-npm.negative.019",
+  "qualificationNegativeKind": "COMMENT_OR_STRING",
+  "description": "documentation only: lodash 4.17.20"
 }
 <<<END:t051.lodash-npm.negative.019>>>
 
@@ -197,7 +215,10 @@
 {
   "name": "t051-t051-lodash-npm-negative-020",
   "version": "1.0.0",
-  "description": "t051.lodash-npm.negative.020: lodash 4.17.20 appears only in documentation",
-  "dependencies": {}
+  "qualificationAnchor": "t051.lodash-npm.negative.020",
+  "qualificationNegativeKind": "GENERATED_OR_VENDOR",
+  "dependencies": {
+    "lodash": "4.17.20"
+  }
 }
 <<<END:t051.lodash-npm.negative.020>>>

@@ -1,15 +1,22 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { cp, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-import { SAST_QUALIFICATION_CORPUS_LIMITS } from '../../packages/shared/dist/index.js';
+import {
+  SAST_QUALIFICATION_CORPUS_LIMITS,
+  buildSastQualificationPriorReleaseManifest
+} from '../../packages/shared/dist/index.js';
 import {
   SastQualificationCorpusLoadError,
   loadAndValidateGoldenCorpus
 } from '../../tools/sast-qualification/corpus-loader.mjs';
+import {
+  initializePriorReleaseManifest
+} from '../../tools/sast-qualification/golden-corpus-assets.mjs';
 
 const repositoryRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const canonicalCorpusRoot = join(repositoryRoot, 'qualification', 'corpora', 'v1');
@@ -41,6 +48,87 @@ test('T051 loader rejects snapshot byte and count drift before use', async (t) =
   await writeFile(snapshotPath, tampered, 'utf8');
 
   await assertLoadError(root, 'SNAPSHOT_DRIFT');
+});
+
+test('T051 loader pins the reviewed prior-release manifest digest', async (t) => {
+  const root = await copyCorpus(t);
+  const manifestPath = join(root, 'prior-release-must-detect.manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const rebuilt = buildSastQualificationPriorReleaseManifest(
+    {
+      releaseRevision: manifest.releaseRevision,
+      publishedAt: manifest.publishedAt,
+      ownerRef: manifest.ownerRef,
+      provenanceRef: manifest.provenanceRef,
+      bindings: manifest.bindings.slice(1)
+    },
+    digest
+  );
+  assert.ok(rebuilt);
+  await writeFile(manifestPath, `${JSON.stringify(rebuilt, null, 2)}\n`, 'utf8');
+
+  await assertLoadError(root, 'PRIOR_RELEASE_MANIFEST_INVALID');
+});
+
+test('T051 prior-release manifest bootstrap refuses overwrite', async () => {
+  await assert.rejects(
+    initializePriorReleaseManifest(),
+    /refusing to overwrite immutable prior-release must-detect manifest/u
+  );
+});
+
+test('T051 negative fixtures match their declared behavior class', async () => {
+  const snapshot = JSON.parse(
+    await readFile(join(canonicalCorpusRoot, 'golden-corpus.snapshot.json'), 'utf8')
+  );
+  const sourceCache = new Map();
+  const counts = Object.fromEntries(
+    snapshot.negativeKindCounts.map((item) => [item.negativeKind, item.cases])
+  );
+  assert.deepEqual(counts, {
+    PATCHED: 95,
+    SANITIZER: 35,
+    SAFE_API: 95,
+    COMMENT_OR_STRING: 80,
+    GENERATED_OR_VENDOR: 95
+  });
+
+  for (const corpusCase of snapshot.cases.filter(
+    (item) => item.corpusClass === 'GOLDEN_NEGATIVE'
+  )) {
+    let source = sourceCache.get(corpusCase.sourcePath);
+    if (!source) {
+      source = await readFile(join(canonicalCorpusRoot, corpusCase.sourcePath), 'utf8');
+      sourceCache.set(corpusCase.sourcePath, source);
+    }
+    const snippet = source
+      .split('\n')
+      .slice(corpusCase.startLine - 1, corpusCase.endLine)
+      .join('\n');
+    assert.match(
+      snippet,
+      new RegExp(
+        `(?:t051-negative-kind: ${corpusCase.negativeKind}|qualificationNegativeKind": "${corpusCase.negativeKind})`,
+        'u'
+      )
+    );
+
+    if (corpusCase.negativeKind === 'GENERATED_OR_VENDOR') {
+      assert.match(corpusCase.scanPath, /\/(?:generated|vendor)\//u);
+      assert.doesNotMatch(snippet, /documentation only/u);
+    } else {
+      assert.doesNotMatch(corpusCase.scanPath, /\/(?:generated|vendor)\//u);
+    }
+    if (corpusCase.negativeKind === 'COMMENT_OR_STRING') {
+      assert.match(snippet, /documentation only/u);
+    }
+    if (corpusCase.negativeKind === 'SANITIZER') {
+      assert.match(snippet, /(?:sanitized|\[REDACTED\])/u);
+    }
+    if (corpusCase.negativeKind === 'SAFE_API') {
+      assert.match(snippet, /(?:SAFE_API|PreparedStatement|allowed|startsWith|VariableResolver|DataInputStream|SAXParserFactory|HmacSHA256|LogRecord)/u);
+    }
+  }
 });
 
 test('T051 loader rejects source drift and CRLF ambiguity', async (t) => {
@@ -104,4 +192,8 @@ async function assertLoadError(root, reason) {
     (error) =>
       error instanceof SastQualificationCorpusLoadError && error.reason === reason
   );
+}
+
+function digest(value) {
+  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
 }

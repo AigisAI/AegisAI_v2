@@ -213,7 +213,10 @@ chain. Historical manifests, plans, findings, coverage, evidence, and the baseli
 T051 immutable golden corpus is complete: an exact shared case/snapshot contract, deterministic
 generator, and root-confined loader bind 800 paired cases and 40 platform-owned source bundles
 to canonical digests, source ranges, unique materialization paths, profile/rule minima, and the
-complete prior Critical/High must-detect set. It grants no runtime or finding authority and does
+complete prior Critical/High must-detect set. A separate exact-key manifest authenticates the 400
+historical bindings, pins its reviewed digest in code, refuses overwrite, and keeps later positives
+outside the historical denominator. Negative kinds use distinct applicable behavior rather than
+uniform labels. It grants no runtime or finding authority and does
 not execute source. T052 is the next implementation task.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
@@ -235,7 +238,8 @@ Run golden, regression, malicious, parser, privacy, performance, integration, an
 gates. Produce a machine-readable go/no-go record. Hand live cluster/microVM rollout to the
 005 operations flow only after every 006 design/implementation gate is satisfied.
 
-T051 supplies only the immutable golden positive/negative and prior must-detect input authority.
+T051 supplies only the immutable golden positive/negative and independently manifested prior
+must-detect input authority.
 T052 adds schema/parser, malicious-repository, fingerprint/correlation, evidence/privacy, and
 performance corpora. T053 is the first slice that materializes cases into a production-equivalent
 isolated scanner environment; no T051 artifact is customer content or an executable build input.
