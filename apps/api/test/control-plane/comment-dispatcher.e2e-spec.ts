@@ -9,6 +9,7 @@ import { TestInternalServiceGuard, TestSessionAuthGuard } from '../support/secur
 
 describe("Comment dispatcher boundary API (e2e)", () => {
   let app: INestApplication;
+  let killSwitchEvaluate: jest.Mock;
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
@@ -30,13 +31,16 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       { AppModule },
       { GithubAppInstallationClient },
       { GitlabCloudIntegrationClient },
-      { PrismaService }
+      { PrismaService },
+      { SastKillSwitchGate }
     ] = await Promise.all([
       import("../../src/app.module"),
       import("../../src/control-plane/github-app-installation.client"),
       import("../../src/control-plane/gitlab-cloud-integration.client"),
-      import("../../src/prisma/prisma.service")
+      import("../../src/prisma/prisma.service"),
+      import("../../src/rule-governance/sast-kill-switch.gate")
     ]);
+    killSwitchEvaluate = jest.fn();
 
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule]
@@ -66,6 +70,12 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       })
       .overrideProvider(ControlPlaneScanRequestStore)
       .useValue(new InMemoryControlPlaneScanRequestStore())
+      .overrideProvider(SastKillSwitchGate)
+      .useValue({
+        evaluateContext: jest.fn(),
+        evaluatePlan: jest.fn(),
+        evaluatePersistedScan: killSwitchEvaluate
+      })
       .overrideGuard(SessionAuthGuard)
       .useClass(TestSessionAuthGuard)
       .overrideGuard(InternalServiceGuard)
@@ -76,6 +86,12 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     app.setGlobalPrefix("api");
 
     await app.init();
+  });
+
+  beforeEach(() => {
+    killSwitchEvaluate.mockReset().mockResolvedValue({
+      receipt: { outcome: 'CLEAR' }
+    });
   });
 
   afterAll(async () => {
@@ -205,6 +221,14 @@ describe("Comment dispatcher boundary API (e2e)", () => {
     });
     expect(JSON.stringify(response.body)).not.toMatch(
       /accessToken|refreshToken|tokenValue|secretValue|sourceArchive|fullRepository|rawScannerPayload|repoReadPrincipalId|integrationAdminPrincipalId/i
+    );
+    expect(killSwitchEvaluate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gate: 'EXTERNAL_PUBLICATION',
+        tenantId: 'tenant_comment_dispatch',
+        repositoryBindingId: repositoryBinding.id,
+        scanRequestId: 'scan_request_comment_1'
+      })
     );
   });
 
@@ -682,6 +706,49 @@ describe("Comment dispatcher boundary API (e2e)", () => {
       .post("/api/comment-dispatches/outbox/claim")
       .send({ ...claimPayload, accessToken: "ghs_secret" })
       .expect(400);
+  });
+
+  it('denies a dispatch claim when a publication switch activates after planning', async () => {
+    const repositoryBinding = await installRepositoryBinding({
+      tenantId: 'tenant_comment_kill_switch',
+      provider: 'github',
+      commentWritePrincipalId: 'github-app-installation:comment-write-killed'
+    });
+    const planResponse = await request(app.getHttpServer())
+      .post('/api/comment-dispatches/plan')
+      .send(
+        dispatchRequest({
+          tenantId: 'tenant_comment_kill_switch',
+          repositoryBindingId: repositoryBinding.id,
+          policyCommentAllowed: true
+        })
+      )
+      .expect(201);
+    const plan = dataOf<Record<string, unknown>>(planResponse.body);
+    await request(app.getHttpServer())
+      .post('/api/comment-dispatches/enqueue')
+      .send({ tenantId: 'tenant_comment_kill_switch', planId: plan.id })
+      .expect(201);
+
+    killSwitchEvaluate.mockResolvedValue({
+      receipt: { outcome: 'ACTIVE' }
+    });
+    await request(app.getHttpServer())
+      .post('/api/comment-dispatches/outbox/claim')
+      .send({
+        tenantId: 'tenant_comment_kill_switch',
+        workerId: 'comment-dispatch-worker-killed',
+        leaseSeconds: 300
+      })
+      .expect(409);
+
+    const outboxResponse = await request(app.getHttpServer())
+      .get('/api/comment-dispatches/outbox')
+      .query({ tenantId: 'tenant_comment_kill_switch' })
+      .expect(200);
+    expect(
+      dataOf<Array<Record<string, unknown>>>(outboxResponse.body)[0]
+    ).not.toHaveProperty('claimedBy');
   });
 
   it("rejects invalid or excessive outbox claim lease durations", async () => {

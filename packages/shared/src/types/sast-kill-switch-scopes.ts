@@ -1,0 +1,13 @@
+export const SAST_KILL_SWITCH_SCOPES = [
+  'SCANNER_VERSION',
+  'RULE_BUNDLE',
+  'SEMANTIC_RULE',
+  'TENANT',
+  'REPOSITORY_BINDING',
+  'CAPABILITY',
+  'PROFILE',
+  'EXTERNAL_PUBLICATION',
+  'GLOBAL'
+] as const;
+
+export type SastKillSwitchScope = (typeof SAST_KILL_SWITCH_SCOPES)[number];

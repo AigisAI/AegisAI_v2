@@ -481,7 +481,7 @@ describe('SastArtifactDispositionService', () => {
     );
   });
 
-  it('reuses a valid durable intent and operation id after a crash boundary', async () => {
+  it('reuses a valid durable intent and operation id only after a fresh acceptance check', async () => {
     const first = createHarness();
     await first.service.processNext(NOW, 'worker-1');
     const saved = first.store.saveIntent.mock.calls[0]![0];
@@ -490,19 +490,69 @@ describe('SastArtifactDispositionService', () => {
     replayCandidate.persistedIntentDigest = saved.intent.intentDigest;
     replayCandidate.persistedOperationId = saved.operationId;
     const replay = createHarness(replayCandidate);
-    replay.gate.evaluate.mockRejectedValue(
-      new Error('must not be re-evaluated')
-    );
 
     await expect(
       replay.service.processNext(NOW, 'worker-2')
     ).resolves.toBe('ACCEPTED');
 
-    expect(replay.gate.evaluate).not.toHaveBeenCalled();
+    expect(replay.gate.evaluate).toHaveBeenCalledTimes(1);
     expect(replay.store.saveIntent).not.toHaveBeenCalled();
     expect(replay.storage.apply).toHaveBeenCalledWith(
       expect.objectContaining({
         operationId: saved.operationId
+      })
+    );
+  });
+
+  it('replaces a persisted accepted intent with quarantine when fresh authority denies', async () => {
+    const first = createHarness();
+    await first.service.processNext(NOW, 'worker-1');
+    const saved = first.store.saveIntent.mock.calls[0]![0];
+    const replayCandidate = validCandidate();
+    replayCandidate.persistedIntent = saved.intent;
+    replayCandidate.persistedIntentDigest = saved.intent.intentDigest;
+    replayCandidate.persistedOperationId = saved.operationId;
+    const replay = createHarness(replayCandidate);
+    replay.gate.evaluate.mockImplementation(async (input) => ({
+      outcome: 'DENY',
+      controlRef: 'kill-switch-evaluation://active-after-crash',
+      reasonCode: 'SAST_KILL_SWITCH_ACTIVE',
+      evaluatedAt: input.evaluatedAt
+    }));
+    replay.storage.apply.mockImplementation(async (input) => ({
+      operationId: input.operationId,
+      storageReceiptRef: 'storage-receipt://quarantine-after-crash',
+      storageReceiptDigest: RECEIPT_DIGEST,
+      finalObjectKey: `${SAST_ARTIFACT_QUARANTINE_OBJECT_PREFIX}after-crash`,
+      encryptionContextDigest: digest(
+        canonicalizeSastArtifactQuarantineEncryptionContext(
+          input.quarantineEncryptionContext!
+        )
+      ),
+      completedAt: STORAGE_COMPLETED_AT
+    }));
+
+    await expect(
+      replay.service.processNext(NOW, 'worker-2')
+    ).resolves.toBe('QUARANTINED');
+
+    expect(replay.store.saveIntent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expectedIntentDigest: saved.intent.intentDigest,
+        intent: expect.objectContaining({
+          disposition: 'QUARANTINED',
+          reasonCodes: ['ARTIFACT_ACCEPTANCE_DENIED'],
+          acceptanceControlRef:
+            'kill-switch-evaluation://active-after-crash'
+        })
+      })
+    );
+    const replacement = replay.store.saveIntent.mock.calls[0]![0];
+    expect(replacement.operationId).not.toBe(saved.operationId);
+    expect(replay.storage.apply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'MOVE_REENCRYPT_QUARANTINE',
+        operationId: replacement.operationId
       })
     );
   });

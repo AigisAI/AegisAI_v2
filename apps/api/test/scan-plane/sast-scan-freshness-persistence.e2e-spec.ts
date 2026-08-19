@@ -179,7 +179,10 @@ describe('SAST scan freshness and retry persistence contract', () => {
     expect(exportsBlock).not.toContain('SastScanFreshnessService');
     expect(exportsBlock).not.toContain('SastScanCoverageService');
     expect(module).toMatch(
-      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastScanFreshnessService/
+      /provide:\s*SastFindingLifecycleCoverageAuthority,[\s\S]{0,100}useExisting:\s*SastScanFreshnessService/
+    );
+    expect(module).toMatch(
+      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastKillSwitchFindingLifecycleCoverageGate/
     );
     expect(module).toMatch(
       /provide:\s*SastRetryAdmissionGate,[\s\S]{0,100}useExisting:\s*SastScanFreshnessService/

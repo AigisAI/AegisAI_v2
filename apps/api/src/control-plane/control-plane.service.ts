@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException
+} from "@nestjs/common";
 import { randomUUID } from 'node:crypto';
 import {
   buildCanonicalScanKey,
@@ -38,12 +44,17 @@ import { GithubAppInstallationClient } from "./github-app-installation.client";
 import { GithubAppInstallationStateService } from "./github-app-installation-state.service";
 import { GitlabCloudIntegrationClient } from "./gitlab-cloud-integration.client";
 import { ControlPlaneScanRequestStore } from './control-plane-scan-request.store';
+import {
+  SastKillSwitchGate,
+  UnavailableSastKillSwitchGate
+} from '../rule-governance/sast-kill-switch.gate';
 
 @Injectable()
 export class ControlPlaneService {
   private readonly commentDispatchPlans = new Map<string, CommentDispatchPlan>();
   private readonly commentDispatchOutboxItems = new Map<string, CommentDispatchOutboxItem>();
   private readonly commentDispatchAuditEvents: CommentDispatchAuditEvent[] = [];
+  private readonly commentDispatchScanRequestIds = new Map<string, string>();
 
   private commentDispatchSequence = 0;
   private commentDispatchOutboxSequence = 0;
@@ -53,7 +64,9 @@ export class ControlPlaneService {
     private readonly githubAppInstallationClient: GithubAppInstallationClient,
     private readonly githubAppInstallationState: GithubAppInstallationStateService,
     private readonly gitlabCloudIntegrationClient: GitlabCloudIntegrationClient,
-    private readonly scanRequestStore: ControlPlaneScanRequestStore
+    private readonly scanRequestStore: ControlPlaneScanRequestStore,
+    private readonly killSwitch: SastKillSwitchGate =
+      new UnavailableSastKillSwitchGate()
   ) {}
 
   async installGithubAppIntegration(input: InstallIntegrationInput): Promise<ControlPlaneIntegration> {
@@ -349,10 +362,17 @@ export class ControlPlaneService {
     if (
       input.policyDecision.tenantId !== input.tenantId ||
       input.finding.tenantId !== input.tenantId ||
-      input.policyDecision.findingId !== input.finding.id
+      input.policyDecision.findingId !== input.finding.id ||
+      input.policyDecision.scanRequestId !== input.finding.scanRequestId
     ) {
       throw new BadRequestException("Comment dispatch input is not tenant or finding aligned.");
     }
+
+    await this.assertExternalPublicationKillSwitchClear(
+      input.tenantId,
+      repositoryBinding.id,
+      input.policyDecision.scanRequestId
+    );
 
     const idempotencyKey = buildCommentDispatchIdempotencyKey(input);
     const existingPlan = this.commentDispatchPlans.get(idempotencyKey);
@@ -397,6 +417,10 @@ export class ControlPlaneService {
     });
 
     this.commentDispatchPlans.set(idempotencyKey, plan);
+    this.commentDispatchScanRequestIds.set(
+      plan.id,
+      input.policyDecision.scanRequestId
+    );
 
     return plan;
   }
@@ -550,7 +574,9 @@ export class ControlPlaneService {
     return limit === undefined ? orderedItems : orderedItems.slice(0, limit);
   }
 
-  claimCommentDispatchOutbox(input: CommentDispatchOutboxClaimRequest): CommentDispatchOutboxItem | null {
+  async claimCommentDispatchOutbox(
+    input: CommentDispatchOutboxClaimRequest
+  ): Promise<CommentDispatchOutboxItem | null> {
     this.assertSafeCommentDispatchPayload(input);
 
     this.assertValidCommentDispatchLease(input.workerId, input.leaseSeconds);
@@ -566,6 +592,11 @@ export class ControlPlaneService {
         item.leaseExpiresAt > claimedAt
     );
     if (existingWorkerClaim) {
+      await this.assertExternalPublicationKillSwitchClear(
+        existingWorkerClaim.tenantId,
+        existingWorkerClaim.repositoryBindingId,
+        this.commentDispatchScanRequestIds.get(existingWorkerClaim.planId)
+      );
       return existingWorkerClaim;
     }
 
@@ -578,6 +609,12 @@ export class ControlPlaneService {
     if (!claimableOutboxItem) {
       return null;
     }
+
+    await this.assertExternalPublicationKillSwitchClear(
+      claimableOutboxItem.tenantId,
+      claimableOutboxItem.repositoryBindingId,
+      this.commentDispatchScanRequestIds.get(claimableOutboxItem.planId)
+    );
 
     const claimedOutboxItem: CommentDispatchOutboxItem = {
       ...claimableOutboxItem,
@@ -781,6 +818,38 @@ export class ControlPlaneService {
       if (new RegExp(forbiddenKey, "i").test(serialized)) {
         throw new BadRequestException("Comment dispatch payload contains forbidden sensitive or authority content.");
       }
+    }
+  }
+
+  private async assertExternalPublicationKillSwitchClear(
+    tenantId: string,
+    repositoryBindingId: string,
+    scanRequestId: string | undefined
+  ): Promise<void> {
+    if (!scanRequestId) {
+      throw new ServiceUnavailableException(
+        'External publication requires a current SAST scan binding.'
+      );
+    }
+    let outcome: 'CLEAR' | 'ACTIVE';
+    try {
+      const evaluation = await this.killSwitch.evaluatePersistedScan({
+        gate: 'EXTERNAL_PUBLICATION',
+        tenantId,
+        repositoryBindingId,
+        scanRequestId,
+        evaluatedAt: new Date().toISOString()
+      });
+      outcome = evaluation.receipt.outcome;
+    } catch {
+      throw new ServiceUnavailableException(
+        'External publication requires current SAST kill-switch authority.'
+      );
+    }
+    if (outcome !== 'CLEAR') {
+      throw new ConflictException(
+        'External publication is denied by an active SAST kill switch.'
+      );
     }
   }
 

@@ -155,7 +155,10 @@ describe('SAST finding lineage persistence contract', () => {
       'UnavailableSastFindingRenameAttestationVerifier'
     );
     expect(module).toMatch(
-      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastScanFreshnessService/
+      /provide:\s*SastFindingLifecycleCoverageAuthority,[\s\S]{0,100}useExisting:\s*SastScanFreshnessService/
+    );
+    expect(module).toMatch(
+      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastKillSwitchFindingLifecycleCoverageGate/
     );
     const exportsBlock =
       module.match(/exports:\s*\[([\s\S]*?)\]\s*\n\}\)/)?.[1] ??

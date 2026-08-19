@@ -58,6 +58,8 @@ const files = {
   sharedSastRulePromotionLifecycleTest: new URL('../../packages/shared/test/sast-rule-promotion-lifecycle.test.mjs', import.meta.url),
   sharedSastRuleBundleCanary: new URL('../../packages/shared/src/types/sast-rule-bundle-canary.ts', import.meta.url),
   sharedSastRuleBundleCanaryTest: new URL('../../packages/shared/test/sast-rule-bundle-canary.test.mjs', import.meta.url),
+  sharedSastKillSwitch: new URL('../../packages/shared/src/types/sast-kill-switch.ts', import.meta.url),
+  sharedSastKillSwitchTest: new URL('../../packages/shared/test/sast-kill-switch.test.mjs', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -155,6 +157,22 @@ const files = {
   apiRuleBundleLifecycleAuthorityRouter: new URL('../../apps/api/src/rule-governance/sast-rule-bundle-lifecycle-authority.router.ts', import.meta.url),
   apiRuleBundleCanaryServiceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-canary.service.e2e-spec.ts', import.meta.url),
   apiRuleBundleCanaryPersistenceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-canary-persistence.e2e-spec.ts', import.meta.url),
+  apiSastKillSwitchService: new URL('../../apps/api/src/rule-governance/sast-kill-switch.service.ts', import.meta.url),
+  apiSastKillSwitchStore: new URL('../../apps/api/src/rule-governance/prisma-sast-kill-switch.store.ts', import.meta.url),
+  apiSastKillSwitchPersistence: new URL('../../apps/api/src/rule-governance/sast-kill-switch-persistence.ts', import.meta.url),
+  apiSastKillSwitchGate: new URL('../../apps/api/src/rule-governance/sast-kill-switch.gate.ts', import.meta.url),
+  apiSastKillSwitchSignatureAuthority: new URL('../../apps/api/src/rule-governance/sast-kill-switch-signature.authority.ts', import.meta.url),
+  apiSastKillSwitchCanarySuspension: new URL('../../apps/api/src/rule-governance/sast-kill-switch-canary-suspension.service.ts', import.meta.url),
+  apiSastKillSwitchServiceTest: new URL('../../apps/api/test/rule-governance/sast-kill-switch.service.e2e-spec.ts', import.meta.url),
+  apiSastKillSwitchPersistenceTest: new URL('../../apps/api/test/rule-governance/sast-kill-switch-persistence.e2e-spec.ts', import.meta.url),
+  apiSastQueueKillSwitchFenceTest: new URL('../../apps/api/test/control-plane/sast-queue-kill-switch-fence.e2e-spec.ts', import.meta.url),
+  apiSastKillSwitchArtifactGate: new URL('../../apps/api/src/scan-plane/sast-kill-switch-artifact-acceptance.gate.ts', import.meta.url),
+  apiSastKillSwitchCoverageGate: new URL('../../apps/api/src/scan-plane/sast-kill-switch-finding-lifecycle-coverage.gate.ts', import.meta.url),
+  apiSastKillSwitchRetryAuthority: new URL('../../apps/api/src/scan-plane/sast-kill-switch-retry-runtime.authority.ts', import.meta.url),
+  apiSastKillSwitchAdapterTest: new URL('../../apps/api/test/scan-plane/sast-kill-switch-adapters.e2e-spec.ts', import.meta.url),
+  apiSastScannerRuntime: new URL('../../apps/api/src/scan-plane/sast-scanner-runtime.service.ts', import.meta.url),
+  apiSastArtifactAcceptanceGate: new URL('../../apps/api/src/scan-plane/sast-artifact-acceptance-gate.ts', import.meta.url),
+  apiControlPlaneService: new URL('../../apps/api/src/control-plane/control-plane.service.ts', import.meta.url),
   aiAdvisoryRuntime: new URL('../../apps/ai/src/advisory-runtime.ts', import.meta.url),
   aiModelGateway: new URL('../../apps/ai/src/model-gateway.ts', import.meta.url),
   apiPrismaSchema: new URL('../../apps/api/prisma/schema.prisma', import.meta.url),
@@ -171,6 +189,7 @@ const files = {
   apiSastRuleSemanticPolicyMigration: new URL('../../apps/api/prisma/migrations/20260813130000_sast_rule_semantic_policy/migration.sql', import.meta.url),
   apiSastRuleBundleLifecycleMigration: new URL('../../apps/api/prisma/migrations/20260814120000_sast_rule_bundle_lifecycle/migration.sql', import.meta.url),
   apiSastRuleBundleCanaryMigration: new URL('../../apps/api/prisma/migrations/20260819120000_sast_rule_bundle_canary/migration.sql', import.meta.url),
+  apiSastKillSwitchMigration: new URL('../../apps/api/prisma/migrations/20260819180000_sast_kill_switch_authority/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
@@ -220,17 +239,17 @@ const assertScanPlaneExports = (scanPlaneModule) => {
   assert.doesNotMatch(exportsBlock, /SyftCycloneDxInventoryIngestor/);
 };
 
-const assertT047QuickstartHandoff = (quickstart) => {
+const assertT049QuickstartHandoff = (quickstart) => {
   assert.match(
     quickstart,
-    /T047 quantitative[\s\S]{0,320}are complete\. T048 deterministic[\s\S]{0,360}are complete; T049 scanner/
+    /T048 deterministic[\s\S]{0,420}are complete\. T049 signed[\s\S]{0,360}are complete; T050/
   );
 };
 
-const assertT047PlanHandoff = (plan) => {
+const assertT049PlanHandoff = (plan) => {
   assert.match(
     plan,
-    /T040 through T048 independently and now proceeds to T049/
+    /T040 through T049 independently and now proceeds to T050/
   );
 };
 
@@ -1341,7 +1360,7 @@ test('SAST T039 coverage feeds T040 freshness and bounded retry authority', () =
 
   assert.match(tasks, /- \[x\] T039\b/);
   assert.match(tasks, /- \[x\] T040\b/);
-  assertT047QuickstartHandoff(quickstart);
+  assertT049QuickstartHandoff(quickstart);
   assert.match(contract, /Scan coverage gate v1/);
   assert.match(contract, /Freshness and bounded retry gate v1/);
   assert.match(dataModel, /SastExternalPublicationDecision/);
@@ -1474,11 +1493,11 @@ test('SAST T041 builds bounded accepted-finding evidence and rejects reconstruct
   assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T041\b/);
-  assertT047QuickstartHandoff(quickstart);
+  assertT049QuickstartHandoff(quickstart);
   assert.match(contract, /Accepted-finding evidence gate v1/);
   assert.match(dataModel, /SastEvidenceBuildDecision/);
   assert.match(dataModel, /SastAcceptedEvidencePack/);
-  assertT047PlanHandoff(plan);
+  assertT049PlanHandoff(plan);
   assert.match(spec, /FR-046a/);
   assert.match(
     research,
@@ -1651,7 +1670,7 @@ test('SAST T042 classifies purpose-bound evidence and proves fenced deletion', (
   assertScanPlaneExports(scanPlaneModule);
 
   assert.match(tasks, /- \[x\] T042\b/);
-  assertT047QuickstartHandoff(quickstart);
+  assertT049QuickstartHandoff(quickstart);
   assert.match(contract, /Evidence access and deletion gate v1/);
   assert.match(dataModel, /SastEvidenceAccessDecision/);
   assert.match(dataModel, /SastEvidenceDeletionProof/);
@@ -1802,10 +1821,10 @@ test('SAST T043 sends only a durable normalized finding and opaque AI reference'
   assert.doesNotMatch(migration, /"handoff" JSONB/);
 
   assert.match(tasks, /- \[x\] T043\b/);
-  assertT047QuickstartHandoff(quickstart);
+  assertT049QuickstartHandoff(quickstart);
   assert.match(contract, /Advisory AI handoff gate v1/);
   assert.match(dataModel, /### SastAiAdvisoryHandoff/);
-  assertT047PlanHandoff(plan);
+  assertT049PlanHandoff(plan);
   assert.match(spec, /FR-051a/);
   assert.match(
     research,
@@ -1940,10 +1959,10 @@ test('SAST T044 proves AI output has zero finding and policy authority', () => {
   );
 
   assert.match(tasks, /- \[x\] T044\b/);
-  assertT047QuickstartHandoff(quickstart);
+  assertT049QuickstartHandoff(quickstart);
   assert.match(contract, /Advisory output authority proof gate v1/);
   assert.match(dataModel, /### SastAiAdvisoryAuthorityProof/);
-  assertT047PlanHandoff(plan);
+  assertT049PlanHandoff(plan);
   assert.match(spec, /FR-052a/);
   assert.match(
     research,
@@ -2058,8 +2077,8 @@ test('SAST T045 requires signed immutable manifests and exact compatibility befo
   );
 
   assert.match(tasks, /- \[x\] T045\b/);
-  assertT047QuickstartHandoff(quickstart);
-  assertT047PlanHandoff(plan);
+  assertT049QuickstartHandoff(quickstart);
+  assertT049PlanHandoff(plan);
   assert.match(ruleGovernance, /A signed bundle manifest contains only/);
   assert.match(ruleGovernance, /mutable tags[\s\S]{0,40}invalid production inputs/);
   assert.match(contract, /Rule-bundle manifest and compatibility gate v1/);
@@ -2211,8 +2230,8 @@ test('SAST T046 binds semantic metadata and monotonic tenant policy before queue
   );
 
   assert.match(tasks, /- \[x\] T046\b/);
-  assertT047QuickstartHandoff(quickstart);
-  assertT047PlanHandoff(plan);
+  assertT049QuickstartHandoff(quickstart);
+  assertT049PlanHandoff(plan);
   assert.match(contract, /Semantic metadata and tenant rule-policy gate v1/);
   assert.match(contract, /exact UTC millisecond form/);
   assert.match(dataModel, /### RuleDefinitionMetadata/);
@@ -2427,8 +2446,8 @@ test('SAST T047 binds promotion evidence and latest lifecycle state before queue
   );
 
   assert.match(tasks, /- \[x\] T047\b/);
-  assertT047QuickstartHandoff(quickstart);
-  assertT047PlanHandoff(plan);
+  assertT049QuickstartHandoff(quickstart);
+  assertT049PlanHandoff(plan);
   assert.match(contract, /Promotion evidence and lifecycle selection gate v1/);
   assert.match(dataModel, /### SastRuleBundlePromotionEvidence/);
   assert.match(dataModel, /### SastRuleBundleLifecycleSelectionReceipt/);
@@ -2606,8 +2625,8 @@ test('SAST T048 binds deterministic cohorts and exact observation authority befo
   assert.doesNotMatch(migration, /"[A-Za-z0-9_]+"\s+JSONB\s+(?:NOT\s+)?NULL/i);
 
   assert.match(tasks, /- \[x\] T048\b/);
-  assertT047QuickstartHandoff(quickstart);
-  assertT047PlanHandoff(plan);
+  assertT049QuickstartHandoff(quickstart);
+  assertT049PlanHandoff(plan);
   assert.match(contract, /Deterministic canary cohort and observation gate v1/);
   assert.match(dataModel, /### SastRuleBundleCanaryRollout and SastRuleBundleCanaryRolloutStep/);
   assert.match(spec, /FR-056d/);
@@ -2615,6 +2634,188 @@ test('SAST T048 binds deterministic cohorts and exact observation authority befo
   assert.match(threatModel, /Canary telemetry poisoning or omission/);
   assert.match(qualityGates, /100% T048 step-gate invariant/);
   assert.match(qualityGates, /caller cannot choose the cutoff or select\/omit observation/);
+});
+
+test('SAST T049 propagates signed kill switches through every production authority boundary', () => {
+  const shared = readNormalizedText(files.sharedSastKillSwitch);
+  const sharedTest = readNormalizedText(files.sharedSastKillSwitchTest);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const service = readNormalizedText(files.apiSastKillSwitchService);
+  const store = readNormalizedText(files.apiSastKillSwitchStore);
+  const persistence = readNormalizedText(files.apiSastKillSwitchPersistence);
+  const gate = readNormalizedText(files.apiSastKillSwitchGate);
+  const signatureAuthority = readNormalizedText(
+    files.apiSastKillSwitchSignatureAuthority
+  );
+  const canarySuspension = readNormalizedText(
+    files.apiSastKillSwitchCanarySuspension
+  );
+  const serviceTest = readNormalizedText(files.apiSastKillSwitchServiceTest);
+  const persistenceTest = readNormalizedText(
+    files.apiSastKillSwitchPersistenceTest
+  );
+  const queueFenceTest = readNormalizedText(
+    files.apiSastQueueKillSwitchFenceTest
+  );
+  const artifactGate = readNormalizedText(files.apiSastKillSwitchArtifactGate);
+  const coverageGate = readNormalizedText(files.apiSastKillSwitchCoverageGate);
+  const acceptanceAuthority = readNormalizedText(
+    files.apiSastArtifactAcceptanceGate
+  );
+  const retryAuthority = readNormalizedText(
+    files.apiSastKillSwitchRetryAuthority
+  );
+  const adapterTest = readNormalizedText(files.apiSastKillSwitchAdapterTest);
+  const planner = readNormalizedText(files.apiSastPlanner);
+  const queueStore = readNormalizedText(files.apiPrismaSastQueueAdmissionStore);
+  const scannerRuntime = readNormalizedText(files.apiSastScannerRuntime);
+  const aiService = readNormalizedText(files.apiAiAdvisoryService);
+  const controlPlaneService = readNormalizedText(files.apiControlPlaneService);
+  const ruleModule = readNormalizedText(files.apiRuleGovernanceModule);
+  const scanModule = readNormalizedText(files.apiScanPlaneModule);
+  const schema = readNormalizedText(files.apiPrismaSchema);
+  const migration = readNormalizedText(files.apiSastKillSwitchMigration);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  for (const version of [
+    'sast-kill-switch-context-v1',
+    'sast-kill-switch-decision-v1',
+    'sast-kill-switch-verification-v1',
+    'sast-kill-switch-evaluation-v1',
+    'sast-kill-switch-planning-v1',
+    'sast-kill-switch-emergency-suspension-v1',
+    'sast-kill-switch-canary-suspension-signal-v1'
+  ]) {
+    assert.match(shared, new RegExp(version));
+  }
+  for (const scope of [
+    "scope: 'GLOBAL'",
+    "scope: 'SCANNER_VERSION'",
+    "scope: 'RULE_BUNDLE'",
+    "scope: 'SEMANTIC_RULE'",
+    "scope: 'PROFILE'",
+    "scope: 'TENANT'",
+    "scope: 'REPOSITORY_BINDING'",
+    "scope: 'CAPABILITY'",
+    "scope: 'EXTERNAL_PUBLICATION'"
+  ]) {
+    assert.match(shared, new RegExp(scope));
+  }
+  for (const runtimeGate of [
+    'PLANNING',
+    'QUEUE_ADMISSION',
+    'SCANNER_START',
+    'ARTIFACT_ACCEPTANCE',
+    'RETRY_ADMISSION',
+    'COVERAGE',
+    'EXTERNAL_PUBLICATION',
+    'AI_ADVISORY'
+  ]) {
+    assert.match(shared, new RegExp(runtimeGate));
+  }
+  assert.match(shared, /buildApplicableSastKillSwitchSelectors/);
+  assert.match(shared, /coverageEffect/);
+  assert.match(sharedTest, /all runtime selectors/);
+  assert.match(sharedTest, /content-free emergency suspension receipt/);
+  assert.match(sharedIndex, /sast-kill-switch/);
+
+  assert.match(service, /class SastKillSwitchService extends SastKillSwitchGate/);
+  assert.match(service, /evaluatePersistedScan/);
+  assert.match(service, /authorizeEmergencySuspension/);
+  assert.match(service, /MAX_BOUNDARY_CLOCK_SKEW_MILLISECONDS/);
+  assert.match(service, /assertTrustedBoundaryTime/);
+  assert.match(persistence, /Prisma\.TransactionIsolationLevel\.Serializable/);
+  assert.match(persistence, /SAST_KILL_SWITCH_SERIALIZABLE_RETRIES = 3/);
+  assert.match(store, /buildApplicableSastKillSwitchSelectors/);
+  assert.match(store, /FOR UPDATE/);
+  assert.match(gate, /UnavailableSastKillSwitchGate/);
+  assert.match(gate, /AUTHORITY_UNAVAILABLE/);
+  assert.match(signatureAuthority, /UnavailableSastKillSwitchSignatureAuthority/);
+  assert.match(canarySuspension, /decision\.outcome !== 'PAUSED'/);
+  assert.match(serviceTest, /production signature authority is unavailable/);
+  assert.match(serviceTest, /only from the locked T048 ledger/);
+  assert.match(persistenceTest, /append-only ledgers/);
+  assert.match(persistenceTest, /planning, runtime, artifact, retry, publication, AI/);
+  assert.match(queueFenceTest, /omits one applicable selector/);
+  assert.match(queueFenceTest, /context digest is not derived from the plan/);
+
+  const canaryGate = planner.indexOf('ruleBundleCanaryGate.verifyScannerSet');
+  const planningKillSwitch = planner.indexOf('killSwitchGate.evaluateContext');
+  const policyGate = planner.indexOf('tenantRulePolicyGate.resolve');
+  assert.ok(canaryGate >= 0);
+  assert.ok(planningKillSwitch > canaryGate);
+  assert.ok(policyGate > planningKillSwitch);
+  assert.match(queueStore, /assertCurrentSastKillSwitchEvaluation/);
+  assert.match(queueStore, /buildApplicableSastKillSwitchSelectors/);
+  assert.match(queueStore, /FOR UPDATE OF head/);
+
+  const scannerKillSwitch = scannerRuntime.indexOf(
+    'this.killSwitch.evaluatePlan'
+  );
+  const scannerProvider = scannerRuntime.indexOf(
+    'this.provider.readRepositoryManifest'
+  );
+  assert.ok(scannerKillSwitch >= 0);
+  assert.ok(scannerProvider > scannerKillSwitch);
+  assert.match(artifactGate, /SastArtifactAcceptanceAuthority/);
+  assert.match(artifactGate, /return await this\.acceptanceAuthority\.evaluate\(input\)/);
+  assert.match(acceptanceAuthority, /abstract class SastArtifactAcceptanceAuthority/);
+  assert.match(retryAuthority, /gate: 'RETRY_ADMISSION'/);
+  assert.match(coverageGate, /gate: 'COVERAGE'/);
+  assert.match(coverageGate, /coverageAuthority\.verify\(decision\)/);
+  assert.match(controlPlaneService, /gate: 'EXTERNAL_PUBLICATION'/);
+  assert.match(
+    controlPlaneService,
+    /assertExternalPublicationKillSwitchClear/
+  );
+  assert.match(aiService, /gate: 'AI_ADVISORY'/);
+  assert.match(adapterTest, /independent production acceptance denial/);
+  assert.match(ruleModule, /provide: SastKillSwitchGate/);
+  assert.match(scanModule, /SastKillSwitchArtifactAcceptanceGate/);
+  assert.match(scanModule, /SastKillSwitchRetryRuntimeAuthority/);
+  assert.match(scanModule, /SastKillSwitchFindingLifecycleCoverageGate/);
+
+  for (const model of [
+    'SastKillSwitchDecision',
+    'SastKillSwitchVerification',
+    'SastKillSwitchHead',
+    'SastKillSwitchEvaluation',
+    'SastKillSwitchEvaluationHead',
+    'SastKillSwitchEvaluationMatch',
+    'SastKillSwitchEmergencySuspensionReceipt'
+  ]) {
+    assert.match(schema, new RegExp(`model ${model} \\{`));
+    assert.match(migration, new RegExp(`CREATE TABLE "${model}"`));
+  }
+  assert.match(migration, /reject_sast_kill_switch_ledger_mutation/);
+  assert.match(migration, /SastQueueReservation_zz_kill_switch_head/);
+  assert.match(migration, /enforce_sast_kill_switch_evaluation_complete/);
+  assert.doesNotMatch(migration, /ON DELETE CASCADE/);
+  assert.doesNotMatch(migration, /"[A-Za-z0-9_]+"\s+JSONB\b/i);
+
+  assert.match(tasks, /- \[x\] T049\b/);
+  assertT049QuickstartHandoff(quickstart);
+  assertT049PlanHandoff(plan);
+  assert.match(contract, /Signed SAST kill-switch authority v1/);
+  assert.match(dataModel, /### SastKillSwitchDecision/);
+  assert.match(spec, /FR-057/);
+  assert.match(
+    ruleGovernance,
+    /T049 Signed Kill-Switch and Emergency-Suspension Boundary/
+  );
+  assert.match(
+    threatModel,
+    /First-activation, selector omission, and plan\/admission race/
+  );
+  assert.match(qualityGates, /T049 is release-blocking/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

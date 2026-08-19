@@ -10,6 +10,19 @@ import {
   isVerifiedSastRuleBundleCanaryAssignmentDescriptorValid,
   type VerifiedSastRuleBundleCanaryAssignmentDescriptor
 } from './sast-rule-bundle-canary';
+import {
+  isSastKillSwitchPlanningDescriptorValid,
+  type SastKillSwitchPlanningDescriptor
+} from './sast-kill-switch';
+import {
+  SAST_KILL_SWITCH_SCOPES,
+  type SastKillSwitchScope
+} from './sast-kill-switch-scopes';
+
+export {
+  SAST_KILL_SWITCH_SCOPES,
+  type SastKillSwitchScope
+} from './sast-kill-switch-scopes';
 
 export const PRODUCTION_SAST_RUNTIME_FEATURE_ID = '006-production-sast-runtime-design';
 
@@ -483,6 +496,12 @@ export interface SastScanPlan {
   tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
   repositoryState: SastRepositoryState;
   scannerSet: CanaryQualifiedScannerSetDescriptor;
+  /**
+   * T049 mutable-runtime receipt. It is intentionally excluded from the v4
+   * canonical scan key and retained in the immutable plan for queue fencing.
+   * Historical terminal v4 plans may not contain this projection.
+   */
+  killSwitchEvaluation?: SastKillSwitchPlanningDescriptor;
   isolationClass: 'HARDENED' | 'RESTRICTED';
   resultIngressRef: string;
   evidenceOutputRef: string;
@@ -785,19 +804,6 @@ export interface RuleBundleCanaryEvidence
   platformApprovalRef: string;
   rollbackRef: string;
 }
-
-export const SAST_KILL_SWITCH_SCOPES = [
-  'SCANNER_VERSION',
-  'RULE_BUNDLE',
-  'SEMANTIC_RULE',
-  'TENANT',
-  'REPOSITORY_BINDING',
-  'CAPABILITY',
-  'PROFILE',
-  'EXTERNAL_PUBLICATION',
-  'GLOBAL'
-] as const;
-export type SastKillSwitchScope = (typeof SAST_KILL_SWITCH_SCOPES)[number];
 
 export interface SastKillSwitchDecision {
   killSwitchId: string;
@@ -1148,6 +1154,10 @@ export function isSastScanPlanValid(plan: SastScanPlan): boolean {
       plan.repositoryState.submodulesEnabled === false &&
       plan.repositoryState.lfsObjectsFetched === false &&
       isCanaryQualifiedScannerSetDescriptorValid(plan.scannerSet) &&
+      (plan.killSwitchEvaluation === undefined ||
+        isSastKillSwitchPlanningDescriptorValid(
+          plan.killSwitchEvaluation
+        )) &&
       (plan.isolationClass === 'HARDENED' || plan.isolationClass === 'RESTRICTED') &&
       isNonBlank(plan.resultIngressRef) &&
       isNonBlank(plan.evidenceOutputRef) &&

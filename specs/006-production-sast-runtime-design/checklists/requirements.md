@@ -40,6 +40,7 @@
 - [x] Scanner, rule, database, schema, and normalizer artifacts are immutable and digest pinned.
 - [x] Signature, provenance, compatibility, semantic rule identity, and rollback are required.
 - [x] Rule promotion, separation of duties, deterministic canary, kill switches, and rollback are explicit.
+- [x] Signed append-only kill-switch authority is enforced at planning, queue, scanner, artifact, retry, coverage, publication, AI, and emergency suspension boundaries.
 - [x] Tenant policy and waiver metadata cannot mutate or inject executable rule content.
 - [x] Disabled required coverage cannot be silently reported complete.
 

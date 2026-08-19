@@ -252,6 +252,10 @@ test('evidence policy prevents full-file reconstruction and caps retention at se
 
 test('rule policy, kill switches, and canary activation remain governed and reversible', () => {
   const contract = readContract();
+  const killSwitchScopes = readFileSync(
+    new URL('../src/types/sast-kill-switch-scopes.ts', import.meta.url),
+    'utf8'
+  );
 
   assert.match(contract, /SAST_KILL_SWITCH_SCOPES/);
   for (const scope of [
@@ -265,7 +269,7 @@ test('rule policy, kill switches, and canary activation remain governed and reve
     'EXTERNAL_PUBLICATION',
     'GLOBAL'
   ]) {
-    assert.match(contract, new RegExp(`'${scope}'`));
+    assert.match(killSwitchScopes, new RegExp(`'${scope}'`));
   }
   assert.match(contract, /isSastKillSwitchDecisionValid/);
   assert.match(contract, /pathPatternDialect:\s*'GITIGNORE_SUBSET_V1'/);

@@ -16,6 +16,7 @@ import {
 import { Injectable } from '@nestjs/common';
 
 import { ControlPlaneService } from '../control-plane/control-plane.service';
+import { SastKillSwitchGate } from '../rule-governance/sast-kill-switch.gate';
 import { SandboxRuntimeAttestationService } from './sandbox-runtime-attestation.service';
 import {
   retryableInfrastructureFailure,
@@ -41,6 +42,7 @@ export class SastScannerRuntimeService {
     private readonly manifestVerifier: ScannerWorkspaceManifestService,
     private readonly provider: ScannerSandboxRuntimeProvider,
     private readonly store: SastScannerRuntimeStore,
+    private readonly killSwitch: SastKillSwitchGate,
     private readonly retryAdmission: SastRetryAdmissionGate =
       new UnavailableSastRetryAdmissionGate()
   ) {}
@@ -145,6 +147,40 @@ export class SastScannerRuntimeService {
           attemptDeadlineAt,
           signal: controller.signal
         };
+        await this.store.beginScannerRun(
+          request,
+          activeScannerRunId,
+          invocation,
+          new Date().toISOString()
+        );
+
+        const killSwitchEvaluatedAt = new Date().toISOString();
+        try {
+          const killSwitch = await this.killSwitch.evaluatePlan({
+            gate: 'SCANNER_START',
+            plan: request.plan,
+            scanner: invocation.scanner,
+            evaluatedAt: killSwitchEvaluatedAt
+          });
+          if (killSwitch.receipt.outcome !== 'CLEAR') {
+            throw securityViolation(
+              'SAST_KILL_SWITCH_ACTIVE',
+              'Scanner start was denied by an active SAST kill switch.'
+            );
+          }
+        } catch (error) {
+          if (
+            error instanceof SastScannerRuntimeError &&
+            error.reasonCode === 'SAST_KILL_SWITCH_ACTIVE'
+          ) {
+            throw error;
+          }
+          throw securityViolation(
+            'SAST_KILL_SWITCH_AUTHORITY_UNAVAILABLE',
+            'Scanner start requires current SAST kill-switch authority.'
+          );
+        }
+
         const manifest = await this.runBeforeDeadline(
           attemptDeadlineAt,
           controller,
@@ -152,12 +188,6 @@ export class SastScannerRuntimeService {
           invocation.scanner
         );
         this.manifestVerifier.verify(request, invocation, manifest);
-        await this.store.beginScannerRun(
-          request,
-          activeScannerRunId,
-          invocation,
-          new Date().toISOString()
-        );
 
         await this.emitAudit(
           request,

@@ -132,7 +132,10 @@ describe('SAST scan coverage persistence contract', () => {
     expect(exportsBlock).not.toContain('TrivyJsonNormalizer');
     expect(exportsBlock).not.toContain('SyftCycloneDxInventoryIngestor');
     expect(module).toMatch(
-      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastScanFreshnessService/
+      /provide:\s*SastFindingLifecycleCoverageAuthority,[\s\S]{0,100}useExisting:\s*SastScanFreshnessService/
+    );
+    expect(module).toMatch(
+      /provide:\s*SastFindingLifecycleCoverageGate,[\s\S]{0,100}useExisting:\s*SastKillSwitchFindingLifecycleCoverageGate/
     );
     expect(service).not.toMatch(/\bLogger\b|\bconsole\./u);
     expect(service).not.toMatch(

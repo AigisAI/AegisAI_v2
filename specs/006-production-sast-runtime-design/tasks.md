@@ -80,7 +80,7 @@
 - [x] T046 Implement semantic rule identity and non-executable tenant policy metadata
 - [x] T047 Implement promotion evidence, approvals, and state transitions
 - [x] T048 Implement deterministic tenant-safe canary cohorts and observation gates
-- [ ] T049 Implement scanner/bundle/rule/profile/tenant/global kill switches
+- [x] T049 Implement scanner/bundle/rule/profile/tenant/global kill switches
 - [ ] T050 Implement last-known-good rollback without historical mutation
 
 ## Phase 10: Production Qualification

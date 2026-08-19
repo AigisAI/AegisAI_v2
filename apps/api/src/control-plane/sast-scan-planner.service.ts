@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   SAST_FORBIDDEN_CAPABILITIES,
+  buildSastKillSwitchContextFromPlanParts,
   buildSastCanonicalScanKeyPreimage,
   buildSastProfileDigestPreimage,
   findSastProfileLimitReasonCodes,
@@ -12,8 +13,10 @@ import {
   isScannerSetDescriptorValid,
   isSignedSastArtifactDescriptorValid,
   selectSastScanProfile,
+  toSastKillSwitchPlanningDescriptor,
   type SastCoverageClaim,
   type SastPlanningReasonCode,
+  type SastKillSwitchPlanningDescriptor,
   type SastScanPlan,
   type SastScanPlanningInput,
   type SastScanPlanningResult,
@@ -26,6 +29,10 @@ import {
   type VerifiedScannerSetDescriptor
 } from '@aegisai/shared';
 
+import {
+  SastKillSwitchGate,
+  SastKillSwitchGateError
+} from '../rule-governance/sast-kill-switch.gate';
 import {
   SastRuleBundleCanaryGate,
   SastRuleBundleCanaryGateError
@@ -55,6 +62,7 @@ export class SastScanPlannerService {
     private readonly ruleBundleCompatibilityGate: SastRuleBundleCompatibilityGate,
     private readonly ruleBundleLifecycleGate: SastRuleBundleLifecycleGate,
     private readonly ruleBundleCanaryGate: SastRuleBundleCanaryGate,
+    private readonly killSwitchGate: SastKillSwitchGate,
     private readonly tenantRulePolicyGate: SastTenantRulePolicyGate,
     private readonly policyEvaluationClock: SastPolicyEvaluationClock
   ) {}
@@ -169,9 +177,11 @@ export class SastScanPlannerService {
     }
     let promotionVerifiedScannerSet: PromotionVerifiedScannerSetDescriptor;
     let canaryQualifiedScannerSet: CanaryQualifiedScannerSetDescriptor;
+    let killSwitchEvaluation: SastKillSwitchPlanningDescriptor;
     let tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor;
+    let policyEvaluatedAt: string;
     try {
-      const policyEvaluatedAt = this.readPolicyEvaluationTime();
+      policyEvaluatedAt = this.readPolicyEvaluationTime();
       promotionVerifiedScannerSet =
         await this.ruleBundleLifecycleGate.verifyScannerSet({
           scannerSet: verifiedScannerSet,
@@ -186,6 +196,41 @@ export class SastScanPlannerService {
           profileDigest,
           evaluatedAt: policyEvaluatedAt
         });
+      const killSwitchContext = buildSastKillSwitchContextFromPlanParts(
+        {
+          tenantId: scanRequest.tenantId,
+          repositoryBindingId: scanRequest.repositoryBindingId,
+          scanRequestId: scanRequest.id,
+          profile: profileSelection.profile,
+          profileDigest,
+          scannerSet: canaryQualifiedScannerSet
+        },
+        (value) => this.digest(value)
+      );
+      if (!killSwitchContext) {
+        throw new SastKillSwitchGateError('CONTEXT_INVALID');
+      }
+      const killSwitchResult = await this.killSwitchGate.evaluateContext({
+        gate: 'PLANNING',
+        context: killSwitchContext,
+        evaluatedAt: policyEvaluatedAt
+      });
+      if (killSwitchResult.receipt.outcome === 'ACTIVE') {
+        return this.reject(
+          scanRequest,
+          requestedAt,
+          'SAST_KILL_SWITCH_ACTIVE',
+          profileSelection.coverageClaim,
+          profileSelection.profile
+        );
+      }
+      const planningDescriptor = toSastKillSwitchPlanningDescriptor(
+        killSwitchResult.receipt
+      );
+      if (!planningDescriptor) {
+        throw new SastKillSwitchGateError('STATE_STALE');
+      }
+      killSwitchEvaluation = planningDescriptor;
       tenantRulePolicy = await this.tenantRulePolicyGate.resolve({
         tenantId: scanRequest.tenantId,
         repositoryBindingId: scanRequest.repositoryBindingId,
@@ -203,6 +248,8 @@ export class SastScanPlannerService {
           ? this.ruleBundleLifecycleReasonCode(error)
           : error instanceof SastRuleBundleCanaryGateError
             ? this.ruleBundleCanaryReasonCode(error)
+            : error instanceof SastKillSwitchGateError
+              ? this.killSwitchReasonCode(error)
             : this.tenantRulePolicyReasonCode(error),
         profileSelection.coverageClaim,
         profileSelection.profile
@@ -244,6 +291,7 @@ export class SastScanPlannerService {
       canonicalScanKey,
       canaryQualifiedScannerSet,
       tenantRulePolicy,
+      killSwitchEvaluation,
       isolationClass,
       input.repositoryMetadata.inventoryDigest,
       input.repositoryMetadata.attestationRef,
@@ -323,6 +371,7 @@ export class SastScanPlannerService {
               canonicalScanKey,
               canaryQualifiedScannerSet,
               tenantRulePolicy,
+              killSwitchEvaluation,
               isolationClass,
               input.repositoryMetadata.inventoryDigest,
               input.repositoryMetadata.attestationRef,
@@ -345,6 +394,7 @@ export class SastScanPlannerService {
     canonicalScanKey: `sha256:${string}`,
     scannerSet: CanaryQualifiedScannerSetDescriptor,
     tenantRulePolicy: VerifiedSastTenantRulePolicyDescriptor,
+    killSwitchEvaluation: SastKillSwitchPlanningDescriptor,
     isolationClass: 'HARDENED' | 'RESTRICTED',
     inventoryDigest: `sha256:${string}`,
     attestationRef: string,
@@ -364,6 +414,9 @@ export class SastScanPlannerService {
       policyVersion: scanRequest.policyVersion,
       tenantRulePolicy: this.deepFreeze(
         structuredClone(tenantRulePolicy)
+      ),
+      killSwitchEvaluation: this.deepFreeze(
+        structuredClone(killSwitchEvaluation)
       ),
       repositoryState: {
         repositoryBindingId: scanRequest.repositoryBindingId,
@@ -469,6 +522,19 @@ export class SastScanPlannerService {
         return 'TENANT_RULE_POLICY_INVALID';
       case 'POLICY_STORE_UNAVAILABLE':
         return 'TENANT_RULE_POLICY_UNAVAILABLE';
+    }
+  }
+
+  private killSwitchReasonCode(
+    error: SastKillSwitchGateError
+  ): SastPlanningReasonCode {
+    switch (error.reason) {
+      case 'STATE_STALE':
+      case 'CONTEXT_INVALID':
+        return 'SAST_KILL_SWITCH_STATE_STALE';
+      case 'AUTHORITY_UNAVAILABLE':
+      case 'STORE_UNAVAILABLE':
+        return 'SAST_KILL_SWITCH_AUTHORITY_UNAVAILABLE';
     }
   }
 

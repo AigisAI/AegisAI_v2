@@ -1,12 +1,14 @@
 import type {
   SastArtifactDispositionScope,
   SastProfileId,
+  SastScanPlan,
   SastScannerKind
 } from '@aegisai/shared';
 import { Injectable } from '@nestjs/common';
 
 export interface SastArtifactAcceptanceGateInput {
   scope: Readonly<SastArtifactDispositionScope>;
+  plan: Readonly<SastScanPlan>;
   scanner: SastScannerKind;
   scannerVersion: string;
   scannerImageDigest: `sha256:${string}`;
@@ -26,10 +28,17 @@ export interface SastArtifactAcceptanceGateDecision {
 }
 
 export abstract class SastArtifactAcceptanceGate {
-  /**
-   * T049 will provide the authoritative kill-switch implementation. Until then
-   * an explicit adapter must be installed; absence is intentionally fail closed.
-   */
+  abstract evaluate(
+    input: Readonly<SastArtifactAcceptanceGateInput>
+  ): Promise<SastArtifactAcceptanceGateDecision>;
+}
+
+/**
+ * Independent Data/Security Plane authority that decides whether a validated
+ * object may become accepted. Runtime safety gates compose around this port;
+ * they never replace its fail-closed production default.
+ */
+export abstract class SastArtifactAcceptanceAuthority {
   abstract evaluate(
     input: Readonly<SastArtifactAcceptanceGateInput>
   ): Promise<SastArtifactAcceptanceGateDecision>;
@@ -44,7 +53,7 @@ export class SastArtifactAcceptanceGateUnavailableError extends Error {
 
 @Injectable()
 export class UnavailableSastArtifactAcceptanceGate
-  extends SastArtifactAcceptanceGate
+  extends SastArtifactAcceptanceAuthority
 {
   evaluate(): Promise<SastArtifactAcceptanceGateDecision> {
     return Promise.reject(
