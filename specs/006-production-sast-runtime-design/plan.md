@@ -167,7 +167,8 @@ reservation locks and revalidates a trigger-maintained latest-transition head, c
 selection-to-admission race. T048 now fixes one immutable rollout per candidate manifest and
 profile to the exact `CANARY` candidate, `ACTIVE` baseline, T047 evidence/transition, profile,
 cohort-key reference/version, eligibility policy, and observation-source digest. The planner
-applies T045 compatibility, T047 lifecycle, T048 canary assignment, and T046 tenant policy in
+applies T045 compatibility, T047 lifecycle, T048 canary assignment, T049 kill-switch authority,
+and T046 tenant policy in
 that order. Stable HMAC-SHA-256 membership over length-framed tenant, repository binding,
 profile, and rollout identity expands monotonically through internal corpus, internal
 repositories, 1%, 5%, 25%, and 100%; only candidate assignment carries a canary descriptor.

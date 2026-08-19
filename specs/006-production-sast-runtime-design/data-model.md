@@ -1158,7 +1158,9 @@ matches are `FAILED`; publication-only matches leave factual coverage unchanged.
 only a verified `CLEAR` descriptor in the immutable plan, while queue and later gates use fresh
 evaluations. Queue admission reconstructs the planning context and canonical selector keys from
 that immutable plan, compares its context digest and exact selector set in application code, and
-has PostgreSQL independently compare every normalized selector identity and total count. A
+uses a single canonical set-based head lock plus anti-join drift check, rejects more than 50,020
+normalized selector bindings to prevent an unbounded queue transaction, and has PostgreSQL
+independently compare every normalized selector identity and total count. A
 content-valid receipt that omits one applicable inactive or active head therefore cannot reserve
 work through either write path.
 

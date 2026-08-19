@@ -159,6 +159,7 @@ const files = {
   apiRuleBundleCanaryPersistenceTest: new URL('../../apps/api/test/rule-governance/sast-rule-bundle-canary-persistence.e2e-spec.ts', import.meta.url),
   apiSastKillSwitchService: new URL('../../apps/api/src/rule-governance/sast-kill-switch.service.ts', import.meta.url),
   apiSastKillSwitchStore: new URL('../../apps/api/src/rule-governance/prisma-sast-kill-switch.store.ts', import.meta.url),
+  apiSastKillSwitchPersistence: new URL('../../apps/api/src/rule-governance/sast-kill-switch-persistence.ts', import.meta.url),
   apiSastKillSwitchGate: new URL('../../apps/api/src/rule-governance/sast-kill-switch.gate.ts', import.meta.url),
   apiSastKillSwitchSignatureAuthority: new URL('../../apps/api/src/rule-governance/sast-kill-switch-signature.authority.ts', import.meta.url),
   apiSastKillSwitchCanarySuspension: new URL('../../apps/api/src/rule-governance/sast-kill-switch-canary-suspension.service.ts', import.meta.url),
@@ -2641,6 +2642,7 @@ test('SAST T049 propagates signed kill switches through every production authori
   const sharedIndex = readNormalizedText(files.sharedIndex);
   const service = readNormalizedText(files.apiSastKillSwitchService);
   const store = readNormalizedText(files.apiSastKillSwitchStore);
+  const persistence = readNormalizedText(files.apiSastKillSwitchPersistence);
   const gate = readNormalizedText(files.apiSastKillSwitchGate);
   const signatureAuthority = readNormalizedText(
     files.apiSastKillSwitchSignatureAuthority
@@ -2730,7 +2732,8 @@ test('SAST T049 propagates signed kill switches through every production authori
   assert.match(service, /authorizeEmergencySuspension/);
   assert.match(service, /MAX_BOUNDARY_CLOCK_SKEW_MILLISECONDS/);
   assert.match(service, /assertTrustedBoundaryTime/);
-  assert.match(store, /Prisma\.TransactionIsolationLevel\.Serializable/);
+  assert.match(persistence, /Prisma\.TransactionIsolationLevel\.Serializable/);
+  assert.match(persistence, /SAST_KILL_SWITCH_SERIALIZABLE_RETRIES = 3/);
   assert.match(store, /buildApplicableSastKillSwitchSelectors/);
   assert.match(store, /FOR UPDATE/);
   assert.match(gate, /UnavailableSastKillSwitchGate/);
@@ -2763,7 +2766,7 @@ test('SAST T049 propagates signed kill switches through every production authori
   assert.ok(scannerKillSwitch >= 0);
   assert.ok(scannerProvider > scannerKillSwitch);
   assert.match(artifactGate, /SastArtifactAcceptanceAuthority/);
-  assert.match(artifactGate, /return this\.acceptanceAuthority\.evaluate\(input\)/);
+  assert.match(artifactGate, /return await this\.acceptanceAuthority\.evaluate\(input\)/);
   assert.match(acceptanceAuthority, /abstract class SastArtifactAcceptanceAuthority/);
   assert.match(retryAuthority, /gate: 'RETRY_ADMISSION'/);
   assert.match(coverageGate, /gate: 'COVERAGE'/);
@@ -2796,7 +2799,7 @@ test('SAST T049 propagates signed kill switches through every production authori
   assert.match(migration, /SastQueueReservation_zz_kill_switch_head/);
   assert.match(migration, /enforce_sast_kill_switch_evaluation_complete/);
   assert.doesNotMatch(migration, /ON DELETE CASCADE/);
-  assert.doesNotMatch(migration, /"[A-Za-z0-9_]+"\s+JSONB\s+(?:NOT\s+)?NULL/i);
+  assert.doesNotMatch(migration, /"[A-Za-z0-9_]+"\s+JSONB\b/i);
 
   assert.match(tasks, /- \[x\] T049\b/);
   assertT049QuickstartHandoff(quickstart);

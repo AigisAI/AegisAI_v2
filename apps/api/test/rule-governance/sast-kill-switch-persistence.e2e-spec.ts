@@ -17,6 +17,9 @@ describe('T049 SAST kill-switch persistence and propagation contracts', () => {
   const service = read(
     'apps/api/src/rule-governance/sast-kill-switch.service.ts'
   );
+  const persistence = read(
+    'apps/api/src/rule-governance/sast-kill-switch-persistence.ts'
+  );
   const moduleSource = read(
     'apps/api/src/rule-governance/rule-governance.module.ts'
   );
@@ -85,8 +88,9 @@ describe('T049 SAST kill-switch persistence and propagation contracts', () => {
   });
 
   it('serializes selector chains, protects heads, and binds exact trusted verification', () => {
-    expect(store).toContain('Prisma.TransactionIsolationLevel.Serializable');
-    expect(store).toContain('SERIALIZABLE_RETRIES = 3');
+    expect(persistence).toContain('Prisma.TransactionIsolationLevel.Serializable');
+    expect(persistence).toContain('SAST_KILL_SWITCH_SERIALIZABLE_RETRIES = 3');
+    expect(persistence).toContain('setTimeout(resolve');
     expect(store).toContain('ensureHeadPlaceholders');
     expect(store).toContain('lockHeads');
     expect(store).toContain('FOR UPDATE');
@@ -101,6 +105,9 @@ describe('T049 SAST kill-switch persistence and propagation contracts', () => {
     expect(migration).toContain('SastKillSwitchHead_protect_insert');
     expect(migration).toContain('SastKillSwitchHead_protect_update');
     expect(migration).toContain('SastKillSwitchHead_protect_delete');
+    expect(migration).not.toContain('aegis.kill_switch_head_writer');
+    expect(migration).toContain('pg_trigger_depth() < 2');
+    expect(migration).toContain('SastKillSwitchHeadPlaceholderRequest');
     expect(service).toContain('MAX_BOUNDARY_CLOCK_SKEW_MILLISECONDS');
     expect(service).toContain('assertTrustedBoundaryTime');
     expect(schema).toContain(
@@ -130,6 +137,11 @@ describe('T049 SAST kill-switch persistence and propagation contracts', () => {
     expect(migration).toContain(
       'SAST queue admission kill-switch selector set does not match the immutable plan'
     );
+    expect(migration).toContain('expected_count > 50020');
+    expect(migration).not.toMatch(
+      /FOR binding_record IN[\s\S]*SAST kill-switch state changed before queue admission/u
+    );
+    expect(migration).toContain('LEFT JOIN public."SastKillSwitchHead" current_head');
     expect(migration).toContain(
       `jsonb_each(NEW."immutablePlan"->'scannerSet'->'scanners')`
     );
@@ -155,6 +167,15 @@ describe('T049 SAST kill-switch persistence and propagation contracts', () => {
     expect(migration).toContain(
       "NEW.\"externalAuthority\" = 'EMERGENCY_SUSPENSION'"
     );
+    expect(migration).toContain(
+      'actual_active_set_digest IS DISTINCT FROM NEW."activeDecisionSetDigest"'
+    );
+    expect(migration).toContain(
+      'actual_active_set_digest IS DISTINCT FROM suspension_record."activeDecisionSetDigest"'
+    );
+    expect(migration).toContain(
+      'SAST emergency suspension decision set changed before lifecycle transition'
+    );
 
     const canary = planner.indexOf('ruleBundleCanaryGate.verifyScannerSet');
     const killSwitch = planner.indexOf('killSwitchGate.evaluateContext');
@@ -170,6 +191,10 @@ describe('T049 SAST kill-switch persistence and propagation contracts', () => {
     expect(artifact).toContain("gate: 'ARTIFACT_ACCEPTANCE'");
     expect(artifact).toContain('acceptanceAuthority.evaluate(input)');
     expect(retry).toContain("gate: 'RETRY_ADMISSION'");
+    expect(retry).toContain('this.scannerSetAuthority.verify(scope)');
+    expect(scanModule).toContain(
+      'provide: SastRetryScannerSetAvailabilityAuthority'
+    );
     expect(coverage).toContain("gate: 'COVERAGE'");
     expect(coverage).toContain('coverageAuthority.verify(decision)');
     expect(scanModule).toContain(

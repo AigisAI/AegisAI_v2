@@ -1,9 +1,8 @@
 import { createHash } from 'node:crypto';
 
 import {
-  SAST_SCANNER_KINDS,
   buildApplicableSastKillSwitchSelectors,
-  buildSastKillSwitchEvaluationContext,
+  buildSastKillSwitchContextFromPlanParts,
   type SastKillSwitchEvaluationContext,
   type SastScanPlan
 } from '@aegisai/shared';
@@ -87,6 +86,47 @@ describe('T049 queue kill-switch complete-selector fence', () => {
     );
     expect(queryRaw).not.toHaveBeenCalled();
   });
+
+  it.each([
+    [
+      'active current head',
+      (head: Record<string, unknown>) => ({
+        ...head,
+        bindingActive: true,
+        currentActive: true
+      })
+    ],
+    [
+      'head sequence drift',
+      (head: Record<string, unknown>) => ({
+        ...head,
+        currentSequence: Number(head.currentSequence) + 1
+      })
+    ]
+  ] as const)(
+    'rejects an %s before queue reservation',
+    async (_scenario, mutate) => {
+      const { plan, heads } = buildFixture();
+      const changedHeads = [...heads];
+      changedHeads[0] = mutate(changedHeads[0]!);
+      const queryRaw = jest
+        .fn()
+        .mockResolvedValueOnce([
+          {
+            headCount: changedHeads.length,
+            matchedDecisionCount: 0,
+            actualHeadCount: BigInt(changedHeads.length)
+          }
+        ])
+        .mockResolvedValueOnce(changedHeads);
+      const store = new PrismaSastQueueAdmissionStore({} as never);
+
+      await expect(
+        (store as unknown as QueueKillSwitchFence)
+          .assertCurrentSastKillSwitchEvaluation({ $queryRaw: queryRaw }, plan)
+      ).rejects.toThrow('SAST kill-switch state changed before queue admission.');
+    }
+  );
 });
 
 function buildFixture(): {
@@ -138,29 +178,14 @@ function buildFixture(): {
 function contextFor(
   plan: Readonly<SastScanPlan>
 ): SastKillSwitchEvaluationContext {
-  const context = buildSastKillSwitchEvaluationContext(
+  const context = buildSastKillSwitchContextFromPlanParts(
     {
       tenantId: plan.tenantId,
       repositoryBindingId: plan.repositoryState.repositoryBindingId,
       scanRequestId: plan.scanRequestId,
-      profileId: plan.profile.id,
+      profile: plan.profile,
       profileDigest: plan.profileDigest,
-      scannerSetDigest: plan.scannerSet.scannerSetDigest,
-      scanners: SAST_SCANNER_KINDS.map((scanner) => ({
-        scanner,
-        scannerVersion: plan.scannerSet.scanners[scanner].version
-      })).sort((left, right) => left.scanner.localeCompare(right.scanner)),
-      ruleBundles: plan.scannerSet.ruleBundles
-        .map((bundle) => ({
-          bundleDigest: bundle.digest,
-          ruleSemanticIds: [
-            ...new Set(bundle.rules.map((rule) => rule.ruleSemanticId))
-          ].sort()
-        }))
-        .sort((left, right) =>
-          left.bundleDigest.localeCompare(right.bundleDigest)
-        ),
-      requiredCapabilities: [...plan.profile.requiredCapabilities]
+      scannerSet: plan.scannerSet
     },
     digestCanonical
   );

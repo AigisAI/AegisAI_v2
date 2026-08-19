@@ -3,6 +3,7 @@ import type {
   SastProfileId,
   SastScannerKind
 } from './sast-runtime';
+import { SAST_KILL_SWITCH_SCOPES } from './sast-kill-switch-scopes';
 
 export const SAST_KILL_SWITCH_CONTEXT_VERSION =
   'sast-kill-switch-context-v1' as const;
@@ -20,6 +21,7 @@ export const SAST_KILL_SWITCH_CANARY_SUSPENSION_REQUEST_VERSION =
   'sast-kill-switch-canary-suspension-request-v1' as const;
 export const SAST_KILL_SWITCH_CANARY_SUSPENSION_SIGNAL_VERSION =
   'sast-kill-switch-canary-suspension-signal-v1' as const;
+export const SAST_KILL_SWITCH_MAX_SELECTOR_BINDINGS = 50_020;
 
 export const SAST_KILL_SWITCH_ACTIONS = [
   'ACTIVATE',
@@ -438,18 +440,6 @@ const CAPABILITIES: readonly SastCapability[] = [
   'IAC_MISCONFIGURATION',
   'SBOM'
 ];
-const SELECTOR_SCOPES = [
-  'SCANNER_VERSION',
-  'RULE_BUNDLE',
-  'SEMANTIC_RULE',
-  'TENANT',
-  'REPOSITORY_BINDING',
-  'CAPABILITY',
-  'PROFILE',
-  'EXTERNAL_PUBLICATION',
-  'GLOBAL'
-] as const;
-
 export function canonicalizeSastKillSwitchSelector(
   selector: Readonly<SastKillSwitchSelector>
 ): string {
@@ -552,7 +542,7 @@ export function isSastKillSwitchEvaluationContextValid(
     value.scanners.length < 1 ||
     value.scanners.length > SCANNERS.length ||
     !Array.isArray(value.ruleBundles) ||
-    value.ruleBundles.length > 8 ||
+    value.ruleBundles.length > 2 ||
     !Array.isArray(value.requiredCapabilities) ||
     value.source !== 'TRUSTED_RUNTIME_BINDING' ||
     value.repositoryContentStored !== false ||
@@ -679,14 +669,16 @@ export function buildApplicableSastKillSwitchSelectors(
     ),
     selector
   }));
-  return [...new Map(keyed.map((entry) => [entry.selectorKey, entry])).values()]
-    .sort((left, right) => compare(left.selectorKey, right.selectorKey));
+  const unique = [
+    ...new Map(keyed.map((entry) => [entry.selectorKey, entry])).values()
+  ].sort((left, right) => compare(left.selectorKey, right.selectorKey));
+  return unique.length <= SAST_KILL_SWITCH_MAX_SELECTOR_BINDINGS ? unique : [];
 }
 
 export function isSastKillSwitchSelectorValid(
   value: unknown
 ): value is SastKillSwitchSelector {
-  if (!isRecord(value) || !SELECTOR_SCOPES.includes(value.scope as never)) {
+  if (!isRecord(value) || !SAST_KILL_SWITCH_SCOPES.includes(value.scope as never)) {
     return false;
   }
   switch (value.scope) {
@@ -1043,7 +1035,7 @@ export function isSastKillSwitchHeadBindingValid(
       'bindingDigest'
     ]) ||
     !isContractId(value.selectorKey, 'sast-kill-switch-selector') ||
-    !SELECTOR_SCOPES.includes(value.scope as never) ||
+    !SAST_KILL_SWITCH_SCOPES.includes(value.scope as never) ||
     !Number.isSafeInteger(value.sequence) ||
     (value.sequence as number) < 0 ||
     typeof value.active !== 'boolean' ||
@@ -1110,7 +1102,7 @@ export function isSastKillSwitchEvaluationMatchValid(
       'bindingDigest'
     ]) ||
     !isContractId(value.selectorKey, 'sast-kill-switch-selector') ||
-    !SELECTOR_SCOPES.includes(value.scope as never) ||
+    !SAST_KILL_SWITCH_SCOPES.includes(value.scope as never) ||
     !isContractId(value.decisionId, 'sast-kill-switch-decision') ||
     !isDigest(value.decisionDigest) ||
     !isDigest(value.bindingDigest)
@@ -1142,6 +1134,7 @@ export function buildSastKillSwitchEvaluation(
     !SAST_KILL_SWITCH_GATES.includes(input.gate) ||
     !isCanonicalTimestamp(input.evaluatedAt) ||
     input.heads.length < 1 ||
+    input.heads.length > SAST_KILL_SWITCH_MAX_SELECTOR_BINDINGS ||
     input.heads.some((head) => !isSastKillSwitchHeadBindingValid(head, digestCanonical)) ||
     !isCanonicalBy(input.heads, (head) => head.selectorKey) ||
     input.heads.some(
@@ -1288,6 +1281,7 @@ export function isSastKillSwitchEvaluationReceiptValid(
     !isDigest(value.snapshotDigest) ||
     !Number.isSafeInteger(value.headCount) ||
     (value.headCount as number) < 1 ||
+    (value.headCount as number) > SAST_KILL_SWITCH_MAX_SELECTOR_BINDINGS ||
     !isDigest(value.headSetDigest) ||
     !Number.isSafeInteger(value.matchedDecisionCount) ||
     (value.matchedDecisionCount as number) < 0 ||

@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import {
   SAST_APPROVED_PROFILE_DIGESTS,
   SAST_KILL_SWITCH_GATES,
@@ -37,15 +35,17 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SastRuleBundleLifecycleAuthorityInput } from './sast-rule-bundle-lifecycle.authority';
 import {
+  asSastKillSwitchDigest,
+  digestSastKillSwitchValue,
+  runSastKillSwitchSerializable
+} from './sast-kill-switch-persistence';
+import {
   SastKillSwitchPersistenceError,
   SastKillSwitchStore,
   type PersistedSastKillSwitchDecision,
   type SastKillSwitchPersistedPlanScope
 } from './sast-kill-switch.store';
 
-const SERIALIZABLE_RETRIES = 3;
-const SERIALIZABLE_MAX_WAIT_MILLISECONDS = 5_000;
-const SERIALIZABLE_TIMEOUT_MILLISECONDS = 120_000;
 const HEAD_INSERT_CHUNK_SIZE = 500;
 
 type DecisionRow = Prisma.SastKillSwitchDecisionGetPayload<Record<string, never>>;
@@ -147,7 +147,7 @@ export class PrismaSastKillSwitchStore extends SastKillSwitchStore {
         );
       });
     } catch (error) {
-      if (!isUniqueConflict(error)) throw mapPersistenceError(error);
+      if (!isUniqueConflict(error)) throw toPersistenceError(error);
       const [existing, existingVerification] = await Promise.all([
         this.prisma.sastKillSwitchDecision.findUnique({
           where: { id: decision.decisionId }
@@ -187,19 +187,13 @@ export class PrismaSastKillSwitchStore extends SastKillSwitchStore {
 
     try {
       return await this.runSerializable(async (tx) => {
-        await ensureHeadPlaceholders(tx, selectors);
-        const rows = await lockHeads(
+        const evaluation = await buildEvaluationSnapshot(
           tx,
-          selectors.map((entry) => entry.selectorKey)
+          selectors,
+          context,
+          gate,
+          evaluatedAt
         );
-        const heads = buildBoundHeads(rows, selectors, evaluatedAt);
-        const evaluation = buildSastKillSwitchEvaluation(
-          { context, gate, heads, evaluatedAt },
-          digest
-        );
-        if (!evaluation) {
-          throw persistenceError('ACTIVE_DECISION_EXPIRED');
-        }
 
         const existing = await tx.sastKillSwitchEvaluation.findUnique({
           where: { id: evaluation.receipt.evaluationId }
@@ -230,27 +224,25 @@ export class PrismaSastKillSwitchStore extends SastKillSwitchStore {
         return { ...evaluation, replayed: false };
       });
     } catch (error) {
-      if (!isUniqueConflict(error)) throw mapPersistenceError(error);
-      const candidate = buildReplayCandidate(context, gate, evaluatedAt);
-      if (!candidate) throw persistenceError('REPLAY_CONFLICT');
-      return this.runSerializable(async (tx) => {
-        await ensureHeadPlaceholders(tx, selectors);
-        const rows = await lockHeads(
-          tx,
-          selectors.map((entry) => entry.selectorKey)
-        );
-        const heads = buildBoundHeads(rows, selectors, evaluatedAt);
-        const evaluation = buildSastKillSwitchEvaluation(
-          { context, gate, heads, evaluatedAt },
-          digest
-        );
-        if (!evaluation) throw persistenceError('ACTIVE_DECISION_EXPIRED');
-        const existing = await tx.sastKillSwitchEvaluation.findUnique({
-          where: { id: evaluation.receipt.evaluationId }
+      if (!isUniqueConflict(error)) throw toPersistenceError(error);
+      try {
+        return await this.runSerializable(async (tx) => {
+          const evaluation = await buildEvaluationSnapshot(
+            tx,
+            selectors,
+            context,
+            gate,
+            evaluatedAt
+          );
+          const existing = await tx.sastKillSwitchEvaluation.findUnique({
+            where: { id: evaluation.receipt.evaluationId }
+          });
+          if (!existing) throw persistenceError('REPLAY_CONFLICT');
+          return replayEvaluation(tx, existing, evaluation);
         });
-        if (!existing) throw persistenceError('REPLAY_CONFLICT');
-        return replayEvaluation(tx, existing, evaluation);
-      });
+      } catch (replayError) {
+        throw toPersistenceError(replayError);
+      }
     }
   }
 
@@ -342,6 +334,9 @@ export class PrismaSastKillSwitchStore extends SastKillSwitchStore {
           tx,
           selectors.map((entry) => entry.selectorKey)
         );
+        if (rows.length !== selectors.length) {
+          throw persistenceError('LEDGER_CORRUPT');
+        }
         const verifiedMilliseconds = Date.parse(verifiedAt);
         if (
           rows.some(
@@ -414,33 +409,14 @@ export class PrismaSastKillSwitchStore extends SastKillSwitchStore {
         return replaySuspension(created, receipt);
       });
     } catch (error) {
-      throw mapPersistenceError(error);
+      throw toPersistenceError(error);
     }
   }
 
   private async runSerializable<T>(
     operation: (tx: Prisma.TransactionClient) => Promise<T>
   ): Promise<T> {
-    for (let attempt = 1; attempt <= SERIALIZABLE_RETRIES; attempt += 1) {
-      try {
-        return await this.prisma.$transaction(operation, {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-          maxWait: SERIALIZABLE_MAX_WAIT_MILLISECONDS,
-          timeout: SERIALIZABLE_TIMEOUT_MILLISECONDS
-        });
-      } catch (error) {
-        if (
-          !isSerializableConflict(error) ||
-          attempt === SERIALIZABLE_RETRIES
-        ) {
-          throw error;
-        }
-        await new Promise((resolve) =>
-          setTimeout(resolve, 20 * attempt + Math.floor(Math.random() * 20))
-        );
-      }
-    }
-    throw persistenceError('AUTHORITY_UNAVAILABLE');
+    return runSastKillSwitchSerializable(this.prisma, operation);
   }
 }
 
@@ -448,9 +424,6 @@ async function ensureHeadPlaceholders(
   tx: Prisma.TransactionClient,
   selectors: readonly KeyedSelector[]
 ): Promise<void> {
-  await tx.$queryRaw<Array<{ set_config: string }>>`
-    SELECT set_config('aegis.kill_switch_head_writer', 'on', TRUE)
-  `;
   for (let offset = 0; offset < selectors.length; offset += HEAD_INSERT_CHUNK_SIZE) {
     const chunk = selectors.slice(offset, offset + HEAD_INSERT_CHUNK_SIZE);
     const values = chunk.map((entry) => {
@@ -460,17 +433,15 @@ async function ensureHeadPlaceholders(
         ${columns.scanner}, ${columns.scannerVersion}, ${columns.bundleDigest},
         ${columns.ruleSemanticId}, ${columns.profileId}, ${columns.profileDigest},
         ${columns.tenantId}, ${columns.repositoryBindingId}, ${columns.capability},
-        ${columns.publicationTargetScope}, 0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        ${columns.publicationTargetScope}
       )`;
     });
     await tx.$executeRaw(Prisma.sql`
-      INSERT INTO "SastKillSwitchHead" (
+      INSERT INTO "SastKillSwitchHeadPlaceholderRequest" (
         "selectorKey", "scope", "runtime", "scanner", "scannerVersion",
         "bundleDigest", "ruleSemanticId", "profileId", "profileDigest",
-        "tenantId", "repositoryBindingId", "capability",
-        "publicationTargetScope", "sequence", "active", "createdAt", "updatedAt"
+        "tenantId", "repositoryBindingId", "capability", "publicationTargetScope"
       ) VALUES ${Prisma.join(values)}
-      ON CONFLICT ("selectorKey") DO NOTHING
     `);
   }
 }
@@ -484,9 +455,30 @@ async function lockHeads(
     SELECT *
     FROM "SastKillSwitchHead"
     WHERE "selectorKey" IN (${Prisma.join(selectorKeys)})
-    ORDER BY "selectorKey"
+    ORDER BY "selectorKey" COLLATE "C"
     FOR UPDATE
   `);
+}
+
+async function buildEvaluationSnapshot(
+  tx: Prisma.TransactionClient,
+  selectors: readonly KeyedSelector[],
+  context: Readonly<SastKillSwitchEvaluationContext>,
+  gate: SastKillSwitchGate,
+  evaluatedAt: string
+): Promise<Omit<SastKillSwitchEvaluationResult, 'replayed'>> {
+  await ensureHeadPlaceholders(tx, selectors);
+  const rows = await lockHeads(
+    tx,
+    selectors.map((entry) => entry.selectorKey)
+  );
+  const heads = buildBoundHeads(rows, selectors, evaluatedAt);
+  const evaluation = buildSastKillSwitchEvaluation(
+    { context, gate, heads, evaluatedAt },
+    digest
+  );
+  if (!evaluation) throw persistenceError('ACTIVE_DECISION_EXPIRED');
+  return evaluation;
 }
 
 function buildBoundHeads(
@@ -1115,6 +1107,24 @@ function suspensionSelectors(manifest: {
   compatibilityEntries: Array<{ kind: string; value: string }>;
 }): KeyedSelector[] {
   const scanner = manifest.scanner as SastScannerKind;
+  const profileSelectors = manifest.compatibilityEntries
+    .filter((entry) => entry.kind === 'PROFILE_ID')
+    .map<SastKillSwitchSelector>((entry) => {
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          SAST_APPROVED_PROFILE_DIGESTS,
+          entry.value
+        )
+      ) {
+        throw persistenceError('LIFECYCLE_SCOPE_MISMATCH');
+      }
+      const profileId = entry.value as SastProfileId;
+      return {
+        scope: 'PROFILE',
+        profileId,
+        profileDigest: SAST_APPROVED_PROFILE_DIGESTS[profileId]
+      };
+    });
   const selectors: SastKillSwitchSelector[] = [
     { scope: 'GLOBAL', runtime: 'SAST' },
     { scope: 'RULE_BUNDLE', bundleDigest: asDigest(manifest.bundleDigest) },
@@ -1129,14 +1139,7 @@ function suspensionSelectors(manifest: {
       scope: 'SEMANTIC_RULE',
       ruleSemanticId: rule.ruleSemanticId
     })),
-    ...manifest.compatibilityEntries
-      .filter((entry) => entry.kind === 'PROFILE_ID')
-      .map<SastKillSwitchSelector>((entry) => ({
-        scope: 'PROFILE',
-        profileId: entry.value as SastProfileId,
-        profileDigest:
-          SAST_APPROVED_PROFILE_DIGESTS[entry.value as SastProfileId]
-      }))
+    ...profileSelectors
   ];
   const keyed = selectors.map((selector) => {
     if (!isSastKillSwitchSelectorValid(selector)) {
@@ -1185,25 +1188,13 @@ function assertVerificationValid(
   }
 }
 
-function buildReplayCandidate(
-  context: Readonly<SastKillSwitchEvaluationContext>,
-  gate: SastKillSwitchGate,
-  evaluatedAt: string
-): true | null {
-  return isSastKillSwitchEvaluationContextValid(context, digest) &&
-    SAST_KILL_SWITCH_GATES.includes(gate) &&
-    isCanonicalTimestamp(evaluatedAt)
-    ? true
-    : null;
-}
-
 function persistenceError(
   reason: ConstructorParameters<typeof SastKillSwitchPersistenceError>[0]
 ): SastKillSwitchPersistenceError {
   return new SastKillSwitchPersistenceError(reason);
 }
 
-function mapPersistenceError(error: unknown): unknown {
+function toPersistenceError(error: unknown): Error {
   if (error instanceof SastKillSwitchPersistenceError) return error;
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -1217,14 +1208,9 @@ function mapPersistenceError(error: unknown): unknown {
   ) {
     return persistenceError('REPLAY_CONFLICT');
   }
-  return error;
-}
-
-function isSerializableConflict(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === 'P2034'
-  );
+  return error instanceof Error
+    ? error
+    : new Error('Unknown SAST kill-switch persistence failure.');
 }
 
 function isUniqueConflict(error: unknown): boolean {
@@ -1235,7 +1221,7 @@ function isUniqueConflict(error: unknown): boolean {
 }
 
 function digest(value: string): `sha256:${string}` {
-  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+  return digestSastKillSwitchValue(value);
 }
 
 function canonicalJson(value: unknown): string {
@@ -1251,10 +1237,7 @@ function canonicalJson(value: unknown): string {
 }
 
 function asDigest(value: string): `sha256:${string}` {
-  if (!/^sha256:[a-f0-9]{64}$/u.test(value)) {
-    throw persistenceError('LEDGER_CORRUPT');
-  }
-  return value as `sha256:${string}`;
+  return asSastKillSwitchDigest(value, () => persistenceError('LEDGER_CORRUPT'));
 }
 
 function isCanonicalTimestamp(value: unknown): value is string {

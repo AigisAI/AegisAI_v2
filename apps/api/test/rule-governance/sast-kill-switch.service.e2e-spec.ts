@@ -21,6 +21,7 @@ import {
   SastKillSwitchCanarySuspensionSignalError
 } from '../../src/rule-governance/sast-kill-switch-canary-suspension.service';
 import {
+  MAX_BOUNDARY_CLOCK_SKEW_MILLISECONDS,
   SastKillSwitchService,
   SastKillSwitchServiceError
 } from '../../src/rule-governance/sast-kill-switch.service';
@@ -83,11 +84,13 @@ describe('SastKillSwitchService T049 authority', () => {
   });
 
   it('rejects caller-selected stale or future boundary time', async () => {
+    const trustedNow = '2026-08-19T00:01:00.000Z';
+    const trustedMilliseconds = Date.parse(trustedNow);
     const store = new InMemoryKillSwitchStore();
     const service = new SastKillSwitchService(
       store,
       new AcceptingSignatureAuthority(),
-      new FixedClock('2026-08-19T00:01:00.000Z')
+      new FixedClock(trustedNow)
     );
     const context = killSwitchContext();
 
@@ -95,14 +98,16 @@ describe('SastKillSwitchService T049 authority', () => {
       service.evaluateContext({
         gate: 'COVERAGE',
         context,
-        evaluatedAt: '2026-08-19T00:00:54.999Z'
+        evaluatedAt: new Date(
+          trustedMilliseconds - MAX_BOUNDARY_CLOCK_SKEW_MILLISECONDS - 1
+        ).toISOString()
       })
     ).rejects.toMatchObject({ reason: 'AUTHORITY_UNAVAILABLE' });
     await expect(
       service.evaluateContext({
         gate: 'COVERAGE',
         context,
-        evaluatedAt: '2026-08-19T00:01:00.001Z'
+        evaluatedAt: new Date(trustedMilliseconds + 1).toISOString()
       })
     ).rejects.toMatchObject({ reason: 'AUTHORITY_UNAVAILABLE' });
 
@@ -110,7 +115,9 @@ describe('SastKillSwitchService T049 authority', () => {
       service.evaluateContext({
         gate: 'COVERAGE',
         context,
-        evaluatedAt: '2026-08-19T00:00:55.000Z'
+        evaluatedAt: new Date(
+          trustedMilliseconds - MAX_BOUNDARY_CLOCK_SKEW_MILLISECONDS
+        ).toISOString()
       })
     ).resolves.toMatchObject({ receipt: { outcome: 'CLEAR' } });
   });

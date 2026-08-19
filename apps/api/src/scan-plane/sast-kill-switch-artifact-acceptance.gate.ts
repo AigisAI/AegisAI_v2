@@ -39,7 +39,7 @@ export class SastKillSwitchArtifactAcceptanceGate extends SastArtifactAcceptance
           reasonCode: 'SAST_KILL_SWITCH_ACTIVE'
         };
       }
-      return this.acceptanceAuthority.evaluate(input);
+      return await this.acceptanceAuthority.evaluate(input);
     } catch (error) {
       if (error instanceof SastKillSwitchGateError) {
         throw new SastArtifactAcceptanceGateUnavailableError();

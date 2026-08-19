@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import {
   SAST_KILL_SWITCH_CANARY_SUSPENSION_REASON_CODES,
   buildSastKillSwitchCanarySuspensionSignal,
@@ -10,11 +8,13 @@ import {
   type SastProfileId
 } from '@aegisai/shared';
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
-
-const SERIALIZABLE_RETRIES = 3;
+import {
+  asSastKillSwitchDigest,
+  digestSastKillSwitchValue,
+  runSastKillSwitchSerializable
+} from './sast-kill-switch-persistence';
 
 interface LifecycleHeadRow {
   manifestId: string;
@@ -66,9 +66,9 @@ export class SastKillSwitchCanarySuspensionService {
       throw new SastKillSwitchCanarySuspensionSignalError('STATE_STALE');
     }
 
-    for (let attempt = 1; attempt <= SERIALIZABLE_RETRIES; attempt += 1) {
-      try {
-        return await this.prisma.$transaction(
+    try {
+      return await runSastKillSwitchSerializable(
+        this.prisma,
           async (tx) => {
             const lifecycleRows = await tx.$queryRaw<LifecycleHeadRow[]>`
               SELECT "manifestId", "manifestDigest", "bundleId", "bundleDigest",
@@ -167,41 +167,24 @@ export class SastKillSwitchCanarySuspensionService {
               throw new SastKillSwitchCanarySuspensionSignalError('STATE_STALE');
             }
             return signal;
-          },
-          {
-            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-            maxWait: 5_000,
-            timeout: 120_000
           }
-        );
-      } catch (error) {
-        if (error instanceof SastKillSwitchCanarySuspensionSignalError) {
-          throw error;
-        }
-        if (isSerializableConflict(error) && attempt < SERIALIZABLE_RETRIES) {
-          continue;
-        }
-        throw new SastKillSwitchCanarySuspensionSignalError('STORE_UNAVAILABLE');
+      );
+    } catch (error) {
+      if (error instanceof SastKillSwitchCanarySuspensionSignalError) {
+        throw error;
       }
+      throw new SastKillSwitchCanarySuspensionSignalError('STORE_UNAVAILABLE');
     }
-    throw new SastKillSwitchCanarySuspensionSignalError('STORE_UNAVAILABLE');
   }
-}
-
-function isSerializableConflict(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === 'P2034'
-  );
 }
 
 function asDigest(value: string): `sha256:${string}` {
-  if (!/^sha256:[a-f0-9]{64}$/u.test(value)) {
-    throw new SastKillSwitchCanarySuspensionSignalError('STATE_STALE');
-  }
-  return value as `sha256:${string}`;
+  return asSastKillSwitchDigest(
+    value,
+    () => new SastKillSwitchCanarySuspensionSignalError('STATE_STALE')
+  );
 }
 
 function digest(value: string): `sha256:${string}` {
-  return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+  return digestSastKillSwitchValue(value);
 }

@@ -14,6 +14,15 @@ import {
   isSastKillSwitchPlanningDescriptorValid,
   type SastKillSwitchPlanningDescriptor
 } from './sast-kill-switch';
+import {
+  SAST_KILL_SWITCH_SCOPES,
+  type SastKillSwitchScope
+} from './sast-kill-switch-scopes';
+
+export {
+  SAST_KILL_SWITCH_SCOPES,
+  type SastKillSwitchScope
+} from './sast-kill-switch-scopes';
 
 export const PRODUCTION_SAST_RUNTIME_FEATURE_ID = '006-production-sast-runtime-design';
 
@@ -795,19 +804,6 @@ export interface RuleBundleCanaryEvidence
   platformApprovalRef: string;
   rollbackRef: string;
 }
-
-export const SAST_KILL_SWITCH_SCOPES = [
-  'SCANNER_VERSION',
-  'RULE_BUNDLE',
-  'SEMANTIC_RULE',
-  'TENANT',
-  'REPOSITORY_BINDING',
-  'CAPABILITY',
-  'PROFILE',
-  'EXTERNAL_PUBLICATION',
-  'GLOBAL'
-] as const;
-export type SastKillSwitchScope = (typeof SAST_KILL_SWITCH_SCOPES)[number];
 
 export interface SastKillSwitchDecision {
   killSwitchId: string;

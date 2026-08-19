@@ -3,14 +3,12 @@ import { createHash } from 'node:crypto';
 import {
   SAST_KILL_SWITCH_GATES,
   SAST_SCANNER_KINDS,
-  SAST_SCANNER_RESPONSIBILITIES,
   buildSastKillSwitchDecision,
-  buildSastKillSwitchEvaluationContext,
+  buildSastKillSwitchContextFromPlanParts,
   buildSastKillSwitchVerification,
   isSastKillSwitchEvaluationContextValid,
   isSastKillSwitchEvaluationReceiptValid,
   isSastScanPlanValid,
-  type SastCapability,
   type SastKillSwitchControlDecisionInput,
   type SastKillSwitchEvaluationContext,
   type SastKillSwitchEvaluationResult,
@@ -41,7 +39,7 @@ import type {
   SastRuleBundleLifecycleAuthorityReceipt
 } from './sast-rule-bundle-lifecycle.authority';
 
-const MAX_BOUNDARY_CLOCK_SKEW_MILLISECONDS = 5_000;
+export const MAX_BOUNDARY_CLOCK_SKEW_MILLISECONDS = 5_000;
 const MAX_LIFECYCLE_CLOCK_SKEW_MILLISECONDS = 60_000;
 
 export class SastKillSwitchServiceError extends Error {
@@ -311,52 +309,18 @@ export function contextFromPlan(
   ) {
     return null;
   }
-  const selectedScanners = SAST_SCANNER_KINDS.filter(
-    (scanner) => onlyScanner === undefined || scanner === onlyScanner
-  );
-  const scanners = selectedScanners
-    .map((scanner) => ({
-      scanner,
-      scannerVersion: plan.scannerSet.scanners[scanner].version
-    }))
-    .sort((left, right) => compare(left.scanner, right.scanner));
-  const ruleBundles = plan.scannerSet.ruleBundles
-    .filter(
-      (bundle) => onlyScanner === undefined || bundle.scanner === onlyScanner
-    )
-    .map((bundle) => ({
-      bundleDigest: bundle.digest,
-      ruleSemanticIds: [...new Set(
-        bundle.rules.map((rule) => rule.ruleSemanticId)
-      )].sort(compare)
-    }))
-    .sort((left, right) => compare(left.bundleDigest, right.bundleDigest));
-  const ownedCapabilities = onlyScanner
-    ? SAST_SCANNER_RESPONSIBILITIES[onlyScanner]
-        .authoritativeCapabilities as readonly SastCapability[]
-    : plan.profile.requiredCapabilities;
-  const requiredCapabilities = plan.profile.requiredCapabilities
-    .filter((capability) => ownedCapabilities.includes(capability))
-    .sort((left, right) =>
-      compare(
-        String(plan.profile.requiredCapabilities.indexOf(left)),
-        String(plan.profile.requiredCapabilities.indexOf(right))
-      )
-    );
-  return buildSastKillSwitchEvaluationContext(
+  return buildSastKillSwitchContextFromPlanParts(
     {
       tenantId: plan.tenantId,
       repositoryBindingId:
         plan.repositoryState.repositoryBindingId,
       scanRequestId: plan.scanRequestId,
-      profileId: plan.profile.id,
+      profile: plan.profile,
       profileDigest: plan.profileDigest,
-      scannerSetDigest: plan.scannerSet.scannerSetDigest,
-      scanners,
-      ruleBundles,
-      requiredCapabilities
+      scannerSet: plan.scannerSet
     },
-    digest
+    digest,
+    onlyScanner
   );
 }
 
@@ -400,8 +364,4 @@ function isCanonicalTimestamp(value: unknown): value is string {
 
 function isBounded(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value.length <= 512;
-}
-
-function compare(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
 }

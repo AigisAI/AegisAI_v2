@@ -117,7 +117,9 @@ import {
   UnavailableSastLatestTargetAuthority
 } from './sast-latest-target-authority';
 import {
+  SastRetryScannerSetAvailabilityAuthority,
   SastRetryRuntimeAuthority,
+  UnavailableSastRetryScannerSetAvailabilityAuthority,
 } from './sast-retry-runtime-authority';
 import { SastKillSwitchRetryRuntimeAuthority } from './sast-kill-switch-retry-runtime.authority';
 import { SastKillSwitchArtifactAcceptanceGate } from './sast-kill-switch-artifact-acceptance.gate';
@@ -240,6 +242,11 @@ import { SastEvidenceDeletionTask } from './sast-evidence-deletion.task';
     {
       provide: SastLatestTargetAuthority,
       useExisting: UnavailableSastLatestTargetAuthority
+    },
+    UnavailableSastRetryScannerSetAvailabilityAuthority,
+    {
+      provide: SastRetryScannerSetAvailabilityAuthority,
+      useExisting: UnavailableSastRetryScannerSetAvailabilityAuthority
     },
     SastKillSwitchRetryRuntimeAuthority,
     {

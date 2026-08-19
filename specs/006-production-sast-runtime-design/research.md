@@ -618,13 +618,21 @@ and leaves the `sast-canonical-scan-key-v4` preimage unchanged. Queue admission 
 applicable selector heads in canonical order, reconstructs the context digest and canonical keys
 from the immutable plan, and verifies that exact receipt/head snapshot again. PostgreSQL also
 derives every normalized planning selector identity and the closed-set count from the plan before
-a direct reservation insert, so an internally consistent receipt cannot omit an active head.
+a direct reservation insert, so an internally consistent receipt cannot omit an active head. The
+runtime context is limited to two rule bundles and 50,020 selector bindings; evaluation and queue
+admission use one canonically ordered set-based lock plus an anti-join rather than per-head SQL.
 Scanner start, artifact acceptance, retry admission, coverage, external publication, and AI
 advisory each obtain a fresh purpose-bound evaluation. An active switch cancels a scanner only
 after the durable run exists and before the first provider repository read or scanner execution;
 accepted output from an affected run is quarantined, retries are denied, and affected AI or
 publication side effects receive no authority. Historical T039 facts remain immutable; the
 current evaluation separately projects `UNCHANGED | PARTIAL | FAILED` effective coverage.
+Crash recovery rechecks an accepted artifact intent before storage application and replaces a
+newly denied intent with quarantine. AI rechecks after inference and before persistence, closing
+activation windows around both long-running boundaries.
+Retry admission separately requires a current scanner-set availability authority whose exact
+digest agrees with the switch context; the port defaults unavailable, so clear switch state never
+asserts that withdrawn runtime assets remain deployable.
 T037 lifecycle coverage composes that fresh `COVERAGE` evaluation outside the independent T040
 freshness/comparability authority and delegates only a clear, unchanged result. External comment
 planning and each dispatch-worker claim separately evaluate `EXTERNAL_PUBLICATION`, preventing an
@@ -636,8 +644,10 @@ port and therefore cannot widen T031 authority.
 For a matching active global, bundle, scanner-version, semantic-rule, or signed-profile selector,
 the same authority may issue one digest-bound `EMERGENCY_SUSPENSION` receipt for the exact latest
 `CANARY | ACTIVE -> SUSPENDED` lifecycle edge. The receipt cannot authorize rollback, mutate an
-old plan/finding, or select a replacement bundle; last-known-good rollback remains T050. A
-separate exact two-reference request can resolve a content-free automatic-suspension signal from
+old plan/finding, or select a replacement bundle; last-known-good rollback remains T050. The
+transition commit locks and recomputes the complete applicable active decision set, rejecting
+deactivation or replacement of any captured non-trigger selector. A separate exact two-reference
+request can resolve a content-free automatic-suspension signal from
 the locked current T048 `PAUSED` decision, rollout, lifecycle head, and normalized reason set.
 The caller cannot supply a manifest, bundle, profile, lifecycle target, pause reason, or
 zero-tolerance claim.

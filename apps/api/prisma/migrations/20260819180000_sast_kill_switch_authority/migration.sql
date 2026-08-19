@@ -219,7 +219,7 @@ CREATE TABLE "SastKillSwitchEvaluation" (
     AND "profileId" IN ('JAVA_FAST_V1','JAVA_DEEP_V1','COMMON_DEEP_V1')
     AND "profileDigest" ~ '^sha256:[a-f0-9]{64}$' AND "scannerSetDigest" ~ '^sha256:[a-f0-9]{64}$'
     AND "contextDigest" ~ '^sha256:[a-f0-9]{64}$' AND "snapshotDigest" ~ '^sha256:[a-f0-9]{64}$'
-    AND "headCount" > 0 AND "headSetDigest" ~ '^sha256:[a-f0-9]{64}$'
+    AND "headCount" BETWEEN 1 AND 50020 AND "headSetDigest" ~ '^sha256:[a-f0-9]{64}$'
     AND "matchedDecisionCount" BETWEEN 0 AND "headCount"
     AND "matchedDecisionSetDigest" ~ '^sha256:[a-f0-9]{64}$'
     AND "outcome" IN ('CLEAR','ACTIVE') AND "coverageEffect" IN ('UNCHANGED','PARTIAL','FAILED')
@@ -340,6 +340,14 @@ ALTER TABLE "SastKillSwitchEmergencySuspensionReceipt" ADD CONSTRAINT "SastKillS
 ALTER TABLE "SastKillSwitchEmergencySuspensionReceipt" ADD CONSTRAINT "SastKillSwitchEmergencySuspensionReceipt_lifecycle_fkey" FOREIGN KEY ("lifecycleTransitionId","lifecycleTransitionDigest") REFERENCES "SastRuleBundleLifecycleTransition"("id","transitionDigest") ON DELETE RESTRICT ON UPDATE RESTRICT;
 ALTER TABLE "SastKillSwitchEmergencySuspensionReceipt" ADD CONSTRAINT "SastKillSwitchEmergencySuspensionReceipt_decision_fkey" FOREIGN KEY ("triggerDecisionId","triggerDecisionDigest","triggerSelectorKey") REFERENCES "SastKillSwitchDecision"("id","decisionDigest","selectorKey") ON DELETE RESTRICT ON UPDATE RESTRICT;
 
+CREATE VIEW "SastKillSwitchHeadPlaceholderRequest" AS
+SELECT
+  "selectorKey", "scope", "runtime", "scanner", "scannerVersion",
+  "bundleDigest", "ruleSemanticId", "profileId", "profileDigest",
+  "tenantId", "repositoryBindingId", "capability", "publicationTargetScope"
+FROM "SastKillSwitchHead"
+WHERE FALSE;
+
 CREATE FUNCTION "reject_sast_kill_switch_ledger_mutation"()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
@@ -350,10 +358,22 @@ $$;
 CREATE FUNCTION "protect_sast_kill_switch_head"()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
-  IF current_setting('aegis.kill_switch_head_writer', TRUE) IS DISTINCT FROM 'on' THEN
+  IF pg_trigger_depth() < 2 THEN
     RAISE EXCEPTION 'SAST kill-switch head is a protected projection';
   END IF;
   RETURN NEW;
+END;
+$$;
+
+CREATE FUNCTION "materialize_sast_kill_switch_head_placeholder"()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  INSERT INTO public."SastKillSwitchHead" (
+    "selectorKey","scope","runtime","scanner","scannerVersion","bundleDigest","ruleSemanticId","profileId","profileDigest","tenantId","repositoryBindingId","capability","publicationTargetScope","sequence","active","createdAt","updatedAt"
+  ) VALUES (
+    NEW."selectorKey",NEW."scope",NEW."runtime",NEW."scanner",NEW."scannerVersion",NEW."bundleDigest",NEW."ruleSemanticId",NEW."profileId",NEW."profileDigest",NEW."tenantId",NEW."repositoryBindingId",NEW."capability",NEW."publicationTargetScope",0,FALSE,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP
+  ) ON CONFLICT ("selectorKey") DO NOTHING;
+  RETURN NULL;
 END;
 $$;
 
@@ -362,7 +382,6 @@ RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 DECLARE head_record RECORD;
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended(NEW."selectorKey", 0));
-  PERFORM set_config('aegis.kill_switch_head_writer', 'on', TRUE);
   INSERT INTO public."SastKillSwitchHead" (
     "selectorKey","scope","runtime","scanner","scannerVersion","bundleDigest","ruleSemanticId","profileId","profileDigest","tenantId","repositoryBindingId","capability","publicationTargetScope","sequence","active","createdAt","updatedAt"
   ) VALUES (
@@ -402,7 +421,6 @@ $$;
 CREATE FUNCTION "refresh_sast_kill_switch_head"()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
-  PERFORM set_config('aegis.kill_switch_head_writer', 'on', TRUE);
   UPDATE public."SastKillSwitchHead" SET
     "sequence" = NEW."sequence",
     "currentDecisionId" = NEW."id",
@@ -442,31 +460,6 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION "enforce_sast_kill_switch_evaluation_head"()
-RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
-DECLARE current_head RECORD; evaluation_time TIMESTAMP(3);
-BEGIN
-  SELECT "evaluatedAt" INTO evaluation_time FROM public."SastKillSwitchEvaluation" WHERE "id" = NEW."evaluationId";
-  IF NOT FOUND THEN RAISE EXCEPTION 'SAST kill-switch evaluation is unavailable'; END IF;
-  SELECT * INTO current_head FROM public."SastKillSwitchHead" WHERE "selectorKey" = NEW."selectorKey" FOR UPDATE;
-  IF NOT FOUND
-     OR current_head."scope" IS DISTINCT FROM NEW."scope"
-     OR current_head."sequence" IS DISTINCT FROM NEW."sequence"
-     OR current_head."currentDecisionId" IS DISTINCT FROM NEW."decisionId"
-     OR current_head."currentDecisionDigest" IS DISTINCT FROM NEW."decisionDigest"
-     OR current_head."currentAction" IS DISTINCT FROM NEW."action"
-     OR current_head."active" IS DISTINCT FROM NEW."active"
-     OR current_head."effectiveAt" IS DISTINCT FROM NEW."effectiveAt"
-     OR current_head."expiresAt" IS DISTINCT FROM NEW."expiresAt" THEN
-    RAISE EXCEPTION 'SAST kill-switch evaluation head is stale';
-  END IF;
-  IF NEW."active" IS TRUE AND NEW."expiresAt" <= evaluation_time THEN
-    RAISE EXCEPTION 'SAST kill-switch active authority expired without explicit deactivation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
 CREATE FUNCTION "enforce_sast_kill_switch_evaluation_match"()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
@@ -489,6 +482,41 @@ CREATE FUNCTION "enforce_sast_kill_switch_evaluation_complete"()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 DECLARE head_count INTEGER; match_count INTEGER; active_count INTEGER;
 BEGIN
+  PERFORM 1
+  FROM public."SastKillSwitchEvaluationHead" binding
+  JOIN public."SastKillSwitchHead" current_head
+    ON current_head."selectorKey" = binding."selectorKey"
+  WHERE binding."evaluationId" = NEW."id"
+  ORDER BY current_head."selectorKey" COLLATE "C"
+  FOR UPDATE OF current_head;
+  IF EXISTS (
+    SELECT 1
+    FROM public."SastKillSwitchEvaluationHead" binding
+    LEFT JOIN public."SastKillSwitchHead" current_head
+      ON current_head."selectorKey" = binding."selectorKey"
+    WHERE binding."evaluationId" = NEW."id"
+      AND (
+        current_head."selectorKey" IS NULL
+        OR current_head."scope" IS DISTINCT FROM binding."scope"
+        OR current_head."sequence" IS DISTINCT FROM binding."sequence"
+        OR current_head."currentDecisionId" IS DISTINCT FROM binding."decisionId"
+        OR current_head."currentDecisionDigest" IS DISTINCT FROM binding."decisionDigest"
+        OR current_head."currentAction" IS DISTINCT FROM binding."action"
+        OR current_head."active" IS DISTINCT FROM binding."active"
+        OR current_head."effectiveAt" IS DISTINCT FROM binding."effectiveAt"
+        OR current_head."expiresAt" IS DISTINCT FROM binding."expiresAt"
+      )
+  ) THEN
+    RAISE EXCEPTION 'SAST kill-switch evaluation head is stale';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public."SastKillSwitchEvaluationHead" binding
+    WHERE binding."evaluationId" = NEW."id"
+      AND binding."active" IS TRUE
+      AND binding."expiresAt" <= NEW."evaluatedAt"
+  ) THEN
+    RAISE EXCEPTION 'SAST kill-switch active authority expired without explicit deactivation';
+  END IF;
   SELECT count(*), count(*) FILTER (WHERE "active" IS TRUE) INTO head_count, active_count
   FROM public."SastKillSwitchEvaluationHead" WHERE "evaluationId" = NEW."id";
   SELECT count(*) INTO match_count FROM public."SastKillSwitchEvaluationMatch" WHERE "evaluationId" = NEW."id";
@@ -503,8 +531,9 @@ $$;
 
 CREATE FUNCTION "enforce_sast_kill_switch_suspension_receipt"()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
-DECLARE lifecycle_head RECORD; switch_head RECORD; manifest_record RECORD; applicable_head RECORD; lifecycle_found BOOLEAN; switch_found BOOLEAN; actual_active_count INTEGER;
+DECLARE lifecycle_head RECORD; switch_head RECORD; manifest_record RECORD; applicable_head RECORD; lifecycle_found BOOLEAN; switch_found BOOLEAN; actual_active_count INTEGER; actual_active_set_json TEXT; actual_active_set_digest TEXT;
 BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended(NEW."manifestId", 0));
   SELECT * INTO lifecycle_head FROM public."SastRuleBundleLifecycleHead" WHERE "manifestId" = NEW."manifestId" FOR UPDATE;
   lifecycle_found := FOUND;
   SELECT * INTO switch_head FROM public."SastKillSwitchHead" WHERE "selectorKey" = NEW."triggerSelectorKey" FOR UPDATE;
@@ -552,6 +581,7 @@ BEGIN
     RAISE EXCEPTION 'SAST emergency suspension selector does not apply to the lifecycle bundle';
   END IF;
   actual_active_count := 0;
+  actual_active_set_json := '[';
   FOR applicable_head IN
     SELECT head.* FROM public."SastKillSwitchHead" head
     WHERE (
@@ -578,13 +608,29 @@ BEGIN
     ORDER BY head."selectorKey"
     FOR UPDATE
   LOOP
-    IF applicable_head."active" IS TRUE
-       AND applicable_head."effectiveAt" <= NEW."verifiedAt"
-       AND applicable_head."expiresAt" > NEW."verifiedAt" THEN
+    IF applicable_head."active" IS TRUE THEN
+      IF applicable_head."currentDecisionId" IS NULL
+         OR applicable_head."currentDecisionDigest" IS NULL
+         OR applicable_head."effectiveAt" IS NULL
+         OR applicable_head."expiresAt" IS NULL
+         OR applicable_head."effectiveAt" > NEW."verifiedAt"
+         OR applicable_head."expiresAt" <= NEW."verifiedAt" THEN
+        RAISE EXCEPTION 'SAST emergency suspension active decision set is corrupt or expired';
+      END IF;
+      IF actual_active_count > 0 THEN
+        actual_active_set_json := actual_active_set_json || ',';
+      END IF;
+      actual_active_set_json := actual_active_set_json
+        || '{"decisionDigest":"' || applicable_head."currentDecisionDigest"
+        || '","decisionId":"' || applicable_head."currentDecisionId"
+        || '","selectorKey":"' || applicable_head."selectorKey" || '"}';
       actual_active_count := actual_active_count + 1;
     END IF;
   END LOOP;
-  IF actual_active_count <> NEW."activeDecisionCount" THEN
+  actual_active_set_json := actual_active_set_json || ']';
+  actual_active_set_digest := 'sha256:' || encode(sha256(convert_to(actual_active_set_json, 'UTF8')), 'hex');
+  IF actual_active_count <> NEW."activeDecisionCount"
+     OR actual_active_set_digest IS DISTINCT FROM NEW."activeDecisionSetDigest" THEN
     RAISE EXCEPTION 'SAST emergency suspension active decision set is incomplete';
   END IF;
   RETURN NEW;
@@ -596,8 +642,6 @@ RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 DECLARE
   projection JSONB;
   evaluation_record RECORD;
-  binding_record RECORD;
-  current_head RECORD;
   actual_count INTEGER;
   expected_count INTEGER;
   scanner_count INTEGER;
@@ -651,7 +695,8 @@ BEGIN
   expected_count := 4 + scanner_count + bundle_count + semantic_rule_count + capability_count;
 
   SELECT count(*) INTO actual_count FROM public."SastKillSwitchEvaluationHead" WHERE "evaluationId" = evaluation_record."id";
-  IF actual_count <> evaluation_record."headCount"
+  IF expected_count > 50020
+     OR actual_count <> evaluation_record."headCount"
      OR actual_count <> expected_count
      OR evaluation_record."matchedDecisionCount" <> 0 THEN
     RAISE EXCEPTION 'SAST queue admission kill-switch receipt is incomplete';
@@ -742,27 +787,40 @@ BEGIN
     RAISE EXCEPTION 'SAST queue admission kill-switch selector set does not match the immutable plan';
   END IF;
 
-  FOR binding_record IN SELECT * FROM public."SastKillSwitchEvaluationHead" WHERE "evaluationId" = evaluation_record."id" ORDER BY "selectorKey" LOOP
-    SELECT * INTO current_head FROM public."SastKillSwitchHead" WHERE "selectorKey" = binding_record."selectorKey" FOR UPDATE;
-    IF NOT FOUND
-       OR current_head."sequence" IS DISTINCT FROM binding_record."sequence"
-       OR current_head."currentDecisionId" IS DISTINCT FROM binding_record."decisionId"
-       OR current_head."currentDecisionDigest" IS DISTINCT FROM binding_record."decisionDigest"
-       OR current_head."currentAction" IS DISTINCT FROM binding_record."action"
-       OR current_head."active" IS DISTINCT FROM binding_record."active"
-       OR current_head."effectiveAt" IS DISTINCT FROM binding_record."effectiveAt"
-       OR current_head."expiresAt" IS DISTINCT FROM binding_record."expiresAt"
-       OR current_head."active" IS TRUE THEN
-      RAISE EXCEPTION 'SAST kill-switch state changed before queue admission';
-    END IF;
-  END LOOP;
+  PERFORM 1
+  FROM public."SastKillSwitchEvaluationHead" binding
+  JOIN public."SastKillSwitchHead" current_head
+    ON current_head."selectorKey" = binding."selectorKey"
+  WHERE binding."evaluationId" = evaluation_record."id"
+  ORDER BY current_head."selectorKey" COLLATE "C"
+  FOR UPDATE OF current_head;
+  IF EXISTS (
+    SELECT 1
+    FROM public."SastKillSwitchEvaluationHead" binding
+    LEFT JOIN public."SastKillSwitchHead" current_head
+      ON current_head."selectorKey" = binding."selectorKey"
+    WHERE binding."evaluationId" = evaluation_record."id"
+      AND (
+        current_head."selectorKey" IS NULL
+        OR current_head."sequence" IS DISTINCT FROM binding."sequence"
+        OR current_head."currentDecisionId" IS DISTINCT FROM binding."decisionId"
+        OR current_head."currentDecisionDigest" IS DISTINCT FROM binding."decisionDigest"
+        OR current_head."currentAction" IS DISTINCT FROM binding."action"
+        OR current_head."active" IS DISTINCT FROM binding."active"
+        OR current_head."effectiveAt" IS DISTINCT FROM binding."effectiveAt"
+        OR current_head."expiresAt" IS DISTINCT FROM binding."expiresAt"
+        OR current_head."active" IS TRUE
+      )
+  ) THEN
+    RAISE EXCEPTION 'SAST kill-switch state changed before queue admission';
+  END IF;
   RETURN NEW;
 END;
 $$;
 
 CREATE OR REPLACE FUNCTION "enforce_sast_rule_bundle_lifecycle_append"()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
-DECLARE latest_record RECORD; evidence_time TIMESTAMP(3); suspension_record RECORD; switch_head RECORD;
+DECLARE latest_record RECORD; evidence_time TIMESTAMP(3); suspension_record RECORD; switch_head RECORD; manifest_record RECORD; applicable_head RECORD; actual_active_count INTEGER; actual_active_set_json TEXT; actual_active_set_digest TEXT;
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended(NEW."manifestId", 0));
   SELECT "id", "transitionDigest", "sequence", "toState", "transitionedAt" INTO latest_record
@@ -790,6 +848,61 @@ BEGIN
     IF NOT FOUND OR switch_head."currentDecisionId" IS DISTINCT FROM suspension_record."triggerDecisionId" OR switch_head."currentDecisionDigest" IS DISTINCT FROM suspension_record."triggerDecisionDigest" OR switch_head."active" IS NOT TRUE OR switch_head."expiresAt" <= NEW."transitionedAt" THEN
       RAISE EXCEPTION 'SAST emergency suspension authority is no longer active';
     END IF;
+    SELECT "scanner" INTO manifest_record FROM public."SastRuleBundleManifest" WHERE "id" = NEW."manifestId";
+    IF NOT FOUND THEN RAISE EXCEPTION 'SAST emergency suspension manifest is unavailable'; END IF;
+    actual_active_count := 0;
+    actual_active_set_json := '[';
+    FOR applicable_head IN
+      SELECT head.* FROM public."SastKillSwitchHead" head
+      WHERE (
+        (head."scope" = 'GLOBAL' AND head."runtime" = 'SAST')
+        OR (head."scope" = 'RULE_BUNDLE' AND head."bundleDigest" = NEW."bundleDigest")
+        OR (head."scope" = 'SCANNER_VERSION' AND head."scanner" = manifest_record."scanner" AND EXISTS (
+          SELECT 1 FROM public."SastRuleBundleCompatibilityEntry" entry
+          WHERE entry."manifestId" = NEW."manifestId" AND entry."kind" = 'SCANNER_VERSION' AND entry."value" = head."scannerVersion"
+        ))
+        OR (head."scope" = 'SEMANTIC_RULE' AND EXISTS (
+          SELECT 1 FROM public."SastRuleBundleManifestRule" rule
+          WHERE rule."manifestId" = NEW."manifestId" AND rule."ruleSemanticId" = head."ruleSemanticId"
+        ))
+        OR (head."scope" = 'PROFILE' AND EXISTS (
+          SELECT 1 FROM public."SastRuleBundleCompatibilityEntry" entry
+          WHERE entry."manifestId" = NEW."manifestId" AND entry."kind" = 'PROFILE_ID' AND entry."value" = head."profileId"
+        ) AND head."profileDigest" = CASE head."profileId"
+          WHEN 'JAVA_FAST_V1' THEN 'sha256:19743211685c76ac7c63cb8c829823c45bf458da3aee5dac4f5eaba2b44bbe74'
+          WHEN 'JAVA_DEEP_V1' THEN 'sha256:df79726b0d32cf7b1c5987f73a3b1f510b29ba57c67567083c94ad77f7a4b321'
+          WHEN 'COMMON_DEEP_V1' THEN 'sha256:2751b8dcd7b4ca7a44fba24a940800c557a03279efc47ba6cf67d6c1151cc8e9'
+          ELSE NULL
+        END)
+      )
+      ORDER BY head."selectorKey"
+      FOR UPDATE
+    LOOP
+      IF applicable_head."active" IS TRUE THEN
+        IF applicable_head."currentDecisionId" IS NULL
+           OR applicable_head."currentDecisionDigest" IS NULL
+           OR applicable_head."effectiveAt" IS NULL
+           OR applicable_head."expiresAt" IS NULL
+           OR applicable_head."effectiveAt" > NEW."transitionedAt"
+           OR applicable_head."expiresAt" <= NEW."transitionedAt" THEN
+          RAISE EXCEPTION 'SAST emergency suspension active decision set is corrupt or expired';
+        END IF;
+        IF actual_active_count > 0 THEN
+          actual_active_set_json := actual_active_set_json || ',';
+        END IF;
+        actual_active_set_json := actual_active_set_json
+          || '{"decisionDigest":"' || applicable_head."currentDecisionDigest"
+          || '","decisionId":"' || applicable_head."currentDecisionId"
+          || '","selectorKey":"' || applicable_head."selectorKey" || '"}';
+        actual_active_count := actual_active_count + 1;
+      END IF;
+    END LOOP;
+    actual_active_set_json := actual_active_set_json || ']';
+    actual_active_set_digest := 'sha256:' || encode(sha256(convert_to(actual_active_set_json, 'UTF8')), 'hex');
+    IF actual_active_count IS DISTINCT FROM suspension_record."activeDecisionCount"
+       OR actual_active_set_digest IS DISTINCT FROM suspension_record."activeDecisionSetDigest" THEN
+      RAISE EXCEPTION 'SAST emergency suspension decision set changed before lifecycle transition';
+    END IF;
   END IF;
   RETURN NEW;
 END;
@@ -801,7 +914,7 @@ CREATE CONSTRAINT TRIGGER "SastKillSwitchDecision_verification" AFTER INSERT ON 
 CREATE TRIGGER "SastKillSwitchHead_protect_insert" BEFORE INSERT ON "SastKillSwitchHead" FOR EACH ROW EXECUTE FUNCTION "protect_sast_kill_switch_head"();
 CREATE TRIGGER "SastKillSwitchHead_protect_update" BEFORE UPDATE ON "SastKillSwitchHead" FOR EACH ROW EXECUTE FUNCTION "protect_sast_kill_switch_head"();
 CREATE TRIGGER "SastKillSwitchHead_protect_delete" BEFORE DELETE ON "SastKillSwitchHead" FOR EACH ROW EXECUTE FUNCTION "protect_sast_kill_switch_head"();
-CREATE TRIGGER "SastKillSwitchEvaluationHead_binding" BEFORE INSERT ON "SastKillSwitchEvaluationHead" FOR EACH ROW EXECUTE FUNCTION "enforce_sast_kill_switch_evaluation_head"();
+CREATE TRIGGER "SastKillSwitchHeadPlaceholderRequest_materialize" INSTEAD OF INSERT ON "SastKillSwitchHeadPlaceholderRequest" FOR EACH ROW EXECUTE FUNCTION "materialize_sast_kill_switch_head_placeholder"();
 CREATE TRIGGER "SastKillSwitchEvaluationMatch_binding" BEFORE INSERT ON "SastKillSwitchEvaluationMatch" FOR EACH ROW EXECUTE FUNCTION "enforce_sast_kill_switch_evaluation_match"();
 CREATE CONSTRAINT TRIGGER "SastKillSwitchEvaluation_complete" AFTER INSERT ON "SastKillSwitchEvaluation" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "enforce_sast_kill_switch_evaluation_complete"();
 CREATE TRIGGER "SastKillSwitchEmergencySuspensionReceipt_binding" BEFORE INSERT ON "SastKillSwitchEmergencySuspensionReceipt" FOR EACH ROW EXECUTE FUNCTION "enforce_sast_kill_switch_suspension_receipt"();

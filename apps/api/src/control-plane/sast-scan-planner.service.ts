@@ -3,8 +3,7 @@ import { createHash } from 'node:crypto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   SAST_FORBIDDEN_CAPABILITIES,
-  SAST_SCANNER_KINDS,
-  buildSastKillSwitchEvaluationContext,
+  buildSastKillSwitchContextFromPlanParts,
   buildSastCanonicalScanKeyPreimage,
   buildSastProfileDigestPreimage,
   findSastProfileLimitReasonCodes,
@@ -197,31 +196,14 @@ export class SastScanPlannerService {
           profileDigest,
           evaluatedAt: policyEvaluatedAt
         });
-      const killSwitchContext = buildSastKillSwitchEvaluationContext(
+      const killSwitchContext = buildSastKillSwitchContextFromPlanParts(
         {
           tenantId: scanRequest.tenantId,
           repositoryBindingId: scanRequest.repositoryBindingId,
           scanRequestId: scanRequest.id,
-          profileId: profileSelection.profile.id,
+          profile: profileSelection.profile,
           profileDigest,
-          scannerSetDigest: canaryQualifiedScannerSet.scannerSetDigest,
-          scanners: SAST_SCANNER_KINDS.map((scanner) => ({
-            scanner,
-            scannerVersion: canaryQualifiedScannerSet.scanners[scanner].version
-          })).sort((left, right) =>
-            left.scanner < right.scanner ? -1 : left.scanner > right.scanner ? 1 : 0
-          ),
-          ruleBundles: canaryQualifiedScannerSet.ruleBundles
-            .map((bundle) => ({
-              bundleDigest: bundle.digest,
-              ruleSemanticIds: [
-                ...new Set(bundle.rules.map((rule) => rule.ruleSemanticId))
-              ].sort()
-            }))
-            .sort((left, right) =>
-              left.bundleDigest.localeCompare(right.bundleDigest)
-            ),
-          requiredCapabilities: [...profileSelection.profile.requiredCapabilities]
+          scannerSet: canaryQualifiedScannerSet
         },
         (value) => this.digest(value)
       );

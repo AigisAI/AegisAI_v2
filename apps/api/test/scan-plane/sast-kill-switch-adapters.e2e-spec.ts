@@ -1,6 +1,7 @@
 import { durableSastScanPlan } from '../support/sast-scan-plan-fixtures';
 
 import { SastKillSwitchArtifactAcceptanceGate } from '../../src/scan-plane/sast-kill-switch-artifact-acceptance.gate';
+import { SastArtifactAcceptanceGateUnavailableError } from '../../src/scan-plane/sast-artifact-acceptance-gate';
 import { SastKillSwitchFindingLifecycleCoverageGate } from '../../src/scan-plane/sast-kill-switch-finding-lifecycle-coverage.gate';
 import { SastKillSwitchRetryRuntimeAuthority } from '../../src/scan-plane/sast-kill-switch-retry-runtime.authority';
 
@@ -122,6 +123,63 @@ describe('T049 Scan Plane kill-switch adapters', () => {
     );
   });
 
+  it.each(['KILL_SWITCH', 'DOWNSTREAM'] as const)(
+    'fails artifact acceptance closed when %s authority is unavailable',
+    async (failure) => {
+      const plan = durableSastScanPlan();
+      const evaluatedAt = '2026-08-19T01:00:00.000Z';
+      const evaluatePlan = jest.fn(
+        failure === 'KILL_SWITCH'
+          ? () => Promise.reject(new Error('offline'))
+          : () => Promise.resolve({
+              receipt: {
+                outcome: 'CLEAR',
+                evaluationId: 'sast-kill-switch-evaluation://control',
+                evaluatedAt
+              }
+            })
+      );
+      const evaluateAcceptance = jest.fn(
+        failure === 'DOWNSTREAM'
+          ? () => Promise.reject(new Error('offline'))
+          : () => Promise.resolve({
+              outcome: 'ALLOW',
+              controlRef: 'artifact-acceptance://control',
+              evaluatedAt
+            })
+      );
+      const adapter = new SastKillSwitchArtifactAcceptanceGate(
+        { evaluatePlan } as never,
+        { evaluate: evaluateAcceptance } as never
+      );
+
+      await expect(
+        adapter.evaluate({
+          scope: {
+            tenantId: plan.tenantId,
+            repositoryBindingId: plan.repositoryState.repositoryBindingId,
+            scanRequestId: plan.scanRequestId,
+            attemptId: 'attempt-1',
+            scannerRunId: 'scanner-run-1'
+          },
+          plan,
+          scanner: 'OPENGREP',
+          scannerVersion: plan.scannerSet.scanners.OPENGREP.version,
+          scannerImageDigest: plan.scannerSet.scanners.OPENGREP.digest,
+          validationResultDigest: plan.scannerSet.scannerSetDigest,
+          scannerSetDigest: plan.scannerSet.scannerSetDigest,
+          ruleBundleDigest: plan.scannerSet.ruleBundles[0]!.digest,
+          profileId: plan.profile.id,
+          profileDigest: plan.profileDigest,
+          evaluatedAt
+        })
+      ).rejects.toBeInstanceOf(SastArtifactAcceptanceGateUnavailableError);
+      expect(evaluateAcceptance).toHaveBeenCalledTimes(
+        failure === 'DOWNSTREAM' ? 1 : 0
+      );
+    }
+  );
+
   it.each(['CLEAR', 'ACTIVE'] as const)(
     'maps %s retry authority without widening immutable intent',
     async (outcome) => {
@@ -132,9 +190,16 @@ describe('T049 Scan Plane kill-switch adapters', () => {
           snapshotDigest: `sha256:${'b'.repeat(64)}`
         }
       });
-      const adapter = new SastKillSwitchRetryRuntimeAuthority({
-        evaluatePersistedScan
-      } as never);
+      const scannerSetAuthority = {
+        verify: jest.fn().mockResolvedValue({
+          currentScannerSetDigest: `sha256:${'a'.repeat(64)}`,
+          scannerSetAvailable: true
+        })
+      };
+      const adapter = new SastKillSwitchRetryRuntimeAuthority(
+        { evaluatePersistedScan } as never,
+        scannerSetAuthority as never
+      );
 
       const decision = await adapter.verify({
         tenantId: 'tenant-1',
@@ -157,6 +222,7 @@ describe('T049 Scan Plane kill-switch adapters', () => {
           evaluatedAt: expect.any(String)
         })
       );
+      expect(scannerSetAuthority.verify).toHaveBeenCalledTimes(1);
     }
   );
 
@@ -179,8 +245,43 @@ describe('T049 Scan Plane kill-switch adapters', () => {
     });
   });
 
+  it('keeps retry fail closed when independent scanner-set assets are unavailable', async () => {
+    const adapter = new SastKillSwitchRetryRuntimeAuthority(
+      {
+        evaluatePersistedScan: jest.fn().mockResolvedValue({
+          receipt: {
+            outcome: 'CLEAR',
+            scannerSetDigest: `sha256:${'a'.repeat(64)}`,
+            snapshotDigest: `sha256:${'b'.repeat(64)}`
+          }
+        })
+      } as never,
+      {
+        verify: jest.fn().mockResolvedValue({
+          currentScannerSetDigest: null,
+          scannerSetAvailable: false
+        })
+      } as never
+    );
+
+    await expect(
+      adapter.verify({
+        tenantId: 'tenant-1',
+        repositoryBindingId: 'repository-1',
+        scanRequestId: 'scan-1'
+      } as never)
+    ).resolves.toEqual({
+      currentScannerSetDigest: null,
+      scannerSetAvailable: false,
+      killSwitchStatus: 'CLEAR',
+      killSwitchSnapshotDigest: `sha256:${'b'.repeat(64)}`
+    });
+  });
+
   it.each([
     ['CLEAR', 'UNCHANGED', 'VERIFIED', 1],
+    ['CLEAR', 'PARTIAL', 'REJECTED', 0],
+    ['CLEAR', 'FAILED', 'REJECTED', 0],
     ['ACTIVE', 'PARTIAL', 'REJECTED', 0],
     ['ACTIVE', 'FAILED', 'REJECTED', 0]
   ] as const)(

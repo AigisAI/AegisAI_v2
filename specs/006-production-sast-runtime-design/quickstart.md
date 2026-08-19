@@ -633,13 +633,20 @@ portion of Phase 6:
   `CLEAR` evaluation descriptor in the immutable plan. It does not change
   `sast-canonical-scan-key-v4`. Queue admission reconstructs the plan context and canonical keys,
   then locks/revalidates the exact complete head set; the database independently compares every
-  selector identity and the closed-set count before accepting a direct insert.
+  selector identity and the closed-set count before accepting a direct insert. The context is
+  limited to two rule bundles and 50,020 selectors; both evaluation and queue admission use one
+  canonically ordered set-based lock and an anti-join instead of per-selector SQL loops.
 - Fresh gates cover scanner start, artifact acceptance, retry, effective coverage, external
   publication, and AI advisory. Scanner cancellation happens after its durable run is created
   but before any provider repository read or scanner execution, records `KILLED`, and preserves
   cleanup. Affected artifacts quarantine before downstream acceptance; a clear switch still
-  delegates to the independently unavailable-by-default Data/Security acceptance port. Retries,
-  publisher calls, and model calls are denied when affected. Effective lifecycle coverage first
+  delegates to the independently unavailable-by-default Data/Security acceptance port. Retry
+  admission also requires an independent current scanner-set availability authority; a clear
+  switch cannot imply that withdrawn images, wrappers, rules, or databases remain available.
+  Publisher calls and model calls are denied when affected.
+  A recovered accepted artifact intent is checked again before storage and is replaced by a
+  quarantine intent when authority changed. AI is checked before inference and again immediately
+  before advisory persistence. Effective lifecycle coverage first
   requires a fresh T049 `COVERAGE` evaluation and delegates only a clear result to the independent
   T040 coverage authority; active scope never reaches that authority. External comment planning
   and every worker claim independently re-evaluate `EXTERNAL_PUBLICATION`, so activation between
@@ -648,7 +655,9 @@ portion of Phase 6:
 - An active applicable global/bundle/scanner-version/semantic-rule/exact-profile decision set can
   issue the sole digest-bound `EMERGENCY_SUSPENSION` receipt for an exact latest
   `CANARY | ACTIVE -> SUSPENDED` edge. Its reference ends in its exact receipt digest, matching
-  the lifecycle authority contract. It cannot authorize T050 rollback.
+  the lifecycle authority contract. The lifecycle transition locks and recomputes the complete
+  applicable active decision set and digest, so deactivation or replacement of any non-trigger
+  selector invalidates the receipt. It cannot authorize T050 rollback.
 - Automatic canary input contains only the exact T048 step-decision ID/digest. A serializable
   lifecycle-then-canary lock derives the current `PAUSED`/zero-tolerance signal and all manifest,
   bundle, signed-profile, transition, reason, and time bindings from durable rows; caller targets

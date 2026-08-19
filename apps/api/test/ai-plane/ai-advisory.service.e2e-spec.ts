@@ -186,6 +186,29 @@ describe('AiAdvisoryService T043 handoff', () => {
     expect(runtime.createAdvisory).not.toHaveBeenCalled();
   });
 
+  it('discards a completed advisory when the kill switch activates before persistence', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const access = allowedAiAccess();
+    const store = memoryStore(access.decision);
+    const evaluatePersistedScan = jest
+      .fn()
+      .mockResolvedValueOnce({ receipt: { outcome: 'CLEAR' } })
+      .mockResolvedValueOnce({ receipt: { outcome: 'ACTIVE' } });
+    const service = new AiAdvisoryService(
+      config(false),
+      { createAdvisory: jest.fn() } as never,
+      { classifyForAi: jest.fn().mockResolvedValue(access) } as never,
+      store as never,
+      { evaluatePersistedScan } as never
+    );
+
+    await expect(
+      service.createAdvisory(aiAdvisoryIntent(), clock())
+    ).rejects.toThrow('AI advisory source is unavailable.');
+    expect(evaluatePersistedScan).toHaveBeenCalledTimes(2);
+    expect(store.persistAdvisory).not.toHaveBeenCalled();
+  });
+
   it('fails closed on handoff or result persistence conflicts', async () => {
     const logger = jest
       .spyOn(Logger.prototype, 'error')

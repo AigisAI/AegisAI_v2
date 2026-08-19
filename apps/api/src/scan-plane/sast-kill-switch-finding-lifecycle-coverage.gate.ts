@@ -25,24 +25,25 @@ export class SastKillSwitchFindingLifecycleCoverageGate
     decision: Readonly<SastFindingLifecycleCoverageDecision>
   ): Promise<SastFindingLifecycleCoverageVerification> {
     if (!hasBoundedScope(decision)) return 'REJECTED';
+    let evaluation;
     try {
-      const evaluation = await this.killSwitch.evaluatePersistedScan({
+      evaluation = await this.killSwitch.evaluatePersistedScan({
         gate: 'COVERAGE',
         tenantId: decision.tenantId,
         repositoryBindingId: decision.repositoryBindingId,
         scanRequestId: decision.scanRequestId,
         evaluatedAt: new Date().toISOString()
       });
-      if (
-        evaluation.receipt.outcome !== 'CLEAR' ||
-        evaluation.receipt.coverageEffect !== 'UNCHANGED'
-      ) {
-        return 'REJECTED';
-      }
-      return await this.coverageAuthority.verify(decision);
     } catch {
       return 'UNAVAILABLE';
     }
+    if (
+      evaluation.receipt.outcome !== 'CLEAR' ||
+      evaluation.receipt.coverageEffect !== 'UNCHANGED'
+    ) {
+      return 'REJECTED';
+    }
+    return this.coverageAuthority.verify(decision);
   }
 }
 

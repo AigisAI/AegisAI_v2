@@ -158,6 +158,13 @@ export class AiAdvisoryService {
       throw unavailable();
     }
 
+    await this.assertKillSwitchClear(
+      handoff.tenantId,
+      handoff.repositoryBindingId,
+      handoff.scanRequestId,
+      completedAt
+    );
+
     try {
       return await this.store.persistAdvisory({
         handoff: persisted.handoff,

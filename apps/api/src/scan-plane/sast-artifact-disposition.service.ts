@@ -101,6 +101,7 @@ export class SastArtifactDispositionService {
         durable,
         claimedAt
       );
+      const reusedPersistedIntent = intent !== null;
       let operationId = candidate.persistedOperationId;
       if (!intent) {
         const hasPersistedIntentState =
@@ -130,6 +131,36 @@ export class SastArtifactDispositionService {
           operationId,
           savedAt: new Date().toISOString()
         });
+      }
+      if (reusedPersistedIntent && intent.disposition === 'ACCEPTED') {
+        const gate = await this.evaluateAcceptance(
+          candidate,
+          durable,
+          claimedAt
+        );
+        if (gate.outcome === 'DENY') {
+          const replacement = this.createIntent(candidate, {
+            disposition: 'QUARANTINED',
+            storageAction: 'MOVE_REENCRYPT_QUARANTINE',
+            failureClass: 'SECURITY_VIOLATION',
+            reasons: new Set(['ARTIFACT_ACCEPTANCE_DENIED']),
+            validationResultDigest: durable.validationResultDigest,
+            validationReasonCodes: durable.validationReasonCodes,
+            retentionExpiresAt: this.retentionExpiresAt(candidate.receivedAt),
+            acceptanceControlRef: gate.controlRef,
+            createdAt: claimedAt
+          });
+          operationId = this.operationIdForIntent(replacement);
+          await this.store.saveIntent({
+            ingestionId: candidate.ingestionId,
+            leaseToken: candidate.leaseToken,
+            expectedIntentDigest: intent.intentDigest,
+            intent: replacement,
+            operationId,
+            savedAt: new Date().toISOString()
+          });
+          intent = replacement;
+        }
       }
       if (!operationId) {
         throw new Error('Artifact disposition operation is unavailable.');
@@ -473,22 +504,7 @@ export class SastArtifactDispositionService {
     if (!durable.envelope || !durable.plan) {
       throw new Error('Validated artifact binding is unavailable.');
     }
-    const gate = await this.acceptanceGate.evaluate({
-      scope: candidate.scope,
-      plan: durable.plan,
-      scanner: durable.envelope.scanner,
-      scannerVersion: durable.envelope.scannerVersion,
-      scannerImageDigest:
-        durable.envelope.scannerImageDigest,
-      validationResultDigest: durable.validationResultDigest,
-      scannerSetDigest:
-        durable.envelope.scannerSetDigest,
-      ruleBundleDigest: durable.envelope.ruleBundleDigest,
-      profileId: durable.envelope.profileId,
-      profileDigest: durable.envelope.profileDigest,
-      evaluatedAt: createdAt
-    });
-    this.assertGateDecision(gate, createdAt);
+    const gate = await this.evaluateAcceptance(candidate, durable, createdAt);
     if (gate.outcome === 'DENY') {
       return this.createIntent(candidate, {
         disposition: 'QUARANTINED',
@@ -513,6 +529,33 @@ export class SastArtifactDispositionService {
       acceptanceControlRef: gate.controlRef,
       createdAt
     });
+  }
+
+  private async evaluateAcceptance(
+    candidate: Readonly<SastArtifactDispositionCandidate>,
+    durable: Readonly<DurableValidation>,
+    evaluatedAt: string
+  ) {
+    if (!durable.envelope || !durable.plan) {
+      throw new Error('Validated artifact binding is unavailable.');
+    }
+    const gate = await this.acceptanceGate.evaluate({
+      scope: candidate.scope,
+      plan: durable.plan,
+      scanner: durable.envelope.scanner,
+      scannerVersion: durable.envelope.scannerVersion,
+      scannerImageDigest:
+        durable.envelope.scannerImageDigest,
+      validationResultDigest: durable.validationResultDigest,
+      scannerSetDigest:
+        durable.envelope.scannerSetDigest,
+      ruleBundleDigest: durable.envelope.ruleBundleDigest,
+      profileId: durable.envelope.profileId,
+      profileDigest: durable.envelope.profileDigest,
+      evaluatedAt
+    });
+    this.assertGateDecision(gate, evaluatedAt);
+    return gate;
   }
 
   private createIntent(

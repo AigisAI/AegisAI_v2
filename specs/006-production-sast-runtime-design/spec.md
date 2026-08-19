@@ -492,13 +492,16 @@ incomplete, stale, quarantined, or security-blocked scan.
   reconstruct and revalidate the plan-bound context digest and exact selector identity set in
   both application and database paths. A missing, substituted, extra, or drifted selector MUST
   reject. Durable inactive placeholders and trigger-owned heads MUST prevent a first-activation/
-  absent-row race.
+  absent-row race. The normalized selector snapshot MUST reject more than 50,020 bindings and
+  MUST use set-based canonical locking and comparison rather than a selector-sized SQL loop.
 - **FR-057c**: Fresh purpose-bound evaluation MUST occur before scanner execution, artifact
   acceptance, retry admission, effective-coverage use, external publication, and AI advisory. A
   scanner MUST create its durable run before evaluation but MUST perform no provider repository
   read or scanner execution after an active/unavailable result. Active affected runs MUST become
   `KILLED`, artifacts MUST be quarantined, retries and AI/publication MUST be denied, and cleanup
-  MUST remain mandatory. A clear artifact kill-switch evaluation MUST delegate to, and MUST NOT
+  MUST remain mandatory. A recovered accepted artifact intent MUST be re-evaluated before storage apply;
+  denial MUST persist a replacement quarantine intent. AI MUST re-evaluate after inference and
+  immediately before advisory persistence. A clear artifact kill-switch evaluation MUST delegate to, and MUST NOT
   replace, the independent fail-closed Data/Security Plane acceptance authority.
 - **FR-057d**: Kill-switch evaluation MUST NOT rewrite historical plans, findings, or T039 factual
   coverage. It MUST expose a separate current effective-coverage result: semantic-rule or

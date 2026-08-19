@@ -16,10 +16,7 @@ import {
 import { Injectable } from '@nestjs/common';
 
 import { ControlPlaneService } from '../control-plane/control-plane.service';
-import {
-  SastKillSwitchGate,
-  SastKillSwitchGateError
-} from '../rule-governance/sast-kill-switch.gate';
+import { SastKillSwitchGate } from '../rule-governance/sast-kill-switch.gate';
 import { SandboxRuntimeAttestationService } from './sandbox-runtime-attestation.service';
 import {
   retryableInfrastructureFailure,
@@ -177,12 +174,6 @@ export class SastScannerRuntimeService {
             error.reasonCode === 'SAST_KILL_SWITCH_ACTIVE'
           ) {
             throw error;
-          }
-          if (error instanceof SastKillSwitchGateError) {
-            throw securityViolation(
-              'SAST_KILL_SWITCH_AUTHORITY_UNAVAILABLE',
-              'Scanner start requires current SAST kill-switch authority.'
-            );
           }
           throw securityViolation(
             'SAST_KILL_SWITCH_AUTHORITY_UNAVAILABLE',

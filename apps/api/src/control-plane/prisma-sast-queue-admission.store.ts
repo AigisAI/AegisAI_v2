@@ -7,9 +7,8 @@ import {
   SAST_PLANNING_REASON_CODES,
   SAST_PLANNING_STATES,
   SAST_PROFILE_IDS,
-  SAST_SCANNER_KINDS,
   buildApplicableSastKillSwitchSelectors,
-  buildSastKillSwitchEvaluationContext,
+  buildSastKillSwitchContextFromPlanParts,
   isSastScanPlanValid,
   orderSastQueueCandidatesFairly,
   type SastPlanningReasonCode,
@@ -857,29 +856,14 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
         'SAST queue admission requires a clear kill-switch evaluation.'
       );
     }
-    const context = buildSastKillSwitchEvaluationContext(
+    const context = buildSastKillSwitchContextFromPlanParts(
       {
         tenantId: plan.tenantId,
         repositoryBindingId: plan.repositoryState.repositoryBindingId,
         scanRequestId: plan.scanRequestId,
-        profileId: plan.profile.id,
+        profile: plan.profile,
         profileDigest: plan.profileDigest,
-        scannerSetDigest: plan.scannerSet.scannerSetDigest,
-        scanners: SAST_SCANNER_KINDS.map((scanner) => ({
-          scanner,
-          scannerVersion: plan.scannerSet.scanners[scanner].version
-        })).sort((left, right) => left.scanner.localeCompare(right.scanner)),
-        ruleBundles: plan.scannerSet.ruleBundles
-          .map((bundle) => ({
-            bundleDigest: bundle.digest,
-            ruleSemanticIds: [
-              ...new Set(bundle.rules.map((rule) => rule.ruleSemanticId))
-            ].sort()
-          }))
-          .sort((left, right) =>
-            left.bundleDigest.localeCompare(right.bundleDigest)
-          ),
-        requiredCapabilities: [...plan.profile.requiredCapabilities]
+        scannerSet: plan.scannerSet
       },
       digestCanonical
     );
@@ -951,7 +935,7 @@ export class PrismaSastQueueAdmissionStore extends SastQueueAdmissionStore {
       JOIN "SastKillSwitchHead" head
         ON head."selectorKey" = binding."selectorKey"
       WHERE binding."evaluationId" = ${projection.evaluationId}
-      ORDER BY binding."selectorKey"
+      ORDER BY binding."selectorKey" COLLATE "C"
       FOR UPDATE OF head
     `;
     if (

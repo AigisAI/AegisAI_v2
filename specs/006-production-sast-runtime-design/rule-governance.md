@@ -231,6 +231,9 @@ command-line flags, rule code, templates, post-processors, or executable configu
   scanner-version, bundle, semantic-rule, and capability identities and their exact total against
   that plan. A direct writer cannot omit an active selector, and a concurrent activation therefore
   wins before admission or serializes after an already-authorized reservation.
+  The context permits two rule bundles and at most 50,020 selector bindings. Evaluation and queue
+  admission acquire the bounded set in one ordered set-based lock and detect drift with an
+  anti-join, avoiding one query per semantic rule.
 - Fresh purpose-bound evaluations occur at `SCANNER_START`, `ARTIFACT_ACCEPTANCE`,
   `RETRY_ADMISSION`, `COVERAGE`, `EXTERNAL_PUBLICATION`, and `AI_ADVISORY`. Scanner evaluation
   occurs only after creating the durable run and before any provider repository read or scanner
@@ -238,10 +241,16 @@ command-line flags, rule code, templates, post-processors, or executable configu
   quarantines affected output, retry denies another attempt, and AI/publication calls receive no
   downstream authority. Authority unavailability is retryable only where the surrounding
   operational contract explicitly permits a safe retry; it never becomes `CLEAR`.
+  Retry admission additionally invokes an independent current scanner-set availability authority;
+  that port defaults unavailable and its exact current digest must match the kill-switch context.
+  A clear switch therefore cannot authorize withdrawn images, wrappers, rules, or databases.
   At artifact acceptance, T049 is an outer short-circuit only: `ACTIVE` quarantines before any
   downstream authority call, while `CLEAR` must still pass the independent Data/Security Plane
   acceptance authority. Its production default remains unavailable, so enabling kill-switch
   reads cannot accidentally authorize artifact retention.
+  A recovered `ACCEPTED` disposition intent is evaluated again immediately before storage apply;
+  a new denial persists a replacement quarantine intent and operation before any storage call.
+  AI evaluates before inference and again after completion immediately before persistence.
 - T037 lifecycle coverage consumes a composite authority: a fresh T049 `COVERAGE` evaluation is
   the outer gate, and only `CLEAR` with `UNCHANGED` delegates to the independent T040 freshness/
   comparability authority. `ACTIVE` returns rejected coverage and unavailable T049 authority
@@ -257,8 +266,11 @@ command-line flags, rule code, templates, post-processors, or executable configu
 - An active applicable global, bundle, scanner-version, semantic-rule, or exact signed-profile
   decision can issue one immutable `sast-kill-switch-emergency-suspension-v1` receipt for the
   exact latest `CANARY | ACTIVE -> SUSPENDED` edge. The lifecycle trigger rebinds its manifest,
-  bundle, transition, promotion evidence, active decision set, and time. It cannot authorize
-  `SUSPENDED -> ROLLED_BACK`; T050 remains a separate authority.
+  bundle, transition, promotion evidence, active decision set, and time. At transition commit,
+  PostgreSQL locks and recomputes the full applicable active selector set, count, and canonical
+  digest; deactivation or replacement of any captured selector, including a non-trigger selector,
+  rejects the receipt. It cannot authorize `SUSPENDED -> ROLLED_BACK`; T050 remains a separate
+  authority.
 - Canary automation accepts only a T048 step-decision ID/digest. Under lifecycle-then-canary head
   locks it reloads the current immutable `PAUSED` decision, rollout, and normalized hard-failure
   reasons and derives `CANARY_PAUSED` or `ZERO_TOLERANCE`. The manifest, bundle, signed profile,

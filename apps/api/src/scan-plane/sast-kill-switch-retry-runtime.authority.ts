@@ -2,14 +2,21 @@ import { Injectable } from '@nestjs/common';
 
 import { SastKillSwitchGate } from '../rule-governance/sast-kill-switch.gate';
 import {
+  SastRetryScannerSetAvailabilityAuthority,
   SastRetryRuntimeAuthority,
-  type SastRetryRuntimeAuthorityDecision
+  UnavailableSastRetryScannerSetAvailabilityAuthority,
+  type SastRetryRuntimeAuthorityDecision,
+  type SastRetryScannerSetAvailabilityDecision
 } from './sast-retry-runtime-authority';
 import type { SastScanRetryScope } from '@aegisai/shared';
 
 @Injectable()
 export class SastKillSwitchRetryRuntimeAuthority extends SastRetryRuntimeAuthority {
-  constructor(private readonly killSwitch: SastKillSwitchGate) {
+  constructor(
+    private readonly killSwitch: SastKillSwitchGate,
+    private readonly scannerSetAuthority: SastRetryScannerSetAvailabilityAuthority =
+      new UnavailableSastRetryScannerSetAvailabilityAuthority()
+  ) {
     super();
   }
 
@@ -24,9 +31,13 @@ export class SastKillSwitchRetryRuntimeAuthority extends SastRetryRuntimeAuthori
         scanRequestId: scope.scanRequestId,
         evaluatedAt: new Date().toISOString()
       });
+      const scannerSet = await this.scannerSetAuthority.verify(scope);
       return {
-        currentScannerSetDigest: result.receipt.scannerSetDigest,
-        scannerSetAvailable: true,
+        currentScannerSetDigest: scannerSet.currentScannerSetDigest,
+        scannerSetAvailable:
+          isAvailableScannerSet(scannerSet) &&
+          scannerSet.currentScannerSetDigest ===
+            result.receipt.scannerSetDigest,
         killSwitchStatus: result.receipt.outcome,
         killSwitchSnapshotDigest: result.receipt.snapshotDigest
       };
@@ -39,4 +50,14 @@ export class SastKillSwitchRetryRuntimeAuthority extends SastRetryRuntimeAuthori
       };
     }
   }
+}
+
+function isAvailableScannerSet(
+  decision: Readonly<SastRetryScannerSetAvailabilityDecision>
+): boolean {
+  return (
+    decision.scannerSetAvailable === true &&
+    typeof decision.currentScannerSetDigest === 'string' &&
+    /^sha256:[a-f0-9]{64}$/u.test(decision.currentScannerSetDigest)
+  );
 }

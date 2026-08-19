@@ -447,6 +447,8 @@ application services, and PostgreSQL constraints:
   skew yields zero evaluation authority;
 - an inactive placeholder and ordered selector-head locks make first activation serialize with
   planning/queue evaluation; a plan admitted from a stale/missing head set equals zero;
+- no context exceeds two rule bundles or 50,020 selector bindings, and both evaluation and direct
+  queue admission prove one set-based ordered lock plus anti-join with zero per-head SQL loops;
 - planning persists only `CLEAR`, leaves canonical key v4 unchanged, and queue admission
   reconstructs the plan-bound context/selector set and rejects a missing, substituted, extra, or
   later-drifted head in both the application transaction and direct database insert path;
@@ -457,6 +459,11 @@ application services, and PostgreSQL constraints:
   switch still requires the independent fail-closed Data/Security acceptance authority; affected
   retry admission is denied, and affected external-publication and AI paths make zero publisher/
   model calls;
+- a crash-recovered accepted artifact intent receives a fresh gate before storage, denial writes a
+  replacement quarantine intent, and activation during AI inference yields zero advisory writes;
+- retry admission requires both a fresh switch evaluation and an independent exact-digest current
+  scanner-set availability result; unavailable or withdrawn assets admit zero sandboxes even when
+  the switch is clear;
 - T037 lifecycle coverage first obtains a fresh `COVERAGE` evaluation and invokes the independent
   T040 authority only for `CLEAR`/`UNCHANGED`; active or unavailable T049 authority invokes T040
   zero times;
@@ -468,7 +475,8 @@ application services, and PostgreSQL constraints:
   byte-for-byte unchanged; and
 - an exact active global/bundle/scanner-version/semantic-rule/profile decision set can authorize
   only the matching latest `CANARY | ACTIVE -> SUSPENDED` edge. Cross-bundle, stale, deactivated,
-  expired, replay-substituted, or rollback use yields zero lifecycle transitions; and
+  expired, replay-substituted, non-trigger decision-set drift, or rollback use yields zero
+  lifecycle transitions; and
 - the automatic canary input accepts only a T048 decision ID/digest, derives current `PAUSED` or
   zero-tolerance status plus every target field under lifecycle/canary locks, and rejects an extra
   caller target, stale head, non-pause outcome, incomplete reason set, or cross-rollout binding.

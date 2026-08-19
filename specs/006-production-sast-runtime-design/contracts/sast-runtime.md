@@ -1603,6 +1603,9 @@ must equal the active subset. The only gates are `PLANNING`, `QUEUE_ADMISSION`, 
 `ARTIFACT_ACCEPTANCE`, `RETRY_ADMISSION`, `COVERAGE`, `EXTERNAL_PUBLICATION`, and `AI_ADVISORY`.
 Global/tenant/repository publication selectors participate in publication and AI gates; unrelated
 internal processing does not include them.
+The context permits at most two runtime rule bundles and the normalized snapshot is hard-capped at
+50,020 selector bindings. Evaluation and queue fences lock that bounded set in one canonical
+set-based query and compare drift with one anti-join; no selector-sized SQL loop is permitted.
 
 Only a `CLEAR` planning evaluation becomes `sast-kill-switch-planning-v1` in the immutable plan.
 Its evaluation time/head digest stays out of `sast-canonical-scan-key-v4`; no key cutover occurs.
@@ -1613,6 +1616,10 @@ immutable plan; PostgreSQL independently compares the exact normalized selector 
 closed-set count. Omitting an applicable head, even when the remaining receipt is internally
 consistent, rejects. Historical terminal plans may omit the descriptor, but every new queue
 insertion must have it and pass the current fence.
+An accepted artifact intent recovered after a crash must run `ARTIFACT_ACCEPTANCE` again before
+storage application; denial replaces it with a new digest-bound quarantine intent and operation.
+AI performs `AI_ADVISORY` both before inference and again after completion immediately before
+advisory persistence.
 
 Every later boundary obtains a fresh evaluation from durable plan state. `SCANNER_START` runs
 after durable run creation and before the first provider repository-manifest read or scanner
@@ -1622,6 +1629,11 @@ and AI make zero downstream calls. Authority unavailable never becomes clear. Ef
 is a separate current projection: semantic-rule/capability-only activation is `PARTIAL`, any
 other runtime selector is `FAILED`, and publication-only activation is `UNCHANGED`. T039 factual
 coverage, old plans, findings, and lifecycle history remain immutable.
+
+Retry admission is also a two-authority composition. The fresh `RETRY_ADMISSION` evaluation and
+an independent current scanner-set availability authority must both succeed, and their exact
+scanner-set digest must agree. The availability port defaults unavailable; kill-switch `CLEAR`
+never implies that withdrawn scanner images, wrappers, rules, or databases are deployable.
 
 The T037 lifecycle coverage port is a two-authority composition. A fresh persisted-plan
 `COVERAGE` evaluation runs first; only `CLEAR` with `UNCHANGED` delegates to the independent T040
@@ -1641,7 +1653,9 @@ For `CANARY | ACTIVE -> SUSPENDED`, the lifecycle router asks T049 for one
 rebind the exact latest manifest/bundle/transition/promotion evidence and at least one currently
 active applicable global, bundle, scanner-version, semantic-rule, or signed-profile selector.
 The complete active decision set and trigger decision are digest-bound. Cross-bundle, stale,
-deactivated, expired, changed-set, or replay-conflicting authority is rejected. Its reference is
+deactivated, expired, changed-set, or replay-conflicting authority is rejected. The lifecycle
+transition locks and recomputes every applicable active selector, count, and canonical digest;
+changing any captured non-trigger selector invalidates the receipt. Its reference is
 exactly `sast-kill-switch-suspension://authority/<receiptDigest>` so the pre-existing lifecycle
 authority contract can verify the reference without a circular digest. The receipt has no rollback
 authority; `SUSPENDED -> ROLLED_BACK` remains T050.
