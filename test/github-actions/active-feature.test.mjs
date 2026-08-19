@@ -3000,8 +3000,13 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   assert.match(loader, /SNAPSHOT_DRIFT/);
   assert.match(loader, /SOURCE_PATH_INVALID/);
   assert.match(loader, /decodeCanonicalText/);
+  assert.match(loader, /EXPECTED_ROOT_ENTRIES/);
+  assert.match(loader, /O_NOFOLLOW/);
+  assert.match(generator, /writeStableRegularFile/);
+  assert.match(generator, /O_NOFOLLOW/);
   assert.match(loaderTest, /rejects symlink or junction traversal/);
   assert.match(loaderTest, /rejects source drift and CRLF ambiguity/);
+  assert.match(loaderTest, /rejects unexpected corpus-root entries/);
   assert.match(corpusReadme, /platform-owned input snapshot/);
   assert.match(gitattributes, /qualification\/corpora\/v1\/\*\* text eol=lf/);
 

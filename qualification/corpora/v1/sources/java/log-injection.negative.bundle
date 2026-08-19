@@ -30,6 +30,7 @@ final class LogInjectionNegative003 {
   void evaluate(String cookieValue003) throws Exception {
     java.util.logging.LogRecord record003 = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");
     record003.setParameters(new Object[] { Integer.toHexString(cookieValue003.hashCode()) });
+    java.util.logging.Logger.getLogger("audit").log(record003);
   }
 }
 <<<END:t051.log-injection.negative.003>>>
@@ -89,6 +90,7 @@ final class LogInjectionNegative008 {
   void evaluate(String messageBody008) throws Exception {
     java.util.logging.LogRecord record008 = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");
     record008.setParameters(new Object[] { Integer.toHexString(messageBody008.hashCode()) });
+    java.util.logging.Logger.getLogger("audit").log(record008);
   }
 }
 <<<END:t051.log-injection.negative.008>>>
@@ -148,6 +150,7 @@ final class LogInjectionNegative013 {
   void evaluate(String yamlProperty013) throws Exception {
     java.util.logging.LogRecord record013 = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");
     record013.setParameters(new Object[] { Integer.toHexString(yamlProperty013.hashCode()) });
+    java.util.logging.Logger.getLogger("audit").log(record013);
   }
 }
 <<<END:t051.log-injection.negative.013>>>
@@ -207,6 +210,7 @@ final class LogInjectionNegative018 {
   void evaluate(String recordField018) throws Exception {
     java.util.logging.LogRecord record018 = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");
     record018.setParameters(new Object[] { Integer.toHexString(recordField018.hashCode()) });
+    java.util.logging.Logger.getLogger("audit").log(record018);
   }
 }
 <<<END:t051.log-injection.negative.018>>>

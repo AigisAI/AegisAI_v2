@@ -738,9 +738,10 @@ still requires the 005 rollout and the remaining 006 gates.
   exact 400 historical positives and rejects deletion, mutation, forged references, or automatic
   inclusion of later positives. Five negative classes are non-empty and use applicable, distinct
   source behavior (95 patched, 35 sanitizer, 95 safe-API, 80 comment/string, 95 generated/vendor).
-  CI rejects manifest/snapshot/source drift,
-  path escape, symlink/junction traversal, extra files, invalid UTF-8/NFC/LF, oversized input,
-  range drift, authority widening, and mutable or executable corpus metadata.
+  CI rejects manifest/snapshot/source drift, non-allowlisted root entries, path escape,
+  symlink/junction traversal, identity changes across guarded reads/writes, extra files, invalid
+  UTF-8/NFC/LF, oversized input, range drift, authority widening, and mutable or executable corpus
+  metadata.
 - T051 fixes qualification inputs only. It neither executes a scanner nor claims detection,
   precision, latency, sandbox-destruction, or production readiness; T052 adds the remaining corpus
   classes and T053 performs production-equivalent isolated scanner execution.

@@ -7,6 +7,7 @@ final class XxeNegative001 {
     javax.xml.parsers.DocumentBuilderFactory factory001 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
     factory001.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
     factory001.setExpandEntityReferences(false);
+    factory001.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(queryParameter001.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.001>>>
@@ -19,6 +20,7 @@ final class XxeNegative002 {
   void evaluate(String headerValue002) throws Exception {
     javax.xml.parsers.SAXParserFactory factory002 = javax.xml.parsers.SAXParserFactory.newInstance();
     factory002.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory002.newSAXParser().parse(new java.io.ByteArrayInputStream(headerValue002.getBytes(java.nio.charset.StandardCharsets.UTF_8)), new org.xml.sax.helpers.DefaultHandler());
   }
 }
 <<<END:t051.xxe.negative.002>>>
@@ -57,6 +59,7 @@ final class XxeNegative005 {
     javax.xml.parsers.DocumentBuilderFactory factory005 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
     factory005.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
     factory005.setExpandEntityReferences(false);
+    factory005.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(formField005.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.005>>>
@@ -69,6 +72,7 @@ final class XxeNegative006 {
   void evaluate(String jsonProperty006) throws Exception {
     javax.xml.parsers.SAXParserFactory factory006 = javax.xml.parsers.SAXParserFactory.newInstance();
     factory006.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory006.newSAXParser().parse(new java.io.ByteArrayInputStream(jsonProperty006.getBytes(java.nio.charset.StandardCharsets.UTF_8)), new org.xml.sax.helpers.DefaultHandler());
   }
 }
 <<<END:t051.xxe.negative.006>>>
@@ -107,6 +111,7 @@ final class XxeNegative009 {
     javax.xml.parsers.DocumentBuilderFactory factory009 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
     factory009.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
     factory009.setExpandEntityReferences(false);
+    factory009.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(queueAttribute009.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.009>>>
@@ -119,6 +124,7 @@ final class XxeNegative010 {
   void evaluate(String rpcArgument010) throws Exception {
     javax.xml.parsers.SAXParserFactory factory010 = javax.xml.parsers.SAXParserFactory.newInstance();
     factory010.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory010.newSAXParser().parse(new java.io.ByteArrayInputStream(rpcArgument010.getBytes(java.nio.charset.StandardCharsets.UTF_8)), new org.xml.sax.helpers.DefaultHandler());
   }
 }
 <<<END:t051.xxe.negative.010>>>
@@ -157,6 +163,7 @@ final class XxeNegative013 {
     javax.xml.parsers.DocumentBuilderFactory factory013 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
     factory013.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
     factory013.setExpandEntityReferences(false);
+    factory013.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(yamlProperty013.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.013>>>
@@ -169,6 +176,7 @@ final class XxeNegative014 {
   void evaluate(String configValue014) throws Exception {
     javax.xml.parsers.SAXParserFactory factory014 = javax.xml.parsers.SAXParserFactory.newInstance();
     factory014.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory014.newSAXParser().parse(new java.io.ByteArrayInputStream(configValue014.getBytes(java.nio.charset.StandardCharsets.UTF_8)), new org.xml.sax.helpers.DefaultHandler());
   }
 }
 <<<END:t051.xxe.negative.014>>>
@@ -207,6 +215,7 @@ final class XxeNegative017 {
     javax.xml.parsers.DocumentBuilderFactory factory017 = javax.xml.parsers.DocumentBuilderFactory.newInstance();
     factory017.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
     factory017.setExpandEntityReferences(false);
+    factory017.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(metadataValue017.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
   }
 }
 <<<END:t051.xxe.negative.017>>>
@@ -219,6 +228,7 @@ final class XxeNegative018 {
   void evaluate(String recordField018) throws Exception {
     javax.xml.parsers.SAXParserFactory factory018 = javax.xml.parsers.SAXParserFactory.newInstance();
     factory018.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory018.newSAXParser().parse(new java.io.ByteArrayInputStream(recordField018.getBytes(java.nio.charset.StandardCharsets.UTF_8)), new org.xml.sax.helpers.DefaultHandler());
   }
 }
 <<<END:t051.xxe.negative.018>>>

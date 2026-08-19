@@ -234,12 +234,15 @@ test('T051 rejects changed prior case bytes and forged prior manifests', () => {
 test('T051 case builders reject hostile metadata and materialization paths', () => {
   const source = snapshot.cases[0];
   const input = caseInput(source);
+  const mismatchedLanguageSegment = input.language === 'JAVA' ? 'common' : 'java';
   const hostileInputs = [
     { ...input, unknown: 'forbidden' },
     { ...input, sourcePath: 'sources/java/../escape.java' },
     { ...input, sourcePath: 'sources/java\\escape.java' },
+    { ...input, sourcePath: `sources/${mismatchedLanguageSegment}/mismatched.java` },
     { ...input, scanPath: 'workspace/java/../../escape.java' },
     { ...input, scanPath: '/workspace/java/escape.java' },
+    { ...input, scanPath: `workspace/${mismatchedLanguageSegment}/mismatched.java` },
     { ...input, ownerRef: 'user://attacker' },
     { ...input, licenseExpression: 'Apache-2.0\nmalicious' },
     { ...input, provenanceRef: 'https://mutable.example/corpus' },
@@ -294,6 +297,7 @@ test('T051 snapshot builder rejects incomplete floors and colliding scan paths',
   portableCollisionInput.scanPath = `${existingPath.slice(0, lastSeparator + 1)}${existingPath
     .slice(lastSeparator + 1)
     .toUpperCase()}`;
+  assert.notEqual(portableCollisionInput.scanPath, existingPath);
   const portableCollision = buildSastQualificationCorpusCase(
     portableCollisionInput,
     digest
@@ -373,6 +377,29 @@ test('T051 validators reject tampering and malformed hostile shapes without thro
     { ...snapshot, buildRequired: true },
     { ...snapshot, dynamicExecutionRequired: true }
   ]) {
+    assert.doesNotThrow(() =>
+      isSastQualificationCorpusSnapshotValid(
+        hostile,
+        digest,
+        priorReleaseManifest
+      )
+    );
+    assert.equal(
+      isSastQualificationCorpusSnapshotValid(
+        hostile,
+        digest,
+        priorReleaseManifest
+      ),
+      false
+    );
+  }
+
+  const cyclicSnapshot = { ...snapshot };
+  cyclicSnapshot.profileCounts = [cyclicSnapshot];
+  let deepShape = { value: true };
+  for (let index = 0; index < 40; index += 1) deepShape = { nested: deepShape };
+  const deeplyNestedSnapshot = { ...snapshot, ruleCounts: [deepShape] };
+  for (const hostile of [cyclicSnapshot, deeplyNestedSnapshot]) {
     assert.doesNotThrow(() =>
       isSastQualificationCorpusSnapshotValid(
         hostile,

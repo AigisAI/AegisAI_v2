@@ -241,6 +241,8 @@ const SOURCE_PATH_PATTERN =
   /^sources\/(?:java|common)\/[A-Za-z0-9][A-Za-z0-9._/-]{0,511}$/u;
 const SCAN_PATH_PATTERN =
   /^workspace\/(?:java|common)\/[A-Za-z0-9][A-Za-z0-9._/-]{0,511}$/u;
+const STABLE_JSON_MAXIMUM_DEPTH = 32;
+const STABLE_JSON_INVALID_SENTINEL = '"__invalid_sast_qualification_shape__"';
 
 const CASE_INPUT_KEYS = [
   'caseKey',
@@ -750,6 +752,7 @@ function isCaseCoreValid(value: SastQualificationCorpusCaseCore): boolean {
     expectationMatches(value) &&
     isSourcePath(value.sourcePath) &&
     isScanPath(value.scanPath) &&
+    pathLanguageMatches(value.sourcePath, value.scanPath, value.language) &&
     isDigest(value.sourceDigest) &&
     Number.isSafeInteger(value.sourceBytes) &&
     value.sourceBytes > 0 &&
@@ -1023,6 +1026,18 @@ function isScanPath(value: unknown): value is string {
   );
 }
 
+function pathLanguageMatches(
+  sourcePath: string,
+  scanPath: string,
+  language: SastQualificationLanguage
+): boolean {
+  const segment = language.toLowerCase();
+  return (
+    sourcePath.startsWith(`sources/${segment}/`) &&
+    scanPath.startsWith(`workspace/${segment}/`)
+  );
+}
+
 function isLine(value: unknown): value is number {
   return (
     Number.isSafeInteger(value) &&
@@ -1061,12 +1076,32 @@ function hasExactKeys(value: unknown, keys: readonly string[]): value is object 
   return arraysEqual(actual, expected);
 }
 
-function stableJson(value: unknown): string {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
-  const record = value as Record<string, unknown>;
-  return `{${Object.keys(record)
-    .sort(compareText)
-    .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`)
-    .join(',')}}`;
+function stableJson(
+  value: unknown,
+  depth = 0,
+  ancestors: WeakSet<object> = new WeakSet<object>()
+): string {
+  if (depth > STABLE_JSON_MAXIMUM_DEPTH) return STABLE_JSON_INVALID_SENTINEL;
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value) ?? STABLE_JSON_INVALID_SENTINEL;
+  }
+  if (ancestors.has(value)) return STABLE_JSON_INVALID_SENTINEL;
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) {
+      return `[${value
+        .map((item) => stableJson(item, depth + 1, ancestors))
+        .join(',')}]`;
+    }
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort(compareText)
+      .map(
+        (key) =>
+          `${JSON.stringify(key)}:${stableJson(record[key], depth + 1, ancestors)}`
+      )
+      .join(',')}}`;
+  } finally {
+    ancestors.delete(value);
+  }
 }

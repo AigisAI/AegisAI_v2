@@ -217,8 +217,8 @@ The following must always remain true:
 - oversized files, excessive file count/depth, sparse files, inode exhaustion
 - T051 prior-manifest deletion/mutation/forgery, later-positive denominator separation,
   negative-kind semantic mismatch, snapshot/count/digest/pair/profile/rule-floor drift, unknown
-  fields, duplicate scan paths, source-byte/range/anchor drift, CRLF/BOM/NUL/non-UTF-8/non-NFC text, extra files, and
-  symlink/junction traversal
+  fields, duplicate scan paths, source-byte/range/anchor drift, CRLF/BOM/NUL/non-UTF-8/non-NFC
+  text, extra root/source entries, symlink/junction traversal, and filesystem identity substitution
 - archive and compression bombs even though expansion is disabled
 - malformed SARIF, Trivy JSON, CycloneDX JSON, deep nesting, duplicate keys, invalid UTF-8
 - foreign/multi-run OpenGrep SARIF, notification-bearing invocation, duplicate/missing rule

@@ -5,6 +5,7 @@ package qualification.corpus;
 final class SsrfNegative001 {
   void evaluate(String queryParameter001) throws Exception {
     java.net.URI uri001 = java.net.URI.create("https://api.example.test/status");
+    uri001.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.001>>>
@@ -17,6 +18,7 @@ final class SsrfNegative002 {
   void evaluate(String headerValue002) throws Exception {
     java.net.URI uri002 = java.net.URI.create(headerValue002);
     if (!"https".equals(uri002.getScheme()) || !"api.example.test".equals(uri002.getHost())) throw new SecurityException();
+    uri002.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.002>>>
@@ -51,6 +53,7 @@ package qualification.corpus;
 final class SsrfNegative005 {
   void evaluate(String formField005) throws Exception {
     java.net.URI uri005 = java.net.URI.create("https://api.example.test/status");
+    uri005.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.005>>>
@@ -63,6 +66,7 @@ final class SsrfNegative006 {
   void evaluate(String jsonProperty006) throws Exception {
     java.net.URI uri006 = java.net.URI.create(jsonProperty006);
     if (!"https".equals(uri006.getScheme()) || !"api.example.test".equals(uri006.getHost())) throw new SecurityException();
+    uri006.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.006>>>
@@ -97,6 +101,7 @@ package qualification.corpus;
 final class SsrfNegative009 {
   void evaluate(String queueAttribute009) throws Exception {
     java.net.URI uri009 = java.net.URI.create("https://api.example.test/status");
+    uri009.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.009>>>
@@ -109,6 +114,7 @@ final class SsrfNegative010 {
   void evaluate(String rpcArgument010) throws Exception {
     java.net.URI uri010 = java.net.URI.create(rpcArgument010);
     if (!"https".equals(uri010.getScheme()) || !"api.example.test".equals(uri010.getHost())) throw new SecurityException();
+    uri010.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.010>>>
@@ -143,6 +149,7 @@ package qualification.corpus;
 final class SsrfNegative013 {
   void evaluate(String yamlProperty013) throws Exception {
     java.net.URI uri013 = java.net.URI.create("https://api.example.test/status");
+    uri013.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.013>>>
@@ -155,6 +162,7 @@ final class SsrfNegative014 {
   void evaluate(String configValue014) throws Exception {
     java.net.URI uri014 = java.net.URI.create(configValue014);
     if (!"https".equals(uri014.getScheme()) || !"api.example.test".equals(uri014.getHost())) throw new SecurityException();
+    uri014.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.014>>>
@@ -189,6 +197,7 @@ package qualification.corpus;
 final class SsrfNegative017 {
   void evaluate(String metadataValue017) throws Exception {
     java.net.URI uri017 = java.net.URI.create("https://api.example.test/status");
+    uri017.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.017>>>
@@ -201,6 +210,7 @@ final class SsrfNegative018 {
   void evaluate(String recordField018) throws Exception {
     java.net.URI uri018 = java.net.URI.create(recordField018);
     if (!"https".equals(uri018.getScheme()) || !"api.example.test".equals(uri018.getHost())) throw new SecurityException();
+    uri018.toURL().openConnection();
   }
 }
 <<<END:t051.ssrf.negative.018>>>

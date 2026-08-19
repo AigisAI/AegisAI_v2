@@ -1815,7 +1815,10 @@ sanitizer 35, safe-API 95, comment/string 80, and generated/vendor 95.
 digest, then regenerates the expected assets in memory and accepts only byte-exact checked-in
 snapshot/source content. It rejects missing/changed historical cases, root/source links, path escape,
 unregistered files, invalid UTF-8, BOM, CRLF, NUL, non-NFC text, missing final LF, oversized
-sources, duplicate scan paths, digest/byte/range drift, and a missing exact anchor. T051 validation
+sources, duplicate scan paths, digest/byte/range drift, and a missing exact anchor. The four root
+entries are allowlisted exactly; supported hosts use no-follow opens, and all hosts compare
+before/open/after file and directory identity plus canonical containment to reject substitution
+windows. T051 validation
 creates no scanner run or quality result. T052 supplies the other corpus classes, and only T053 may
 materialize these bounded ranges into production-equivalent isolated scan workspaces.
 

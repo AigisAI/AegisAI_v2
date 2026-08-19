@@ -25,6 +25,18 @@ const representativeSource = join(
   'common',
   'aws-access-key.positive.bundle'
 );
+const javaSafeFlowSinks = new Map([
+  ['aegis.java.cwe-89.sql-injection', /\.executeQuery\(/u],
+  ['aegis.java.cwe-78.command-injection', /\.start\(\)/u],
+  ['aegis.java.cwe-22.path-traversal', /Files\.readString\(/u],
+  ['aegis.java.cwe-918.ssrf', /\.openConnection\(\)/u],
+  ['aegis.java.cwe-90.ldap-injection', /\.search\(/u],
+  ['aegis.java.cwe-643.xpath-injection', /\.evaluate\(/u],
+  ['aegis.java.cwe-502.unsafe-deserialization', /\.(?:readObject|readUTF)\(/u],
+  ['aegis.java.cwe-611.xxe', /\.parse\(/u],
+  ['aegis.java.cwe-327.weak-crypto', /\.(?:digest|doFinal)\(/u],
+  ['aegis.java.cwe-117.log-injection', /\.log\(/u]
+]);
 
 test('T051 loader accepts only the canonical immutable golden corpus', async () => {
   const result = await loadAndValidateGoldenCorpus();
@@ -128,6 +140,14 @@ test('T051 negative fixtures match their declared behavior class', async () => {
     if (corpusCase.negativeKind === 'SAFE_API') {
       assert.match(snippet, /(?:SAFE_API|PreparedStatement|allowed|startsWith|VariableResolver|DataInputStream|SAXParserFactory|HmacSHA256|LogRecord)/u);
     }
+    if (
+      corpusCase.language === 'JAVA' &&
+      ['PATCHED', 'SANITIZER', 'SAFE_API'].includes(corpusCase.negativeKind)
+    ) {
+      const sink = javaSafeFlowSinks.get(corpusCase.ruleSemanticId);
+      assert.ok(sink);
+      assert.match(snippet, sink);
+    }
   }
 });
 
@@ -159,6 +179,13 @@ test('T051 loader rejects unregistered source files', async (t) => {
   await writeFile(join(root, 'sources', 'extra.bundle'), 'unregistered\n', 'utf8');
 
   await assertLoadError(root, 'SOURCE_SET_INVALID');
+});
+
+test('T051 loader rejects unexpected corpus-root entries', async (t) => {
+  const root = await copyCorpus(t);
+  await writeFile(join(root, 'unregistered.json'), '{}\n', 'utf8');
+
+  await assertLoadError(root, 'ROOT_ENTRIES_INVALID');
 });
 
 test('T051 loader rejects symlink or junction traversal', async (t) => {

@@ -549,9 +549,10 @@ loader, tests, and documentation prove all of the following without provider or 
   floor drift, duplicate scan paths, unsafe traversal/absolute/backslash paths, mutable ownership/
   provenance/license facts, and any widened execution or content authority without throwing;
 - the filesystem loader rejects a missing, changed, noncanonical, or unpinned prior manifest,
-  changed snapshot/source bytes, extra or missing files, symlinks or
+  any extra or missing root entry, changed snapshot/source bytes, extra or missing files, symlinks or
   junctions, real-path escape, invalid UTF-8, BOM, CRLF, NUL, non-NFC text, missing final LF,
-  oversized input, digest/byte/range/anchor drift, and duplicate materialization paths; and
+  oversized input, digest/byte/range/anchor drift, duplicate materialization paths, and file or
+  directory identity changes across validation/read; and
 - corpus and case facts fix platform ownership/immutability true and customer content/config,
   dependency installation, build, dynamic execution, and network requirements false.
 

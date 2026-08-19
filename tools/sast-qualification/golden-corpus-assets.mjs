@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { lstat, mkdir, open, readdir, realpath } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -277,31 +278,45 @@ export function createInitialPriorReleaseManifest() {
 }
 
 export async function writeGoldenCorpusAssets() {
-  const priorReleaseManifest = await readPriorReleaseManifestForGeneration();
+  const writeContext = await assertSafeCorpusWriteTargets();
+  const priorReleaseManifest = await readPriorReleaseManifestForGeneration(
+    writeContext.root.canonical
+  );
   const assets = createGoldenCorpusAssets(priorReleaseManifest);
-  await assertSafeCorpusWriteTargets();
   const expectedPaths = new Set(assets.sources.keys());
-  const existingPaths = await listSourceFiles(join(GOLDEN_CORPUS_ROOT, 'sources'));
+  const existingPaths = await listSourceFiles(
+    join(GOLDEN_CORPUS_ROOT, 'sources'),
+    writeContext.root.canonical
+  );
   const stale = existingPaths.filter((path) => !expectedPaths.has(path));
   if (stale.length > 0) {
     throw new Error(`refusing to leave stale corpus sources: ${stale.join(', ')}`);
   }
   for (const [sourcePath, text] of assets.sources) {
     const output = safeCorpusPath(sourcePath);
-    await mkdir(dirname(output), { recursive: true });
-    await writeFile(output, text, { encoding: 'utf8' });
+    await writeStableRegularFile(output, text, writeContext.root.canonical);
   }
-  await writeFile(
+  await writeStableRegularFile(
     GOLDEN_CORPUS_SNAPSHOT_PATH,
     `${JSON.stringify(assets.snapshot, null, 2)}\n`,
-    { encoding: 'utf8' }
+    writeContext.root.canonical
+  );
+  await assertDirectoryStable(
+    GOLDEN_CORPUS_ROOT,
+    writeContext.root,
+    'golden corpus root changed during generation'
+  );
+  await assertDirectoryStable(
+    join(GOLDEN_CORPUS_ROOT, 'sources'),
+    writeContext.sources,
+    'golden corpus source root changed during generation'
   );
   return assets;
 }
 
 export async function initializePriorReleaseManifest() {
   await mkdir(GOLDEN_CORPUS_ROOT, { recursive: true });
-  await assertPlainDirectory(GOLDEN_CORPUS_ROOT);
+  const root = await inspectPlainDirectory(GOLDEN_CORPUS_ROOT);
   if (await optionalLstat(GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH)) {
     throw new Error(
       'refusing to overwrite immutable prior-release must-detect manifest'
@@ -311,10 +326,22 @@ export async function initializePriorReleaseManifest() {
   if (manifest.manifestDigest !== GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_DIGEST) {
     throw new Error('initial prior-release manifest does not match the reviewed digest');
   }
-  await writeFile(
-    GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH,
-    `${JSON.stringify(manifest, null, 2)}\n`,
-    { encoding: 'utf8', flag: 'wx' }
+  let handle;
+  try {
+    handle = await open(
+      GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH,
+      constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL,
+      0o600
+    );
+    await handle.writeFile(`${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+    await handle.sync();
+  } finally {
+    await handle?.close().catch(() => undefined);
+  }
+  await assertDirectoryStable(
+    GOLDEN_CORPUS_ROOT,
+    root,
+    'golden corpus root changed during manifest initialization'
   );
   return manifest;
 }
@@ -464,45 +491,53 @@ function javaNegativeBody(slug, input, ordinal, negativeKind) {
       }
       return [
         `java.sql.PreparedStatement statement${ordinal} = null;`,
-        `statement${ordinal}.setString(1, ${input});`
+        `statement${ordinal}.setString(1, ${input});`,
+        `statement${ordinal}.executeQuery();`
       ];
     case 'command-injection':
       if (negativeKind === 'PATCHED') {
-        return [`new ProcessBuilder("/usr/bin/tool", "status");`];
+        return [`new ProcessBuilder("/usr/bin/tool", "status").start();`];
       }
       if (negativeKind === 'SANITIZER') {
         return [
           `String sanitized${ordinal} = ${input}.replaceAll("[^A-Za-z0-9_-]", "");`,
-          `new ProcessBuilder("/usr/bin/tool", sanitized${ordinal});`
+          `new ProcessBuilder("/usr/bin/tool", sanitized${ordinal}).start();`
         ];
       }
       return [
         `java.util.List<String> allowed${ordinal} = java.util.List.of("status", "version");`,
-        `new ProcessBuilder("/usr/bin/tool", allowed${ordinal}.contains(${input}) ? ${input} : "status");`
+        `new ProcessBuilder("/usr/bin/tool", allowed${ordinal}.contains(${input}) ? ${input} : "status").start();`
       ];
     case 'path-traversal':
       if (negativeKind === 'PATCHED') {
         return [
-          `java.nio.file.Path path${ordinal} = java.nio.file.Path.of("/srv/data/fixed.txt");`
+          `java.nio.file.Path path${ordinal} = java.nio.file.Path.of("/srv/data/fixed.txt");`,
+          `java.nio.file.Files.readString(path${ordinal});`
         ];
       }
       if (negativeKind === 'SANITIZER') {
         return [
           `String sanitized${ordinal} = ${input}.replaceAll("[^A-Za-z0-9._-]", "");`,
-          `java.nio.file.Path path${ordinal} = java.nio.file.Path.of("/srv/data").resolve(sanitized${ordinal});`
+          `java.nio.file.Path path${ordinal} = java.nio.file.Path.of("/srv/data").resolve(sanitized${ordinal});`,
+          `java.nio.file.Files.readString(path${ordinal});`
         ];
       }
       return [
         `java.nio.file.Path root${ordinal} = java.nio.file.Path.of("/srv/data").normalize();`,
         `java.nio.file.Path path${ordinal} = root${ordinal}.resolve(${input}).normalize();`,
-        `if (!path${ordinal}.startsWith(root${ordinal})) throw new SecurityException();`
+        `if (!path${ordinal}.startsWith(root${ordinal})) throw new SecurityException();`,
+        `java.nio.file.Files.readString(path${ordinal});`
       ];
     case 'ssrf':
       return negativeKind === 'PATCHED'
-        ? [`java.net.URI uri${ordinal} = java.net.URI.create("https://api.example.test/status");`]
+        ? [
+            `java.net.URI uri${ordinal} = java.net.URI.create("https://api.example.test/status");`,
+            `uri${ordinal}.toURL().openConnection();`
+          ]
         : [
             `java.net.URI uri${ordinal} = java.net.URI.create(${input});`,
-            `if (!"https".equals(uri${ordinal}.getScheme()) || !"api.example.test".equals(uri${ordinal}.getHost())) throw new SecurityException();`
+            `if (!"https".equals(uri${ordinal}.getScheme()) || !"api.example.test".equals(uri${ordinal}.getHost())) throw new SecurityException();`,
+            `uri${ordinal}.toURL().openConnection();`
           ];
     case 'ldap-injection':
       if (negativeKind === 'PATCHED') {
@@ -550,12 +585,14 @@ function javaNegativeBody(slug, input, ordinal, negativeKind) {
         return [
           `javax.xml.parsers.DocumentBuilderFactory factory${ordinal} = javax.xml.parsers.DocumentBuilderFactory.newInstance();`,
           `factory${ordinal}.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);`,
-          `factory${ordinal}.setExpandEntityReferences(false);`
+          `factory${ordinal}.setExpandEntityReferences(false);`,
+          `factory${ordinal}.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8)));`
         ];
       }
       return [
         `javax.xml.parsers.SAXParserFactory factory${ordinal} = javax.xml.parsers.SAXParserFactory.newInstance();`,
-        `factory${ordinal}.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);`
+        `factory${ordinal}.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);`,
+        `factory${ordinal}.newSAXParser().parse(new java.io.ByteArrayInputStream(${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8)), new org.xml.sax.helpers.DefaultHandler());`
       ];
     case 'weak-crypto':
       return negativeKind === 'PATCHED'
@@ -565,7 +602,8 @@ function javaNegativeBody(slug, input, ordinal, negativeKind) {
           ]
         : [
             `javax.crypto.Mac mac${ordinal} = javax.crypto.Mac.getInstance("HmacSHA256");`,
-            `byte[] value${ordinal} = ${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8);`
+            `byte[] value${ordinal} = ${input}.getBytes(java.nio.charset.StandardCharsets.UTF_8);`,
+            `mac${ordinal}.doFinal(value${ordinal});`
           ];
     case 'log-injection':
       if (negativeKind === 'PATCHED') {
@@ -582,7 +620,8 @@ function javaNegativeBody(slug, input, ordinal, negativeKind) {
       }
       return [
         `java.util.logging.LogRecord record${ordinal} = new java.util.logging.LogRecord(java.util.logging.Level.INFO, "authenticated-user");`,
-        `record${ordinal}.setParameters(new Object[] { Integer.toHexString(${input}.hashCode()) });`
+        `record${ordinal}.setParameters(new Object[] { Integer.toHexString(${input}.hashCode()) });`,
+        `java.util.logging.Logger.getLogger("audit").log(record${ordinal});`
       ];
     default:
       throw new Error(`unknown Java corpus family: ${slug}`);
@@ -969,12 +1008,17 @@ function digestBoundReference(prefix, value) {
   return `${prefix}/${digest(value)}`;
 }
 
-async function readPriorReleaseManifestForGeneration() {
+async function readPriorReleaseManifestForGeneration(canonicalRoot) {
   const stat = await optionalLstat(GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH);
   if (!stat || !stat.isFile() || stat.isSymbolicLink()) {
     throw new Error('prior-release must-detect manifest must be a regular file');
   }
-  const text = await readFile(GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH, 'utf8');
+  const text = (
+    await readStableRegularFile(
+      GOLDEN_CORPUS_PRIOR_RELEASE_MANIFEST_PATH,
+      canonicalRoot
+    )
+  ).toString('utf8');
   if (
     text.startsWith('\uFEFF') ||
     text.includes('\r') ||
@@ -1012,10 +1056,10 @@ function safeCorpusPath(sourcePath) {
   return output;
 }
 
-async function listSourceFiles(sourceRoot) {
+async function listSourceFiles(sourceRoot, canonicalRoot) {
   try {
     const output = [];
-    await walk(sourceRoot, output);
+    await walk(sourceRoot, output, canonicalRoot);
     return output;
   } catch (error) {
     if (error && typeof error === 'object' && error.code === 'ENOENT') return [];
@@ -1024,15 +1068,14 @@ async function listSourceFiles(sourceRoot) {
 }
 
 async function assertSafeCorpusWriteTargets() {
-  await mkdir(GOLDEN_CORPUS_ROOT, { recursive: true });
-  await assertPlainDirectory(GOLDEN_CORPUS_ROOT);
+  const root = await inspectPlainDirectory(GOLDEN_CORPUS_ROOT);
   const sourceRoot = join(GOLDEN_CORPUS_ROOT, 'sources');
-  await mkdir(sourceRoot, { recursive: true });
-  await assertPlainDirectory(sourceRoot);
+  const sources = await inspectPlainDirectory(sourceRoot, root.canonical);
   const snapshotStat = await optionalLstat(GOLDEN_CORPUS_SNAPSHOT_PATH);
   if (
-    snapshotStat &&
-    (!snapshotStat.isFile() || snapshotStat.isSymbolicLink())
+    !snapshotStat ||
+    !snapshotStat.isFile() ||
+    snapshotStat.isSymbolicLink()
   ) {
     throw new Error('golden corpus snapshot write target must be a regular file');
   }
@@ -1042,39 +1085,168 @@ async function assertSafeCorpusWriteTargets() {
   if (!manifestStat || !manifestStat.isFile() || manifestStat.isSymbolicLink()) {
     throw new Error('prior-release manifest write dependency must be a regular file');
   }
+  return { root, sources };
 }
 
-async function assertPlainDirectory(path) {
-  const stat = await lstat(path);
+async function inspectPlainDirectory(path, canonicalRoot) {
+  const stat = await lstat(path, { bigint: true });
   if (!stat.isDirectory() || stat.isSymbolicLink()) {
     throw new Error(`golden corpus write directory is unsafe: ${path}`);
   }
+  const canonical = await realpath(path);
+  if (canonicalRoot) ensureWithin(canonicalRoot, canonical, path, true);
+  return { stat, canonical };
+}
+
+async function assertDirectoryStable(path, expected, reason) {
+  const current = await inspectPlainDirectory(path);
+  if (
+    current.canonical !== expected.canonical ||
+    !sameNodeIdentity(current.stat, expected.stat)
+  ) {
+    throw new Error(reason);
+  }
+}
+
+async function readStableRegularFile(path, canonicalRoot) {
+  const before = await lstat(path, { bigint: true });
+  if (!before.isFile() || before.isSymbolicLink()) {
+    throw new Error(`golden corpus read target is unsafe: ${path}`);
+  }
+  const canonicalBefore = await realpath(path);
+  ensureWithin(canonicalRoot, canonicalBefore, path);
+  let handle;
+  try {
+    handle = await open(
+      path,
+      constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)
+    );
+    const opened = await handle.stat({ bigint: true });
+    if (!opened.isFile() || !sameStableIdentity(before, opened)) {
+      throw new Error(`golden corpus read target changed before open: ${path}`);
+    }
+    const value = await handle.readFile();
+    const openedAfter = await handle.stat({ bigint: true });
+    const after = await lstat(path, { bigint: true });
+    const canonicalAfter = await realpath(path);
+    ensureWithin(canonicalRoot, canonicalAfter, path);
+    if (
+      !sameStableIdentity(opened, openedAfter) ||
+      !sameStableIdentity(before, after) ||
+      canonicalAfter !== canonicalBefore
+    ) {
+      throw new Error(`golden corpus read target changed during read: ${path}`);
+    }
+    return value;
+  } finally {
+    await handle?.close().catch(() => undefined);
+  }
+}
+
+async function writeStableRegularFile(path, value, canonicalRoot) {
+  const parentPath = dirname(path);
+  const parent = await inspectPlainDirectory(parentPath, canonicalRoot);
+  const before = await lstat(path, { bigint: true });
+  if (!before.isFile() || before.isSymbolicLink()) {
+    throw new Error(`golden corpus write target is unsafe: ${path}`);
+  }
+  const canonicalBefore = await realpath(path);
+  ensureWithin(canonicalRoot, canonicalBefore, path);
+  let handle;
+  try {
+    handle = await open(
+      path,
+      constants.O_WRONLY | (constants.O_NOFOLLOW ?? 0)
+    );
+    const opened = await handle.stat({ bigint: true });
+    if (!opened.isFile() || !sameNodeIdentity(before, opened)) {
+      throw new Error(`golden corpus write target changed before open: ${path}`);
+    }
+    await handle.truncate(0);
+    await handle.writeFile(value, { encoding: 'utf8' });
+    await handle.sync();
+    const openedAfter = await handle.stat({ bigint: true });
+    const after = await lstat(path, { bigint: true });
+    const canonicalAfter = await realpath(path);
+    ensureWithin(canonicalRoot, canonicalAfter, path);
+    if (
+      !sameNodeIdentity(opened, openedAfter) ||
+      !sameNodeIdentity(before, after) ||
+      canonicalAfter !== canonicalBefore
+    ) {
+      throw new Error(`golden corpus write target changed during write: ${path}`);
+    }
+  } finally {
+    await handle?.close().catch(() => undefined);
+  }
+  await assertDirectoryStable(
+    parentPath,
+    parent,
+    `golden corpus write directory changed during write: ${parentPath}`
+  );
+}
+
+function ensureWithin(root, candidate, label, allowRoot = false) {
+  const relation = relative(root, candidate);
+  if (
+    (!allowRoot && relation === '') ||
+    relation.startsWith('..') ||
+    relation.includes(':')
+  ) {
+    throw new Error(`golden corpus path escapes root: ${label}`);
+  }
+}
+
+function sameNodeIdentity(left, right) {
+  return (
+    left.dev === right.dev &&
+    left.ino === right.ino &&
+    left.mode === right.mode &&
+    left.nlink === right.nlink
+  );
+}
+
+function sameStableIdentity(left, right) {
+  return (
+    sameNodeIdentity(left, right) &&
+    left.size === right.size &&
+    left.mtimeNs === right.mtimeNs &&
+    left.ctimeNs === right.ctimeNs
+  );
 }
 
 async function optionalLstat(path) {
   try {
-    return await lstat(path);
+    return await lstat(path, { bigint: true });
   } catch (error) {
     if (error && typeof error === 'object' && error.code === 'ENOENT') return null;
     throw error;
   }
 }
 
-async function walk(directory, output) {
+async function walk(directory, output, canonicalRoot) {
+  const inspected = await inspectPlainDirectory(directory, canonicalRoot);
   const entries = await readdir(directory, { withFileTypes: true });
   for (const entry of entries) {
     const absolute = join(directory, entry.name);
-    if (entry.isSymbolicLink()) {
+    const stat = await lstat(absolute, { bigint: true });
+    if (entry.isSymbolicLink() || stat.isSymbolicLink()) {
       throw new Error(`symbolic link is forbidden in corpus sources: ${absolute}`);
     }
-    if (entry.isDirectory()) {
-      await walk(absolute, output);
-    } else if (entry.isFile()) {
+    if (entry.isDirectory() && stat.isDirectory()) {
+      await walk(absolute, output, canonicalRoot);
+    } else if (entry.isFile() && stat.isFile()) {
+      ensureWithin(canonicalRoot, await realpath(absolute), absolute);
       output.push(relative(GOLDEN_CORPUS_ROOT, absolute).replaceAll('\\', '/'));
     } else {
       throw new Error(`non-regular corpus source is forbidden: ${absolute}`);
     }
   }
+  await assertDirectoryStable(
+    directory,
+    inspected,
+    `golden corpus source directory changed during enumeration: ${directory}`
+  );
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

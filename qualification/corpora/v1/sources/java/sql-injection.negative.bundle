@@ -32,6 +32,7 @@ final class SqlInjectionNegative003 {
   void evaluate(String cookieValue003) throws Exception {
     java.sql.PreparedStatement statement003 = null;
     statement003.setString(1, cookieValue003);
+    statement003.executeQuery();
   }
 }
 <<<END:t051.sql-injection.negative.003>>>
@@ -95,6 +96,7 @@ final class SqlInjectionNegative008 {
   void evaluate(String messageBody008) throws Exception {
     java.sql.PreparedStatement statement008 = null;
     statement008.setString(1, messageBody008);
+    statement008.executeQuery();
   }
 }
 <<<END:t051.sql-injection.negative.008>>>
@@ -158,6 +160,7 @@ final class SqlInjectionNegative013 {
   void evaluate(String yamlProperty013) throws Exception {
     java.sql.PreparedStatement statement013 = null;
     statement013.setString(1, yamlProperty013);
+    statement013.executeQuery();
   }
 }
 <<<END:t051.sql-injection.negative.013>>>
@@ -221,6 +224,7 @@ final class SqlInjectionNegative018 {
   void evaluate(String recordField018) throws Exception {
     java.sql.PreparedStatement statement018 = null;
     statement018.setString(1, recordField018);
+    statement018.executeQuery();
   }
 }
 <<<END:t051.sql-injection.negative.018>>>

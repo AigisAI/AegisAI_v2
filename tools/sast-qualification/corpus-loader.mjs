@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { lstat, open, readdir, realpath } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 
 import {
@@ -21,11 +22,19 @@ export class SastQualificationCorpusLoadError extends Error {
   }
 }
 
+const EXPECTED_ROOT_ENTRIES = [
+  'README.md',
+  'golden-corpus.snapshot.json',
+  'prior-release-must-detect.manifest.json',
+  'sources'
+];
+
 export async function loadAndValidateGoldenCorpus(corpusRoot = GOLDEN_CORPUS_ROOT) {
   const root = resolve(corpusRoot);
   const rootStat = await guardedLstat(root, 'ROOT_INVALID');
   if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) reject('ROOT_INVALID');
   const canonicalRoot = await guardedRealpath(root, 'ROOT_INVALID');
+  await assertExactRootEntries(root, rootStat, canonicalRoot);
 
   const priorReleaseManifestPath = resolveInside(
     root,
@@ -43,7 +52,8 @@ export async function loadAndValidateGoldenCorpus(corpusRoot = GOLDEN_CORPUS_ROO
   }
   const priorReleaseManifestBuffer = await guardedRead(
     priorReleaseManifestPath,
-    'PRIOR_RELEASE_MANIFEST_INVALID'
+    'PRIOR_RELEASE_MANIFEST_INVALID',
+    canonicalRoot
   );
   if (
     priorReleaseManifestBuffer.byteLength === 0 ||
@@ -82,7 +92,11 @@ export async function loadAndValidateGoldenCorpus(corpusRoot = GOLDEN_CORPUS_ROO
   if (!snapshotStat.isFile() || snapshotStat.isSymbolicLink()) {
     reject('SNAPSHOT_INVALID');
   }
-  const snapshotBuffer = await guardedRead(snapshotPath, 'SNAPSHOT_INVALID');
+  const snapshotBuffer = await guardedRead(
+    snapshotPath,
+    'SNAPSHOT_INVALID',
+    canonicalRoot
+  );
   if (snapshotBuffer.byteLength === 0 || snapshotBuffer.byteLength > 8 * 1024 * 1024) {
     reject('SNAPSHOT_INVALID');
   }
@@ -125,7 +139,7 @@ export async function loadAndValidateGoldenCorpus(corpusRoot = GOLDEN_CORPUS_ROO
     ensureInside(canonicalRoot, canonical, 'SOURCE_PATH_INVALID');
     const stat = await guardedLstat(absolute, 'SOURCE_PATH_INVALID');
     if (!stat.isFile() || stat.isSymbolicLink()) reject('SOURCE_PATH_INVALID');
-    const buffer = await guardedRead(absolute, 'SOURCE_INVALID');
+    const buffer = await guardedRead(absolute, 'SOURCE_INVALID', canonicalRoot);
     if (
       buffer.byteLength === 0 ||
       buffer.byteLength > SAST_QUALIFICATION_CORPUS_LIMITS.maximumSourceBytes
@@ -161,6 +175,8 @@ export async function loadAndValidateGoldenCorpus(corpusRoot = GOLDEN_CORPUS_ROO
     }
   }
 
+  await assertStableDirectory(root, rootStat, canonicalRoot, 'ROOT_INVALID');
+
   return Object.freeze({
     corpusId: snapshot.corpusId,
     snapshotDigest: snapshot.snapshotDigest,
@@ -180,6 +196,32 @@ async function listRegularFiles(root, relativeDirectory) {
   const output = [];
   await walk(root, start, output);
   return output.sort(compareText);
+}
+
+async function assertExactRootEntries(root, rootStat, canonicalRoot) {
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch {
+    reject('ROOT_ENTRIES_INVALID');
+  }
+  entries.sort((left, right) => compareText(left.name, right.name));
+  if (!arraysEqual(entries.map((entry) => entry.name), EXPECTED_ROOT_ENTRIES)) {
+    reject('ROOT_ENTRIES_INVALID');
+  }
+  for (const entry of entries) {
+    const stat = await guardedLstat(join(root, entry.name), 'ROOT_ENTRIES_INVALID');
+    if (
+      entry.isSymbolicLink() ||
+      stat.isSymbolicLink() ||
+      (entry.name === 'sources'
+        ? !entry.isDirectory() || !stat.isDirectory()
+        : !entry.isFile() || !stat.isFile())
+    ) {
+      reject('ROOT_ENTRIES_INVALID');
+    }
+  }
+  await assertStableDirectory(root, rootStat, canonicalRoot, 'ROOT_ENTRIES_INVALID');
 }
 
 async function walk(root, directory, output) {
@@ -211,6 +253,12 @@ async function walk(root, directory, output) {
       reject('SOURCE_PATH_INVALID');
     }
   }
+  await assertStableDirectory(
+    directory,
+    stat,
+    canonicalDirectory,
+    'SOURCE_PATH_INVALID'
+  );
 }
 
 function resolveInside(root, relativePath) {
@@ -256,7 +304,7 @@ function decodeCanonicalText(buffer, reason) {
 
 async function guardedLstat(path, reason) {
   try {
-    return await lstat(path);
+    return await lstat(path, { bigint: true });
   } catch {
     reject(reason);
   }
@@ -270,12 +318,64 @@ async function guardedRealpath(path, reason) {
   }
 }
 
-async function guardedRead(path, reason) {
+async function guardedRead(path, reason, canonicalRoot) {
+  const before = await guardedLstat(path, reason);
+  if (!before.isFile() || before.isSymbolicLink()) reject(reason);
+  const canonicalBefore = await guardedRealpath(path, reason);
+  ensureInside(canonicalRoot, canonicalBefore, reason);
+  let handle;
   try {
-    return await readFile(path);
+    handle = await open(
+      path,
+      constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)
+    );
   } catch {
     reject(reason);
   }
+  try {
+    const opened = await handle.stat({ bigint: true });
+    if (!opened.isFile() || !sameEntryIdentity(before, opened)) reject(reason);
+    const buffer = await handle.readFile();
+    const openedAfter = await handle.stat({ bigint: true });
+    const after = await guardedLstat(path, reason);
+    const canonicalAfter = await guardedRealpath(path, reason);
+    if (
+      !sameEntryIdentity(opened, openedAfter) ||
+      !sameEntryIdentity(before, after) ||
+      canonicalAfter !== canonicalBefore
+    ) {
+      reject(reason);
+    }
+    ensureInside(canonicalRoot, canonicalAfter, reason);
+    return buffer;
+  } finally {
+    await handle.close().catch(() => undefined);
+  }
+}
+
+async function assertStableDirectory(path, before, canonicalBefore, reason) {
+  const after = await guardedLstat(path, reason);
+  const canonicalAfter = await guardedRealpath(path, reason);
+  if (
+    !after.isDirectory() ||
+    after.isSymbolicLink() ||
+    !sameEntryIdentity(before, after) ||
+    canonicalAfter !== canonicalBefore
+  ) {
+    reject(reason);
+  }
+}
+
+function sameEntryIdentity(left, right) {
+  return (
+    left.dev === right.dev &&
+    left.ino === right.ino &&
+    left.mode === right.mode &&
+    left.nlink === right.nlink &&
+    left.size === right.size &&
+    left.mtimeNs === right.mtimeNs &&
+    left.ctimeNs === right.ctimeNs
+  );
 }
 
 function digest(value) {

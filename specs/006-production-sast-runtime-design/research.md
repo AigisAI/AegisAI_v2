@@ -729,7 +729,9 @@ package installation, build, dynamic execution, and network use to false.
 The loader first verifies the canonical manifest and pinned digest, then regenerates the expected
 snapshot in memory and requires byte-exact snapshot and source equality, exact source-set
 membership, real-path containment, no symbolic links or
-junctions, bounded bytes/lines, and matching range anchors. This makes reviewable source the
+junctions, an exact four-entry corpus root, stable before/open/after filesystem identity, bounded
+bytes/lines, and matching range anchors. No-follow file opens are used where the host exposes
+them. This makes reviewable source the
 authority instead of trusting a mutable JSON count or directory. CI runs both shared hostile-shape
 tests and filesystem tampering tests plus the explicit corpus validator.
 

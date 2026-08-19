@@ -17,7 +17,8 @@ build step, dynamic test, or network requirement.
   cases retain the unsafe construct under an excluded path instead of duplicating comment cases.
 - The generator and loader reject stale files, path escape, symlinks, non-UTF-8 or non-NFC
   content, CRLF ambiguity, oversized sources, digest/count/range drift, and unknown contract
-  fields.
+  fields. Root entries are an exact allowlist, and file reads/writes use no-follow where the host
+  supports it plus before/open/after identity checks to reject concurrent substitution.
 
 Do not hand-edit generated files. Change the reviewed family definitions in
 `tools/sast-qualification/golden-corpus-assets.mjs`, increment the immutable corpus revision,

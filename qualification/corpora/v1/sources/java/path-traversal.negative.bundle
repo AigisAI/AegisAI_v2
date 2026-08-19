@@ -5,6 +5,7 @@ package qualification.corpus;
 final class PathTraversalNegative001 {
   void evaluate(String queryParameter001) throws Exception {
     java.nio.file.Path path001 = java.nio.file.Path.of("/srv/data/fixed.txt");
+    java.nio.file.Files.readString(path001);
   }
 }
 <<<END:t051.path-traversal.negative.001>>>
@@ -17,6 +18,7 @@ final class PathTraversalNegative002 {
   void evaluate(String headerValue002) throws Exception {
     String sanitized002 = headerValue002.replaceAll("[^A-Za-z0-9._-]", "");
     java.nio.file.Path path002 = java.nio.file.Path.of("/srv/data").resolve(sanitized002);
+    java.nio.file.Files.readString(path002);
   }
 }
 <<<END:t051.path-traversal.negative.002>>>
@@ -30,6 +32,7 @@ final class PathTraversalNegative003 {
     java.nio.file.Path root003 = java.nio.file.Path.of("/srv/data").normalize();
     java.nio.file.Path path003 = root003.resolve(cookieValue003).normalize();
     if (!path003.startsWith(root003)) throw new SecurityException();
+    java.nio.file.Files.readString(path003);
   }
 }
 <<<END:t051.path-traversal.negative.003>>>
@@ -64,6 +67,7 @@ package qualification.corpus;
 final class PathTraversalNegative006 {
   void evaluate(String jsonProperty006) throws Exception {
     java.nio.file.Path path006 = java.nio.file.Path.of("/srv/data/fixed.txt");
+    java.nio.file.Files.readString(path006);
   }
 }
 <<<END:t051.path-traversal.negative.006>>>
@@ -76,6 +80,7 @@ final class PathTraversalNegative007 {
   void evaluate(String xmlValue007) throws Exception {
     String sanitized007 = xmlValue007.replaceAll("[^A-Za-z0-9._-]", "");
     java.nio.file.Path path007 = java.nio.file.Path.of("/srv/data").resolve(sanitized007);
+    java.nio.file.Files.readString(path007);
   }
 }
 <<<END:t051.path-traversal.negative.007>>>
@@ -89,6 +94,7 @@ final class PathTraversalNegative008 {
     java.nio.file.Path root008 = java.nio.file.Path.of("/srv/data").normalize();
     java.nio.file.Path path008 = root008.resolve(messageBody008).normalize();
     if (!path008.startsWith(root008)) throw new SecurityException();
+    java.nio.file.Files.readString(path008);
   }
 }
 <<<END:t051.path-traversal.negative.008>>>
@@ -123,6 +129,7 @@ package qualification.corpus;
 final class PathTraversalNegative011 {
   void evaluate(String webhookField011) throws Exception {
     java.nio.file.Path path011 = java.nio.file.Path.of("/srv/data/fixed.txt");
+    java.nio.file.Files.readString(path011);
   }
 }
 <<<END:t051.path-traversal.negative.011>>>
@@ -135,6 +142,7 @@ final class PathTraversalNegative012 {
   void evaluate(String csvColumn012) throws Exception {
     String sanitized012 = csvColumn012.replaceAll("[^A-Za-z0-9._-]", "");
     java.nio.file.Path path012 = java.nio.file.Path.of("/srv/data").resolve(sanitized012);
+    java.nio.file.Files.readString(path012);
   }
 }
 <<<END:t051.path-traversal.negative.012>>>
@@ -148,6 +156,7 @@ final class PathTraversalNegative013 {
     java.nio.file.Path root013 = java.nio.file.Path.of("/srv/data").normalize();
     java.nio.file.Path path013 = root013.resolve(yamlProperty013).normalize();
     if (!path013.startsWith(root013)) throw new SecurityException();
+    java.nio.file.Files.readString(path013);
   }
 }
 <<<END:t051.path-traversal.negative.013>>>
@@ -182,6 +191,7 @@ package qualification.corpus;
 final class PathTraversalNegative016 {
   void evaluate(String cliArgument016) throws Exception {
     java.nio.file.Path path016 = java.nio.file.Path.of("/srv/data/fixed.txt");
+    java.nio.file.Files.readString(path016);
   }
 }
 <<<END:t051.path-traversal.negative.016>>>
@@ -194,6 +204,7 @@ final class PathTraversalNegative017 {
   void evaluate(String metadataValue017) throws Exception {
     String sanitized017 = metadataValue017.replaceAll("[^A-Za-z0-9._-]", "");
     java.nio.file.Path path017 = java.nio.file.Path.of("/srv/data").resolve(sanitized017);
+    java.nio.file.Files.readString(path017);
   }
 }
 <<<END:t051.path-traversal.negative.017>>>
@@ -207,6 +218,7 @@ final class PathTraversalNegative018 {
     java.nio.file.Path root018 = java.nio.file.Path.of("/srv/data").normalize();
     java.nio.file.Path path018 = root018.resolve(recordField018).normalize();
     if (!path018.startsWith(root018)) throw new SecurityException();
+    java.nio.file.Files.readString(path018);
   }
 }
 <<<END:t051.path-traversal.negative.018>>>

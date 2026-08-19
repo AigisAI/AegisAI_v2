@@ -4,7 +4,7 @@
 package qualification.corpus;
 final class CommandInjectionNegative001 {
   void evaluate(String queryParameter001) throws Exception {
-    new ProcessBuilder("/usr/bin/tool", "status");
+    new ProcessBuilder("/usr/bin/tool", "status").start();
   }
 }
 <<<END:t051.command-injection.negative.001>>>
@@ -16,7 +16,7 @@ package qualification.corpus;
 final class CommandInjectionNegative002 {
   void evaluate(String headerValue002) throws Exception {
     String sanitized002 = headerValue002.replaceAll("[^A-Za-z0-9_-]", "");
-    new ProcessBuilder("/usr/bin/tool", sanitized002);
+    new ProcessBuilder("/usr/bin/tool", sanitized002).start();
   }
 }
 <<<END:t051.command-injection.negative.002>>>
@@ -28,7 +28,7 @@ package qualification.corpus;
 final class CommandInjectionNegative003 {
   void evaluate(String cookieValue003) throws Exception {
     java.util.List<String> allowed003 = java.util.List.of("status", "version");
-    new ProcessBuilder("/usr/bin/tool", allowed003.contains(cookieValue003) ? cookieValue003 : "status");
+    new ProcessBuilder("/usr/bin/tool", allowed003.contains(cookieValue003) ? cookieValue003 : "status").start();
   }
 }
 <<<END:t051.command-injection.negative.003>>>
@@ -62,7 +62,7 @@ final class CommandInjectionNegative005 {
 package qualification.corpus;
 final class CommandInjectionNegative006 {
   void evaluate(String jsonProperty006) throws Exception {
-    new ProcessBuilder("/usr/bin/tool", "status");
+    new ProcessBuilder("/usr/bin/tool", "status").start();
   }
 }
 <<<END:t051.command-injection.negative.006>>>
@@ -74,7 +74,7 @@ package qualification.corpus;
 final class CommandInjectionNegative007 {
   void evaluate(String xmlValue007) throws Exception {
     String sanitized007 = xmlValue007.replaceAll("[^A-Za-z0-9_-]", "");
-    new ProcessBuilder("/usr/bin/tool", sanitized007);
+    new ProcessBuilder("/usr/bin/tool", sanitized007).start();
   }
 }
 <<<END:t051.command-injection.negative.007>>>
@@ -86,7 +86,7 @@ package qualification.corpus;
 final class CommandInjectionNegative008 {
   void evaluate(String messageBody008) throws Exception {
     java.util.List<String> allowed008 = java.util.List.of("status", "version");
-    new ProcessBuilder("/usr/bin/tool", allowed008.contains(messageBody008) ? messageBody008 : "status");
+    new ProcessBuilder("/usr/bin/tool", allowed008.contains(messageBody008) ? messageBody008 : "status").start();
   }
 }
 <<<END:t051.command-injection.negative.008>>>
@@ -120,7 +120,7 @@ final class CommandInjectionNegative010 {
 package qualification.corpus;
 final class CommandInjectionNegative011 {
   void evaluate(String webhookField011) throws Exception {
-    new ProcessBuilder("/usr/bin/tool", "status");
+    new ProcessBuilder("/usr/bin/tool", "status").start();
   }
 }
 <<<END:t051.command-injection.negative.011>>>
@@ -132,7 +132,7 @@ package qualification.corpus;
 final class CommandInjectionNegative012 {
   void evaluate(String csvColumn012) throws Exception {
     String sanitized012 = csvColumn012.replaceAll("[^A-Za-z0-9_-]", "");
-    new ProcessBuilder("/usr/bin/tool", sanitized012);
+    new ProcessBuilder("/usr/bin/tool", sanitized012).start();
   }
 }
 <<<END:t051.command-injection.negative.012>>>
@@ -144,7 +144,7 @@ package qualification.corpus;
 final class CommandInjectionNegative013 {
   void evaluate(String yamlProperty013) throws Exception {
     java.util.List<String> allowed013 = java.util.List.of("status", "version");
-    new ProcessBuilder("/usr/bin/tool", allowed013.contains(yamlProperty013) ? yamlProperty013 : "status");
+    new ProcessBuilder("/usr/bin/tool", allowed013.contains(yamlProperty013) ? yamlProperty013 : "status").start();
   }
 }
 <<<END:t051.command-injection.negative.013>>>
@@ -178,7 +178,7 @@ final class CommandInjectionNegative015 {
 package qualification.corpus;
 final class CommandInjectionNegative016 {
   void evaluate(String cliArgument016) throws Exception {
-    new ProcessBuilder("/usr/bin/tool", "status");
+    new ProcessBuilder("/usr/bin/tool", "status").start();
   }
 }
 <<<END:t051.command-injection.negative.016>>>
@@ -190,7 +190,7 @@ package qualification.corpus;
 final class CommandInjectionNegative017 {
   void evaluate(String metadataValue017) throws Exception {
     String sanitized017 = metadataValue017.replaceAll("[^A-Za-z0-9_-]", "");
-    new ProcessBuilder("/usr/bin/tool", sanitized017);
+    new ProcessBuilder("/usr/bin/tool", sanitized017).start();
   }
 }
 <<<END:t051.command-injection.negative.017>>>
@@ -202,7 +202,7 @@ package qualification.corpus;
 final class CommandInjectionNegative018 {
   void evaluate(String recordField018) throws Exception {
     java.util.List<String> allowed018 = java.util.List.of("status", "version");
-    new ProcessBuilder("/usr/bin/tool", allowed018.contains(recordField018) ? recordField018 : "status");
+    new ProcessBuilder("/usr/bin/tool", allowed018.contains(recordField018) ? recordField018 : "status").start();
   }
 }
 <<<END:t051.command-injection.negative.018>>>
