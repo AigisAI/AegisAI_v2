@@ -88,6 +88,11 @@
 - [x] T051 Build versioned golden positive/negative and prior must-detect corpora
 - [x] T052 Build schema/parser, malicious-repository, fingerprint, evidence/privacy, and performance corpora
 - [ ] T053 Run production-equivalent microVM integration and destruction-evidence tests
+  - [x] Repository-side exact 123-cell manifest, dependency/plan/receipt/result contracts,
+    closed materialization policy, filesystem validator, provider plan generator, and Ed25519
+    offline verifier are package-ready and fail closed as `PENDING_PROVIDER_EXECUTION`.
+  - [ ] Execute all 123 cells on a real production-equivalent provider and verify provider/runtime
+    signatures plus complete destruction evidence; do not replace this with CI or local fixtures.
 - [ ] T054 Run Fast/Deep end-to-end, latency, reliability, and capacity gates
 - [ ] T055 Run signature/provenance/database/schema supply-chain and rollback drills
 - [ ] T056 Produce immutable go/no-go evidence satisfying every `quality-gates.md` threshold

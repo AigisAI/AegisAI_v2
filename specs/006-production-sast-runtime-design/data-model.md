@@ -1307,6 +1307,42 @@ relabeled, widened, or byte-changed fixture fails closed. Validation returns imm
 later stages but neither materializes them nor creates scanner, finding, evidence, correlation,
 lifecycle, policy, publication, promotion, or readiness authority.
 
+### SastIsolatedQualificationManifest and ExecutionCell
+
+Repository-owned T053 provider-handoff entities, not customer or production runtime rows. One
+manifest derives exactly 41 T052 `T053_ISOLATED_INTEGRATION` cases across all three signed profiles
+into 123 canonical cells. Each cell binds the source snapshot, case/fixture identity and bytes,
+profile/scanner set, exact data-driven materialization input/projection, expected outcome,
+isolation class, and a new-microVM/no-reuse policy. The manifest additionally binds the reviewed
+provisioning contract and closed materialization policy. It remains
+`PENDING_PROVIDER_EXECUTION`, records no live evidence, and grants no readiness authority.
+
+### SastIsolatedQualificationDependencySet and ExecutionPlan
+
+An external immutable dependency set binds one production-equivalent provider adapter and the
+exact scanner set, scanner images/wrappers, rule/check/database/schema/normalizer assets, microVM
+kernel/rootfs, materializer, runner, harness, provider policy, and trust policy. Every reference is
+digest-bound and carries signature and provenance references; the validity window is positive and
+at most 24 hours. The canonical plan rebinds the manifest, dependency set, source snapshot, and
+complete cell set. Execution requires detached Security Engineering and Scan Platform approvals;
+no plan carries provider credentials, customer content, execution arguments, or readiness authority.
+
+### SastIsolatedQualificationReceipt and Result
+
+One receipt represents one observed cell attempt. It contains only bounded metadata: unique
+attempt/sandbox/workload and provider/runtime attestation references; exact plan/cell/case/fixture/
+profile/materialization/outcome bindings; ordered phase egress observations; eight prohibited-
+effect counters; trusted execution/cleanup times; and six digest-bound cleanup observations.
+Provider and qualification-runtime Ed25519 signatures bind the exact receipt digest. The receipt
+has no source, SCM credential, command, environment, raw scanner output, finding, evidence body,
+policy, publication, or readiness field.
+
+The aggregate result is immutable and tri-state. Missing but otherwise valid cells remain
+`PENDING_PROVIDER_EXECUTION`; any malformed, invalidly signed, reused, drifted, violating, stale,
+or incompletely destroyed cell is `FAILED`; only 123 unique fully valid receipts and both plan
+approvals are `PASSED`. A pass authorizes entry to T054 only. It never authorizes rollout or marks
+production ready, and T053 remains incomplete until those external receipts actually exist.
+
 ### SastQualityEvaluation
 
 - scanner-set and rule-bundle versions

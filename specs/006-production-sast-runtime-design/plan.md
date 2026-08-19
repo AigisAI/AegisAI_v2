@@ -15,7 +15,8 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040 through T052 independently and now proceeds to T053 production-equivalent isolated integration.
+T040 through T052 independently. The T053 repository-side provider handoff is package-ready, and
+the guarded next action is real production-equivalent microVM execution and destruction evidence.
 
 ## Target Boundaries
 
@@ -223,9 +224,11 @@ evidence/privacy, and 9 performance scenarios. The byte-bound fixtures contain n
 live hostile filesystem objects; performance buckets bind one immutable hardware class and 30
 measured runs. Revision `1.0.2` additionally binds exact per-profile boundary values—including
 artifact-byte and record-count segment formulas—exact shared parser depth/string boundaries, both
-cycle edges, raw encoding bytes, and complete concrete identity vectors. T053 is the next
-implementation task and the first stage allowed to materialize
-the applicable recipes inside production-equivalent isolation.
+cycle edges, raw encoding bytes, and complete concrete identity vectors. T053 now has an immutable
+123-cell manifest, closed guest-only materialization policy, complete provider dependency/plan/
+receipt/result contracts, root-confined loader, and cryptographic offline verifier. Repository CI
+proves only that this provider handoff is exact and remains `PENDING_PROVIDER_EXECUTION`; the first
+allowed materialization is still the external production-equivalent microVM run.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 
@@ -251,7 +254,11 @@ must-detect input authority.
 T052 adds schema/parser, malicious-repository, fingerprint/correlation, evidence/privacy, and
 performance corpora as immutable declarative recipes. T053 is the first slice that materializes
 cases into a production-equivalent isolated scanner environment; no T051 artifact is customer
-content or an executable build input.
+content or an executable build input. The repository side derives exactly 123 case-profile cells,
+binds all provider and supply-chain dependencies, requires detached dual approval and dual-signed
+per-cell receipts, and rejects any reuse, egress, prohibited effect, or cleanup beyond 60 seconds.
+Actual T053 completion remains blocked on external provider evidence; T054 cannot start from a
+repository-only or partial result.
 
 ## Key Interfaces
 

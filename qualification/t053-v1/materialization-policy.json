@@ -1,0 +1,49 @@
+{
+  "version": "sast-isolated-integration-materialization-policy-v1",
+  "revision": "1.0.0",
+  "ownerRef": "team://security-engineering/sast-qualification",
+  "sourceCorpusRevision": "1.0.2",
+  "evidenceStage": "T053_ISOLATED_INTEGRATION",
+  "allowedCorpusClasses": [
+    "SCHEMA_PARSER",
+    "MALICIOUS_REPOSITORY"
+  ],
+  "allowedMaterializationKinds": [
+    "ARTIFACT_STREAM",
+    "REPOSITORY_RECIPE"
+  ],
+  "allowedActions": [
+    "EMIT_ARTIFACT_BYTES",
+    "DECLARE_TREE_ENTRY",
+    "DECLARE_SYMLINK",
+    "DECLARE_SPECIAL_ENTRY",
+    "DECLARE_SCANNER_OUTPUT",
+    "ASSERT_NO_EGRESS",
+    "ASSERT_NO_EXECUTION",
+    "ASSERT_NO_SECRET_LEAK",
+    "ASSERT_NO_AUTHORITY"
+  ],
+  "selectionSource": "BOUND_FIXTURE_AND_CASE_PROFILE_ONLY",
+  "scenarioNameBranchingAllowed": false,
+  "generalCommandInterpreterAllowed": false,
+  "argvAllowed": false,
+  "environmentAllowed": false,
+  "scriptAllowed": false,
+  "urlInputAllowed": false,
+  "customerContentAccepted": false,
+  "scmCredentialIssued": false,
+  "packageInstallAllowed": false,
+  "repositoryBuildAllowed": false,
+  "dynamicTestAllowed": false,
+  "hostMaterializationAllowed": false,
+  "guestMicroVmMaterializationRequired": true,
+  "productionEquivalentProviderRequired": true,
+  "oneFreshMicroVmPerCell": true,
+  "sandboxReuseAllowed": false,
+  "publicInternetEgressAllowed": false,
+  "cleanupSloSeconds": 60,
+  "providerAndRuntimeSignaturesRequired": true,
+  "localExecutionAllowed": false,
+  "productionReadinessAuthority": false,
+  "immutable": true
+}

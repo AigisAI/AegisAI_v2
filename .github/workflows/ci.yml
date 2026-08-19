@@ -87,7 +87,7 @@ jobs:
       - name: Run tests
         run: corepack pnpm test
 
-      - name: Validate T051-T052 qualification corpora
+      - name: Validate T051-T053 qualification packages
         run: corepack pnpm qualification:validate
 
       - name: Test ontology importer

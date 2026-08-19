@@ -799,3 +799,31 @@ benchmarks, customer repositories, live special files or symlinks in Git, compre
 pre-expanded 2 GiB/250,000-file trees, mutable hardware labels, fewer than 30 performance runs,
 empty or duplicate scenario denominators, opaque hand-authored snapshots, permissive extra files,
 following links, platform-default BOM stripping, and treating T052 as T053/T054 evidence.
+
+## Decision 31: Separate the T053 Provider Handoff from Live Qualification Evidence
+
+**Decision**: T053 has two explicit boundaries. The repository boundary deterministically expands
+the 41 applicable T052 cases across three profiles into a 123-cell immutable manifest, fixes a
+closed guest-only materialization policy, validates a complete digest-bound provider dependency
+set, and emits an immutable execution plan. The evidence boundary is external: Security
+Engineering and Scan Platform sign the plan; a production-equivalent provider creates one new
+microVM per cell; and the provider plus qualification runtime sign each exact receipt.
+
+Receipts record unique attempt/sandbox/workload/attestation identity, materialization and outcome,
+five phase egress observations, eight prohibited-effect counters, and six cleanup proofs completed
+within 60 seconds. An offline verifier checks the dependency-set-bound trust bundle, canonical
+Ed25519 SPKI identity, signatures, freshness, uniqueness, bindings, zero-effect requirements, and
+destruction. Zero or a valid subset of receipts stays `PENDING_PROVIDER_EXECUTION`, any violation
+is `FAILED`, and only all 123 may be `PASSED`. A pass grants only entry to T054; readiness remains
+false.
+
+**Rationale**: Committing provider credentials, signing keys, fabricated attestations, live hostile
+objects, or local scanner output would collapse the boundary the qualification is meant to prove.
+A deterministic package makes provider work reproducible and reviewable while a cryptographically
+separate receipt bundle ensures CI cannot self-certify isolation or destruction.
+
+**Rejected**: Running hostile materialization on the host or ordinary PR runner; using a pod as the
+sole isolation boundary; one sandbox for multiple cells; scenario-name branching; mutable image or
+policy references; unsigned plans or receipts; a repository-shipped trust root; accepting partial
+evidence as success; inferring cleanup from provider termination alone; using the local clock or
+filesystem presence as an attestation; and marking T053 complete before real provider evidence.

@@ -614,6 +614,47 @@ parser and malicious-repository recipes inside production-equivalent isolated mi
 destruction evidence. T054 must execute fingerprint/correlation, evidence/privacy, Fast/Deep,
 latency, reliability, and capacity gates. Neither task may infer a passing result from this corpus.
 
+## T053 Production-Equivalent Isolated Integration Gates
+
+The repository-side T053 package is release-blocking unless all of the following are true without
+running a local scanner, microVM, or Kubernetes workload:
+
+- exactly 41 T052-designated cases expand in canonical order to 123 unique case-profile cells, with
+  every source snapshot, case, fixture, profile, scanner, selected boundary, provisioning contract,
+  and closed materialization-policy digest rebound;
+- one immutable dependency set contains every required scanner-set/image/wrapper/rule/database/
+  schema/normalizer, microVM kernel/rootfs, materializer/runner/harness, provider-policy, and
+  trust-policy artifact with digest, signature, and provenance references and a maximum 24-hour
+  validity window;
+- plan identity is stable under input reordering and requires independent Security Engineering and
+  Scan Platform signatures before any provider receipt is accepted;
+- every accepted cell has one unique attempt, sandbox, workload, provider attestation, runtime
+  attestation, and receipt, with no reuse across the 123-cell set;
+- actual materialization counts and outcome equal the cell's exact projection and expected control
+  outcome; scenario-name branching, customer content, SCM credentials, arbitrary command/argv/env/
+  script/URL, package install, repository build, and dynamic test remain absent;
+- all five phase observations report zero public-internet connection, byte, DNS, and destination
+  activity, and all eight prohibited-effect counters equal zero;
+- credential wipe, process-tree termination, writable-volume destruction, result-ingress closure,
+  microVM termination, and final audit are all `VERIFIED`, digest-bound, provider/runtime signed,
+  and completed no later than 60 seconds after cleanup starts;
+- trust keys are canonical Ed25519 SPKI identities, the external trust-bundle bytes match the
+  dependency-set `TRUST_POLICY` digest, and stale/future, wrong-role, changed-key, changed-payload,
+  or invalid signatures fail closed; and
+- filesystem tests reject missing/extra/changed assets, noncanonical UTF-8/NFC/LF, BOM, NUL, CRLF,
+  symlink/junction, real-path escape, and before/open/after identity drift.
+
+The aggregate contract has exactly three outcomes. Zero or a valid strict subset of 123 receipts is
+`PENDING_PROVIDER_EXECUTION`; any invalid observation is `FAILED`; only both plan approvals and all
+123 unique dual-signed valid receipts are `PASSED`. A pass sets only `t054EntryAuthorized=true`.
+Finding, policy, publication, deployment, and production-readiness authority remain false.
+
+`corepack pnpm qualification:validate` validates only the immutable handoff and must report live
+evidence as pending. `verify-isolated-integration-evidence.mjs` uses exit code 2 for pending, 1 for
+failed, and 0 only for a complete cryptographically valid external bundle. T053 itself stays open
+until a production-equivalent provider supplies the real 123-cell and destruction evidence; CI or
+repository fixtures must never manufacture it.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:

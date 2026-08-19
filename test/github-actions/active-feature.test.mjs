@@ -79,6 +79,18 @@ const files = {
   multiClassQualificationLoaderTest: new URL('../../test/qualification/sast-multi-class-qualification-corpus-loader.test.mjs', import.meta.url),
   multiClassQualificationSnapshot: new URL('../../qualification/corpora/t052-v1/multi-class-corpus.snapshot.json', import.meta.url),
   multiClassQualificationReadme: new URL('../../qualification/corpora/t052-v1/README.md', import.meta.url),
+  sharedSastIsolatedQualification: new URL('../../packages/shared/src/types/sast-isolated-integration-qualification.ts', import.meta.url),
+  sharedSastIsolatedQualificationTest: new URL('../../packages/shared/test/sast-isolated-integration-qualification.test.mjs', import.meta.url),
+  isolatedQualificationGenerator: new URL('../../tools/sast-qualification/isolated-integration-assets.mjs', import.meta.url),
+  isolatedQualificationLoader: new URL('../../tools/sast-qualification/isolated-integration-loader.mjs', import.meta.url),
+  isolatedQualificationValidator: new URL('../../tools/sast-qualification/validate-isolated-integration.mjs', import.meta.url),
+  isolatedQualificationPlanTool: new URL('../../tools/sast-qualification/generate-isolated-integration-plan.mjs', import.meta.url),
+  isolatedQualificationEvidenceTool: new URL('../../tools/sast-qualification/verify-isolated-integration-evidence.mjs', import.meta.url),
+  isolatedQualificationLoaderTest: new URL('../../test/qualification/sast-isolated-integration-loader.test.mjs', import.meta.url),
+  isolatedQualificationToolsTest: new URL('../../test/qualification/sast-isolated-integration-tools.test.mjs', import.meta.url),
+  isolatedQualificationManifest: new URL('../../qualification/t053-v1/isolated-integration.manifest.json', import.meta.url),
+  isolatedQualificationPolicy: new URL('../../qualification/t053-v1/materialization-policy.json', import.meta.url),
+  isolatedQualificationReadme: new URL('../../qualification/t053-v1/README.md', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -276,7 +288,7 @@ const assertT049QuickstartHandoff = (quickstart) => {
 const assertT049PlanHandoff = (plan) => {
   assert.match(
     plan,
-    /T040 through T052 independently and now proceeds to T053 production-equivalent isolated integration/
+    /T040 through T052 independently\. The T053 repository-side provider handoff is package-ready/
   );
 };
 
@@ -3062,12 +3074,12 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   );
 
   assert.match(rootPackage, /"qualification:validate"/);
-  assert.match(ci, /Validate T051-T052 qualification corpora/);
+  assert.match(ci, /Validate T051-T053 qualification packages/);
   assert.match(ci, /corepack pnpm qualification:validate/);
   assert.match(tasks, /- \[x\] T051\b/);
   assert.match(quickstart, /T051\s+versioned golden qualification corpus is complete/);
   assert.match(quickstart, /T052 multi-class qualification corpus is complete/);
-  assert.match(quickstart, /T053 is\s+the next implementation task/);
+  assert.match(quickstart, /T053's\s+repository provider-handoff implementation is complete/);
   assert.match(plan, /T051 immutable golden corpus is complete/);
   assert.match(contract, /Versioned golden qualification corpus v1/);
   assert.match(dataModel, /SastQualificationCorpusSnapshot/);
@@ -3168,7 +3180,7 @@ test('SAST T052 pins all multi-class qualification inputs without executing them
 
   assert.match(rootPackage, /validate-golden-corpus\.mjs/);
   assert.match(rootPackage, /validate-multi-class-corpus\.mjs/);
-  assert.match(ci, /Validate T051-T052 qualification corpora/);
+  assert.match(ci, /Validate T051-T053 qualification packages/);
   assert.match(tasks, /- \[x\] T052\b/);
   assert.match(tasks, /- \[ \] T053\b/);
   assert.match(quickstart, /T052 multi-class qualification corpus is complete/);
@@ -3180,6 +3192,107 @@ test('SAST T052 pins all multi-class qualification inputs without executing them
   assert.match(ruleGovernance, /T052 Multi-Class Qualification Corpus Boundary/);
   assert.match(threatModel, /Multi-class qualification recipe substitution/);
   assert.match(qualityGates, /T052 is release-blocking/);
+});
+
+test('SAST T053 packages an exact fail-closed provider handoff without fabricating evidence', () => {
+  const shared = readNormalizedText(files.sharedSastIsolatedQualification);
+  const sharedTest = readNormalizedText(files.sharedSastIsolatedQualificationTest);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const generator = readNormalizedText(files.isolatedQualificationGenerator);
+  const loader = readNormalizedText(files.isolatedQualificationLoader);
+  const validator = readNormalizedText(files.isolatedQualificationValidator);
+  const planTool = readNormalizedText(files.isolatedQualificationPlanTool);
+  const evidenceTool = readNormalizedText(files.isolatedQualificationEvidenceTool);
+  const loaderTest = readNormalizedText(files.isolatedQualificationLoaderTest);
+  const toolsTest = readNormalizedText(files.isolatedQualificationToolsTest);
+  const readme = readNormalizedText(files.isolatedQualificationReadme);
+  const manifest = JSON.parse(readFileSync(files.isolatedQualificationManifest, 'utf8'));
+  const policy = JSON.parse(readFileSync(files.isolatedQualificationPolicy, 'utf8'));
+  const rootPackage = readNormalizedText(files.rootPackage);
+  const ci = readNormalizedText(files.ci);
+  const gitattributes = readNormalizedText(files.gitattributes);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(shared, /sast-isolated-integration-qualification-manifest-v1/);
+  assert.match(shared, /sast-isolated-integration-qualification-receipt-v1/);
+  assert.match(shared, /expectedCellCount: 123/);
+  assert.match(shared, /cleanupSloSeconds: 60/);
+  assert.match(shared, /PENDING_PROVIDER_EXECUTION/);
+  assert.match(shared, /DETACHED_DUAL_APPROVAL_REQUIRED/);
+  assert.match(sharedIndex, /sast-isolated-integration-qualification/);
+  assert.match(sharedTest, /passes only an exact 123-cell dual-signed provider receipt set/);
+  assert.match(sharedTest, /keeps a valid partial provider run pending/);
+  assert.match(sharedTest, /duplicate cells and sandbox or attestation reuse/);
+
+  assert.equal(manifest.sourceCorpusRevision, '1.0.2');
+  assert.equal(manifest.caseCount, 41);
+  assert.equal(manifest.executionCellCount, 123);
+  assert.equal(manifest.cells.length, 123);
+  assert.equal(new Set(manifest.cells.map((item) => item.cellId)).size, 123);
+  assert.equal(new Set(manifest.cells.map((item) => item.cellKey)).size, 123);
+  assert.equal(manifest.providerExecutionStatus, 'PENDING_PROVIDER_EXECUTION');
+  assert.equal(manifest.liveProviderEvidencePresent, false);
+  assert.equal(manifest.productionReadinessAuthority, false);
+  assert.ok(
+    manifest.cells.every(
+      (item) =>
+        item.freshMicroVmRequired === true &&
+        item.sandboxReuseAllowed === false &&
+        item.scenarioNameBranchingAllowed === false &&
+        item.customerContentAccepted === false &&
+        item.customerCodeExecutionAllowed === false &&
+        item.packageInstallAllowed === false &&
+        item.repositoryBuildAllowed === false &&
+        item.dynamicTestAllowed === false &&
+        item.publicInternetEgressAllowed === false &&
+        item.productionReadinessAuthority === false
+    )
+  );
+
+  assert.equal(policy.version, 'sast-isolated-integration-materialization-policy-v1');
+  assert.equal(policy.allowedActions.length, 9);
+  assert.equal(policy.localExecutionAllowed, false);
+  assert.equal(policy.guestMicroVmMaterializationRequired, true);
+  assert.equal(policy.oneFreshMicroVmPerCell, true);
+  assert.equal(policy.productionReadinessAuthority, false);
+
+  assert.match(generator, /createIsolatedIntegrationAssets/);
+  assert.match(generator, /refusing to overwrite existing T053 qualification root/);
+  assert.match(loader, /EXPECTED_ROOT_ENTRIES/);
+  assert.match(loader, /before\.isSymbolicLink/);
+  assert.match(validator, /PENDING_PROVIDER_EXECUTION/);
+  assert.match(planTool, /buildSastIsolatedQualificationExecutionPlan/);
+  assert.match(evidenceTool, /verifySignatureBytes/);
+  assert.match(evidenceTool, /TRUST_POLICY/);
+  assert.match(evidenceTool, /result\.status === 'PASSED'/);
+  assert.match(loaderTest, /rejects missing, extra, noncanonical, and linked entries/);
+  assert.match(toolsTest, /real Ed25519 approvals and 123 receipts/);
+  assert.match(toolsTest, /reject signature tampering/);
+  assert.match(readme, /PENDING_PROVIDER_EXECUTION/);
+
+  assert.match(rootPackage, /validate-isolated-integration\.mjs/);
+  assert.match(ci, /Validate T051-T053 qualification packages/);
+  assert.match(gitattributes, /qualification\/t053-v1\/\*\* text eol=lf/);
+  assert.match(tasks, /- \[ \] T053\b/);
+  assert.match(tasks, /Repository-side exact 123-cell manifest/);
+  assert.match(quickstart, /T053 repository-side 123-cell provider handoff/);
+  assert.match(plan, /T053 repository-side provider handoff is package-ready/);
+  assert.match(contract, /Isolated integration qualification v1/);
+  assert.match(dataModel, /SastIsolatedQualificationReceipt and Result/);
+  assert.match(spec, /FR-057k/);
+  assert.match(research, /Decision 31: Separate the T053 Provider Handoff/);
+  assert.match(ruleGovernance, /T053 Isolated Integration Qualification Boundary/);
+  assert.match(threatModel, /Isolated qualification evidence forgery or reuse/);
+  assert.match(qualityGates, /T053 Production-Equivalent Isolated Integration Gates/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {
