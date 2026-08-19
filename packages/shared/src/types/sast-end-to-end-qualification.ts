@@ -1,7 +1,9 @@
 import {
   SAST_ISOLATED_QUALIFICATION_CLEANUP_CONTROLS,
+  isSastIsolatedQualificationDependencySetValid,
   isSastIsolatedQualificationManifestValid,
   isSastIsolatedQualificationResultValid,
+  type SastIsolatedQualificationDependencySet,
   type SastIsolatedQualificationManifest,
   type SastIsolatedQualificationResult
 } from './sast-isolated-integration-qualification';
@@ -32,6 +34,10 @@ export const SAST_END_TO_END_QUALIFICATION_DEPENDENCY_SET_VERSION =
   'sast-end-to-end-qualification-dependency-set-v1' as const;
 export const SAST_END_TO_END_QUALIFICATION_ENTRY_ATTESTATION_VERSION =
   'sast-end-to-end-qualification-entry-attestation-v1' as const;
+export const SAST_END_TO_END_QUALIFICATION_ARTIFACT_VERIFICATION_SET_VERSION =
+  'sast-end-to-end-qualification-artifact-verification-set-v1' as const;
+export const SAST_END_TO_END_QUALIFICATION_ARTIFACT_PROVENANCE_VERSION =
+  'sast-end-to-end-qualification-artifact-provenance-v1' as const;
 export const SAST_END_TO_END_QUALIFICATION_PLAN_VERSION =
   'sast-end-to-end-qualification-plan-v1' as const;
 export const SAST_END_TO_END_QUALIFICATION_SIGNATURE_VERSION =
@@ -101,6 +107,7 @@ export type SastEndToEndQualificationStatus =
 
 export const SAST_END_TO_END_QUALIFICATION_SIGNATURE_ROLES = [
   'QUALIFICATION_AUTHORITY',
+  'SUPPLY_CHAIN_AUTHORITY',
   'SECURITY_ENGINEERING',
   'SCAN_PLATFORM',
   'MICROVM_PROVIDER',
@@ -169,6 +176,7 @@ export type SastEndToEndQualificationArtifactKey =
 export const SAST_END_TO_END_QUALIFICATION_FAILURE_REASONS = [
   'T053_ENTRY_INVALID',
   'DEPENDENCY_SET_INVALID',
+  'ARTIFACT_VERIFICATION_INVALID',
   'EXECUTION_PLAN_INVALID',
   'APPROVAL_SET_INVALID',
   'RECEIPT_INVALID',
@@ -389,6 +397,56 @@ export interface SastEndToEndQualificationSignature {
   valueBase64: string;
 }
 
+export interface SastEndToEndQualificationArtifactProvenanceCore {
+  version: typeof SAST_END_TO_END_QUALIFICATION_ARTIFACT_PROVENANCE_VERSION;
+  artifactKey: SastEndToEndQualificationArtifactKey;
+  artifactRef: string;
+  artifactDigest: string;
+  builderRef: string;
+  sourceRef: string;
+  sourceDigest: string;
+  materialsDigest: string;
+  generatedAt: string;
+  customerContentIncluded: false;
+  immutable: true;
+}
+
+export interface SastEndToEndQualificationArtifactProvenance
+  extends SastEndToEndQualificationArtifactProvenanceCore {
+  provenanceDigest: string;
+  signature: SastEndToEndQualificationSignature;
+}
+
+export interface SastEndToEndQualificationArtifactVerification {
+  artifactKey: SastEndToEndQualificationArtifactKey;
+  artifactDigest: string;
+  signatureRef: string;
+  signatureEnvelopeDigest: string;
+  artifactSignature: SastEndToEndQualificationSignature;
+  provenanceRef: string;
+  provenanceEnvelopeDigest: string;
+  provenance: SastEndToEndQualificationArtifactProvenance;
+}
+
+export interface SastEndToEndQualificationArtifactVerificationSetCore {
+  version: typeof SAST_END_TO_END_QUALIFICATION_ARTIFACT_VERIFICATION_SET_VERSION;
+  dependencySetId: string;
+  dependencySetDigest: string;
+  verifications: SastEndToEndQualificationArtifactVerification[];
+  verifiedAt: string;
+  verifierRef: string;
+  everyArtifactSignatureVerified: true;
+  everyArtifactProvenanceVerified: true;
+  immutable: true;
+}
+
+export interface SastEndToEndQualificationArtifactVerificationSet
+  extends SastEndToEndQualificationArtifactVerificationSetCore {
+  verificationSetId: string;
+  verificationSetDigest: string;
+  signature: SastEndToEndQualificationSignature;
+}
+
 export interface SastEndToEndQualificationEntryAttestationCore {
   version: typeof SAST_END_TO_END_QUALIFICATION_ENTRY_ATTESTATION_VERSION;
   t053ManifestId: string;
@@ -419,6 +477,12 @@ export interface SastEndToEndQualificationExecutionPlanCore {
   manifestDigest: string;
   dependencySetId: string;
   dependencySetDigest: string;
+  t053DependencySetId: string;
+  t053DependencySetDigest: string;
+  t053ProviderId: string;
+  t053ProviderAdapterRef: string;
+  artifactVerificationSetId: string;
+  artifactVerificationSetDigest: string;
   t053ResultId: string;
   t053ResultDigest: string;
   t053EntryAttestationId: string;
@@ -636,8 +700,12 @@ export type SastEndToEndQualificationSignatureVerifier = (
 export interface SastEndToEndQualificationEvaluationInput {
   manifest: SastEndToEndQualificationManifest;
   t053Result: SastIsolatedQualificationResult | null;
+  t053DependencySet: SastIsolatedQualificationDependencySet | null;
   entryAttestation: SastEndToEndQualificationEntryAttestation | null;
   dependencySet: SastEndToEndQualificationDependencySet | null;
+  artifactVerificationSet:
+    | SastEndToEndQualificationArtifactVerificationSet
+    | null;
   plan: SastEndToEndQualificationExecutionPlan | null;
   approvals: SastEndToEndQualificationSignature[];
   signedReceipts: SastEndToEndQualificationSignedReceipt[];
@@ -1089,6 +1157,267 @@ export function isSastEndToEndQualificationDependencySetValid(
   }
 }
 
+const ARTIFACT_VERIFICATION_KEYS = [
+  'artifactKey', 'artifactDigest', 'signatureRef', 'signatureEnvelopeDigest',
+  'artifactSignature', 'provenanceRef', 'provenanceEnvelopeDigest', 'provenance'
+] as const;
+
+const ARTIFACT_PROVENANCE_CORE_KEYS = [
+  'version', 'artifactKey', 'artifactRef', 'artifactDigest', 'builderRef',
+  'sourceRef', 'sourceDigest', 'materialsDigest', 'generatedAt',
+  'customerContentIncluded', 'immutable'
+] as const;
+
+const ARTIFACT_PROVENANCE_KEYS = [
+  ...ARTIFACT_PROVENANCE_CORE_KEYS, 'provenanceDigest', 'signature'
+] as const;
+
+const ARTIFACT_VERIFICATION_SET_CORE_KEYS = [
+  'version', 'dependencySetId', 'dependencySetDigest', 'verifications',
+  'verifiedAt', 'verifierRef', 'everyArtifactSignatureVerified',
+  'everyArtifactProvenanceVerified', 'immutable'
+] as const;
+
+export function buildSastEndToEndQualificationArtifactProvenance(
+  input: Omit<
+    SastEndToEndQualificationArtifactProvenanceCore,
+    'version' | 'customerContentIncluded' | 'immutable'
+  >,
+  signature: SastEndToEndQualificationSignature,
+  digestCanonical: SastEndToEndQualificationCanonicalDigester
+): SastEndToEndQualificationArtifactProvenance | null {
+  try {
+    if (
+      !hasExactKeys(input, [
+        'artifactKey', 'artifactRef', 'artifactDigest', 'builderRef', 'sourceRef',
+        'sourceDigest', 'materialsDigest', 'generatedAt'
+      ]) ||
+      !SAST_END_TO_END_QUALIFICATION_ARTIFACT_KEYS.includes(input.artifactKey) ||
+      !isDigestBoundReference(input.artifactRef, input.artifactDigest) ||
+      !isDigestBoundReference(input.builderRef) ||
+      !isDigestBoundReference(input.sourceRef, input.sourceDigest) ||
+      !isDigest(input.materialsDigest) ||
+      !isIsoInstant(input.generatedAt)
+    ) {
+      return null;
+    }
+    const core: SastEndToEndQualificationArtifactProvenanceCore = {
+      version: SAST_END_TO_END_QUALIFICATION_ARTIFACT_PROVENANCE_VERSION,
+      ...input,
+      customerContentIncluded: false,
+      immutable: true
+    };
+    const provenanceDigest = digestCanonical(stableJson(core));
+    if (
+      !isDigest(provenanceDigest) ||
+      !isSastEndToEndQualificationSignatureValid(signature) ||
+      signature.role !== 'SUPPLY_CHAIN_AUTHORITY' ||
+      signature.payloadDigest !== provenanceDigest ||
+      signature.signedAt !== input.generatedAt
+    ) {
+      return null;
+    }
+    return { ...core, provenanceDigest, signature };
+  } catch {
+    return null;
+  }
+}
+
+export function isSastEndToEndQualificationArtifactProvenanceValid(
+  value: unknown,
+  verifySignature: SastEndToEndQualificationSignatureVerifier,
+  digestCanonical: SastEndToEndQualificationCanonicalDigester
+): value is SastEndToEndQualificationArtifactProvenance {
+  try {
+    if (!isRecord(value) || !hasExactKeys(value, ARTIFACT_PROVENANCE_KEYS)) {
+      return false;
+    }
+    const candidate =
+      value as unknown as SastEndToEndQualificationArtifactProvenance;
+    const rebuilt = buildSastEndToEndQualificationArtifactProvenance(
+      omitKeys(candidate, [
+        'version', 'customerContentIncluded', 'immutable', 'provenanceDigest',
+        'signature'
+      ]) as Omit<
+        SastEndToEndQualificationArtifactProvenanceCore,
+        'version' | 'customerContentIncluded' | 'immutable'
+      >,
+      candidate.signature,
+      digestCanonical
+    );
+    if (rebuilt === null || stableJson(rebuilt) !== stableJson(candidate)) {
+      return false;
+    }
+    const payload = serializeSastEndToEndQualificationSignaturePayload(
+      candidate.signature
+    );
+    return payload !== null && verifySignature(candidate.signature, payload);
+  } catch {
+    return false;
+  }
+}
+
+export function buildSastEndToEndQualificationArtifactVerificationSet(
+  input: Readonly<{
+    dependencySet: SastEndToEndQualificationDependencySet;
+    verifications: SastEndToEndQualificationArtifactVerification[];
+    verifiedAt: string;
+    verifierRef: string;
+  }>,
+  signature: SastEndToEndQualificationSignature,
+  digestCanonical: SastEndToEndQualificationCanonicalDigester
+): SastEndToEndQualificationArtifactVerificationSet | null {
+  try {
+    if (
+      !hasExactKeys(input, [
+        'dependencySet', 'verifications', 'verifiedAt', 'verifierRef'
+      ]) ||
+      !isSastEndToEndQualificationDependencySetValid(
+        input.dependencySet,
+        digestCanonical
+      ) ||
+      !Array.isArray(input.verifications) ||
+      input.verifications.length !== input.dependencySet.artifacts.length ||
+      input.verifications.length >
+        SAST_END_TO_END_QUALIFICATION_LIMITS.maximumArtifacts ||
+      !isIsoInstant(input.verifiedAt) ||
+      Date.parse(input.verifiedAt) < Date.parse(input.dependencySet.validFrom) ||
+      Date.parse(input.verifiedAt) > Date.parse(input.dependencySet.validUntil) ||
+      !isDigestBoundReference(input.verifierRef)
+    ) {
+      return null;
+    }
+    const byKey = new Map<
+      SastEndToEndQualificationArtifactKey,
+      SastEndToEndQualificationArtifactVerification
+    >();
+    for (const verification of input.verifications) {
+      if (
+        !isArtifactVerificationValid(verification, digestCanonical) ||
+        byKey.has(verification.artifactKey)
+      ) {
+        return null;
+      }
+      byKey.set(verification.artifactKey, { ...verification });
+    }
+    const verifications = input.dependencySet.artifacts.map((artifact) => {
+      const verification = byKey.get(artifact.artifactKey);
+      if (
+        !verification ||
+        verification.artifactDigest !== artifact.artifactDigest ||
+        verification.signatureRef !== artifact.signatureRef ||
+        verification.provenanceRef !== artifact.provenanceRef ||
+        verification.provenance.artifactRef !== artifact.artifactRef ||
+        Date.parse(verification.artifactSignature.signedAt) >
+          Date.parse(input.verifiedAt) ||
+        Date.parse(verification.provenance.generatedAt) >
+          Date.parse(input.verifiedAt)
+      ) {
+        return null;
+      }
+      return verification;
+    });
+    if (verifications.some((item) => item === null)) return null;
+    const core: SastEndToEndQualificationArtifactVerificationSetCore = {
+      version: SAST_END_TO_END_QUALIFICATION_ARTIFACT_VERIFICATION_SET_VERSION,
+      dependencySetId: input.dependencySet.dependencySetId,
+      dependencySetDigest: input.dependencySet.dependencySetDigest,
+      verifications:
+        verifications as SastEndToEndQualificationArtifactVerification[],
+      verifiedAt: input.verifiedAt,
+      verifierRef: input.verifierRef,
+      everyArtifactSignatureVerified: true,
+      everyArtifactProvenanceVerified: true,
+      immutable: true
+    };
+    const verificationSetDigest = digestCanonical(stableJson(core));
+    if (!isDigest(verificationSetDigest)) return null;
+    if (
+      !isSastEndToEndQualificationSignatureValid(signature) ||
+      signature.role !== 'SUPPLY_CHAIN_AUTHORITY' ||
+      signature.payloadDigest !== verificationSetDigest ||
+      signature.signedAt !== input.verifiedAt
+    ) {
+      return null;
+    }
+    return {
+      ...core,
+      verificationSetId:
+        `sast-end-to-end-qualification-artifact-verification-set://${verificationSetDigest.slice('sha256:'.length)}`,
+      verificationSetDigest,
+      signature
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function isSastEndToEndQualificationArtifactVerificationSetValid(
+  value: unknown,
+  dependencySet: SastEndToEndQualificationDependencySet,
+  verifySignature: SastEndToEndQualificationSignatureVerifier,
+  digestCanonical: SastEndToEndQualificationCanonicalDigester
+): value is SastEndToEndQualificationArtifactVerificationSet {
+  try {
+    if (
+      !isRecord(value) ||
+      !hasExactKeys(value, [
+        ...ARTIFACT_VERIFICATION_SET_CORE_KEYS,
+        'verificationSetId', 'verificationSetDigest', 'signature'
+      ])
+    ) {
+      return false;
+    }
+    const candidate =
+      value as unknown as SastEndToEndQualificationArtifactVerificationSet;
+    const rebuilt = buildSastEndToEndQualificationArtifactVerificationSet(
+      {
+        dependencySet,
+        verifications: candidate.verifications,
+        verifiedAt: candidate.verifiedAt,
+        verifierRef: candidate.verifierRef
+      },
+      candidate.signature,
+      digestCanonical
+    );
+    if (
+      rebuilt === null ||
+      stableJson(rebuilt) !== stableJson(candidate) ||
+      !isDirectQualificationIdentity(
+        candidate.verificationSetId,
+        'sast-end-to-end-qualification-artifact-verification-set://'
+      ) ||
+      !isDigest(candidate.verificationSetDigest)
+    ) {
+      return false;
+    }
+    const payload = serializeSastEndToEndQualificationSignaturePayload(
+      candidate.signature
+    );
+    return (
+      payload !== null &&
+      verifySignature(candidate.signature, payload) &&
+      candidate.verifications.every((verification) => {
+        const artifactPayload =
+          serializeSastEndToEndQualificationSignaturePayload(
+            verification.artifactSignature
+          );
+        return (
+          artifactPayload !== null &&
+          verifySignature(verification.artifactSignature, artifactPayload) &&
+          isSastEndToEndQualificationArtifactProvenanceValid(
+            verification.provenance,
+            verifySignature,
+            digestCanonical
+          )
+        );
+      })
+    );
+  } catch {
+    return false;
+  }
+}
+
 const ENTRY_ATTESTATION_CORE_KEYS = [
   'version', 't053ManifestId', 't053ManifestDigest', 't053ResultId', 't053ResultDigest',
   't053DependencySetDigest', 'verifiedAt', 'verifierRef', 't054EntryAuthorized',
@@ -1211,6 +1540,9 @@ export function isSastEndToEndQualificationEntryAttestationValid(
 
 const PLAN_CORE_KEYS = [
   'version', 'manifestId', 'manifestDigest', 'dependencySetId', 'dependencySetDigest',
+  't053DependencySetId', 't053DependencySetDigest', 't053ProviderId',
+  't053ProviderAdapterRef', 'artifactVerificationSetId',
+  'artifactVerificationSetDigest',
   't053ResultId', 't053ResultDigest', 't053EntryAttestationId',
   't053EntryAttestationDigest', 'executionCellCount', 'requiredApprovalRoles',
   'requiredReceiptSignatureRoles', 'plannedAt', 'executionAuthority',
@@ -1224,7 +1556,9 @@ const PLAN_CORE_KEYS = [
 export function buildSastEndToEndQualificationExecutionPlan(
   input: Readonly<{
     manifest: SastEndToEndQualificationManifest;
+    t053DependencySet: SastIsolatedQualificationDependencySet;
     dependencySet: SastEndToEndQualificationDependencySet;
+    artifactVerificationSet: SastEndToEndQualificationArtifactVerificationSet;
     t053Result: SastIsolatedQualificationResult;
     entryAttestation: SastEndToEndQualificationEntryAttestation;
     plannedAt: string;
@@ -1235,12 +1569,23 @@ export function buildSastEndToEndQualificationExecutionPlan(
   try {
     if (
       !hasExactKeys(input, [
-        'manifest', 'dependencySet', 't053Result', 'entryAttestation', 'plannedAt',
+        'manifest', 't053DependencySet', 'dependencySet',
+        'artifactVerificationSet', 't053Result', 'entryAttestation', 'plannedAt',
         'verifySignature'
       ]) ||
       !isSastEndToEndQualificationManifestValid(input.manifest, digestCanonical) ||
+      !isSastIsolatedQualificationDependencySetValid(
+        input.t053DependencySet,
+        digestCanonical
+      ) ||
       !isSastEndToEndQualificationDependencySetValid(
         input.dependencySet,
+        digestCanonical
+      ) ||
+      !isSastEndToEndQualificationArtifactVerificationSetValid(
+        input.artifactVerificationSet,
+        input.dependencySet,
+        input.verifySignature,
         digestCanonical
       ) ||
       !isSastEndToEndQualificationEntryAttestationValid(
@@ -1252,8 +1597,18 @@ export function buildSastEndToEndQualificationExecutionPlan(
       ) ||
       !isIsoInstant(input.plannedAt) ||
       Date.parse(input.plannedAt) < Date.parse(input.entryAttestation.verifiedAt) ||
+      Date.parse(input.plannedAt) <
+        Date.parse(input.artifactVerificationSet.verifiedAt) ||
       Date.parse(input.plannedAt) < Date.parse(input.dependencySet.validFrom) ||
       Date.parse(input.plannedAt) > Date.parse(input.dependencySet.validUntil) ||
+      Date.parse(input.plannedAt) > Date.parse(input.t053DependencySet.validUntil) ||
+      input.t053DependencySet.dependencySetDigest !==
+        input.t053Result.dependencySetDigest ||
+      input.t053DependencySet.dependencySetDigest !==
+        input.entryAttestation.t053DependencySetDigest ||
+      input.t053DependencySet.providerId !== input.dependencySet.providerId ||
+      input.t053DependencySet.providerAdapterRef !==
+        input.dependencySet.providerAdapterRef ||
       input.dependencySet.performanceHardwareClassRef !==
         performanceHardwareClassRef(input.manifest) ||
       input.dependencySet.performanceHardwareClassDigest !==
@@ -1267,6 +1622,14 @@ export function buildSastEndToEndQualificationExecutionPlan(
       manifestDigest: input.manifest.manifestDigest,
       dependencySetId: input.dependencySet.dependencySetId,
       dependencySetDigest: input.dependencySet.dependencySetDigest,
+      t053DependencySetId: input.t053DependencySet.dependencySetId,
+      t053DependencySetDigest: input.t053DependencySet.dependencySetDigest,
+      t053ProviderId: input.t053DependencySet.providerId,
+      t053ProviderAdapterRef: input.t053DependencySet.providerAdapterRef,
+      artifactVerificationSetId:
+        input.artifactVerificationSet.verificationSetId,
+      artifactVerificationSetDigest:
+        input.artifactVerificationSet.verificationSetDigest,
       t053ResultId: input.t053Result.resultId,
       t053ResultDigest: input.t053Result.resultDigest,
       t053EntryAttestationId: input.entryAttestation.attestationId,
@@ -1309,7 +1672,9 @@ export function buildSastEndToEndQualificationExecutionPlan(
 export function isSastEndToEndQualificationExecutionPlanValid(
   value: unknown,
   manifest: SastEndToEndQualificationManifest,
+  t053DependencySet: SastIsolatedQualificationDependencySet,
   dependencySet: SastEndToEndQualificationDependencySet,
+  artifactVerificationSet: SastEndToEndQualificationArtifactVerificationSet,
   t053Result: SastIsolatedQualificationResult,
   entryAttestation: SastEndToEndQualificationEntryAttestation,
   verifySignature: SastEndToEndQualificationSignatureVerifier,
@@ -1323,7 +1688,9 @@ export function isSastEndToEndQualificationExecutionPlanValid(
     const rebuilt = buildSastEndToEndQualificationExecutionPlan(
       {
         manifest,
+        t053DependencySet,
         dependencySet,
+        artifactVerificationSet,
         t053Result,
         entryAttestation,
         plannedAt: candidate.plannedAt,
@@ -1789,8 +2156,9 @@ const RESULT_CORE_KEYS = [
 const RESULT_KEYS = [...RESULT_CORE_KEYS, 'resultId', 'resultDigest'] as const;
 
 const EVALUATION_INPUT_KEYS = [
-  'manifest', 't053Result', 'entryAttestation', 'dependencySet', 'plan',
-  'approvals', 'signedReceipts', 'trustedEvaluatedAt', 'verifySignature'
+  'manifest', 't053Result', 't053DependencySet', 'entryAttestation',
+  'dependencySet', 'artifactVerificationSet', 'plan', 'approvals',
+  'signedReceipts', 'trustedEvaluatedAt', 'verifySignature'
 ] as const;
 
 export function evaluateSastEndToEndQualificationEvidence(
@@ -1810,8 +2178,10 @@ export function evaluateSastEndToEndQualificationEvidence(
     }
 
     const downstreamEvidencePresent =
+      input.t053DependencySet !== null ||
       input.entryAttestation !== null ||
       input.dependencySet !== null ||
+      input.artifactVerificationSet !== null ||
       input.plan !== null ||
       input.approvals.length > 0 ||
       input.signedReceipts.length > 0;
@@ -1873,6 +2243,16 @@ export function evaluateSastEndToEndQualificationEvidence(
     }
 
     const failureReasons: SastEndToEndQualificationFailureReason[] = [];
+    const t053DependencyValid =
+      input.t053DependencySet !== null &&
+      isSastIsolatedQualificationDependencySetValid(
+        input.t053DependencySet,
+        digestCanonical
+      ) &&
+      input.t053DependencySet.dependencySetDigest ===
+        input.t053Result.dependencySetDigest;
+    if (!t053DependencyValid) failureReasons.push('T053_ENTRY_INVALID');
+
     const entryValid =
       input.entryAttestation !== null &&
       isSastEndToEndQualificationEntryAttestationValid(
@@ -1892,14 +2272,40 @@ export function evaluateSastEndToEndQualificationEvidence(
       );
     if (!dependencyValid) failureReasons.push('DEPENDENCY_SET_INVALID');
 
+    const artifactVerificationValid =
+      dependencyValid &&
+      input.artifactVerificationSet !== null &&
+      isSastEndToEndQualificationArtifactVerificationSetValid(
+        input.artifactVerificationSet,
+        input.dependencySet as SastEndToEndQualificationDependencySet,
+        input.verifySignature,
+        digestCanonical
+      );
+    if (!artifactVerificationValid) {
+      failureReasons.push('ARTIFACT_VERIFICATION_INVALID');
+    }
+
+    const providerBindingValid =
+      t053DependencyValid &&
+      dependencyValid &&
+      input.t053DependencySet?.providerId === input.dependencySet?.providerId &&
+      input.t053DependencySet?.providerAdapterRef ===
+        input.dependencySet?.providerAdapterRef;
+    if (!providerBindingValid) failureReasons.push('PROVIDER_MISMATCH');
+
     const planValid =
+      t053DependencyValid &&
       entryValid &&
       dependencyValid &&
+      artifactVerificationValid &&
+      providerBindingValid &&
       input.plan !== null &&
       isSastEndToEndQualificationExecutionPlanValid(
         input.plan,
         input.manifest,
+        input.t053DependencySet as SastIsolatedQualificationDependencySet,
         input.dependencySet as SastEndToEndQualificationDependencySet,
+        input.artifactVerificationSet as SastEndToEndQualificationArtifactVerificationSet,
         input.t053Result,
         input.entryAttestation as SastEndToEndQualificationEntryAttestation,
         input.verifySignature,
@@ -1907,7 +2313,14 @@ export function evaluateSastEndToEndQualificationEvidence(
       );
     if (!planValid) failureReasons.push('EXECUTION_PLAN_INVALID');
 
-    if (!entryValid || !dependencyValid || !planValid) {
+    if (
+      !t053DependencyValid ||
+      !entryValid ||
+      !dependencyValid ||
+      !artifactVerificationValid ||
+      !providerBindingValid ||
+      !planValid
+    ) {
       if (input.approvals.length > 0) failureReasons.push('APPROVAL_SET_INVALID');
       if (input.signedReceipts.length > 0) failureReasons.push('RECEIPT_INVALID');
       return failedResult(
@@ -3318,6 +3731,44 @@ function isArtifactBindingValid(
     isDigestBoundReference(candidate.artifactRef, candidate.artifactDigest) &&
     isDigestBoundReference(candidate.signatureRef) &&
     isDigestBoundReference(candidate.provenanceRef)
+  );
+}
+
+function isArtifactVerificationValid(
+  value: unknown,
+  digestCanonical: SastEndToEndQualificationCanonicalDigester
+): value is SastEndToEndQualificationArtifactVerification {
+  if (!isRecord(value) || !hasExactKeys(value, ARTIFACT_VERIFICATION_KEYS)) {
+    return false;
+  }
+  const candidate = value as unknown as SastEndToEndQualificationArtifactVerification;
+  return (
+    SAST_END_TO_END_QUALIFICATION_ARTIFACT_KEYS.includes(candidate.artifactKey) &&
+    isDigest(candidate.artifactDigest) &&
+    isSastEndToEndQualificationSignatureValid(candidate.artifactSignature) &&
+    candidate.artifactSignature.role === 'SUPPLY_CHAIN_AUTHORITY' &&
+    candidate.artifactSignature.payloadDigest === candidate.artifactDigest &&
+    isDigest(candidate.signatureEnvelopeDigest) &&
+    digestCanonical(stableJson(candidate.artifactSignature)) ===
+      candidate.signatureEnvelopeDigest &&
+    isDigest(candidate.provenanceEnvelopeDigest) &&
+    isSastEndToEndQualificationArtifactProvenanceValid(
+      candidate.provenance,
+      () => true,
+      digestCanonical
+    ) &&
+    candidate.provenance.artifactKey === candidate.artifactKey &&
+    candidate.provenance.artifactDigest === candidate.artifactDigest &&
+    digestCanonical(stableJson(candidate.provenance)) ===
+      candidate.provenanceEnvelopeDigest &&
+    isDigestBoundReference(
+      candidate.signatureRef,
+      candidate.signatureEnvelopeDigest
+    ) &&
+    isDigestBoundReference(
+      candidate.provenanceRef,
+      candidate.provenanceEnvelopeDigest
+    )
   );
 }
 

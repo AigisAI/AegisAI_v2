@@ -839,6 +839,14 @@ same-negative-corpus candidate/baseline comparison and 30 candidate plus 30 base
 of nine fixed hardware-bound performance buckets. It cannot create a plan until a Qualification
 Authority signature attests an exact T053 `PASSED` result that grants only T054 entry.
 
+The plan additionally consumes the exact T053 dependency set named by the result and refuses any
+T054 provider or adapter mismatch. For every T054 artifact, the verifier loads the complete
+artifact signature and provenance statement, recomputes both envelope digests, binds provenance
+subject/source/builder/materials to the artifact, and verifies both Ed25519 signatures before it
+accepts the closed `SUPPLY_CHAIN_AUTHORITY`-signed verification set. The trust bundle is accepted
+only when its byte digest equals `SAST_T054_TRUST_POLICY_DIGEST` from independent process
+configuration; a submitted dependency set cannot introduce its own trust root.
+
 Every execution receipt binds candidate and baseline assets, provider, hardware, cell, profile,
 queue-to-cleanup phase evidence, resource observations, and one or two fully destroyed fresh
 microVM attempts. An infrastructure retry is retained rather than replacing the first attempt.
@@ -859,5 +867,7 @@ detectable while keeping customer content and production authority out of the pa
 as qualification evidence; uploading customer repositories; accepting caller p95/precision/
 recall summaries; dropping failed attempts after retry; fewer than 30 runs; sharing sandboxes;
 mutable candidate/baseline tags; one signer for provider/runtime/telemetry roles; retroactive plan
-approval; local evaluation-time override; partial receipt success; and allowing a T054 result to
-publish, deploy, or mark the system production ready.
+approval; caller-selected trust roots; unsigned artifact/provenance references; transferring T053
+qualification to a different provider or adapter; aggregate-only artifact verification without
+loading each signed envelope; local evaluation-time override; partial receipt success; and allowing
+a T054 result to publish, deploy, or mark the system production ready.

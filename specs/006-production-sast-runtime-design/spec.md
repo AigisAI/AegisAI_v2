@@ -606,7 +606,15 @@ incomplete, stale, quarantined, or security-blocked scan.
   scanner/microVM or fabricate live evidence.
 - **FR-057l**: T054 MUST refuse plan creation unless a structurally valid T053 `PASSED` result,
   `t054EntryAuthorized=true`, and a Qualification Authority Ed25519 entry attestation bind the
-  exact T053 and T054 manifests. The repository manifest MUST derive exactly 3,462 immutable cells:
+  exact T053 and T054 manifests. The exact T053 dependency set MUST be supplied, its digest MUST
+  equal the passing result, and its provider ID and provider-adapter ref MUST equal T054. Every
+  T054 dependency artifact MUST have its complete digest-bound signature envelope and provenance
+  statement represented exactly once in a `SUPPLY_CHAIN_AUTHORITY`-signed verification set. Before
+  plan construction, the verifier MUST recompute both envelope digests, verify both per-artifact
+  Ed25519 signatures, and bind the provenance subject, source, builder, and materials to the exact
+  artifact. The trust bundle MUST match an independently configured
+  `SAST_T054_TRUST_POLICY_DIGEST`; submitted evidence MUST NOT choose its own trust root. The
+  repository manifest MUST derive exactly 3,462 immutable cells:
   1,880 candidate T051 case-profile cells, 940 baseline T051 negative case-profile cells, 102
   candidate T052 fingerprint/evidence-privacy cells, and 540 candidate/baseline performance cells
   covering nine fixed profile-size buckets with 30 post-warm-up runs per arm. The dependency set

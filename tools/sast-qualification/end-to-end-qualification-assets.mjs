@@ -29,7 +29,7 @@ export const END_TO_END_QUALIFICATION_POLICY_PATH = join(
   'measurement-policy.json'
 );
 
-const REVISION = '1.0.0';
+const REVISION = '1.0.2';
 const PUBLISHED_AT = '2026-08-20T00:00:00.000Z';
 const OWNER_REF = 'team://security-engineering/sast-qualification';
 const EXPECTED_ROOT_ENTRIES = [
@@ -46,7 +46,9 @@ const MEASUREMENT_POLICY = Object.freeze({
     stage: 'T053_ISOLATED_INTEGRATION',
     requiredStatus: 'PASSED',
     requiredEntryAuthorization: 't054EntryAuthorized',
-    cryptographicEntryAttestationRequired: true
+    cryptographicEntryAttestationRequired: true,
+    exactT053DependencySetRequired: true,
+    sameProviderAndAdapterRequired: true
   },
   execution: {
     evidenceStage: 'T054_END_TO_END_AND_PERFORMANCE',
@@ -59,6 +61,14 @@ const MEASUREMENT_POLICY = Object.freeze({
     cleanupSloSeconds: 60,
     queueToCleanupMeasurementRequired: true,
     candidateAndBaselineArtifactBindingRequired: true,
+    signedArtifactVerificationSetRequired: true,
+    artifactVerificationSignatureRole: 'SUPPLY_CHAIN_AUTHORITY',
+    everyArtifactSignatureAndProvenanceVerified: true,
+    artifactSignatureEnvelopePayloadRequired: true,
+    artifactProvenanceEnvelopePayloadRequired: true,
+    perArtifactEd25519VerificationRequired: true,
+    artifactProvenanceSubjectBindingRequired: true,
+    independentlyConfiguredTrustPolicyDigestRequired: true,
     aggregateMetricsAcceptedFromCaller: false,
     trustedClockRequired: true,
     detachedDualApprovalRequired: true,
@@ -146,7 +156,13 @@ cells, 102 candidate fingerprint/privacy end-to-end cells, and 540 candidate/bas
 performance cells (nine profile-size buckets, 30 post-warm-up runs per arm).
 
 - T054 cannot issue an execution plan until a valid T053 \`PASSED\` result and a separately
-  signed \`t054EntryAuthorized\` attestation are verified offline.
+  signed \`t054EntryAuthorized\` attestation are verified offline. The exact T053 dependency set,
+  provider, and provider adapter must match T054; provider qualification is not transferable.
+- The trust bundle must match \`SAST_T054_TRUST_POLICY_DIGEST\`, configured independently from
+  external evidence. The verifier must load each artifact signature and provenance statement,
+  recompute both envelope digests, verify both Ed25519 signatures as \`SUPPLY_CHAIN_AUTHORITY\`,
+  bind provenance subject/source/builder/materials to the artifact, and then verify the closed set
+  signature.
 - Every receipt binds the exact manifest, dependency set, candidate and baseline scanner sets,
   hardware class, plan, cell, profile, provider, attempt chain, all queue-to-cleanup phases,
   resource observations, and cleanup evidence.

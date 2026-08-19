@@ -18,7 +18,8 @@ Control, Scan, AI, and Data/Security plane boundaries.
 - This package is the active implementation target for production SAST runtime design.
 - T040 through T052 are complete. The T053 repository-side 123-cell provider handoff and the
   T054 repository-side 3,462-cell qualification contract, receipt-recomputed gates, and offline
-  verifiers are package-ready. T054 remains cryptographically blocked until an externally
+  verifiers are package-ready, including an independently configured trust-policy digest,
+  every-artifact supply-chain attestation, and exact T053/T054 provider binding. T054 remains cryptographically blocked until an externally
   authorized production-equivalent T053 microVM run supplies all destruction evidence.
 - Production Kubernetes rollout remains deferred until T053-T056 pass. A standalone or staging
   qualification provider may execute T053 only with its external dependency set, trust bundle, and
@@ -828,6 +829,9 @@ Before claiming the 006 design milestone complete:
     provider/runtime-signed receipts and complete destruction evidence.
 14. Validate the T054 repository-side 3,462-cell qualification contract, confirm it remains
     `BLOCKED_T053_QUALIFICATION`, and never issue its provider plan without a signed T053 pass or
+    its exact dependency/provider binding and an independently pinned trust-policy digest. Confirm
+    each artifact's complete signature envelope and provenance statement is digest-recomputed and
+    individually Ed25519-verified before the closed verification-set signature is accepted. Never
     treat CI/local receipt fixtures as end-to-end, latency, reliability, or capacity evidence.
 
 ## Validation Commands

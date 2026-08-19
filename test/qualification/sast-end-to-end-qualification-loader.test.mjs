@@ -17,7 +17,7 @@ import {
 const repositoryRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const canonicalRoot = join(repositoryRoot, 'qualification', 't054-v1');
 const EXPECTED_MANIFEST_DIGEST =
-  'sha256:1ff4e71b5a04c6098c5851f6b8146db70961e4246ae0329814533f2550b68741';
+  'sha256:fdbede0e8361b739988770f9ecc53b22afd2d6b9e44a4e3659c6d1bd6147a4c4';
 
 test('T054 loader accepts only the exact immutable 3,462-cell package', async () => {
   const result = await loadAndValidateEndToEndQualificationPackage();
@@ -47,6 +47,21 @@ test('T054 generator is deterministic and bootstrap refuses overwrite', async ()
 test('T054 policy denies local execution and every production authority', () => {
   const policy = createEndToEndQualificationAssets().measurementPolicy;
   assert.equal(policy.execution.aggregateMetricsAcceptedFromCaller, false);
+  assert.equal(policy.prerequisite.exactT053DependencySetRequired, true);
+  assert.equal(policy.prerequisite.sameProviderAndAdapterRequired, true);
+  assert.equal(policy.execution.signedArtifactVerificationSetRequired, true);
+  assert.equal(
+    policy.execution.artifactVerificationSignatureRole,
+    'SUPPLY_CHAIN_AUTHORITY'
+  );
+  assert.equal(policy.execution.artifactSignatureEnvelopePayloadRequired, true);
+  assert.equal(policy.execution.artifactProvenanceEnvelopePayloadRequired, true);
+  assert.equal(policy.execution.perArtifactEd25519VerificationRequired, true);
+  assert.equal(policy.execution.artifactProvenanceSubjectBindingRequired, true);
+  assert.equal(
+    policy.execution.independentlyConfiguredTrustPolicyDigestRequired,
+    true
+  );
   assert.equal(policy.prohibited.localExecutionAllowed, false);
   for (const value of Object.values(policy.prohibited)) assert.equal(value, false);
   for (const value of Object.values(policy.authority)) assert.equal(value, false);

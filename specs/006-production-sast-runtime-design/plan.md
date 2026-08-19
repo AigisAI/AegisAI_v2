@@ -265,7 +265,11 @@ repository-only or partial result.
 The T054 repository package then expands T051/T052 into exactly 3,462 candidate/baseline cells,
 binds candidate and last-known-good scanner sets plus one performance hardware class, preserves an
 infrastructure retry as a measured attempt, and requires three independently signed receipts per
-cell. Its verifier recomputes all denominators, p50/p95 values, correctness, precision, recall,
+cell. Plan issuance also requires the exact T053 dependency/provider/adapter and a process-pinned
+trust bundle digest. The verifier loads every artifact signature and provenance statement,
+recomputes both envelope digests, verifies both per-artifact `SUPPLY_CHAIN_AUTHORITY` Ed25519
+signatures and provenance subject/source/materials, then verifies the signed closed set. It
+recomputes all denominators, p50/p95 values, correctness, precision, recall,
 false-positive, failure, capacity, resource, and zero-tolerance gates. A partial valid run stays
 `PENDING_PROVIDER_EXECUTION`; repository-only validation stays `BLOCKED_T053_QUALIFICATION`; only
 a complete pass may authorize T055, never rollout or production readiness.

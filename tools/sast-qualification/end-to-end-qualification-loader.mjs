@@ -90,6 +90,17 @@ export async function loadAndValidateEndToEndQualificationPackage(
       digest(actualText.get('measurement-policy.json')) ||
     measurementPolicy.version !==
       'sast-end-to-end-qualification-measurement-policy-v1' ||
+    measurementPolicy.prerequisite?.exactT053DependencySetRequired !== true ||
+    measurementPolicy.prerequisite?.sameProviderAndAdapterRequired !== true ||
+    measurementPolicy.execution?.signedArtifactVerificationSetRequired !== true ||
+    measurementPolicy.execution?.artifactVerificationSignatureRole !==
+      'SUPPLY_CHAIN_AUTHORITY' ||
+    measurementPolicy.execution?.everyArtifactSignatureAndProvenanceVerified !== true ||
+    measurementPolicy.execution?.artifactSignatureEnvelopePayloadRequired !== true ||
+    measurementPolicy.execution?.artifactProvenanceEnvelopePayloadRequired !== true ||
+    measurementPolicy.execution?.perArtifactEd25519VerificationRequired !== true ||
+    measurementPolicy.execution?.artifactProvenanceSubjectBindingRequired !== true ||
+    measurementPolicy.execution?.independentlyConfiguredTrustPolicyDigestRequired !== true ||
     measurementPolicy.execution?.aggregateMetricsAcceptedFromCaller !== false ||
     measurementPolicy.prohibited?.localExecutionAllowed !== false ||
     measurementPolicy.authority?.productionReadinessAuthority !== false
@@ -123,8 +134,10 @@ export async function loadAndValidateEndToEndQualificationPackage(
     {
       manifest,
       t053Result,
+      t053DependencySet: null,
       entryAttestation: null,
       dependencySet: null,
+      artifactVerificationSet: null,
       plan: null,
       approvals: [],
       signedReceipts: [],

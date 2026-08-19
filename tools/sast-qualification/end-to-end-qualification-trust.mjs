@@ -11,7 +11,8 @@ import {
 export function buildEndToEndQualificationTrustVerifier({
   value,
   text,
-  dependencySet
+  dependencySet,
+  trustedTrustPolicyDigest
 }) {
   if (
     !hasExactKeys(value, ['version', 'revision', 'keys', 'immutable']) ||
@@ -25,9 +26,15 @@ export function buildEndToEndQualificationTrustVerifier({
   const trustArtifact = dependencySet.artifacts.find(
     (item) => item.artifactKey === 'TRUST_POLICY'
   );
-  if (!trustArtifact || digest(text) !== trustArtifact.artifactDigest) {
+  const trustDigest = digest(text);
+  if (
+    !isDigest(trustedTrustPolicyDigest) ||
+    !trustArtifact ||
+    trustDigest !== trustArtifact.artifactDigest ||
+    trustDigest !== trustedTrustPolicyDigest
+  ) {
     throw new Error(
-      'T054 trust bundle does not match the dependency-set TRUST_POLICY digest'
+      'T054 trust bundle does not match the independently configured trust-policy digest'
     );
   }
   if (
@@ -105,6 +112,18 @@ export function buildEndToEndQualificationTrustVerifier({
   };
 }
 
+export function readConfiguredEndToEndQualificationTrustPolicyDigest(
+  environment = process.env
+) {
+  const value = environment.SAST_T054_TRUST_POLICY_DIGEST;
+  if (!isDigest(value)) {
+    throw new Error(
+      'SAST_T054_TRUST_POLICY_DIGEST must independently pin the T054 trust bundle'
+    );
+  }
+  return value;
+}
+
 function hasExactKeys(value, keys) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
@@ -132,6 +151,10 @@ function isIsoInstant(value) {
 
 function digest(value) {
   return `sha256:${createHash('sha256').update(value, 'utf8').digest('hex')}`;
+}
+
+function isDigest(value) {
+  return typeof value === 'string' && /^sha256:[a-f0-9]{64}$/u.test(value);
 }
 
 function digestBytes(value) {

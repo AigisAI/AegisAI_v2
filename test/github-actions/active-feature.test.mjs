@@ -3345,6 +3345,12 @@ test('SAST T054 packages exact end-to-end gates without fabricating external evi
 
   assert.match(shared, /sast-end-to-end-qualification-manifest-v1/);
   assert.match(shared, /sast-end-to-end-qualification-receipt-v1/);
+  assert.match(shared, /sast-end-to-end-qualification-artifact-verification-set-v1/);
+  assert.match(shared, /sast-end-to-end-qualification-artifact-provenance-v1/);
+  assert.match(shared, /verification\.artifactSignature/);
+  assert.match(shared, /verification\.provenance/);
+  assert.match(shared, /SUPPLY_CHAIN_AUTHORITY/);
+  assert.match(shared, /t053ProviderAdapterRef/);
   assert.match(shared, /expectedCellCount: 3_462/);
   assert.match(shared, /BLOCKED_T053_QUALIFICATION/);
   assert.match(shared, /aggregateMetricsAcceptedFromCaller: false/);
@@ -3354,6 +3360,7 @@ test('SAST T054 packages exact end-to-end gates without fabricating external evi
   assert.match(sharedTest, /recomputes every gate from all signed receipts/);
   assert.match(sharedTest, /keeps infrastructure retries in reliability metrics/);
   assert.match(sharedTest, /duplicate global identities and retroactive approvals/);
+  assert.match(sharedTest, /untrusted artifact attestations and T053 provider transfer/);
 
   assert.equal(manifest.executionCellCount, 3462);
   assert.equal(manifest.goldenCandidateCellCount, 1880);
@@ -3387,6 +3394,17 @@ test('SAST T054 packages exact end-to-end gates without fabricating external evi
   assert.equal(policy.denominators.totalExecutionCells, 3462);
   assert.equal(policy.denominators.performanceRunsPerArmBucket, 30);
   assert.equal(policy.execution.aggregateMetricsAcceptedFromCaller, false);
+  assert.equal(policy.prerequisite.exactT053DependencySetRequired, true);
+  assert.equal(policy.prerequisite.sameProviderAndAdapterRequired, true);
+  assert.equal(policy.execution.signedArtifactVerificationSetRequired, true);
+  assert.equal(policy.execution.artifactSignatureEnvelopePayloadRequired, true);
+  assert.equal(policy.execution.artifactProvenanceEnvelopePayloadRequired, true);
+  assert.equal(policy.execution.perArtifactEd25519VerificationRequired, true);
+  assert.equal(policy.execution.artifactProvenanceSubjectBindingRequired, true);
+  assert.equal(
+    policy.execution.independentlyConfiguredTrustPolicyDigestRequired,
+    true
+  );
   assert.equal(policy.prohibited.localExecutionAllowed, false);
   assert.equal(policy.authority.productionReadinessAuthority, false);
 
@@ -3399,12 +3417,15 @@ test('SAST T054 packages exact end-to-end gates without fabricating external evi
   assert.match(loader, /before\.isSymbolicLink/);
   assert.match(validator, /BLOCKED_T053_QUALIFICATION/);
   assert.match(planTool, /buildSastEndToEndQualificationExecutionPlan/);
+  assert.match(planTool, /--t053-dependency-set/);
+  assert.match(planTool, /--artifact-verification-set/);
   assert.match(evidenceTool, /new Date\(\)\.toISOString\(\)/);
   assert.doesNotMatch(evidenceTool, /'--evaluated-at'/);
   assert.match(trustTool, /verifySignatureBytes/);
   assert.match(trustTool, /TRUST_POLICY/);
+  assert.match(trustTool, /SAST_T054_TRUST_POLICY_DIGEST/);
   assert.match(loaderTest, /rejects CRLF and linked package entries/);
-  assert.match(toolsTest, /real Ed25519 entry, approvals, and receipt signatures/);
+  assert.match(toolsTest, /pinned trust root and verify all Ed25519 authorities/);
   assert.match(readme, /BLOCKED_T053_QUALIFICATION/);
 
   assert.match(rootPackage, /validate-end-to-end-qualification\.mjs/);
@@ -3421,6 +3442,8 @@ test('SAST T054 packages exact end-to-end gates without fabricating external evi
   assert.match(ruleGovernance, /T054 End-to-End Qualification Boundary/);
   assert.match(threatModel, /End-to-end qualification aggregate forgery or retry erasure/);
   assert.match(threatModel, /T054 prerequisite or retroactive-approval replay/);
+  assert.match(threatModel, /T054 self-selected trust root or unsigned artifact substitution/);
+  assert.match(threatModel, /T054 provider qualification transfer/);
   assert.match(qualityGates, /T054 End-to-End Qualification Gates/);
 });
 

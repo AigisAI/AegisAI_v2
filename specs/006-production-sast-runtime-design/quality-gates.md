@@ -668,6 +668,14 @@ T053 `PASSED` result grants T054 entry. The immutable denominator is 1,880 candi
 540 performance cells: 30 candidate plus 30 baseline measurements for each of nine fixed
 profile-size-hardware buckets.
 
+Before any T054 plan exists, the verifier must load the exact T053 dependency set bound by the
+passing result and require the same provider ID and provider-adapter ref in T054. It must also
+load every T054 artifact's full signature envelope and provenance statement, recompute their
+digests, verify both Ed25519 signatures as `SUPPLY_CHAIN_AUTHORITY`, and bind provenance subject,
+source, builder, and materials to that artifact. It then verifies the signed closed set covering
+all records. The trust bundle digest comes only from independent process configuration
+(`SAST_T054_TRUST_POLICY_DIGEST`), never from the submitted dependency/evidence set alone.
+
 External execution is release-blocking unless every receipt:
 
 - binds the exact manifest, dependency set, plan, candidate and baseline scanner-set digests,

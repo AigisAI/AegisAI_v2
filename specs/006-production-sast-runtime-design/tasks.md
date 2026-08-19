@@ -96,8 +96,10 @@
 - [ ] T054 Run Fast/Deep end-to-end, latency, reliability, and capacity gates
   - [x] Repository-side exact 3,462-cell T054 manifest, T053 entry attestation,
     candidate/baseline dependency and plan contracts, attempt/receipt/result contracts,
-    receipt-recomputed measurements, root-confined validator, provider plan generator, and
-    Ed25519 offline verifier are package-ready and fail closed as
+    exact T053 provider binding, independently pinned trust root, individually verified artifact
+    signature/provenance envelopes plus a closed supply-chain attestation, receipt-recomputed
+    measurements, root-confined validator, provider plan
+    generator, and Ed25519 offline verifier are package-ready and fail closed as
     `BLOCKED_T053_QUALIFICATION` without a real T053 pass.
   - [ ] After T053 passes externally, execute all 3,462 T054 cells on the bound
     production-equivalent provider and verify the full signed receipt set; do not replace this

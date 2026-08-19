@@ -389,6 +389,12 @@ command-line flags, rule code, templates, post-processors, or executable configu
 - The dependency set binds distinct candidate/baseline scanner assets and every shared pipeline,
   provider, hardware, telemetry, and trust artifact. Detached Security Engineering and Scan
   Platform approvals strictly predate all attempts.
+- The exact T053 dependency set is mandatory. Its provider and adapter must equal T054, so isolated
+  qualification cannot be transferred to another provider. Each complete artifact-signature
+  envelope and provenance statement is loaded, digest-recomputed, and individually verified with
+  the `SUPPLY_CHAIN_AUTHORITY` Ed25519 key; provenance subject/source/builder/materials are rebound
+  to the artifact before the closed verification-set signature is checked. The trust bundle digest
+  is pinned independently through `SAST_T054_TRUST_POLICY_DIGEST`.
 - One infrastructure retry is permitted, but both fresh microVM attempts remain signed and counted.
   Global receipt/cell/attempt/sandbox/workload/provider/runtime/telemetry identities cannot be
   reused. All queue-to-cleanup phases, resource observations, zero-tolerance counters, and cleanup

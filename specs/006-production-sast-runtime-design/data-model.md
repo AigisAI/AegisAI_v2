@@ -1358,10 +1358,17 @@ and the closed measurement policy but contains no live evidence.
 An external dependency set binds distinct candidate and baseline scanner-set digests, their
 images/wrappers/rules/checks/databases, and the shared ingress, normalization, correlation,
 coverage, policy, evidence, queue, cleanup, microVM, runner, provider, telemetry, and trust assets.
-All carry digest/signature/provenance references within an at-most-seven-day window. A canonical
-execution plan can be built only after a valid T053 `PASSED` result and a Qualification Authority
-Ed25519 entry attestation bind the exact T053/T054 manifests. Detached Security Engineering and
-Scan Platform approvals must strictly predate the first attempt.
+All carry digest/signature/provenance references within an at-most-seven-day window. An immutable
+artifact-verification set mirrors every binding and includes each complete artifact signature plus
+a signed provenance statement containing the exact subject, source, builder, materials, and
+generation time. Validation recomputes both envelope digests and verifies both per-artifact
+Ed25519 signatures before verifying the `SUPPLY_CHAIN_AUTHORITY` set signature. Its trust bundle
+must match the independently configured `SAST_T054_TRUST_POLICY_DIGEST`; the dependency set cannot
+select its own trust root. A
+canonical execution plan can be built only after a valid T053 `PASSED` result, its exact dependency
+set, and a Qualification Authority Ed25519 entry attestation bind the exact T053/T054 manifests.
+The T053 and T054 provider IDs and adapter refs must be identical. Detached Security Engineering
+and Scan Platform approvals must strictly predate the first attempt.
 
 ### SastEndToEndQualificationReceipt and Result
 

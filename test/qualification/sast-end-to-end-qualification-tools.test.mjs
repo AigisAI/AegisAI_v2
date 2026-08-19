@@ -14,17 +14,23 @@ import test from 'node:test';
 import {
   SAST_END_TO_END_QUALIFICATION_APPROVAL_ROLES,
   SAST_END_TO_END_QUALIFICATION_ARTIFACT_KEYS,
+  SAST_END_TO_END_QUALIFICATION_ARTIFACT_PROVENANCE_VERSION,
+  SAST_END_TO_END_QUALIFICATION_ARTIFACT_VERIFICATION_SET_VERSION,
   SAST_END_TO_END_QUALIFICATION_ENTRY_ATTESTATION_VERSION,
   SAST_END_TO_END_QUALIFICATION_PIPELINE_PHASES,
   SAST_END_TO_END_QUALIFICATION_RECEIPT_SIGNATURE_ROLES,
   SAST_END_TO_END_QUALIFICATION_SIGNATURE_ROLES,
   SAST_END_TO_END_QUALIFICATION_SIGNATURE_VERSION,
   SAST_ISOLATED_QUALIFICATION_CLEANUP_CONTROLS,
+  SAST_ISOLATED_QUALIFICATION_ARTIFACT_KINDS,
   SAST_ISOLATED_QUALIFICATION_RESULT_VERSION,
   buildSastEndToEndQualificationAttempt,
+  buildSastEndToEndQualificationArtifactProvenance,
+  buildSastEndToEndQualificationArtifactVerificationSet,
   buildSastEndToEndQualificationDependencySet,
   buildSastEndToEndQualificationEntryAttestation,
   buildSastEndToEndQualificationReceipt,
+  buildSastIsolatedQualificationDependencySet,
   serializeSastEndToEndQualificationSignaturePayload
 } from '../../packages/shared/dist/index.js';
 import { loadAndValidateEndToEndQualificationPackage } from '../../tools/sast-qualification/end-to-end-qualification-loader.mjs';
@@ -70,26 +76,45 @@ test('T054 verifier remains blocked with exit code 2 and rejects clock spoofing'
   assert.match(spoofedClock.stderr, /invalid or duplicate qualification tool argument/u);
 });
 
-test('T054 tools verify real Ed25519 entry, approvals, and receipt signatures', async (t) => {
+test('T054 tools enforce a pinned trust root and verify all Ed25519 authorities', async (t) => {
   const temporaryRoot = await mkdtemp(join(tmpdir(), 'aegis-t054-tools-'));
   t.after(() => rm(temporaryRoot, { recursive: true, force: true }));
   const qualificationPackage = await loadAndValidateEndToEndQualificationPackage();
   const clock = buildClock();
   const trust = buildTrustBundle(clock);
-  const dependencySet = buildDependencySet(
-    trust.text,
+  const {
+    dependencySet,
+    verifications: artifactVerifications
+  } = buildDependencySet(
+    trust,
     qualificationPackage.manifest,
     clock
   );
-  const t053Result = passedT053Result(qualificationPackage.manifest, clock);
+  const t053DependencySet = buildT053DependencySet(dependencySet, clock);
+  const t053Result = passedT053Result(
+    qualificationPackage.manifest,
+    t053DependencySet,
+    clock
+  );
   const entryAttestation = buildEntryAttestation(
     qualificationPackage.manifest,
     t053Result,
     trust,
     clock
   );
+  const artifactVerificationSet = buildArtifactVerificationSet(
+    dependencySet,
+    artifactVerifications,
+    trust,
+    clock
+  );
 
   const t053Path = await writeJson(temporaryRoot, 't053-result.json', t053Result);
+  const t053DependencyPath = await writeJson(
+    temporaryRoot,
+    't053-dependency-set.json',
+    t053DependencySet
+  );
   const entryPath = await writeJson(
     temporaryRoot,
     'entry-attestation.json',
@@ -100,22 +125,71 @@ test('T054 tools verify real Ed25519 entry, approvals, and receipt signatures', 
     'dependency-set.json',
     dependencySet
   );
+  const artifactVerificationPath = await writeJson(
+    temporaryRoot,
+    'artifact-verification-set.json',
+    artifactVerificationSet
+  );
   const trustPath = join(temporaryRoot, 'trust-bundle.json');
   await writeFile(trustPath, trust.text, 'utf8');
-  const planRun = await runNode(planTool, [
+  const trustedEnvironment = {
+    SAST_T054_TRUST_POLICY_DIGEST: digest(trust.text)
+  };
+  const planArgs = [
     '--t053-result',
     t053Path,
+    '--t053-dependency-set',
+    t053DependencyPath,
     '--entry-attestation',
     entryPath,
     '--dependency-set',
     dependencyPath,
+    '--artifact-verification-set',
+    artifactVerificationPath,
     '--trust-bundle',
     trustPath
-  ]);
+  ];
+  const missingTrustRoot = await runNode(planTool, planArgs, {
+    SAST_T054_TRUST_POLICY_DIGEST: ''
+  });
+  assert.equal(missingTrustRoot.code, 1);
+  assert.match(missingTrustRoot.stderr, /must independently pin/u);
+  const untrustedRoot = await runNode(planTool, planArgs, {
+    SAST_T054_TRUST_POLICY_DIGEST: digest('attacker-selected-trust-root')
+  });
+  assert.equal(untrustedRoot.code, 1);
+  assert.match(
+    untrustedRoot.stderr,
+    /independently configured trust-policy digest/u
+  );
+  const planRun = await runNode(planTool, planArgs, trustedEnvironment);
   assert.equal(planRun.code, 0, planRun.stderr);
   const plan = JSON.parse(planRun.stdout);
   assert.equal(plan.executionCellCount, 3462);
   assert.equal(plan.aggregateMetricsAcceptedFromCaller, false);
+  const tamperedArtifactVerificationSet = structuredClone(artifactVerificationSet);
+  tamperedArtifactVerificationSet.signature.valueBase64 =
+    Buffer.alloc(64).toString('base64');
+  await writeJson(
+    temporaryRoot,
+    'artifact-verification-set.json',
+    tamperedArtifactVerificationSet
+  );
+  const tamperedArtifactVerification = await runNode(
+    planTool,
+    planArgs,
+    trustedEnvironment
+  );
+  assert.equal(tamperedArtifactVerification.code, 1);
+  assert.match(
+    tamperedArtifactVerification.stderr,
+    /artifact signature\/provenance verification set is invalid/u
+  );
+  await writeJson(
+    temporaryRoot,
+    'artifact-verification-set.json',
+    artifactVerificationSet
+  );
   const planPath = await writeJson(temporaryRoot, 'plan.json', plan);
 
   const evidenceClock = evidenceClockAfter(plan.plannedAt);
@@ -144,10 +218,14 @@ test('T054 tools verify real Ed25519 entry, approvals, and receipt signatures', 
   const verifierArgs = [
     '--t053-result',
     t053Path,
+    '--t053-dependency-set',
+    t053DependencyPath,
     '--entry-attestation',
     entryPath,
     '--dependency-set',
     dependencyPath,
+    '--artifact-verification-set',
+    artifactVerificationPath,
     '--plan',
     planPath,
     '--approvals',
@@ -157,7 +235,7 @@ test('T054 tools verify real Ed25519 entry, approvals, and receipt signatures', 
     '--trust-bundle',
     trustPath
   ];
-  const pending = await runNode(verifierTool, verifierArgs);
+  const pending = await runNode(verifierTool, verifierArgs, trustedEnvironment);
   assert.equal(pending.code, 2, pending.stderr);
   const pendingResult = JSON.parse(pending.stdout);
   assert.equal(pendingResult.status, 'PENDING_PROVIDER_EXECUTION');
@@ -167,7 +245,7 @@ test('T054 tools verify real Ed25519 entry, approvals, and receipt signatures', 
 
   receipts[0].signatures[0].valueBase64 = Buffer.alloc(64).toString('base64');
   await writeJson(temporaryRoot, 'receipts.json', receipts);
-  const tampered = await runNode(verifierTool, verifierArgs);
+  const tampered = await runNode(verifierTool, verifierArgs, trustedEnvironment);
   assert.equal(tampered.code, 1, tampered.stderr);
   const tamperedResult = JSON.parse(tampered.stdout);
   assert.equal(tamperedResult.status, 'FAILED');
@@ -228,14 +306,15 @@ function buildTrustBundle(clock) {
   };
 }
 
-function buildDependencySet(trustText, manifest, clock) {
-  const trustDigest = digest(trustText);
+function buildDependencySet(trust, manifest, clock) {
+  const trustDigest = digest(trust.text);
   const candidateScannerSetDigest = digest('candidate-scanner-set');
   const baselineScannerSetDigest = digest('baseline-scanner-set');
   const performance = manifest.cells.find((cell) =>
     cell.cellKind.startsWith('PERFORMANCE_')
   );
   assert.ok(performance?.hardwareClassRef);
+  const verifications = [];
   const artifacts = SAST_END_TO_END_QUALIFICATION_ARTIFACT_KEYS.map(
     (artifactKey) => {
       const artifactDigest =
@@ -246,20 +325,68 @@ function buildDependencySet(trustText, manifest, clock) {
             : artifactKey === 'BASELINE_SCANNER_SET'
               ? baselineScannerSetDigest
               : digest(`artifact:${artifactKey}`);
-      return {
-        artifactKey,
-        artifactRef:
-          `qualification-artifact://aegisai/t054/${artifactKey.toLowerCase()}/${artifactDigest}`,
+      const artifactRef =
+        `qualification-artifact://aegisai/t054/${artifactKey.toLowerCase()}/${artifactDigest}`;
+      const artifactSignature = createSignature(
+        'SUPPLY_CHAIN_AUTHORITY',
         artifactDigest,
-        signatureRef: digestRef(
-          `artifact-signature://aegisai/t054/${artifactKey.toLowerCase()}`,
-          `signature:${artifactKey}`
+        clock.validFrom,
+        trust
+      );
+      const signatureEnvelopeDigest = digest(stableJson(artifactSignature));
+      const sourceDigest = digest(`source:${artifactKey}`);
+      const generatedAt = new Date(
+        Date.parse(clock.validFrom) + 1_000
+      ).toISOString();
+      const provenanceInput = {
+        artifactKey,
+        artifactDigest,
+        artifactRef,
+        builderRef: digestRef(
+          'supply-chain-builder://aegisai/t054',
+          `builder:${artifactKey}`
         ),
-        provenanceRef: digestRef(
-          `artifact-provenance://aegisai/t054/${artifactKey.toLowerCase()}`,
-          `provenance:${artifactKey}`
-        )
+        sourceRef:
+          `source-snapshot://aegisai/t054/${artifactKey.toLowerCase()}/${sourceDigest}`,
+        sourceDigest,
+        materialsDigest: digest(`materials:${artifactKey}`),
+        generatedAt
       };
+      const provenanceDigest = digest(
+        stableJson({
+          version: SAST_END_TO_END_QUALIFICATION_ARTIFACT_PROVENANCE_VERSION,
+          ...provenanceInput,
+          customerContentIncluded: false,
+          immutable: true
+        })
+      );
+      const provenance = buildSastEndToEndQualificationArtifactProvenance(
+        provenanceInput,
+        createSignature(
+          'SUPPLY_CHAIN_AUTHORITY',
+          provenanceDigest,
+          generatedAt,
+          trust
+        ),
+        digest
+      );
+      assert.ok(provenance);
+      const provenanceEnvelopeDigest = digest(stableJson(provenance));
+      const signatureRef =
+        `artifact-signature://aegisai/t054/${artifactKey.toLowerCase()}/${signatureEnvelopeDigest}`;
+      const provenanceRef =
+        `artifact-provenance://aegisai/t054/${artifactKey.toLowerCase()}/${provenanceEnvelopeDigest}`;
+      verifications.push({
+        artifactKey,
+        artifactDigest,
+        signatureRef,
+        signatureEnvelopeDigest,
+        artifactSignature,
+        provenanceRef,
+        provenanceEnvelopeDigest,
+        provenance
+      });
+      return { artifactKey, artifactRef, artifactDigest, signatureRef, provenanceRef };
     }
   );
   const result = buildSastEndToEndQualificationDependencySet(
@@ -281,15 +408,47 @@ function buildDependencySet(trustText, manifest, clock) {
     digest
   );
   assert.ok(result);
+  return { dependencySet: result, verifications };
+}
+
+function buildT053DependencySet(t054DependencySet, clock) {
+  const result = buildSastIsolatedQualificationDependencySet(
+    {
+      revision: '1.0.0',
+      providerId: t054DependencySet.providerId,
+      providerAdapterRef: t054DependencySet.providerAdapterRef,
+      validFrom: clock.validFrom,
+      validUntil: clock.validUntil,
+      artifacts: SAST_ISOLATED_QUALIFICATION_ARTIFACT_KINDS.map((kind) => {
+        const artifactDigest = digest(`t053-artifact:${kind}`);
+        return {
+          kind,
+          artifactRef:
+            `qualification-artifact://aegisai/t053/${kind.toLowerCase()}/${artifactDigest}`,
+          artifactDigest,
+          signatureRef: digestRef(
+            `artifact-signature://aegisai/t053/${kind.toLowerCase()}`,
+            `t053-signature:${kind}`
+          ),
+          provenanceRef: digestRef(
+            `artifact-provenance://aegisai/t053/${kind.toLowerCase()}`,
+            `t053-provenance:${kind}`
+          )
+        };
+      })
+    },
+    digest
+  );
+  assert.ok(result);
   return result;
 }
 
-function passedT053Result(manifest, clock) {
+function passedT053Result(manifest, t053DependencySet, clock) {
   const core = {
     version: SAST_ISOLATED_QUALIFICATION_RESULT_VERSION,
     manifestId: manifest.t053ManifestId,
     manifestDigest: manifest.t053ManifestDigest,
-    dependencySetDigest: digest('t053-dependency-set'),
+    dependencySetDigest: t053DependencySet.dependencySetDigest,
     planDigest: digest('t053-plan'),
     status: 'PASSED',
     expectedCellCount: 123,
@@ -314,6 +473,42 @@ function passedT053Result(manifest, clock) {
       `sast-isolated-qualification-result://${resultDigest.slice('sha256:'.length)}`,
     resultDigest
   };
+}
+
+function buildArtifactVerificationSet(dependencySet, verifications, trust, clock) {
+  const verifierRef = digestRef(
+    'supply-chain-verifier://aegisai/t054',
+    'artifact-verifier'
+  );
+  const core = {
+    version: SAST_END_TO_END_QUALIFICATION_ARTIFACT_VERIFICATION_SET_VERSION,
+    dependencySetId: dependencySet.dependencySetId,
+    dependencySetDigest: dependencySet.dependencySetDigest,
+    verifications,
+    verifiedAt: clock.entryVerifiedAt,
+    verifierRef,
+    everyArtifactSignatureVerified: true,
+    everyArtifactProvenanceVerified: true,
+    immutable: true
+  };
+  const verificationSetDigest = digest(stableJson(core));
+  const result = buildSastEndToEndQualificationArtifactVerificationSet(
+    {
+      dependencySet,
+      verifications,
+      verifiedAt: clock.entryVerifiedAt,
+      verifierRef
+    },
+    createSignature(
+      'SUPPLY_CHAIN_AUTHORITY',
+      verificationSetDigest,
+      clock.entryVerifiedAt,
+      trust
+    ),
+    digest
+  );
+  assert.ok(result);
+  return result;
 }
 
 function buildEntryAttestation(manifest, t053Result, trust, clock) {
@@ -483,10 +678,11 @@ async function writeJson(root, name, value) {
   return path;
 }
 
-function runNode(script, args) {
+function runNode(script, args, environment = {}) {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(process.execPath, [script, ...args], {
       cwd: repositoryRoot,
+      env: { ...process.env, ...environment },
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe']
     });

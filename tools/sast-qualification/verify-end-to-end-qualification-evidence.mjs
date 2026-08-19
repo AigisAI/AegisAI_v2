@@ -2,13 +2,18 @@ import { createHash } from 'node:crypto';
 
 import {
   evaluateSastEndToEndQualificationEvidence,
+  isSastEndToEndQualificationArtifactVerificationSetValid,
   isSastEndToEndQualificationDependencySetValid,
   isSastEndToEndQualificationEntryAttestationValid,
   isSastEndToEndQualificationExecutionPlanValid,
+  isSastIsolatedQualificationDependencySetValid,
   isSastIsolatedQualificationResultValid
 } from '../../packages/shared/dist/index.js';
 import { loadAndValidateEndToEndQualificationPackage } from './end-to-end-qualification-loader.mjs';
-import { buildEndToEndQualificationTrustVerifier } from './end-to-end-qualification-trust.mjs';
+import {
+  buildEndToEndQualificationTrustVerifier,
+  readConfiguredEndToEndQualificationTrustPolicyDigest
+} from './end-to-end-qualification-trust.mjs';
 import {
   parseExactArguments,
   readQualificationJson
@@ -16,8 +21,10 @@ import {
 
 const args = parseExactArguments(process.argv.slice(2), {
   '--t053-result': false,
+  '--t053-dependency-set': false,
   '--entry-attestation': false,
   '--dependency-set': false,
+  '--artifact-verification-set': false,
   '--plan': false,
   '--approvals': false,
   '--receipts': false,
@@ -25,8 +32,10 @@ const args = parseExactArguments(process.argv.slice(2), {
 });
 const externalNames = [
   '--t053-result',
+  '--t053-dependency-set',
   '--entry-attestation',
   '--dependency-set',
+  '--artifact-verification-set',
   '--plan',
   '--approvals',
   '--receipts',
@@ -46,14 +55,21 @@ if (externalCount === 0) {
 } else {
   const [
     t053Input,
+    t053DependencyInput,
     entryInput,
     dependencyInput,
+    artifactVerificationInput,
     planInput,
     approvalInput,
     receiptInput,
     trustInput
   ] = await Promise.all([
     readQualificationJson(args['--t053-result'], 2 * 1024 * 1024, 'T053 result'),
+    readQualificationJson(
+      args['--t053-dependency-set'],
+      4 * 1024 * 1024,
+      'T053 dependency set'
+    ),
     readQualificationJson(
       args['--entry-attestation'],
       2 * 1024 * 1024,
@@ -63,6 +79,11 @@ if (externalCount === 0) {
       args['--dependency-set'],
       4 * 1024 * 1024,
       'T054 dependency set'
+    ),
+    readQualificationJson(
+      args['--artifact-verification-set'],
+      8 * 1024 * 1024,
+      'T054 artifact verification set'
     ),
     readQualificationJson(args['--plan'], 4 * 1024 * 1024, 'T054 execution plan'),
     readQualificationJson(args['--approvals'], 2 * 1024 * 1024, 'T054 approvals'),
@@ -81,6 +102,16 @@ if (externalCount === 0) {
     throw new Error('T053 result failed T054 entry validation');
   }
   if (
+    !isSastIsolatedQualificationDependencySetValid(
+      t053DependencyInput.value,
+      digest
+    ) ||
+    t053DependencyInput.value.dependencySetDigest !==
+      t053Input.value.dependencySetDigest
+  ) {
+    throw new Error('T053 dependency set failed exact result binding validation');
+  }
+  if (
     !isSastEndToEndQualificationDependencySetValid(dependencyInput.value, digest)
   ) {
     throw new Error('T054 dependency set failed exact contract validation');
@@ -88,7 +119,9 @@ if (externalCount === 0) {
   const verifySignature = buildEndToEndQualificationTrustVerifier({
     value: trustInput.value,
     text: trustInput.text,
-    dependencySet: dependencyInput.value
+    dependencySet: dependencyInput.value,
+    trustedTrustPolicyDigest:
+      readConfiguredEndToEndQualificationTrustPolicyDigest()
   });
   if (
     !isSastEndToEndQualificationEntryAttestationValid(
@@ -102,10 +135,22 @@ if (externalCount === 0) {
     throw new Error('T054 entry attestation failed signature or binding validation');
   }
   if (
+    !isSastEndToEndQualificationArtifactVerificationSetValid(
+      artifactVerificationInput.value,
+      dependencyInput.value,
+      verifySignature,
+      digest
+    )
+  ) {
+    throw new Error('T054 artifact signature/provenance verification set is invalid');
+  }
+  if (
     !isSastEndToEndQualificationExecutionPlanValid(
       planInput.value,
       qualificationPackage.manifest,
+      t053DependencyInput.value,
       dependencyInput.value,
+      artifactVerificationInput.value,
       t053Input.value,
       entryInput.value,
       verifySignature,
@@ -121,8 +166,10 @@ if (externalCount === 0) {
     {
       manifest: qualificationPackage.manifest,
       t053Result: t053Input.value,
+      t053DependencySet: t053DependencyInput.value,
       entryAttestation: entryInput.value,
       dependencySet: dependencyInput.value,
+      artifactVerificationSet: artifactVerificationInput.value,
       plan: planInput.value,
       approvals: approvalInput.value,
       signedReceipts: receiptInput.value,

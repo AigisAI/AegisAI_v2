@@ -2019,8 +2019,18 @@ sast-end-to-end-qualification-entry-attestation-v1 {
   role: QUALIFICATION_AUTHORITY, algorithm: ED25519
 }
 
+sast-end-to-end-qualification-artifact-verification-set-v1 {
+  exact T054 dependency-set and every artifact binding,
+  complete artifact signature envelopes plus signed provenance statements,
+  recomputed signature/provenance envelope digests,
+  provenance subject/source/builder/materials bound to the artifact,
+  per-artifact and closed-set role: SUPPLY_CHAIN_AUTHORITY, algorithm: ED25519,
+  trust root: independently configured SAST_T054_TRUST_POLICY_DIGEST
+}
+
 sast-end-to-end-qualification-plan-v1 {
-  exact manifest/dependency/T053/entry-attestation bindings,
+  exact manifest/T053 dependency/T054 dependency/entry/artifact-verification bindings,
+  exact same T053 and T054 providerId + providerAdapterRef,
   distinct candidate and baseline scanner sets,
   one digest-bound performance hardware class,
   approvals: SECURITY_ENGINEERING + SCAN_PLATFORM,
@@ -2029,10 +2039,15 @@ sast-end-to-end-qualification-plan-v1 {
 }
 ```
 
-Plan construction validates the T053 result as `PASSED`, re-verifies its exact entry attestation
-against the dependency-set-bound Ed25519 trust bundle, and rejects a pending, partial, unsigned,
-cross-manifest, or stale prerequisite. The command exposes no evaluation-time override. Both plan
-approvals sign the plan digest and must strictly precede the earliest receipt attempt.
+Plan construction validates the T053 result as `PASSED`, loads the exact T053 dependency set named
+by that result, and requires its provider and adapter to equal T054. It re-verifies the entry,
+loads every artifact signature and provenance statement, recomputes both envelope digests,
+validates provenance subject/source/builder/materials, and verifies both per-artifact signatures
+before the closed-set signature. All signatures use an Ed25519 trust bundle whose digest is pinned
+by process configuration independently from all evidence inputs. A pending, partial, unsigned,
+cross-provider, cross-manifest, stale, or self-selected-trust prerequisite is rejected. The command
+exposes no evaluation-time override. Both plan approvals sign the plan digest and must strictly
+precede the earliest receipt attempt.
 
 Each cell receipt binds both scanner-set digests even when executing only one arm, the exact
 provider/hardware/profile/cell, and one or two ordered attempts. A second attempt exists only after

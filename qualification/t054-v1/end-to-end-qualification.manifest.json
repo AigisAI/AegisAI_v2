@@ -1,6 +1,6 @@
 {
   "version": "sast-end-to-end-qualification-manifest-v1",
-  "revision": "1.0.0",
+  "revision": "1.0.2",
   "publishedAt": "2026-08-20T00:00:00.000Z",
   "ownerRef": "team://security-engineering/sast-qualification",
   "t051Revision": "1.0.0",
@@ -10,8 +10,8 @@
   "t052SnapshotDigest": "sha256:8daee3b29765ff85f74819acec75f2bb803ba423585af6b4d12c3803e5460f92",
   "t053ManifestId": "sast-isolated-qualification-manifest://dda19ac6bd431dd3a6b0be1d52b17942dc01c0e57c3c71f06521c8c07718ffe4",
   "t053ManifestDigest": "sha256:dda19ac6bd431dd3a6b0be1d52b17942dc01c0e57c3c71f06521c8c07718ffe4",
-  "measurementPolicyRef": "repository-file://qualification/t054-v1/measurement-policy.json/sha256:a28f1333c1a788ceea155c1cb556a708c74c473994ff563971580ff76551215a",
-  "measurementPolicyDigest": "sha256:a28f1333c1a788ceea155c1cb556a708c74c473994ff563971580ff76551215a",
+  "measurementPolicyRef": "repository-file://qualification/t054-v1/measurement-policy.json/sha256:012cecc40659daaab56d5446ff7c09e14c041af739a06040100a50ffa465526c",
+  "measurementPolicyDigest": "sha256:012cecc40659daaab56d5446ff7c09e14c041af739a06040100a50ffa465526c",
   "profiles": [
     {
       "profileId": "JAVA_FAST_V1",
@@ -128146,6 +128146,6 @@
   "deploymentAuthority": false,
   "productionReadinessAuthority": false,
   "immutable": true,
-  "manifestId": "sast-end-to-end-qualification-manifest://1ff4e71b5a04c6098c5851f6b8146db70961e4246ae0329814533f2550b68741",
-  "manifestDigest": "sha256:1ff4e71b5a04c6098c5851f6b8146db70961e4246ae0329814533f2550b68741"
+  "manifestId": "sast-end-to-end-qualification-manifest://fdbede0e8361b739988770f9ecc53b22afd2d6b9e44a4e3659c6d1bd6147a4c4",
+  "manifestDigest": "sha256:fdbede0e8361b739988770f9ecc53b22afd2d6b9e44a4e3659c6d1bd6147a4c4"
 }

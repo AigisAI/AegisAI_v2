@@ -5,18 +5,25 @@ import test from 'node:test';
 import {
   SAST_END_TO_END_QUALIFICATION_APPROVAL_ROLES,
   SAST_END_TO_END_QUALIFICATION_ARTIFACT_KEYS,
+  SAST_END_TO_END_QUALIFICATION_ARTIFACT_PROVENANCE_VERSION,
+  SAST_END_TO_END_QUALIFICATION_ARTIFACT_VERIFICATION_SET_VERSION,
   SAST_END_TO_END_QUALIFICATION_ENTRY_ATTESTATION_VERSION,
   SAST_END_TO_END_QUALIFICATION_PIPELINE_PHASES,
   SAST_END_TO_END_QUALIFICATION_RECEIPT_SIGNATURE_ROLES,
   SAST_END_TO_END_QUALIFICATION_SIGNATURE_VERSION,
   SAST_ISOLATED_QUALIFICATION_CLEANUP_CONTROLS,
+  SAST_ISOLATED_QUALIFICATION_ARTIFACT_KINDS,
   SAST_ISOLATED_QUALIFICATION_RESULT_VERSION,
   buildSastEndToEndQualificationAttempt,
+  buildSastEndToEndQualificationArtifactProvenance,
+  buildSastEndToEndQualificationArtifactVerificationSet,
   buildSastEndToEndQualificationDependencySet,
   buildSastEndToEndQualificationEntryAttestation,
   buildSastEndToEndQualificationExecutionPlan,
   buildSastEndToEndQualificationReceipt,
+  buildSastIsolatedQualificationDependencySet,
   evaluateSastEndToEndQualificationEvidence,
+  isSastEndToEndQualificationArtifactVerificationSetValid,
   isSastEndToEndQualificationManifestValid,
   isSastEndToEndQualificationResultValid,
   isSastIsolatedQualificationResultValid
@@ -54,8 +61,10 @@ test('T054 remains blocked without a cryptographically qualified T053 pass', () 
     {
       manifest,
       t053Result: null,
+      t053DependencySet: null,
       entryAttestation: null,
       dependencySet: null,
+      artifactVerificationSet: null,
       plan: null,
       approvals: [],
       signedReceipts: [],
@@ -137,9 +146,121 @@ test('T054 rejects duplicate global identities and retroactive approvals', () =>
   assert.ok(retroactive.failureReasons.includes('APPROVAL_SET_INVALID'));
 });
 
+test('T054 rejects untrusted artifact attestations and T053 provider transfer', () => {
+  const bundle = createExecutionBundle(0);
+  const input = bundle.evaluationInput;
+  assert.equal(
+    isSastEndToEndQualificationArtifactVerificationSetValid(
+      input.artifactVerificationSet,
+      input.dependencySet,
+      () => false,
+      digest
+    ),
+    false
+  );
+  const firstVerification = input.artifactVerificationSet.verifications[0];
+  assert.ok(firstVerification);
+  assert.equal(
+    isSastEndToEndQualificationArtifactVerificationSetValid(
+      input.artifactVerificationSet,
+      input.dependencySet,
+      (candidate) =>
+        candidate.payloadDigest !== firstVerification.artifactDigest,
+      digest
+    ),
+    false
+  );
+  assert.equal(
+    isSastEndToEndQualificationArtifactVerificationSetValid(
+      input.artifactVerificationSet,
+      input.dependencySet,
+      (candidate) =>
+        candidate.payloadDigest !==
+        firstVerification.provenance.provenanceDigest,
+      digest
+    ),
+    false
+  );
+  const tamperedArtifactSignature = structuredClone(
+    input.artifactVerificationSet
+  );
+  tamperedArtifactSignature.verifications[0].artifactSignature.valueBase64 =
+    Buffer.alloc(64, 1).toString('base64');
+  assert.equal(
+    isSastEndToEndQualificationArtifactVerificationSetValid(
+      tamperedArtifactSignature,
+      input.dependencySet,
+      (candidate) => candidate.valueBase64 === SIGNATURE_BYTES,
+      digest
+    ),
+    false
+  );
+  const tamperedProvenanceSignature = structuredClone(
+    input.artifactVerificationSet
+  );
+  tamperedProvenanceSignature.verifications[0].provenance.signature.valueBase64 =
+    Buffer.alloc(64, 1).toString('base64');
+  assert.equal(
+    isSastEndToEndQualificationArtifactVerificationSetValid(
+      tamperedProvenanceSignature,
+      input.dependencySet,
+      (candidate) => candidate.valueBase64 === SIGNATURE_BYTES,
+      digest
+    ),
+    false
+  );
+  const transferredDependencySet = buildSastEndToEndQualificationDependencySet(
+    {
+      revision: input.dependencySet.revision,
+      providerId: 'microvm-provider://aegisai/unqualified/t054',
+      providerAdapterRef: digestRef(
+        'provider-adapter://aegisai/unqualified/t054',
+        'unqualified-provider-adapter'
+      ),
+      validFrom: input.dependencySet.validFrom,
+      validUntil: input.dependencySet.validUntil,
+      candidateScannerSetDigest:
+        input.dependencySet.candidateScannerSetDigest,
+      baselineScannerSetDigest: input.dependencySet.baselineScannerSetDigest,
+      performanceHardwareClassRef:
+        input.dependencySet.performanceHardwareClassRef,
+      performanceHardwareClassDigest:
+        input.dependencySet.performanceHardwareClassDigest,
+      artifacts: input.dependencySet.artifacts
+    },
+    digest
+  );
+  assert.ok(transferredDependencySet);
+  const transferredVerificationSet = artifactVerificationSetFor(
+    transferredDependencySet,
+    input.artifactVerificationSet.verifications,
+    '2026-08-20T00:00:45.000Z'
+  );
+  const transferredPlan = buildSastEndToEndQualificationExecutionPlan(
+    {
+      manifest,
+      t053DependencySet: input.t053DependencySet,
+      dependencySet: transferredDependencySet,
+      artifactVerificationSet: transferredVerificationSet,
+      t053Result: input.t053Result,
+      entryAttestation: input.entryAttestation,
+      plannedAt: '2026-08-20T00:01:00.000Z',
+      verifySignature: () => true
+    },
+    digest
+  );
+  assert.equal(transferredPlan, null);
+});
+
 function createExecutionBundle(retryCount) {
-  const t053Result = passedT053Result();
-  const dependencySet = dependencySetForManifest();
+  const {
+    result: t053Result,
+    dependencySet: t053DependencySet
+  } = passedT053Bundle();
+  const {
+    dependencySet,
+    verifications: artifactVerifications
+  } = dependencySetForManifest(t053DependencySet);
   const entryCoreInput = {
     t053ManifestId: manifest.t053ManifestId,
     t053ManifestDigest: manifest.t053ManifestDigest,
@@ -174,10 +295,17 @@ function createExecutionBundle(retryCount) {
     digest
   );
   assert.ok(entryAttestation);
+  const artifactVerificationSet = artifactVerificationSetFor(
+    dependencySet,
+    artifactVerifications,
+    '2026-08-20T00:00:45.000Z'
+  );
   const plan = buildSastEndToEndQualificationExecutionPlan(
     {
       manifest,
+      t053DependencySet,
       dependencySet,
+      artifactVerificationSet,
       t053Result,
       entryAttestation,
       plannedAt: '2026-08-20T00:01:00.000Z',
@@ -198,8 +326,10 @@ function createExecutionBundle(retryCount) {
     evaluationInput: {
       manifest,
       t053Result,
+      t053DependencySet,
       entryAttestation,
       dependencySet,
+      artifactVerificationSet,
       plan,
       approvals,
       signedReceipts,
@@ -213,14 +343,45 @@ function evaluateBundle(bundle) {
   return evaluateSastEndToEndQualificationEvidence(bundle.evaluationInput, digest);
 }
 
-function passedT053Result() {
-  const dependencySetDigest = digest('t053-live-dependency-set');
+function passedT053Bundle() {
+  const providerId = 'microvm-provider://aegisai/production-equivalent/t054';
+  const providerAdapterRef = digestRef(
+    'provider-adapter://aegisai/t054',
+    'provider-adapter'
+  );
+  const dependencySet = buildSastIsolatedQualificationDependencySet(
+    {
+      revision: '1.0.0',
+      providerId,
+      providerAdapterRef,
+      validFrom: '2026-08-20T00:00:00.000Z',
+      validUntil: '2026-08-21T00:00:00.000Z',
+      artifacts: SAST_ISOLATED_QUALIFICATION_ARTIFACT_KINDS.map((kind) => {
+        const artifactDigest = digest(`t053-artifact:${kind}`);
+        return {
+          kind,
+          artifactRef: `qualification-artifact://aegisai/t053/${kind.toLowerCase()}/${artifactDigest}`,
+          artifactDigest,
+          signatureRef: digestRef(
+            `artifact-signature://aegisai/t053/${kind.toLowerCase()}`,
+            `t053-signature:${kind}`
+          ),
+          provenanceRef: digestRef(
+            `artifact-provenance://aegisai/t053/${kind.toLowerCase()}`,
+            `t053-provenance:${kind}`
+          )
+        };
+      })
+    },
+    digest
+  );
+  assert.ok(dependencySet);
   const planDigest = digest('t053-live-plan');
   const core = {
     version: SAST_ISOLATED_QUALIFICATION_RESULT_VERSION,
     manifestId: manifest.t053ManifestId,
     manifestDigest: manifest.t053ManifestDigest,
-    dependencySetDigest,
+    dependencySetDigest: dependencySet.dependencySetDigest,
     planDigest,
     status: 'PASSED',
     expectedCellCount: 123,
@@ -246,10 +407,10 @@ function passedT053Result() {
     resultDigest
   };
   assert.equal(isSastIsolatedQualificationResultValid(result, digest), true);
-  return result;
+  return { result, dependencySet };
 }
 
-function dependencySetForManifest() {
+function dependencySetForManifest(t053DependencySet) {
   const candidateScannerSetDigest = digest('candidate-scanner-set');
   const baselineScannerSetDigest = digest('baseline-scanner-set');
   const performanceCell = manifest.cells.find((cell) =>
@@ -257,6 +418,7 @@ function dependencySetForManifest() {
   );
   assert.ok(performanceCell?.hardwareClassRef);
   assert.ok(performanceCell.hardwareClassDigest);
+  const verifications = [];
   const artifacts = SAST_END_TO_END_QUALIFICATION_ARTIFACT_KEYS.map(
     (artifactKey) => {
       const artifactDigest =
@@ -265,30 +427,76 @@ function dependencySetForManifest() {
           : artifactKey === 'BASELINE_SCANNER_SET'
             ? baselineScannerSetDigest
             : digest(`artifact:${artifactKey}`);
+      const artifactRef =
+        `qualification-artifact://aegisai/t054/${artifactKey.toLowerCase()}/${artifactDigest}`;
+      const artifactSignature = signature(
+        'SUPPLY_CHAIN_AUTHORITY',
+        artifactDigest,
+        '2026-08-20T00:00:10.000Z'
+      );
+      const signatureEnvelopeDigest = digest(stableJson(artifactSignature));
+      const sourceDigest = digest(`source:${artifactKey}`);
+      const provenanceInput = {
+        artifactKey,
+        artifactRef,
+        artifactDigest,
+        builderRef: digestRef(
+          'supply-chain-builder://aegisai/t054',
+          `builder:${artifactKey}`
+        ),
+        sourceRef:
+          `source-snapshot://aegisai/t054/${artifactKey.toLowerCase()}/${sourceDigest}`,
+        sourceDigest,
+        materialsDigest: digest(`materials:${artifactKey}`),
+        generatedAt: '2026-08-20T00:00:15.000Z'
+      };
+      const provenanceDigest = digest(
+        stableJson({
+          version: SAST_END_TO_END_QUALIFICATION_ARTIFACT_PROVENANCE_VERSION,
+          ...provenanceInput,
+          customerContentIncluded: false,
+          immutable: true
+        })
+      );
+      const provenance = buildSastEndToEndQualificationArtifactProvenance(
+        provenanceInput,
+        signature(
+          'SUPPLY_CHAIN_AUTHORITY',
+          provenanceDigest,
+          provenanceInput.generatedAt
+        ),
+        digest
+      );
+      assert.ok(provenance);
+      const provenanceEnvelopeDigest = digest(stableJson(provenance));
+      const signatureRef =
+        `artifact-signature://aegisai/t054/${artifactKey.toLowerCase()}/${signatureEnvelopeDigest}`;
+      const provenanceRef =
+        `artifact-provenance://aegisai/t054/${artifactKey.toLowerCase()}/${provenanceEnvelopeDigest}`;
+      verifications.push({
+        artifactKey,
+        artifactDigest,
+        signatureRef,
+        signatureEnvelopeDigest,
+        artifactSignature,
+        provenanceRef,
+        provenanceEnvelopeDigest,
+        provenance
+      });
       return {
         artifactKey,
-        artifactRef:
-          `qualification-artifact://aegisai/t054/${artifactKey.toLowerCase()}/${artifactDigest}`,
+        artifactRef,
         artifactDigest,
-        signatureRef: digestRef(
-          `artifact-signature://aegisai/t054/${artifactKey.toLowerCase()}`,
-          `signature:${artifactKey}`
-        ),
-        provenanceRef: digestRef(
-          `artifact-provenance://aegisai/t054/${artifactKey.toLowerCase()}`,
-          `provenance:${artifactKey}`
-        )
+        signatureRef,
+        provenanceRef
       };
     }
   );
   const value = buildSastEndToEndQualificationDependencySet(
     {
       revision: '1.0.0',
-      providerId: 'microvm-provider://aegisai/production-equivalent/t054',
-      providerAdapterRef: digestRef(
-        'provider-adapter://aegisai/t054',
-        'provider-adapter'
-      ),
+      providerId: t053DependencySet.providerId,
+      providerAdapterRef: t053DependencySet.providerAdapterRef,
       validFrom: '2026-08-20T00:00:00.000Z',
       validUntil: '2026-08-21T00:00:00.000Z',
       candidateScannerSetDigest,
@@ -297,6 +505,38 @@ function dependencySetForManifest() {
       performanceHardwareClassDigest: performanceCell.hardwareClassDigest,
       artifacts
     },
+    digest
+  );
+  assert.ok(value);
+  return { dependencySet: value, verifications };
+}
+
+function artifactVerificationSetFor(dependencySet, verifications, verifiedAt) {
+  const input = {
+    dependencySet,
+    verifications,
+    verifiedAt,
+    verifierRef: digestRef(
+      'supply-chain-verifier://aegisai/t054',
+      'artifact-verifier'
+    )
+  };
+  const setDigest = digest(
+    stableJson({
+      version: SAST_END_TO_END_QUALIFICATION_ARTIFACT_VERIFICATION_SET_VERSION,
+      dependencySetId: dependencySet.dependencySetId,
+      dependencySetDigest: dependencySet.dependencySetDigest,
+      verifications,
+      verifiedAt,
+      verifierRef: input.verifierRef,
+      everyArtifactSignatureVerified: true,
+      everyArtifactProvenanceVerified: true,
+      immutable: true
+    })
+  );
+  const value = buildSastEndToEndQualificationArtifactVerificationSet(
+    input,
+    signature('SUPPLY_CHAIN_AUTHORITY', setDigest, verifiedAt),
     digest
   );
   assert.ok(value);

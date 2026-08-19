@@ -1,12 +1,14 @@
 {
   "version": "sast-end-to-end-qualification-measurement-policy-v1",
-  "revision": "1.0.0",
+  "revision": "1.0.2",
   "ownerRef": "team://security-engineering/sast-qualification",
   "prerequisite": {
     "stage": "T053_ISOLATED_INTEGRATION",
     "requiredStatus": "PASSED",
     "requiredEntryAuthorization": "t054EntryAuthorized",
-    "cryptographicEntryAttestationRequired": true
+    "cryptographicEntryAttestationRequired": true,
+    "exactT053DependencySetRequired": true,
+    "sameProviderAndAdapterRequired": true
   },
   "execution": {
     "evidenceStage": "T054_END_TO_END_AND_PERFORMANCE",
@@ -19,6 +21,14 @@
     "cleanupSloSeconds": 60,
     "queueToCleanupMeasurementRequired": true,
     "candidateAndBaselineArtifactBindingRequired": true,
+    "signedArtifactVerificationSetRequired": true,
+    "artifactVerificationSignatureRole": "SUPPLY_CHAIN_AUTHORITY",
+    "everyArtifactSignatureAndProvenanceVerified": true,
+    "artifactSignatureEnvelopePayloadRequired": true,
+    "artifactProvenanceEnvelopePayloadRequired": true,
+    "perArtifactEd25519VerificationRequired": true,
+    "artifactProvenanceSubjectBindingRequired": true,
+    "independentlyConfiguredTrustPolicyDigestRequired": true,
     "aggregateMetricsAcceptedFromCaller": false,
     "trustedClockRequired": true,
     "detachedDualApprovalRequired": true,
