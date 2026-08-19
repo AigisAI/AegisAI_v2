@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
+  SAST_ARTIFACT_VALIDATION_LIMITS,
   SAST_MULTI_CLASS_QUALIFICATION_CORPUS_CLASSES,
   SAST_MULTI_CLASS_QUALIFICATION_LIMITS,
   SAST_MULTI_CLASS_QUALIFICATION_REQUIRED_SCENARIOS,
@@ -397,6 +398,8 @@ test('T052 evidence encoding recipes carry the intended raw bytes', () => {
 
 test('T052 limit-plus-one recipes bind the exact selected-profile boundary', () => {
   const metricByScenario = new Map([
+    ['ARTIFACT_BYTES_LIMIT_PLUS_ONE', 'maxArtifactBytes'],
+    ['RECORD_COUNT_LIMIT_PLUS_ONE', 'maxArtifactRecords'],
     ['PATH_DEPTH_LIMIT_PLUS_ONE', 'maxPathDepth'],
     ['REPOSITORY_BYTES_LIMIT_PLUS_ONE', 'maxRepositoryBytes'],
     ['SELECTED_BYTES_LIMIT_PLUS_ONE', 'maxSelectedBytes'],
@@ -429,7 +432,77 @@ test('T052 limit-plus-one recipes bind the exact selected-profile boundary', () 
         `${scenario}:${profileId}`
       );
     }
+    if (
+      scenario === 'ARTIFACT_BYTES_LIMIT_PLUS_ONE' ||
+      scenario === 'RECORD_COUNT_LIMIT_PLUS_ONE'
+    ) {
+      const materializationMetric =
+        scenario === 'ARTIFACT_BYTES_LIMIT_PLUS_ONE'
+          ? 'MATERIALIZED_BYTES'
+          : 'MATERIALIZED_ENTRIES';
+      assert.equal(parameters.get('PROFILE_BOUND_SEGMENT_ORDINAL'), 2, scenario);
+      assert.equal(
+        parameters.get('PROFILE_BOUND_MATERIALIZATION_METRIC'),
+        materializationMetric,
+        scenario
+      );
+      assert.equal(
+        parameters.get('PROFILE_BOUND_UNIT_CONTRIBUTION'),
+        1,
+        scenario
+      );
+      assert.equal(
+        parameters.get('PROFILE_BOUND_REPEAT_FORMULA'),
+        'SELECTED_LIMIT_PLUS_ONE_MINUS_FIXED_CONTRIBUTION',
+        scenario
+      );
+      const fixedContribution = parameters.get(
+        'PROFILE_BOUND_FIXED_CONTRIBUTION'
+      );
+      assert.equal(Number.isSafeInteger(fixedContribution), true, scenario);
+      for (const profileId of SAST_PROFILE_IDS) {
+        const selectedBoundary = parameters.get(`${profileId}_LIMIT_PLUS_ONE`);
+        const selectedRepeat = selectedBoundary - fixedContribution;
+        assert.equal(
+          selectedRepeat + fixedContribution,
+          SAST_SCAN_PROFILES[profileId].limits[metric] + 1,
+          `${scenario}:${profileId}:projection`
+        );
+      }
+    }
   }
+});
+
+test('T052 parser-wide boundaries are the exact validator limit plus one', () => {
+  const nesting = fixtureForScenario('NESTING_DEPTH_LIMIT_PLUS_ONE');
+  const nestingUnit = nesting.segments.find((segment) => segment.role === 'PREFIX');
+  assert.ok(nestingUnit);
+  assert.equal(
+    nestingUnit.repeat,
+    SAST_ARTIFACT_VALIDATION_LIMITS.maximumJsonDepth + 1
+  );
+  assert.equal(
+    nesting.segments.find((segment) => segment.role === 'SUFFIX')?.repeat,
+    SAST_ARTIFACT_VALIDATION_LIMITS.maximumJsonDepth + 1
+  );
+  assertBoundaryParameters(
+    nesting,
+    'maximumJsonDepth',
+    SAST_ARTIFACT_VALIDATION_LIMITS.maximumJsonDepth
+  );
+
+  const string = fixtureForScenario('STRING_BYTES_LIMIT_PLUS_ONE');
+  const stringUnit = string.segments.find((segment) => segment.role === 'UNIT');
+  assert.ok(stringUnit);
+  assert.equal(
+    stringUnit.repeat,
+    SAST_ARTIFACT_VALIDATION_LIMITS.maximumStringBytes + 1
+  );
+  assertBoundaryParameters(
+    string,
+    'maximumStringBytes',
+    SAST_ARTIFACT_VALIDATION_LIMITS.maximumStringBytes
+  );
 });
 
 test('T052 hostile cyclic and over-depth snapshots fail without throwing', () => {
@@ -451,6 +524,19 @@ test('T052 hostile cyclic and over-depth snapshots fail without throwing', () =>
     assert.equal(isSastMultiClassQualificationSnapshotValid(deep, digest), false)
   );
 });
+
+function assertBoundaryParameters(fixture, metric, limit) {
+  const parameters = new Map(
+    fixture.parameters.map((parameter) => [
+      parameter.name,
+      parameter.stringValue ?? parameter.integerValue ?? parameter.booleanValue
+    ])
+  );
+  assert.equal(parameters.get('BOUNDARY_METRIC'), metric);
+  assert.equal(parameters.get('BOUNDARY_LIMIT'), limit);
+  assert.equal(parameters.get('BOUNDARY_LIMIT_PLUS_ONE'), limit + 1);
+  assert.equal(parameters.get('BOUNDARY_SOURCE'), 'SAST_ARTIFACT_VALIDATION_LIMITS');
+}
 
 function fixtureInput(value) {
   return {

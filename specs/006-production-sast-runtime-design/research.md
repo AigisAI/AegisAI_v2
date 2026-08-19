@@ -768,13 +768,15 @@ therefore remain inert reviewed data. No live symlink, FIFO, device, bomb, execu
 repository, package installation, build, dynamic test, scanner, or network operation is stored or
 run by T052.
 
-Revision `1.0.1` closes four interpretation gaps before isolated execution: every profile-relative
-boundary carries the exact plus-one value for each immutable profile and selects through the case
-profile; a cycle contains both directed symlink declarations; binary and malformed UTF-8 cases bind
-the intended raw bytes; and fingerprint invariance cases contain complete vectors that differ only
-in the excluded line, branch, commit, or unknown-location reason. The remaining identity cases also
-bind concrete rename, migration, replay, collision, lifecycle, and related-only inputs so a future
-runner cannot pass by branching on the scenario label.
+Revision `1.0.2` closes the interpretation gaps before isolated execution: every profile-relative
+boundary—including artifact bytes and record count—carries the exact plus-one value for each
+immutable profile and selects through the case profile with a generic segment formula; shared JSON
+depth and string boundaries come directly from the validator's 64 and 4,096 limits; a cycle contains
+both directed symlink declarations; binary and malformed UTF-8 cases bind the intended raw bytes;
+and fingerprint invariance cases contain complete vectors that differ only in the excluded line,
+branch, commit, or unknown-location reason. The remaining identity cases also bind concrete rename,
+migration, replay, collision, lifecycle, and related-only inputs so a future runner cannot pass by
+branching on the scenario label.
 
 The generator produces the snapshot and 84 canonical fixture files. Bootstrap is exclusive and
 refuses overwrite; normal generation requires the exact existing tree and performs no-follow

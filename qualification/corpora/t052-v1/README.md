@@ -15,9 +15,11 @@ build step, dynamic test, scanner execution, or network requirement.
   authenticates inputs only and grants no finding, policy, publication, or readiness authority.
 - Every performance size bucket requires 30 post-warm-up measurements on the single immutable
   hardware-class reference bound by the snapshot.
-- Revision 1.0.1 binds every profile boundary to the selected profile's exact limit plus one,
+- Revision 1.0.2 binds every profile boundary to the selected profile's exact limit plus one,
   represents a symlink cycle as both directed links, carries binary/invalid-UTF-8 inputs as raw
   base64 bytes, and supplies complete fingerprint vectors whose excluded field alone changes.
+  Artifact-byte and record-count recipes now select the exact profile limit through generic
+  segment metadata; JSON depth and string length use the shared validator's exact limit plus one.
 - The generator and loader require exact root and fixture sets, canonical UTF-8/NFC/LF JSON,
   byte/digest identity, root confinement, no-follow file access where supported, and stable
   before/open/after filesystem identity.

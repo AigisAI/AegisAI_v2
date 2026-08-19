@@ -5,6 +5,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
+  SAST_ARTIFACT_VALIDATION_LIMITS,
   SAST_MULTI_CLASS_QUALIFICATION_CORPUS_CLASSES,
   SAST_MULTI_CLASS_QUALIFICATION_LIMITS,
   SAST_MULTI_CLASS_QUALIFICATION_REQUIRED_SCENARIOS,
@@ -27,8 +28,8 @@ export const MULTI_CLASS_CORPUS_SNAPSHOT_PATH = join(
 const FIXTURE_ROOT = join(MULTI_CLASS_CORPUS_ROOT, 'fixtures');
 const OWNER_REF = 'team://security-engineering/sast-qualification';
 const LICENSE_EXPRESSION = 'Apache-2.0';
-const REVISION = '1.0.1';
-const PUBLISHED_AT = '2026-08-19T17:30:00.000Z';
+const REVISION = '1.0.2';
+const PUBLISHED_AT = '2026-08-19T17:55:00.000Z';
 const PROVENANCE_REF = digestBoundReference(
   'sast-corpus-provenance://aegisai/t052/multi-class-v1',
   'aegisai-t052-multi-class-qualification-source-v1'
@@ -65,9 +66,11 @@ build step, dynamic test, scanner execution, or network requirement.
   authenticates inputs only and grants no finding, policy, publication, or readiness authority.
 - Every performance size bucket requires 30 post-warm-up measurements on the single immutable
   hardware-class reference bound by the snapshot.
-- Revision 1.0.1 binds every profile boundary to the selected profile's exact limit plus one,
+- Revision 1.0.2 binds every profile boundary to the selected profile's exact limit plus one,
   represents a symlink cycle as both directed links, carries binary/invalid-UTF-8 inputs as raw
   base64 bytes, and supplies complete fingerprint vectors whose excluded field alone changes.
+  Artifact-byte and record-count recipes now select the exact profile limit through generic
+  segment metadata; JSON depth and string length use the shared validator's exact limit plus one.
 - The generator and loader require exact root and fixture sets, canonical UTF-8/NFC/LF JSON,
   byte/digest identity, root confinement, no-follow file access where supported, and stable
   before/open/after filesystem identity.
@@ -270,7 +273,8 @@ function schemaParserFixture(caseKey, corpusClass, scenario) {
     parameters: [
       stringParameter('ARTIFACT_SCHEMA', payload.schema),
       stringParameter('BOUNDARY', scenario),
-      booleanParameter('STREAMING_REQUIRED', true)
+      booleanParameter('STREAMING_REQUIRED', true),
+      ...schemaBoundaryParameters(payload)
     ],
     segments,
     steps: recipeSteps([
@@ -328,34 +332,45 @@ function schemaPayload(scenario) {
     return singlePayload('OPENGREP_SARIF_2_1_0', '{"runs":[');
   }
   if (scenario === 'ARTIFACT_BYTES_LIMIT_PLUS_ONE') {
+    const projectedBytes = maximumProfileLimitPlusOne('maxArtifactBytes');
     return {
       schema: 'SYFT_CYCLONEDX_1_6',
       records: 0,
+      limitMetric: 'maxArtifactBytes',
+      materializationMetric: 'MATERIALIZED_BYTES',
+      fixedContribution: 2,
       segments: [
         { role: 'PREFIX', value: '{', repeat: 1 },
-        { role: 'UNIT', value: ' ', repeat: 268_435_455 },
+        { role: 'UNIT', value: ' ', repeat: projectedBytes - 2 },
         { role: 'SUFFIX', value: '}', repeat: 1 }
       ]
     };
   }
   if (scenario === 'NESTING_DEPTH_LIMIT_PLUS_ONE') {
+    const depth = SAST_ARTIFACT_VALIDATION_LIMITS.maximumJsonDepth + 1;
     return {
       schema: 'TRIVY_JSON_2',
       records: 1,
+      globalLimitMetric: 'maximumJsonDepth',
+      globalLimitValue: SAST_ARTIFACT_VALIDATION_LIMITS.maximumJsonDepth,
       segments: [
-        { role: 'PREFIX', value: '[', repeat: 129 },
+        { role: 'PREFIX', value: '[', repeat: depth },
         { role: 'PRIMARY', value: '0', repeat: 1 },
-        { role: 'SUFFIX', value: ']', repeat: 129 }
+        { role: 'SUFFIX', value: ']', repeat: depth }
       ]
     };
   }
   if (scenario === 'RECORD_COUNT_LIMIT_PLUS_ONE') {
+    const projectedRecords = maximumProfileLimitPlusOne('maxArtifactRecords');
     return {
       schema: 'SYFT_CYCLONEDX_1_6',
-      records: 250_001,
+      records: projectedRecords,
+      limitMetric: 'maxArtifactRecords',
+      materializationMetric: 'MATERIALIZED_ENTRIES',
+      fixedContribution: 1,
       segments: [
         { role: 'PREFIX', value: '{"components":[', repeat: 1 },
-        { role: 'UNIT', value: '{},', repeat: 250_000 },
+        { role: 'UNIT', value: '{},', repeat: projectedRecords - 1 },
         { role: 'SUFFIX', value: '{}]}', repeat: 1 }
       ]
     };
@@ -364,9 +379,15 @@ function schemaPayload(scenario) {
     return {
       schema: 'OPENGREP_SARIF_2_1_0',
       records: 1,
+      globalLimitMetric: 'maximumStringBytes',
+      globalLimitValue: SAST_ARTIFACT_VALIDATION_LIMITS.maximumStringBytes,
       segments: [
         { role: 'PREFIX', value: '{"message":"', repeat: 1 },
-        { role: 'UNIT', value: 'A', repeat: 1_048_577 },
+        {
+          role: 'UNIT',
+          value: 'A',
+          repeat: SAST_ARTIFACT_VALIDATION_LIMITS.maximumStringBytes + 1
+        },
         { role: 'SUFFIX', value: '"}', repeat: 1 }
       ]
     };
@@ -423,6 +444,38 @@ function schemaPayload(scenario) {
     );
   }
   throw new Error(`missing schema payload: ${scenario}`);
+}
+
+function schemaBoundaryParameters(payload) {
+  if (payload.limitMetric) {
+    return [
+      stringParameter('PROFILE_LIMIT_MODE', 'SELECTED_PROFILE_LIMIT_PLUS_ONE'),
+      ...profileBoundaryParameters(payload.limitMetric),
+      integerParameter('PROFILE_BOUND_SEGMENT_ORDINAL', 2),
+      stringParameter(
+        'PROFILE_BOUND_MATERIALIZATION_METRIC',
+        payload.materializationMetric
+      ),
+      integerParameter(
+        'PROFILE_BOUND_FIXED_CONTRIBUTION',
+        payload.fixedContribution
+      ),
+      integerParameter('PROFILE_BOUND_UNIT_CONTRIBUTION', 1),
+      stringParameter(
+        'PROFILE_BOUND_REPEAT_FORMULA',
+        'SELECTED_LIMIT_PLUS_ONE_MINUS_FIXED_CONTRIBUTION'
+      )
+    ];
+  }
+  if (payload.globalLimitMetric) {
+    return [
+      stringParameter('BOUNDARY_METRIC', payload.globalLimitMetric),
+      integerParameter('BOUNDARY_LIMIT', payload.globalLimitValue),
+      integerParameter('BOUNDARY_LIMIT_PLUS_ONE', payload.globalLimitValue + 1),
+      stringParameter('BOUNDARY_SOURCE', 'SAST_ARTIFACT_VALIDATION_LIMITS')
+    ];
+  }
+  return [];
 }
 
 function singlePayload(schema, value) {

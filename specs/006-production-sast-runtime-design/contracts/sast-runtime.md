@@ -1900,11 +1900,14 @@ Actual symlinks, FIFOs, devices, expanded archives, large repositories, scanner 
 are absent from the checked-in corpus. T053/T054 must map each declaration through their own exact
 allowlist inside a fresh isolated environment.
 
-Revision `1.0.1` makes those declarations execution-complete without granting execution authority.
+Revision `1.0.2` makes those declarations execution-complete without granting execution authority.
 Every limit-plus-one recipe names the immutable profile-limit field, fixes
 `PROFILE_SELECTION_SOURCE=CASE_PROFILE`, and binds the exact plus-one value for all three profiles;
-the projected materialization scalar is only the maximum reservation bound. A symlink cycle contains
-two explicit `DECLARE_SYMLINK` edges. Binary and malformed UTF-8 evidence use
+the projected materialization scalar is only the maximum reservation bound. Artifact-byte and
+record-count cases also bind the generic segment ordinal, materialization metric, unit contribution,
+fixed contribution, and selected-limit repeat formula. Shared parser boundaries use
+`maximumJsonDepth + 1` and `maximumStringBytes + 1` directly. A symlink cycle contains two explicit
+`DECLARE_SYMLINK` edges. Binary and malformed UTF-8 evidence use
 `DECLARE_EVIDENCE_BYTES` and base64 carries the intended raw octets rather than a descriptive UTF-8
 label. Line, branch, commit, and unknown-location-reason invariance each contains two complete
 seven-field fingerprint vectors with only the excluded test field changed. Rename, replay,

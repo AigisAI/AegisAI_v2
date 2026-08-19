@@ -757,10 +757,12 @@ still requires the 005 rollout and the remaining 006 gates.
   stable before/open/after file and directory identity. It grants no finding, policy, publication,
   or readiness authority. T053 is the first stage allowed to materialize the T053-designated
   recipes and perform production-equivalent isolated scanner execution.
-- T052 revision `1.0.1` binds profile-relative cases to each selected profile's exact limit plus
-  one, declares both symlink-cycle edges, preserves binary/malformed UTF-8 as raw bytes, and gives
-  identity/correlation cases complete vectors and relations. Future runners consume those bound
-  declarations directly and never branch on scenario names to manufacture a pass.
+- T052 revision `1.0.2` binds profile-relative cases—including artifact bytes and record count—to
+  each selected profile's exact limit plus one through generic segment formulas. Shared JSON depth
+  and string cases bind the validator's exact 64+1 and 4,096+1 boundaries. It also declares both
+  symlink-cycle edges, preserves binary/malformed UTF-8 as raw bytes, and gives identity/correlation
+  cases complete vectors and relations. Future runners consume those bound declarations directly
+  and never branch on scenario names to manufacture a pass.
 - Repository completion still requires the standard commands below on the final branch. Live
   signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
   remain fail-closed rollout dependencies rather than fabricated local evidence.

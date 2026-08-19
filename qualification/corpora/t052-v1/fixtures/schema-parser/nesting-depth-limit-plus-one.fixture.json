@@ -20,6 +20,34 @@
       "booleanValue": null
     },
     {
+      "name": "BOUNDARY_LIMIT",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 64,
+      "booleanValue": null
+    },
+    {
+      "name": "BOUNDARY_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 65,
+      "booleanValue": null
+    },
+    {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maximumJsonDepth",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "BOUNDARY_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "SAST_ARTIFACT_VALIDATION_LIMITS",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
       "name": "STREAMING_REQUIRED",
       "valueType": "BOOLEAN",
       "stringValue": null,
@@ -33,7 +61,7 @@
       "role": "PREFIX",
       "encoding": "BASE64",
       "valueBase64": "Ww==",
-      "repeat": 129
+      "repeat": 65
     },
     {
       "ordinal": 2,
@@ -47,7 +75,7 @@
       "role": "SUFFIX",
       "encoding": "BASE64",
       "valueBase64": "XQ==",
-      "repeat": 129
+      "repeat": 65
     }
   ],
   "steps": [
@@ -73,7 +101,7 @@
       ]
     }
   ],
-  "materializedBytes": 259,
+  "materializedBytes": 131,
   "materializedEntries": 1,
   "materializedPathDepth": 0,
   "simulatedDurationSeconds": 0,
@@ -87,6 +115,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://600aefe1fc05386944503f3876cb6a62496addfa7e7cd886af9431b2663d2df8",
-  "fixtureDigest": "sha256:600aefe1fc05386944503f3876cb6a62496addfa7e7cd886af9431b2663d2df8"
+  "fixtureId": "sast-multi-class-qualification-fixture://5bd41cd4ce7977d91b964b696e0f8ec9fe27303a3a49010d3ad76ff273b91ad7",
+  "fixtureDigest": "sha256:5bd41cd4ce7977d91b964b696e0f8ec9fe27303a3a49010d3ad76ff273b91ad7"
 }
