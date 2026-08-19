@@ -633,6 +633,32 @@ incomplete, stale, quarantined, or security-blocked scan.
   cells MAY be `PASSED` and set `t055EntryAuthorized=true`. No T054 state grants finding, policy,
   publication, deployment, Kubernetes, or production-readiness authority, and repository CI MUST
   never fabricate external execution evidence.
+- **FR-057m**: T055 MUST refuse plan creation unless a structurally valid T054 `PASSED` result with
+  `t055EntryAuthorized=true`, the exact T054 manifest, dependency set, complete artifact-
+  verification set and execution plan, and a Qualification Authority Ed25519 entry attestation are
+  mutually bound. T054 and T055 MUST use the same provider ID and provider-adapter ref. The T055
+  trust bundle MUST match independently configured `SAST_T055_TRUST_POLICY_DIGEST`; submitted
+  evidence MUST NOT select its own trust root. Before accepting drill evidence, the verifier MUST
+  reload every one of the 36 T054 artifacts and its complete signature and provenance envelopes,
+  recompute both envelope digests, rebind provenance subject/source/builder/materials, and verify
+  every `SUPPLY_CHAIN_AUTHORITY` Ed25519 signature. The immutable denominator MUST be exactly 169
+  cells: 144 read-only mount/digest/signature/provenance drills, one unlisted-component rejection,
+  six internal-mirror/stale/network-enrichment vulnerability-database drills, three canonical/
+  incompatible/malformed-or-oversized result-schema drills, and 15 ordered rollback phase drills
+  across three profiles. Exactly 115 cells MUST reject before artifact invocation, exactly 39 MAY
+  invoke one allowlisted artifact, and no cell MAY accept customer content, execute customer code,
+  install packages, build a repository, run a dynamic test, use public egress, or mutate production.
+  Detached Security Engineering and Scan Platform approvals MUST strictly predate execution. Every
+  receipt MUST use globally unique identities and carry Supply Chain Authority, MicroVM Provider,
+  and Qualification Runtime Ed25519 signatures. Rollback MUST bind exact candidate and baseline
+  release-set digests, suspend and fence the candidate, prove in-flight abort and cleanup, derive
+  and reverify the last-known-good baseline, record zero candidate invocations after the fence, and
+  activate `STANDBY -> ACTIVE` only through a digest-chained append-only audit ledger entry.
+  Missing T054 evidence MUST be `BLOCKED_T054_QUALIFICATION`; a valid strict subset MUST be
+  `PENDING_DRILL_EXECUTION`; malformed evidence or any zero-tolerance breach MUST be `FAILED`; only
+  all 169 valid cells MAY be `PASSED` and set `t056EntryAuthorized=true`. No T055 state grants
+  finding, policy, publication, deployment, Kubernetes, or production-readiness authority, and
+  repository CI MUST never fabricate external execution or rollback evidence.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

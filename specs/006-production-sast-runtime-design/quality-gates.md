@@ -711,6 +711,56 @@ sample-at-completion, stale, reused, unsigned, drifted, incomplete, over-limit, 
 breaching evidence is `FAILED`. Only the complete passing set authorizes T055 entry. It never grants
 finding, policy, publication, deployment, Kubernetes, or production-readiness authority.
 
+## T055 Supply-Chain and Rollback Qualification Gates
+
+Repository validation first proves an exact 169-cell manifest and must return
+`BLOCKED_T054_QUALIFICATION`. No plan or receipt can count until a Qualification Authority signature
+binds the exact T054 manifest, `PASSED` result, dependency set, complete artifact-verification set,
+execution plan, and T055 manifest. The T054 and T055 provider ID and provider-adapter ref must
+match. Trust-bundle bytes are accepted only when their digest equals independently configured
+`SAST_T055_TRUST_POLICY_DIGEST`.
+
+Before execution, all 36 T054 dependency artifacts must have their complete signature and
+provenance envelopes reloaded, both envelope digests recomputed, provenance subject/source/
+builder/materials rebound, and both `SUPPLY_CHAIN_AUTHORITY` Ed25519 signatures verified. Security
+Engineering and Scan Platform approvals must sign the exact plan strictly before its first attempt.
+
+The immutable denominator and thresholds are:
+
+| Gate | Threshold |
+|---|---:|
+| Artifact mount/rehash, digest-reject, signature-reject, provenance-reject drills | 36 each |
+| Unlisted component rejected before execution | 1 of 1 |
+| Candidate/baseline internal vulnerability DB mirror accepted | 2 of 2 |
+| Candidate/baseline stale vulnerability DB rejected before execution | 2 of 2 |
+| Candidate/baseline network enrichment rejected before egress | 2 of 2 |
+| Canonical result schema accepted | 1 of 1 |
+| Incompatible and malformed/oversized result schemas rejected before execution | 2 of 2 |
+| Ordered rollback phases | 5 per profile, 15 total |
+| Pre-execution rejections | exactly 115 |
+| Allowlisted artifact invocations | exactly 39 |
+| Network egress and production mutation | exactly 0 |
+| Customer content/code, package install, repository build, dynamic test | exactly 0 |
+| Cleanup within 60 seconds | 169 of 169 |
+
+Every receipt must bind the exact cell and upstream chain; use globally unique cell, receipt,
+attempt, sandbox, workload, provider/runtime attestation, and audit identities; and carry valid
+Supply Chain Authority, MicroVM Provider, and Qualification Runtime Ed25519 signatures. Read-only
+positive mounts must rehash to the expected artifact and exact signature/provenance envelope
+digests. Negative cells must reject before invocation or egress and retain the observed failure.
+
+For every profile, rollback must bind exact candidate/baseline release-set digests and prove in
+order: candidate suspension, queue-admission fence, in-flight abort and cleanup, derived and
+reverified last-known-good target, and baseline `STANDBY -> ACTIVE` activation through a digest-
+chained append-only ledger entry. Candidate invocation after the fence is exactly zero, and each
+ledger entry is rebound to the receipt audit ref.
+
+A valid strict subset is `PENDING_DRILL_EXECUTION`; missing T054 evidence remains
+`BLOCKED_T054_QUALIFICATION`; malformed, stale, reused, unsigned, cross-provider, over-SLO,
+out-of-order, ledger-invalid, or zero-tolerance-breaching evidence is `FAILED`. Only all 169 passing
+cells authorize T056 entry. They never grant finding, policy, publication, deployment, Kubernetes,
+production mutation, or production-readiness authority.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:

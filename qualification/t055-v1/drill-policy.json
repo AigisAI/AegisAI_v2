@@ -1,0 +1,87 @@
+{
+  "version": "sast-supply-chain-rollback-drill-policy-v1",
+  "revision": "1.0.0",
+  "ownerRef": "team://security-engineering/sast-supply-chain/sha256:88522a08ae91bfebbbfeaadf267bdcbbcb42804eb0caf10371b6c28d6a0ccfbb",
+  "prerequisite": {
+    "stage": "T054_END_TO_END_AND_PERFORMANCE",
+    "requiredStatus": "PASSED",
+    "requiredEntryAuthorization": "t055EntryAuthorized",
+    "exactT054ManifestRequired": true,
+    "exactT054ResultRequired": true,
+    "exactT054DependencySetRequired": true,
+    "exactT054ArtifactVerificationSetRequired": true,
+    "exactT054PlanRequired": true,
+    "sameProviderAndAdapterRequired": true,
+    "qualificationAuthorityEntryAttestationRequired": true,
+    "independentlyConfiguredTrustPolicyDigestRequired": true
+  },
+  "execution": {
+    "evidenceStage": "T055_SUPPLY_CHAIN_DATABASE_SCHEMA_ROLLBACK",
+    "productionEquivalentProviderRequired": true,
+    "oneFreshIsolatedEnvironmentPerDrill": true,
+    "readOnlyArtifactMountRequired": true,
+    "mountedArtifactRehashRequired": true,
+    "exactSignatureEnvelopeDigestRequired": true,
+    "exactProvenanceEnvelopeDigestRequired": true,
+    "internalVulnerabilityDatabaseMirrorRequired": true,
+    "externalDatabaseEnrichmentRejectedBeforeEgress": true,
+    "canonicalResultSchemaRequired": true,
+    "detachedDualApprovalRequired": true,
+    "trustedClockRequired": true,
+    "cleanupSloSeconds": 60,
+    "aggregateMetricsAcceptedFromCaller": false,
+    "receiptSignatureRoles": [
+      "SUPPLY_CHAIN_AUTHORITY",
+      "MICROVM_PROVIDER",
+      "QUALIFICATION_RUNTIME"
+    ]
+  },
+  "denominators": {
+    "artifactCount": 36,
+    "artifactDrillsPerArtifact": 4,
+    "artifactSupplyChainDrills": 144,
+    "unlistedComponentDrills": 1,
+    "vulnerabilityDatabaseDrills": 6,
+    "resultSchemaDrills": 3,
+    "rollbackProfiles": 3,
+    "rollbackDrillsPerProfile": 5,
+    "rollbackDrills": 15,
+    "preExecutionRejections": 115,
+    "artifactInvocations": 39,
+    "totalExecutionCells": 169
+  },
+  "rollback": {
+    "orderedPhases": [
+      "ROLLBACK_CANDIDATE_SUSPEND",
+      "ROLLBACK_QUEUE_ADMISSION_FENCE",
+      "ROLLBACK_IN_FLIGHT_ABORT_AND_CLEANUP",
+      "ROLLBACK_DERIVE_AND_REVERIFY_LAST_KNOWN_GOOD",
+      "ROLLBACK_ACTIVATE_BASELINE_APPEND_ONLY"
+    ],
+    "exactCandidateAndBaselineReleaseSetDigestsRequired": true,
+    "candidateInvocationsAfterFenceMaximum": 0,
+    "inFlightAbortEvidenceRequired": true,
+    "lastKnownGoodReverificationRequired": true,
+    "appendOnlyActivationLedgerRequired": true
+  },
+  "prohibited": {
+    "customerContentAccepted": false,
+    "customerCodeExecutionAllowed": false,
+    "packageInstallAllowed": false,
+    "repositoryBuildAllowed": false,
+    "dynamicTestAllowed": false,
+    "publicInternetEgressAllowed": false,
+    "productionMutationAllowed": false,
+    "localExecutionAllowed": false
+  },
+  "authority": {
+    "findingAuthority": false,
+    "policyAuthority": false,
+    "publicationAuthority": false,
+    "deploymentAuthority": false,
+    "kubernetesAuthority": false,
+    "productionReadinessAuthority": false,
+    "nextStageAuthorizationOnly": "T056_ENTRY"
+  },
+  "immutable": true
+}

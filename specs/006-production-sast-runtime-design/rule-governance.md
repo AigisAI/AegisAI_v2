@@ -407,6 +407,33 @@ command-line flags, rule code, templates, post-processors, or executable configu
   deploy Kubernetes, or establish production readiness. Synthetic tests prove only verifier
   behavior and never satisfy the external run.
 
+### T055 Supply-Chain and Rollback Qualification Boundary
+
+- T055 planning is impossible until the exact T054 manifest, `PASSED` result, dependency set,
+  complete artifact-verification set, and execution plan are rebound by a Qualification Authority
+  Ed25519 signature. T054 and T055 must use the same provider and adapter; repository validation
+  remains `BLOCKED_T054_QUALIFICATION`.
+- The immutable denominator is exactly 169 cells: four drills for each of all 36 T054 artifacts,
+  one unlisted-component rejection, six vulnerability-database drills, three result-schema drills,
+  and five ordered rollback phases for each of three profiles. Exactly 115 reject before execution
+  and exactly 39 allow one read-only artifact invocation.
+- The T055 trust root is independently pinned through `SAST_T055_TRUST_POLICY_DIGEST`. Each artifact
+  signature and provenance envelope is reloaded, digest-recomputed, provenance-rebound, and
+  Ed25519-verified before any drill evidence is admitted.
+- Security Engineering and Scan Platform approvals strictly predate execution. Supply Chain
+  Authority, MicroVM Provider, and Qualification Runtime sign every receipt; all execution,
+  attestation, audit, receipt, and cell identities are globally single-use. Customer code, package
+  installation, repository builds, dynamic tests, public egress, and production mutation remain
+  prohibited.
+- Rollback binds exact candidate/baseline release sets and proves suspension, queue fencing,
+  in-flight abort and cleanup, last-known-good derivation and reverification, zero post-fence
+  candidate invocation, and baseline `STANDBY -> ACTIVE` through a digest-chained append-only audit
+  ledger. Failed evidence remains visible and cannot be erased by a favorable aggregate.
+- A valid subset is `PENDING_DRILL_EXECUTION`; any invalid or zero-tolerance evidence is `FAILED`;
+  all 169 passing cells grant T056 entry only. T055 cannot create findings, alter policy, select or
+  mutate production lifecycle state, publish, deploy Kubernetes, or establish production readiness.
+  Synthetic signing tests prove verifier behavior only and never satisfy the external drill.
+
 ## Lifecycle
 
 ```text

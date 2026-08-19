@@ -2072,6 +2072,84 @@ threshold breach yields `FAILED`; only all cells and all gates yield `PASSED` wi
 `t055EntryAuthorized=true`. No result can create findings, override policy, publish, deploy
 Kubernetes, or mark production ready.
 
+## Supply-chain and rollback qualification v1
+
+The repository-owned T055 package binds the exact T054 qualification chain into this closed
+denominator:
+
+```text
+sast-supply-chain-rollback-qualification-manifest-v1 {
+  36 ARTIFACT_MOUNT_REHASH_ACCEPT cells,
+  36 ARTIFACT_DIGEST_SUBSTITUTION_REJECT cells,
+  36 ARTIFACT_SIGNATURE_SUBSTITUTION_REJECT cells,
+  36 ARTIFACT_PROVENANCE_SUBSTITUTION_REJECT cells,
+  one UNLISTED_COMPONENT_REJECT cell,
+  six internal-mirror/stale/network-enrichment DATABASE cells,
+  three canonical/incompatible/malformed-or-oversized SCHEMA cells,
+  five ordered ROLLBACK cells * three profiles,
+  preExecutionRejectionCount: 115,
+  artifactInvocationCount: 39,
+  executionCellCount: 169,
+  providerExecutionStatus: BLOCKED_T054_QUALIFICATION,
+  all customer execution and production authority: false
+}
+
+sast-supply-chain-rollback-qualification-entry-attestation-v1 {
+  exact T054 manifest/result/dependency/artifact-verification/plan digests,
+  exact T055 manifest digest,
+  t055EntryAuthorized: true,
+  role: QUALIFICATION_AUTHORITY, algorithm: ED25519
+}
+
+sast-supply-chain-rollback-qualification-plan-v1 {
+  exact upstream, entry, provider, adapter, and independently pinned trust-policy bindings,
+  all 36 T054 artifact signature/provenance envelopes reverified,
+  approvals: SECURITY_ENGINEERING + SCAN_PLATFORM,
+  receipt signatures: SUPPLY_CHAIN_AUTHORITY + MICROVM_PROVIDER + QUALIFICATION_RUNTIME,
+  readOnlyArtifactMountRequired: true,
+  aggregateMetricsAcceptedFromCaller: false
+}
+```
+
+Plan construction validates the complete T054 plan and exact `PASSED` result, requires the same
+provider and adapter, and rejects missing, partial, stale, cross-manifest, cross-provider, or
+self-selected-trust prerequisites. The trust-bundle bytes must match process-owned
+`SAST_T055_TRUST_POLICY_DIGEST`. Every artifact signature and provenance payload is reloaded; both
+envelope digests and provenance subject/source/builder/materials are recomputed before each
+`SUPPLY_CHAIN_AUTHORITY` Ed25519 signature is accepted. The CLI exposes no evaluation-time
+override. Both detached plan approvals must strictly precede the earliest receipt.
+
+Each receipt binds one exact cell and all upstream/plan digests. It records observed envelope
+digests, read-only mount and allowlist state, invocation/egress/production-mutation counts,
+prohibited effects, cleanup timing, and globally unique cell/receipt/attempt/sandbox/workload/
+provider/runtime/audit identities. The three required authorities independently sign its digest.
+Negative receipts preserve the observed rejection; they cannot replace failed facts with booleans
+that merely match an expected aggregate. Customer content, customer code, package installation,
+repository builds, dynamic tests, public egress, and production mutation remain forbidden.
+
+For each profile, rollback receipts form one exact ordered prefix:
+
+```text
+ROLLBACK_CANDIDATE_SUSPEND
+  -> ROLLBACK_QUEUE_ADMISSION_FENCE
+  -> ROLLBACK_IN_FLIGHT_ABORT_AND_CLEANUP
+  -> ROLLBACK_DERIVE_AND_REVERIFY_LAST_KNOWN_GOOD
+  -> ROLLBACK_ACTIVATE_BASELINE_APPEND_ONLY
+```
+
+All phases bind distinct exact candidate and baseline release-set digests. The fence permits zero
+later candidate invocation; in-flight before/after counts and abort confirmation prove cleanup;
+the target is derived only from last-known-good evidence; and the final receipt alone records the
+baseline `STANDBY -> ACTIVE` transition through a digest-chained append-only ledger entry whose
+content is bound to its audit ref.
+
+The verifier accepts no caller measurement object. It recomputes the exact 169-cell key set, 115
+pre-execution rejections, 39 artifact invocations, all uniqueness, cleanup, zero-tolerance, and
+rollback-sequence properties. Missing T054 evidence is `BLOCKED_T054_QUALIFICATION`; a valid strict
+subset is `PENDING_DRILL_EXECUTION`; invalid or breaching evidence is `FAILED`; only the complete
+passing set is `PASSED` with `t056EntryAuthorized=true`. No result can create findings, override
+policy, publish, deploy Kubernetes, mutate production, or mark the system ready.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:
