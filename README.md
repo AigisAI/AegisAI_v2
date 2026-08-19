@@ -60,7 +60,7 @@ Start from its
 | --- | --- |
 | Production SAST runtime | Active 006 detailed-design and implementation milestone |
 | SAST scanner set | OpenGrep SAST, Trivy dependency/secret/IaC, Syft SBOM with explicit authority |
-| Rule governance | T047 immutable promotion evidence/approvals/lifecycle selection complete; T048 tenant-safe canary observation next |
+| Production qualification | T053 immutable 123-cell provider handoff and verifier package-ready; real microVM/destruction evidence pending |
 | Deployment operations | Completed provider-neutral contract baseline in [`005-production-deployment-operations`](./specs/005-production-deployment-operations/) |
 | Runtime infrastructure | Completed baseline in [`004-production-runtime-infrastructure`](./specs/004-production-runtime-infrastructure/) |
 | Production AI inference | Completed baseline in [`003-production-ai-inference-runtime`](./specs/003-production-ai-inference-runtime/) |
@@ -71,6 +71,9 @@ The 006 package makes the SAST runtime implementation-ready before provider exec
 fixed-commit isolated scans, hostile-input validation, deterministic normalization,
 repository-scoped finding lineage with target-scoped lifecycle history, fail-closed coverage,
 reduced evidence, and measurable rule/runtime gates.
+The current boundary is the real T053 production-equivalent provider run: repository CI can
+validate the exact manifest, dual-signature verifier, and fail-closed pending state, but cannot
+self-certify the required 123 fresh microVM executions or destruction evidence.
 The 005 baseline still governs the later live Kubernetes and provider-specific microVM
 rollout; production credentials and live provider execution remain deferred.
 

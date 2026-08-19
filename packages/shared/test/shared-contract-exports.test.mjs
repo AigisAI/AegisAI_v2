@@ -13,6 +13,10 @@ const files = {
   aiInferenceRuntime: new URL('../src/types/ai-inference-runtime.ts', import.meta.url),
   deploymentOperations: new URL('../src/types/deployment-operations.ts', import.meta.url),
   sastRuntime: new URL('../src/types/sast-runtime.ts', import.meta.url),
+  sastIsolatedIntegrationQualification: new URL(
+    '../src/types/sast-isolated-integration-qualification.ts',
+    import.meta.url
+  ),
   sastArtifactValidation: new URL(
     '../src/types/sast-artifact-validation.ts',
     import.meta.url
@@ -61,6 +65,7 @@ test('shared contract modules exist and are re-exported from the package root', 
     'ai-inference-runtime',
     'deployment-operations',
     'sast-runtime',
+    'sast-isolated-integration-qualification',
     'sast-artifact-validation',
     'sast-artifact-disposition',
     'sast-normalization',

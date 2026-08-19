@@ -16,9 +16,12 @@ Control, Scan, AI, and Data/Security plane boundaries.
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
-- T040 through T052 are complete; the guarded next entry point is T053 production-equivalent
-  isolated integration and destruction-evidence work. Provider/Kubernetes execution remains deferred until all T053-T056
-  gates pass.
+- T040 through T052 are complete. The T053 repository-side 123-cell provider handoff, receipt
+  contract, and offline verifier are package-ready; the guarded next action is an externally
+  authorized production-equivalent microVM run and destruction-evidence collection.
+- Production Kubernetes rollout remains deferred until T053-T056 pass. A standalone or staging
+  qualification provider may execute T053 only with its external dependency set, trust bundle, and
+  detached approvals; no repository or ordinary PR environment may substitute for that evidence.
 - Issue #276 is explicitly reclassified by `spec.md` as a local-only Neo4j/MITRE CWE
   dev/demo bootstrap; it does not replace this package or advance T040.
 - `005-production-deployment-operations` remains the completed deployment-operations
@@ -710,12 +713,13 @@ tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step p
   identities and its reviewed digest is pinned in code.
   T052 multi-class qualification corpus is complete: 84 immutable declarative cases bind every
   required schema/parser, malicious-repository, fingerprint/correlation, evidence/privacy, and
-  profile/size performance scenario without materializing or executing hostile content. T053 is
-  the next implementation task.
+  profile/size performance scenario without materializing or executing hostile content. T053's
+  repository provider-handoff implementation is complete, but T053 itself remains pending until
+  real production-equivalent provider receipts prove all 123 isolated executions and destruction.
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
-### T049-T052 Validation Checkpoint
+### T049-T053 Package Validation Checkpoint
 
 - Shared kill-switch contract tests cover canonical selectors/context, decision and verification
   shape, complete evaluation/head/match sets, coverage effects, planning descriptors, active
@@ -763,6 +767,22 @@ still requires the 005 rollout and the remaining 006 gates.
   symlink-cycle edges, preserves binary/malformed UTF-8 as raw bytes, and gives identity/correlation
   cases complete vectors and relations. Future runners consume those bound declarations directly
   and never branch on scenario names to manufacture a pass.
+- T053 derives the exact 41 applicable cases across all three profiles into 123 canonical cells.
+  The checked-in manifest binds the T052 snapshot, fixtures, profiles, scanners, exact
+  materialization projections, provisioning contract, and a closed guest-only action policy.
+- A live dependency set must bind every scanner, wrapper, rule/database/schema/normalizer,
+  materializer/runner/harness, microVM kernel/rootfs, provider, and trust artifact. The generated
+  plan requires Security Engineering and Scan Platform approval. Each cell then requires one new
+  microVM plus provider and qualification-runtime Ed25519 signatures over its receipt.
+- The offline verifier rejects duplicate/reused attempt, sandbox, workload, attestation, cell, or
+  receipt identity; wrong outcome/materialization; any phase egress or prohibited effect; stale or
+  changed signatures; approval at or after the earliest execution start; caller-selected evaluation
+  time; incomplete cleanup; and cleanup over 60 seconds. It uses only its service-owned trusted UTC
+  clock. Its exit codes are 0 only
+  for all 123 valid receipts, 1 for failure, and 2 for `PENDING_PROVIDER_EXECUTION`.
+- Repository CI validates package determinism, exact filesystem bytes, real Ed25519 verification,
+  tamper rejection, and the mandatory pending state. It never launches a scanner/microVM, creates
+  provider attestations, or checks T053 complete. T054 remains blocked until a real T053 pass.
 - Repository completion still requires the standard commands below on the final branch. Live
   signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
   remain fail-closed rollout dependencies rather than fabricated local evidence.
@@ -802,6 +822,9 @@ Before claiming the 006 design milestone complete:
     rollback probe; never aim the probe at a shared or production database.
 12. Validate the checked-in T051 golden corpus from its deterministic generator before using it as
     a qualification denominator.
+13. Validate the checked-in T052 corpus and T053 provider handoff, confirm the repository-only T053
+    verdict is `PENDING_PROVIDER_EXECUTION`, and never mark T053 complete without 123 external
+    provider/runtime-signed receipts and complete destruction evidence.
 
 ## Validation Commands
 

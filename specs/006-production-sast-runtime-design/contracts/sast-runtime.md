@@ -1922,6 +1922,79 @@ outcome/stage/profile/hardware drift, and any authority widening. A successful l
 immutable case/recipe inputs. It creates no workspace, scanner run, result, metric, finding,
 evidence, lifecycle event, policy decision, publication, promotion, or readiness decision.
 
+## Isolated integration qualification v1
+
+The repository-owned T053 provider handoff expands only the 16 schema/parser and 25
+malicious-repository T052 cases across `JAVA_FAST_V1`, `JAVA_DEEP_V1`, and `COMMON_DEEP_V1`.
+The resulting 123 cells are canonical, immutable, and one-to-one with fresh production-equivalent
+microVM attempts.
+
+```text
+sast-isolated-integration-qualification-manifest-v1 {
+  manifestId/digest, revision, source corpus/snapshot/revision,
+  provisioning contract and materialization policy refs/digests,
+  profiles[3], cells[123], cellSetDigest,
+  caseCount: 41, executionCellCount: 123, cleanupSloSeconds: 60,
+  providerExecutionStatus: PENDING_PROVIDER_EXECUTION,
+  oneFreshMicroVmPerCell: true, platformOwnedFixturesOnly: true,
+  liveProviderEvidencePresent: false,
+  all customer execution and readiness authority: false
+}
+
+sast-isolated-integration-qualification-cell-v1 {
+  ordinal, cellKey, cellId/digest,
+  source snapshot, case, fixture, profile and scanner bindings,
+  materializationInputDigest, recipeActionDigest,
+  expected materialization projection/digest,
+  isolationClass, executionTarget, expectedOutcome,
+  freshMicroVmRequired: true, sandboxReuseAllowed: false,
+  scenarioNameBranchingAllowed: false,
+  customer content/credential/code/package/build/test/egress authority: false
+}
+
+sast-isolated-integration-qualification-dependency-set-v1 {
+  dependencySetId/digest, providerId/adapter, validFrom/validUntil <= 24 hours,
+  exact scanner-set/image/wrapper/rule/database/schema/normalizer,
+  microVM kernel/rootfs, materializer/runner/harness, provider/trust artifacts,
+  executionEnvironment: PRODUCTION_EQUIVALENT,
+  liveProviderAdapterRequired: true, testOnly: false
+}
+
+sast-isolated-integration-qualification-plan-v1 {
+  planId/digest, manifest/dependency/source/cell-set bindings,
+  executionCellCount: 123, cleanupSloSeconds: 60,
+  approvals: SECURITY_ENGINEERING + SCAN_PLATFORM,
+  receipt signatures: MICROVM_PROVIDER + QUALIFICATION_RUNTIME,
+  executionAuthority: DETACHED_DUAL_APPROVAL_REQUIRED,
+  productionReadinessAuthority: false
+}
+```
+
+Each exact-key receipt binds the plan, dependency set, manifest, cell, case, fixture, profile,
+provider, unique attempt/sandbox/workload IDs, provider/runtime attestations, materialization,
+expected/actual outcome, isolation class, and trusted timestamps. Five ordered phase observations
+record public-internet connections, bytes, DNS, and opaque destinations. Eight prohibited-effect
+counters cover customer execution, package installation, build, dynamic test, public internet,
+credential persistence, host mutation, and unauthorized result writes. Six ordered cleanup
+observations prove credential wipe, process-tree termination, writable-volume destruction,
+result-ingress closure, microVM termination, and final audit commitment within 60 seconds.
+
+Plan approvals sign the plan digest and both approval timestamps must be strictly earlier than the
+earliest accepted receipt `startedAt`; equal-time or post-start approval is invalid. Every receipt
+is separately signed over its digest by the microVM provider and qualification runtime using
+canonical Ed25519 payloads. The offline verifier obtains `trustedEvaluatedAt` only from its
+service-owned UTC clock, exposes no caller-selected evaluation-time argument, and accepts an
+external trust bundle only when its raw digest matches the dependency set's
+`TRUST_POLICY`; each key ID must match the SHA-256 digest of its canonical Ed25519 SPKI. Duplicate
+cell/receipt, attempt, sandbox, workload, or attestation identity and any timestamp, provider,
+outcome, projection, signature, egress, prohibited-effect, cleanup, or authority drift fail closed.
+
+An empty or valid partial receipt set is `PENDING_PROVIDER_EXECUTION`. Exactly 123 unique valid
+dual-signed receipts plus both valid plan approvals may produce `PASSED` and only
+`t054EntryAuthorized=true`. One invalid observation produces `FAILED`. Finding, policy,
+publication, Kubernetes, and production-readiness authority always remain false. Repository CI
+validates the package and verifier but never creates a receipt or runs a scanner/microVM.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:

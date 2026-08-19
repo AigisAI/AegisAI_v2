@@ -361,6 +361,23 @@ command-line flags, rule code, templates, post-processors, or executable configu
   detection/precision/privacy/isolation/performance success, or authorize production. T053 is the
   first materialization and production-equivalent isolated execution stage.
 
+### T053 Isolated Integration Qualification Boundary
+
+- The repository handoff contains exactly 123 canonical cells: 41 T052 schema/parser and
+  malicious-repository cases across three signed profiles. It binds every fixture, scanner/profile,
+  materialization projection, provisioning contract, and closed guest-only action policy.
+- A live dependency set binds all scanner/rule/database/schema/normalizer, microVM,
+  materializer/runner/harness, provider, and trust artifacts. The plan is unusable without detached
+  Security Engineering and Scan Platform approvals.
+- One fresh production-equivalent microVM and one unique receipt are required per cell. Provider
+  and qualification-runtime Ed25519 signatures bind exact materialization/outcome, phase egress,
+  zero prohibited effects, and six destruction proofs completed within 60 seconds.
+- A valid partial run remains `PENDING_PROVIDER_EXECUTION`; any violation is `FAILED`; exactly 123
+  valid receipts may authorize T054 entry only. T053 evidence cannot qualify, promote, activate,
+  suspend, roll back, or select a rule bundle and never grants production-readiness authority.
+- CI validates the manifest, loader, plan and cryptographic verifier with synthetic signing keys,
+  but synthetic receipts are verifier tests only and never count as T053 execution evidence.
+
 ## Lifecycle
 
 ```text
