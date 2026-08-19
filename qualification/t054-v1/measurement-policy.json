@@ -1,0 +1,73 @@
+{
+  "version": "sast-end-to-end-qualification-measurement-policy-v1",
+  "revision": "1.0.0",
+  "ownerRef": "team://security-engineering/sast-qualification",
+  "prerequisite": {
+    "stage": "T053_ISOLATED_INTEGRATION",
+    "requiredStatus": "PASSED",
+    "requiredEntryAuthorization": "t054EntryAuthorized",
+    "cryptographicEntryAttestationRequired": true
+  },
+  "execution": {
+    "evidenceStage": "T054_END_TO_END_AND_PERFORMANCE",
+    "productionEquivalentProviderRequired": true,
+    "liveProviderAdapterRequired": true,
+    "oneFreshMicroVmPerAttempt": true,
+    "maximumAttemptsPerCell": 2,
+    "infrastructureRetryLimit": 1,
+    "retriesIncludedInReliabilityDenominator": true,
+    "cleanupSloSeconds": 60,
+    "queueToCleanupMeasurementRequired": true,
+    "candidateAndBaselineArtifactBindingRequired": true,
+    "aggregateMetricsAcceptedFromCaller": false,
+    "trustedClockRequired": true,
+    "detachedDualApprovalRequired": true,
+    "receiptSignatureRoles": [
+      "MICROVM_PROVIDER",
+      "QUALIFICATION_RUNTIME",
+      "TELEMETRY_AUTHORITY"
+    ]
+  },
+  "denominators": {
+    "goldenCandidateCaseProfileCells": 1880,
+    "goldenNegativeBaselineCaseProfileCells": 940,
+    "fingerprintAndEvidencePrivacyCaseProfileCells": 102,
+    "performanceProfileSizeBuckets": 9,
+    "performanceRunsPerArmBucket": 30,
+    "performanceCandidateAndBaselineCells": 540,
+    "totalExecutionCells": 3462
+  },
+  "thresholds": {
+    "goldenCorpusExactPassRate": 1,
+    "mustDetectRecallMinimum": 0.95,
+    "criticalHighPrecisionMinimum": 0.9,
+    "priorMustDetectRecall": 1,
+    "falsePositiveIncreaseMaximum": 0.02,
+    "scannerFailureRateMaximum": 0.02,
+    "candidateP95LatencyIncreaseMaximum": 0.2,
+    "fastLaneP95MillisecondsMaximum": 600000,
+    "deepLaneP95MillisecondsMaximum": 2700000,
+    "fingerprintFixturePassRate": 1,
+    "evidencePrivacyPassRate": 1,
+    "capacityPassRate": 1,
+    "allZeroToleranceCounts": 0
+  },
+  "prohibited": {
+    "customerContentAccepted": false,
+    "customerCodeExecutionAllowed": false,
+    "packageInstallAllowed": false,
+    "repositoryBuildAllowed": false,
+    "dynamicTestAllowed": false,
+    "publicInternetEgressAllowed": false,
+    "externalPublicationAllowed": false,
+    "localExecutionAllowed": false
+  },
+  "authority": {
+    "findingAuthority": false,
+    "policyAuthority": false,
+    "publicationAuthority": false,
+    "deploymentAuthority": false,
+    "productionReadinessAuthority": false
+  },
+  "immutable": true
+}

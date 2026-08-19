@@ -659,6 +659,50 @@ failed, and 0 only for a complete cryptographically valid external bundle. T053 
 until a production-equivalent provider supplies the real 123-cell and destruction evidence; CI or
 repository fixtures must never manufacture it.
 
+## T054 End-to-End Qualification Gates
+
+Repository validation first proves an exact 3,462-cell manifest and must return
+`BLOCKED_T053_QUALIFICATION`; it cannot issue a plan or count any run until an independently signed
+T053 `PASSED` result grants T054 entry. The immutable denominator is 1,880 candidate golden cells,
+940 same-negative-corpus baseline cells, 102 candidate fingerprint/privacy end-to-end cells, and
+540 performance cells: 30 candidate plus 30 baseline measurements for each of nine fixed
+profile-size-hardware buckets.
+
+External execution is release-blocking unless every receipt:
+
+- binds the exact manifest, dependency set, plan, candidate and baseline scanner-set digests,
+  provider, hardware class, case, profile, and cell;
+- contains one fresh microVM attempt or one infrastructure-failed attempt followed by exactly one
+  fresh retry, with no identity or attestation reuse across the complete evidence set;
+- preserves every attempt in the eligible reliability denominator and reports bounded latency,
+  CPU, memory, disk, zero egress, all eight zero-tolerance counters, and six cleanup controls within
+  60 seconds;
+- proves all nine queue-to-cleanup phases and the exact normalized/fingerprint/correlation/
+  coverage/policy/evidence digests for a completed cell; and
+- carries independent valid Ed25519 signatures from the microVM provider, qualification runtime,
+  and telemetry authority after execution, while both plan approvals strictly predate execution.
+
+The offline verifier recomputes rather than accepts the following aggregates:
+
+| Gate | Threshold |
+|---|---:|
+| Golden exact-case conformance | 100% |
+| Must-detect recall | >= 95% |
+| Critical/High precision | >= 90% |
+| Prior must-detect recall | 100% |
+| Candidate minus baseline false-positive rate | <= 2 percentage points |
+| Scanner-defect plus infrastructure-failure attempts / eligible attempts | <= 2% |
+| Candidate/baseline p95 per profile-size bucket | <= 20% increase |
+| Fast / Deep candidate p95 | <= 10 / 45 minutes |
+| Fingerprint/correlation, evidence/privacy, and capacity fixtures | 100% each |
+| Cross-tenant, secret, escape, stale publication, egress, missing destruction, evidence-policy, unsigned execution | exactly 0 |
+
+Resource maxima must also remain within the immutable profile CPU, memory, disk, and cumulative
+timeout limits. A valid strict receipt subset is `PENDING_PROVIDER_EXECUTION`; malformed, missing-
+sample-at-completion, stale, reused, unsigned, drifted, incomplete, over-limit, or threshold-
+breaching evidence is `FAILED`. Only the complete passing set authorizes T055 entry. It never grants
+finding, policy, publication, deployment, Kubernetes, or production-readiness authority.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:

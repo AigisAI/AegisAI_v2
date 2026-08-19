@@ -16,9 +16,10 @@ Control, Scan, AI, and Data/Security plane boundaries.
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
-- T040 through T052 are complete. The T053 repository-side 123-cell provider handoff, receipt
-  contract, and offline verifier are package-ready; the guarded next action is an externally
-  authorized production-equivalent microVM run and destruction-evidence collection.
+- T040 through T052 are complete. The T053 repository-side 123-cell provider handoff and the
+  T054 repository-side 3,462-cell qualification contract, receipt-recomputed gates, and offline
+  verifiers are package-ready. T054 remains cryptographically blocked until an externally
+  authorized production-equivalent T053 microVM run supplies all destruction evidence.
 - Production Kubernetes rollout remains deferred until T053-T056 pass. A standalone or staging
   qualification provider may execute T053 only with its external dependency set, trust bundle, and
   detached approvals; no repository or ordinary PR environment may substitute for that evidence.
@@ -825,6 +826,9 @@ Before claiming the 006 design milestone complete:
 13. Validate the checked-in T052 corpus and T053 provider handoff, confirm the repository-only T053
     verdict is `PENDING_PROVIDER_EXECUTION`, and never mark T053 complete without 123 external
     provider/runtime-signed receipts and complete destruction evidence.
+14. Validate the T054 repository-side 3,462-cell qualification contract, confirm it remains
+    `BLOCKED_T053_QUALIFICATION`, and never issue its provider plan without a signed T053 pass or
+    treat CI/local receipt fixtures as end-to-end, latency, reliability, or capacity evidence.
 
 ## Validation Commands
 

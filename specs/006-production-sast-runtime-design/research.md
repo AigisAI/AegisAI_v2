@@ -830,3 +830,34 @@ policy references; unsigned plans or receipts; a repository-shipped trust root; 
 evidence as success; retroactive approval; caller-controlled evaluation time; inferring cleanup
 from provider termination alone; using the local clock or
 filesystem presence as an attestation; and marking T053 complete before real provider evidence.
+
+## Decision 32: Make T054 Receipt-Recomputed and Cryptographically Dependent on T053
+
+**Decision**: T054 has a repository contract boundary and a later external evidence boundary. The
+repository derives exactly 3,462 cells from the complete T051 and T052 authorities, including a
+same-negative-corpus candidate/baseline comparison and 30 candidate plus 30 baseline runs for each
+of nine fixed hardware-bound performance buckets. It cannot create a plan until a Qualification
+Authority signature attests an exact T053 `PASSED` result that grants only T054 entry.
+
+Every execution receipt binds candidate and baseline assets, provider, hardware, cell, profile,
+queue-to-cleanup phase evidence, resource observations, and one or two fully destroyed fresh
+microVM attempts. An infrastructure retry is retained rather than replacing the first attempt.
+Provider, qualification-runtime, and telemetry authorities independently sign each receipt. The
+offline verifier accepts no summary measurements: it reconstructs every denominator and
+percentile from the complete signed set and applies the exact quality-gate thresholds and all
+eight zero-tolerance counters. Missing T053 evidence is `BLOCKED_T053_QUALIFICATION`; a valid
+strict receipt subset is `PENDING_PROVIDER_EXECUTION`; any invalid evidence or gate breach is
+`FAILED`; only the complete passing set authorizes T055 entry.
+
+**Rationale**: Allowing T054 to trust a database row, CI aggregate, retried final status, mutable
+hardware label, or caller-selected receipt subset would permit false readiness without proving the
+actual end-to-end Scan Plane. A closed manifest plus independently signed raw measurements makes
+omission, substitution, retry erasure, cross-provider reuse, and percentile manipulation
+detectable while keeping customer content and production authority out of the package.
+
+**Rejected**: Starting T054 from a partial or repository-only T053 result; using Kubernetes rollout
+as qualification evidence; uploading customer repositories; accepting caller p95/precision/
+recall summaries; dropping failed attempts after retry; fewer than 30 runs; sharing sandboxes;
+mutable candidate/baseline tags; one signer for provider/runtime/telemetry roles; retroactive plan
+approval; local evaluation-time override; partial receipt success; and allowing a T054 result to
+publish, deploy, or mark the system production ready.

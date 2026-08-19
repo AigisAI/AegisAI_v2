@@ -2,4 +2,5 @@
 qualification/corpora/v1/** text eol=lf
 qualification/corpora/t052-v1/** text eol=lf
 qualification/t053-v1/** text eol=lf
+qualification/t054-v1/** text eol=lf
 deploy/scanner-sandbox/provisioning-contract.json text eol=lf

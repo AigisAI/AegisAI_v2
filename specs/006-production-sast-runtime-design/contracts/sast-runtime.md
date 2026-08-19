@@ -1995,6 +1995,68 @@ dual-signed receipts plus both valid plan approvals may produce `PASSED` and onl
 publication, Kubernetes, and production-readiness authority always remain false. Repository CI
 validates the package and verifier but never creates a receipt or runs a scanner/microVM.
 
+## End-to-end qualification v1
+
+The repository-owned T054 package binds T051, T052, and the exact T053 provider-handoff manifest
+into this closed denominator:
+
+```text
+sast-end-to-end-qualification-manifest-v1 {
+  1,880 GOLDEN_CANDIDATE cells,
+  940 GOLDEN_NEGATIVE_BASELINE cells,
+  102 END_TO_END_CANDIDATE cells,
+  270 PERFORMANCE_CANDIDATE + 270 PERFORMANCE_BASELINE cells,
+  nine profile-size buckets * 30 post-warm-up runs per arm,
+  executionCellCount: 3,462,
+  providerExecutionStatus: BLOCKED_T053_QUALIFICATION,
+  aggregateMetricsRecomputedFromReceipts: true,
+  all customer execution and production authority: false
+}
+
+sast-end-to-end-qualification-entry-attestation-v1 {
+  exact T053 manifest/result/dependency digests,
+  t054EntryAuthorized: true,
+  role: QUALIFICATION_AUTHORITY, algorithm: ED25519
+}
+
+sast-end-to-end-qualification-plan-v1 {
+  exact manifest/dependency/T053/entry-attestation bindings,
+  distinct candidate and baseline scanner sets,
+  one digest-bound performance hardware class,
+  approvals: SECURITY_ENGINEERING + SCAN_PLATFORM,
+  receipt signatures: MICROVM_PROVIDER + QUALIFICATION_RUNTIME + TELEMETRY_AUTHORITY,
+  oneFreshMicroVmPerAttempt: true, aggregateMetricsAcceptedFromCaller: false
+}
+```
+
+Plan construction validates the T053 result as `PASSED`, re-verifies its exact entry attestation
+against the dependency-set-bound Ed25519 trust bundle, and rejects a pending, partial, unsigned,
+cross-manifest, or stale prerequisite. The command exposes no evaluation-time override. Both plan
+approvals sign the plan digest and must strictly precede the earliest receipt attempt.
+
+Each cell receipt binds both scanner-set digests even when executing only one arm, the exact
+provider/hardware/profile/cell, and one or two ordered attempts. A second attempt exists only after
+an `INFRASTRUCTURE_FAILURE`; each attempt uses fresh globally unique sandbox/workload/attestation
+identities, reports latency/CPU/memory/disk, zero egress, eight security counters, and all six
+cleanup controls within 60 seconds. Retries never erase the failed attempt. Successful receipts
+contain ordered evidence for `QUEUE_ADMISSION`, `SANDBOX_EXECUTION`, `RESULT_INGRESS`,
+`NORMALIZATION`, `FINGERPRINT_CORRELATION`, `COVERAGE`, `POLICY`, `EVIDENCE`, and `CLEANUP`, plus
+the six downstream output digests. Provider, qualification-runtime, and telemetry authorities
+independently sign the exact receipt digest.
+
+The verifier rejects duplicate receipt/cell/attempt/sandbox/workload/attestation identity,
+candidate/baseline/provider/hardware drift, resource overflow, stale/future evidence, incomplete
+phases or cleanup, signature drift, prohibited effects, and any zero-tolerance event. It accepts no
+aggregate measurement input. From all 3,462 receipts it recomputes golden exact pass, recall,
+precision, prior recall, candidate/baseline false-positive rates, attempt failure rate, per-bucket
+p50/p95 and resource maxima, Fast/Deep absolute p95, and fingerprint/privacy/capacity pass rates.
+
+Repository validation and a valid T053 subset yield `BLOCKED_T053_QUALIFICATION`; after a real T053
+pass, a valid strict T054 subset yields `PENDING_PROVIDER_EXECUTION`; any invalid evidence or
+threshold breach yields `FAILED`; only all cells and all gates yield `PASSED` with
+`t055EntryAuthorized=true`. No result can create findings, override policy, publish, deploy
+Kubernetes, or mark production ready.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:

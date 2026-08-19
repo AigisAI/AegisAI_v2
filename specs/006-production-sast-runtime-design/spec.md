@@ -604,6 +604,27 @@ incomplete, stale, quarantined, or security-blocked scan.
   MUST reject caller-selected evaluation time. No T053 state MAY grant finding, policy, publication, deployment, or production-
   readiness authority. Repository CI MUST validate the handoff and verifier but MUST NOT execute a
   scanner/microVM or fabricate live evidence.
+- **FR-057l**: T054 MUST refuse plan creation unless a structurally valid T053 `PASSED` result,
+  `t054EntryAuthorized=true`, and a Qualification Authority Ed25519 entry attestation bind the
+  exact T053 and T054 manifests. The repository manifest MUST derive exactly 3,462 immutable cells:
+  1,880 candidate T051 case-profile cells, 940 baseline T051 negative case-profile cells, 102
+  candidate T052 fingerprint/evidence-privacy cells, and 540 candidate/baseline performance cells
+  covering nine fixed profile-size buckets with 30 post-warm-up runs per arm. The dependency set
+  MUST bind distinct candidate/baseline scanner sets, all scanner and pipeline artifacts, one exact
+  hardware class, provider/telemetry/trust policies, signatures, and provenance. Each cell MUST
+  bind every queue-to-cleanup phase, a fresh microVM per attempt, at most one infrastructure retry,
+  unique attempt/sandbox/workload and provider/runtime/telemetry attestations, resource observations,
+  all cleanup controls within 60 seconds, and provider/runtime/telemetry Ed25519 signatures.
+  Retries MUST remain in the reliability denominator. The verifier MUST accept no caller aggregate
+  or evaluation time and MUST recompute exact conformance, >=95% recall, >=90% Critical/High
+  precision, 100% prior recall, <=2-point false-positive increase, <=2% scanner failure, <=20% p95
+  regression, 10/45-minute absolute p95, fingerprint/privacy/capacity pass rates, resource limits,
+  and all eight zero-tolerance counters from the complete signed receipt set. Missing T053 evidence
+  MUST be `BLOCKED_T053_QUALIFICATION`; a valid strict T054 subset MUST be
+  `PENDING_PROVIDER_EXECUTION`; any drift or breached gate MUST be `FAILED`; only all 3,462 valid
+  cells MAY be `PASSED` and set `t055EntryAuthorized=true`. No T054 state grants finding, policy,
+  publication, deployment, Kubernetes, or production-readiness authority, and repository CI MUST
+  never fabricate external execution evidence.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

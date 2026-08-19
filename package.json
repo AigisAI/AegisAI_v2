@@ -15,7 +15,7 @@
     "lint": "corepack pnpm -r lint",
     "test": "corepack pnpm -r test && node --test test/github-actions/*.test.mjs test/qualification/*.test.mjs",
     "test:ci-workflow": "node --test test/github-actions/*.test.mjs",
-    "qualification:validate": "corepack pnpm --filter @aegisai/shared build && node tools/sast-qualification/validate-golden-corpus.mjs && node tools/sast-qualification/validate-multi-class-corpus.mjs && node tools/sast-qualification/validate-isolated-integration.mjs",
+    "qualification:validate": "corepack pnpm --filter @aegisai/shared build && node tools/sast-qualification/validate-golden-corpus.mjs && node tools/sast-qualification/validate-multi-class-corpus.mjs && node tools/sast-qualification/validate-isolated-integration.mjs && node tools/sast-qualification/validate-end-to-end-qualification.mjs",
     "typecheck": "corepack pnpm -r typecheck"
   },
   "devDependencies": {

@@ -378,6 +378,29 @@ command-line flags, rule code, templates, post-processors, or executable configu
 - CI validates the manifest, loader, plan and cryptographic verifier with synthetic signing keys,
   but synthetic receipts are verifier tests only and never count as T053 execution evidence.
 
+### T054 End-to-End Qualification Boundary
+
+- T054 planning is impossible until an exact T053 `PASSED` result and Qualification Authority
+  Ed25519 attestation authorize entry; repository validation remains
+  `BLOCKED_T053_QUALIFICATION` and has no execution authority.
+- The immutable denominator is exactly 3,462 cells: every T051 candidate case/profile, the same
+  negative cases against the baseline, all T052 fingerprint/privacy case/profiles, and 30
+  candidate plus 30 baseline measurements in every fixed performance bucket.
+- The dependency set binds distinct candidate/baseline scanner assets and every shared pipeline,
+  provider, hardware, telemetry, and trust artifact. Detached Security Engineering and Scan
+  Platform approvals strictly predate all attempts.
+- One infrastructure retry is permitted, but both fresh microVM attempts remain signed and counted.
+  Global receipt/cell/attempt/sandbox/workload/provider/runtime/telemetry identities cannot be
+  reused. All queue-to-cleanup phases, resource observations, zero-tolerance counters, and cleanup
+  controls are independently signed by provider, runtime, and telemetry roles.
+- The verifier accepts no aggregate input and recomputes every sample count, correctness,
+  precision/recall, false-positive delta, failure rate, per-bucket p50/p95, absolute SLO, capacity,
+  resource maximum, and security count from receipts. A partial valid run is pending; a breach is
+  failed; only the complete passing set grants T055 entry.
+- T054 evidence cannot qualify itself, select or mutate a lifecycle state, publish a result,
+  deploy Kubernetes, or establish production readiness. Synthetic tests prove only verifier
+  behavior and never satisfy the external run.
+
 ## Lifecycle
 
 ```text
