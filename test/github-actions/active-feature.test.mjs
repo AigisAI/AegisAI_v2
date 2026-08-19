@@ -111,6 +111,7 @@ const files = {
   supplyChainRollbackQualificationValidator: new URL('../../tools/sast-qualification/validate-supply-chain-rollback-qualification.mjs', import.meta.url),
   supplyChainRollbackQualificationPlanTool: new URL('../../tools/sast-qualification/generate-supply-chain-rollback-qualification-plan.mjs', import.meta.url),
   supplyChainRollbackQualificationEvidenceTool: new URL('../../tools/sast-qualification/verify-supply-chain-rollback-qualification-evidence.mjs', import.meta.url),
+  supplyChainRollbackQualificationPrerequisiteTool: new URL('../../tools/sast-qualification/supply-chain-rollback-qualification-prerequisite.mjs', import.meta.url),
   supplyChainRollbackQualificationTrustTool: new URL('../../tools/sast-qualification/supply-chain-rollback-qualification-trust.mjs', import.meta.url),
   supplyChainRollbackQualificationLoaderTest: new URL('../../test/qualification/sast-supply-chain-rollback-qualification-loader.test.mjs', import.meta.url),
   supplyChainRollbackQualificationToolsTest: new URL('../../test/qualification/sast-supply-chain-rollback-qualification-tools.test.mjs', import.meta.url),
@@ -3469,6 +3470,9 @@ test('SAST T055 qualifies supply-chain, database, schema, and rollback controls 
   const validator = readNormalizedText(files.supplyChainRollbackQualificationValidator);
   const planTool = readNormalizedText(files.supplyChainRollbackQualificationPlanTool);
   const evidenceTool = readNormalizedText(files.supplyChainRollbackQualificationEvidenceTool);
+  const prerequisiteTool = readNormalizedText(
+    files.supplyChainRollbackQualificationPrerequisiteTool
+  );
   const trustTool = readNormalizedText(files.supplyChainRollbackQualificationTrustTool);
   const loaderTest = readNormalizedText(files.supplyChainRollbackQualificationLoaderTest);
   const toolsTest = readNormalizedText(files.supplyChainRollbackQualificationToolsTest);
@@ -3578,8 +3582,24 @@ test('SAST T055 qualifies supply-chain, database, schema, and rollback controls 
   assert.match(planTool, /buildSastSupplyChainRollbackQualificationPlan/);
   assert.match(planTool, /--t054-artifact-verification-set/);
   assert.match(planTool, /--rollback-ledger-head-attestations/);
+  assert.match(
+    planTool,
+    /validateSupplyChainRollbackQualificationPrerequisite/
+  );
   assert.match(evidenceTool, /new Date\(\)\.toISOString\(\)/);
+  assert.match(
+    evidenceTool,
+    /validateSupplyChainRollbackQualificationPrerequisite/
+  );
   assert.doesNotMatch(evidenceTool, /'--evaluated-at'/);
+  assert.match(
+    prerequisiteTool,
+    /isSastEndToEndQualificationArtifactVerificationSetValid/
+  );
+  assert.match(
+    prerequisiteTool,
+    /isSastSupplyChainRollbackQualificationEntryAttestationValid/
+  );
   assert.match(trustTool, /SAST_T055_TRUST_POLICY_DIGEST/);
   assert.match(loaderTest, /rejects CRLF and linked package entries/);
   assert.match(toolsTest, /independent trust root and verify every Ed25519 authority/);

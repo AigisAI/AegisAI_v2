@@ -2,10 +2,6 @@ import { createHash } from 'node:crypto';
 
 import {
   evaluateSastSupplyChainRollbackQualificationEvidence,
-  isSastEndToEndQualificationArtifactVerificationSetValid,
-  isSastEndToEndQualificationDependencySetValid,
-  isSastEndToEndQualificationResultValid,
-  isSastSupplyChainRollbackQualificationEntryAttestationValid,
   isSastSupplyChainRollbackQualificationPlanValid
 } from '../../packages/shared/dist/index.js';
 import {
@@ -13,10 +9,7 @@ import {
   readQualificationJson
 } from './qualification-json-input.mjs';
 import { loadAndValidateSupplyChainRollbackQualificationPackage } from './supply-chain-rollback-qualification-loader.mjs';
-import {
-  buildSupplyChainRollbackQualificationTrustVerifier,
-  readConfiguredSupplyChainRollbackTrustPolicyDigest
-} from './supply-chain-rollback-qualification-trust.mjs';
+import { validateSupplyChainRollbackQualificationPrerequisite } from './supply-chain-rollback-qualification-prerequisite.mjs';
 
 const args = parseExactArguments(process.argv.slice(2), {
   '--t054-result': false,
@@ -86,48 +79,21 @@ if (externalCount === 0) {
     readQualificationJson(args['--receipts'], 32 * 1024 * 1024, 'T055 receipts'),
     readQualificationJson(args['--trust-bundle'], 2 * 1024 * 1024, 'T055 trust bundle')
   ]);
-  if (
-    !isSastEndToEndQualificationResultValid(t054ResultInput.value, digest) ||
-    t054ResultInput.value.status !== 'PASSED' ||
-    t054ResultInput.value.t055EntryAuthorized !== true
-  ) {
-    throw new Error('T054 result failed T055 entry validation');
-  }
-  if (!isSastEndToEndQualificationDependencySetValid(dependencyInput.value, digest)) {
-    throw new Error('T054 dependency set failed exact contract validation');
-  }
-  const verifySignature = buildSupplyChainRollbackQualificationTrustVerifier({
-    value: trustInput.value,
-    text: trustInput.text,
-    dependencySet: dependencyInput.value,
-    trustedTrustPolicyDigest:
-      readConfiguredSupplyChainRollbackTrustPolicyDigest()
-  });
-  if (
-    !isSastEndToEndQualificationArtifactVerificationSetValid(
-      artifactVerificationInput.value,
-      dependencyInput.value,
-      verifySignature,
+  const verifySignature =
+    validateSupplyChainRollbackQualificationPrerequisite(
+      {
+        qualificationPackage,
+        t054Result: t054ResultInput.value,
+        dependencySet: dependencyInput.value,
+        artifactVerificationSet: artifactVerificationInput.value,
+        t054Plan: t054PlanInput.value,
+        entryAttestation: entryInput.value,
+        trustBundle: trustInput,
+        entryAttestationFailureMessage:
+          'T055 entry attestation failed signature or binding validation'
+      },
       digest
-    )
-  ) {
-    throw new Error('T054 artifact signature/provenance verification set is invalid');
-  }
-  if (
-    !isSastSupplyChainRollbackQualificationEntryAttestationValid(
-      entryInput.value,
-      qualificationPackage.manifest,
-      qualificationPackage.t054Manifest,
-      t054ResultInput.value,
-      dependencyInput.value,
-      artifactVerificationInput.value,
-      t054PlanInput.value,
-      verifySignature,
-      digest
-    )
-  ) {
-    throw new Error('T055 entry attestation failed signature or binding validation');
-  }
+    );
   if (
     !isSastSupplyChainRollbackQualificationPlanValid(
       planInput.value,
