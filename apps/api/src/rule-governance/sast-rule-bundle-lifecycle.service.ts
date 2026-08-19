@@ -229,6 +229,9 @@ export class SastRuleBundleLifecycleService extends SastRuleBundleLifecycleGate 
               evidence: persistedEvidence.evidence,
               fromState,
               toState: request.toState,
+              actorRef: request.actorRef,
+              reasonRef: request.reasonRef,
+              auditRef: request.auditRef,
               requestedAt: request.transitionedAt
             });
       if (
@@ -439,6 +442,9 @@ export class SastRuleBundleLifecycleService extends SastRuleBundleLifecycleGate 
     evidence: Readonly<SastRuleBundlePromotionEvidence>;
     fromState: RuleBundleState;
     toState: RuleBundleState;
+    actorRef: string;
+    reasonRef: string;
+    auditRef: string;
     requestedAt: string;
   }): Promise<SastRuleBundleLifecycleAuthorityReceipt> {
     return this.authority.authorize({
@@ -451,6 +457,9 @@ export class SastRuleBundleLifecycleService extends SastRuleBundleLifecycleGate 
       toState: input.toState,
       promotionEvidenceId: input.evidence.evidenceId,
       promotionEvidenceDigest: input.evidence.evidenceDigest,
+      actorRef: input.actorRef,
+      reasonRef: input.reasonRef,
+      auditRef: input.auditRef,
       requestedAt: input.requestedAt
     });
   }

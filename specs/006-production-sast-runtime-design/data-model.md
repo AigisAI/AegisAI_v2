@@ -1012,8 +1012,9 @@ Every edge requires Security Engineering approval; transitions to `ACTIVE` or `R
 require Scan Platform or Security Operations. Exact external authority is mandatory only for
 `CANARY -> ACTIVE`, suspension, and rollback. Advisory locks, restrictive composite foreign
 keys, deferred approval-set validation, and mutation-rejection triggers prevent forked or
-partially approved histories. T048 installs `CANARY_OBSERVATION`; T049 installs exact
-`EMERGENCY_SUSPENSION`; T050 rollback remains unavailable by default.
+partially approved histories. T048 installs `CANARY_OBSERVATION`, T049 installs exact
+`EMERGENCY_SUSPENSION`, and T050 installs `ROLLBACK`; each external provider still fails closed
+when its independently qualified production adapter is unavailable.
 
 ### SastRuleBundleLifecycleHead
 
@@ -1174,6 +1175,47 @@ authority. It grants no `SUSPENDED -> ROLLED_BACK` authority and stores no custo
 secret material. Its reference is exactly
 `sast-kill-switch-suspension://authority/<receiptDigest>`, satisfying the existing lifecycle
 digest-bound reference contract without a circular identity preimage.
+
+### SastRuleBundleRollbackCommand and SastRuleBundleRollbackVerification
+
+The command is one immutable, content-free, signed intent for an exact latest suspended
+candidate. It stores the candidate manifest/attestation/bundle, suspended transition and T049
+receipt, original promotion evidence and profile, and a derived baseline manifest/attestation/
+bundle/current-active transition. It also stores bounded incident, actor/role, reason, audit,
+signature, provenance, and command-time references. No baseline field exists in the external
+request; the persisted baseline must equal the T047 evidence baseline and rollback target. One
+candidate manifest and suspended transition can have only one command.
+
+The separate verification row binds the command ID/digest, trusted signer, exact signature and
+provenance references, verification time, and fixed true/false verification/storage facts. The
+command insert uses a deferred constraint trigger so a transaction cannot commit without its
+matching verification. Both rows reject update/delete and contain no JSON, bytes, source, finding,
+secret, signature bytes, provenance payload, or arbitrary payload.
+
+### SastRuleBundleRollbackApproval
+
+An append-only human decision binds one command ID/digest, role, approver, approval reference,
+and approval time. Unique command/role and command/approver keys prevent duplicates. A command
+accepts exactly one `SECURITY_ENGINEERING` and one of `SCAN_PLATFORM | SECURITY_OPERATIONS`, from
+different actors and never the command actor, between command time and command time plus 15
+minutes. A receipt freezes the set; no later approval can be added.
+
+### SastRuleBundleRollbackReceipt and SastRuleBundleRollbackReceiptApproval
+
+The receipt repeats the exact command, verification, candidate suspension/T049 provenance,
+promotion evidence/profile, and baseline active-head binding plus the canonical two-approval set
+digest. `requestedAt` is within 15 minutes of the command and equals `issuedAt`. Its reference is
+exactly `sast-rule-bundle-rollback-receipt://authority/<receiptDigest>`. Every authority bit for
+baseline/history/scanner-set/finding/policy/publication/SCM mutation is false. Two normalized
+receipt-approval rows in canonical role order bind the exact approvals; a deferred trigger
+recomputes their canonical set digest and rejects missing, extra, stale, self, or substituted
+rows.
+
+Command and receipt insertion lock the candidate and baseline lifecycle heads in canonical
+manifest-ID order. Before the final lifecycle append, a dedicated trigger locks them again and
+requires the exact candidate `SUSPENDED` head, baseline `ACTIVE` head, command/receipt metadata,
+approval count, and next sequence. Success adds only the candidate `ROLLED_BACK` transition; the
+baseline head and every historical ledger remain unchanged.
 
 ### T048 Canary Suspension Signal Projection
 

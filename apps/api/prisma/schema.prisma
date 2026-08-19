@@ -2049,6 +2049,8 @@ model SastRuleBundleManifest {
   promotionBaselineEvidence  SastRuleBundlePromotionEvidence[]     @relation("SastRuleBundlePromotionBaselineManifest")
   lifecycleTransitions       SastRuleBundleLifecycleTransition[]
   lifecycleHead              SastRuleBundleLifecycleHead?
+  rollbackCandidateCommands  SastRuleBundleRollbackCommand[]      @relation("SastRuleBundleRollbackCandidateManifest")
+  rollbackBaselineCommands   SastRuleBundleRollbackCommand[]      @relation("SastRuleBundleRollbackBaselineManifest")
 
   @@unique([id, manifestDigest], map: "SastRuleBundleManifest_id_digest_key")
   @@unique([id, manifestDigest, bundleDigest], map: "SastRuleBundleManifest_evidence_baseline_key")
@@ -2123,6 +2125,8 @@ model SastRuleBundleSupplyChainAttestation {
   manifest              SastRuleBundleManifest               @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   compatibilityReceipts SastRuleBundleCompatibilityReceipt[]
   promotionEvidence     SastRuleBundlePromotionEvidence[]
+  rollbackCandidateCommands SastRuleBundleRollbackCommand[] @relation("SastRuleBundleRollbackCandidateVerification")
+  rollbackBaselineCommands  SastRuleBundleRollbackCommand[] @relation("SastRuleBundleRollbackBaselineVerification")
 
   @@unique([id, manifestId, attestationDigest], map: "SastRuleBundleSupplyChainAttestation_evidence_key")
 }
@@ -2230,6 +2234,8 @@ model SastRuleBundlePromotionEvidence {
   verification      SastRuleBundleSupplyChainAttestation @relation(fields: [verificationId, manifestId, verificationDigest], references: [id, manifestId, attestationDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundlePromotionEvidence_verification_fkey")
   approvals         SastRuleBundlePromotionApproval[]
   transitions       SastRuleBundleLifecycleTransition[]
+  rollbackCommandsById     SastRuleBundleRollbackCommand[] @relation("SastRuleBundleRollbackEvidenceId")
+  rollbackCommandsByDigest SastRuleBundleRollbackCommand[] @relation("SastRuleBundleRollbackEvidenceDigest")
 
   @@unique([id, evidenceDigest, manifestId, manifestDigest, bundleDigest, candidateAuthorRef], map: "SastRuleBundlePromotionEvidence_binding_key")
   @@index([manifestId, measuredAt], map: "SastRuleBundlePromotionEvidence_manifest_measured_idx")
@@ -2304,6 +2310,8 @@ model SastRuleBundleLifecycleTransition {
   approvals          SastRuleBundleLifecycleTransitionApproval[]
   selections         SastRuleBundleLifecycleSelectionReceipt[]
   lifecycleHead      SastRuleBundleLifecycleHead?
+  rollbackSuspendedCommands SastRuleBundleRollbackCommand[] @relation("SastRuleBundleRollbackSuspendedTransition")
+  rollbackBaselineCommands SastRuleBundleRollbackCommand[] @relation("SastRuleBundleRollbackBaselineTransition")
 
   @@unique([manifestId, sequence], map: "SastRuleBundleLifecycleTransition_manifest_sequence_key")
   @@unique([id, transitionDigest], map: "SastRuleBundleLifecycleTransition_id_transitionDigest_key")
@@ -3364,7 +3372,213 @@ model SastKillSwitchEmergencySuspensionReceipt {
   secretValueStored         Boolean  @default(false)
   recordedAt                DateTime @default(now())
 
+  rollbackCommands SastRuleBundleRollbackCommand[] @relation("SastRuleBundleRollbackSuspensionReceipt")
+
   @@unique([id, receiptDigest, manifestId, bundleDigest], map: "SastKillSwitchEmergencySuspensionReceipt_binding_key")
   @@index([manifestId, lifecycleSequence, verifiedAt], map: "SastKillSwitchEmergencySuspensionReceipt_lifecycle_idx")
   @@index([triggerDecisionId, triggerDecisionDigest], map: "SastKillSwitchEmergencySuspensionReceipt_decision_idx")
+}
+
+model SastRuleBundleRollbackCommand {
+  id                                 String   @id
+  contractVersion                    String
+  commandDigest                      String   @unique
+  candidateManifestId                String   @unique
+  candidateManifestDigest            String
+  candidateVerificationId            String
+  candidateVerificationDigest        String
+  candidateBundleId                  String
+  candidateBundleDigest              String
+  suspendedTransitionId              String   @unique
+  suspendedTransitionDigest          String
+  suspendedSequence                  Int
+  suspendedTransitionedAt            DateTime
+  suspensionAuthorityReceiptRef      String
+  suspensionAuthorityReceiptDigest   String
+  promotionEvidenceId                String
+  promotionEvidenceDigest            String
+  profileId                          String
+  baselineManifestId                 String
+  baselineManifestDigest             String
+  baselineVerificationId             String
+  baselineVerificationDigest         String
+  baselineBundleId                   String
+  baselineBundleDigest               String
+  baselineTransitionId               String
+  baselineTransitionDigest           String
+  baselineSequence                   Int
+  baselineTransitionedAt             DateTime
+  baselineState                      String   @default("ACTIVE")
+  incidentRef                        String
+  actorRef                           String
+  actorRole                          String
+  reasonRef                          String
+  auditRef                           String
+  signatureRef                       String
+  provenanceRef                      String
+  commandedAt                        DateTime
+  rollbackTargetDerived              Boolean  @default(true)
+  customerTargetAccepted             Boolean  @default(false)
+  source                             String   @default("PLATFORM_RULE_GOVERNANCE")
+  immutable                          Boolean  @default(true)
+  repositoryContentStored            Boolean  @default(false)
+  findingContentStored               Boolean  @default(false)
+  secretValueStored                  Boolean  @default(false)
+  arbitraryPayloadStored             Boolean  @default(false)
+  recordedAt                         DateTime @default(now())
+
+  candidateManifest     SastRuleBundleManifest                       @relation("SastRuleBundleRollbackCandidateManifest", fields: [candidateManifestId, candidateManifestDigest, candidateBundleId, candidateBundleDigest], references: [id, manifestDigest, bundleId, bundleDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_candidate_manifest_fkey")
+  baselineManifest      SastRuleBundleManifest                       @relation("SastRuleBundleRollbackBaselineManifest", fields: [baselineManifestId, baselineManifestDigest, baselineBundleId, baselineBundleDigest], references: [id, manifestDigest, bundleId, bundleDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_baseline_manifest_fkey")
+  candidateVerification SastRuleBundleSupplyChainAttestation        @relation("SastRuleBundleRollbackCandidateVerification", fields: [candidateVerificationId, candidateManifestId, candidateVerificationDigest], references: [id, manifestId, attestationDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_candidate_verification_fkey")
+  baselineVerification  SastRuleBundleSupplyChainAttestation        @relation("SastRuleBundleRollbackBaselineVerification", fields: [baselineVerificationId, baselineManifestId, baselineVerificationDigest], references: [id, manifestId, attestationDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_baseline_verification_fkey")
+  suspendedTransition   SastRuleBundleLifecycleTransition           @relation("SastRuleBundleRollbackSuspendedTransition", fields: [suspendedTransitionId, suspendedTransitionDigest], references: [id, transitionDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_suspended_transition_fkey")
+  baselineTransition    SastRuleBundleLifecycleTransition           @relation("SastRuleBundleRollbackBaselineTransition", fields: [baselineTransitionId, baselineTransitionDigest], references: [id, transitionDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_baseline_transition_fkey")
+  promotionEvidenceById SastRuleBundlePromotionEvidence             @relation("SastRuleBundleRollbackEvidenceId", fields: [promotionEvidenceId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_evidence_id_fkey")
+  promotionEvidenceByDigest SastRuleBundlePromotionEvidence         @relation("SastRuleBundleRollbackEvidenceDigest", fields: [promotionEvidenceDigest], references: [evidenceDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_evidence_digest_fkey")
+  suspensionReceipt     SastKillSwitchEmergencySuspensionReceipt    @relation("SastRuleBundleRollbackSuspensionReceipt", fields: [suspensionAuthorityReceiptRef, suspensionAuthorityReceiptDigest, candidateManifestId, candidateBundleDigest], references: [id, receiptDigest, manifestId, bundleDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackCommand_suspension_receipt_fkey")
+  verifications         SastRuleBundleRollbackVerification[]        @relation("SastRuleBundleRollbackCommandVerification")
+  approvals             SastRuleBundleRollbackApproval[]            @relation("SastRuleBundleRollbackCommandApproval")
+  receipts              SastRuleBundleRollbackReceipt[]             @relation("SastRuleBundleRollbackCommandReceipt")
+
+  @@unique([id, commandDigest], map: "SastRuleBundleRollbackCommand_binding_key")
+  @@index([candidateBundleId, candidateBundleDigest, commandedAt], map: "SastRuleBundleRollbackCommand_candidate_idx")
+  @@index([baselineManifestId, baselineBundleDigest], map: "SastRuleBundleRollbackCommand_baseline_idx")
+}
+
+model SastRuleBundleRollbackVerification {
+  id                       String   @id
+  contractVersion          String
+  verificationDigest       String   @unique
+  commandId                String   @unique
+  commandDigest            String
+  signerIdentity           String
+  signatureRef             String
+  provenanceRef            String
+  verifiedAt               DateTime
+  signatureVerified        Boolean  @default(true)
+  provenanceVerified       Boolean  @default(true)
+  trustedSigner            Boolean  @default(true)
+  signatureBytesStored     Boolean  @default(false)
+  provenancePayloadStored  Boolean  @default(false)
+  repositoryContentStored  Boolean  @default(false)
+  secretValueStored        Boolean  @default(false)
+  recordedAt               DateTime @default(now())
+
+  command  SastRuleBundleRollbackCommand   @relation("SastRuleBundleRollbackCommandVerification", fields: [commandId, commandDigest], references: [id, commandDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackVerification_command_fkey")
+  receipts SastRuleBundleRollbackReceipt[] @relation("SastRuleBundleRollbackReceiptVerification")
+
+  @@unique([id, verificationDigest, commandId, commandDigest], map: "SastRuleBundleRollbackVerification_binding_key")
+  @@index([signerIdentity, verifiedAt], map: "SastRuleBundleRollbackVerification_signer_idx")
+}
+
+model SastRuleBundleRollbackApproval {
+  id                    String   @id
+  contractVersion       String
+  approvalDigest        String   @unique
+  commandId             String
+  commandDigest         String
+  role                  String
+  approverRef           String
+  approvalRef           String
+  approvedAt            DateTime
+  approved              Boolean  @default(true)
+  humanApproval         Boolean  @default(true)
+  automatedApproval     Boolean  @default(false)
+  customerInputAccepted Boolean  @default(false)
+  recordedAt            DateTime @default(now())
+
+  command         SastRuleBundleRollbackCommand           @relation("SastRuleBundleRollbackCommandApproval", fields: [commandId, commandDigest], references: [id, commandDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackApproval_command_fkey")
+  receiptBindings SastRuleBundleRollbackReceiptApproval[] @relation("SastRuleBundleRollbackApprovalBinding")
+
+  @@unique([commandId, role], map: "SastRuleBundleRollbackApproval_command_role_key")
+  @@unique([commandId, approverRef], map: "SastRuleBundleRollbackApproval_command_approver_key")
+  @@unique([id, approvalDigest, commandId, commandDigest, role, approverRef, approvedAt], map: "SastRuleBundleRollbackApproval_binding_key")
+  @@index([commandId, approvedAt], map: "SastRuleBundleRollbackApproval_command_time_idx")
+}
+
+model SastRuleBundleRollbackReceipt {
+  id                                String   @id
+  contractVersion                   String
+  receiptDigest                     String   @unique
+  commandId                         String   @unique
+  commandDigest                     String
+  commandVerificationId             String
+  commandVerificationDigest         String
+  candidateManifestId               String   @unique
+  candidateManifestDigest           String
+  candidateBundleId                 String
+  candidateBundleDigest             String
+  suspendedTransitionId             String   @unique
+  suspendedTransitionDigest         String
+  suspendedSequence                 Int
+  suspendedTransitionedAt           DateTime
+  suspensionAuthorityReceiptRef     String
+  suspensionAuthorityReceiptDigest  String
+  promotionEvidenceId               String
+  promotionEvidenceDigest           String
+  profileId                         String
+  baselineManifestId                String
+  baselineManifestDigest            String
+  baselineVerificationId            String
+  baselineVerificationDigest        String
+  baselineBundleId                  String
+  baselineBundleDigest              String
+  baselineTransitionId              String
+  baselineTransitionDigest          String
+  baselineSequence                  Int
+  baselineTransitionedAt            DateTime
+  baselineState                     String   @default("ACTIVE")
+  approvalCount                     Int      @default(2)
+  approvalSetDigest                 String
+  actorRef                          String
+  reasonRef                         String
+  auditRef                          String
+  commandedAt                       DateTime
+  requestedAt                       DateTime
+  issuedAt                          DateTime
+  fromState                         String   @default("SUSPENDED")
+  toState                           String   @default("ROLLED_BACK")
+  rollbackTargetDerived             Boolean  @default(true)
+  baselineMutationAuthorized        Boolean  @default(false)
+  historicalMutationAuthorized      Boolean  @default(false)
+  scannerSetMutationAuthorized      Boolean  @default(false)
+  findingAuthority                  Boolean  @default(false)
+  policyAuthority                   Boolean  @default(false)
+  publicationAuthority              Boolean  @default(false)
+  scmWriteAuthority                 Boolean  @default(false)
+  customerInputAccepted             Boolean  @default(false)
+  repositoryContentStored           Boolean  @default(false)
+  findingContentStored              Boolean  @default(false)
+  secretValueStored                 Boolean  @default(false)
+  arbitraryPayloadStored            Boolean  @default(false)
+  recordedAt                        DateTime @default(now())
+
+  command      SastRuleBundleRollbackCommand           @relation("SastRuleBundleRollbackCommandReceipt", fields: [commandId, commandDigest], references: [id, commandDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackReceipt_command_fkey")
+  verification SastRuleBundleRollbackVerification      @relation("SastRuleBundleRollbackReceiptVerification", fields: [commandVerificationId, commandVerificationDigest, commandId, commandDigest], references: [id, verificationDigest, commandId, commandDigest], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackReceipt_verification_fkey")
+  approvals    SastRuleBundleRollbackReceiptApproval[] @relation("SastRuleBundleRollbackReceiptBinding")
+
+  @@unique([id, receiptDigest, commandId, candidateManifestId, baselineManifestId], map: "SastRuleBundleRollbackReceipt_binding_key")
+  @@index([candidateManifestId, suspendedSequence, issuedAt], map: "SastRuleBundleRollbackReceipt_candidate_idx")
+  @@index([baselineManifestId, baselineSequence], map: "SastRuleBundleRollbackReceipt_baseline_idx")
+}
+
+model SastRuleBundleRollbackReceiptApproval {
+  receiptId       String
+  position        Int
+  approvalId      String
+  approvalDigest  String
+  commandId       String
+  commandDigest   String
+  role            String
+  approverRef     String
+  approvedAt      DateTime
+
+  receipt  SastRuleBundleRollbackReceipt  @relation("SastRuleBundleRollbackReceiptBinding", fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackReceiptApproval_receipt_fkey")
+  approval SastRuleBundleRollbackApproval @relation("SastRuleBundleRollbackApprovalBinding", fields: [approvalId, approvalDigest, commandId, commandDigest, role, approverRef, approvedAt], references: [id, approvalDigest, commandId, commandDigest, role, approverRef, approvedAt], onDelete: Restrict, onUpdate: Restrict, map: "SastRuleBundleRollbackReceiptApproval_approval_fkey")
+
+  @@id([receiptId, position])
+  @@unique([receiptId, approvalId], map: "SastRuleBundleRollbackReceiptApproval_id_key")
+  @@unique([receiptId, role], map: "SastRuleBundleRollbackReceiptApproval_role_key")
+  @@unique([receiptId, approverRef], map: "SastRuleBundleRollbackReceiptApproval_approver_key")
+  @@index([commandId, commandDigest], map: "SastRuleBundleRollbackReceiptApproval_command_idx")
 }

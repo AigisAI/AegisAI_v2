@@ -1443,8 +1443,9 @@ digest, revalidates the exact evidence and approvals, and is immutable after ins
 `CANARY -> ACTIVE` transition requires `CANARY_OBSERVATION`; suspension requires
 `EMERGENCY_SUSPENSION`; rollback requires `ROLLBACK`. Each authority must return a matching
 digest-bound receipt. T048 installs `CANARY_OBSERVATION`; T049 installs
-`EMERGENCY_SUSPENSION`; `ROLLBACK` remains unavailable until T050 installs its corresponding
-implementation. All other edges require `NONE` and must contain no external receipt.
+`EMERGENCY_SUSPENSION`; T050 installs `ROLLBACK`. Each independently qualified production
+adapter may still be unavailable and then fails closed. All other edges require `NONE` and must
+contain no external receipt.
 
 Before tenant-policy resolution, the lifecycle gate serializably reloads the latest transition,
 evidence, and approvals and accepts only `CANARY` or `ACTIVE`. It persists one content-free
@@ -1658,7 +1659,7 @@ transition locks and recomputes every applicable active selector, count, and can
 changing any captured non-trigger selector invalidates the receipt. Its reference is
 exactly `sast-kill-switch-suspension://authority/<receiptDigest>` so the pre-existing lifecycle
 authority contract can verify the reference without a circular digest. The receipt has no rollback
-authority; `SUSPENDED -> ROLLED_BACK` remains T050.
+authority; `SUSPENDED -> ROLLED_BACK` requires the separate T050 contract below.
 
 The optional automation input is exactly
 `sast-kill-switch-canary-suspension-request-v1 { canaryDecisionId,
@@ -1670,6 +1671,67 @@ trigger. Manifest, bundle, profile, lifecycle transition, reasons, and time are 
 unknown request fields fail exact validation and `customerTargetAccepted=false`. The signal alone
 cannot activate a switch or mutate lifecycle state; signing and the exact emergency receipt remain
 independent mandatory authorities.
+
+### Last-known-good rollback authority v1
+
+The external request is exact and target-free:
+
+```text
+sast-rule-bundle-rollback-request-v1 {
+  candidateManifestId,
+  suspendedTransitionId,
+  suspendedTransitionDigest,
+  incidentRef,
+  actorRef,
+  actorRole: SECURITY_ON_CALL | PLATFORM_ON_CALL,
+  reasonRef,
+  auditRef,
+  signatureRef,
+  provenanceRef,
+  commandedAt
+}
+```
+
+Unknown fields fail closed. In particular, callers, customers, AI, scanner output, and incident
+automation cannot supply a baseline manifest, bundle digest, lifecycle transition, scanner set,
+or rollback target. The service derives those fields only from the exact original
+`sast-rule-bundle-promotion-evidence-v1` bound to the candidate's latest suspended transition and
+requires `rollbackTargetDigest === baselineBundleDigest`.
+
+`sast-rule-bundle-rollback-command-v1` binds the exact T045 candidate and baseline manifests and
+trusted attestations, same bundle identity and scanner, common signed profile, candidate latest
+`SUSPENDED` transition, exact T049 suspension receipt, baseline latest `ACTIVE` transition,
+incident/actor/reason/audit metadata, signature/provenance references, and command time. The
+production command-signature authority defaults unavailable and returns only content-free signer
+facts; it never stores signature bytes or provenance payloads. A matching
+`sast-rule-bundle-rollback-verification-v1` must commit with the command.
+
+Within 15 minutes of `commandedAt`, exactly two
+`sast-rule-bundle-rollback-approval-v1` rows are required: one `SECURITY_ENGINEERING` and one
+independent `SCAN_PLATFORM | SECURITY_OPERATIONS`. They must be human, fresh, unique by role and
+approver, different from each other and the command actor, and present before receipt issuance.
+Automated/customer approval and approval after receipt issuance are invalid.
+
+`sast-rule-bundle-rollback-receipt-v1` binds the command, verification, canonical two-approval
+set, candidate/T049 suspension provenance, original promotion evidence, and exact active baseline
+head at one trusted requested/issued time. Its reference is
+`sast-rule-bundle-rollback-receipt://authority/<receiptDigest>`. It grants only the matching next
+`SUSPENDED -> ROLLED_BACK` edge. Baseline mutation, historical mutation, scanner-set mutation,
+finding, policy, publication, and SCM-write authority are all fixed false.
+
+All five ledgers—command, verification, approval, receipt, and receipt-approval binding—are
+normalized, content-free, append-only, and exact-replay only. Command/receipt persistence and the
+final lifecycle insert lock candidate and baseline heads in canonical manifest-ID order under
+bounded serializable transactions. PostgreSQL independently rebinds the T045 attestations, T047
+target, T049 suspension receipt, approvals, command verification, candidate head, and baseline
+head at direct-write boundaries. Candidate or baseline drift therefore yields no transition; two
+concurrent exact retries converge on one immutable receipt and one lifecycle append.
+
+The baseline identity is a handoff, not routing authority. A trusted scanner-set owner must
+separately select the still-current exact `ACTIVE` baseline and submit it through T045
+compatibility, T047 lifecycle, T048 canary, T049 kill-switch, T046 policy, and queue revalidation.
+The rolled-back candidate remains non-selectable and no historical plan, finding, coverage,
+evidence, manifest, or baseline row is rewritten.
 
 ## Cleanup Contract
 

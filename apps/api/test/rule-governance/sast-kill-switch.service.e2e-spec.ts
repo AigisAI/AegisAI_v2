@@ -139,6 +139,9 @@ describe('SastKillSwitchService T049 authority', () => {
       toState: 'SUSPENDED',
       promotionEvidenceId: 'evidence-1',
       promotionEvidenceDigest: sha('evidence'),
+      actorRef: reference('suspension-actor'),
+      reasonRef: reference('suspension-reason'),
+      auditRef: reference('suspension-audit'),
       requestedAt: '2026-08-19T00:01:30.000Z'
     };
 

@@ -5,6 +5,7 @@ import { PrismaSastRuleBundleLifecycleStore } from './prisma-sast-rule-bundle-li
 import { PrismaSastRuleBundleCanaryStore } from './prisma-sast-rule-bundle-canary.store';
 import { PrismaSastRuleSemanticPolicyStore } from './prisma-sast-rule-semantic-policy.store';
 import { PrismaSastKillSwitchStore } from './prisma-sast-kill-switch.store';
+import { PrismaSastRuleBundleRollbackStore } from './prisma-sast-rule-bundle-rollback.store';
 import {
   SastKillSwitchClock,
   SystemSastKillSwitchClock
@@ -45,6 +46,16 @@ import {
 import { SastRuleBundleLifecycleGate } from './sast-rule-bundle-lifecycle.gate';
 import { SastRuleBundleLifecycleService } from './sast-rule-bundle-lifecycle.service';
 import { SastRuleBundleLifecycleStore } from './sast-rule-bundle-lifecycle.store';
+import {
+  SastRuleBundleRollbackClock,
+  SystemSastRuleBundleRollbackClock
+} from './sast-rule-bundle-rollback.clock';
+import {
+  SastRuleBundleRollbackSignatureAuthority,
+  UnavailableSastRuleBundleRollbackSignatureAuthority
+} from './sast-rule-bundle-rollback-signature.authority';
+import { SastRuleBundleRollbackService } from './sast-rule-bundle-rollback.service';
+import { SastRuleBundleRollbackStore } from './sast-rule-bundle-rollback.store';
 import { SastRuleBundleManifestService } from './sast-rule-bundle-manifest.service';
 import { SastRuleBundleManifestStore } from './sast-rule-bundle-manifest.store';
 import { SastRuleSemanticPolicyService } from './sast-rule-semantic-policy.service';
@@ -62,12 +73,14 @@ import { SastTenantRulePolicyGate } from './sast-tenant-rule-policy.gate';
     PrismaSastRuleBundleCanaryStore,
     PrismaSastRuleSemanticPolicyStore,
     PrismaSastKillSwitchStore,
+    PrismaSastRuleBundleRollbackStore,
     SastRuleBundleManifestService,
     SastRuleBundleLifecycleService,
     SastRuleBundleCanaryService,
     SastRuleSemanticPolicyService,
     SastKillSwitchService,
     SastKillSwitchCanarySuspensionService,
+    SastRuleBundleRollbackService,
     UnavailableSastRuleBundleSupplyChainAuthority,
     UnavailableSastRuleBundleLifecycleAuthority,
     UnavailableSastRuleBundleCanaryObservationSource,
@@ -77,9 +90,23 @@ import { SastTenantRulePolicyGate } from './sast-tenant-rule-policy.gate';
     SystemSastRuleBundleLifecycleClock,
     SystemSastKillSwitchClock,
     UnavailableSastKillSwitchSignatureAuthority,
+    SystemSastRuleBundleRollbackClock,
+    UnavailableSastRuleBundleRollbackSignatureAuthority,
     {
       provide: SastKillSwitchStore,
       useExisting: PrismaSastKillSwitchStore
+    },
+    {
+      provide: SastRuleBundleRollbackStore,
+      useExisting: PrismaSastRuleBundleRollbackStore
+    },
+    {
+      provide: SastRuleBundleRollbackClock,
+      useExisting: SystemSastRuleBundleRollbackClock
+    },
+    {
+      provide: SastRuleBundleRollbackSignatureAuthority,
+      useExisting: UnavailableSastRuleBundleRollbackSignatureAuthority
     },
     {
       provide: SastKillSwitchGate,
@@ -161,6 +188,7 @@ import { SastTenantRulePolicyGate } from './sast-tenant-rule-policy.gate';
     SastTenantRulePolicyGate,
     SastKillSwitchService,
     SastKillSwitchCanarySuspensionService,
+    SastRuleBundleRollbackService,
     SastKillSwitchGate
   ]
 })

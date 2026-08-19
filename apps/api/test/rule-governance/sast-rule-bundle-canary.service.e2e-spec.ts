@@ -635,6 +635,9 @@ describe('SastRuleBundleCanaryService T048 gate', () => {
       toState: 'ACTIVE',
       promotionEvidenceId: rollout.promotionEvidenceId,
       promotionEvidenceDigest: rollout.promotionEvidenceDigest,
+      actorRef: reference('canary-authority-actor'),
+      reasonRef: reference('canary-authority-reason'),
+      auditRef: reference('canary-authority-audit'),
       requestedAt: new Date(clock.valueOf() + 1).toISOString()
     });
     expect(authority).toMatchObject({

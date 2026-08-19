@@ -15,7 +15,7 @@ Issue #276 is an explicitly reclassified adjacent bootstrap, not a new productio
 Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling with no Scan,
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
-T040 through T049 independently and now proceeds to T050.
+T040 through T050 independently and now proceeds to the T051 qualification corpus.
 
 ## Target Boundaries
 
@@ -201,7 +201,16 @@ gates, safe pre-provider cancellation, quarantine, effective-coverage projection
 signal from only a locked current T048 pause-decision reference, never a caller target. Mutable
 switch state remains outside canonical key v4 and historical plans/findings/coverage remain
 immutable. The production signature authority defaults unavailable until a qualified adapter is
-installed. T050 rollback authority remains fail closed and is the next implementation task.
+installed. T050 now derives the only permitted last-known-good target from the candidate's
+original T047 promotion evidence, revalidates both T045 supply-chain records, the exact T049
+suspension provenance, and current `SUSPENDED`/`ACTIVE` heads, and requires a signed command plus
+fresh independent Security Engineering and Scan Platform/Security Operations approvals. Its
+normalized ledgers are append-only; ordered two-head locks and PostgreSQL commit-time triggers
+allow only the exact `SUSPENDED -> ROLLED_BACK` append. The receipt provides a baseline handoff
+identity but no scanner-set mutation authority, so trusted orchestration must separately select
+the still-`ACTIVE` baseline and pass the existing T045 -> T047 -> T048 -> T049 -> T046 planning
+chain. Historical manifests, plans, findings, coverage, evidence, and the baseline are unchanged.
+T051 is the next implementation task.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence
 

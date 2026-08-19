@@ -585,7 +585,6 @@ function transitionData(
         position,
         approvalId: approval.approvalId,
         approvalDigest: approval.approvalDigest,
-        evidenceId: transition.promotionEvidenceId,
         role: approval.role,
         approverRef: approval.approverRef,
         approvedAt: new Date(approval.approvedAt)
