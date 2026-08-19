@@ -10,6 +10,7 @@ import {
   loadAndValidateIsolatedIntegrationPackage
 } from '../../tools/sast-qualification/isolated-integration-loader.mjs';
 import {
+  canonicalizeRepositoryText,
   createIsolatedIntegrationAssets,
   initializeIsolatedIntegrationAssets
 } from '../../tools/sast-qualification/isolated-integration-assets.mjs';
@@ -38,6 +39,23 @@ test('T053 generator is deterministic and bootstrap refuses overwrite', async ()
   await assert.rejects(
     initializeIsolatedIntegrationAssets(),
     /refusing to overwrite existing T053 qualification root/u
+  );
+});
+
+test('T053 generator canonicalizes repository text across operating systems', () => {
+  const canonical = '{\n  "version": "v1"\n}\n';
+  assert.equal(canonicalizeRepositoryText(canonical), canonical);
+  assert.equal(
+    canonicalizeRepositoryText(canonical.replaceAll('\n', '\r\n')),
+    canonical
+  );
+  assert.throws(
+    () => canonicalizeRepositoryText('{\r  "version": "v1"\n}\n'),
+    /not canonical UTF-8 NFC line text/u
+  );
+  assert.throws(
+    () => canonicalizeRepositoryText('\uFEFF{}\n'),
+    /not canonical UTF-8 NFC line text/u
   );
 });
 

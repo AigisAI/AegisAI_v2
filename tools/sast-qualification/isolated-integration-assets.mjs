@@ -91,7 +91,9 @@ export function createIsolatedIntegrationAssets() {
     2
   )}\n`;
   const materializationPolicyDigest = digest(materializationPolicyText);
-  const provisioningContractText = readFileSync(PROVISIONING_CONTRACT_PATH, 'utf8');
+  const provisioningContractText = canonicalizeRepositoryText(
+    readFileSync(PROVISIONING_CONTRACT_PATH, 'utf8')
+  );
   const provisioningContractDigest = digest(provisioningContractText);
   const manifest = buildSastIsolatedQualificationManifest(
     {
@@ -201,6 +203,23 @@ export async function writeIsolatedIntegrationAssets() {
     'T053 qualification root changed during generation'
   );
   return assets;
+}
+
+export function canonicalizeRepositoryText(text) {
+  if (typeof text !== 'string') {
+    throw new TypeError('repository text must be a string');
+  }
+  const canonical = text.replaceAll('\r\n', '\n');
+  if (
+    canonical.startsWith('\uFEFF') ||
+    canonical.includes('\u0000') ||
+    canonical.includes('\r') ||
+    !canonical.endsWith('\n') ||
+    canonical !== canonical.normalize('NFC')
+  ) {
+    throw new Error('repository text is not canonical UTF-8 NFC line text');
+  }
+  return canonical;
 }
 
 async function assertExactRootEntries(root) {

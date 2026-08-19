@@ -17,7 +17,7 @@ malicious-repository cases expanded across all three signed profiles (123 execut
 - A T053 pass grants entry to T054 only. It never grants finding, policy, publication, rollout,
   Kubernetes, or production-readiness authority.
 
-Manifest: `sha256:e0c5a35504b89bfeffb8f9bbeb547fe527d3fc9c63641ea2cc6fe1ca61863b78`
+Manifest: `sha256:dda19ac6bd431dd3a6b0be1d52b17942dc01c0e57c3c71f06521c8c07718ffe4`
 Source snapshot: `sha256:8daee3b29765ff85f74819acec75f2bb803ba423585af6b4d12c3803e5460f92`
 
 Do not hand-edit generated assets. Change the reviewed generator, increment the immutable

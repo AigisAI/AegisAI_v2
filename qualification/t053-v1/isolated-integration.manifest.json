@@ -6,8 +6,8 @@
   "sourceCorpusId": "sast-multi-class-qualification-corpus://8daee3b29765ff85f74819acec75f2bb803ba423585af6b4d12c3803e5460f92",
   "sourceSnapshotDigest": "sha256:8daee3b29765ff85f74819acec75f2bb803ba423585af6b4d12c3803e5460f92",
   "sourceCorpusRevision": "1.0.2",
-  "provisioningContractRef": "repository-file://deploy/scanner-sandbox/provisioning-contract.json/sha256:b4164eed7a35f8dac561d9eea83324cd4c2268474501003c6d9ac900599234f0",
-  "provisioningContractDigest": "sha256:b4164eed7a35f8dac561d9eea83324cd4c2268474501003c6d9ac900599234f0",
+  "provisioningContractRef": "repository-file://deploy/scanner-sandbox/provisioning-contract.json/sha256:653055f259aa1f4e67c069a8f7ef4f67e47a7018896d30ce54fbf9853c671c34",
+  "provisioningContractDigest": "sha256:653055f259aa1f4e67c069a8f7ef4f67e47a7018896d30ce54fbf9853c671c34",
   "materializationPolicyRef": "repository-file://qualification/t053-v1/materialization-policy.json/sha256:17e6760d9ec3dc9e9cf41a1d6cf49e1e7f05c8dafb6ee20c676aca95daa1241b",
   "materializationPolicyDigest": "sha256:17e6760d9ec3dc9e9cf41a1d6cf49e1e7f05c8dafb6ee20c676aca95daa1241b",
   "profiles": [
@@ -6849,6 +6849,6 @@
   "dynamicTestAllowed": false,
   "productionReadinessAuthority": false,
   "immutable": true,
-  "manifestId": "sast-isolated-qualification-manifest://e0c5a35504b89bfeffb8f9bbeb547fe527d3fc9c63641ea2cc6fe1ca61863b78",
-  "manifestDigest": "sha256:e0c5a35504b89bfeffb8f9bbeb547fe527d3fc9c63641ea2cc6fe1ca61863b78"
+  "manifestId": "sast-isolated-qualification-manifest://dda19ac6bd431dd3a6b0be1d52b17942dc01c0e57c3c71f06521c8c07718ffe4",
+  "manifestDigest": "sha256:dda19ac6bd431dd3a6b0be1d52b17942dc01c0e57c3c71f06521c8c07718ffe4"
 }
