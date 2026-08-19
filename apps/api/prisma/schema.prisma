@@ -3262,7 +3262,7 @@ model SastKillSwitchHead {
   expiresAt              DateTime?
   createdAt              DateTime  @default(now())
   /// Maintained only by the refresh_sast_kill_switch_head database trigger.
-  updatedAt              DateTime
+  updatedAt              DateTime  @default(now())
 
   @@unique([selectorKey, sequence, currentDecisionId, currentDecisionDigest, currentAction, active], map: "SastKillSwitchHead_binding_key")
   @@index([scope, active, updatedAt], map: "SastKillSwitchHead_active_scope_idx")

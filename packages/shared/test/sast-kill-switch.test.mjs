@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import {
   SAST_KILL_SWITCH_GATES,
+  SAST_SCAN_PROFILES,
   buildApplicableSastKillSwitchSelectors,
   buildSastKillSwitchCanarySuspensionSignal,
   buildSastKillSwitchDecision,
@@ -11,6 +12,7 @@ import {
   buildSastKillSwitchEvaluation,
   buildSastKillSwitchEvaluationContext,
   buildSastKillSwitchHeadBinding,
+  buildSastKillSwitchContextFromPlanParts,
   buildSastKillSwitchVerification,
   isSastKillSwitchDecisionShapeValid,
   isSastKillSwitchCanarySuspensionRequestValid,
@@ -23,6 +25,29 @@ import {
   isSastKillSwitchVerificationShapeValid,
   toSastKillSwitchPlanningDescriptor
 } from '../dist/index.js';
+
+test('T049 rejects a reconstructed plan with a missing scanner descriptor', () => {
+  const value = buildSastKillSwitchContextFromPlanParts(
+    {
+      tenantId: 'tenant-1',
+      repositoryBindingId: 'repository-1',
+      scanRequestId: 'scan-1',
+      profile: SAST_SCAN_PROFILES.JAVA_DEEP_V1,
+      profileDigest: sha('profile'),
+      scannerSet: {
+        scannerSetDigest: sha('scanner-set'),
+        scanners: {
+          OPENGREP: { version: '1.2.3' },
+          TRIVY: { version: '0.60.0' }
+        },
+        ruleBundles: []
+      }
+    },
+    digest
+  );
+
+  assert.equal(value, null);
+});
 
 test('T049 canonicalizes one content-free multi-scope runtime context', () => {
   const value = context();

@@ -43,14 +43,21 @@ export function buildSastKillSwitchContextFromPlanParts(
     return null;
   }
 
-  const scanners = SAST_SCANNER_KINDS.filter(
+  const selectedScanners = SAST_SCANNER_KINDS.filter(
     (scanner) => onlyScanner === undefined || scanner === onlyScanner
-  )
-    .map((scanner) => ({
-      scanner,
-      scannerVersion: parts.scannerSet.scanners[scanner].version
-    }))
-    .sort((left, right) => compare(left.scanner, right.scanner));
+  );
+  const scanners: Array<{
+    scanner: SastScannerKind;
+    scannerVersion: string;
+  }> = [];
+  for (const scanner of selectedScanners) {
+    const descriptor = parts.scannerSet.scanners[scanner];
+    if (!descriptor || typeof descriptor.version !== 'string') {
+      return null;
+    }
+    scanners.push({ scanner, scannerVersion: descriptor.version });
+  }
+  scanners.sort((left, right) => compare(left.scanner, right.scanner));
   const ruleBundles = parts.scannerSet.ruleBundles
     .filter(
       (bundle) => onlyScanner === undefined || bundle.scanner === onlyScanner

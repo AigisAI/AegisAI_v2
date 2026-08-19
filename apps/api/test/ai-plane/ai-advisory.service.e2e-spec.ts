@@ -193,6 +193,7 @@ describe('AiAdvisoryService T043 handoff', () => {
     const evaluatePersistedScan = jest
       .fn()
       .mockResolvedValueOnce({ receipt: { outcome: 'CLEAR' } })
+      .mockResolvedValueOnce({ receipt: { outcome: 'CLEAR' } })
       .mockResolvedValueOnce({ receipt: { outcome: 'ACTIVE' } });
     const service = new AiAdvisoryService(
       config(false),
@@ -205,7 +206,8 @@ describe('AiAdvisoryService T043 handoff', () => {
     await expect(
       service.createAdvisory(aiAdvisoryIntent(), clock())
     ).rejects.toThrow('AI advisory source is unavailable.');
-    expect(evaluatePersistedScan).toHaveBeenCalledTimes(2);
+    expect(evaluatePersistedScan).toHaveBeenCalledTimes(3);
+    expect(store.persistHandoff).toHaveBeenCalledTimes(1);
     expect(store.persistAdvisory).not.toHaveBeenCalled();
   });
 
