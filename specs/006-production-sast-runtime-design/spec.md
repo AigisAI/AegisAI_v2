@@ -590,7 +590,8 @@ incomplete, stale, quarantined, or security-blocked scan.
   A live dependency set MUST bind every scanner/image/wrapper/rule/database/schema/normalizer,
   kernel/rootfs, materializer/runner/harness, provider-policy, and trust-policy artifact by digest,
   signature, and provenance within an at-most-24-hour window. Execution MUST require detached
-  Security Engineering and Scan Platform approvals. Each receipt MUST have unique attempt,
+  Security Engineering and Scan Platform approvals, and both signatures MUST strictly predate the
+  earliest receipt execution start. Each receipt MUST have unique attempt,
   sandbox, workload, provider-attestation, runtime-attestation, and receipt identity; exact
   materialization and outcome; five phase-bound egress observations; zero prohibited effects; and
   digest-bound proof of credential wipe, process-tree termination, writable-volume destruction,
@@ -599,7 +600,8 @@ incomplete, stale, quarantined, or security-blocked scan.
   identities and raw trust-bundle digest rebind the dependency set. Missing valid receipts MUST be
   `PENDING_PROVIDER_EXECUTION`; any invalid, reused, drifted, stale, violating, or incomplete
   receipt MUST be `FAILED`; only all 123 valid receipts and both approvals MAY be `PASSED` and grant
-  T054 entry. No T053 state MAY grant finding, policy, publication, deployment, or production-
+  T054 entry. The verifier MUST derive evaluation time from its service-owned trusted UTC clock and
+  MUST reject caller-selected evaluation time. No T053 state MAY grant finding, policy, publication, deployment, or production-
   readiness authority. Repository CI MUST validate the handoff and verifier but MUST NOT execute a
   scanner/microVM or fabricate live evidence.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the

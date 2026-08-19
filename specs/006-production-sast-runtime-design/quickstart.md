@@ -776,7 +776,9 @@ still requires the 005 rollout and the remaining 006 gates.
   microVM plus provider and qualification-runtime Ed25519 signatures over its receipt.
 - The offline verifier rejects duplicate/reused attempt, sandbox, workload, attestation, cell, or
   receipt identity; wrong outcome/materialization; any phase egress or prohibited effect; stale or
-  changed signatures; incomplete cleanup; and cleanup over 60 seconds. Its exit codes are 0 only
+  changed signatures; approval at or after the earliest execution start; caller-selected evaluation
+  time; incomplete cleanup; and cleanup over 60 seconds. It uses only its service-owned trusted UTC
+  clock. Its exit codes are 0 only
   for all 123 valid receipts, 1 for failure, and 2 for `PENDING_PROVIDER_EXECUTION`.
 - Repository CI validates package determinism, exact filesystem bytes, real Ed25519 verification,
   tamper rejection, and the mandatory pending state. It never launches a scanner/microVM, creates

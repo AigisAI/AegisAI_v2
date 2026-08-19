@@ -627,7 +627,8 @@ running a local scanner, microVM, or Kubernetes workload:
   trust-policy artifact with digest, signature, and provenance references and a maximum 24-hour
   validity window;
 - plan identity is stable under input reordering and requires independent Security Engineering and
-  Scan Platform signatures before any provider receipt is accepted;
+  Scan Platform signatures whose timestamps are both strictly earlier than the earliest receipt
+  execution start;
 - every accepted cell has one unique attempt, sandbox, workload, provider attestation, runtime
   attestation, and receipt, with no reuse across the 123-cell set;
 - actual materialization counts and outcome equal the cell's exact projection and expected control
@@ -641,6 +642,9 @@ running a local scanner, microVM, or Kubernetes workload:
 - trust keys are canonical Ed25519 SPKI identities, the external trust-bundle bytes match the
   dependency-set `TRUST_POLICY` digest, and stale/future, wrong-role, changed-key, changed-payload,
   or invalid signatures fail closed; and
+- the verifier derives its evaluation instant only from a service-owned trusted UTC clock, rejects
+  any caller-selected time argument, and evaluates dependency and receipt freshness against that
+  instant; and
 - filesystem tests reject missing/extra/changed assets, noncanonical UTF-8/NFC/LF, BOM, NUL, CRLF,
   symlink/junction, real-path escape, and before/open/after identity drift.
 

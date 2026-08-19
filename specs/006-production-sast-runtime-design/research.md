@@ -807,13 +807,15 @@ the 41 applicable T052 cases across three profiles into a 123-cell immutable man
 closed guest-only materialization policy, validates a complete digest-bound provider dependency
 set, and emits an immutable execution plan. The evidence boundary is external: Security
 Engineering and Scan Platform sign the plan; a production-equivalent provider creates one new
-microVM per cell; and the provider plus qualification runtime sign each exact receipt.
+microVM per cell; both approvals strictly predate the earliest execution start; and the provider
+plus qualification runtime sign each exact receipt.
 
 Receipts record unique attempt/sandbox/workload/attestation identity, materialization and outcome,
 five phase egress observations, eight prohibited-effect counters, and six cleanup proofs completed
 within 60 seconds. An offline verifier checks the dependency-set-bound trust bundle, canonical
 Ed25519 SPKI identity, signatures, freshness, uniqueness, bindings, zero-effect requirements, and
-destruction. Zero or a valid subset of receipts stays `PENDING_PROVIDER_EXECUTION`, any violation
+destruction. Its service-owned UTC clock is the sole evaluation-time source; caller-selected
+historical instants are rejected. Zero or a valid subset of receipts stays `PENDING_PROVIDER_EXECUTION`, any violation
 is `FAILED`, and only all 123 may be `PASSED`. A pass grants only entry to T054; readiness remains
 false.
 
@@ -825,5 +827,6 @@ separate receipt bundle ensures CI cannot self-certify isolation or destruction.
 **Rejected**: Running hostile materialization on the host or ordinary PR runner; using a pod as the
 sole isolation boundary; one sandbox for multiple cells; scenario-name branching; mutable image or
 policy references; unsigned plans or receipts; a repository-shipped trust root; accepting partial
-evidence as success; inferring cleanup from provider termination alone; using the local clock or
+evidence as success; retroactive approval; caller-controlled evaluation time; inferring cleanup
+from provider termination alone; using the local clock or
 filesystem presence as an attestation; and marking T053 complete before real provider evidence.

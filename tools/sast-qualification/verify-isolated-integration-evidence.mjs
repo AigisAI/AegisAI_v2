@@ -18,7 +18,6 @@ import {
 } from './qualification-json-input.mjs';
 
 const args = parseExactArguments(process.argv.slice(2), {
-  '--evaluated-at': true,
   '--dependency-set': false,
   '--plan': false,
   '--approvals': false,
@@ -82,6 +81,7 @@ if (externalCount > 0) {
   verifySignature = buildTrustVerifier(trustInput.value, dependencySet);
 }
 
+const trustedEvaluatedAt = new Date().toISOString();
 const result = evaluateSastIsolatedQualificationEvidence(
   {
     manifest: qualificationPackage.manifest,
@@ -89,7 +89,7 @@ const result = evaluateSastIsolatedQualificationEvidence(
     plan,
     approvals,
     signedReceipts,
-    evaluatedAt: args['--evaluated-at'],
+    trustedEvaluatedAt,
     verifySignature
   },
   digest

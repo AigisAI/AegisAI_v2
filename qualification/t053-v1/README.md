@@ -14,6 +14,8 @@ malicious-repository cases expanded across all three signed profiles (123 execut
 - Repository validation never launches a scanner or microVM and cannot produce a passing T053
   verdict. Until a live dependency set, dual plan approvals, and 123 valid dual-signed receipts
   exist, the only valid aggregate state is `PENDING_PROVIDER_EXECUTION`.
+- The verifier derives evaluation time only from its service-owned trusted UTC clock and rejects
+  caller time overrides. Both detached plan approvals must strictly precede the earliest cell start.
 - A T053 pass grants entry to T054 only. It never grants finding, policy, publication, rollout,
   Kubernetes, or production-readiness authority.
 

@@ -523,7 +523,7 @@ export interface SastIsolatedQualificationEvaluationInput {
   plan: SastIsolatedQualificationExecutionPlan | null;
   approvals: readonly SastIsolatedQualificationSignature[];
   signedReceipts: readonly SastIsolatedQualificationSignedReceipt[];
-  evaluatedAt: string;
+  trustedEvaluatedAt: string;
   verifySignature: SastIsolatedQualificationSignatureVerifier;
 }
 
@@ -798,7 +798,7 @@ const EVALUATION_INPUT_KEYS = [
   'plan',
   'approvals',
   'signedReceipts',
-  'evaluatedAt',
+  'trustedEvaluatedAt',
   'verifySignature'
 ] as const;
 
@@ -1340,7 +1340,7 @@ export function evaluateSastIsolatedQualificationEvidence(
       !isSastIsolatedQualificationManifestValid(input.manifest, digestCanonical) ||
       !Array.isArray(input.approvals) ||
       !Array.isArray(input.signedReceipts) ||
-      !isIsoInstant(input.evaluatedAt) ||
+      !isIsoInstant(input.trustedEvaluatedAt) ||
       typeof input.verifySignature !== 'function'
     ) {
       return null;
@@ -1382,7 +1382,7 @@ export function evaluateSastIsolatedQualificationEvidence(
       if (!dependencyValid) failureReasons.push('DEPENDENCY_SET_INVALID');
       if (!planValid) failureReasons.push('EXECUTION_PLAN_INVALID');
 
-      const evaluatedAtMs = Date.parse(input.evaluatedAt);
+      const evaluatedAtMs = Date.parse(input.trustedEvaluatedAt);
       const validFromMs = Date.parse(input.dependencySet.validFrom);
       const validUntilMs = Date.parse(input.dependencySet.validUntil);
       if (evaluatedAtMs < validFromMs) failureReasons.push('TIMESTAMP_INVALID');
@@ -1390,6 +1390,10 @@ export function evaluateSastIsolatedQualificationEvidence(
 
       const approvalRequired =
         input.approvals.length > 0 || input.signedReceipts.length > 0;
+      const earliestReceiptStartMs = earliestValidReceiptStartMilliseconds(
+        input.signedReceipts,
+        digestCanonical
+      );
       const approvalsValid =
         approvalRequired &&
         isSignatureSetValid(
@@ -1397,9 +1401,13 @@ export function evaluateSastIsolatedQualificationEvidence(
           SAST_ISOLATED_QUALIFICATION_APPROVAL_ROLES,
           input.plan.planDigest,
           input.dependencySet.validFrom,
-          input.evaluatedAt,
+          input.trustedEvaluatedAt,
           input.verifySignature
-        );
+        ) &&
+        (earliestReceiptStartMs === null ||
+          input.approvals.every(
+            (approval) => Date.parse(approval.signedAt) < earliestReceiptStartMs
+          ));
       if (approvalRequired && !approvalsValid) {
         failureReasons.push('APPROVAL_SET_INVALID');
       }
@@ -1438,7 +1446,7 @@ export function evaluateSastIsolatedQualificationEvidence(
             SAST_ISOLATED_QUALIFICATION_RECEIPT_SIGNATURE_ROLES,
             receipt.receiptDigest,
             receipt.cleanupCompletedAt,
-            input.evaluatedAt,
+            input.trustedEvaluatedAt,
             input.verifySignature
           )
         ) {
@@ -1474,7 +1482,7 @@ export function evaluateSastIsolatedQualificationEvidence(
           receipt,
           cell ?? null,
           input.dependencySet,
-          input.evaluatedAt
+          input.trustedEvaluatedAt
         );
         failureReasons.push(...receiptFailures);
         if (
@@ -1527,7 +1535,7 @@ export function evaluateSastIsolatedQualificationEvidence(
         missingCellCount,
         missingCellSetDigest,
         failureReasons: canonicalFailures,
-        evaluatedAt: input.evaluatedAt,
+        evaluatedAt: input.trustedEvaluatedAt,
         t053Complete: status === 'PASSED',
         t054EntryAuthorized: status === 'PASSED',
         findingAuthority: false,
@@ -2218,6 +2226,27 @@ function isReceiptBoundToCell(
     receipt.isolationClass === cell.isolationClass &&
     receipt.expectedOutcome === cell.expectedOutcome
   );
+}
+
+function earliestValidReceiptStartMilliseconds(
+  signedReceipts: readonly SastIsolatedQualificationSignedReceipt[],
+  digestCanonical: SastIsolatedQualificationCanonicalDigester
+): number | null {
+  let earliest: number | null = null;
+  for (const signedReceipt of signedReceipts) {
+    if (
+      !hasExactKeys(signedReceipt, SIGNED_RECEIPT_KEYS) ||
+      !isSastIsolatedQualificationReceiptValid(
+        signedReceipt.receipt,
+        digestCanonical
+      )
+    ) {
+      continue;
+    }
+    const startedAt = Date.parse(signedReceipt.receipt.startedAt);
+    earliest = earliest === null ? startedAt : Math.min(earliest, startedAt);
+  }
+  return earliest;
 }
 
 function receiptFailureReasons(

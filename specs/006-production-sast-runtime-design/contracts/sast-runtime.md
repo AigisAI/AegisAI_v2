@@ -1979,9 +1979,12 @@ credential persistence, host mutation, and unauthorized result writes. Six order
 observations prove credential wipe, process-tree termination, writable-volume destruction,
 result-ingress closure, microVM termination, and final audit commitment within 60 seconds.
 
-Plan approvals sign the plan digest. Every receipt is separately signed over its digest by the
-microVM provider and qualification runtime using canonical Ed25519 payloads. The offline verifier
-accepts an external trust bundle only when its raw digest matches the dependency set's
+Plan approvals sign the plan digest and both approval timestamps must be strictly earlier than the
+earliest accepted receipt `startedAt`; equal-time or post-start approval is invalid. Every receipt
+is separately signed over its digest by the microVM provider and qualification runtime using
+canonical Ed25519 payloads. The offline verifier obtains `trustedEvaluatedAt` only from its
+service-owned UTC clock, exposes no caller-selected evaluation-time argument, and accepts an
+external trust bundle only when its raw digest matches the dependency set's
 `TRUST_POLICY`; each key ID must match the SHA-256 digest of its canonical Ed25519 SPKI. Duplicate
 cell/receipt, attempt, sandbox, workload, or attestation identity and any timestamp, provider,
 outcome, projection, signature, egress, prohibited-effect, cleanup, or authority drift fail closed.

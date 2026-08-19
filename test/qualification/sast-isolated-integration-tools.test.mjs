@@ -37,24 +37,35 @@ const verifierTool = join(
   'sast-qualification',
   'verify-isolated-integration-evidence.mjs'
 );
-const evaluatedAt = '2026-08-20T00:10:00.000Z';
 
 test('T053 verifier returns PENDING with a distinct exit code when provider evidence is absent', async () => {
-  const run = await runNode(verifierTool, ['--evaluated-at', evaluatedAt]);
+  const startedAt = Date.now();
+  const run = await runNode(verifierTool, []);
+  const completedAt = Date.now();
   assert.equal(run.code, 2, run.stderr);
   const result = JSON.parse(run.stdout);
   assert.equal(result.status, 'PENDING_PROVIDER_EXECUTION');
   assert.equal(result.receivedReceiptCount, 0);
   assert.equal(result.t054EntryAuthorized, false);
   assert.equal(result.productionReadinessAuthority, false);
+  assert.ok(Date.parse(result.evaluatedAt) >= startedAt - 1_000);
+  assert.ok(Date.parse(result.evaluatedAt) <= completedAt + 1_000);
+
+  const spoofedClock = await runNode(verifierTool, [
+    '--evaluated-at',
+    '2026-08-20T00:10:00.000Z'
+  ]);
+  assert.equal(spoofedClock.code, 1);
+  assert.match(spoofedClock.stderr, /invalid or duplicate qualification tool argument/u);
 });
 
 test('T053 tools verify real Ed25519 approvals and 123 receipts, then reject signature tampering', async (t) => {
   const temporaryRoot = await mkdtemp(join(tmpdir(), 'aegis-t053-tools-'));
   t.after(() => rm(temporaryRoot, { recursive: true, force: true }));
   const qualificationPackage = await loadAndValidateIsolatedIntegrationPackage();
-  const trust = buildTrustBundle();
-  const dependencySet = buildDependencySet(trust.text);
+  const clock = buildTestClock();
+  const trust = buildTrustBundle(clock);
+  const dependencySet = buildDependencySet(trust.text, clock);
   const dependencyPath = await writeJson(
     temporaryRoot,
     'dependency-set.json',
@@ -66,14 +77,15 @@ test('T053 tools verify real Ed25519 approvals and 123 receipts, then reject sig
   assert.equal(plan.executionCellCount, 123);
   const planPath = await writeJson(temporaryRoot, 'plan.json', plan);
   const approvals = SAST_ISOLATED_QUALIFICATION_APPROVAL_ROLES.map((role) =>
-    createSignature(role, plan.planDigest, '2026-08-20T00:00:30.000Z', trust)
+    createSignature(role, plan.planDigest, clock.approvalSignedAt, trust)
   );
   const receipts = qualificationPackage.manifest.cells.map((cell) => {
     const receipt = buildReceipt(
       cell,
       qualificationPackage.manifest,
       plan,
-      dependencySet
+      dependencySet,
+      clock
     );
     return {
       receipt,
@@ -81,7 +93,7 @@ test('T053 tools verify real Ed25519 approvals and 123 receipts, then reject sig
         createSignature(
           role,
           receipt.receiptDigest,
-          '2026-08-20T00:03:00.000Z',
+          clock.receiptSignedAt,
           trust
         )
       )
@@ -93,8 +105,6 @@ test('T053 tools verify real Ed25519 approvals and 123 receipts, then reject sig
   await writeFile(trustPath, trust.text, 'utf8');
 
   const args = [
-    '--evaluated-at',
-    evaluatedAt,
     '--dependency-set',
     dependencyPath,
     '--plan',
@@ -114,6 +124,18 @@ test('T053 tools verify real Ed25519 approvals and 123 receipts, then reject sig
   assert.equal(passedResult.t054EntryAuthorized, true);
   assert.equal(passedResult.productionReadinessAuthority, false);
 
+  const retroactiveApprovals = SAST_ISOLATED_QUALIFICATION_APPROVAL_ROLES.map(
+    (role) => createSignature(role, plan.planDigest, clock.startedAt, trust)
+  );
+  await writeJson(temporaryRoot, 'approvals.json', retroactiveApprovals);
+  const retroactive = await runNode(verifierTool, args);
+  assert.equal(retroactive.code, 1, retroactive.stderr);
+  const retroactiveResult = JSON.parse(retroactive.stdout);
+  assert.equal(retroactiveResult.status, 'FAILED');
+  assert.ok(retroactiveResult.failureReasons.includes('APPROVAL_SET_INVALID'));
+  assert.equal(retroactiveResult.t054EntryAuthorized, false);
+
+  await writeJson(temporaryRoot, 'approvals.json', approvals);
   receipts[0].signatures[0].valueBase64 = Buffer.alloc(64).toString('base64');
   await writeJson(temporaryRoot, 'receipts.json', receipts);
   const failed = await runNode(verifierTool, args);
@@ -124,7 +146,22 @@ test('T053 tools verify real Ed25519 approvals and 123 receipts, then reject sig
   assert.equal(failedResult.t054EntryAuthorized, false);
 });
 
-function buildTrustBundle() {
+function buildTestClock(baseMilliseconds = Date.now()) {
+  const instant = (offsetSeconds) =>
+    new Date(baseMilliseconds + offsetSeconds * 1_000).toISOString();
+  return Object.freeze({
+    validFrom: instant(-3_600),
+    approvalSignedAt: instant(-1_800),
+    startedAt: instant(-1_200),
+    executionCompletedAt: instant(-930),
+    cleanupStartedAt: instant(-930),
+    cleanupCompletedAt: instant(-900),
+    receiptSignedAt: instant(-840),
+    validUntil: instant(43_200)
+  });
+}
+
+function buildTrustBundle(clock) {
   const roles = [
     ...SAST_ISOLATED_QUALIFICATION_APPROVAL_ROLES,
     ...SAST_ISOLATED_QUALIFICATION_RECEIPT_SIGNATURE_ROLES
@@ -143,8 +180,8 @@ function buildTrustBundle() {
       role,
       algorithm: 'ED25519',
       publicKeyPem,
-      validFrom: '2026-08-20T00:00:00.000Z',
-      validUntil: '2026-08-21T00:00:00.000Z'
+      validFrom: clock.validFrom,
+      validUntil: clock.validUntil
     };
   });
   const value = {
@@ -160,7 +197,7 @@ function buildTrustBundle() {
   };
 }
 
-function buildDependencySet(trustText) {
+function buildDependencySet(trustText, clock) {
   const trustDigest = digest(trustText);
   const artifacts = SAST_ISOLATED_QUALIFICATION_ARTIFACT_KINDS.map((kind) => {
     const artifactDigest =
@@ -188,8 +225,8 @@ function buildDependencySet(trustText) {
         'provider-adapter://aegisai/qualification-v1',
         'provider-adapter'
       ),
-      validFrom: '2026-08-20T00:00:00.000Z',
-      validUntil: '2026-08-21T00:00:00.000Z',
+      validFrom: clock.validFrom,
+      validUntil: clock.validUntil,
       artifacts
     },
     digest
@@ -198,7 +235,7 @@ function buildDependencySet(trustText) {
   return dependencySet;
 }
 
-function buildReceipt(cell, manifest, plan, dependencySet) {
+function buildReceipt(cell, manifest, plan, dependencySet, clock) {
   const providerAttestationDigest = digest(`provider-attestation:${cell.cellId}`);
   const runtimeAttestationDigest = digest(`runtime-attestation:${cell.cellId}`);
   const receipt = buildSastIsolatedQualificationReceipt(
@@ -235,10 +272,10 @@ function buildReceipt(cell, manifest, plan, dependencySet) {
       isolationClass: cell.isolationClass,
       expectedOutcome: cell.expectedOutcome,
       actualOutcome: cell.expectedOutcome,
-      startedAt: '2026-08-20T00:01:00.000Z',
-      executionCompletedAt: '2026-08-20T00:02:00.000Z',
-      cleanupStartedAt: '2026-08-20T00:02:00.000Z',
-      cleanupCompletedAt: '2026-08-20T00:02:30.000Z',
+      startedAt: clock.startedAt,
+      executionCompletedAt: clock.executionCompletedAt,
+      cleanupStartedAt: clock.cleanupStartedAt,
+      cleanupCompletedAt: clock.cleanupCompletedAt,
       cleanupDurationSeconds: 30,
       phaseEgress: SAST_ISOLATED_QUALIFICATION_PHASES.map((phase) => ({
         phase,
@@ -263,7 +300,7 @@ function buildReceipt(cell, manifest, plan, dependencySet) {
           return {
             control,
             status: 'VERIFIED',
-            observedAt: '2026-08-20T00:02:30.000Z',
+            observedAt: clock.cleanupCompletedAt,
             evidenceRef:
               `cleanup-evidence://aegisai/t053/${control.toLowerCase()}/${evidenceDigest}`,
             evidenceDigest

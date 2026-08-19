@@ -158,7 +158,7 @@ test('T053 cannot report a pass before live provider inputs exist', () => {
       plan: null,
       approvals: [],
       signedReceipts: [],
-      evaluatedAt: '2026-08-20T00:10:00.000Z',
+      trustedEvaluatedAt: '2026-08-20T00:10:00.000Z',
       verifySignature: () => false
     },
     digest
@@ -202,7 +202,7 @@ test('T053 passes only an exact 123-cell dual-signed provider receipt set', () =
       plan: bundle.plan,
       approvals: bundle.approvals,
       signedReceipts: bundle.signedReceipts,
-      evaluatedAt: '2026-08-20T00:10:00.000Z',
+      trustedEvaluatedAt: '2026-08-20T00:10:00.000Z',
       verifySignature: () => true
     },
     digest
@@ -227,7 +227,7 @@ test('T053 keeps a valid partial provider run pending without inventing completi
       plan: bundle.plan,
       approvals: bundle.approvals,
       signedReceipts: bundle.signedReceipts.slice(0, 17),
-      evaluatedAt: '2026-08-20T00:10:00.000Z',
+      trustedEvaluatedAt: '2026-08-20T00:10:00.000Z',
       verifySignature: () => true
     },
     digest
@@ -236,6 +236,49 @@ test('T053 keeps a valid partial provider run pending without inventing completi
   assert.equal(result.status, 'PENDING_PROVIDER_EXECUTION');
   assert.equal(result.validatedReceiptCount, 17);
   assert.equal(result.missingCellCount, 106);
+  assert.equal(result.t054EntryAuthorized, false);
+});
+
+test('T053 requires both detached approvals strictly before execution starts', () => {
+  const bundle = completeEvidenceBundle();
+  const retroactiveApprovals = SAST_ISOLATED_QUALIFICATION_APPROVAL_ROLES.map(
+    (role) => signature(role, bundle.plan.planDigest, '2026-08-20T00:01:00.000Z')
+  );
+  const result = evaluateSastIsolatedQualificationEvidence(
+    {
+      manifest,
+      dependencySet: bundle.dependencySet,
+      plan: bundle.plan,
+      approvals: retroactiveApprovals,
+      signedReceipts: bundle.signedReceipts.slice(0, 1),
+      trustedEvaluatedAt: '2026-08-20T00:10:00.000Z',
+      verifySignature: () => true
+    },
+    digest
+  );
+  assert.ok(result);
+  assert.equal(result.status, 'FAILED');
+  assert.deepEqual(result.failureReasons, ['APPROVAL_SET_INVALID']);
+  assert.equal(result.validatedReceiptCount, 0);
+});
+
+test('T053 rejects stale replay against the trusted evaluation instant', () => {
+  const bundle = completeEvidenceBundle();
+  const result = evaluateSastIsolatedQualificationEvidence(
+    {
+      manifest,
+      dependencySet: bundle.dependencySet,
+      plan: bundle.plan,
+      approvals: bundle.approvals,
+      signedReceipts: bundle.signedReceipts.slice(0, 1),
+      trustedEvaluatedAt: '2026-08-22T00:10:00.000Z',
+      verifySignature: () => true
+    },
+    digest
+  );
+  assert.ok(result);
+  assert.equal(result.status, 'FAILED');
+  assert.deepEqual(result.failureReasons, ['EVIDENCE_STALE']);
   assert.equal(result.t054EntryAuthorized, false);
 });
 
@@ -248,7 +291,7 @@ test('T053 fails closed on duplicate cells and sandbox or attestation reuse', ()
       plan: bundle.plan,
       approvals: bundle.approvals,
       signedReceipts: [bundle.signedReceipts[0], bundle.signedReceipts[0]],
-      evaluatedAt: '2026-08-20T00:10:00.000Z',
+      trustedEvaluatedAt: '2026-08-20T00:10:00.000Z',
       verifySignature: () => true
     },
     digest
@@ -302,7 +345,7 @@ test('T053 reports outcome, egress, cleanup, and signature violations', () => {
           signatures: receiptSignatures(violatedReceipt.receiptDigest, '2026-08-20T00:05:00.000Z')
         }
       ],
-      evaluatedAt: '2026-08-20T00:10:00.000Z',
+      trustedEvaluatedAt: '2026-08-20T00:10:00.000Z',
       verifySignature: (signatureValue) =>
         SAST_ISOLATED_QUALIFICATION_APPROVAL_ROLES.includes(signatureValue.role)
     },
@@ -349,7 +392,7 @@ test('T053 rejects provider drift and every prohibited side effect', () => {
           )
         }
       ],
-      evaluatedAt: '2026-08-20T00:10:00.000Z',
+      trustedEvaluatedAt: '2026-08-20T00:10:00.000Z',
       verifySignature: () => true
     },
     digest

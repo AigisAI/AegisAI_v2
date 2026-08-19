@@ -1325,7 +1325,8 @@ kernel/rootfs, materializer, runner, harness, provider policy, and trust policy.
 digest-bound and carries signature and provenance references; the validity window is positive and
 at most 24 hours. The canonical plan rebinds the manifest, dependency set, source snapshot, and
 complete cell set. Execution requires detached Security Engineering and Scan Platform approvals;
-no plan carries provider credentials, customer content, execution arguments, or readiness authority.
+both approvals must be valid and strictly predate the earliest receipt execution start. No plan
+carries provider credentials, customer content, execution arguments, or readiness authority.
 
 ### SastIsolatedQualificationReceipt and Result
 
@@ -1340,7 +1341,8 @@ policy, publication, or readiness field.
 The aggregate result is immutable and tri-state. Missing but otherwise valid cells remain
 `PENDING_PROVIDER_EXECUTION`; any malformed, invalidly signed, reused, drifted, violating, stale,
 or incompletely destroyed cell is `FAILED`; only 123 unique fully valid receipts and both plan
-approvals are `PASSED`. A pass authorizes entry to T054 only. It never authorizes rollout or marks
+approvals are `PASSED`. Its evaluation instant is supplied only by the verifier's service-owned UTC
+clock; callers cannot submit or replay an evaluation time. A pass authorizes entry to T054 only. It never authorizes rollout or marks
 production ready, and T053 remains incomplete until those external receipts actually exist.
 
 ### SastQualityEvaluation

@@ -3228,9 +3228,12 @@ test('SAST T053 packages an exact fail-closed provider handoff without fabricati
   assert.match(shared, /cleanupSloSeconds: 60/);
   assert.match(shared, /PENDING_PROVIDER_EXECUTION/);
   assert.match(shared, /DETACHED_DUAL_APPROVAL_REQUIRED/);
+  assert.match(shared, /trustedEvaluatedAt/);
   assert.match(sharedIndex, /sast-isolated-integration-qualification/);
   assert.match(sharedTest, /passes only an exact 123-cell dual-signed provider receipt set/);
   assert.match(sharedTest, /keeps a valid partial provider run pending/);
+  assert.match(sharedTest, /detached approvals strictly before execution starts/);
+  assert.match(sharedTest, /stale replay against the trusted evaluation instant/);
   assert.match(sharedTest, /duplicate cells and sandbox or attestation reuse/);
 
   assert.equal(manifest.sourceCorpusRevision, '1.0.2');
@@ -3273,6 +3276,8 @@ test('SAST T053 packages an exact fail-closed provider handoff without fabricati
   assert.match(planTool, /buildSastIsolatedQualificationExecutionPlan/);
   assert.match(evidenceTool, /verifySignatureBytes/);
   assert.match(evidenceTool, /TRUST_POLICY/);
+  assert.match(evidenceTool, /new Date\(\)\.toISOString\(\)/);
+  assert.doesNotMatch(evidenceTool, /'--evaluated-at'/);
   assert.match(evidenceTool, /result\.status === 'PASSED'/);
   assert.match(loaderTest, /rejects missing, extra, noncanonical, and linked entries/);
   assert.match(toolsTest, /real Ed25519 approvals and 123 receipts/);
@@ -3292,6 +3297,7 @@ test('SAST T053 packages an exact fail-closed provider handoff without fabricati
   assert.match(research, /Decision 31: Separate the T053 Provider Handoff/);
   assert.match(ruleGovernance, /T053 Isolated Integration Qualification Boundary/);
   assert.match(threatModel, /Isolated qualification evidence forgery or reuse/);
+  assert.match(threatModel, /Isolated qualification clock or retroactive-approval replay/);
   assert.match(qualityGates, /T053 Production-Equivalent Isolated Integration Gates/);
 });
 
