@@ -17,7 +17,7 @@ import {
 const repositoryRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const canonicalRoot = join(repositoryRoot, 'qualification', 't055-v1');
 const EXPECTED_MANIFEST_DIGEST =
-  'sha256:cb4b009f58577ed1dd43472bb4579b8927a6327c5fa8ef9a4429e1b5c2b39f0f';
+  'sha256:662f8c25f9e9a4c236fb170339c7cf8eb13fd73433a0843b6caf00e9d006286e';
 
 test('T055 loader accepts only the exact immutable 169-cell package', async () => {
   const result = await loadAndValidateSupplyChainRollbackQualificationPackage();

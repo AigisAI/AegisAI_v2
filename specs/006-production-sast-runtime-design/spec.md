@@ -648,12 +648,16 @@ incomplete, stale, quarantined, or security-blocked scan.
   across three profiles. Exactly 115 cells MUST reject before artifact invocation, exactly 39 MAY
   invoke one allowlisted artifact, and no cell MAY accept customer content, execute customer code,
   install packages, build a repository, run a dynamic test, use public egress, or mutate production.
-  Detached Security Engineering and Scan Platform approvals MUST strictly predate execution. Every
-  receipt MUST use globally unique identities and carry Supply Chain Authority, MicroVM Provider,
-  and Qualification Runtime Ed25519 signatures. Rollback MUST bind exact candidate and baseline
-  release-set digests, suspend and fence the candidate, prove in-flight abort and cleanup, derive
-  and reverify the last-known-good baseline, record zero candidate invocations after the fence, and
-  activate `STANDBY -> ACTIVE` only through a digest-chained append-only audit ledger entry.
+  For every profile, Qualification Authority and Supply Chain Authority signatures MUST authenticate
+  the exact durable rollback-ledger head digest, sequence, reference, provider, and candidate/
+  baseline release sets before plan approval. Detached Security Engineering and Scan Platform
+  approvals MUST bind those head attestations and strictly predate the earliest submitted receipt
+  or attempt. Every receipt MUST use globally unique identities and carry Supply Chain Authority,
+  MicroVM Provider, and Qualification Runtime Ed25519 signatures. Rollback MUST bind exact candidate
+  and baseline release-set digests, suspend and fence the candidate, prove in-flight abort and
+  cleanup, derive and reverify the last-known-good baseline, record zero candidate invocations after
+  the fence, and activate `STANDBY -> ACTIVE` only through an append-only audit ledger entry that
+  references the exact authenticated head and uses exactly `head.sequence + 1`.
   Missing T054 evidence MUST be `BLOCKED_T054_QUALIFICATION`; a valid strict subset MUST be
   `PENDING_DRILL_EXECUTION`; malformed evidence or any zero-tolerance breach MUST be `FAILED`; only
   all 169 valid cells MAY be `PASSED` and set `t056EntryAuthorized=true`. No T055 state grants

@@ -2104,6 +2104,8 @@ sast-supply-chain-rollback-qualification-entry-attestation-v1 {
 sast-supply-chain-rollback-qualification-plan-v1 {
   exact upstream, entry, provider, adapter, and independently pinned trust-policy bindings,
   all 36 T054 artifact signature/provenance envelopes reverified,
+  three profile-ordered rollback-ledger-head attestations,
+  each head signed by QUALIFICATION_AUTHORITY + SUPPLY_CHAIN_AUTHORITY,
   approvals: SECURITY_ENGINEERING + SCAN_PLATFORM,
   receipt signatures: SUPPLY_CHAIN_AUTHORITY + MICROVM_PROVIDER + QUALIFICATION_RUNTIME,
   readOnlyArtifactMountRequired: true,
@@ -2117,7 +2119,11 @@ self-selected-trust prerequisites. The trust-bundle bytes must match process-own
 `SAST_T055_TRUST_POLICY_DIGEST`. Every artifact signature and provenance payload is reloaded; both
 envelope digests and provenance subject/source/builder/materials are recomputed before each
 `SUPPLY_CHAIN_AUTHORITY` Ed25519 signature is accepted. The CLI exposes no evaluation-time
-override. Both detached plan approvals must strictly precede the earliest receipt.
+override. Each profile's durable prior ledger head digest, sequence, digest-bound reference,
+provider, and exact candidate/baseline release sets must be independently signed by Qualification
+Authority and Supply Chain Authority before being embedded in the plan. Both detached plan
+approvals bind those attestations and must strictly precede the earliest submitted receipt or
+attempt.
 
 Each receipt binds one exact cell and all upstream/plan digests. It records observed envelope
 digests, read-only mount and allowlist state, invocation/egress/production-mutation counts,
@@ -2140,8 +2146,10 @@ ROLLBACK_CANDIDATE_SUSPEND
 All phases bind distinct exact candidate and baseline release-set digests. The fence permits zero
 later candidate invocation; in-flight before/after counts and abort confirmation prove cleanup;
 the target is derived only from last-known-good evidence; and the final receipt alone records the
-baseline `STANDBY -> ACTIVE` transition through a digest-chained append-only ledger entry whose
-content is bound to its audit ref.
+baseline `STANDBY -> ACTIVE` transition. That receipt must reference the exact profile head
+attestation in the approved plan, repeat its head digest, use exactly `head.sequence + 1`, and bind
+the new append-only entry digest to the attestation, prior/new sequence, exact release sets, target,
+action, activation time, and audit ref.
 
 The verifier accepts no caller measurement object. It recomputes the exact 169-cell key set, 115
 pre-execution rejections, 39 artifact invocations, all uniqueness, cleanup, zero-tolerance, and

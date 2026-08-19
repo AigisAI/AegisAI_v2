@@ -107,8 +107,9 @@
 - [ ] T055 Run signature/provenance/database/schema supply-chain and rollback drills
   - [x] Repository-side exact 169-cell T055 manifest, T054 entry attestation, same-provider plan,
     independently pinned trust root, per-artifact signature/provenance reverification, signed
-    receipt/result contracts, ordered rollback ledger, root-confined validator, plan generator,
-    and Ed25519 offline verifier are package-ready and fail closed as
+    receipt/result contracts, dual-signed per-profile durable ledger-head attestations, exact next-
+    sequence rollback appends, root-confined validator, plan generator, and Ed25519 offline verifier
+    are package-ready and fail closed as
     `BLOCKED_T054_QUALIFICATION` without a real T054 pass.
   - [ ] After T054 passes externally, execute all 169 T055 cells on the bound
     production-equivalent provider and verify the full three-role-signed receipt set; do not

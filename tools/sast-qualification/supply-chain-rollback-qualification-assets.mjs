@@ -49,7 +49,8 @@ const DRILL_POLICY = Object.freeze({
     exactT054PlanRequired: true,
     sameProviderAndAdapterRequired: true,
     qualificationAuthorityEntryAttestationRequired: true,
-    independentlyConfiguredTrustPolicyDigestRequired: true
+    independentlyConfiguredTrustPolicyDigestRequired: true,
+    authenticatedRollbackLedgerHeadAttestationsRequired: true
   },
   execution: {
     evidenceStage: 'T055_SUPPLY_CHAIN_DATABASE_SCHEMA_ROLLBACK',
@@ -70,6 +71,10 @@ const DRILL_POLICY = Object.freeze({
       'SUPPLY_CHAIN_AUTHORITY',
       'MICROVM_PROVIDER',
       'QUALIFICATION_RUNTIME'
+    ],
+    rollbackLedgerHeadSignatureRoles: [
+      'QUALIFICATION_AUTHORITY',
+      'SUPPLY_CHAIN_AUTHORITY'
     ]
   },
   denominators: {
@@ -98,7 +103,9 @@ const DRILL_POLICY = Object.freeze({
     candidateInvocationsAfterFenceMaximum: 0,
     inFlightAbortEvidenceRequired: true,
     lastKnownGoodReverificationRequired: true,
-    appendOnlyActivationLedgerRequired: true
+    appendOnlyActivationLedgerRequired: true,
+    authenticatedPriorLedgerHeadRequired: true,
+    exactLedgerSequenceIncrementRequired: true
   },
   prohibited: {
     customerContentAccepted: false,
@@ -161,8 +168,11 @@ component rejection, six internal vulnerability-database drills, three result-sc
   before artifact invocation or external egress.
 - Rollback evidence is ordered per profile: suspend candidate, fence queue admission, abort and
   clean in-flight work, derive and reverify the exact last-known-good release set, then activate
-  that baseline through a digest-chained append-only audit entry.
-- Detached Security Engineering and Scan Platform approvals must strictly predate execution.
+  that baseline through a digest-chained append-only audit entry. Before plan approval, each
+  profile's durable prior ledger head and sequence are authenticated by independent Qualification
+  Authority and Supply Chain Authority signatures; the activation must be its exact next entry.
+- Detached Security Engineering and Scan Platform approvals must strictly predate the earliest
+  submitted receipt or attempt.
   Supply Chain Authority, MicroVM Provider, and Qualification Runtime signatures are required on
   every receipt. Attempt, sandbox, workload, attestation, audit, receipt, and cell identities are
   globally single-use.

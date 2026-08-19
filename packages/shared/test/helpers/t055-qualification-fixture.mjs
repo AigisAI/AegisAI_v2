@@ -11,8 +11,11 @@ import {
   SAST_END_TO_END_QUALIFICATION_SIGNATURE_VERSION,
   SAST_ISOLATED_QUALIFICATION_ARTIFACT_KINDS,
   SAST_ISOLATED_QUALIFICATION_RESULT_VERSION,
+  SAST_PROFILE_IDS,
   SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_ENTRY_ATTESTATION_VERSION,
   SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_ENTRY_VERSION,
+  SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_ATTESTATION_VERSION,
+  SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_SIGNATURE_ROLES,
   SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_RECEIPT_SIGNATURE_ROLES,
   buildSastEndToEndQualificationArtifactProvenance,
   buildSastEndToEndQualificationArtifactVerificationSet,
@@ -21,6 +24,7 @@ import {
   buildSastEndToEndQualificationExecutionPlan,
   buildSastIsolatedQualificationDependencySet,
   buildSastSupplyChainRollbackQualificationEntryAttestation,
+  buildSastSupplyChainRollbackQualificationLedgerHeadAttestation,
   buildSastSupplyChainRollbackQualificationManifest,
   buildSastSupplyChainRollbackQualificationPlan,
   buildSastSupplyChainRollbackQualificationReceipt,
@@ -102,6 +106,12 @@ export function createT055QualificationBundle(options = {}) {
     );
   assert.ok(entryAttestation);
 
+  const rollbackLedgerHeadAttestations = createRollbackLedgerHeadAttestations(
+    manifest,
+    t054.dependencySet,
+    signatureFactory
+  );
+
   const plan = buildSastSupplyChainRollbackQualificationPlan(
     {
       manifest,
@@ -111,6 +121,7 @@ export function createT055QualificationBundle(options = {}) {
       t054ArtifactVerificationSet: t054.artifactVerificationSet,
       t054Plan: t054.plan,
       entryAttestation,
+      rollbackLedgerHeadAttestations,
       plannedAt: '2026-08-19T20:01:30.000Z',
       verifySignature: () => true
     },
@@ -152,11 +163,65 @@ export function createT055QualificationBundle(options = {}) {
     t054Manifest: T054_MANIFEST,
     manifest,
     entryAttestation,
+    rollbackLedgerHeadAttestations,
     plan,
     approvals,
     signedReceipts,
     evaluationInput
   };
+}
+
+function createRollbackLedgerHeadAttestations(
+  manifest,
+  dependencySet,
+  signatureFactory
+) {
+  const candidateReleaseSetDigest = releaseSetDigest(dependencySet, 'CANDIDATE');
+  const baselineReleaseSetDigest = releaseSetDigest(dependencySet, 'BASELINE');
+  return SAST_PROFILE_IDS.map((profileId, index) => {
+    const ledgerHeadDigest = digest(`trusted-rollback-ledger-head:${profileId}`);
+    const input = {
+      manifestId: manifest.manifestId,
+      manifestDigest: manifest.manifestDigest,
+      dependencySetId: dependencySet.dependencySetId,
+      dependencySetDigest: dependencySet.dependencySetDigest,
+      providerId: dependencySet.providerId,
+      providerAdapterRef: dependencySet.providerAdapterRef,
+      profileId,
+      candidateReleaseSetDigest,
+      baselineReleaseSetDigest,
+      ledgerHeadDigest,
+      ledgerHeadSequence: 100 + index,
+      ledgerHeadRef:
+        `rollback-ledger-head://aegisai/t055/${profileId.toLowerCase()}/${ledgerHeadDigest}`,
+      observedAt: '2026-08-19T20:01:10.000Z'
+    };
+    const attestationDigest = digest(
+      stableJson({
+        version:
+          SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_ATTESTATION_VERSION,
+        ...input,
+        appendOnlyLedgerVerified: true,
+        productionMutationAuthority: false
+      })
+    );
+    const attestation =
+      buildSastSupplyChainRollbackQualificationLedgerHeadAttestation(
+        input,
+        SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_SIGNATURE_ROLES.map(
+          (role) =>
+            signatureFactory(
+              role,
+              attestationDigest,
+              input.observedAt,
+              `t055-ledger-head-${profileId}`
+            )
+        ),
+        digest
+      );
+    assert.ok(attestation);
+    return attestation;
+  });
 }
 
 function createT054Prerequisite(signatureFactory, trustPolicyText) {
@@ -588,7 +653,10 @@ function signedT055Receipt(
     inFlightCandidateWorkloadCountBefore: 0,
     inFlightCandidateWorkloadCountAfter: 0,
     inFlightAbortConfirmed: false,
+    rollbackLedgerHeadAttestationId: null,
+    rollbackLedgerHeadAttestationDigest: null,
     rollbackLedgerPreviousDigest: null,
+    rollbackLedgerEntrySequence: null,
     rollbackLedgerEntryDigest: null,
     rollbackLedgerAppendVerified: false,
     preExecutionRejected: cell.preExecutionRejectionRequired,
@@ -620,7 +688,8 @@ function signedT055Receipt(
     cell,
     artifact,
     verification,
-    dependencySet
+    dependencySet,
+    plan
   );
   const receipt = buildSastSupplyChainRollbackQualificationReceipt(input, digest);
   assert.ok(receipt, `expected receipt for ${cell.drillKind}`);
@@ -632,7 +701,8 @@ function applyDrillObservation(
   cell,
   artifact,
   verification,
-  dependencySet
+  dependencySet,
+  plan
 ) {
   const canonical = () => {
     assert.ok(artifact);
@@ -757,11 +827,11 @@ function applyDrillObservation(
       });
       return;
     default:
-      applyRollbackObservation(input, cell, dependencySet);
+      applyRollbackObservation(input, cell, dependencySet, plan);
   }
 }
 
-function applyRollbackObservation(input, cell, dependencySet) {
+function applyRollbackObservation(input, cell, dependencySet, plan) {
   const candidateReleaseSetDigest = releaseSetDigest(
     dependencySet,
     'CANDIDATE'
@@ -808,14 +878,20 @@ function applyRollbackObservation(input, cell, dependencySet) {
       });
       return;
     case 'ROLLBACK_ACTIVATE_BASELINE_APPEND_ONLY': {
-      const rollbackLedgerPreviousDigest = digest(
-        `rollback-ledger-previous:${cell.profileId}`
+      const ledgerHeadAttestation = plan.rollbackLedgerHeadAttestations.find(
+        (attestation) => attestation.profileId === cell.profileId
       );
+      assert.ok(ledgerHeadAttestation);
+      const rollbackLedgerEntrySequence =
+        ledgerHeadAttestation.ledgerHeadSequence + 1;
       const rollbackLedgerEntryDigest = digest(
         stableJson({
           version:
             SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_ENTRY_VERSION,
-          previousDigest: rollbackLedgerPreviousDigest,
+          headAttestationDigest: ledgerHeadAttestation.attestationDigest,
+          previousDigest: ledgerHeadAttestation.ledgerHeadDigest,
+          previousSequence: ledgerHeadAttestation.ledgerHeadSequence,
+          sequence: rollbackLedgerEntrySequence,
           profileId: cell.profileId,
           candidateReleaseSetDigest,
           baselineReleaseSetDigest,
@@ -832,7 +908,11 @@ function applyRollbackObservation(input, cell, dependencySet) {
         rollbackTargetDerived: true,
         baselineReverified: true,
         rollbackTargetDigest: baselineReleaseSetDigest,
-        rollbackLedgerPreviousDigest,
+        rollbackLedgerHeadAttestationId: ledgerHeadAttestation.attestationId,
+        rollbackLedgerHeadAttestationDigest:
+          ledgerHeadAttestation.attestationDigest,
+        rollbackLedgerPreviousDigest: ledgerHeadAttestation.ledgerHeadDigest,
+        rollbackLedgerEntrySequence,
         rollbackLedgerEntryDigest,
         rollbackLedgerAppendVerified: true,
         auditRef:

@@ -112,12 +112,20 @@ export async function loadAndValidateSupplyChainRollbackQualificationPackage(
     drillPolicy.prerequisite?.exactT054PlanRequired !== true ||
     drillPolicy.prerequisite?.sameProviderAndAdapterRequired !== true ||
     drillPolicy.prerequisite?.independentlyConfiguredTrustPolicyDigestRequired !== true ||
+    drillPolicy.prerequisite?.authenticatedRollbackLedgerHeadAttestationsRequired !== true ||
     drillPolicy.execution?.readOnlyArtifactMountRequired !== true ||
     drillPolicy.execution?.exactSignatureEnvelopeDigestRequired !== true ||
     drillPolicy.execution?.exactProvenanceEnvelopeDigestRequired !== true ||
     drillPolicy.execution?.externalDatabaseEnrichmentRejectedBeforeEgress !== true ||
     drillPolicy.execution?.aggregateMetricsAcceptedFromCaller !== false ||
+    !Array.isArray(drillPolicy.execution?.rollbackLedgerHeadSignatureRoles) ||
+    !arraysEqual(
+      drillPolicy.execution.rollbackLedgerHeadSignatureRoles,
+      ['QUALIFICATION_AUTHORITY', 'SUPPLY_CHAIN_AUTHORITY']
+    ) ||
     drillPolicy.rollback?.appendOnlyActivationLedgerRequired !== true ||
+    drillPolicy.rollback?.authenticatedPriorLedgerHeadRequired !== true ||
+    drillPolicy.rollback?.exactLedgerSequenceIncrementRequired !== true ||
     drillPolicy.prohibited?.localExecutionAllowed !== false ||
     drillPolicy.prohibited?.productionMutationAllowed !== false ||
     drillPolicy.authority?.kubernetesAuthority !== false ||

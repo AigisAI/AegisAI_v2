@@ -722,8 +722,11 @@ match. Trust-bundle bytes are accepted only when their digest equals independent
 
 Before execution, all 36 T054 dependency artifacts must have their complete signature and
 provenance envelopes reloaded, both envelope digests recomputed, provenance subject/source/
-builder/materials rebound, and both `SUPPLY_CHAIN_AUTHORITY` Ed25519 signatures verified. Security
-Engineering and Scan Platform approvals must sign the exact plan strictly before its first attempt.
+builder/materials rebound, and both `SUPPLY_CHAIN_AUTHORITY` Ed25519 signatures verified. For every
+profile, Qualification Authority and Supply Chain Authority must sign the exact durable prior
+rollback-ledger head digest, sequence, digest-bound reference, provider, and candidate/baseline
+release sets before the attestations enter the plan. Security Engineering and Scan Platform
+approvals must bind that exact plan strictly before the earliest submitted receipt or attempt.
 
 The immutable denominator and thresholds are:
 
@@ -751,9 +754,11 @@ digests. Negative cells must reject before invocation or egress and retain the o
 
 For every profile, rollback must bind exact candidate/baseline release-set digests and prove in
 order: candidate suspension, queue-admission fence, in-flight abort and cleanup, derived and
-reverified last-known-good target, and baseline `STANDBY -> ACTIVE` activation through a digest-
-chained append-only ledger entry. Candidate invocation after the fence is exactly zero, and each
-ledger entry is rebound to the receipt audit ref.
+reverified last-known-good target, and baseline `STANDBY -> ACTIVE` activation through an append-
+only ledger entry. Candidate invocation after the fence is exactly zero. The final receipt must
+reference its exact approved head attestation, repeat the attested previous digest, increment the
+attested sequence by exactly one, and bind the new entry digest to both the head attestation and the
+receipt audit ref.
 
 A valid strict subset is `PENDING_DRILL_EXECUTION`; missing T054 evidence remains
 `BLOCKED_T054_QUALIFICATION`; malformed, stale, reused, unsigned, cross-provider, over-SLO,

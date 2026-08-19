@@ -889,14 +889,18 @@ must match, and trust-bundle bytes must match independently configured
 and provenance envelope is loaded again, its digest and provenance relations are recomputed, and
 its `SUPPLY_CHAIN_AUTHORITY` signature is reverified.
 
-Security Engineering and Scan Platform approve before the first attempt. Supply Chain Authority,
-MicroVM Provider, and Qualification Runtime independently sign each receipt, whose identities and
-attestation/audit references are globally single-use. Positive artifacts mount read-only and are
-rehashed; negative variants reject before invocation or egress. Rollback is an ordered five-phase
-proof over exact candidate/baseline release-set digests: suspend, fence, abort and clean in-flight
-work, derive and reverify last-known-good, then append a digest-chained activation ledger entry that
-moves only the baseline from `STANDBY` to `ACTIVE`. No customer code, package install, build,
-dynamic test, public egress, Kubernetes action, or production mutation is permitted.
+For each profile, Qualification Authority and Supply Chain Authority signatures authenticate the
+durable rollback-ledger head digest, sequence, reference, provider, and exact candidate/baseline
+release sets before the plan is approved. Security Engineering and Scan Platform approvals bind
+those attestations and strictly predate the earliest submitted receipt or attempt. Supply Chain
+Authority, MicroVM Provider, and Qualification Runtime independently sign each receipt, whose
+identities and attestation/audit references are globally single-use. Positive artifacts mount
+read-only and are rehashed; negative variants reject before invocation or egress. Rollback is an
+ordered five-phase proof over exact candidate/baseline release-set digests: suspend, fence, abort and
+clean in-flight work, derive and reverify last-known-good, then append an activation ledger entry
+that references the authenticated head and uses exactly `head.sequence + 1`, moving only the
+baseline from `STANDBY` to `ACTIVE`. No customer code, package install, build, dynamic test, public
+egress, Kubernetes action, or production mutation is permitted.
 
 **Rationale**: A signed T054 aggregate does not prove that deployment-time artifacts still match
 their reviewed envelopes, an unlisted binary cannot run, vulnerability data remains internal and

@@ -3502,6 +3502,8 @@ test('SAST T055 qualifies supply-chain, database, schema, and rollback controls 
   assert.match(shared, /observedSignatureEnvelopeDigest/);
   assert.match(shared, /observedProvenanceEnvelopeDigest/);
   assert.match(shared, /rollbackLedgerEntryDigest/);
+  assert.match(shared, /rollbackLedgerHeadAttestations/);
+  assert.match(shared, /ledgerHeadSequence/);
   assert.match(shared, /expectedCellCount: 169/);
   assert.match(shared, /BLOCKED_T054_QUALIFICATION/);
   assert.match(shared, /aggregateMetricsAcceptedFromCaller: false/);
@@ -3545,11 +3547,21 @@ test('SAST T055 qualifies supply-chain, database, schema, and rollback controls 
   assert.equal(policy.prerequisite.exactT054ResultRequired, true);
   assert.equal(policy.prerequisite.exactT054ArtifactVerificationSetRequired, true);
   assert.equal(policy.prerequisite.sameProviderAndAdapterRequired, true);
+  assert.equal(
+    policy.prerequisite.authenticatedRollbackLedgerHeadAttestationsRequired,
+    true
+  );
   assert.equal(policy.execution.readOnlyArtifactMountRequired, true);
   assert.equal(policy.execution.exactSignatureEnvelopeDigestRequired, true);
   assert.equal(policy.execution.exactProvenanceEnvelopeDigestRequired, true);
   assert.equal(policy.execution.aggregateMetricsAcceptedFromCaller, false);
+  assert.deepEqual(policy.execution.rollbackLedgerHeadSignatureRoles, [
+    'QUALIFICATION_AUTHORITY',
+    'SUPPLY_CHAIN_AUTHORITY'
+  ]);
   assert.equal(policy.rollback.appendOnlyActivationLedgerRequired, true);
+  assert.equal(policy.rollback.authenticatedPriorLedgerHeadRequired, true);
+  assert.equal(policy.rollback.exactLedgerSequenceIncrementRequired, true);
   assert.equal(policy.prohibited.localExecutionAllowed, false);
   assert.equal(policy.authority.kubernetesAuthority, false);
   assert.equal(policy.authority.productionReadinessAuthority, false);
@@ -3565,6 +3577,7 @@ test('SAST T055 qualifies supply-chain, database, schema, and rollback controls 
   assert.match(validator, /BLOCKED_T054_QUALIFICATION/);
   assert.match(planTool, /buildSastSupplyChainRollbackQualificationPlan/);
   assert.match(planTool, /--t054-artifact-verification-set/);
+  assert.match(planTool, /--rollback-ledger-head-attestations/);
   assert.match(evidenceTool, /new Date\(\)\.toISOString\(\)/);
   assert.doesNotMatch(evidenceTool, /'--evaluated-at'/);
   assert.match(trustTool, /SAST_T055_TRUST_POLICY_DIGEST/);

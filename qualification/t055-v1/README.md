@@ -17,8 +17,11 @@ component rejection, six internal vulnerability-database drills, three result-sc
   before artifact invocation or external egress.
 - Rollback evidence is ordered per profile: suspend candidate, fence queue admission, abort and
   clean in-flight work, derive and reverify the exact last-known-good release set, then activate
-  that baseline through a digest-chained append-only audit entry.
-- Detached Security Engineering and Scan Platform approvals must strictly predate execution.
+  that baseline through a digest-chained append-only audit entry. Before plan approval, each
+  profile's durable prior ledger head and sequence are authenticated by independent Qualification
+  Authority and Supply Chain Authority signatures; the activation must be its exact next entry.
+- Detached Security Engineering and Scan Platform approvals must strictly predate the earliest
+  submitted receipt or attempt.
   Supply Chain Authority, MicroVM Provider, and Qualification Runtime signatures are required on
   every receipt. Attempt, sandbox, workload, attestation, audit, receipt, and cell identities are
   globally single-use.
@@ -29,9 +32,9 @@ component rejection, six internal vulnerability-database drills, three result-sc
 - A complete pass authorizes entry to T056 only. It grants no finding, policy, publication,
   deployment, Kubernetes, or production-readiness authority.
 
-Manifest: `sha256:cb4b009f58577ed1dd43472bb4579b8927a6327c5fa8ef9a4429e1b5c2b39f0f`
+Manifest: `sha256:662f8c25f9e9a4c236fb170339c7cf8eb13fd73433a0843b6caf00e9d006286e`
 T054 manifest: `sha256:fdbede0e8361b739988770f9ecc53b22afd2d6b9e44a4e3659c6d1bd6147a4c4`
-Drill policy: `sha256:289a9b5abcdd7cd559b0871d5cff7b0d1876e3c74f0201c065dedd370b166a2b`
+Drill policy: `sha256:5c2aaac36e6534a9ac103201ca35874bbf7737e8eb85d791f683ec9ccb1d56bf`
 
 Do not hand-edit generated assets. Change the reviewed generator, increment the immutable
 revision, regenerate, and run `corepack pnpm qualification:validate`.

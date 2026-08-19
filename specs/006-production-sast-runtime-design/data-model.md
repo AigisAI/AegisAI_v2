@@ -1403,8 +1403,12 @@ An entry attestation signed by `QUALIFICATION_AUTHORITY` binds the exact T054 ma
 result, dependency set, complete artifact-verification set, execution plan, and T055 manifest. Plan
 construction validates the complete T054 plan again, requires the same provider ID and adapter,
 loads and reverifies all artifact signature/provenance envelopes, and accepts only trust-bundle
-bytes matching process-owned `SAST_T055_TRUST_POLICY_DIGEST`. Detached Security Engineering and
-Scan Platform approvals sign the exact plan and must strictly predate its first receipt.
+bytes matching process-owned `SAST_T055_TRUST_POLICY_DIGEST`. One ledger-head attestation per
+profile binds the durable prior head digest, non-negative sequence, digest-bound storage reference,
+provider, and exact candidate/baseline release sets. Qualification Authority and Supply Chain
+Authority independently sign each attestation before it is embedded in the plan. Detached Security
+Engineering and Scan Platform approvals sign that exact plan and must strictly predate the earliest
+submitted receipt or attempt.
 
 ### SastSupplyChainRollbackQualificationReceipt and Result
 
@@ -1414,6 +1418,13 @@ counts, prohibited-effect observations, cleanup evidence, and unique attempt, sa
 attestation, audit, and receipt identities. Supply Chain Authority, MicroVM Provider, and
 Qualification Runtime independently sign the receipt digest. Failure receipts retain negative
 observations instead of sanitizing them into a pass.
+
+Only the final activation receipt opens rollback-ledger fields. It must reference the exact
+profile-specific ledger-head attestation carried by the approved plan, repeat that attested head as
+its previous digest, and use exactly the attested sequence plus one. The new entry digest commits
+the head-attestation digest, prior digest and sequence, next sequence, profile, candidate and
+baseline release sets, target, action, and activation time; its audit reference is digest-bound to
+that entry. All non-final phases must keep every ledger field closed.
 
 Rollback receipts additionally bind exact candidate and baseline release-set digests, candidate/
 baseline states, the queue fence, in-flight workload before/after and abort confirmation,

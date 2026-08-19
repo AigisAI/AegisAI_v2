@@ -282,10 +282,12 @@ negative cells reject before artifact invocation, while 39 positive cells permit
 artifact invocation. Plan construction requires the exact passing T054 manifest/result/dependency/
 artifact-verification/plan chain, a Qualification Authority entry signature, the same provider and
 adapter, and a separately configured `SAST_T055_TRUST_POLICY_DIGEST`. It reloads and reverifies every
-artifact signature/provenance envelope. Three receipt authorities bind all evidence, and rollback
-proves the exact candidate/baseline release sets, queue fencing, in-flight abort and cleanup,
-last-known-good derivation, zero post-fence candidate invocation, and a digest-chained append-only
-activation ledger. Repository validation stays `BLOCKED_T054_QUALIFICATION`; a complete pass may
+artifact signature/provenance envelope. Qualification Authority and Supply Chain Authority
+authenticate each profile's durable prior ledger head and sequence before the dual-approved plan
+is issued. Three receipt authorities bind all evidence, and rollback proves the exact candidate/
+baseline release sets, queue fencing, in-flight abort and cleanup, last-known-good derivation, zero
+post-fence candidate invocation, and an exact sequence + 1 append from the plan-bound head.
+Repository validation stays `BLOCKED_T054_QUALIFICATION`; a complete pass may
 authorize T056 only and never deployment, Kubernetes, or production readiness.
 
 ## Key Interfaces

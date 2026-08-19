@@ -24,6 +24,7 @@ import {
   isSastEndToEndQualificationManifestValid,
   isSastEndToEndQualificationResultValid,
   isSastSupplyChainRollbackQualificationEntryAttestationValid,
+  isSastSupplyChainRollbackQualificationLedgerHeadAttestationValid,
   serializeSastEndToEndQualificationSignaturePayload
 } from '../../packages/shared/dist/index.js';
 import {
@@ -179,6 +180,20 @@ test('T055 tools pin an independent trust root and verify every Ed25519 authorit
     true,
     'fixture entry attestation must bind the real T054 prerequisite'
   );
+  assert.equal(bundle.rollbackLedgerHeadAttestations.length, 3);
+  assert.ok(
+    bundle.rollbackLedgerHeadAttestations.every((attestation) =>
+      isSastSupplyChainRollbackQualificationLedgerHeadAttestationValid(
+        attestation,
+        qualificationPackage.manifest,
+        bundle.dependencySet,
+        bundle.plan.plannedAt,
+        verifySignature,
+        digest
+      )
+    ),
+    'fixture rollback ledger heads must be independently signed and authenticated'
+  );
 
   const t054ResultPath = await writeJson(
     temporaryRoot,
@@ -205,6 +220,11 @@ test('T055 tools pin an independent trust root and verify every Ed25519 authorit
     't055-entry-attestation.json',
     bundle.entryAttestation
   );
+  const ledgerHeadPath = await writeJson(
+    temporaryRoot,
+    't055-rollback-ledger-head-attestations.json',
+    bundle.rollbackLedgerHeadAttestations
+  );
   const trustPath = join(temporaryRoot, 'trust-bundle.json');
   await writeFile(trustPath, trust.text, 'utf8');
 
@@ -219,6 +239,8 @@ test('T055 tools pin an independent trust root and verify every Ed25519 authorit
     t054PlanPath,
     '--entry-attestation',
     entryPath,
+    '--rollback-ledger-head-attestations',
+    ledgerHeadPath,
     '--trust-bundle',
     trustPath
   ];
@@ -236,10 +258,36 @@ test('T055 tools pin an independent trust root and verify every Ed25519 authorit
   const trustedEnvironment = {
     SAST_T055_TRUST_POLICY_DIGEST: digest(trust.text)
   };
+  const tamperedLedgerHeads = structuredClone(
+    bundle.rollbackLedgerHeadAttestations
+  );
+  tamperedLedgerHeads[0].signatures[0].valueBase64 =
+    Buffer.alloc(64).toString('base64');
+  const tamperedLedgerHeadPath = await writeJson(
+    temporaryRoot,
+    't055-tampered-rollback-ledger-head-attestations.json',
+    tamperedLedgerHeads
+  );
+  const tamperedLedgerHeadArgs = [...planArgs];
+  tamperedLedgerHeadArgs[
+    tamperedLedgerHeadArgs.indexOf('--rollback-ledger-head-attestations') + 1
+  ] = tamperedLedgerHeadPath;
+  const tamperedLedgerHeadRun = await runNode(
+    planTool,
+    tamperedLedgerHeadArgs,
+    trustedEnvironment
+  );
+  assert.equal(tamperedLedgerHeadRun.code, 1);
+  assert.match(
+    tamperedLedgerHeadRun.stderr,
+    /failed to create T055 drill execution plan/u
+  );
+
   const planRun = await runNode(planTool, planArgs, trustedEnvironment);
   assert.equal(planRun.code, 0, planRun.stderr);
   const plan = JSON.parse(planRun.stdout);
   assert.equal(plan.executionCellCount, 169);
+  assert.equal(plan.rollbackLedgerHeadAttestations.length, 3);
   assert.equal(plan.aggregateMetricsAcceptedFromCaller, false);
   assert.equal(plan.productionReadinessAuthority, false);
 
@@ -406,7 +454,10 @@ function buildPartialEvidence(
       inFlightCandidateWorkloadCountBefore: 0,
       inFlightCandidateWorkloadCountAfter: 0,
       inFlightAbortConfirmed: false,
+      rollbackLedgerHeadAttestationId: null,
+      rollbackLedgerHeadAttestationDigest: null,
       rollbackLedgerPreviousDigest: null,
+      rollbackLedgerEntrySequence: null,
       rollbackLedgerEntryDigest: null,
       rollbackLedgerAppendVerified: false,
       preExecutionRejected: false,

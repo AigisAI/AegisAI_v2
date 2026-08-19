@@ -13,7 +13,8 @@
     "exactT054PlanRequired": true,
     "sameProviderAndAdapterRequired": true,
     "qualificationAuthorityEntryAttestationRequired": true,
-    "independentlyConfiguredTrustPolicyDigestRequired": true
+    "independentlyConfiguredTrustPolicyDigestRequired": true,
+    "authenticatedRollbackLedgerHeadAttestationsRequired": true
   },
   "execution": {
     "evidenceStage": "T055_SUPPLY_CHAIN_DATABASE_SCHEMA_ROLLBACK",
@@ -34,6 +35,10 @@
       "SUPPLY_CHAIN_AUTHORITY",
       "MICROVM_PROVIDER",
       "QUALIFICATION_RUNTIME"
+    ],
+    "rollbackLedgerHeadSignatureRoles": [
+      "QUALIFICATION_AUTHORITY",
+      "SUPPLY_CHAIN_AUTHORITY"
     ]
   },
   "denominators": {
@@ -62,7 +67,9 @@
     "candidateInvocationsAfterFenceMaximum": 0,
     "inFlightAbortEvidenceRequired": true,
     "lastKnownGoodReverificationRequired": true,
-    "appendOnlyActivationLedgerRequired": true
+    "appendOnlyActivationLedgerRequired": true,
+    "authenticatedPriorLedgerHeadRequired": true,
+    "exactLedgerSequenceIncrementRequired": true
   },
   "prohibited": {
     "customerContentAccepted": false,

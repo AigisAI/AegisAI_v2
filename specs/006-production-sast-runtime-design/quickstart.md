@@ -794,14 +794,18 @@ still requires the 005 rollout and the remaining 006 gates.
   same provider/adapter. `SAST_T055_TRUST_POLICY_DIGEST` independently pins the trust bundle, and
   every artifact signature and provenance envelope is reloaded, digest-recomputed, and Ed25519-
   verified before any drill evidence is accepted.
-- Security Engineering and Scan Platform approvals strictly predate execution. Each receipt is
+- Qualification Authority and Supply Chain Authority independently sign each profile's exact
+  durable prior rollback-ledger head, sequence, reference, provider, and release sets before the
+  attestations enter the plan. Security Engineering and Scan Platform approvals bind that plan and
+  strictly predate the earliest submitted receipt or attempt. Each receipt is
   independently signed by Supply Chain Authority, MicroVM Provider, and Qualification Runtime and
   uses globally unique cell, attempt, sandbox, workload, attestation, audit, and receipt identities.
   Mounts are read-only; customer code, package installation, repository build, dynamic testing,
   public egress, and production mutation remain prohibited.
 - Rollback receipts bind exact candidate/baseline release-set digests, fence new candidate work,
   prove in-flight abort and cleanup, derive and reverify the last-known-good baseline, require zero
-  post-fence invocations, and append a digest-chained audit ledger entry for `STANDBY -> ACTIVE`.
+  post-fence invocations, and append `STANDBY -> ACTIVE` only by referencing the exact plan-bound
+  head attestation and using exactly `head.sequence + 1`.
   A complete pass grants only T056 entry. Repository validation remains
   `BLOCKED_T054_QUALIFICATION` and never grants Kubernetes, deployment, or production-readiness
   authority.
@@ -856,8 +860,10 @@ Before claiming the 006 design milestone complete:
 15. Validate the T055 repository-side 169-cell supply-chain and rollback contract, confirm it
     remains `BLOCKED_T054_QUALIFICATION`, and never issue its drill plan without the exact signed
     T054 pass, same-provider dependency/verification/plan bindings, and independently pinned trust
-    policy. Never treat synthetic signatures, local receipts, or repository validation as external
-    supply-chain, rollback, T056, Kubernetes, deployment, or production-readiness evidence.
+    policy. Confirm every profile has a dual-signed durable prior-ledger-head attestation in the
+    approved plan and that final activation accepts only its exact sequence + 1. Never treat
+    synthetic signatures, local receipts, or repository validation as external supply-chain,
+    rollback, T056, Kubernetes, deployment, or production-readiness evidence.
 
 ## Validation Commands
 

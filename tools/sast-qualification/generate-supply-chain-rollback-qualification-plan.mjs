@@ -23,6 +23,7 @@ const args = parseExactArguments(process.argv.slice(2), {
   '--t054-artifact-verification-set': true,
   '--t054-plan': true,
   '--entry-attestation': true,
+  '--rollback-ledger-head-attestations': true,
   '--trust-bundle': true
 });
 const [
@@ -31,6 +32,7 @@ const [
   artifactVerificationInput,
   t054PlanInput,
   entryInput,
+  ledgerHeadInput,
   trustInput
 ] = await Promise.all([
   readQualificationJson(args['--t054-result'], 8 * 1024 * 1024, 'T054 result'),
@@ -49,6 +51,11 @@ const [
     args['--entry-attestation'],
     2 * 1024 * 1024,
     'T055 entry attestation'
+  ),
+  readQualificationJson(
+    args['--rollback-ledger-head-attestations'],
+    4 * 1024 * 1024,
+    'T055 authenticated rollback ledger heads'
   ),
   readQualificationJson(args['--trust-bundle'], 2 * 1024 * 1024, 'T055 trust bundle')
 ]);
@@ -106,6 +113,7 @@ const plan = buildSastSupplyChainRollbackQualificationPlan(
     t054ArtifactVerificationSet: artifactVerificationInput.value,
     t054Plan: t054PlanInput.value,
     entryAttestation: entryInput.value,
+    rollbackLedgerHeadAttestations: ledgerHeadInput.value,
     plannedAt: new Date().toISOString(),
     verifySignature
   },

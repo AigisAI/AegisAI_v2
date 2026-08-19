@@ -420,15 +420,20 @@ command-line flags, rule code, templates, post-processors, or executable configu
 - The T055 trust root is independently pinned through `SAST_T055_TRUST_POLICY_DIGEST`. Each artifact
   signature and provenance envelope is reloaded, digest-recomputed, provenance-rebound, and
   Ed25519-verified before any drill evidence is admitted.
-- Security Engineering and Scan Platform approvals strictly predate execution. Supply Chain
+- Qualification Authority and Supply Chain Authority independently sign each profile's durable
+  prior rollback-ledger head digest, sequence, digest-bound reference, provider, and exact release
+  sets before plan approval. Security Engineering and Scan Platform approvals bind those exact
+  attestations and strictly predate the earliest submitted receipt or attempt. Supply Chain
   Authority, MicroVM Provider, and Qualification Runtime sign every receipt; all execution,
   attestation, audit, receipt, and cell identities are globally single-use. Customer code, package
   installation, repository builds, dynamic tests, public egress, and production mutation remain
   prohibited.
 - Rollback binds exact candidate/baseline release sets and proves suspension, queue fencing,
   in-flight abort and cleanup, last-known-good derivation and reverification, zero post-fence
-  candidate invocation, and baseline `STANDBY -> ACTIVE` through a digest-chained append-only audit
-  ledger. Failed evidence remains visible and cannot be erased by a favorable aggregate.
+  candidate invocation, and baseline `STANDBY -> ACTIVE` through an append-only audit entry that
+  references the exact plan-bound head attestation, repeats the attested previous digest, and uses
+  exactly `head.sequence + 1`. Failed evidence remains visible and cannot be erased by a favorable
+  aggregate.
 - A valid subset is `PENDING_DRILL_EXECUTION`; any invalid or zero-tolerance evidence is `FAILED`;
   all 169 passing cells grant T056 entry only. T055 cannot create findings, alter policy, select or
   mutate production lifecycle state, publish, deploy Kubernetes, or establish production readiness.

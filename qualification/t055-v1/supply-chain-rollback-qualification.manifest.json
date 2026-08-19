@@ -3,8 +3,8 @@
   "revision": "1.0.0",
   "publishedAt": "2026-08-20T00:00:00.000Z",
   "ownerRef": "team://security-engineering/sast-supply-chain/sha256:88522a08ae91bfebbbfeaadf267bdcbbcb42804eb0caf10371b6c28d6a0ccfbb",
-  "drillPolicyRef": "repository-file://qualification/t055-v1/drill-policy.json/sha256:289a9b5abcdd7cd559b0871d5cff7b0d1876e3c74f0201c065dedd370b166a2b",
-  "drillPolicyDigest": "sha256:289a9b5abcdd7cd559b0871d5cff7b0d1876e3c74f0201c065dedd370b166a2b",
+  "drillPolicyRef": "repository-file://qualification/t055-v1/drill-policy.json/sha256:5c2aaac36e6534a9ac103201ca35874bbf7737e8eb85d791f683ec9ccb1d56bf",
+  "drillPolicyDigest": "sha256:5c2aaac36e6534a9ac103201ca35874bbf7737e8eb85d791f683ec9ccb1d56bf",
   "t054ManifestId": "sast-end-to-end-qualification-manifest://fdbede0e8361b739988770f9ecc53b22afd2d6b9e44a4e3659c6d1bd6147a4c4",
   "t054ManifestDigest": "sha256:fdbede0e8361b739988770f9ecc53b22afd2d6b9e44a4e3659c6d1bd6147a4c4",
   "artifactKeys": [
@@ -4304,6 +4304,6 @@
   "deploymentAuthority": false,
   "productionReadinessAuthority": false,
   "immutable": true,
-  "manifestId": "sast-supply-chain-rollback-qualification-manifest://cb4b009f58577ed1dd43472bb4579b8927a6327c5fa8ef9a4429e1b5c2b39f0f",
-  "manifestDigest": "sha256:cb4b009f58577ed1dd43472bb4579b8927a6327c5fa8ef9a4429e1b5c2b39f0f"
+  "manifestId": "sast-supply-chain-rollback-qualification-manifest://662f8c25f9e9a4c236fb170339c7cf8eb13fd73433a0843b6caf00e9d006286e",
+  "manifestDigest": "sha256:662f8c25f9e9a4c236fb170339c7cf8eb13fd73433a0843b6caf00e9d006286e"
 }

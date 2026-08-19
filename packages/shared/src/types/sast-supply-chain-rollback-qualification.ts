@@ -42,6 +42,8 @@ export const SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_RESULT_VERSION =
   'sast-supply-chain-rollback-qualification-result-v1' as const;
 export const SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_ENTRY_VERSION =
   'sast-supply-chain-rollback-qualification-ledger-entry-v1' as const;
+export const SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_ATTESTATION_VERSION =
+  'sast-supply-chain-rollback-qualification-ledger-head-attestation-v1' as const;
 
 export const SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_DRILL_KINDS = [
   'ARTIFACT_MOUNT_REHASH_ACCEPT',
@@ -102,6 +104,11 @@ export const SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_RECEIPT_SIGNATURE_ROLES = 
   'SUPPLY_CHAIN_AUTHORITY',
   'MICROVM_PROVIDER',
   'QUALIFICATION_RUNTIME'
+] as const satisfies readonly SastEndToEndQualificationSignatureRole[];
+
+export const SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_SIGNATURE_ROLES = [
+  'QUALIFICATION_AUTHORITY',
+  'SUPPLY_CHAIN_AUTHORITY'
 ] as const satisfies readonly SastEndToEndQualificationSignatureRole[];
 
 export const SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_FAILURE_REASONS = [
@@ -265,6 +272,32 @@ export interface SastSupplyChainRollbackQualificationEntryAttestation
   signature: SastEndToEndQualificationSignature;
 }
 
+export interface SastSupplyChainRollbackQualificationLedgerHeadAttestationCore {
+  version: typeof SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_ATTESTATION_VERSION;
+  manifestId: string;
+  manifestDigest: string;
+  dependencySetId: string;
+  dependencySetDigest: string;
+  providerId: string;
+  providerAdapterRef: string;
+  profileId: SastProfileId;
+  candidateReleaseSetDigest: string;
+  baselineReleaseSetDigest: string;
+  ledgerHeadDigest: string;
+  ledgerHeadSequence: number;
+  ledgerHeadRef: string;
+  observedAt: string;
+  appendOnlyLedgerVerified: true;
+  productionMutationAuthority: false;
+}
+
+export interface SastSupplyChainRollbackQualificationLedgerHeadAttestation
+  extends SastSupplyChainRollbackQualificationLedgerHeadAttestationCore {
+  attestationId: string;
+  attestationDigest: string;
+  signatures: SastEndToEndQualificationSignature[];
+}
+
 export interface SastSupplyChainRollbackQualificationPlanCore {
   version: typeof SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_PLAN_VERSION;
   manifestId: string;
@@ -281,6 +314,8 @@ export interface SastSupplyChainRollbackQualificationPlanCore {
   entryAttestationDigest: string;
   providerId: string;
   providerAdapterRef: string;
+  rollbackLedgerHeadAttestations:
+    SastSupplyChainRollbackQualificationLedgerHeadAttestation[];
   executionCellCount: number;
   requiredApprovalRoles: string[];
   requiredReceiptSignatureRoles: string[];
@@ -357,7 +392,10 @@ export interface SastSupplyChainRollbackQualificationReceiptCore {
   inFlightCandidateWorkloadCountBefore: number;
   inFlightCandidateWorkloadCountAfter: number;
   inFlightAbortConfirmed: boolean;
+  rollbackLedgerHeadAttestationId: string | null;
+  rollbackLedgerHeadAttestationDigest: string | null;
   rollbackLedgerPreviousDigest: string | null;
+  rollbackLedgerEntrySequence: number | null;
   rollbackLedgerEntryDigest: string | null;
   rollbackLedgerAppendVerified: boolean;
   preExecutionRejected: boolean;
@@ -489,12 +527,21 @@ const ENTRY_CORE_KEYS = [
   'publicationAuthority', 'deploymentAuthority', 'productionReadinessAuthority'
 ] as const;
 
+const LEDGER_HEAD_CORE_KEYS = [
+  'version', 'manifestId', 'manifestDigest', 'dependencySetId',
+  'dependencySetDigest', 'providerId', 'providerAdapterRef', 'profileId',
+  'candidateReleaseSetDigest', 'baselineReleaseSetDigest', 'ledgerHeadDigest',
+  'ledgerHeadSequence', 'ledgerHeadRef', 'observedAt',
+  'appendOnlyLedgerVerified', 'productionMutationAuthority'
+] as const;
+
 const PLAN_CORE_KEYS = [
   'version', 'manifestId', 'manifestDigest', 't054ResultId', 't054ResultDigest',
   't054DependencySetId', 't054DependencySetDigest',
   't054ArtifactVerificationSetId', 't054ArtifactVerificationSetDigest',
   't054PlanId', 't054PlanDigest', 'entryAttestationId', 'entryAttestationDigest',
-  'providerId', 'providerAdapterRef', 'executionCellCount',
+  'providerId', 'providerAdapterRef', 'rollbackLedgerHeadAttestations',
+  'executionCellCount',
   'requiredApprovalRoles', 'requiredReceiptSignatureRoles', 'plannedAt',
   'executionEnvironment', 'detachedDualApprovalRequired',
   'oneFreshIsolatedEnvironmentPerDrill', 'aggregateMetricsAcceptedFromCaller',
@@ -519,8 +566,10 @@ const RECEIPT_CORE_KEYS = [
   'baselineReverified', 'candidateInvocationsAfterFence', 'preExecutionRejected',
   'candidateReleaseSetDigest', 'baselineReleaseSetDigest', 'rollbackTargetDigest',
   'inFlightCandidateWorkloadCountBefore', 'inFlightCandidateWorkloadCountAfter',
-  'inFlightAbortConfirmed', 'rollbackLedgerPreviousDigest',
-  'rollbackLedgerEntryDigest', 'rollbackLedgerAppendVerified',
+  'inFlightAbortConfirmed', 'rollbackLedgerHeadAttestationId',
+  'rollbackLedgerHeadAttestationDigest', 'rollbackLedgerPreviousDigest',
+  'rollbackLedgerEntrySequence', 'rollbackLedgerEntryDigest',
+  'rollbackLedgerAppendVerified',
   'artifactInvocationCount', 'networkEgressCount', 'productionMutationCount',
   'customerContentObserved', 'customerCodeExecuted', 'packageInstallObserved',
   'repositoryBuildObserved', 'dynamicTestObserved', 'cleanupComplete',
@@ -823,6 +872,150 @@ export function isSastSupplyChainRollbackQualificationEntryAttestationValid(
   }
 }
 
+export function buildSastSupplyChainRollbackQualificationLedgerHeadAttestation(
+  input: Omit<
+    SastSupplyChainRollbackQualificationLedgerHeadAttestationCore,
+    'version' | 'appendOnlyLedgerVerified' | 'productionMutationAuthority'
+  >,
+  signatures: SastEndToEndQualificationSignature[],
+  digestCanonical: SastEndToEndQualificationCanonicalDigester
+): SastSupplyChainRollbackQualificationLedgerHeadAttestation | null {
+  try {
+    if (
+      !hasExactKeys(input, [
+        'manifestId', 'manifestDigest', 'dependencySetId', 'dependencySetDigest',
+        'providerId', 'providerAdapterRef', 'profileId',
+        'candidateReleaseSetDigest', 'baselineReleaseSetDigest', 'ledgerHeadDigest',
+        'ledgerHeadSequence', 'ledgerHeadRef', 'observedAt'
+      ]) ||
+      !isDigestBoundIdentity(input.manifestId, input.manifestDigest) ||
+      !isDigestBoundIdentity(input.dependencySetId, input.dependencySetDigest) ||
+      !isReferenceWithPrefix(input.providerId, 'microvm-provider://') ||
+      !isDigestBoundReferenceWithPrefix(
+        input.providerAdapterRef,
+        'provider-adapter://'
+      ) ||
+      !SAST_PROFILE_IDS.includes(input.profileId) ||
+      !isDigest(input.candidateReleaseSetDigest) ||
+      !isDigest(input.baselineReleaseSetDigest) ||
+      input.candidateReleaseSetDigest === input.baselineReleaseSetDigest ||
+      !isDigest(input.ledgerHeadDigest) ||
+      !isNonNegativeSafeInteger(input.ledgerHeadSequence) ||
+      input.ledgerHeadSequence >= Number.MAX_SAFE_INTEGER ||
+      !isDigestBoundReferenceWithPrefix(
+        input.ledgerHeadRef,
+        'rollback-ledger-head://'
+      ) ||
+      !input.ledgerHeadRef.endsWith(input.ledgerHeadDigest) ||
+      !isIsoInstant(input.observedAt)
+    ) {
+      return null;
+    }
+    const core: SastSupplyChainRollbackQualificationLedgerHeadAttestationCore = {
+      version:
+        SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_ATTESTATION_VERSION,
+      ...input,
+      appendOnlyLedgerVerified: true,
+      productionMutationAuthority: false
+    };
+    const attestationDigest = digestCanonical(stableJson(core));
+    if (
+      !isDigest(attestationDigest) ||
+      !isSignatureSetValid(
+        signatures,
+        SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_SIGNATURE_ROLES,
+        attestationDigest,
+        input.observedAt,
+        input.observedAt,
+        () => true
+      )
+    ) {
+      return null;
+    }
+    return {
+      ...core,
+      attestationId:
+        `sast-supply-chain-rollback-qualification-ledger-head-attestation://${attestationDigest.slice('sha256:'.length)}`,
+      attestationDigest,
+      signatures
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function isSastSupplyChainRollbackQualificationLedgerHeadAttestationValid(
+  value: unknown,
+  manifest: SastSupplyChainRollbackQualificationManifest,
+  dependencySet: SastEndToEndQualificationDependencySet,
+  trustedAt: string,
+  verifySignature: SastEndToEndQualificationSignatureVerifier,
+  digestCanonical: SastEndToEndQualificationCanonicalDigester
+): value is SastSupplyChainRollbackQualificationLedgerHeadAttestation {
+  try {
+    if (
+      !isRecord(value) ||
+      !hasExactKeys(value, [
+        ...LEDGER_HEAD_CORE_KEYS, 'attestationId', 'attestationDigest', 'signatures'
+      ]) ||
+      !isIsoInstant(trustedAt)
+    ) {
+      return false;
+    }
+    const candidate =
+      value as unknown as SastSupplyChainRollbackQualificationLedgerHeadAttestation;
+    const rebuilt =
+      buildSastSupplyChainRollbackQualificationLedgerHeadAttestation(
+        omitKeys(candidate, [
+          'version', 'appendOnlyLedgerVerified', 'productionMutationAuthority',
+          'attestationId', 'attestationDigest', 'signatures'
+        ]) as Omit<
+          SastSupplyChainRollbackQualificationLedgerHeadAttestationCore,
+          'version' | 'appendOnlyLedgerVerified' | 'productionMutationAuthority'
+        >,
+        candidate.signatures,
+        digestCanonical
+      );
+    const candidateReleaseSetDigest = releaseSetDigest(
+      dependencySet,
+      'CANDIDATE',
+      digestCanonical
+    );
+    const baselineReleaseSetDigest = releaseSetDigest(
+      dependencySet,
+      'BASELINE',
+      digestCanonical
+    );
+    return (
+      rebuilt !== null &&
+      stableJson(rebuilt) === stableJson(candidate) &&
+      candidate.manifestId === manifest.manifestId &&
+      candidate.manifestDigest === manifest.manifestDigest &&
+      candidate.dependencySetId === dependencySet.dependencySetId &&
+      candidate.dependencySetDigest === dependencySet.dependencySetDigest &&
+      candidate.providerId === dependencySet.providerId &&
+      candidate.providerAdapterRef === dependencySet.providerAdapterRef &&
+      candidate.candidateReleaseSetDigest === candidateReleaseSetDigest &&
+      candidate.baselineReleaseSetDigest === baselineReleaseSetDigest &&
+      Date.parse(candidate.observedAt) >= Date.parse(dependencySet.validFrom) &&
+      Date.parse(candidate.observedAt) <= Date.parse(dependencySet.validUntil) &&
+      Date.parse(candidate.observedAt) <= Date.parse(trustedAt) &&
+      secondsBetween(candidate.observedAt, trustedAt) <=
+        SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LIMITS.maximumEvidenceAgeSeconds &&
+      isSignatureSetValid(
+        candidate.signatures,
+        SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_HEAD_SIGNATURE_ROLES,
+        candidate.attestationDigest as Sha256Digest,
+        candidate.observedAt,
+        candidate.observedAt,
+        verifySignature
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function buildSastSupplyChainRollbackQualificationPlan(
   input: Readonly<{
     manifest: SastSupplyChainRollbackQualificationManifest;
@@ -832,6 +1025,8 @@ export function buildSastSupplyChainRollbackQualificationPlan(
     t054ArtifactVerificationSet: SastEndToEndQualificationArtifactVerificationSet;
     t054Plan: SastEndToEndQualificationExecutionPlan;
     entryAttestation: SastSupplyChainRollbackQualificationEntryAttestation;
+    rollbackLedgerHeadAttestations:
+      SastSupplyChainRollbackQualificationLedgerHeadAttestation[];
     plannedAt: string;
     verifySignature: SastEndToEndQualificationSignatureVerifier;
   }>,
@@ -841,8 +1036,8 @@ export function buildSastSupplyChainRollbackQualificationPlan(
     if (
       !hasExactKeys(input, [
         'manifest', 't054Manifest', 't054Result', 't054DependencySet',
-        't054ArtifactVerificationSet', 't054Plan', 'entryAttestation', 'plannedAt',
-        'verifySignature'
+        't054ArtifactVerificationSet', 't054Plan', 'entryAttestation',
+        'rollbackLedgerHeadAttestations', 'plannedAt', 'verifySignature'
       ]) ||
       !isSastSupplyChainRollbackQualificationEntryAttestationValid(
         input.entryAttestation,
@@ -857,7 +1052,15 @@ export function buildSastSupplyChainRollbackQualificationPlan(
       ) ||
       !isIsoInstant(input.plannedAt) ||
       Date.parse(input.plannedAt) < Date.parse(input.entryAttestation.verifiedAt) ||
-      Date.parse(input.plannedAt) > Date.parse(input.t054DependencySet.validUntil)
+      Date.parse(input.plannedAt) > Date.parse(input.t054DependencySet.validUntil) ||
+      !isRollbackLedgerHeadAttestationSetValid(
+        input.rollbackLedgerHeadAttestations,
+        input.manifest,
+        input.t054DependencySet,
+        input.plannedAt,
+        input.verifySignature,
+        digestCanonical
+      )
     ) {
       return null;
     }
@@ -879,6 +1082,9 @@ export function buildSastSupplyChainRollbackQualificationPlan(
       entryAttestationDigest: input.entryAttestation.attestationDigest,
       providerId: input.t054DependencySet.providerId,
       providerAdapterRef: input.t054DependencySet.providerAdapterRef,
+      rollbackLedgerHeadAttestations: input.rollbackLedgerHeadAttestations.map(
+        (attestation) => ({ ...attestation, signatures: [...attestation.signatures] })
+      ),
       executionCellCount: input.manifest.executionCellCount,
       requiredApprovalRoles: [...SAST_END_TO_END_QUALIFICATION_APPROVAL_ROLES],
       requiredReceiptSignatureRoles: [
@@ -944,6 +1150,8 @@ export function isSastSupplyChainRollbackQualificationPlanValid(
         t054ArtifactVerificationSet: artifactVerificationSet,
         t054Plan,
         entryAttestation,
+        rollbackLedgerHeadAttestations:
+          candidate.rollbackLedgerHeadAttestations,
         plannedAt: candidate.plannedAt,
         verifySignature
       },
@@ -1310,6 +1518,7 @@ export function evaluateSastSupplyChainRollbackQualificationEvidence(
         !receiptMatchesCell(
           receipt,
           cell,
+          plan,
           dependencySet,
           input.t054ArtifactVerificationSet as SastEndToEndQualificationArtifactVerificationSet,
           digestCanonical
@@ -1688,7 +1897,13 @@ function isReceiptCoreValid(
     isNonNegativeInteger(value.inFlightCandidateWorkloadCountBefore) &&
     isNonNegativeInteger(value.inFlightCandidateWorkloadCountAfter) &&
     typeof value.inFlightAbortConfirmed === 'boolean' &&
+    isNullableDigestIdentity(
+      value.rollbackLedgerHeadAttestationId,
+      value.rollbackLedgerHeadAttestationDigest
+    ) &&
     isNullableDigest(value.rollbackLedgerPreviousDigest) &&
+    (value.rollbackLedgerEntrySequence === null ||
+      isNonNegativeSafeInteger(value.rollbackLedgerEntrySequence)) &&
     isNullableDigest(value.rollbackLedgerEntryDigest) &&
     typeof value.rollbackLedgerAppendVerified === 'boolean' &&
     typeof value.preExecutionRejected === 'boolean' &&
@@ -1741,6 +1956,7 @@ function isReceiptBoundToPlan(
 function receiptMatchesCell(
   receipt: SastSupplyChainRollbackQualificationReceipt,
   cell: SastSupplyChainRollbackQualificationCell,
+  plan: SastSupplyChainRollbackQualificationPlan,
   dependencySet: SastEndToEndQualificationDependencySet,
   artifactVerificationSet: SastEndToEndQualificationArtifactVerificationSet,
   digestCanonical: SastEndToEndQualificationCanonicalDigester
@@ -1756,6 +1972,7 @@ function receiptMatchesCell(
     return rollbackReceiptMatches(
       receipt,
       cell.drillKind,
+      plan,
       dependencySet,
       digestCanonical
     );
@@ -1997,7 +2214,10 @@ function nonRollbackStateFieldsClosed(
     receipt.inFlightCandidateWorkloadCountBefore === 0 &&
     receipt.inFlightCandidateWorkloadCountAfter === 0 &&
     receipt.inFlightAbortConfirmed === false &&
+    receipt.rollbackLedgerHeadAttestationId === null &&
+    receipt.rollbackLedgerHeadAttestationDigest === null &&
     receipt.rollbackLedgerPreviousDigest === null &&
+    receipt.rollbackLedgerEntrySequence === null &&
     receipt.rollbackLedgerEntryDigest === null &&
     receipt.rollbackLedgerAppendVerified === false
   );
@@ -2006,6 +2226,7 @@ function nonRollbackStateFieldsClosed(
 function rollbackReceiptMatches(
   receipt: SastSupplyChainRollbackQualificationReceipt,
   drillKind: SastSupplyChainRollbackQualificationDrillKind,
+  plan: SastSupplyChainRollbackQualificationPlan,
   dependencySet: SastEndToEndQualificationDependencySet,
   digestCanonical: SastEndToEndQualificationCanonicalDigester
 ): boolean {
@@ -2019,9 +2240,13 @@ function rollbackReceiptMatches(
     'BASELINE',
     digestCanonical
   );
+  const ledgerHeadAttestation = plan.rollbackLedgerHeadAttestations.find(
+    (attestation) => attestation.profileId === receipt.profileId
+  );
   if (
     candidateReleaseSetDigest === null ||
     baselineReleaseSetDigest === null ||
+    ledgerHeadAttestation === undefined ||
     receipt.observedArtifactDigest !== null ||
     receipt.mountRehashDigest !== null ||
     receipt.observedSignatureEnvelopeDigest !== null ||
@@ -2110,6 +2335,7 @@ function rollbackReceiptMatches(
         inFlightEvidenceClosed(receipt) &&
         rollbackLedgerMatches(
           receipt,
+          ledgerHeadAttestation,
           candidateReleaseSetDigest,
           baselineReleaseSetDigest,
           digestCanonical
@@ -2140,7 +2366,10 @@ function rollbackLedgerClosed(
   receipt: SastSupplyChainRollbackQualificationReceipt
 ): boolean {
   return (
+    receipt.rollbackLedgerHeadAttestationId === null &&
+    receipt.rollbackLedgerHeadAttestationDigest === null &&
     receipt.rollbackLedgerPreviousDigest === null &&
+    receipt.rollbackLedgerEntrySequence === null &&
     receipt.rollbackLedgerEntryDigest === null &&
     receipt.rollbackLedgerAppendVerified === false
   );
@@ -2148,13 +2377,22 @@ function rollbackLedgerClosed(
 
 function rollbackLedgerMatches(
   receipt: SastSupplyChainRollbackQualificationReceipt,
+  ledgerHeadAttestation:
+    SastSupplyChainRollbackQualificationLedgerHeadAttestation,
   candidateReleaseSetDigest: string,
   baselineReleaseSetDigest: string,
   digestCanonical: SastEndToEndQualificationCanonicalDigester
 ): boolean {
   if (
     receipt.profileId === null ||
-    !isDigest(receipt.rollbackLedgerPreviousDigest) ||
+    receipt.rollbackLedgerHeadAttestationId !==
+      ledgerHeadAttestation.attestationId ||
+    receipt.rollbackLedgerHeadAttestationDigest !==
+      ledgerHeadAttestation.attestationDigest ||
+    receipt.rollbackLedgerPreviousDigest !==
+      ledgerHeadAttestation.ledgerHeadDigest ||
+    receipt.rollbackLedgerEntrySequence !==
+      ledgerHeadAttestation.ledgerHeadSequence + 1 ||
     !isDigest(receipt.rollbackLedgerEntryDigest) ||
     receipt.rollbackLedgerAppendVerified !== true
   ) {
@@ -2163,7 +2401,10 @@ function rollbackLedgerMatches(
   const expectedEntryDigest = digestCanonical(
     stableJson({
       version: SAST_SUPPLY_CHAIN_ROLLBACK_QUALIFICATION_LEDGER_ENTRY_VERSION,
-      previousDigest: receipt.rollbackLedgerPreviousDigest,
+      headAttestationDigest: ledgerHeadAttestation.attestationDigest,
+      previousDigest: ledgerHeadAttestation.ledgerHeadDigest,
+      previousSequence: ledgerHeadAttestation.ledgerHeadSequence,
+      sequence: receipt.rollbackLedgerEntrySequence,
       profileId: receipt.profileId,
       candidateReleaseSetDigest,
       baselineReleaseSetDigest,
@@ -2176,6 +2417,42 @@ function rollbackLedgerMatches(
     isDigest(expectedEntryDigest) &&
     receipt.rollbackLedgerEntryDigest === expectedEntryDigest &&
     isDigestBoundReference(receipt.auditRef, expectedEntryDigest)
+  );
+}
+
+function isRollbackLedgerHeadAttestationSetValid(
+  attestations: readonly SastSupplyChainRollbackQualificationLedgerHeadAttestation[],
+  manifest: SastSupplyChainRollbackQualificationManifest,
+  dependencySet: SastEndToEndQualificationDependencySet,
+  trustedAt: string,
+  verifySignature: SastEndToEndQualificationSignatureVerifier,
+  digestCanonical: SastEndToEndQualificationCanonicalDigester
+): boolean {
+  if (
+    !Array.isArray(attestations) ||
+    attestations.length !== SAST_PROFILE_IDS.length ||
+    !arraysEqual(
+      attestations.map((attestation) => attestation.profileId),
+      SAST_PROFILE_IDS
+    ) ||
+    new Set(attestations.map((attestation) => attestation.attestationId)).size !==
+      attestations.length ||
+    new Set(attestations.map((attestation) => attestation.attestationDigest)).size !==
+      attestations.length ||
+    new Set(attestations.map((attestation) => attestation.ledgerHeadRef)).size !==
+      attestations.length
+  ) {
+    return false;
+  }
+  return attestations.every((attestation) =>
+    isSastSupplyChainRollbackQualificationLedgerHeadAttestationValid(
+      attestation,
+      manifest,
+      dependencySet,
+      trustedAt,
+      verifySignature,
+      digestCanonical
+    )
   );
 }
 
@@ -2771,6 +3048,10 @@ function secondsBetween(from: string, to: string): number {
 
 function isNonNegativeInteger(value: unknown): value is number {
   return Number.isInteger(value) && Number(value) >= 0;
+}
+
+function isNonNegativeSafeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) >= 0;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

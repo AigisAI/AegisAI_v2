@@ -230,6 +230,30 @@ test('T055 requires ordered rollback phases and fail-closed cleanup evidence', (
   assert.equal(outOfOrder.status, 'FAILED');
   assert.ok(outOfOrder.failureReasons.includes('ROLLBACK_SEQUENCE_INVALID'));
 
+  const activation = bundle.signedReceipts.find(
+    ({ receipt }) =>
+      receipt.drillKind === 'ROLLBACK_ACTIVATE_BASELINE_APPEND_ONLY'
+  );
+  assert.ok(activation);
+  const arbitraryPriorHead = signReceipt(
+    rebuildT055Receipt(activation.receipt, {
+      rollbackLedgerPreviousDigest: digest('attacker-selected-ledger-head')
+    })
+  );
+  const arbitraryPriorHeadResult =
+    evaluateSastSupplyChainRollbackQualificationEvidence(
+      {
+        ...bundle.evaluationInput,
+        signedReceipts: [arbitraryPriorHead]
+      },
+      digest
+    );
+  assert.ok(arbitraryPriorHeadResult);
+  assert.equal(arbitraryPriorHeadResult.status, 'FAILED');
+  assert.ok(
+    arbitraryPriorHeadResult.failureReasons.includes('DRILL_OUTCOME_MISMATCH')
+  );
+
   const first = bundle.signedReceipts[0].receipt;
   const cleanupLate = signReceipt(
     rebuildT055Receipt(first, {
