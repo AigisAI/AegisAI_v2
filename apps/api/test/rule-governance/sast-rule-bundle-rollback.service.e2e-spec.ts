@@ -110,6 +110,28 @@ describe('SastRuleBundleRollbackService T050 authority', () => {
     >({ reason: 'SIGNATURE_UNAVAILABLE' });
   });
 
+  it('rejects a caller-selected rollback baseline before reading trusted state', async () => {
+    const fixture = fixtures();
+    const store = new InMemoryRollbackStore();
+    const service = rollbackService(
+      fixture,
+      store,
+      new MutableClock('2026-08-19T01:31:00.000Z')
+    );
+    const callerSelectedRequest = {
+      ...request(fixture),
+      baselineManifestId: fixture.baseline.manifest.manifestId,
+      baselineBundleDigest: fixture.baseline.manifest.bundleDigest
+    };
+
+    await expect(
+      service.registerCommand(callerSelectedRequest)
+    ).rejects.toMatchObject<Partial<SastRuleBundleRollbackServiceError>>({
+      reason: 'INPUT_INVALID'
+    });
+    expect(store.command).toBeNull();
+  });
+
   it('rejects self approval and a second platform-side role', async () => {
     const fixture = fixtures();
     const clock = new MutableClock('2026-08-19T01:31:00.000Z');
