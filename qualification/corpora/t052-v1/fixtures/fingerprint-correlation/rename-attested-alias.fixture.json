@@ -33,23 +33,49 @@
       "ordinal": 1,
       "action": "DECLARE_IDENTITY_INPUT",
       "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/Before.java",
         "ordinal=1",
-        "scenario=RENAME_ATTESTED_ALIAS"
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
       ]
     },
     {
       "ordinal": 2,
       "action": "DECLARE_IDENTITY_INPUT",
       "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/After.java",
         "ordinal=2",
-        "scenario=RENAME_ATTESTED_ALIAS"
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
       ]
     },
     {
       "ordinal": 3,
       "action": "DECLARE_CORRELATION_INPUT",
       "arguments": [
-        "relation=RENAME_ATTESTED_ALIAS"
+        "from=src/Before.java",
+        "kind=SIGNED_RENAME_ATTESTATION",
+        "mapping=ONE_TO_ONE",
+        "to=src/After.java",
+        "verification=VALID"
       ]
     },
     {
@@ -74,6 +100,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://6ce6ece2eca51939786187949524c19199b4ce50afc333c8aba9984c818e3255",
-  "fixtureDigest": "sha256:6ce6ece2eca51939786187949524c19199b4ce50afc333c8aba9984c818e3255"
+  "fixtureId": "sast-multi-class-qualification-fixture://812f60777b256935ee82553c62807c731464b72ac0c0f558698f107388683602",
+  "fixtureDigest": "sha256:812f60777b256935ee82553c62807c731464b72ac0c0f558698f107388683602"
 }

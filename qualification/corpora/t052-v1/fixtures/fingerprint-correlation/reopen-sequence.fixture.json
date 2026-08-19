@@ -31,6 +31,25 @@
   "steps": [
     {
       "ordinal": 1,
+      "action": "DECLARE_IDENTITY_INPUT",
+      "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
+        "ordinal=1",
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
+      ]
+    },
+    {
+      "ordinal": 2,
       "action": "DECLARE_LIFECYCLE_EVENT",
       "arguments": [
         "sequence=1",
@@ -38,7 +57,7 @@
       ]
     },
     {
-      "ordinal": 2,
+      "ordinal": 3,
       "action": "DECLARE_LIFECYCLE_EVENT",
       "arguments": [
         "sequence=2",
@@ -46,7 +65,7 @@
       ]
     },
     {
-      "ordinal": 3,
+      "ordinal": 4,
       "action": "DECLARE_LIFECYCLE_EVENT",
       "arguments": [
         "sequence=3",
@@ -54,7 +73,7 @@
       ]
     },
     {
-      "ordinal": 4,
+      "ordinal": 5,
       "action": "ASSERT_NO_AUTHORITY",
       "arguments": [
         "correlation=display-only"
@@ -75,6 +94,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://5a4a2122d498f1c4b56936bbb5b3c71df18fc55266b793da21e46f86b1c0e03a",
-  "fixtureDigest": "sha256:5a4a2122d498f1c4b56936bbb5b3c71df18fc55266b793da21e46f86b1c0e03a"
+  "fixtureId": "sast-multi-class-qualification-fixture://8005d6f76d5c0e2163631e033729f06305e25cd18fa484e7352ffeaa9a144ebe",
+  "fixtureDigest": "sha256:8005d6f76d5c0e2163631e033729f06305e25cd18fa484e7352ffeaa9a144ebe"
 }

@@ -20,6 +20,34 @@
       "booleanValue": null
     },
     {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maxFindings",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "COMMON_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 25001,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 25001,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_FAST_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 5001,
+      "booleanValue": null
+    },
+    {
       "name": "LIVE_SPECIAL_FILE_CHECKED_IN",
       "valueType": "BOOLEAN",
       "stringValue": null,
@@ -27,9 +55,23 @@
       "booleanValue": false
     },
     {
+      "name": "MATERIALIZED_PROJECTION_MODE",
+      "valueType": "STRING",
+      "stringValue": "MAXIMUM_APPLICABLE_PROFILE_BOUND",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
       "name": "PROFILE_LIMIT_MODE",
       "valueType": "STRING",
-      "stringValue": "PROFILE_LIMIT_PLUS_ONE",
+      "stringValue": "SELECTED_PROFILE_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_SELECTION_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "CASE_PROFILE",
       "integerValue": null,
       "booleanValue": null
     }
@@ -86,6 +128,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://4355f99581f06740838cf64f98db028785464d21edb7adc9452beb2da6e0d6dc",
-  "fixtureDigest": "sha256:4355f99581f06740838cf64f98db028785464d21edb7adc9452beb2da6e0d6dc"
+  "fixtureId": "sast-multi-class-qualification-fixture://fb41d0e9f63192a559ac6110af061259655b62a84ff7a2a8c4c1bb13559b140f",
+  "fixtureDigest": "sha256:fb41d0e9f63192a559ac6110af061259655b62a84ff7a2a8c4c1bb13559b140f"
 }

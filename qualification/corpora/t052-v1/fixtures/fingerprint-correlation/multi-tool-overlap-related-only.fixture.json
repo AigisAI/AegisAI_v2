@@ -33,23 +33,48 @@
       "ordinal": 1,
       "action": "DECLARE_IDENTITY_INPUT",
       "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
         "ordinal=1",
-        "scenario=MULTI_TOOL_OVERLAP_RELATED_ONLY"
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "scanner=OPENGREP",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
       ]
     },
     {
       "ordinal": 2,
       "action": "DECLARE_IDENTITY_INPUT",
       "arguments": [
+        "branch=refs/heads/main",
+        "capability=DEPENDENCY_VULNERABILITY",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
         "ordinal=2",
-        "scenario=MULTI_TOOL_OVERLAP_RELATED_ONLY"
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "scanner=TRIVY",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=package:maven/example@1",
+        "symbol-anchor=com.example.App#run"
       ]
     },
     {
       "ordinal": 3,
       "action": "DECLARE_CORRELATION_INPUT",
       "arguments": [
-        "relation=MULTI_TOOL_OVERLAP_RELATED_ONLY"
+        "merge=FORBIDDEN",
+        "relation=RELATED_ONLY"
       ]
     },
     {
@@ -74,6 +99,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://b114cda46d4d85e147141aa0136bd05cf53888f915209251cbf66585c365ca5c",
-  "fixtureDigest": "sha256:b114cda46d4d85e147141aa0136bd05cf53888f915209251cbf66585c365ca5c"
+  "fixtureId": "sast-multi-class-qualification-fixture://6e6b4aefc3e611d9d1edea3c96a34179c98034681a37ce4788b7cc26d0b85e7f",
+  "fixtureDigest": "sha256:6e6b4aefc3e611d9d1edea3c96a34179c98034681a37ce4788b7cc26d0b85e7f"
 }

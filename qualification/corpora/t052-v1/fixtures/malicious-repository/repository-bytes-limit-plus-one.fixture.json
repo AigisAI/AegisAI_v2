@@ -20,6 +20,34 @@
       "booleanValue": null
     },
     {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maxRepositoryBytes",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "COMMON_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 2147483649,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 2147483649,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_FAST_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 1073741825,
+      "booleanValue": null
+    },
+    {
       "name": "LIVE_SPECIAL_FILE_CHECKED_IN",
       "valueType": "BOOLEAN",
       "stringValue": null,
@@ -27,9 +55,23 @@
       "booleanValue": false
     },
     {
+      "name": "MATERIALIZED_PROJECTION_MODE",
+      "valueType": "STRING",
+      "stringValue": "MAXIMUM_APPLICABLE_PROFILE_BOUND",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
       "name": "PROFILE_LIMIT_MODE",
       "valueType": "STRING",
-      "stringValue": "PROFILE_LIMIT_PLUS_ONE",
+      "stringValue": "SELECTED_PROFILE_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_SELECTION_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "CASE_PROFILE",
       "integerValue": null,
       "booleanValue": null
     }
@@ -86,6 +128,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://f25f02adb040749b012633c5287c5cd91ca19f87b32af14c23b6bea19b51f12d",
-  "fixtureDigest": "sha256:f25f02adb040749b012633c5287c5cd91ca19f87b32af14c23b6bea19b51f12d"
+  "fixtureId": "sast-multi-class-qualification-fixture://5f582add963318306694686748fccce9ff06bdbfb3917cb65dd47e846337f665",
+  "fixtureDigest": "sha256:5f582add963318306694686748fccce9ff06bdbfb3917cb65dd47e846337f665"
 }

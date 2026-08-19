@@ -20,6 +20,34 @@
       "booleanValue": null
     },
     {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maxSingleFileBytes",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "COMMON_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 5242881,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 5242881,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_FAST_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 2097153,
+      "booleanValue": null
+    },
+    {
       "name": "LIVE_SPECIAL_FILE_CHECKED_IN",
       "valueType": "BOOLEAN",
       "stringValue": null,
@@ -27,9 +55,23 @@
       "booleanValue": false
     },
     {
+      "name": "MATERIALIZED_PROJECTION_MODE",
+      "valueType": "STRING",
+      "stringValue": "MAXIMUM_APPLICABLE_PROFILE_BOUND",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
       "name": "PROFILE_LIMIT_MODE",
       "valueType": "STRING",
-      "stringValue": "PROFILE_LIMIT_PLUS_ONE",
+      "stringValue": "SELECTED_PROFILE_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_SELECTION_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "CASE_PROFILE",
       "integerValue": null,
       "booleanValue": null
     }
@@ -86,6 +128,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://37d6eb12dcfb68318a0f6f64184f7f1118220db6e4526ccbb7298d2b5de7761e",
-  "fixtureDigest": "sha256:37d6eb12dcfb68318a0f6f64184f7f1118220db6e4526ccbb7298d2b5de7761e"
+  "fixtureId": "sast-multi-class-qualification-fixture://5c111e96b0a43e81530fffc82bf0373cd656d4c450129251d937c4ab71d39a18",
+  "fixtureDigest": "sha256:5c111e96b0a43e81530fffc82bf0373cd656d4c450129251d937c4ab71d39a18"
 }

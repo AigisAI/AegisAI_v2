@@ -32,16 +32,18 @@
       "ordinal": 1,
       "role": "PRIMARY",
       "encoding": "BASE64",
-      "valueBase64": "YmluYXJ5LWZpeHR1cmUtYmFzZTY0OkFBRUNBd1FG",
+      "valueBase64": "AAECAwQF",
       "repeat": 1
     }
   ],
   "steps": [
     {
       "ordinal": 1,
-      "action": "DECLARE_EVIDENCE_FRAGMENT",
+      "action": "DECLARE_EVIDENCE_BYTES",
       "arguments": [
-        "scenario=BINARY_INPUT_REJECT"
+        "payload-kind=BINARY",
+        "scenario=BINARY_INPUT_REJECT",
+        "segment-encoding=BASE64"
       ]
     },
     {
@@ -59,7 +61,7 @@
       ]
     }
   ],
-  "materializedBytes": 30,
+  "materializedBytes": 6,
   "materializedEntries": 1,
   "materializedPathDepth": 0,
   "simulatedDurationSeconds": 0,
@@ -73,6 +75,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://f227fa3c4af79348b2cedbafe0ab88247c24307a323cd36549321a38e1ab39d9",
-  "fixtureDigest": "sha256:f227fa3c4af79348b2cedbafe0ab88247c24307a323cd36549321a38e1ab39d9"
+  "fixtureId": "sast-multi-class-qualification-fixture://e0a034b257c45fe9d355bc797384b0fde26ef44c3141bfbc4abe0ff35d22f719",
+  "fixtureDigest": "sha256:e0a034b257c45fe9d355bc797384b0fde26ef44c3141bfbc4abe0ff35d22f719"
 }

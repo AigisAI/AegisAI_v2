@@ -575,6 +575,11 @@ incomplete, stale, quarantined, or security-blocked scan.
   materialize or execute nothing and MUST grant no finding, correlation, lifecycle, evidence,
   policy, publication, promotion, or production-readiness authority; T053 is the first isolated
   materialization stage.
+  Profile-relative limit-plus-one recipes MUST bind the exact value for every supported immutable
+  profile and select it only from the case profile. Cycles MUST declare every directed link.
+  Binary and malformed-encoding cases MUST carry the intended raw octets, and fingerprint
+  invariance cases MUST contain complete identity vectors that differ only in the excluded field
+  under test; a runner MUST NOT infer any behavior from the scenario label.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

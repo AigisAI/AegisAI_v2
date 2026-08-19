@@ -221,7 +221,9 @@ not execute source. T052 multi-class qualification corpus is complete: 84 exact 
 cases cover 16 schema/parser, 25 malicious-repository, 17 fingerprint/correlation, 17
 evidence/privacy, and 9 performance scenarios. The byte-bound fixtures contain no commands or
 live hostile filesystem objects; performance buckets bind one immutable hardware class and 30
-measured runs. T053 is the next implementation task and the first stage allowed to materialize
+measured runs. Revision `1.0.1` additionally binds exact per-profile boundary values, both cycle
+edges, raw encoding bytes, and complete concrete identity vectors. T053 is the next implementation
+task and the first stage allowed to materialize
 the applicable recipes inside production-equivalent isolation.
 
 ### Slice 6 - Coverage, Failure, Policy, and Evidence

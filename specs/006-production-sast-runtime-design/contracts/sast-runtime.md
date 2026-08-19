@@ -1900,6 +1900,17 @@ Actual symlinks, FIFOs, devices, expanded archives, large repositories, scanner 
 are absent from the checked-in corpus. T053/T054 must map each declaration through their own exact
 allowlist inside a fresh isolated environment.
 
+Revision `1.0.1` makes those declarations execution-complete without granting execution authority.
+Every limit-plus-one recipe names the immutable profile-limit field, fixes
+`PROFILE_SELECTION_SOURCE=CASE_PROFILE`, and binds the exact plus-one value for all three profiles;
+the projected materialization scalar is only the maximum reservation bound. A symlink cycle contains
+two explicit `DECLARE_SYMLINK` edges. Binary and malformed UTF-8 evidence use
+`DECLARE_EVIDENCE_BYTES` and base64 carries the intended raw octets rather than a descriptive UTF-8
+label. Line, branch, commit, and unknown-location-reason invariance each contains two complete
+seven-field fingerprint vectors with only the excluded test field changed. Rename, replay,
+collision, migration, and related-only cases likewise carry their concrete identity and relation
+inputs rather than deriving behavior from a scenario label.
+
 `tools/sast-qualification/multi-class-corpus-loader.mjs` regenerates the reviewed snapshot and all
 84 fixture files in memory. It requires the exact three root entries, exact five class directories,
 exact fixture filenames and canonical UTF-8/NFC/LF bytes, rejects BOM/NUL/CRLF/invalid UTF-8,

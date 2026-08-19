@@ -580,11 +580,14 @@ provider, microVM, scanner, or Kubernetes execution:
 - fingerprint/correlation inputs cover line, branch, and commit invariance; attested rename and
   rename-back; unknown locations; multi-tool related-only and cross-capability no-merge behavior;
   distinct rule migration; fixed/reopen sequences; digest-collision and tampered-replay rejection;
-  duplicate replay, edge limits, complete zero-finding batches, and severity preservation;
+  duplicate replay, edge limits, complete zero-finding batches, and severity preservation. Every
+  invariance case supplies two complete seven-field identity vectors and changes only the excluded
+  coordinate/context field under test;
 - evidence/privacy inputs cover known-format, registered, high-entropy, private-key, authorization,
   and URL credentials; secret-bearing identity fields and reserved markers; full-file and overlap
-  reconstruction; prompt injection as inert data; binary and invalid encoding; retention expiry and
-  exact boundary; zero audit/raw-artifact leakage; and cross-tenant reference rejection;
+  reconstruction; prompt injection as inert data; raw binary and malformed UTF-8 octets decoded
+  from the declared base64 segment; retention expiry and exact boundary; zero audit/raw-artifact
+  leakage; and cross-tenant reference rejection;
 - the 9 performance cases bind small, medium, and large synthetic-repository recipes to each exact
   resource limit, one immutable hardware-class reference and digest, and at least 30 measured runs
   per bucket; T052 records the denominator only and does not manufacture latency or capacity
@@ -593,6 +596,8 @@ provider, microVM, scanner, or Kubernetes execution:
   byte segments; command, executable, argv, environment, shell, script, URL, dynamic execution,
   package installation, build, network, customer-content, finding, policy, publication, SCM
   mutation, and readiness authority are all absent or false;
+- each malicious limit-plus-one case names the selected immutable profile-limit field and binds its
+  exact value for every supported profile, while a symlink cycle declares both directed edges;
 - exclusive initialization refuses overwrite, normal regeneration requires the exact reviewed
   root and fixture set, and the loader regenerates every expected byte in memory before accepting
   the corpus; and

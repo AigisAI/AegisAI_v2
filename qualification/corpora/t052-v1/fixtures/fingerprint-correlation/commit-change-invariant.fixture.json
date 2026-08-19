@@ -33,16 +33,38 @@
       "ordinal": 1,
       "action": "DECLARE_IDENTITY_INPUT",
       "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
         "ordinal=1",
-        "scenario=COMMIT_CHANGE_INVARIANT"
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
       ]
     },
     {
       "ordinal": 2,
       "action": "DECLARE_IDENTITY_INPUT",
       "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
         "ordinal=2",
-        "scenario=COMMIT_CHANGE_INVARIANT"
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
       ]
     },
     {
@@ -67,6 +89,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://a3dce82460aeb5c2431d184ff03c3935d53a0e57a496413069825c261394384e",
-  "fixtureDigest": "sha256:a3dce82460aeb5c2431d184ff03c3935d53a0e57a496413069825c261394384e"
+  "fixtureId": "sast-multi-class-qualification-fixture://4f5503519d684c13ba179d5285a9f87de126abe13e67b2b9157ebb433935abee",
+  "fixtureDigest": "sha256:4f5503519d684c13ba179d5285a9f87de126abe13e67b2b9157ebb433935abee"
 }

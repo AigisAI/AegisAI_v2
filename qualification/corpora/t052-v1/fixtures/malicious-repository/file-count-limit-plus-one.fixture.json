@@ -20,6 +20,34 @@
       "booleanValue": null
     },
     {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maxFileCount",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "COMMON_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 250001,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 250001,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_FAST_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 25001,
+      "booleanValue": null
+    },
+    {
       "name": "LIVE_SPECIAL_FILE_CHECKED_IN",
       "valueType": "BOOLEAN",
       "stringValue": null,
@@ -27,9 +55,23 @@
       "booleanValue": false
     },
     {
+      "name": "MATERIALIZED_PROJECTION_MODE",
+      "valueType": "STRING",
+      "stringValue": "MAXIMUM_APPLICABLE_PROFILE_BOUND",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
       "name": "PROFILE_LIMIT_MODE",
       "valueType": "STRING",
-      "stringValue": "PROFILE_LIMIT_PLUS_ONE",
+      "stringValue": "SELECTED_PROFILE_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_SELECTION_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "CASE_PROFILE",
       "integerValue": null,
       "booleanValue": null
     }
@@ -86,6 +128,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://814b607ebfa281e98d0070d356e002e2bff7e349b04a067ba1e6971215469911",
-  "fixtureDigest": "sha256:814b607ebfa281e98d0070d356e002e2bff7e349b04a067ba1e6971215469911"
+  "fixtureId": "sast-multi-class-qualification-fixture://02b27fb4d7be7d5ce4272e79e747b7d4a01b34a2b4ab7b721471ecac4e0310a6",
+  "fixtureDigest": "sha256:02b27fb4d7be7d5ce4272e79e747b7d4a01b34a2b4ab7b721471ecac4e0310a6"
 }

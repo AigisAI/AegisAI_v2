@@ -20,6 +20,34 @@
       "booleanValue": null
     },
     {
+      "name": "BOUNDARY_METRIC",
+      "valueType": "STRING",
+      "stringValue": "maxStdoutStderrBytes",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "COMMON_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 1048577,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_DEEP_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 1048577,
+      "booleanValue": null
+    },
+    {
+      "name": "JAVA_FAST_V1_LIMIT_PLUS_ONE",
+      "valueType": "INTEGER",
+      "stringValue": null,
+      "integerValue": 1048577,
+      "booleanValue": null
+    },
+    {
       "name": "LIVE_SPECIAL_FILE_CHECKED_IN",
       "valueType": "BOOLEAN",
       "stringValue": null,
@@ -27,9 +55,23 @@
       "booleanValue": false
     },
     {
+      "name": "MATERIALIZED_PROJECTION_MODE",
+      "valueType": "STRING",
+      "stringValue": "MAXIMUM_APPLICABLE_PROFILE_BOUND",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
       "name": "PROFILE_LIMIT_MODE",
       "valueType": "STRING",
-      "stringValue": "PROFILE_LIMIT_PLUS_ONE",
+      "stringValue": "SELECTED_PROFILE_LIMIT_PLUS_ONE",
+      "integerValue": null,
+      "booleanValue": null
+    },
+    {
+      "name": "PROFILE_SELECTION_SOURCE",
+      "valueType": "STRING",
+      "stringValue": "CASE_PROFILE",
       "integerValue": null,
       "booleanValue": null
     }
@@ -86,6 +128,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://fb8b2eb7b83aed8dbc643f0e4da36f14e3a1f7deb69dea2b8b42b6230d96825e",
-  "fixtureDigest": "sha256:fb8b2eb7b83aed8dbc643f0e4da36f14e3a1f7deb69dea2b8b42b6230d96825e"
+  "fixtureId": "sast-multi-class-qualification-fixture://c4869924bccddbb8636aba18db00ebe16fb5b0e44490f6225d81e94ba2259396",
+  "fixtureDigest": "sha256:c4869924bccddbb8636aba18db00ebe16fb5b0e44490f6225d81e94ba2259396"
 }

@@ -8,6 +8,7 @@ import {
   SAST_MULTI_CLASS_QUALIFICATION_LIMITS,
   SAST_MULTI_CLASS_QUALIFICATION_REQUIRED_SCENARIOS,
   SAST_PROFILE_IDS,
+  SAST_SCAN_PROFILES,
   buildSastMultiClassQualificationCase,
   buildSastMultiClassQualificationFixture,
   buildSastMultiClassQualificationSnapshot,
@@ -322,6 +323,115 @@ test('T052 performance recipes pin profile limits and one hardware class', () =>
   assert.equal(deepLimit.materializedBytes, 2_147_483_648);
 });
 
+test('T052 fingerprint invariance recipes bind two complete vectors that differ only by the excluded field', () => {
+  const invariantFieldByScenario = new Map([
+    ['LINE_SHIFT_INVARIANT', 'line'],
+    ['BRANCH_CHANGE_INVARIANT', 'branch'],
+    ['COMMIT_CHANGE_INVARIANT', 'commit-sha'],
+    ['UNKNOWN_LOCATION_REASON_INVARIANT', 'location-reason']
+  ]);
+  const stableFields = [
+    'repository-binding-id',
+    'capability',
+    'rule-semantic-id',
+    'normalized-path',
+    'symbol-anchor',
+    'sink-kind',
+    'structural-hash'
+  ];
+
+  for (const [scenario, varyingField] of invariantFieldByScenario) {
+    const fixture = fixtureForScenario(scenario);
+    const identityInputs = fixture.steps
+      .filter((step) => step.action === 'DECLARE_IDENTITY_INPUT')
+      .map((step) => Object.fromEntries(step.arguments.map(splitArgument)));
+    assert.equal(identityInputs.length, 2, scenario);
+    for (const field of stableFields) {
+      assert.equal(Object.hasOwn(identityInputs[0], field), true, `${scenario}:${field}`);
+      assert.equal(Object.hasOwn(identityInputs[1], field), true, `${scenario}:${field}`);
+      assert.equal(identityInputs[0][field], identityInputs[1][field], `${scenario}:${field}`);
+    }
+    const differingFields = Object.keys(identityInputs[0])
+      .filter((field) => field !== 'ordinal')
+      .filter((field) => identityInputs[0][field] !== identityInputs[1][field]);
+    assert.deepEqual(differingFields, [varyingField], scenario);
+    if (scenario === 'UNKNOWN_LOCATION_REASON_INVARIANT') {
+      assert.equal(identityInputs[0]['normalized-path'], '');
+      assert.equal(identityInputs[0]['location-kind'], 'UNKNOWN');
+    }
+  }
+});
+
+test('T052 symlink cycle recipe declares both directed links', () => {
+  const fixture = fixtureForScenario('SYMLINK_CYCLE');
+  const links = fixture.steps
+    .filter((step) => step.action === 'DECLARE_SYMLINK')
+    .map((step) => Object.fromEntries(step.arguments.map(splitArgument)));
+  assert.deepEqual(
+    links.map(({ path, target }) => ({ path, target })),
+    [
+      { path: 'a', target: 'b' },
+      { path: 'b', target: 'a' }
+    ]
+  );
+});
+
+test('T052 evidence encoding recipes carry the intended raw bytes', () => {
+  const binary = fixtureForScenario('BINARY_INPUT_REJECT');
+  const invalidUtf8 = fixtureForScenario('INVALID_ENCODING_REJECT');
+  assert.equal(
+    binary.steps.some((step) => step.action === 'DECLARE_EVIDENCE_BYTES'),
+    true
+  );
+  assert.equal(
+    invalidUtf8.steps.some((step) => step.action === 'DECLARE_EVIDENCE_BYTES'),
+    true
+  );
+  assert.deepEqual(Buffer.from(binary.segments[0].valueBase64, 'base64'),
+    Buffer.from([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]));
+  assert.deepEqual(
+    Buffer.from(invalidUtf8.segments[0].valueBase64, 'base64'),
+    Buffer.from([0xff])
+  );
+});
+
+test('T052 limit-plus-one recipes bind the exact selected-profile boundary', () => {
+  const metricByScenario = new Map([
+    ['PATH_DEPTH_LIMIT_PLUS_ONE', 'maxPathDepth'],
+    ['REPOSITORY_BYTES_LIMIT_PLUS_ONE', 'maxRepositoryBytes'],
+    ['SELECTED_BYTES_LIMIT_PLUS_ONE', 'maxSelectedBytes'],
+    ['FILE_COUNT_LIMIT_PLUS_ONE', 'maxFileCount'],
+    ['SINGLE_FILE_BYTES_LIMIT_PLUS_ONE', 'maxSingleFileBytes'],
+    ['OUTPUT_BYTES_LIMIT_PLUS_ONE', 'maxStdoutStderrBytes'],
+    ['FINDING_COUNT_LIMIT_PLUS_ONE', 'maxFindings'],
+    ['TIMEOUT_PLUS_ONE', 'wallClockTimeoutSeconds']
+  ]);
+
+  for (const [scenario, metric] of metricByScenario) {
+    const fixture = fixtureForScenario(scenario);
+    const parameters = new Map(
+      fixture.parameters.map((parameter) => [
+        parameter.name,
+        parameter.stringValue ?? parameter.integerValue ?? parameter.booleanValue
+      ])
+    );
+    assert.equal(parameters.get('BOUNDARY_METRIC'), metric, scenario);
+    assert.equal(
+      parameters.get('PROFILE_LIMIT_MODE'),
+      'SELECTED_PROFILE_LIMIT_PLUS_ONE',
+      scenario
+    );
+    assert.equal(parameters.get('PROFILE_SELECTION_SOURCE'), 'CASE_PROFILE', scenario);
+    for (const profileId of SAST_PROFILE_IDS) {
+      assert.equal(
+        parameters.get(`${profileId}_LIMIT_PLUS_ONE`),
+        SAST_SCAN_PROFILES[profileId].limits[metric] + 1,
+        `${scenario}:${profileId}`
+      );
+    }
+  }
+});
+
 test('T052 hostile cyclic and over-depth snapshots fail without throwing', () => {
   const cyclic = structuredClone(snapshot);
   cyclic.classCounts[0].cases = cyclic;
@@ -356,6 +466,20 @@ function fixtureInput(value) {
     materializedPathDepth: value.materializedPathDepth,
     simulatedDurationSeconds: value.simulatedDurationSeconds
   };
+}
+
+function fixtureForScenario(scenario) {
+  const item = snapshot.cases.find((candidate) => candidate.scenario === scenario);
+  assert.ok(item, scenario);
+  const fixture = fixtures.get(item.fixturePath);
+  assert.ok(fixture, scenario);
+  return fixture;
+}
+
+function splitArgument(argument) {
+  const separator = argument.indexOf('=');
+  assert.notEqual(separator, -1, argument);
+  return [argument.slice(0, separator), argument.slice(separator + 1)];
 }
 
 function caseInput(value) {

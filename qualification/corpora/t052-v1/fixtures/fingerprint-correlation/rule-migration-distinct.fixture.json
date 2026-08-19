@@ -33,16 +33,38 @@
       "ordinal": 1,
       "action": "DECLARE_IDENTITY_INPUT",
       "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
         "ordinal=1",
-        "scenario=RULE_MIGRATION_DISTINCT"
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection.v1",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
       ]
     },
     {
       "ordinal": 2,
       "action": "DECLARE_IDENTITY_INPUT",
       "arguments": [
+        "branch=refs/heads/main",
+        "capability=SAST",
+        "commit-sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "line=17",
+        "location-kind=KNOWN",
+        "location-reason=NONE",
+        "normalized-path=src/App.java",
         "ordinal=2",
-        "scenario=RULE_MIGRATION_DISTINCT"
+        "repository-binding-id=repo-qualification-1",
+        "rule-semantic-id=java.sql-injection.v2",
+        "sink-kind=SQL_EXECUTE",
+        "structural-hash=ast:v1-call",
+        "symbol-anchor=com.example.App#run"
       ]
     },
     {
@@ -67,6 +89,6 @@
   "networkRequired": false,
   "hostMutationAllowed": false,
   "immutable": true,
-  "fixtureId": "sast-multi-class-qualification-fixture://d89fb224b116447f4e1d5cc1f32c36f3efa72660135768b41288690545f0987c",
-  "fixtureDigest": "sha256:d89fb224b116447f4e1d5cc1f32c36f3efa72660135768b41288690545f0987c"
+  "fixtureId": "sast-multi-class-qualification-fixture://ca86ce40b1b989abf7e782fa61422ac2e7d2bed4e196907bea04113785393af3",
+  "fixtureDigest": "sha256:ca86ce40b1b989abf7e782fa61422ac2e7d2bed4e196907bea04113785393af3"
 }

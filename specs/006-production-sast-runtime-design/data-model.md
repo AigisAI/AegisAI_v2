@@ -1281,6 +1281,11 @@ ordered declarative steps, and bounded projected bytes/entries/path depth/durati
 command, argv, environment, URL fetch, executable configuration, customer content, package
 installation, build, dynamic execution, scanner execution, host mutation, or network authority.
 Actual symlinks, FIFOs, devices, archive bombs, and expanded performance trees are never stored.
+For revision `1.0.1`, profile-relative boundary recipes carry one exact limit-plus-one value per
+supported profile and select only through the case profile; projected materialization totals are
+maximum reservation bounds. Cyclic links are separate directed declarations, binary/invalid UTF-8
+segments bind raw octets, and fingerprint invariance binds complete input vectors instead of an
+opaque scenario name.
 
 The corresponding case binds the fixture path/ID/digest/byte count, owner, license, digest-bound
 provenance, immutable revision, applicable profiles, expected control outcome, required

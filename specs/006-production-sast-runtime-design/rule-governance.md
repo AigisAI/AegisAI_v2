@@ -344,6 +344,10 @@ command-line flags, rule code, templates, post-processors, or executable configu
   content, package installation, build, dynamic execution, scanner execution, host mutation,
   network access, and all finding/policy/publication/promotion/readiness authority are rejected.
   Live symlinks, FIFOs, devices, archive bombs, and expanded performance trees are not checked in.
+- Revision `1.0.1` binds profile-relative boundaries to the exact selected-profile limit plus one,
+  declares both edges of a symlink cycle, preserves binary and malformed UTF-8 as raw octets, and
+  records complete fingerprint vectors and concrete correlation relationships. A later runner must
+  consume those values directly and cannot infer a test from the scenario name.
 - The performance denominator has small, medium, and exact-large-limit buckets for each v1 profile,
   binds one immutable hardware-class reference/digest, and requires 30 post-warm-up measurements
   per bucket. T052 cannot claim a latency, reliability, or capacity result.
