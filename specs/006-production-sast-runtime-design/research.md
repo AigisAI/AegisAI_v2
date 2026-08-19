@@ -871,3 +871,48 @@ approval; caller-selected trust roots; unsigned artifact/provenance references; 
 qualification to a different provider or adapter; aggregate-only artifact verification without
 loading each signed envelope; local evaluation-time override; partial receipt success; and allowing
 a T054 result to publish, deploy, or mark the system production ready.
+
+## Decision 33: Make T055 Supply-Chain and Rollback Qualification Closed and Receipt-Recomputed
+
+**Decision**: T055 is split into a deterministic repository contract and a later external drill
+run. The repository fixes exactly 169 cells: four mount/digest/signature/provenance variants for
+each of all 36 T054 artifacts, one unlisted-component rejection, six internal vulnerability-
+database cases, three result-schema cases, and five ordered rollback phases for each of three
+profiles. The manifest itself fixes 115 pre-execution rejections and 39 allowed single artifact
+invocations.
+
+Plan construction is cryptographically downstream of the exact T054 `PASSED` result and consumes
+the same T054 manifest, dependency set, full artifact-verification set, and execution plan named by
+that result. A Qualification Authority signature binds entry, T054 and T055 provider/adapter values
+must match, and trust-bundle bytes must match independently configured
+`SAST_T055_TRUST_POLICY_DIGEST`. Before any receipt is considered, every T054 artifact signature
+and provenance envelope is loaded again, its digest and provenance relations are recomputed, and
+its `SUPPLY_CHAIN_AUTHORITY` signature is reverified.
+
+For each profile, Qualification Authority and Supply Chain Authority signatures authenticate the
+durable rollback-ledger head digest, sequence, reference, provider, and exact candidate/baseline
+release sets before the plan is approved. Security Engineering and Scan Platform approvals bind
+those attestations and strictly predate the earliest submitted receipt or attempt. Supply Chain
+Authority, MicroVM Provider, and Qualification Runtime independently sign each receipt, whose
+identities and attestation/audit references are globally single-use. Positive artifacts mount
+read-only and are rehashed; negative variants reject before invocation or egress. Rollback is an
+ordered five-phase proof over exact candidate/baseline release-set digests: suspend, fence, abort and
+clean in-flight work, derive and reverify last-known-good, then append an activation ledger entry
+that references the authenticated head and uses exactly `head.sequence + 1`, moving only the
+baseline from `STANDBY` to `ACTIVE`. No customer code, package install, build, dynamic test, public
+egress, Kubernetes action, or production mutation is permitted.
+
+**Rationale**: A signed T054 aggregate does not prove that deployment-time artifacts still match
+their reviewed envelopes, an unlisted binary cannot run, vulnerability data remains internal and
+fresh, result schemas reject drift, or rollback preserves fencing and audit history. A closed cell
+set and receipt-recomputed result make omissions, substitutions, trust transfer, retroactive
+approval, post-fence work, and ledger forgery independently detectable. A complete result advances
+only to T056; it is not deployment or readiness authority.
+
+**Rejected**: Starting from repository-only, partial, or cross-provider T054 evidence; letting the
+submitted dependency set choose the trust root; trusting signature/provenance booleans without
+loading envelopes; aggregate-only results; mutable tags; writable mounts; network enrichment;
+unlisted executables; reused identities or attestations; approvals after execution; rollback to a
+caller-selected target; activating before abort evidence or without an append-only chain; erasing
+failed evidence; caller-selected verification time; synthetic CI receipts as external evidence;
+and allowing T055 to publish, deploy Kubernetes, mutate production, or mark the system ready.

@@ -17,6 +17,10 @@ const files = {
     '../src/types/sast-isolated-integration-qualification.ts',
     import.meta.url
   ),
+  sastSupplyChainRollbackQualification: new URL(
+    '../src/types/sast-supply-chain-rollback-qualification.ts',
+    import.meta.url
+  ),
   sastArtifactValidation: new URL(
     '../src/types/sast-artifact-validation.ts',
     import.meta.url
@@ -66,6 +70,7 @@ test('shared contract modules exist and are re-exported from the package root', 
     'deployment-operations',
     'sast-runtime',
     'sast-isolated-integration-qualification',
+    'sast-supply-chain-rollback-qualification',
     'sast-artifact-validation',
     'sast-artifact-disposition',
     'sast-normalization',

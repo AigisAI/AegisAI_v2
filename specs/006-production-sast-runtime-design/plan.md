@@ -16,9 +16,10 @@ Its `ontology/` Neo4j and MITRE CWE work remains local dev/demo data tooling wit
 AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority. Work on
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
 T040 through T052 independently. The T053 repository-side provider handoff is package-ready.
-The T054 repository-side end-to-end qualification contract is package-ready. The guarded next action remains real
-production-equivalent T053 microVM execution and destruction evidence; T054 plan issuance is
-cryptographically blocked until that result passes.
+The T054 repository-side end-to-end qualification contract is package-ready.
+The T055 repository-side supply-chain and rollback contract is package-ready. The guarded next action
+remains real production-equivalent T053 microVM execution and destruction evidence; T054 and T055
+plan issuance remain cryptographically blocked behind their exact upstream passing results.
 
 ## Target Boundaries
 
@@ -273,6 +274,21 @@ recomputes all denominators, p50/p95 values, correctness, precision, recall,
 false-positive, failure, capacity, resource, and zero-tolerance gates. A partial valid run stays
 `PENDING_PROVIDER_EXECUTION`; repository-only validation stays `BLOCKED_T053_QUALIFICATION`; only
 a complete pass may authorize T055, never rollout or production readiness.
+
+The T055 repository package fixes exactly 169 drills: four supply-chain variants for each of all
+36 T054 artifacts, one unlisted-component rejection, six internal vulnerability-database cases,
+three result-schema cases, and five ordered rollback phases for each of three profiles. Exactly 115
+negative cells reject before artifact invocation, while 39 positive cells permit one read-only
+artifact invocation. Plan construction requires the exact passing T054 manifest/result/dependency/
+artifact-verification/plan chain, a Qualification Authority entry signature, the same provider and
+adapter, and a separately configured `SAST_T055_TRUST_POLICY_DIGEST`. It reloads and reverifies every
+artifact signature/provenance envelope. Qualification Authority and Supply Chain Authority
+authenticate each profile's durable prior ledger head and sequence before the dual-approved plan
+is issued. Three receipt authorities bind all evidence, and rollback proves the exact candidate/
+baseline release sets, queue fencing, in-flight abort and cleanup, last-known-good derivation, zero
+post-fence candidate invocation, and an exact sequence + 1 append from the plan-bound head.
+Repository validation stays `BLOCKED_T054_QUALIFICATION`; a complete pass may
+authorize T056 only and never deployment, Kubernetes, or production readiness.
 
 ## Key Interfaces
 

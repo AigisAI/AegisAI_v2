@@ -16,11 +16,11 @@ Control, Scan, AI, and Data/Security plane boundaries.
 
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
-- T040 through T052 are complete. The T053 repository-side 123-cell provider handoff and the
-  T054 repository-side 3,462-cell qualification contract, receipt-recomputed gates, and offline
-  verifiers are package-ready, including an independently configured trust-policy digest,
-  every-artifact supply-chain attestation, and exact T053/T054 provider binding. T054 remains cryptographically blocked until an externally
-  authorized production-equivalent T053 microVM run supplies all destruction evidence.
+- T040 through T052 are complete. The T053 repository-side 123-cell provider handoff, T054
+  repository-side 3,462-cell end-to-end contract, and T055 repository-side 169-cell supply-chain
+  and rollback contract are package-ready with offline cryptographic verifiers. T054 remains
+  blocked until an externally authorized T053 run supplies all destruction evidence, and T055
+  remains `BLOCKED_T054_QUALIFICATION` until the exact T054 result passes on the same provider.
 - Production Kubernetes rollout remains deferred until T053-T056 pass. A standalone or staging
   qualification provider may execute T053 only with its external dependency set, trust bundle, and
   detached approvals; no repository or ordinary PR environment may substitute for that evidence.
@@ -721,7 +721,7 @@ tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step p
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
-### T049-T053 Package Validation Checkpoint
+### T049-T055 Package Validation Checkpoint
 
 - Shared kill-switch contract tests cover canonical selectors/context, decision and verification
   shape, complete evaluation/head/match sets, coverage effects, planning descriptors, active
@@ -785,6 +785,30 @@ still requires the 005 rollout and the remaining 006 gates.
 - Repository CI validates package determinism, exact filesystem bytes, real Ed25519 verification,
   tamper rejection, and the mandatory pending state. It never launches a scanner/microVM, creates
   provider attestations, or checks T053 complete. T054 remains blocked until a real T053 pass.
+- T055 derives exactly 169 immutable cells: 144 mount/digest/signature/provenance drills across all
+  36 T054 artifacts, one unlisted-component rejection, six internal vulnerability-database drills,
+  three result-schema drills, and 15 ordered rollback phases across all three profiles. Exactly 115
+  cells reject before execution and only 39 allow one artifact invocation.
+- A T055 plan requires the exact T054 manifest, `PASSED` result, dependency set, complete artifact-
+  verification set, and execution plan, plus a Qualification Authority entry signature and the
+  same provider/adapter. `SAST_T055_TRUST_POLICY_DIGEST` independently pins the trust bundle, and
+  every artifact signature and provenance envelope is reloaded, digest-recomputed, and Ed25519-
+  verified before any drill evidence is accepted.
+- Qualification Authority and Supply Chain Authority independently sign each profile's exact
+  durable prior rollback-ledger head, sequence, reference, provider, and release sets before the
+  attestations enter the plan. Security Engineering and Scan Platform approvals bind that plan and
+  strictly predate the earliest submitted receipt or attempt. Each receipt is
+  independently signed by Supply Chain Authority, MicroVM Provider, and Qualification Runtime and
+  uses globally unique cell, attempt, sandbox, workload, attestation, audit, and receipt identities.
+  Mounts are read-only; customer code, package installation, repository build, dynamic testing,
+  public egress, and production mutation remain prohibited.
+- Rollback receipts bind exact candidate/baseline release-set digests, fence new candidate work,
+  prove in-flight abort and cleanup, derive and reverify the last-known-good baseline, require zero
+  post-fence invocations, and append `STANDBY -> ACTIVE` only by referencing the exact plan-bound
+  head attestation and using exactly `head.sequence + 1`.
+  A complete pass grants only T056 entry. Repository validation remains
+  `BLOCKED_T054_QUALIFICATION` and never grants Kubernetes, deployment, or production-readiness
+  authority.
 - Repository completion still requires the standard commands below on the final branch. Live
   signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
   remain fail-closed rollout dependencies rather than fabricated local evidence.
@@ -833,6 +857,13 @@ Before claiming the 006 design milestone complete:
     each artifact's complete signature envelope and provenance statement is digest-recomputed and
     individually Ed25519-verified before the closed verification-set signature is accepted. Never
     treat CI/local receipt fixtures as end-to-end, latency, reliability, or capacity evidence.
+15. Validate the T055 repository-side 169-cell supply-chain and rollback contract, confirm it
+    remains `BLOCKED_T054_QUALIFICATION`, and never issue its drill plan without the exact signed
+    T054 pass, same-provider dependency/verification/plan bindings, and independently pinned trust
+    policy. Confirm every profile has a dual-signed durable prior-ledger-head attestation in the
+    approved plan and that final activation accepts only its exact sequence + 1. Never treat
+    synthetic signatures, local receipts, or repository validation as external supply-chain,
+    rollback, T056, Kubernetes, deployment, or production-readiness evidence.
 
 ## Validation Commands
 

@@ -104,6 +104,20 @@ const files = {
   endToEndQualificationManifest: new URL('../../qualification/t054-v1/end-to-end-qualification.manifest.json', import.meta.url),
   endToEndQualificationPolicy: new URL('../../qualification/t054-v1/measurement-policy.json', import.meta.url),
   endToEndQualificationReadme: new URL('../../qualification/t054-v1/README.md', import.meta.url),
+  sharedSastSupplyChainRollbackQualification: new URL('../../packages/shared/src/types/sast-supply-chain-rollback-qualification.ts', import.meta.url),
+  sharedSastSupplyChainRollbackQualificationTest: new URL('../../packages/shared/test/sast-supply-chain-rollback-qualification.test.mjs', import.meta.url),
+  supplyChainRollbackQualificationGenerator: new URL('../../tools/sast-qualification/supply-chain-rollback-qualification-assets.mjs', import.meta.url),
+  supplyChainRollbackQualificationLoader: new URL('../../tools/sast-qualification/supply-chain-rollback-qualification-loader.mjs', import.meta.url),
+  supplyChainRollbackQualificationValidator: new URL('../../tools/sast-qualification/validate-supply-chain-rollback-qualification.mjs', import.meta.url),
+  supplyChainRollbackQualificationPlanTool: new URL('../../tools/sast-qualification/generate-supply-chain-rollback-qualification-plan.mjs', import.meta.url),
+  supplyChainRollbackQualificationEvidenceTool: new URL('../../tools/sast-qualification/verify-supply-chain-rollback-qualification-evidence.mjs', import.meta.url),
+  supplyChainRollbackQualificationPrerequisiteTool: new URL('../../tools/sast-qualification/supply-chain-rollback-qualification-prerequisite.mjs', import.meta.url),
+  supplyChainRollbackQualificationTrustTool: new URL('../../tools/sast-qualification/supply-chain-rollback-qualification-trust.mjs', import.meta.url),
+  supplyChainRollbackQualificationLoaderTest: new URL('../../test/qualification/sast-supply-chain-rollback-qualification-loader.test.mjs', import.meta.url),
+  supplyChainRollbackQualificationToolsTest: new URL('../../test/qualification/sast-supply-chain-rollback-qualification-tools.test.mjs', import.meta.url),
+  supplyChainRollbackQualificationManifest: new URL('../../qualification/t055-v1/supply-chain-rollback-qualification.manifest.json', import.meta.url),
+  supplyChainRollbackQualificationPolicy: new URL('../../qualification/t055-v1/drill-policy.json', import.meta.url),
+  supplyChainRollbackQualificationReadme: new URL('../../qualification/t055-v1/README.md', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -3087,7 +3101,7 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   );
 
   assert.match(rootPackage, /"qualification:validate"/);
-  assert.match(ci, /Validate T051-T054 qualification packages/);
+  assert.match(ci, /Validate T051-T055 qualification packages/);
   assert.match(ci, /corepack pnpm qualification:validate/);
   assert.match(tasks, /- \[x\] T051\b/);
   assert.match(quickstart, /T051\s+versioned golden qualification corpus is complete/);
@@ -3193,7 +3207,7 @@ test('SAST T052 pins all multi-class qualification inputs without executing them
 
   assert.match(rootPackage, /validate-golden-corpus\.mjs/);
   assert.match(rootPackage, /validate-multi-class-corpus\.mjs/);
-  assert.match(ci, /Validate T051-T054 qualification packages/);
+  assert.match(ci, /Validate T051-T055 qualification packages/);
   assert.match(tasks, /- \[x\] T052\b/);
   assert.match(tasks, /- \[ \] T053\b/);
   assert.match(quickstart, /T052 multi-class qualification corpus is complete/);
@@ -3298,7 +3312,7 @@ test('SAST T053 packages an exact fail-closed provider handoff without fabricati
   assert.match(readme, /PENDING_PROVIDER_EXECUTION/);
 
   assert.match(rootPackage, /validate-isolated-integration\.mjs/);
-  assert.match(ci, /Validate T051-T054 qualification packages/);
+  assert.match(ci, /Validate T051-T055 qualification packages/);
   assert.match(gitattributes, /qualification\/t053-v1\/\*\* text eol=lf/);
   assert.match(tasks, /- \[ \] T053\b/);
   assert.match(tasks, /Repository-side exact 123-cell manifest/);
@@ -3429,7 +3443,7 @@ test('SAST T054 packages exact end-to-end gates without fabricating external evi
   assert.match(readme, /BLOCKED_T053_QUALIFICATION/);
 
   assert.match(rootPackage, /validate-end-to-end-qualification\.mjs/);
-  assert.match(ci, /Validate T051-T054 qualification packages/);
+  assert.match(ci, /Validate T051-T055 qualification packages/);
   assert.match(gitattributes, /qualification\/t054-v1\/\*\* text eol=lf/);
   assert.match(tasks, /Repository-side exact 3,462-cell T054 manifest/);
   assert.match(tasks, /- \[ \] T054\b/);
@@ -3445,6 +3459,168 @@ test('SAST T054 packages exact end-to-end gates without fabricating external evi
   assert.match(threatModel, /T054 self-selected trust root or unsigned artifact substitution/);
   assert.match(threatModel, /T054 provider qualification transfer/);
   assert.match(qualityGates, /T054 End-to-End Qualification Gates/);
+});
+
+test('SAST T055 qualifies supply-chain, database, schema, and rollback controls without production mutation', () => {
+  const shared = readNormalizedText(files.sharedSastSupplyChainRollbackQualification);
+  const sharedTest = readNormalizedText(files.sharedSastSupplyChainRollbackQualificationTest);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const generator = readNormalizedText(files.supplyChainRollbackQualificationGenerator);
+  const loader = readNormalizedText(files.supplyChainRollbackQualificationLoader);
+  const validator = readNormalizedText(files.supplyChainRollbackQualificationValidator);
+  const planTool = readNormalizedText(files.supplyChainRollbackQualificationPlanTool);
+  const evidenceTool = readNormalizedText(files.supplyChainRollbackQualificationEvidenceTool);
+  const prerequisiteTool = readNormalizedText(
+    files.supplyChainRollbackQualificationPrerequisiteTool
+  );
+  const trustTool = readNormalizedText(files.supplyChainRollbackQualificationTrustTool);
+  const loaderTest = readNormalizedText(files.supplyChainRollbackQualificationLoaderTest);
+  const toolsTest = readNormalizedText(files.supplyChainRollbackQualificationToolsTest);
+  const readme = readNormalizedText(files.supplyChainRollbackQualificationReadme);
+  const manifest = JSON.parse(
+    readFileSync(files.supplyChainRollbackQualificationManifest, 'utf8')
+  );
+  const policy = JSON.parse(
+    readFileSync(files.supplyChainRollbackQualificationPolicy, 'utf8')
+  );
+  const rootPackage = readNormalizedText(files.rootPackage);
+  const ci = readNormalizedText(files.ci);
+  const gitattributes = readNormalizedText(files.gitattributes);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+
+  assert.match(shared, /sast-supply-chain-rollback-qualification-manifest-v1/);
+  assert.match(shared, /sast-supply-chain-rollback-qualification-receipt-v1/);
+  assert.match(shared, /ARTIFACT_SIGNATURE_SUBSTITUTION_REJECT/);
+  assert.match(shared, /DATABASE_NETWORK_ENRICHMENT_REJECT/);
+  assert.match(shared, /SCHEMA_MALFORMED_OR_OVERSIZED_REJECT/);
+  assert.match(shared, /ROLLBACK_ACTIVATE_BASELINE_APPEND_ONLY/);
+  assert.match(shared, /observedSignatureEnvelopeDigest/);
+  assert.match(shared, /observedProvenanceEnvelopeDigest/);
+  assert.match(shared, /rollbackLedgerEntryDigest/);
+  assert.match(shared, /rollbackLedgerHeadAttestations/);
+  assert.match(shared, /ledgerHeadSequence/);
+  assert.match(shared, /expectedCellCount: 169/);
+  assert.match(shared, /BLOCKED_T054_QUALIFICATION/);
+  assert.match(shared, /aggregateMetricsAcceptedFromCaller: false/);
+  assert.match(sharedIndex, /sast-supply-chain-rollback-qualification/);
+  assert.match(sharedTest, /exact 169-cell supply-chain and rollback denominator/);
+  assert.match(sharedTest, /recomputes all 169 drills and grants only T056 entry/);
+  assert.match(sharedTest, /envelope drift, provider transfer, and untrusted signatures/);
+  assert.match(sharedTest, /ordered rollback phases and fail-closed cleanup evidence/);
+
+  assert.equal(manifest.executionCellCount, 169);
+  assert.equal(manifest.artifactKeys.length, 36);
+  assert.equal(manifest.artifactSupplyChainDrillCount, 144);
+  assert.equal(manifest.allowlistDrillCount, 1);
+  assert.equal(manifest.databaseDrillCount, 6);
+  assert.equal(manifest.schemaDrillCount, 3);
+  assert.equal(manifest.rollbackDrillCount, 15);
+  assert.equal(manifest.preExecutionRejectionCount, 115);
+  assert.equal(manifest.providerExecutionStatus, 'BLOCKED_T054_QUALIFICATION');
+  assert.equal(manifest.productionReadinessAuthority, false);
+  assert.equal(new Set(manifest.cells.map((item) => item.cellId)).size, 169);
+  assert.ok(
+    manifest.cells.every(
+      (item) =>
+        item.productionEquivalentProviderRequired === true &&
+        item.freshIsolatedEnvironmentRequired === true &&
+        item.customerContentAccepted === false &&
+        item.customerCodeExecutionAllowed === false &&
+        item.packageInstallAllowed === false &&
+        item.repositoryBuildAllowed === false &&
+        item.dynamicTestAllowed === false &&
+        item.publicInternetEgressAllowed === false &&
+        item.productionMutationAllowed === false &&
+        item.productionReadinessAuthority === false
+    )
+  );
+
+  assert.equal(policy.version, 'sast-supply-chain-rollback-drill-policy-v1');
+  assert.equal(policy.denominators.totalExecutionCells, 169);
+  assert.equal(policy.denominators.preExecutionRejections, 115);
+  assert.equal(policy.denominators.artifactInvocations, 39);
+  assert.equal(policy.prerequisite.exactT054ResultRequired, true);
+  assert.equal(policy.prerequisite.exactT054ArtifactVerificationSetRequired, true);
+  assert.equal(policy.prerequisite.sameProviderAndAdapterRequired, true);
+  assert.equal(
+    policy.prerequisite.authenticatedRollbackLedgerHeadAttestationsRequired,
+    true
+  );
+  assert.equal(policy.execution.readOnlyArtifactMountRequired, true);
+  assert.equal(policy.execution.exactSignatureEnvelopeDigestRequired, true);
+  assert.equal(policy.execution.exactProvenanceEnvelopeDigestRequired, true);
+  assert.equal(policy.execution.aggregateMetricsAcceptedFromCaller, false);
+  assert.deepEqual(policy.execution.rollbackLedgerHeadSignatureRoles, [
+    'QUALIFICATION_AUTHORITY',
+    'SUPPLY_CHAIN_AUTHORITY'
+  ]);
+  assert.equal(policy.rollback.appendOnlyActivationLedgerRequired, true);
+  assert.equal(policy.rollback.authenticatedPriorLedgerHeadRequired, true);
+  assert.equal(policy.rollback.exactLedgerSequenceIncrementRequired, true);
+  assert.equal(policy.prohibited.localExecutionAllowed, false);
+  assert.equal(policy.authority.kubernetesAuthority, false);
+  assert.equal(policy.authority.productionReadinessAuthority, false);
+  assert.equal(policy.authority.nextStageAuthorizationOnly, 'T056_ENTRY');
+
+  assert.match(generator, /createSupplyChainRollbackQualificationAssets/);
+  assert.match(generator, /refusing to overwrite existing T055 qualification root/);
+  assert.match(generator, /createExclusiveFile/);
+  assert.match(generator, /writeStableRegularFile/);
+  assert.match(generator, /O_NOFOLLOW/);
+  assert.match(loader, /EXPECTED_ROOT_ENTRIES/);
+  assert.match(loader, /before\.isSymbolicLink/);
+  assert.match(validator, /BLOCKED_T054_QUALIFICATION/);
+  assert.match(planTool, /buildSastSupplyChainRollbackQualificationPlan/);
+  assert.match(planTool, /--t054-artifact-verification-set/);
+  assert.match(planTool, /--rollback-ledger-head-attestations/);
+  assert.match(
+    planTool,
+    /validateSupplyChainRollbackQualificationPrerequisite/
+  );
+  assert.match(evidenceTool, /new Date\(\)\.toISOString\(\)/);
+  assert.match(
+    evidenceTool,
+    /validateSupplyChainRollbackQualificationPrerequisite/
+  );
+  assert.doesNotMatch(evidenceTool, /'--evaluated-at'/);
+  assert.match(
+    prerequisiteTool,
+    /isSastEndToEndQualificationArtifactVerificationSetValid/
+  );
+  assert.match(
+    prerequisiteTool,
+    /isSastSupplyChainRollbackQualificationEntryAttestationValid/
+  );
+  assert.match(trustTool, /SAST_T055_TRUST_POLICY_DIGEST/);
+  assert.match(loaderTest, /rejects CRLF and linked package entries/);
+  assert.match(toolsTest, /independent trust root and verify every Ed25519 authority/);
+  assert.match(readme, /BLOCKED_T054_QUALIFICATION/);
+
+  assert.match(rootPackage, /validate-supply-chain-rollback-qualification\.mjs/);
+  assert.match(ci, /Validate T051-T055 qualification packages/);
+  assert.match(gitattributes, /qualification\/t055-v1\/\*\* text eol=lf/);
+  assert.match(tasks, /Repository-side exact 169-cell T055 manifest/);
+  assert.match(tasks, /- \[ \] T055\b/);
+  assert.match(quickstart, /T055 repository-side 169-cell supply-chain and rollback contract/);
+  assert.match(plan, /T055 repository-side supply-chain and rollback contract is package-ready/);
+  assert.match(contract, /Supply-chain and rollback qualification v1/);
+  assert.match(dataModel, /SastSupplyChainRollbackQualificationReceipt and Result/);
+  assert.match(spec, /FR-057m/);
+  assert.match(research, /Decision 33: Make T055 Supply-Chain and Rollback Qualification/);
+  assert.match(ruleGovernance, /T055 Supply-Chain and Rollback Qualification Boundary/);
+  assert.match(threatModel, /T055 supply-chain envelope substitution or allowlist bypass/);
+  assert.match(threatModel, /T055 rollback sequencing or append-only ledger forgery/);
+  assert.match(threatModel, /T055 trust-root or provider qualification transfer/);
+  assert.match(qualityGates, /T055 Supply-Chain and Rollback Qualification Gates/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

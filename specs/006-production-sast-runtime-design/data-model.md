@@ -1389,6 +1389,56 @@ and zero-tolerance sums from the signed receipts. It is
 `t055EntryAuthorized=true`. Finding, policy, publication, deployment, and production-readiness
 authority are always false.
 
+### SastSupplyChainRollbackQualificationManifest, EntryAttestation, and ExecutionPlan
+
+The repository-owned T055 manifest contains exactly 169 immutable cells. Thirty-six T054
+dependency artifacts each receive one read-only mount-and-rehash acceptance drill and three
+pre-execution digest, signature-envelope, and provenance-envelope substitution rejections. The
+remaining cells are one unlisted-component rejection; candidate and baseline internal-mirror,
+stale-snapshot, and network-enrichment database drills; three canonical/incompatible/malformed-or-
+oversized result-schema drills; and five ordered rollback phases for each signed profile. The
+manifest fixes exactly 115 pre-execution rejections and 39 permitted single artifact invocations.
+
+An entry attestation signed by `QUALIFICATION_AUTHORITY` binds the exact T054 manifest, passing
+result, dependency set, complete artifact-verification set, execution plan, and T055 manifest. Plan
+construction validates the complete T054 plan again, requires the same provider ID and adapter,
+loads and reverifies all artifact signature/provenance envelopes, and accepts only trust-bundle
+bytes matching process-owned `SAST_T055_TRUST_POLICY_DIGEST`. One ledger-head attestation per
+profile binds the durable prior head digest, non-negative sequence, digest-bound storage reference,
+provider, and exact candidate/baseline release sets. Qualification Authority and Supply Chain
+Authority independently sign each attestation before it is embedded in the plan. Detached Security
+Engineering and Scan Platform approvals sign that exact plan and must strictly predate the earliest
+submitted receipt or attempt.
+
+### SastSupplyChainRollbackQualificationReceipt and Result
+
+One signed receipt binds one cell, exact upstream and plan digests, observed signature/provenance
+envelope digests, read-only mount state, allowlist decision, invocation/egress/production-mutation
+counts, prohibited-effect observations, cleanup evidence, and unique attempt, sandbox, workload,
+attestation, audit, and receipt identities. Supply Chain Authority, MicroVM Provider, and
+Qualification Runtime independently sign the receipt digest. Failure receipts retain negative
+observations instead of sanitizing them into a pass.
+
+Only the final activation receipt opens rollback-ledger fields. It must reference the exact
+profile-specific ledger-head attestation carried by the approved plan, repeat that attested head as
+its previous digest, and use exactly the attested sequence plus one. The new entry digest commits
+the head-attestation digest, prior digest and sequence, next sequence, profile, candidate and
+baseline release sets, target, action, and activation time; its audit reference is digest-bound to
+that entry. All non-final phases must keep every ledger field closed.
+
+Rollback receipts additionally bind exact candidate and baseline release-set digests, candidate/
+baseline states, the queue fence, in-flight workload before/after and abort confirmation,
+last-known-good derivation, and an ordered digest-chained ledger entry bound to the audit ref. Only
+the final profile phase changes the baseline from `STANDBY` to `ACTIVE`, and no candidate invocation
+may occur after the fence.
+
+The result accepts neither caller aggregates nor a caller clock. It recomputes exact cell and drill
+counts, 115 pre-execution rejections, 39 invocations, cleanup, egress, production mutation, and all
+prohibited effects from the complete signed receipt set. It is
+`BLOCKED_T054_QUALIFICATION | PENDING_DRILL_EXECUTION | FAILED | PASSED`; only `PASSED` sets
+`t056EntryAuthorized=true`. Finding, policy, publication, deployment, Kubernetes, and production-
+readiness authority are always false.
+
 ### SastQualityEvaluation
 
 - scanner-set and rule-bundle versions
