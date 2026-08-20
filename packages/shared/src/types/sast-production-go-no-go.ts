@@ -2093,7 +2093,12 @@ function stripDigest(value: string): string {
 }
 
 function isReference(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0 && Buffer.byteLength(value, 'utf8') <= SAST_PRODUCTION_GO_NO_GO_LIMITS.maximumReferenceBytes;
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    new TextEncoder().encode(value).byteLength <=
+      SAST_PRODUCTION_GO_NO_GO_LIMITS.maximumReferenceBytes
+  );
 }
 
 function isDigestBoundReference(value: unknown): value is string {
