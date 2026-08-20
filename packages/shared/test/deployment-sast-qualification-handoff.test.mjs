@@ -155,6 +155,29 @@ test('005 deployment entry fails closed for non-GO, signature, freshness, contra
     false
   );
 
+  const foreignSigning = createSigningContext();
+  const foreignSignatureAttestation = buildDeploymentSastQualificationEntryAttestation(
+    {
+      record: qualification.record,
+      attestedAt: qualification.entryAttestation.attestedAt,
+      expiresAt: qualification.entryAttestation.expiresAt,
+      signature: foreignSigning.sign(
+        qualification.entryAttestation.attestationDigest,
+        qualification.entryAttestation.attestedAt
+      )
+    },
+    digest
+  );
+  assert.ok(foreignSignatureAttestation);
+  assert.equal(
+    isDeploymentSastQualificationEntryAttestationValid(
+      foreignSignatureAttestation,
+      qualification.record,
+      qualification.context
+    ),
+    false
+  );
+
   const staleContext = {
     ...qualification.context,
     trustedEvaluatedAt: qualification.entryAttestation.expiresAt
