@@ -73,13 +73,22 @@ export function buildProductionGoNoGoTrustVerifier({
     trustedKeys.set(item.keyId, Object.freeze({ ...item, publicKey }));
   }
   return (signature, payload) => {
+    if (
+      signature === null ||
+      typeof signature !== 'object' ||
+      Array.isArray(signature) ||
+      !isIsoInstant(signature.signedAt)
+    ) {
+      return false;
+    }
     const trusted = trustedKeys.get(signature.keyId);
+    const signedAt = Date.parse(signature.signedAt);
     if (
       !trusted ||
       trusted.role !== signature.role ||
       trusted.algorithm !== signature.algorithm ||
-      Date.parse(signature.signedAt) < Date.parse(trusted.validFrom) ||
-      Date.parse(signature.signedAt) > Date.parse(trusted.validUntil)
+      signedAt < Date.parse(trusted.validFrom) ||
+      signedAt > Date.parse(trusted.validUntil)
     ) {
       return false;
     }

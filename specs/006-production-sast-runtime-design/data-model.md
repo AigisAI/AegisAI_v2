@@ -1442,8 +1442,9 @@ readiness authority are always false.
 ### SastProductionGoNoGoManifest, EntryAttestation, and EvidenceAttestation
 
 The repository-owned T056 manifest contains exactly 54 immutable gates. The closed catalog groups
-34 upstream qualification gates, six repository-assurance gates, five canary replay gates, four
-kill-switch gates, three rollback-readiness gates, and two deployment-handoff gates. Every gate
+gates by evidence kind: 34 upstream qualification, six repository validation, five canary
+telemetry replay, four kill-switch propagation, three rollback readiness, and two
+deployment-handoff gates. Every gate
 fixes its evidence kind, threshold operator/value, unit, rationale, independent signature roles,
 and `notApplicableAllowed=false`. The manifest binds the exact T055 manifest and normalized 005
 deployment-operations contract while granting no runtime, deployment, Kubernetes, mutation, or
@@ -1465,11 +1466,11 @@ production mutation, and Kubernetes execution.
 
 ### SastProductionGoNoGoPlan, GateResult, and Record
 
-The plan binds all six evidence attestation IDs/digests, the complete 54-gate set, derived rollback
-target, exact kill-switch evidence, 005 contract, decision actor/time, and the two required final
-approval roles. It accepts no aggregate decision and grants only a possible 005 operations-entry
-handoff. Security Engineering and Scan Platform independently sign the exact plan before the
-trusted decision instant and within one hour.
+The plan binds all six evidence attestation IDs/digests, their one shared repository commit, the
+complete 54-gate set, derived rollback target, exact kill-switch evidence, 005 contract, decision
+actor/time, and the two required final approval roles. It accepts no aggregate decision and grants
+only a possible 005 operations-entry handoff. Security Engineering and Scan Platform independently
+sign the exact plan before the trusted decision instant and within one hour.
 
 The verifier recreates each `SastProductionGoNoGoGateResult` from the signed observation and
 reviewed threshold, and recomputes all upstream values from the bound T054/T055 results. The
@@ -1477,7 +1478,8 @@ immutable record is
 `BLOCKED_T055_QUALIFICATION | PENDING_FINAL_EVIDENCE | NO_GO | GO`. A complete valid category
 subset or approval subset is pending; malformed, unsigned, stale, drifted, breached, or
 `NOT_APPLICABLE` evidence is no-go. Only 54 passing results and both valid approvals produce `GO`
-and set `deploymentOperationsEntryAuthorized=true`. Finding, policy, publication, SCM, AI,
+and set `deploymentOperationsEntryAuthorized=true`. Any plan-bearing record also binds the same
+repository commit as the plan. Finding, policy, publication, SCM, AI,
 deployment, Kubernetes, production-mutation, and production-readiness authority remain false in
 every state.
 

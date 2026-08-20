@@ -104,6 +104,14 @@ test('T056 tools pin an independent trust root and fail closed around signed GO'
     verifySignature(bundle.entryAttestation.signature, entryPayload),
     true
   );
+  assert.equal(verifySignature(null, entryPayload), false);
+  assert.equal(
+    verifySignature(
+      { ...bundle.entryAttestation.signature, signedAt: 'not-an-instant' },
+      entryPayload
+    ),
+    false
+  );
 
   const upstreamPath = await writeJson(
     temporaryRoot,
@@ -142,6 +150,7 @@ test('T056 tools pin an independent trust root and fail closed around signed GO'
   assert.equal(planRun.code, 0, planRun.stderr);
   const plan = JSON.parse(planRun.stdout);
   assert.equal(plan.evidenceAttestationIds.length, 6);
+  assert.equal(plan.repositoryCommitSha, 'a'.repeat(40));
   assert.equal(plan.requiredApprovalRoles.length, 2);
   assert.equal(plan.deploymentOperationsEntryOnly, true);
   assert.equal(plan.deploymentAuthority, false);
@@ -178,6 +187,7 @@ test('T056 tools pin an independent trust root and fail closed around signed GO'
   assert.equal(acceptedRecord.status, 'GO');
   assert.equal(acceptedRecord.evaluatedGateCount, 54);
   assert.equal(acceptedRecord.passedGateCount, 54);
+  assert.equal(acceptedRecord.repositoryCommitSha, plan.repositoryCommitSha);
   assert.equal(acceptedRecord.deploymentOperationsEntryAuthorized, true);
   assert.equal(acceptedRecord.deploymentAuthority, false);
   assert.equal(acceptedRecord.kubernetesExecutionAuthority, false);

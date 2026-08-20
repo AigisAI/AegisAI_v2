@@ -56,7 +56,7 @@ export function createT056GoNoGoBundle(options = {}) {
           evidenceDigest
         }));
       const observedAt = evidenceObservedAtBase === null
-        ? `2026-08-20T20:0${index}:00.000Z`
+        ? `2026-08-20T20:${String(index).padStart(2, '0')}:00.000Z`
         : new Date(evidenceObservedAtBase + index * 1_000).toISOString();
       const baseInput = {
         manifestId: assets.manifest.manifestId,

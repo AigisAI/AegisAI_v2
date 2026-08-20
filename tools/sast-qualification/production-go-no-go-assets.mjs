@@ -144,16 +144,16 @@ release-blocking gates and accepts no caller-supplied overall decision.
 - Exactly six evidence attestations cover upstream qualification, repository validation, canary
   telemetry replay, kill-switch propagation, rollback readiness, and the reference-only 005
   deployment boundary. Each attestation binds the candidate/baseline scanner sets, profiles,
-  T051/T052 corpus revisions, T054/T055 measurements, evidence references, and required signer
-  roles.
+  T051/T052 corpus revisions, one repository commit shared by all six categories, T054/T055
+  measurements, digest-paired evidence references, and required signer roles.
 - The verifier recomputes every upstream observation from the signed T054/T055 results. It does not
   accept a caller aggregate, caller verdict, omitted denominator, or retry-erased measurement.
 - Missing whole evidence categories or final approvals remain \`PENDING_FINAL_EVIDENCE\`.
   Malformed, unsigned, stale, drifted, threshold-breaching, or \`NOT_APPLICABLE\` evidence is
   \`NO_GO\`. Every v1 gate is mandatory.
 - Security Engineering and Scan Platform independently sign the exact decision plan. The immutable
-  record retains every per-gate outcome, rationale, evidence binding, rollback target, kill-switch
-  evidence, decision actor, and decision time.
+  record retains the shared repository commit, every per-gate outcome, rationale, evidence binding,
+  rollback target, kill-switch evidence, decision actor, and decision time.
 - \`GO\` sets only \`deploymentOperationsEntryAuthorized=true\`. Finding, policy, publication,
   SCM, AI, deployment execution, Kubernetes execution, production mutation, and production-
   readiness authority remain false.

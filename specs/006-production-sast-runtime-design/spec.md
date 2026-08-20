@@ -674,6 +674,9 @@ incomplete, stale, quarantined, or security-blocked scan.
   manifest and entry digests, candidate/baseline scanner sets, profile set, T051 prior/current and
   T052 corpus revisions, T054/T055 measurement digests, repository commit, observation window,
   digest-bound evidence reference, and the required independent signing roles. The verifier MUST
+  require all six evidence attestations to share one repository commit, bind that commit into the
+  plan and every plan-bearing record, and require every evidence/observation reference terminal
+  digest to equal its separately declared digest. It MUST
   reject caller aggregates and caller-selected evaluation time, and MUST recompute all upstream
   correctness, performance, security and T055 drill observations from the signed T054/T055
   results. A valid missing evidence category or final approval MUST be

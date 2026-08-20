@@ -782,9 +782,10 @@ v1 gate has `notApplicableAllowed=false`.
 | Deployment handoff | normalized 005 contract is reference-only and Kubernetes execution count is zero | 2 |
 
 Each of the six ordered evidence attestations binds the exact candidate/baseline/profile/corpus and
-T054/T055 measurement identities, repository commit, digest-bound evidence, observation/expiry
-times, and required Ed25519 signer roles. The verifier owns its UTC clock and recomputes every
-upstream value. A valid missing category or one missing final approval is
+T054/T055 measurement identities, one repository commit shared by every evidence kind and bound
+into the plan/record, digest-bound evidence whose reference terminal digest equals its declared
+digest, observation/expiry times, and required Ed25519 signer roles. The verifier owns its UTC
+clock and recomputes every upstream value. A valid missing category or one missing final approval is
 `PENDING_FINAL_EVIDENCE`; malformed, unsigned, stale, drifted, threshold-breaching, or
 `NOT_APPLICABLE` evidence is `NO_GO`. Security Engineering and Scan Platform must independently
 sign the exact plan within one hour. Only 54 of 54 passing gates produce `GO`.

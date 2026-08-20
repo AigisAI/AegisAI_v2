@@ -3674,10 +3674,13 @@ test('SAST T056 produces immutable evidence-recomputed go-no-go without deployme
   assert.match(shared, /PENDING_FINAL_EVIDENCE/);
   assert.match(shared, /SAST_PRODUCTION_GO_NO_GO_GATE_CATALOG/);
   assert.match(shared, /deriveSastProductionGoNoGoUpstreamObservations/);
+  assert.match(shared, /repositoryCommitSha/);
+  assert.match(shared, /isReferenceBoundToDigest/);
   assert.match(shared, /deploymentOperationsEntryAuthorized: status === 'GO'/);
   assert.match(sharedIndex, /sast-production-go-no-go/);
   assert.match(sharedTest, /exact 54-gate catalog and zero production authority/);
   assert.match(sharedTest, /GO authorizes only entry to deployment operations/);
+  assert.match(sharedTest, /mixed repository commits and digest-detached evidence references/);
   assert.match(sharedTest, /valid missing category or final approval as pending/);
   assert.match(sharedTest, /threshold breach, stale evidence, or v1 N\/A substitution/);
   assert.match(sharedTest, /favorable caller aggregate that differs from upstream measurements/);
@@ -3736,6 +3739,7 @@ test('SAST T056 produces immutable evidence-recomputed go-no-go without deployme
   assert.doesNotMatch(evidenceTool, /'--evaluated-at'/);
   assert.match(prerequisiteTool, /isSastProductionGoNoGoEntryAttestationValid/);
   assert.match(trustTool, /SAST_T056_TRUST_POLICY_DIGEST/);
+  assert.match(trustTool, /!isIsoInstant\(signature\.signedAt\)/);
   assert.match(trustTool, /sast-production-go-no-go-trust-bundle-v1/);
   assert.match(loaderTest, /rejects CRLF and linked package entries/);
   assert.match(toolsTest, /independent trust root and fail closed around signed GO/);

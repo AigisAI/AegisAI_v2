@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { cp, link, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,10 +41,35 @@ test('T056 generator is deterministic and bootstrap refuses overwrite', async ()
   assert.equal(first.manifestText, second.manifestText);
   assert.equal(first.policyText, second.policyText);
   assert.equal(first.readmeText, second.readmeText);
+  assert.equal(existsSync(canonicalRoot), true);
   await assert.rejects(
     initializeProductionGoNoGoAssets(),
     /refusing to overwrite existing T056 qualification root/u
   );
+});
+
+test('T056 loader rejects oversized and hard-linked package entries', async (t) => {
+  const oversizedRoot = await copyPackage(t);
+  await writeFile(
+    join(oversizedRoot, 'go-no-go-policy.json'),
+    'x'.repeat(256 * 1024 + 1),
+    'utf8'
+  );
+  await assertLoadError(oversizedRoot, 'ASSET_INVALID');
+
+  const hardLinkRoot = await copyPackage(t);
+  const manifestPath = join(hardLinkRoot, 'production-go-no-go.manifest.json');
+  await rm(manifestPath);
+  try {
+    await link(join(hardLinkRoot, 'README.md'), manifestPath);
+  } catch (error) {
+    if (error?.code === 'EPERM' || error?.code === 'EACCES') {
+      t.diagnostic(`hard-link creation is unavailable: ${error.code}`);
+      return;
+    }
+    throw error;
+  }
+  await assertLoadError(hardLinkRoot, 'ASSET_INVALID');
 });
 
 test('T056 policy makes every gate mandatory and grants no production authority', () => {

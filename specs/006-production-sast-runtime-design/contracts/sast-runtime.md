@@ -2202,6 +2202,7 @@ sast-production-go-no-go-evidence-attestation-v1 {
 
 sast-production-go-no-go-plan-v1 {
   exact six evidence attestation IDs and digests,
+  one canonical repository commit shared by all six attestations,
   exact 54-gate set, rollback target, and kill-switch evidence,
   normalized 005 deployment-operations contract reference,
   decision actor/time,
@@ -2212,7 +2213,9 @@ sast-production-go-no-go-plan-v1 {
 ```
 
 The verifier owns the current UTC evaluation time and exposes no time override. It validates every
-signature and digest binding, recomputes the upstream 34 observations from T054/T055 signed
+signature and digest binding, rejects mixed repository commits or references whose terminal digest
+differs from their declared digest, binds the one canonical commit into the plan and record,
+recomputes the upstream 34 observations from T054/T055 signed
 measurements, evaluates every reviewed threshold, and stores one immutable per-gate result. A
 valid missing evidence category or final approval is `PENDING_FINAL_EVIDENCE` only when no plan or
 approval claims authority over that incomplete evidence set; any contradictory downstream

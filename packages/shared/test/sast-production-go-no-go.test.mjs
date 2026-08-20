@@ -4,6 +4,8 @@ import test from 'node:test';
 import {
   SAST_PRODUCTION_GO_NO_GO_EVIDENCE_KINDS,
   SAST_PRODUCTION_GO_NO_GO_GATE_IDS,
+  buildSastProductionGoNoGoEvidenceAttestation,
+  buildSastProductionGoNoGoPlan,
   evaluateSastProductionGoNoGoEvidence,
   isSastProductionGoNoGoManifestValid,
   isSastProductionGoNoGoRecordValid
@@ -49,6 +51,23 @@ test('T056 repository validation remains blocked without the exact external T055
   assert.equal(record.status, 'BLOCKED_T055_QUALIFICATION');
   assert.equal(record.deploymentOperationsEntryAuthorized, false);
   assert.equal(record.kubernetesExecutionAuthority, false);
+
+  const blockedWithUpstream = evaluateSastProductionGoNoGoEvidence(
+    {
+      ...bundle.evaluationInput,
+      upstream: {
+        ...bundle.upstream,
+        t055Result: {
+          ...bundle.upstream.t055Result,
+          status: 'FAILED',
+          t056EntryAuthorized: false
+        }
+      }
+    },
+    digest
+  );
+  assert.equal(blockedWithUpstream?.status, 'BLOCKED_T055_QUALIFICATION');
+  assert.equal(isSastProductionGoNoGoRecordValid(blockedWithUpstream, digest), true);
 });
 
 test('T056 recomputes all gates and GO authorizes only entry to deployment operations', () => {
@@ -71,12 +90,80 @@ test('T056 recomputes all gates and GO authorizes only entry to deployment opera
   assert.equal(record.kubernetesExecutionAuthority, false);
   assert.equal(record.productionMutationAuthority, false);
   assert.equal(record.productionReadinessAuthority, false);
+  assert.equal(bundle.plan.repositoryCommitSha, 'a'.repeat(40));
+  assert.equal(record.repositoryCommitSha, bundle.plan.repositoryCommitSha);
   assert.equal(record.rollbackTargetDigest, bundle.entryAttestation.rollbackTargetDigest);
   assert.equal(
     record.killSwitchEvidenceAttestationDigest,
     bundle.evidenceAttestations.find(
       (item) => item.evidenceKind === 'KILL_SWITCH_PROPAGATION'
     ).attestationDigest
+  );
+});
+
+test('T056 rejects mixed repository commits and digest-detached evidence references', () => {
+  const bundle = createT056GoNoGoBundle();
+  const source = bundle.evidenceAttestations[1];
+  const mixedCommitEvidence = rebuildEvidenceAttestation(source, {
+    repositoryCommitSha: 'b'.repeat(40)
+  });
+  const mixedEvidenceSet = [...bundle.evidenceAttestations];
+  mixedEvidenceSet[1] = mixedCommitEvidence;
+  const mixedPlan = buildSastProductionGoNoGoPlan(
+    {
+      manifest: bundle.assets.manifest,
+      entryAttestation: bundle.entryAttestation,
+      evidenceAttestations: mixedEvidenceSet,
+      decisionActorRef: bundle.plan.decisionActorRef,
+      decidedAt: bundle.plan.decidedAt,
+      verifySignature: () => true
+    },
+    digest
+  );
+  assert.equal(mixedPlan, null);
+  const mixedRecord = evaluateSastProductionGoNoGoEvidence(
+    { ...bundle.evaluationInput, evidenceAttestations: mixedEvidenceSet },
+    digest
+  );
+  assert.equal(mixedRecord?.status, 'NO_GO');
+  assert.ok(mixedRecord?.failureReasons.includes('EVIDENCE_INVALID'));
+
+  const mismatchedDigest = digest('mismatched-reference');
+  const evidenceInput = pickEvidenceInput(source);
+  assert.equal(
+    buildSastProductionGoNoGoEvidenceAttestation(
+      {
+        ...evidenceInput,
+        evidenceRef: evidenceInput.evidenceRef.replace(
+          /sha256:[a-f0-9]{64}$/u,
+          mismatchedDigest
+        )
+      },
+      [],
+      digest
+    ),
+    null
+  );
+  assert.equal(
+    buildSastProductionGoNoGoEvidenceAttestation(
+      {
+        ...evidenceInput,
+        observations: evidenceInput.observations.map((item, index) =>
+          index === 0
+            ? {
+                ...item,
+                evidenceRef: item.evidenceRef.replace(
+                  /sha256:[a-f0-9]{64}$/u,
+                  mismatchedDigest
+                )
+              }
+            : item
+        )
+      },
+      [],
+      digest
+    ),
+    null
   );
 });
 
@@ -254,6 +341,16 @@ test('T056 fails closed on signature failure and record mutation', () => {
   assert.equal(rejected?.status, 'NO_GO');
   assert.ok(rejected?.failureReasons.includes('UPSTREAM_BINDING_INVALID'));
 
+  const tamperedPlanRecord = evaluateSastProductionGoNoGoEvidence(
+    {
+      ...bundle.evaluationInput,
+      plan: { ...bundle.plan, repositoryCommitSha: 'b'.repeat(40) }
+    },
+    digest
+  );
+  assert.equal(tamperedPlanRecord?.status, 'NO_GO');
+  assert.ok(tamperedPlanRecord?.failureReasons.includes('PLAN_INVALID'));
+
   const record = evaluateSastProductionGoNoGoEvidence(bundle.evaluationInput, digest);
   assert.ok(record);
   assert.equal(
@@ -264,3 +361,53 @@ test('T056 fails closed on signature failure and record mutation', () => {
     false
   );
 });
+
+function rebuildEvidenceAttestation(source, overrides) {
+  const input = { ...pickEvidenceInput(source), ...overrides };
+  const unsigned = buildSastProductionGoNoGoEvidenceAttestation(input, [], digest);
+  assert.ok(unsigned);
+  const signed = buildSastProductionGoNoGoEvidenceAttestation(
+    input,
+    source.signatures.map((item) => ({
+      ...item,
+      payloadDigest: unsigned.attestationDigest
+    })),
+    digest
+  );
+  assert.ok(signed);
+  return signed;
+}
+
+function pickEvidenceInput(source) {
+  return {
+    manifestId: source.manifestId,
+    manifestDigest: source.manifestDigest,
+    entryAttestationId: source.entryAttestationId,
+    entryAttestationDigest: source.entryAttestationDigest,
+    evidenceKind: source.evidenceKind,
+    providerId: source.providerId,
+    providerAdapterRef: source.providerAdapterRef,
+    repositoryCommitSha: source.repositoryCommitSha,
+    candidateScannerSetDigest: source.candidateScannerSetDigest,
+    baselineScannerSetDigest: source.baselineScannerSetDigest,
+    profileSetDigest: source.profileSetDigest,
+    t051SnapshotDigest: source.t051SnapshotDigest,
+    t051PriorReleaseManifestDigest: source.t051PriorReleaseManifestDigest,
+    t052SnapshotDigest: source.t052SnapshotDigest,
+    t054MeasurementsDigest: source.t054MeasurementsDigest,
+    t055MeasurementsDigest: source.t055MeasurementsDigest,
+    evidenceRef: source.evidenceRef,
+    evidenceDigest: source.evidenceDigest,
+    observedAt: source.observedAt,
+    validUntil: source.validUntil,
+    observations: source.observations.map((item) => ({
+      gateId: item.gateId,
+      disposition: item.disposition,
+      observedValue: item.observedValue,
+      unit: item.unit,
+      evidenceRef: item.evidenceRef,
+      evidenceDigest: item.evidenceDigest
+    })),
+    externalEvidence: source.externalEvidence
+  };
+}

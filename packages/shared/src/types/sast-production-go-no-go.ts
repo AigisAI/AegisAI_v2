@@ -485,6 +485,7 @@ export interface SastProductionGoNoGoPlanCore {
   entryAttestationDigest: string;
   providerId: string;
   providerAdapterRef: string;
+  repositoryCommitSha: string;
   candidateScannerSetDigest: string;
   baselineScannerSetDigest: string;
   profileSetDigest: string;
@@ -555,6 +556,7 @@ export interface SastProductionGoNoGoRecordCore {
   planDigest: string | null;
   providerId: string | null;
   providerAdapterRef: string | null;
+  repositoryCommitSha: string | null;
   candidateScannerSetDigest: string | null;
   baselineScannerSetDigest: string | null;
   profileSetDigest: string | null;
@@ -658,7 +660,8 @@ const EVIDENCE_CORE_KEYS = [
 const PLAN_CORE_KEYS = [
   'version', 'manifestId', 'manifestDigest', 'entryAttestationId',
   'entryAttestationDigest', 'providerId', 'providerAdapterRef',
-  'candidateScannerSetDigest', 'baselineScannerSetDigest', 'profileSetDigest',
+  'repositoryCommitSha', 'candidateScannerSetDigest',
+  'baselineScannerSetDigest', 'profileSetDigest',
   't051SnapshotDigest', 't051PriorReleaseManifestDigest', 't052SnapshotDigest',
   't054MeasurementsDigest', 't055MeasurementsDigest',
   'evidenceAttestationIds', 'evidenceAttestationDigests',
@@ -681,7 +684,8 @@ const GATE_RESULT_CORE_KEYS = [
 const RECORD_CORE_KEYS = [
   'version', 'status', 'manifestId', 'manifestDigest', 'entryAttestationId',
   'entryAttestationDigest', 'planId', 'planDigest', 'providerId',
-  'providerAdapterRef', 'candidateScannerSetDigest', 'baselineScannerSetDigest',
+  'providerAdapterRef', 'repositoryCommitSha', 'candidateScannerSetDigest',
+  'baselineScannerSetDigest',
   'profileSetDigest', 't051SnapshotDigest', 't051PriorReleaseManifestDigest',
   't052SnapshotDigest', 't054MeasurementsDigest', 't055MeasurementsDigest',
   'expectedGateCount', 'evaluatedGateCount', 'passedGateCount',
@@ -1025,11 +1029,17 @@ export function isSastProductionGoNoGoEvidenceAttestationValid(
       candidate.signatures,
       digestCanonical
     );
-    const roles = expectedGates[0]?.requiredSignatureRoles ?? [];
     return (
       rebuilt !== null &&
       stableJson(rebuilt) === stableJson(candidate) &&
-      isSignatureSetValid(candidate.signatures, roles, candidate.attestationDigest, verifySignature) &&
+      expectedGates.every((definition) =>
+        isSignatureSetValid(
+          candidate.signatures,
+          definition.requiredSignatureRoles,
+          candidate.attestationDigest,
+          verifySignature
+        )
+      ) &&
       candidate.signatures.every((item) =>
         Date.parse(item.signedAt) >= Date.parse(candidate.observedAt) &&
         Date.parse(item.signedAt) <= Date.parse(candidate.validUntil)
@@ -1080,7 +1090,16 @@ export function buildSastProductionGoNoGoPlan(
     const killSwitch = input.evidenceAttestations.find(
       (item) => item.evidenceKind === 'KILL_SWITCH_PROPAGATION'
     );
-    if (!killSwitch) return null;
+    const repositoryCommitSha = input.evidenceAttestations[0]?.repositoryCommitSha;
+    if (
+      !killSwitch ||
+      !repositoryCommitSha ||
+      !input.evidenceAttestations.every(
+        (item) => item.repositoryCommitSha === repositoryCommitSha
+      )
+    ) {
+      return null;
+    }
     const evidenceAttestationIds = input.evidenceAttestations.map((item) => item.attestationId);
     const evidenceAttestationDigests = input.evidenceAttestations.map((item) => item.attestationDigest);
     const rollbackTargetRef = `rollback-target://aegisai/t056/${input.entryAttestation.rollbackTargetDigest}`;
@@ -1092,6 +1111,7 @@ export function buildSastProductionGoNoGoPlan(
       entryAttestationDigest: input.entryAttestation.attestationDigest,
       providerId: input.entryAttestation.providerId,
       providerAdapterRef: input.entryAttestation.providerAdapterRef,
+      repositoryCommitSha,
       candidateScannerSetDigest: input.entryAttestation.candidateScannerSetDigest,
       baselineScannerSetDigest: input.entryAttestation.baselineScannerSetDigest,
       profileSetDigest: input.entryAttestation.profileSetDigest,
@@ -1440,6 +1460,8 @@ export function isSastProductionGoNoGoRecordValid(
       (candidate.planId === null) !== (candidate.planDigest === null) ||
       !isNullableReference(candidate.providerId) ||
       !isNullableReference(candidate.providerAdapterRef) ||
+      (candidate.repositoryCommitSha !== null &&
+        !/^[a-f0-9]{40}$/u.test(candidate.repositoryCommitSha)) ||
       ![
         candidate.candidateScannerSetDigest,
         candidate.baselineScannerSetDigest,
@@ -1499,6 +1521,7 @@ export function isSastProductionGoNoGoRecordValid(
       return false;
     }
     const planBindings = [
+      candidate.repositoryCommitSha,
       candidate.rollbackTargetRef,
       candidate.rollbackTargetDigest,
       candidate.killSwitchEvidenceAttestationId,
@@ -1525,6 +1548,7 @@ export function isSastProductionGoNoGoRecordValid(
         candidate.planId === null ||
         candidate.providerId === null ||
         candidate.providerAdapterRef === null ||
+        candidate.repositoryCommitSha === null ||
         candidate.rollbackTargetRef === null ||
         candidate.killSwitchEvidenceAttestationId === null ||
         candidate.decisionActorRef === null)
@@ -1691,6 +1715,9 @@ function validateEvidenceSet(
   if (
     input.evidenceAttestations.length > SAST_PRODUCTION_GO_NO_GO_EVIDENCE_KINDS.length ||
     new Set(kinds).size !== kinds.length ||
+    new Set(
+      input.evidenceAttestations.map((item) => item.repositoryCommitSha)
+    ).size > 1 ||
     !arraysEqual(kinds, canonicalSubset) ||
     !input.evidenceAttestations.every((item) =>
       isSastProductionGoNoGoEvidenceAttestationValid(
@@ -1840,6 +1867,7 @@ function buildRecord(
     planDigest: plan?.planDigest ?? null,
     providerId: entry?.providerId ?? null,
     providerAdapterRef: entry?.providerAdapterRef ?? null,
+    repositoryCommitSha: plan?.repositoryCommitSha ?? null,
     candidateScannerSetDigest: entry?.candidateScannerSetDigest ?? null,
     baselineScannerSetDigest: entry?.baselineScannerSetDigest ?? null,
     profileSetDigest: entry?.profileSetDigest ?? null,
@@ -1911,7 +1939,7 @@ function isEvidenceCoreValid(value: SastProductionGoNoGoEvidenceAttestationCore)
       value.evidenceDigest,
       value.observationSetDigest
     ].every(isDigest) &&
-    isDigestBoundReference(value.evidenceRef) &&
+    isReferenceBoundToDigest(value.evidenceRef, value.evidenceDigest) &&
     isIsoInstant(value.observedAt) &&
     isIsoInstant(value.validUntil) &&
     Date.parse(value.validUntil) > Date.parse(value.observedAt) &&
@@ -1938,8 +1966,7 @@ function isObservationCoreValid(value: SastProductionGoNoGoObservationCore): boo
       ? isSafeInteger(value.observedValue)
       : value.observedValue === null) &&
     SAST_PRODUCTION_GO_NO_GO_UNITS.includes(value.unit) &&
-    isDigestBoundReference(value.evidenceRef) &&
-    isDigest(value.evidenceDigest)
+    isReferenceBoundToDigest(value.evidenceRef, value.evidenceDigest)
   );
 }
 
@@ -2103,6 +2130,14 @@ function isReference(value: unknown): value is string {
 
 function isDigestBoundReference(value: unknown): value is string {
   return isReference(value) && /\/sha256:[a-f0-9]{64}$/u.test(value);
+}
+
+function isReferenceBoundToDigest(reference: unknown, digest: unknown): boolean {
+  return (
+    isDigestBoundReference(reference) &&
+    isDigest(digest) &&
+    reference.endsWith(`/${digest}`)
+  );
 }
 
 function isNullableReference(value: unknown): value is string | null {

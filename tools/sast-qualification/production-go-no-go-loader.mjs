@@ -4,6 +4,7 @@ import { lstat, open, readdir, realpath } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
 
 import {
+  SAST_PRODUCTION_GO_NO_GO_GATE_CATALOG,
   evaluateSastProductionGoNoGoEvidence,
   isSastProductionGoNoGoManifestValid,
   isSastProductionGoNoGoRecordValid
@@ -87,7 +88,7 @@ export async function loadAndValidateProductionGoNoGoPackage(
     reject('MANIFEST_INVALID');
   }
   if (
-    manifest.requiredGateCount !== 54 ||
+    manifest.requiredGateCount !== SAST_PRODUCTION_GO_NO_GO_GATE_CATALOG.length ||
     manifest.notApplicableGateCount !== 0 ||
     manifest.gatePolicyDigest !== digest(actualText.get('go-no-go-policy.json')) ||
     policy.version !== 'sast-production-go-no-go-policy-v1' ||
@@ -104,7 +105,7 @@ export async function loadAndValidateProductionGoNoGoPackage(
     policy.evidence?.notApplicableAllowedForV1 !== false ||
     !arraysEqual(policy.evidence?.finalApprovalRoles ?? [], ['SECURITY_ENGINEERING', 'SCAN_PLATFORM']) ||
     !Array.isArray(policy.gateCatalog) ||
-    policy.gateCatalog.length !== 54 ||
+    policy.gateCatalog.length !== SAST_PRODUCTION_GO_NO_GO_GATE_CATALOG.length ||
     !policy.gateCatalog.every((item) => item.notApplicableAllowed === false) ||
     policy.handoff?.goAuthorizesOnly !== 'DEPLOYMENT_OPERATIONS_ENTRY' ||
     policy.handoff?.passingDoesNotExecuteKubernetes !== true ||
