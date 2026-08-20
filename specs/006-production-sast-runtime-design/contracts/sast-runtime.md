@@ -2229,6 +2229,15 @@ publish, mutate SCM or production, invoke AI, deploy, execute Kubernetes, or est
 readiness. Repository validation without real upstream and external evidence remains
 `BLOCKED_T055_QUALIFICATION`; synthetic fixtures prove only verifier behavior.
 
+The 005 consumer does not trust that boolean in isolation. It accepts only the exact valid `GO`
+record plus a fresh Qualification Authority Ed25519 deployment-entry attestation that binds the
+record/manifest/plan, repository commit, provider/adapter, rollback target, kill-switch evidence,
+and current 005 contract digest. It reconstructs one immutable qualification binding under trusted
+UTC and requires that binding in preflight and handoff. Non-GO, invalid signature, expiry,
+contract/provider/approval/rollback drift, extra fields, or any authority widening fails closed;
+even a passing handoff grants no Kubernetes, provider-mutation, production-mutation, or production-
+readiness authority.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:

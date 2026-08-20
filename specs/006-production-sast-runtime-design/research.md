@@ -948,3 +948,32 @@ while claiming `GO`; treating stale, malformed, unsigned, drifted, threshold-bre
 `NOT_APPLICABLE` evidence as pending; treating synthetic test fixtures as external evidence; and
 allowing T056 to publish, mutate SCM/production, invoke AI, deploy Kubernetes, or mark the system
 ready.
+
+## Decision 35: Make 005 Reverify and Bind T056 GO Before Preflight
+
+**Decision**: The T056 `deploymentOperationsEntryAuthorized` bit is necessary but never sufficient
+as a caller-supplied preflight claim. The Qualification Authority must issue a fresh Ed25519
+deployment-entry attestation over the exact valid `GO` record, manifest, plan, repository commit,
+provider and adapter, rollback target, kill-switch evidence, and current 005 contract digest. The
+decision-to-sign interval and signature lifetime are each capped at one hour. The 005 verifier owns
+trusted UTC, receives the canonical digester and signature verifier, reconstructs one immutable
+qualification binding, and requires that binding in every preflight and handoff validation.
+
+Preflight requires exactly the three deployment credential scopes and three approval kinds, with
+each approval bound to the qualification digest. Provider and adapter cannot drift from T056,
+external resources remain digest-bound references, and the audit signal targets the binding at the
+trusted instant. Handoff starts strictly before qualification expiry, lasts no more than eight
+hours, and keeps the exact qualified rollback target. Every live-operation/readiness authority bit
+remains false.
+
+**Rationale**: T056 correctly authorizes only entry into 005, but an entry bit is not itself a
+secure consumption protocol. Without downstream signature, freshness, contract, provider, commit,
+approval, and rollback rebinding, a caller could replay or self-assert qualification while still
+passing an otherwise plausible deployment preflight. Independent consumption verification closes
+that gap without executing Kubernetes or requiring provider credentials.
+
+**Rejected**: Evidence-free preflight; trusting a boolean or status string; accepting an old 005
+contract digest; caller-selected time; unsigned or wrong-role entry; long-lived entry tokens;
+provider/adapter/commit/rollback substitution; approval references detached from the binding;
+unknown payload fields; and treating a passing repository handoff as deployment, Kubernetes,
+provider mutation, production mutation, or production-readiness authority.

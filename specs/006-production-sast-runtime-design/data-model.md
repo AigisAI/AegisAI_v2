@@ -1483,6 +1483,17 @@ repository commit as the plan. Finding, policy, publication, SCM, AI,
 deployment, Kubernetes, production-mutation, and production-readiness authority remain false in
 every state.
 
+### DeploymentSastQualificationEntryAttestation and Binding
+
+The separately governed 005 consumer requires the exact valid T056 `GO` record and a fresh
+Qualification Authority Ed25519 entry attestation. The attestation binds the record, manifest,
+plan, repository commit, provider/adapter, rollback target, kill-switch evidence, and current 005
+contract revision; it is issued no more than one hour after the decision and remains valid for no
+more than one hour. The consumer reconstructs a deterministic binding ID/digest under trusted UTC.
+Preflight and handoff use that binding as their approval/audit subject and cannot accept a caller-
+asserted status. All finding, policy, publication, SCM, AI, deployment, Kubernetes, provider/
+production mutation, and production-readiness authority remains false.
+
 ### SastQualityEvaluation
 
 - scanner-set and rule-bundle versions

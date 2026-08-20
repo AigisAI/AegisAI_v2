@@ -31,6 +31,13 @@
 
 - [x] T013 Hand the SAST runtime and rule-governance follow-up to `006-production-sast-runtime-design` before live scanner rollout
 
+## Phase 7: T056 GO-Bound Deployment Entry
+
+- [x] T014 Require a fresh Qualification Authority Ed25519 attestation over the exact valid T056 `GO`, repository commit, provider/adapter, rollback, kill-switch evidence, and current 005 contract
+- [x] T015 Require the immutable qualification binding, exact credential scopes and approvals, trusted-time audit signal, bounded execution window, and reference-only rollback handoff in 005 preflight
+- [x] T016 Add passing and fail-closed tests for non-GO, signature failure, expiry, provider/approval drift, unknown fields, rollback drift, sole deployment-operations entry authorization, and zero live-deployment/Kubernetes/readiness authority
+- [x] T017 Bump and regenerate T056 assets so the manifest and policy pin the exact current 005 contract digest
+
 ## Deferred
 
 - [ ] Execute live production Kubernetes cluster provisioning

@@ -7,6 +7,10 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import {
+  PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_DIGEST,
+  PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_REF
+} from '../../packages/shared/dist/index.js';
+import {
   createProductionGoNoGoAssets,
   initializeProductionGoNoGoAssets
 } from '../../tools/sast-qualification/production-go-no-go-assets.mjs';
@@ -18,7 +22,7 @@ import {
 const repositoryRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const canonicalRoot = join(repositoryRoot, 'qualification', 't056-v1');
 const EXPECTED_MANIFEST_DIGEST =
-  'sha256:d14e1ebaa1cc624b735ea9f22bab096f750cff4cad34faff908d1408f4d9a71d';
+  'sha256:a80f5307d50f029f2e7a03a293ed58575c3e3c2d06580c6a70ba523c7135c670';
 
 test('T056 loader accepts only the exact immutable 54-gate package', async () => {
   const result = await loadAndValidateProductionGoNoGoPackage();
@@ -33,6 +37,14 @@ test('T056 loader accepts only the exact immutable 54-gate package', async () =>
   assert.equal(result.kubernetesExecutionAuthority, false);
   assert.equal(result.productionReadinessAuthority, false);
   assert.equal(result.manifestDigest, EXPECTED_MANIFEST_DIGEST);
+  assert.equal(
+    result.manifest.deploymentOperationsContractDigest,
+    PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_DIGEST
+  );
+  assert.equal(
+    result.manifest.deploymentOperationsContractRef,
+    PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_REF
+  );
 });
 
 test('T056 generator is deterministic and bootstrap refuses overwrite', async () => {

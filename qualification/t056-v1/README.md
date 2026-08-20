@@ -26,10 +26,10 @@ release-blocking gates and accepts no caller-supplied overall decision.
 - Repository validation creates no external qualification, provider, canary, Kubernetes, or
   production evidence. Without a real T055 pass it remains `BLOCKED_T055_QUALIFICATION`.
 
-Manifest: `sha256:d14e1ebaa1cc624b735ea9f22bab096f750cff4cad34faff908d1408f4d9a71d`
+Manifest: `sha256:a80f5307d50f029f2e7a03a293ed58575c3e3c2d06580c6a70ba523c7135c670`
 T055 manifest: `sha256:662f8c25f9e9a4c236fb170339c7cf8eb13fd73433a0843b6caf00e9d006286e`
-Gate policy: `sha256:979669657c88760afe4f060964d408046dd0acf60ccbf5ce68f5765e173aa935`
-005 contract: `sha256:8cb73cceceb1d43632082a19ae6838704f450e30fd1ad981a84221c563cdd9eb`
+Gate policy: `sha256:b58976e9e36b9210eeea1b97515713ae846b2a2179b7082e3fc1686f1c1a1313`
+005 contract: `sha256:f54339d493ac13a11dbc27742c088f13f6fe8f024307c350fb9ee9ea6f770c68`
 
 Do not hand-edit generated assets. Change the reviewed generator, increment the immutable
 revision, regenerate, and run `corepack pnpm qualification:validate`.

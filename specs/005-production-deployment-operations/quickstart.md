@@ -18,6 +18,10 @@ operations package with no local development defaults for provider credentials.
 - Agents should arrive at the active 006 package from [`AGENTS.md`](../../AGENTS.md).
 - This package is the completed provider-neutral contract baseline for production
   deployment operations; live provider execution remains deferred.
+- Its preflight now consumes only a fresh Qualification Authority Ed25519
+  attestation over an exact T056 `GO`. The derived binding fixes the T056 record,
+  plan, repository commit, provider/adapter, rollback, kill-switch evidence, and
+  current 005 contract revision without granting live-operation authority.
 - `006-production-sast-runtime-design` is the active detailed SAST follow-up that must
   complete before live scanner rollout.
 - `004-production-runtime-infrastructure` remains the completed runtime
@@ -80,6 +84,10 @@ the completed plane boundaries:
   credentials, full repositories, source archives, or raw scanner payloads.
 - Scanner sandboxes MUST NOT install packages, build customer repositories, run
   dynamic tests, add direct source upload, or create auto-fix PR/MR flows.
+- Preflight and handoff MUST fail closed without the exact current-contract T056
+  `GO`, its valid short-lived Qualification Authority signature, and trusted UTC.
+- Passing preflight or handoff MUST NOT execute Kubernetes, call a provider,
+  mutate production, or establish production readiness.
 
 ## Execution Flow
 
@@ -89,6 +97,12 @@ the completed plane boundaries:
 4. Add provider-neutral microVM rollout inputs and validation tests.
 5. Keep provider credential use as explicit deployment operation input, not local
    development defaults.
+6. Verify the exact T056 `GO` and short-lived Qualification Authority entry
+   signature, then reconstruct one immutable deployment qualification binding.
+7. Validate the binding, three credential boundaries, three operator approvals,
+   plane separation, audit signal, resource references, and bounded handoff.
+8. Stop before provider credentials, Kubernetes access, provider APIs, or any
+   real production mutation are required.
 
 ## Deployment Position
 
@@ -120,8 +134,15 @@ The non-deferred 005 contract milestone is complete. When revalidating it:
    production scan architecture baseline.
 6. Confirm `001-aegisai-mvp-foundation` remains available as the legacy MVP baseline.
 7. Confirm provider credentials are not introduced as local development defaults.
-8. Confirm live production Kubernetes cluster provisioning and provider-specific
+8. Confirm preflight has no evidence-free validation path; only a fresh signed
+   T056 `GO` bound to the current 005 contract can produce its qualification binding.
+9. Confirm signature, expiry, provider/adapter, repository commit, approval,
+   rollback, unknown-field, and authority-widening drift all fail closed.
+10. Confirm live production Kubernetes cluster provisioning and provider-specific
    microVM platform rollout preserve the completed plane boundaries.
+11. Confirm repository validation grants only `deploymentOperationsEntryAuthorized`;
+    live deployment, Kubernetes execution, provider/production mutation, and
+    production-readiness authority remain forbidden.
 
 ## Validation Commands
 
@@ -130,6 +151,7 @@ corepack pnpm lint
 corepack pnpm test
 corepack pnpm typecheck
 corepack pnpm build
+corepack pnpm qualification:validate
 corepack pnpm --filter @aegisai/api prisma:validate
 git diff --check
 ```
