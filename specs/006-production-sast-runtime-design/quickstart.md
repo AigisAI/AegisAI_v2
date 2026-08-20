@@ -17,10 +17,12 @@ Control, Scan, AI, and Data/Security plane boundaries.
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
 - T040 through T052 are complete. The T053 repository-side 123-cell provider handoff, T054
-  repository-side 3,462-cell end-to-end contract, and T055 repository-side 169-cell supply-chain
-  and rollback contract are package-ready with offline cryptographic verifiers. T054 remains
-  blocked until an externally authorized T053 run supplies all destruction evidence, and T055
-  remains `BLOCKED_T054_QUALIFICATION` until the exact T054 result passes on the same provider.
+  repository-side 3,462-cell end-to-end contract, T055 repository-side 169-cell supply-chain and
+  rollback contract, and T056 repository-side 54-gate immutable go/no-go contract are package-ready
+  with offline cryptographic verifiers. T054 remains blocked until an externally authorized T053
+  run supplies all destruction evidence, T055 remains `BLOCKED_T054_QUALIFICATION` until the exact
+  T054 result passes on the same provider, and T056 remains `BLOCKED_T055_QUALIFICATION` until the
+  exact signed upstream chain and external evidence exist.
 - Production Kubernetes rollout remains deferred until T053-T056 pass. A standalone or staging
   qualification provider may execute T053 only with its external dependency set, trust bundle, and
   detached approvals; no repository or ordinary PR environment may substitute for that evidence.
@@ -721,7 +723,7 @@ tenant-safe cohorts, candidate/baseline observations, terminal pause, six-step p
 Live deployment eligibility
 still requires the 005 rollout and the remaining 006 gates.
 
-### T049-T055 Package Validation Checkpoint
+### T049-T056 Package Validation Checkpoint
 
 - Shared kill-switch contract tests cover canonical selectors/context, decision and verification
   shape, complete evaluation/head/match sets, coverage effects, planning descriptors, active
@@ -809,6 +811,21 @@ still requires the 005 rollout and the remaining 006 gates.
   A complete pass grants only T056 entry. Repository validation remains
   `BLOCKED_T054_QUALIFICATION` and never grants Kubernetes, deployment, or production-readiness
   authority.
+- T056 fixes exactly 54 mandatory gates across six ordered evidence kinds: 34 upstream
+  qualification observations, six repository assurances, five canary replay checks, four
+  kill-switch checks, three rollback-readiness checks, and two reference-only deployment boundary
+  checks. Every v1 gate prohibits `NOT_APPLICABLE`.
+- A T056 plan requires the exact same-provider T054/T055 chain, a Qualification Authority entry
+  signature, and trust bytes independently pinned by `SAST_T056_TRUST_POLICY_DIGEST`. Every
+  category binds candidate/baseline/profile/corpus and T054/T055 measurement digests, repository
+  commit, digest-bound evidence, validity window, and its independent signer roles. The verifier
+  owns its UTC clock and recomputes upstream values instead of accepting caller aggregates.
+- Missing valid categories or Security Engineering/Scan Platform approvals remain
+  `PENDING_FINAL_EVIDENCE`; malformed, unsigned, stale, drifted, threshold-breaching, or
+  `NOT_APPLICABLE` evidence is `NO_GO`. Only all 54 passing gates and both fresh approvals produce
+  `GO`. That record authorizes only entry to the 005 operations workflow; it cannot execute
+  Kubernetes, mutate production, or establish readiness. Repository validation remains
+  `BLOCKED_T055_QUALIFICATION` and synthetic fixtures are verifier tests only.
 - Repository completion still requires the standard commands below on the final branch. Live
   signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
   remain fail-closed rollout dependencies rather than fabricated local evidence.
@@ -864,6 +881,13 @@ Before claiming the 006 design milestone complete:
     approved plan and that final activation accepts only its exact sequence + 1. Never treat
     synthetic signatures, local receipts, or repository validation as external supply-chain,
     rollback, T056, Kubernetes, deployment, or production-readiness evidence.
+16. Validate the T056 repository-side 54-gate immutable go/no-go contract, confirm it remains
+    `BLOCKED_T055_QUALIFICATION`, and never issue its plan without the exact signed same-provider
+    T054/T055 chain and independently pinned trust root. Confirm all six evidence categories,
+    verifier-owned time, upstream recomputation, mandatory-gate and dual-approval rules, and that
+    `GO` grants only 005 deployment-operations entry. Never treat synthetic signatures, local
+    evidence, or repository validation as canary, kill-switch, rollback, Kubernetes, deployment,
+    or production-readiness evidence.
 
 ## Validation Commands
 

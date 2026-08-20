@@ -85,7 +85,7 @@ test('active 006 spec explicitly reclassifies only the bounded issue 276 bootstr
   assert.match(plan, /Issue #276 is an explicitly reclassified adjacent bootstrap/);
   assert.match(
     plan,
-    /did not advance or satisfy T040[\s\S]{0,240}completed[\s\S]{0,120}T040 through T052[\s\S]{0,180}T053 repository-side provider handoff is package-ready[\s\S]{0,160}T054 repository-side end-to-end qualification contract is package-ready[\s\S]{0,180}production-equivalent T053 microVM execution/
+    /did not advance or satisfy T040[\s\S]{0,240}completed[\s\S]{0,120}T040 through T052[\s\S]{0,180}T053 repository-side provider handoff is package-ready[\s\S]{0,160}T054 repository-side end-to-end qualification contract is package-ready[\s\S]{0,160}T055 repository-side supply-chain and rollback contract is package-ready[\s\S]{0,160}T056 repository-side immutable go\/no-go evidence contract is package-ready[\s\S]{0,180}production-equivalent T053 microVM execution/
   );
   assert.match(tasks, /Approved Adjacent Bootstrap \(Does Not Advance 006\)/);
   assert.match(tasks, /Keep T040 as the next formal active-milestone task/);

@@ -1439,6 +1439,48 @@ prohibited effects from the complete signed receipt set. It is
 `t056EntryAuthorized=true`. Finding, policy, publication, deployment, Kubernetes, and production-
 readiness authority are always false.
 
+### SastProductionGoNoGoManifest, EntryAttestation, and EvidenceAttestation
+
+The repository-owned T056 manifest contains exactly 54 immutable gates. The closed catalog groups
+34 upstream qualification gates, six repository-assurance gates, five canary replay gates, four
+kill-switch gates, three rollback-readiness gates, and two deployment-handoff gates. Every gate
+fixes its evidence kind, threshold operator/value, unit, rationale, independent signature roles,
+and `notApplicableAllowed=false`. The manifest binds the exact T055 manifest and normalized 005
+deployment-operations contract while granting no runtime, deployment, Kubernetes, mutation, or
+readiness authority.
+
+The Qualification Authority entry attestation binds the complete exact T054 and T055 chain,
+same provider and adapter, candidate and baseline scanner-set digests, profile-set digest,
+T051 current/prior and T052 snapshot digests, both upstream measurement digests, and the derived
+rollback target. Its `t056EntryAuthorized=true` means only that T056 evidence may be evaluated.
+The independent trust bundle is process-pinned by `SAST_T056_TRUST_POLICY_DIGEST`.
+
+One evidence attestation exists for each of the six ordered evidence kinds. It binds the manifest
+and entry, repository commit, all candidate/baseline/profile/corpus/measurement identities, one
+digest-bound evidence reference, observation and expiry instants, the exact ordered observations,
+and the category's required signatures. External categories are explicitly distinguished from
+repository validation. Every attestation records false for customer-content observation, customer
+code execution, package installation, repository build, dynamic testing, public egress,
+production mutation, and Kubernetes execution.
+
+### SastProductionGoNoGoPlan, GateResult, and Record
+
+The plan binds all six evidence attestation IDs/digests, the complete 54-gate set, derived rollback
+target, exact kill-switch evidence, 005 contract, decision actor/time, and the two required final
+approval roles. It accepts no aggregate decision and grants only a possible 005 operations-entry
+handoff. Security Engineering and Scan Platform independently sign the exact plan before the
+trusted decision instant and within one hour.
+
+The verifier recreates each `SastProductionGoNoGoGateResult` from the signed observation and
+reviewed threshold, and recomputes all upstream values from the bound T054/T055 results. The
+immutable record is
+`BLOCKED_T055_QUALIFICATION | PENDING_FINAL_EVIDENCE | NO_GO | GO`. A complete valid category
+subset or approval subset is pending; malformed, unsigned, stale, drifted, breached, or
+`NOT_APPLICABLE` evidence is no-go. Only 54 passing results and both valid approvals produce `GO`
+and set `deploymentOperationsEntryAuthorized=true`. Finding, policy, publication, SCM, AI,
+deployment, Kubernetes, production-mutation, and production-readiness authority remain false in
+every state.
+
 ### SastQualityEvaluation
 
 - scanner-set and rule-bundle versions

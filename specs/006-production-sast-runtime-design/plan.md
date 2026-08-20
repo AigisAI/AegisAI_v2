@@ -17,9 +17,11 @@ AI, policy, finding, evidence, publication, SCM, tenant, or deployment authority
 that bootstrap did not advance or satisfy T040; the formal 006 sequence has since completed
 T040 through T052 independently. The T053 repository-side provider handoff is package-ready.
 The T054 repository-side end-to-end qualification contract is package-ready.
-The T055 repository-side supply-chain and rollback contract is package-ready. The guarded next action
-remains real production-equivalent T053 microVM execution and destruction evidence; T054 and T055
-plan issuance remain cryptographically blocked behind their exact upstream passing results.
+The T055 repository-side supply-chain and rollback contract is package-ready.
+The T056 repository-side immutable go/no-go evidence contract is package-ready. The guarded next
+action remains real production-equivalent T053 microVM execution and destruction evidence; T054,
+T055, and T056 plan issuance remain cryptographically blocked behind their exact upstream passing
+results and T056 external evidence categories.
 
 ## Target Boundaries
 
@@ -289,6 +291,16 @@ baseline release sets, queue fencing, in-flight abort and cleanup, last-known-go
 post-fence candidate invocation, and an exact sequence + 1 append from the plan-bound head.
 Repository validation stays `BLOCKED_T054_QUALIFICATION`; a complete pass may
 authorize T056 only and never deployment, Kubernetes, or production readiness.
+
+The T056 repository package fixes exactly 54 mandatory gates across six signed evidence kinds. It
+requires the exact same-provider T054/T055 chain and a Qualification Authority entry signature,
+pins its trust root independently through `SAST_T056_TRUST_POLICY_DIGEST`, and recomputes every
+upstream measurement rather than accepting a caller aggregate. Missing valid categories or final
+approvals remain `PENDING_FINAL_EVIDENCE`; malformed, unsigned, stale, drifted, breached, or
+`NOT_APPLICABLE` evidence is `NO_GO`. Only all 54 passing gates plus fresh Security Engineering and
+Scan Platform signatures yield `GO`, which authorizes only entry to the 005 operations flow and
+never deployment, Kubernetes execution, production mutation, or production readiness. Repository
+validation stays `BLOCKED_T055_QUALIFICATION` without real external evidence.
 
 ## Key Interfaces
 

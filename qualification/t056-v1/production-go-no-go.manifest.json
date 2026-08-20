@@ -1,0 +1,896 @@
+{
+  "version": "sast-production-go-no-go-manifest-v1",
+  "revision": "1.0.0",
+  "publishedAt": "2026-08-20T00:00:00.000Z",
+  "ownerRef": "team://security-engineering/sast-production-readiness/sha256:476e95a66351140e7eeeb4be19480ccfd4323ab17c4bbf30357e829707394b79",
+  "gatePolicyRef": "repository-file://qualification/t056-v1/go-no-go-policy.json/sha256:979669657c88760afe4f060964d408046dd0acf60ccbf5ce68f5765e173aa935",
+  "gatePolicyDigest": "sha256:979669657c88760afe4f060964d408046dd0acf60ccbf5ce68f5765e173aa935",
+  "t055ManifestId": "sast-supply-chain-rollback-qualification-manifest://662f8c25f9e9a4c236fb170339c7cf8eb13fd73433a0843b6caf00e9d006286e",
+  "t055ManifestDigest": "sha256:662f8c25f9e9a4c236fb170339c7cf8eb13fd73433a0843b6caf00e9d006286e",
+  "deploymentOperationsContractRef": "repository-file://specs/005-production-deployment-operations/contracts/deployment-operations.md/sha256:8cb73cceceb1d43632082a19ae6838704f450e30fd1ad981a84221c563cdd9eb",
+  "deploymentOperationsContractDigest": "sha256:8cb73cceceb1d43632082a19ae6838704f450e30fd1ad981a84221c563cdd9eb",
+  "gates": [
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T053_ISOLATED_INTEGRATION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "T053_PASSED",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:3fd1f880487995fe23bd3a344d941082f378661fe1384f7507fdacb48d7ceaa3"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ARTIFACT_SIGNATURE_PROVENANCE",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "ARTIFACTS_VERIFIED",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:75e9b1cac347a9996f5508b925bf61bb0df61fa3feb493284db1e7634afa6add"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "SCANNER_PROFILE_COMPATIBILITY",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "COMPATIBILITY_VERIFIED",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:28a9660c5bd19883103c0ea1f079f2235bc75ef7941653f3b37c2ecac953317e"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "GOLDEN_CORPUS_EXACT",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "GOLDEN_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:0f397067b03c6be1d282fd5536ff5aabc75ae485e6d41aa57ccf35dda2ed4f36"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "MUST_DETECT_RECALL",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_LEAST",
+      "thresholdValue": 9500,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "RECALL_THRESHOLD",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:3b6efb3e36ddd287c790a3d573100f698193e9de625c531bc78906240a0b548b"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "CRITICAL_HIGH_PRECISION",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_LEAST",
+      "thresholdValue": 9000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "PRECISION_THRESHOLD",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:5fa8a7a59bd86f1146dfef85925250552ed74ffa6df9f9ebe4afdf8205b6514f"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "PRIOR_MUST_DETECT_RECALL",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "PRIOR_RECALL_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:f7672b6aee52a0bc6a0faf20e6904239fd6ce0d71713b550737f2b589491db29"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "FALSE_POSITIVE_INCREASE",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 200,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "FALSE_POSITIVE_DELTA",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:f8512b8dd2d68d29eb29bc64295c3be5165d1be25a3b8c3e07af6ba342286560"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "SCANNER_FAILURE_RATE",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 200,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "FAILURE_RATE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:2e8242fb4c494257ce4962584d1157e9ef00933e159ca258ae65155d4877f7ab"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "P95_LATENCY_REGRESSION",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 2000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "P95_REGRESSION",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:8ce88c204c6c4f3b599e3a2d3bdd9e24087c09d7484e916fb14288dfb59e8f4d"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "FAST_LANE_ABSOLUTE_P95",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 600000,
+      "unit": "MILLISECONDS",
+      "rationaleCode": "FAST_P95",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:268f16b2913c8d76d3b76f441f0a8a670da4970abe494ffd5da0e8be45039407"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "DEEP_LANE_ABSOLUTE_P95",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 2700000,
+      "unit": "MILLISECONDS",
+      "rationaleCode": "DEEP_P95",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:fc38a21aa057ef8a7997be75fb5371c4c65e8b7714a3e3e4afb54cf85a3a2778"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "FINGERPRINT_CORRELATION",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "FINGERPRINT_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:ade1416884a4161e53d73e62c24b44ae5dd539ae689d4fb51a56e91038070264"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "EVIDENCE_PRIVACY",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "EVIDENCE_PRIVACY_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:c1b5ca84de7ae4378e21f7894f8b086eb93ad1eb039d0b1f06101e681a77e3b5"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "CAPACITY_RESOURCE_LIMITS",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "CAPACITY_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:30505fa748ee47eb21ad33d9ea6ef23beee5b52718dd51742769b8986eb14e32"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ZERO_CROSS_TENANT_LEAK",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:1595ef5577d2ff14d28a35a7bcb34dfabeb29bbc55f31428ebf6a8b711b79b21"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ZERO_SECRET_LEAK",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:196a6998c25243b718b7781b60d547fbc580ed3c9aeab0fbc5e0dac5b70d3eab"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ZERO_SANDBOX_ESCAPE",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:86e01d5ac2def247c18c7a42272e2383c7f00a36832126ef85f27074e8d67885"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ZERO_STALE_PUBLICATION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:fbbf6b96520dcf94cd10fefcab7f4fe44e5c324f10cda59be6a7c13fb231784a"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ZERO_UNAUTHORIZED_EGRESS",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:daa959674c7694af884789cc64733136fe00c9053293f0ed8bbaa16f58ae3f32"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ZERO_MISSING_DESTRUCTION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:1cc68e1dd809f11ffa7dfb69bfba5daeb375b54a34390e591c109bf8484574d7"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ZERO_EVIDENCE_POLICY_VIOLATION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:86bd6be04d493fec9e1e9e22cd9826e149e0e4ca1925306eadca2df3dc3c8af8"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ZERO_UNSIGNED_ARTIFACT_EXECUTION",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:3cde3942fe4dc30588fcef991598786b853b2534c04cfee22f5aa92a4f757617"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_ARTIFACT_DRILLS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 144,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:830a4feec4d3910b41b7c220a5a14ec7b81baecba587cf4aa91533be7558b325"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_ALLOWLIST_DRILLS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:e23d783e8835b6a02fbfe7ac0c9a2dcccae698f028a51653cbdb4fbdc138c987"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_DATABASE_DRILLS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 6,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:ba45bb2f5e1705f384f88bafb9699925696854217419a64d8e8bbeed27880063"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_SCHEMA_DRILLS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 3,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:6034d0fa5e9ebfd176527b25e1476d202cdf3e9910b4227274c0e1db14fce3cf"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_ROLLBACK_PHASES",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 15,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:ae596b2a042da5726594091a378866e2c0ddfb5df62ca9d90676e6828834499f"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_PRE_EXECUTION_REJECTIONS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 115,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:439f12a2b66305b6aede445087e5be787faec81f704bcc2ccfc9e1f421053a20"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_ARTIFACT_INVOCATIONS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 39,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:fc086b6920cbb5b3fe1ea559d23f3d02af0baac7142793e60b9b43a0cf40cb48"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_CLEANUP_COMPLETION",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 169,
+      "unit": "COUNT",
+      "rationaleCode": "T055_CLEANUP",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:4e20a810b8384d07ed459b16167160c73331d808977bc90af61ffb5f5515c5ec"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_ZERO_NETWORK_EGRESS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "T055_ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:cf5c68c81939ca3de2f00c85b125952ca1deb66b44bc0d4d393e838d1e21b7a0"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_ZERO_PRODUCTION_MUTATION",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "T055_ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:c8942c3216df8b6e32324c264e16e8bc276c40268f5fae1f773efe2dc4479716"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "T055_ZERO_FORBIDDEN_EFFECTS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "T055_ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:c7611caeddbe3fa2865f08710ef00f0b759e5e610ca57fe21490d9380c4789ba"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "REPOSITORY_CONTRACT_TESTS",
+      "category": "REPOSITORY_ASSURANCE",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "REPOSITORY_TESTS",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:ec675d1936c7658a236855ba264aa12da99475c43b375eba3959f9e669462b72"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "REPOSITORY_STATIC_VALIDATION",
+      "category": "REPOSITORY_ASSURANCE",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "LINT_TYPECHECK_BUILD",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:92a577d4ea2905ed7c9be551235bb6d3cc6edcfb6b42db37b8d7181fb0c4fbf0"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "REPOSITORY_DATABASE_VALIDATION",
+      "category": "REPOSITORY_ASSURANCE",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "SCHEMA_MIGRATION_PROBE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:377b18e9b0240376521b47d2e55013feb780ab994e4a089f07398f7665ace99c"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "NORMALIZATION_DATA_INTEGRITY",
+      "category": "REPOSITORY_ASSURANCE",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "DATA_INTEGRITY_TESTS",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:d2e337533ced6db5296fd0201757609e875bf0b5766174c1042978d3b7e74094"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "EVIDENCE_RETENTION_DELETION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "RETENTION_TESTS",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:7d17951ace82dcab9573886638b761b94176659439652a64baa9c6c86e5a0db7"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "AI_ADVISORY_ZERO_AUTHORITY",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "AI_ZERO_AUTHORITY",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:0dec04b2a0e2155b277247e4b72f018d0261e3c096b76a2741d53c97c250f66e"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "CANARY_SIX_STEP_REPLAY",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 6,
+      "unit": "COUNT",
+      "rationaleCode": "CANARY_STEPS",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:50c0cd5987a5b5aa196e379944e773a91130a395c6b87b1802eb07ea72dda69c"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "CANARY_SAMPLE_SUFFICIENCY",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "AT_LEAST",
+      "thresholdValue": 1000,
+      "unit": "COUNT",
+      "rationaleCode": "CANARY_MINIMUM_PER_ARM",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:07e54e88b46765263bda602d87cdb8c8b527327c1a2b591c320cc091b5673737"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "CANARY_OBSERVATION_WINDOW",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "AT_LEAST",
+      "thresholdValue": 48,
+      "unit": "HOURS",
+      "rationaleCode": "CANARY_WINDOW",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:583e48a723f6cc3632a941d320f43a049d4990f05b0d7c37b2aee9b390757202"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "CANARY_TELEMETRY_COMPLETE",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "CANARY_TELEMETRY",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:6ef3786a9ca886983edcc73cebf8deff93891b155ce436c5becc960e0e7cf52b"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "CANARY_THRESHOLDS_ZERO_TOLERANCE",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "CANARY_THRESHOLDS",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:ad3b17dd4663ccc4324c5e0ea44853ec4315daa9a75b3f19eb9e2e34dccbe134"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "KILL_SWITCH_PROPAGATION_BOUNDARIES",
+      "category": "KILL_SWITCH",
+      "evidenceKind": "KILL_SWITCH_PROPAGATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 5,
+      "unit": "COUNT",
+      "rationaleCode": "KILL_SWITCH_BOUNDARIES",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:79728361c6656d1b2e10713a3077c38ea47a672390444f78b06945a9e353eb79"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "KILL_SWITCH_FAIL_CLOSED",
+      "category": "KILL_SWITCH",
+      "evidenceKind": "KILL_SWITCH_PROPAGATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "KILL_SWITCH_FAIL_CLOSED",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:eeafcbf85171c82aead0d31ec4a4c99266531a10c9934024a86c997f391994ba"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "KILL_SWITCH_DEACTIVATION_RECOVERY",
+      "category": "KILL_SWITCH",
+      "evidenceKind": "KILL_SWITCH_PROPAGATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "KILL_SWITCH_RECOVERY",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:57eb702c58edb148d0159bb221ff821bd2a24deae6a9791763bd0981bce90bcf"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "KILL_SWITCH_FORBIDDEN_SIDE_EFFECTS",
+      "category": "KILL_SWITCH",
+      "evidenceKind": "KILL_SWITCH_PROPAGATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "KILL_SWITCH_ZERO_EFFECTS",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:55c2f3909990df0aa55a2157abd2673771f09507d5cf70b4fe3b51a46c93cc27"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ROLLBACK_SIGNED_CHAIN",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "ROLLBACK_READINESS",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "ROLLBACK_CHAIN",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:278d92811ff8fd2b31a6300e25ad5131ae54d8df90c0f2af37a6a53263c40b62"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ROLLBACK_TARGET_DERIVED",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "ROLLBACK_READINESS",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "ROLLBACK_TARGET",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:98cc3831cec1dfd1d6f8fc0ac0598de43f3b00bdbaf2758705c6a028e583ba4b"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "ROLLBACK_POST_FENCE_INVOCATIONS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "ROLLBACK_READINESS",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ROLLBACK_FENCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:0d544528bf97ece3260a85c049bc97318c50808fd0a7c8d0fd36a4a06ffbee16"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "DEPLOYMENT_OPERATIONS_REFERENCE_ONLY",
+      "category": "DEPLOYMENT_BOUNDARY",
+      "evidenceKind": "DEPLOYMENT_HANDOFF_BOUNDARY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "005_REFERENCE_ONLY",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:a890ca1164b52d6e9135e5ac4883ada7286d2b694dea5d22c3ec2a4ce8c26213"
+    },
+    {
+      "version": "sast-production-go-no-go-gate-v1",
+      "gateId": "KUBERNETES_EXECUTION_NOT_PERFORMED",
+      "category": "DEPLOYMENT_BOUNDARY",
+      "evidenceKind": "DEPLOYMENT_HANDOFF_BOUNDARY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "NO_KUBERNETES_EXECUTION",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY"
+      ],
+      "notApplicableAllowed": false,
+      "gateDigest": "sha256:44344e70b35ad9a3aa3f97a1fee2a122352985c558825409b0d0f682ce79ab28"
+    }
+  ],
+  "gateSetDigest": "sha256:69604e67c647d4c1ecb3fa13ec811aa7c570e38bd47bdb84513be9b09a99b633",
+  "requiredGateCount": 54,
+  "notApplicableGateCount": 0,
+  "providerExecutionStatus": "BLOCKED_T055_QUALIFICATION",
+  "t055PassRequired": true,
+  "externalEvidenceRequired": true,
+  "aggregateDecisionAcceptedFromCaller": false,
+  "notApplicableSubstitutionAllowed": false,
+  "findingAuthority": false,
+  "policyAuthority": false,
+  "publicationAuthority": false,
+  "scmMutationAuthority": false,
+  "aiAuthority": false,
+  "deploymentAuthority": false,
+  "kubernetesExecutionAuthority": false,
+  "productionMutationAuthority": false,
+  "productionReadinessAuthority": false,
+  "immutable": true,
+  "manifestId": "sast-production-go-no-go-manifest://d14e1ebaa1cc624b735ea9f22bab096f750cff4cad34faff908d1408f4d9a71d",
+  "manifestDigest": "sha256:d14e1ebaa1cc624b735ea9f22bab096f750cff4cad34faff908d1408f4d9a71d"
+}
