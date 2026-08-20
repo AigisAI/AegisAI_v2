@@ -1,6 +1,6 @@
 {
   "version": "sast-production-go-no-go-policy-v1",
-  "revision": "1.0.0",
+  "revision": "1.0.1",
   "ownerRef": "team://security-engineering/sast-production-readiness/sha256:476e95a66351140e7eeeb4be19480ccfd4323ab17c4bbf30357e829707394b79",
   "prerequisite": {
     "stage": "T055_SUPPLY_CHAIN_DATABASE_SCHEMA_ROLLBACK",
@@ -791,8 +791,8 @@
     }
   ],
   "handoff": {
-    "deploymentOperationsContractRef": "repository-file://specs/005-production-deployment-operations/contracts/deployment-operations.md/sha256:8cb73cceceb1d43632082a19ae6838704f450e30fd1ad981a84221c563cdd9eb",
-    "deploymentOperationsContractDigest": "sha256:8cb73cceceb1d43632082a19ae6838704f450e30fd1ad981a84221c563cdd9eb",
+    "deploymentOperationsContractRef": "repository-file://specs/005-production-deployment-operations/contracts/deployment-operations.md/sha256:f54339d493ac13a11dbc27742c088f13f6fe8f024307c350fb9ee9ea6f770c68",
+    "deploymentOperationsContractDigest": "sha256:f54339d493ac13a11dbc27742c088f13f6fe8f024307c350fb9ee9ea6f770c68",
     "goAuthorizesOnly": "DEPLOYMENT_OPERATIONS_ENTRY",
     "passingDoesNotExecuteKubernetes": true,
     "passingDoesNotEstablishProductionReadiness": true

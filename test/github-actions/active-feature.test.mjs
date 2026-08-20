@@ -271,6 +271,12 @@ const files = {
   apiSastKillSwitchMigration: new URL('../../apps/api/prisma/migrations/20260819180000_sast_kill_switch_authority/migration.sql', import.meta.url),
   apiSastRuleBundleRollbackMigration: new URL('../../apps/api/prisma/migrations/20260819220000_sast_rule_bundle_rollback/migration.sql', import.meta.url),
   apiScanPlaneModule: new URL('../../apps/api/src/scan-plane/scan-plane.module.ts', import.meta.url),
+  sharedDeploymentOperations: new URL('../../packages/shared/src/types/deployment-operations.ts', import.meta.url),
+  sharedDeploymentOperationsTest: new URL('../../packages/shared/test/deployment-sast-qualification-handoff.test.mjs', import.meta.url),
+  completedDeploymentContract: new URL('../../specs/005-production-deployment-operations/contracts/deployment-operations.md', import.meta.url),
+  completedDeploymentSpec: new URL('../../specs/005-production-deployment-operations/spec.md', import.meta.url),
+  completedDeploymentPlan: new URL('../../specs/005-production-deployment-operations/plan.md', import.meta.url),
+  completedDeploymentDataModel: new URL('../../specs/005-production-deployment-operations/data-model.md', import.meta.url),
   completedDeploymentQuickstart: new URL('../../specs/005-production-deployment-operations/quickstart.md', import.meta.url),
   completedDeploymentTasks: new URL('../../specs/005-production-deployment-operations/tasks.md', import.meta.url),
   completedDeploymentChecklist: new URL('../../specs/005-production-deployment-operations/checklists/requirements.md', import.meta.url),
@@ -3755,11 +3761,14 @@ test('SAST T056 produces immutable evidence-recomputed go-no-go without deployme
   assert.match(contract, /Production go\/no-go v1/);
   assert.match(dataModel, /SastProductionGoNoGoPlan, GateResult, and Record/);
   assert.match(spec, /FR-057n/);
+  assert.match(spec, /FR-057o/);
   assert.match(research, /Decision 34: Make T056 an Immutable Evidence-Recomputed Deployment Handoff/);
+  assert.match(research, /Decision 35: Make 005 Reverify and Bind T056 GO Before Preflight/);
   assert.match(ruleGovernance, /T056 Immutable Production Go\/No-Go Boundary/);
   assert.match(threatModel, /T056 favorable aggregate or upstream measurement substitution/);
   assert.match(threatModel, /T056 missing, stale, unsigned, or not-applicable evidence laundering/);
   assert.match(threatModel, /T056 trust-root or deployment-authority widening/);
+  assert.match(threatModel, /005 self-asserted or replayed T056 entry/);
   assert.match(qualityGates, /T056 Immutable Production Go\/No-Go Gates/);
   assert.match(checklist, /T056 repository handoff pins exactly 54 mandatory gates/);
 });
@@ -3817,6 +3826,49 @@ test('completed deployment operations baseline hands SAST detail to 006', () => 
   assert.match(tasks, /Hand the SAST runtime and rule-governance follow-up to `006-production-sast-runtime-design`/);
   assert.match(tasks, /Execute live production Kubernetes cluster provisioning/);
   assert.match(tasks, /Execute provider-specific microVM platform rollout/);
+});
+
+test('005 deployment preflight consumes only a fresh signed T056 GO binding', () => {
+  const shared = readNormalizedText(files.sharedDeploymentOperations);
+  const sharedTest = readNormalizedText(files.sharedDeploymentOperationsTest);
+  const contract = readNormalizedText(files.completedDeploymentContract);
+  const spec = readNormalizedText(files.completedDeploymentSpec);
+  const plan = readNormalizedText(files.completedDeploymentPlan);
+  const dataModel = readNormalizedText(files.completedDeploymentDataModel);
+  const quickstart = readNormalizedText(files.completedDeploymentQuickstart);
+  const tasks = readNormalizedText(files.completedDeploymentTasks);
+  const checklist = readNormalizedText(files.completedDeploymentChecklist);
+  const manifest = JSON.parse(readFileSync(files.productionGoNoGoManifest, 'utf8'));
+
+  const digestMatch = shared.match(
+    /PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_DIGEST\s*=\s*\n\s*'(sha256:[a-f0-9]{64})'/u
+  );
+  assert.ok(digestMatch);
+  assert.notEqual(digestMatch[1], `sha256:${'0'.repeat(64)}`);
+  assert.equal(manifest.deploymentOperationsContractDigest, digestMatch[1]);
+  assert.match(
+    manifest.deploymentOperationsContractRef,
+    new RegExp(`${digestMatch[1]}$`)
+  );
+
+  assert.match(shared, /buildDeploymentSastQualificationEntryAttestation/);
+  assert.match(shared, /isDeploymentSastQualificationEntryAttestationValid/);
+  assert.match(shared, /buildDeploymentSastQualificationBinding/);
+  assert.match(shared, /record\.status !== 'GO'/);
+  assert.match(shared, /signature\.role === 'QUALIFICATION_AUTHORITY'/);
+  assert.match(shared, /isDeploymentOperationPreflightReady\(\s*input: unknown,\s*evidence:/u);
+  assert.match(shared, /startsAt < qualificationExpiresAt/);
+  assert.match(shared, /rollbackPlanRef === candidate\.preflight\.sastQualification\.rollbackTargetRef/);
+  assert.match(sharedTest, /fresh Qualification Authority-signed T056 GO binding/);
+  assert.match(sharedTest, /fails closed for non-GO, signature, freshness, and binding drift/);
+
+  assert.match(contract, /Preflight validation has no evidence-free overload/);
+  assert.match(spec, /T056 record MUST be valid `GO` with all 54 gates passed/);
+  assert.match(plan, /never[\s\S]{0,80}manufactures external qualification[\s\S]{0,30}evidence/);
+  assert.match(dataModel, /Repository code in this milestone can reach only `handoff_ready`/);
+  assert.match(quickstart, /no evidence-free validation path/);
+  assert.match(tasks, /Phase 7: T056 GO-Bound Deployment Entry/);
+  assert.match(checklist, /fresh Qualification Authority-signed T056 `GO`/);
 });
 
 test('completed production runtime infrastructure baseline hands live rollout follow-up to 005', () => {

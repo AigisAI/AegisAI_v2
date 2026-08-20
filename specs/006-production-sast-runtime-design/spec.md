@@ -689,6 +689,18 @@ incomplete, stale, quarantined, or security-blocked scan.
   MUST NOT create findings, override policy, publish, mutate SCM or production, invoke AI, deploy,
   execute Kubernetes, or establish production readiness. Repository CI MUST remain
   `BLOCKED_T055_QUALIFICATION` without the real signed upstream and external evidence chain.
+- **FR-057o**: The 005 deployment preflight MUST NOT accept a caller assertion that T056 passed.
+  It MUST reconstruct an immutable qualification binding from the exact structurally and
+  cryptographically valid T056 `GO` record plus a fresh Qualification Authority Ed25519
+  deployment-entry attestation. The attestation MUST bind the T056 record/manifest/plan,
+  repository commit, provider and adapter, rollback target, kill-switch evidence, and exact
+  current 005 contract reference/digest; it MUST be signed within one hour of the decision and
+  expire no more than one hour after signing. Preflight MUST require verifier-owned trusted UTC,
+  the signature verifier and canonical digester, exact provider/adapter equality, all three
+  credential scopes and approval kinds, and digest-bound reference-only inputs. Handoff MUST
+  begin before qualification expiry, last no more than eight hours, and retain the exact
+  qualified rollback target. Every finding, policy, publication, SCM, AI, deployment,
+  Kubernetes, production-mutation, and production-readiness authority bit MUST remain false.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

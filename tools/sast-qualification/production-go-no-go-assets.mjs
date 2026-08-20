@@ -31,8 +31,8 @@ export const PRODUCTION_GO_NO_GO_POLICY_PATH = join(
   'go-no-go-policy.json'
 );
 
-const REVISION = '1.0.0';
-const PUBLISHED_AT = '2026-08-20T00:00:00.000Z';
+const REVISION = '1.0.1';
+const PUBLISHED_AT = '2026-08-20T02:00:00.000Z';
 const OWNER_REF = `team://security-engineering/sast-production-readiness/${digest('t056-owner')}`;
 const EXPECTED_ROOT_ENTRIES = [
   'README.md',

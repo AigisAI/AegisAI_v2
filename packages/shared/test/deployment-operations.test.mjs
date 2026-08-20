@@ -79,7 +79,9 @@ test('microVM rollout contracts preserve scanner sandbox isolation boundaries', 
     'tokenBrokerRef',
     'evidenceStorageRef',
     'egressPolicyRef',
-    'ttlSeconds'
+    'ttlSeconds',
+    'providerAdapterRef',
+    'forbiddenScannerCapabilities'
   ]) {
     assert.match(contract, new RegExp(`\\b${requiredField}\\b`));
   }
@@ -131,8 +133,21 @@ test('deployment operation preflight contracts require explicit production execu
   const contract = readContract();
 
   for (const exportName of [
+    'PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_DIGEST',
+    'PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_REF',
+    'PRODUCTION_PLANE_FORBIDDEN_NAMESPACES',
+    'DEPLOYMENT_SAST_QUALIFICATION_ENTRY_ATTESTATION_VERSION',
+    'DEPLOYMENT_SAST_QUALIFICATION_BINDING_VERSION',
     'DEPLOYMENT_PREFLIGHT_REQUIRED_APPROVALS',
+    'DeploymentSastQualificationEntryAttestation',
+    'DeploymentSastQualificationBinding',
+    'DeploymentOperatorApprovalReference',
     'DeploymentOperationPreflight',
+    'buildDeploymentSastQualificationEntryAttestationDraft',
+    'buildDeploymentSastQualificationEntryAttestation',
+    'isDeploymentSastQualificationEntryAttestationValid',
+    'buildDeploymentSastQualificationBinding',
+    'isDeploymentSastQualificationBindingValid',
     'isDeploymentOperationPreflightReady'
   ]) {
     assert.match(contract, new RegExp(`export (interface|const|type|function) ${exportName}\\b`));
@@ -141,9 +156,10 @@ test('deployment operation preflight contracts require explicit production execu
   for (const requiredField of [
     'clusterProvisioning',
     'microVmRollout',
-    'credentialBoundary',
+    'credentialBoundaries',
+    'sastQualification',
     'auditSignal',
-    'operatorApprovalRefs',
+    'operatorApprovals',
     'kmsKeyRef',
     'secretManagerRef',
     'objectStorageRef',
@@ -159,6 +175,20 @@ test('deployment operation preflight contracts require explicit production execu
   ]) {
     assert.match(contract, new RegExp(`'${requiredApproval}'`));
   }
+
+  assert.doesNotMatch(
+    contract,
+    /PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_DIGEST\s*=\s*\n\s*'sha256:0{64}'/u
+  );
+  assert.match(
+    contract,
+    /isDeploymentOperationPreflightReady\(\s*input:\s*unknown,\s*evidence:\s*DeploymentSastQualificationEvidence,\s*context:\s*DeploymentSastQualificationVerificationContext/u
+  );
+  assert.match(contract, /signature\.role\s*===\s*'QUALIFICATION_AUTHORITY'/u);
+  assert.match(contract, /record\.status\s*!==\s*'GO'/u);
+  assert.match(contract, /kubernetesExecutionAuthority:\s*false/u);
+  assert.match(contract, /productionMutationAuthority:\s*false/u);
+  assert.match(contract, /productionReadinessAuthority:\s*false/u);
 });
 
 test('deployment operation preflight contracts reject persisted secrets and forbidden payload inputs', () => {

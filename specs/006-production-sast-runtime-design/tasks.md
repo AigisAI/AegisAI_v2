@@ -121,6 +121,10 @@
     offline verifier are package-ready and fail closed as `BLOCKED_T055_QUALIFICATION` without a
     real T055 pass. `GO` grants only 005 deployment-operations entry and no Kubernetes or
     production-readiness authority.
+  - [x] The 005 consumer requires a fresh Qualification Authority Ed25519 deployment-entry
+    attestation over the exact T056 `GO`, repository commit, provider/adapter, rollback,
+    kill-switch evidence, and current 005 contract; preflight and bounded handoff fail closed on
+    missing, non-GO, stale, future, tampered, drifted, or authority-widened evidence.
   - [ ] After T055 passes externally, collect the complete signed repository, canary, kill-switch,
     rollback, and deployment-boundary evidence, obtain fresh Security Engineering and Scan
     Platform plan approvals, and verify all 54 gates; do not replace this with CI, synthetic

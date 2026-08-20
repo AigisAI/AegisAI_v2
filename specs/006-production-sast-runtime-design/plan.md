@@ -18,10 +18,11 @@ that bootstrap did not advance or satisfy T040; the formal 006 sequence has sinc
 T040 through T052 independently. The T053 repository-side provider handoff is package-ready.
 The T054 repository-side end-to-end qualification contract is package-ready.
 The T055 repository-side supply-chain and rollback contract is package-ready.
-The T056 repository-side immutable go/no-go evidence contract is package-ready. The guarded next
-action remains real production-equivalent T053 microVM execution and destruction evidence; T054,
-T055, and T056 plan issuance remain cryptographically blocked behind their exact upstream passing
-results and T056 external evidence categories.
+The T056 repository-side immutable go/no-go evidence contract is package-ready, and 005 preflight
+now accepts it only through a fresh Qualification Authority-signed, current-contract deployment-
+entry binding. The guarded next action remains real production-equivalent T053 microVM execution
+and destruction evidence; T054, T055, and T056 plan issuance remain cryptographically blocked
+behind their exact upstream passing results and T056 external evidence categories.
 
 ## Target Boundaries
 
@@ -301,6 +302,14 @@ approvals remain `PENDING_FINAL_EVIDENCE`; malformed, unsigned, stale, drifted, 
 Scan Platform signatures yield `GO`, which authorizes only entry to the 005 operations flow and
 never deployment, Kubernetes execution, production mutation, or production readiness. Repository
 validation stays `BLOCKED_T055_QUALIFICATION` without real external evidence.
+
+The 005 consumer has no evidence-free preflight path. A Qualification Authority Ed25519 entry
+attestation must bind the exact T056 record/manifest/plan, repository commit, provider/adapter,
+rollback target, kill-switch evidence, and current 005 contract revision within a one-hour issue
+and validity window. Preflight reconstructs that immutable binding under trusted UTC, requires the
+exact credential scopes and approvals, and handoff must start before qualification expiry with the
+exact rollback target. This closes the repository handoff without granting live deployment,
+Kubernetes, provider mutation, or production-readiness authority.
 
 ## Key Interfaces
 

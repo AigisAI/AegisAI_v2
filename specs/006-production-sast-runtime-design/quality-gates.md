@@ -795,6 +795,16 @@ publication, SCM, AI, deployment, Kubernetes, production-mutation, and productio
 authority remain false. Repository validation remains `BLOCKED_T055_QUALIFICATION` until the real
 T053, T054, T055, canary, kill-switch, and rollback evidence chain exists.
 
+The 005 consumer must independently verify a fresh Qualification Authority Ed25519 deployment-
+entry attestation over the exact `GO` record, manifest, plan, repository commit, provider/adapter,
+rollback target, kill-switch evidence, and current 005 contract digest. The decision-to-
+attestation interval and attestation lifetime are each at most one hour. Preflight has no
+evidence-free overload; it uses trusted UTC, exact provider/adapter equality, all three credential
+scopes and operator approvals, and digest-bound references. Handoff starts strictly before
+qualification expiry, lasts at most eight hours, and preserves the exact rollback target. Non-GO,
+invalid signature, stale/future time, contract/provider/approval/rollback drift, unknown fields,
+or any execution/readiness authority widening fails closed.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:

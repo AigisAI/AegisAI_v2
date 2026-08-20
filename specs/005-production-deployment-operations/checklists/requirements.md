@@ -11,3 +11,9 @@
 - [x] Oracle VPS and Docker Compose remain dev/demo paths only.
 - [x] Completion validation points to quickstart and CI rather than duplicating command checklists in README.
 - [x] The detailed SAST runtime and rule-governance follow-up is handed to `006-production-sast-runtime-design` before live scanner rollout.
+- [x] 005 preflight has no evidence-free path and accepts only a fresh Qualification Authority-signed T056 `GO` bound to the exact current 005 contract.
+- [x] The qualification binding preserves the T056 record, manifest, plan, repository commit, provider/adapter, rollback target, kill-switch evidence, contract revision, and expiry.
+- [x] Preflight requires all three credential scopes and approval kinds, exact provider/adapter matching, trusted-time audit, and digest-bound reference-only resources.
+- [x] Handoff starts before qualification expiry, lasts no more than eight hours, and uses the exact T056 rollback target.
+- [x] Passing repository validation grants no deployment, Kubernetes execution, provider/production mutation, or production-readiness authority.
+- [x] T056 revisioned assets pin the exact normalized 005 deployment-operations contract digest.

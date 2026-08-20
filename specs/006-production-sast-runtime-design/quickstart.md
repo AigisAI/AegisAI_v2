@@ -19,7 +19,9 @@ Control, Scan, AI, and Data/Security plane boundaries.
 - T040 through T052 are complete. The T053 repository-side 123-cell provider handoff, T054
   repository-side 3,462-cell end-to-end contract, T055 repository-side 169-cell supply-chain and
   rollback contract, and T056 repository-side 54-gate immutable go/no-go contract are package-ready
-  with offline cryptographic verifiers. T054 remains blocked until an externally authorized T053
+  with offline cryptographic verifiers. The 005 consumer now requires a fresh Qualification
+  Authority-signed current-contract T056 `GO` binding and has no evidence-free preflight path. T054
+  remains blocked until an externally authorized T053
   run supplies all destruction evidence, T055 remains `BLOCKED_T054_QUALIFICATION` until the exact
   T054 result passes on the same provider, and T056 remains `BLOCKED_T055_QUALIFICATION` until the
   exact signed upstream chain and external evidence exist.
@@ -826,6 +828,12 @@ still requires the 005 rollout and the remaining 006 gates.
   `GO`. That record authorizes only entry to the 005 operations workflow; it cannot execute
   Kubernetes, mutate production, or establish readiness. Repository validation remains
   `BLOCKED_T055_QUALIFICATION` and synthetic fixtures are verifier tests only.
+- 005 preflight independently verifies a short-lived Qualification Authority Ed25519 entry
+  attestation over the exact T056 record/manifest/plan, repository commit, provider/adapter,
+  rollback, kill-switch evidence, and current 005 contract digest. It reconstructs the binding
+  under trusted UTC, requires all credential scopes and approvals, and allows only a bounded
+  handoff that begins before qualification expiry and keeps the exact rollback target. No step
+  grants deployment, Kubernetes, provider mutation, production mutation, or readiness authority.
 - Repository completion still requires the standard commands below on the final branch. Live
   signing, publisher, object-store, provider repository, microVM, and Kubernetes qualification
   remain fail-closed rollout dependencies rather than fabricated local evidence.
@@ -888,6 +896,11 @@ Before claiming the 006 design milestone complete:
     `GO` grants only 005 deployment-operations entry. Never treat synthetic signatures, local
     evidence, or repository validation as canary, kill-switch, rollback, Kubernetes, deployment,
     or production-readiness evidence.
+17. Validate that 005 preflight has no evidence-free path: it must require the exact current-
+    contract T056 `GO` record and a fresh Qualification Authority Ed25519 entry attestation, bind
+    repository commit/provider/adapter/rollback/kill-switch evidence, use trusted UTC, require all
+    credential scopes and approvals, and reject expiry or drift. Confirm handoff begins before
+    qualification expiry, preserves the exact rollback target, and grants no live authority.
 
 ## Validation Commands
 
