@@ -916,3 +916,35 @@ unlisted executables; reused identities or attestations; approvals after executi
 caller-selected target; activating before abort evidence or without an append-only chain; erasing
 failed evidence; caller-selected verification time; synthetic CI receipts as external evidence;
 and allowing T055 to publish, deploy Kubernetes, mutate production, or mark the system ready.
+
+## Decision 34: Make T056 an Immutable Evidence-Recomputed Deployment Handoff
+
+**Decision**: T056 is a deterministic repository contract plus later external evidence, not a
+deployment command. Its reviewed package fixes 54 mandatory gates and six evidence categories:
+34 exact upstream T054/T055 observations, six repository-assurance observations, five canary
+telemetry observations, four kill-switch observations, three rollback-readiness observations, and
+two deployment-boundary observations. No v1 gate accepts `NOT_APPLICABLE`, and no caller may submit
+an overall verdict, aggregate metric object, or evaluation time.
+
+Plan creation is cryptographically downstream of the exact same-provider T054/T055 chain and a
+Qualification Authority entry attestation. Trust-bundle bytes are independently pinned by
+`SAST_T056_TRUST_POLICY_DIGEST`. Each category attestation binds the candidate/baseline scanner
+sets, profiles, T051/T052 corpus authority, T054/T055 measurement digests, repository commit,
+evidence reference and validity window, and its required signer set. The verifier recomputes all
+upstream values from signed results and evaluates the reviewed thresholds itself. Security
+Engineering and Scan Platform then sign the exact plan within the bounded approval window.
+
+**Rationale**: A passing upstream aggregate, green CI run, canary label, rollback assertion, or
+operator-selected timestamp does not prove that the same immutable candidate has complete, fresh,
+independently signed evidence at the deployment boundary. A closed gate catalog and digest-bound
+record make omissions, stale evidence, favorable metric substitution, trust-root replacement,
+`NOT_APPLICABLE` laundering, and authority widening independently detectable. A complete `GO`
+authorizes only entry to the separate 005 deployment-operations workflow; it does not execute or
+approve Kubernetes and does not establish production readiness.
+
+**Rejected**: Starting from repository-only or partial T055 evidence; accepting caller aggregates
+or clocks; using one signature for distinct authorities; omitting an evidence category or approval
+while claiming `GO`; treating stale, malformed, unsigned, drifted, threshold-breaching, or
+`NOT_APPLICABLE` evidence as pending; treating synthetic test fixtures as external evidence; and
+allowing T056 to publish, mutate SCM/production, invoke AI, deploy Kubernetes, or mark the system
+ready.

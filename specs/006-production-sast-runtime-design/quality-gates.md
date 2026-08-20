@@ -766,6 +766,35 @@ out-of-order, ledger-invalid, or zero-tolerance-breaching evidence is `FAILED`. 
 cells authorize T056 entry. They never grant finding, policy, publication, deployment, Kubernetes,
 production mutation, or production-readiness authority.
 
+## T056 Immutable Production Go/No-Go Gates
+
+T056 starts only from the exact same-provider T054/T055 signed chain and independently pinned
+`SAST_T056_TRUST_POLICY_DIGEST`. Its immutable manifest contains exactly 54 mandatory gates; every
+v1 gate has `notApplicableAllowed=false`.
+
+| Evidence kind | Required gates and thresholds | Count |
+|---|---|---:|
+| Upstream qualification | T053 pass, artifact provenance and profile compatibility exactly true; golden/prior/fingerprint/privacy/capacity exactly 100%; must-detect recall >= 95%; Critical/High precision >= 90%; false-positive and scanner-failure increase <= 2%; p95 regression <= 20%; Fast p95 <= 10 minutes; Deep p95 <= 45 minutes; all eight security counters zero; T055 denominators exactly 144 artifact, 1 allowlist, 6 database, 3 schema, 15 rollback, 115 pre-execution rejection, 39 invocation, 169 cleanup, with zero egress/mutation/forbidden effects | 34 |
+| Repository validation | contract tests, static validation, database validation, normalization integrity, retention/deletion, and advisory-AI zero authority exactly true | 6 |
+| Canary telemetry replay | exactly six steps, >= 1,000 observations per arm, >= 48 hours, complete telemetry, and all zero-tolerance thresholds satisfied | 5 |
+| Kill-switch propagation | exactly five enforcement boundaries, fail-closed and recovery proofs true, forbidden side effects zero | 4 |
+| Rollback readiness | signed chain and derived target true, post-fence candidate invocation zero | 3 |
+| Deployment handoff | normalized 005 contract is reference-only and Kubernetes execution count is zero | 2 |
+
+Each of the six ordered evidence attestations binds the exact candidate/baseline/profile/corpus and
+T054/T055 measurement identities, one repository commit shared by every evidence kind and bound
+into the plan/record, digest-bound evidence whose reference terminal digest equals its declared
+digest, observation/expiry times, and required Ed25519 signer roles. The verifier owns its UTC
+clock and recomputes every upstream value. A valid missing category or one missing final approval is
+`PENDING_FINAL_EVIDENCE`; malformed, unsigned, stale, drifted, threshold-breaching, or
+`NOT_APPLICABLE` evidence is `NO_GO`. Security Engineering and Scan Platform must independently
+sign the exact plan within one hour. Only 54 of 54 passing gates produce `GO`.
+
+`GO` authorizes only entry to the separate 005 deployment-operations flow. Finding, policy,
+publication, SCM, AI, deployment, Kubernetes, production-mutation, and production-readiness
+authority remain false. Repository validation remains `BLOCKED_T055_QUALIFICATION` until the real
+T053, T054, T055, canary, kill-switch, and rollback evidence chain exists.
+
 ## Canary and Continuous Production Gates
 
 At every canary step compare candidate and last-known-good by profile and repository size:
@@ -801,8 +830,9 @@ Every promotion and production-readiness decision stores:
 - security and platform approval references
 - rollback target, kill-switch reference, decision time, and decision actor
 
-`NOT_APPLICABLE` is allowed only for a capability the selected profile explicitly does not
-claim. It cannot be used for missing evidence. The decision is machine-readable and immutable.
+For the T056 record, `NOT_APPLICABLE` is prohibited for every v1 gate. Other profile-scoped
+promotion records may use it only for a capability the selected profile explicitly does not claim;
+it can never replace missing evidence. Every decision is machine-readable and immutable.
 
 ## Required Verification Layers
 

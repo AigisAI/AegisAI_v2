@@ -663,6 +663,32 @@ incomplete, stale, quarantined, or security-blocked scan.
   all 169 valid cells MAY be `PASSED` and set `t056EntryAuthorized=true`. No T055 state grants
   finding, policy, publication, deployment, Kubernetes, or production-readiness authority, and
   repository CI MUST never fabricate external execution or rollback evidence.
+- **FR-057n**: T056 MUST refuse final decision-plan construction unless the exact T054 manifest,
+  result, dependency set, artifact-verification set and plan plus the exact T055 manifest, entry
+  attestation, plan and `PASSED` result with `t056EntryAuthorized=true` are mutually bound to the
+  same provider and adapter by a Qualification Authority Ed25519 entry attestation. The T056 trust
+  bundle MUST match independently configured `SAST_T056_TRUST_POLICY_DIGEST`. The immutable
+  denominator MUST be exactly 54 mandatory gates across exactly six evidence kinds: upstream
+  qualification, repository validation, canary telemetry replay, kill-switch propagation,
+  rollback readiness, and deployment-handoff boundary. Every evidence attestation MUST bind the
+  manifest and entry digests, candidate/baseline scanner sets, profile set, T051 prior/current and
+  T052 corpus revisions, T054/T055 measurement digests, repository commit, observation window,
+  digest-bound evidence reference, and the required independent signing roles. The verifier MUST
+  require all six evidence attestations to share one repository commit, bind that commit into the
+  plan and every plan-bearing record, and require every evidence/observation reference terminal
+  digest to equal its separately declared digest. It MUST
+  reject caller aggregates and caller-selected evaluation time, and MUST recompute all upstream
+  correctness, performance, security and T055 drill observations from the signed T054/T055
+  results. A valid missing evidence category or final approval MUST be
+  `PENDING_FINAL_EVIDENCE` only when no decision plan or approval claims authority over that
+  incomplete evidence set; any such contradictory downstream artifact, malformed, unsigned,
+  stale, drifted, threshold-breaching, or
+  `NOT_APPLICABLE` evidence MUST be `NO_GO`. Only all 54 passing gates plus fresh detached Security
+  Engineering and Scan Platform approvals MAY produce `GO`. `GO` MAY set only
+  `deploymentOperationsEntryAuthorized=true` for the separately governed 005 operations flow; it
+  MUST NOT create findings, override policy, publish, mutate SCM or production, invoke AI, deploy,
+  execute Kubernetes, or establish production readiness. Repository CI MUST remain
+  `BLOCKED_T055_QUALIFICATION` without the real signed upstream and external evidence chain.
 - **FR-058**: Rule suppressions MUST use policy/waiver metadata and MUST NOT mutate the
   signed bundle.
 - **FR-058a**: Semantic rule identity MUST be an immutable digest-bound core. Changing the

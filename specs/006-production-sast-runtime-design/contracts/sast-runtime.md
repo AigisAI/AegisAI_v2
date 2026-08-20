@@ -2158,6 +2158,77 @@ subset is `PENDING_DRILL_EXECUTION`; invalid or breaching evidence is `FAILED`; 
 passing set is `PASSED` with `t056EntryAuthorized=true`. No result can create findings, override
 policy, publish, deploy Kubernetes, mutate production, or mark the system ready.
 
+## Production go/no-go v1
+
+T056 closes the repository-owned SAST qualification boundary without performing deployment. Plan
+construction requires the exact same-provider T054/T055 chain, a T055 `PASSED` result with
+`t056EntryAuthorized=true`, and a Qualification Authority entry signature verified through a trust
+bundle independently pinned by `SAST_T056_TRUST_POLICY_DIGEST`.
+
+```text
+sast-production-go-no-go-manifest-v1 {
+  evidenceKinds: [
+    UPSTREAM_QUALIFICATION,
+    REPOSITORY_VALIDATION,
+    CANARY_TELEMETRY_REPLAY,
+    KILL_SWITCH_PROPAGATION,
+    ROLLBACK_READINESS,
+    DEPLOYMENT_HANDOFF_BOUNDARY
+  ],
+  requiredGateCount: 54,
+  notApplicableGateCount: 0,
+  providerExecutionStatus: BLOCKED_T055_QUALIFICATION,
+  aggregateDecisionAcceptedFromCaller: false,
+  deployment/Kubernetes/production/readiness authority: false
+}
+
+sast-production-go-no-go-entry-attestation-v1 {
+  exact T054 manifest/result/dependency/artifact-verification/plan digests,
+  exact T055 manifest/entry/plan/result digests,
+  same provider and adapter,
+  candidate/baseline/profile and T051/T052 bindings,
+  T054/T055 measurement digests and derived rollback target,
+  role: QUALIFICATION_AUTHORITY, algorithm: ED25519
+}
+
+sast-production-go-no-go-evidence-attestation-v1 {
+  exact manifest and entry digests,
+  repository commit and candidate/baseline/profile/corpus/measurement bindings,
+  one ordered evidence kind and its complete gate observations,
+  digest-bound evidence reference and validity interval,
+  category-specific independent Ed25519 signatures,
+  customer execution, egress, production mutation, Kubernetes execution: false
+}
+
+sast-production-go-no-go-plan-v1 {
+  exact six evidence attestation IDs and digests,
+  one canonical repository commit shared by all six attestations,
+  exact 54-gate set, rollback target, and kill-switch evidence,
+  normalized 005 deployment-operations contract reference,
+  decision actor/time,
+  approvals: SECURITY_ENGINEERING + SCAN_PLATFORM,
+  deploymentOperationsEntryOnly: true,
+  all deployment execution and readiness authority: false
+}
+```
+
+The verifier owns the current UTC evaluation time and exposes no time override. It validates every
+signature and digest binding, rejects mixed repository commits or references whose terminal digest
+differs from their declared digest, binds the one canonical commit into the plan and record,
+recomputes the upstream 34 observations from T054/T055 signed
+measurements, evaluates every reviewed threshold, and stores one immutable per-gate result. A
+valid missing evidence category or final approval is `PENDING_FINAL_EVIDENCE` only when no plan or
+approval claims authority over that incomplete evidence set; any contradictory downstream
+artifact, malformed, unsigned, stale, drifted, breached, or `NOT_APPLICABLE` observation is
+`NO_GO`. Only the exact 54
+passing results and two fresh approvals produce `GO`.
+
+`GO` sets only `deploymentOperationsEntryAuthorized=true`. It is a reference-only authorization
+to begin the separately reviewed 005 operations flow. It cannot create findings, override policy,
+publish, mutate SCM or production, invoke AI, deploy, execute Kubernetes, or establish production
+readiness. Repository validation without real upstream and external evidence remains
+`BLOCKED_T055_QUALIFICATION`; synthetic fixtures prove only verifier behavior.
+
 ## Cleanup Contract
 
 A scan attempt is not operationally complete until:

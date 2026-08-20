@@ -36,6 +36,7 @@ export * from './types/sast-multi-class-qualification-corpus';
 export * from './types/sast-isolated-integration-qualification';
 export * from './types/sast-end-to-end-qualification';
 export * from './types/sast-supply-chain-rollback-qualification';
+export * from './types/sast-production-go-no-go';
 export * from './types/sast-kill-switch';
 export * from './types/sast-kill-switch-plan-context';
 export * from './types/sast-kill-switch-scopes';

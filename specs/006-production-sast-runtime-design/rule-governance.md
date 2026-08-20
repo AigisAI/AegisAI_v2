@@ -439,6 +439,28 @@ command-line flags, rule code, templates, post-processors, or executable configu
   mutate production lifecycle state, publish, deploy Kubernetes, or establish production readiness.
   Synthetic signing tests prove verifier behavior only and never satisfy the external drill.
 
+### T056 Immutable Production Go/No-Go Boundary
+
+- T056 planning requires the exact T054/T055 manifest, entry, dependency, verification, plan, and
+  passing-result chain on one provider/adapter, rebound by a Qualification Authority Ed25519 entry
+  signature. The trust bundle is separately pinned through `SAST_T056_TRUST_POLICY_DIGEST`;
+  submitted evidence cannot select its own root.
+- The closed denominator is exactly 54 mandatory gates across six ordered evidence kinds:
+  upstream qualification, repository assurance, canary telemetry replay, kill-switch propagation,
+  rollback readiness, and the 005 reference-only handoff. Every v1 gate rejects
+  `NOT_APPLICABLE`; no caller aggregate or caller-selected verification time exists.
+- Each signed category binds candidate/baseline scanner sets, profiles, T051 current/prior and T052
+  corpus authority, T054/T055 measurement digests, repository commit, digest-bound evidence,
+  validity interval, and the category's signer roles. Upstream observations are recomputed from
+  the signed results instead of trusted from the submission.
+- A valid missing category or Security Engineering/Scan Platform approval remains
+  `PENDING_FINAL_EVIDENCE`. Malformed, unsigned, stale, drifted, breached, or `NOT_APPLICABLE`
+  evidence is `NO_GO`. Only all 54 passing gate results and both fresh plan signatures are `GO`.
+- T056 never changes rule lifecycle, finding, policy, publication, SCM, AI, or production state.
+  `GO` authorizes only entry to 005 deployment operations; deployment, Kubernetes execution,
+  production mutation, and production-readiness authority remain false. Repository fixtures and
+  CI remain `BLOCKED_T055_QUALIFICATION` and cannot replace external qualification evidence.
+
 ## Lifecycle
 
 ```text

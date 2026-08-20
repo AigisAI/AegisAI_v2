@@ -118,6 +118,20 @@ const files = {
   supplyChainRollbackQualificationManifest: new URL('../../qualification/t055-v1/supply-chain-rollback-qualification.manifest.json', import.meta.url),
   supplyChainRollbackQualificationPolicy: new URL('../../qualification/t055-v1/drill-policy.json', import.meta.url),
   supplyChainRollbackQualificationReadme: new URL('../../qualification/t055-v1/README.md', import.meta.url),
+  sharedSastProductionGoNoGo: new URL('../../packages/shared/src/types/sast-production-go-no-go.ts', import.meta.url),
+  sharedSastProductionGoNoGoTest: new URL('../../packages/shared/test/sast-production-go-no-go.test.mjs', import.meta.url),
+  productionGoNoGoGenerator: new URL('../../tools/sast-qualification/production-go-no-go-assets.mjs', import.meta.url),
+  productionGoNoGoLoader: new URL('../../tools/sast-qualification/production-go-no-go-loader.mjs', import.meta.url),
+  productionGoNoGoValidator: new URL('../../tools/sast-qualification/validate-production-go-no-go.mjs', import.meta.url),
+  productionGoNoGoPlanTool: new URL('../../tools/sast-qualification/generate-production-go-no-go-plan.mjs', import.meta.url),
+  productionGoNoGoEvidenceTool: new URL('../../tools/sast-qualification/verify-production-go-no-go-evidence.mjs', import.meta.url),
+  productionGoNoGoPrerequisiteTool: new URL('../../tools/sast-qualification/production-go-no-go-prerequisite.mjs', import.meta.url),
+  productionGoNoGoTrustTool: new URL('../../tools/sast-qualification/production-go-no-go-trust.mjs', import.meta.url),
+  productionGoNoGoLoaderTest: new URL('../../test/qualification/sast-production-go-no-go-loader.test.mjs', import.meta.url),
+  productionGoNoGoToolsTest: new URL('../../test/qualification/sast-production-go-no-go-tools.test.mjs', import.meta.url),
+  productionGoNoGoManifest: new URL('../../qualification/t056-v1/production-go-no-go.manifest.json', import.meta.url),
+  productionGoNoGoPolicy: new URL('../../qualification/t056-v1/go-no-go-policy.json', import.meta.url),
+  productionGoNoGoReadme: new URL('../../qualification/t056-v1/README.md', import.meta.url),
   apiSastPlanner: new URL('../../apps/api/src/control-plane/sast-scan-planner.service.ts', import.meta.url),
   apiSastPolicyEvaluationClock: new URL('../../apps/api/src/control-plane/sast-policy-evaluation-clock.service.ts', import.meta.url),
   apiSastQueueAdmission: new URL('../../apps/api/src/control-plane/sast-queue-admission.service.ts', import.meta.url),
@@ -3101,7 +3115,7 @@ test('SAST T051 pins versioned golden and prior must-detect qualification corpor
   );
 
   assert.match(rootPackage, /"qualification:validate"/);
-  assert.match(ci, /Validate T051-T055 qualification packages/);
+  assert.match(ci, /Validate T051-T056 qualification packages/);
   assert.match(ci, /corepack pnpm qualification:validate/);
   assert.match(tasks, /- \[x\] T051\b/);
   assert.match(quickstart, /T051\s+versioned golden qualification corpus is complete/);
@@ -3207,7 +3221,7 @@ test('SAST T052 pins all multi-class qualification inputs without executing them
 
   assert.match(rootPackage, /validate-golden-corpus\.mjs/);
   assert.match(rootPackage, /validate-multi-class-corpus\.mjs/);
-  assert.match(ci, /Validate T051-T055 qualification packages/);
+  assert.match(ci, /Validate T051-T056 qualification packages/);
   assert.match(tasks, /- \[x\] T052\b/);
   assert.match(tasks, /- \[ \] T053\b/);
   assert.match(quickstart, /T052 multi-class qualification corpus is complete/);
@@ -3312,7 +3326,7 @@ test('SAST T053 packages an exact fail-closed provider handoff without fabricati
   assert.match(readme, /PENDING_PROVIDER_EXECUTION/);
 
   assert.match(rootPackage, /validate-isolated-integration\.mjs/);
-  assert.match(ci, /Validate T051-T055 qualification packages/);
+  assert.match(ci, /Validate T051-T056 qualification packages/);
   assert.match(gitattributes, /qualification\/t053-v1\/\*\* text eol=lf/);
   assert.match(tasks, /- \[ \] T053\b/);
   assert.match(tasks, /Repository-side exact 123-cell manifest/);
@@ -3443,7 +3457,7 @@ test('SAST T054 packages exact end-to-end gates without fabricating external evi
   assert.match(readme, /BLOCKED_T053_QUALIFICATION/);
 
   assert.match(rootPackage, /validate-end-to-end-qualification\.mjs/);
-  assert.match(ci, /Validate T051-T055 qualification packages/);
+  assert.match(ci, /Validate T051-T056 qualification packages/);
   assert.match(gitattributes, /qualification\/t054-v1\/\*\* text eol=lf/);
   assert.match(tasks, /Repository-side exact 3,462-cell T054 manifest/);
   assert.match(tasks, /- \[ \] T054\b/);
@@ -3606,7 +3620,7 @@ test('SAST T055 qualifies supply-chain, database, schema, and rollback controls 
   assert.match(readme, /BLOCKED_T054_QUALIFICATION/);
 
   assert.match(rootPackage, /validate-supply-chain-rollback-qualification\.mjs/);
-  assert.match(ci, /Validate T051-T055 qualification packages/);
+  assert.match(ci, /Validate T051-T056 qualification packages/);
   assert.match(gitattributes, /qualification\/t055-v1\/\*\* text eol=lf/);
   assert.match(tasks, /Repository-side exact 169-cell T055 manifest/);
   assert.match(tasks, /- \[ \] T055\b/);
@@ -3621,6 +3635,133 @@ test('SAST T055 qualifies supply-chain, database, schema, and rollback controls 
   assert.match(threatModel, /T055 rollback sequencing or append-only ledger forgery/);
   assert.match(threatModel, /T055 trust-root or provider qualification transfer/);
   assert.match(qualityGates, /T055 Supply-Chain and Rollback Qualification Gates/);
+});
+
+test('SAST T056 produces immutable evidence-recomputed go-no-go without deployment authority', () => {
+  const shared = readNormalizedText(files.sharedSastProductionGoNoGo);
+  const sharedTest = readNormalizedText(files.sharedSastProductionGoNoGoTest);
+  const sharedIndex = readNormalizedText(files.sharedIndex);
+  const generator = readNormalizedText(files.productionGoNoGoGenerator);
+  const loader = readNormalizedText(files.productionGoNoGoLoader);
+  const validator = readNormalizedText(files.productionGoNoGoValidator);
+  const planTool = readNormalizedText(files.productionGoNoGoPlanTool);
+  const evidenceTool = readNormalizedText(files.productionGoNoGoEvidenceTool);
+  const prerequisiteTool = readNormalizedText(files.productionGoNoGoPrerequisiteTool);
+  const trustTool = readNormalizedText(files.productionGoNoGoTrustTool);
+  const loaderTest = readNormalizedText(files.productionGoNoGoLoaderTest);
+  const toolsTest = readNormalizedText(files.productionGoNoGoToolsTest);
+  const readme = readNormalizedText(files.productionGoNoGoReadme);
+  const manifest = JSON.parse(readFileSync(files.productionGoNoGoManifest, 'utf8'));
+  const policy = JSON.parse(readFileSync(files.productionGoNoGoPolicy, 'utf8'));
+  const rootPackage = readNormalizedText(files.rootPackage);
+  const ci = readNormalizedText(files.ci);
+  const gitattributes = readNormalizedText(files.gitattributes);
+  const tasks = readNormalizedText(files.tasks);
+  const quickstart = readNormalizedText(files.quickstart);
+  const plan = readNormalizedText(files.plan);
+  const contract = readNormalizedText(files.contract);
+  const dataModel = readNormalizedText(files.dataModel);
+  const spec = readNormalizedText(files.spec);
+  const research = readNormalizedText(files.research);
+  const ruleGovernance = readNormalizedText(files.ruleGovernance);
+  const threatModel = readNormalizedText(files.threatModel);
+  const qualityGates = readNormalizedText(files.qualityGates);
+  const checklist = readNormalizedText(files.checklist);
+
+  assert.match(shared, /sast-production-go-no-go-manifest-v1/);
+  assert.match(shared, /sast-production-go-no-go-record-v1/);
+  assert.match(shared, /BLOCKED_T055_QUALIFICATION/);
+  assert.match(shared, /PENDING_FINAL_EVIDENCE/);
+  assert.match(shared, /SAST_PRODUCTION_GO_NO_GO_GATE_CATALOG/);
+  assert.match(shared, /deriveSastProductionGoNoGoUpstreamObservations/);
+  assert.match(shared, /repositoryCommitSha/);
+  assert.match(shared, /isReferenceBoundToDigest/);
+  assert.match(shared, /deploymentOperationsEntryAuthorized: status === 'GO'/);
+  assert.match(sharedIndex, /sast-production-go-no-go/);
+  assert.match(sharedTest, /exact 54-gate catalog and zero production authority/);
+  assert.match(sharedTest, /GO authorizes only entry to deployment operations/);
+  assert.match(sharedTest, /mixed repository commits and digest-detached evidence references/);
+  assert.match(sharedTest, /valid missing category or final approval as pending/);
+  assert.match(sharedTest, /threshold breach, stale evidence, or v1 N\/A substitution/);
+  assert.match(sharedTest, /favorable caller aggregate that differs from upstream measurements/);
+
+  assert.equal(manifest.requiredGateCount, 54);
+  assert.equal(manifest.gates.length, 54);
+  assert.equal(manifest.notApplicableGateCount, 0);
+  assert.equal(manifest.providerExecutionStatus, 'BLOCKED_T055_QUALIFICATION');
+  assert.equal(manifest.aggregateDecisionAcceptedFromCaller, false);
+  assert.equal(manifest.notApplicableSubstitutionAllowed, false);
+  assert.equal(manifest.deploymentAuthority, false);
+  assert.equal(manifest.kubernetesExecutionAuthority, false);
+  assert.equal(manifest.productionMutationAuthority, false);
+  assert.equal(manifest.productionReadinessAuthority, false);
+  assert.equal(new Set(manifest.gates.map((item) => item.gateId)).size, 54);
+  assert.ok(manifest.gates.every((item) => item.notApplicableAllowed === false));
+
+  assert.equal(policy.version, 'sast-production-go-no-go-policy-v1');
+  assert.equal(policy.prerequisite.requiredStatus, 'PASSED');
+  assert.equal(policy.prerequisite.requiredEntryAuthorization, 't056EntryAuthorized');
+  assert.equal(policy.prerequisite.sameProviderAndAdapterRequired, true);
+  assert.equal(
+    policy.prerequisite.independentlyConfiguredTrustPolicyDigestRequired,
+    true
+  );
+  assert.equal(policy.evidence.requiredKinds.length, 6);
+  assert.equal(policy.evidence.aggregateDecisionAcceptedFromCaller, false);
+  assert.equal(policy.evidence.callerSelectedEvaluationTimeAllowed, false);
+  assert.equal(policy.evidence.missingCategoryOutcome, 'PENDING_FINAL_EVIDENCE');
+  assert.equal(policy.evidence.malformedStaleOrBreachedOutcome, 'NO_GO');
+  assert.equal(policy.evidence.notApplicableAllowedForV1, false);
+  assert.deepEqual(policy.evidence.finalApprovalRoles, [
+    'SECURITY_ENGINEERING',
+    'SCAN_PLATFORM'
+  ]);
+  assert.equal(policy.handoff.goAuthorizesOnly, 'DEPLOYMENT_OPERATIONS_ENTRY');
+  assert.equal(policy.handoff.passingDoesNotExecuteKubernetes, true);
+  assert.equal(policy.handoff.passingDoesNotEstablishProductionReadiness, true);
+  assert.equal(policy.authority.deploymentAuthority, false);
+  assert.equal(policy.authority.kubernetesExecutionAuthority, false);
+  assert.equal(policy.authority.productionReadinessAuthority, false);
+
+  assert.match(generator, /createProductionGoNoGoAssets/);
+  assert.match(generator, /refusing to overwrite existing T056 qualification root/);
+  assert.match(generator, /createExclusiveFile/);
+  assert.match(generator, /writeStableRegularFile/);
+  assert.match(generator, /O_NOFOLLOW/);
+  assert.match(loader, /EXPECTED_ROOT_ENTRIES/);
+  assert.match(loader, /before\.isSymbolicLink/);
+  assert.match(validator, /BLOCKED_T055_QUALIFICATION/);
+  assert.match(planTool, /buildSastProductionGoNoGoPlan/);
+  assert.match(planTool, /--decision-actor/);
+  assert.match(planTool, /validateProductionGoNoGoPrerequisite/);
+  assert.match(evidenceTool, /new Date\(\)\.toISOString\(\)/);
+  assert.match(evidenceTool, /validateProductionGoNoGoPrerequisite/);
+  assert.doesNotMatch(evidenceTool, /'--evaluated-at'/);
+  assert.match(prerequisiteTool, /isSastProductionGoNoGoEntryAttestationValid/);
+  assert.match(trustTool, /SAST_T056_TRUST_POLICY_DIGEST/);
+  assert.match(trustTool, /!isIsoInstant\(signature\.signedAt\)/);
+  assert.match(trustTool, /sast-production-go-no-go-trust-bundle-v1/);
+  assert.match(loaderTest, /rejects CRLF and linked package entries/);
+  assert.match(toolsTest, /independent trust root and fail closed around signed GO/);
+  assert.match(readme, /BLOCKED_T055_QUALIFICATION/);
+
+  assert.match(rootPackage, /validate-production-go-no-go\.mjs/);
+  assert.match(ci, /Validate T051-T056 qualification packages/);
+  assert.match(gitattributes, /qualification\/t056-v1\/\*\* text eol=lf/);
+  assert.match(tasks, /Repository-side exact 54-gate T056 manifest/);
+  assert.match(tasks, /- \[ \] T056\b/);
+  assert.match(quickstart, /T056 repository-side 54-gate immutable go\/no-go contract/);
+  assert.match(plan, /T056 repository-side immutable go\/no-go evidence contract is package-ready/);
+  assert.match(contract, /Production go\/no-go v1/);
+  assert.match(dataModel, /SastProductionGoNoGoPlan, GateResult, and Record/);
+  assert.match(spec, /FR-057n/);
+  assert.match(research, /Decision 34: Make T056 an Immutable Evidence-Recomputed Deployment Handoff/);
+  assert.match(ruleGovernance, /T056 Immutable Production Go\/No-Go Boundary/);
+  assert.match(threatModel, /T056 favorable aggregate or upstream measurement substitution/);
+  assert.match(threatModel, /T056 missing, stale, unsigned, or not-applicable evidence laundering/);
+  assert.match(threatModel, /T056 trust-root or deployment-authority widening/);
+  assert.match(qualityGates, /T056 Immutable Production Go\/No-Go Gates/);
+  assert.match(checklist, /T056 repository handoff pins exactly 54 mandatory gates/);
 });
 
 test('SAST design completion gate stays synchronized between quickstart and CI', () => {

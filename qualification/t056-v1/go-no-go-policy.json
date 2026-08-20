@@ -1,0 +1,824 @@
+{
+  "version": "sast-production-go-no-go-policy-v1",
+  "revision": "1.0.0",
+  "ownerRef": "team://security-engineering/sast-production-readiness/sha256:476e95a66351140e7eeeb4be19480ccfd4323ab17c4bbf30357e829707394b79",
+  "prerequisite": {
+    "stage": "T055_SUPPLY_CHAIN_DATABASE_SCHEMA_ROLLBACK",
+    "requiredStatus": "PASSED",
+    "requiredEntryAuthorization": "t056EntryAuthorized",
+    "exactT054ManifestResultDependencyVerificationPlanRequired": true,
+    "exactT055ManifestEntryPlanResultRequired": true,
+    "sameProviderAndAdapterRequired": true,
+    "qualificationAuthorityEntryAttestationRequired": true,
+    "independentlyConfiguredTrustPolicyDigestRequired": true
+  },
+  "evidence": {
+    "requiredKinds": [
+      "UPSTREAM_QUALIFICATION",
+      "REPOSITORY_VALIDATION",
+      "CANARY_TELEMETRY_REPLAY",
+      "KILL_SWITCH_PROPAGATION",
+      "ROLLBACK_READINESS",
+      "DEPLOYMENT_HANDOFF_BOUNDARY"
+    ],
+    "exactCanonicalGateCatalogRequired": true,
+    "aggregateDecisionAcceptedFromCaller": false,
+    "callerSelectedEvaluationTimeAllowed": false,
+    "missingCategoryOutcome": "PENDING_FINAL_EVIDENCE",
+    "malformedStaleOrBreachedOutcome": "NO_GO",
+    "notApplicableAllowedForV1": false,
+    "maximumEvidenceAgeSeconds": 86400,
+    "finalApprovalRoles": [
+      "SECURITY_ENGINEERING",
+      "SCAN_PLATFORM"
+    ],
+    "finalApprovalMaximumAgeSeconds": 3600
+  },
+  "gateCatalog": [
+    {
+      "gateId": "T053_ISOLATED_INTEGRATION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "T053_PASSED",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ARTIFACT_SIGNATURE_PROVENANCE",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "ARTIFACTS_VERIFIED",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "SCANNER_PROFILE_COMPATIBILITY",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "COMPATIBILITY_VERIFIED",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "GOLDEN_CORPUS_EXACT",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "GOLDEN_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "MUST_DETECT_RECALL",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_LEAST",
+      "thresholdValue": 9500,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "RECALL_THRESHOLD",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "CRITICAL_HIGH_PRECISION",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_LEAST",
+      "thresholdValue": 9000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "PRECISION_THRESHOLD",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "PRIOR_MUST_DETECT_RECALL",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "PRIOR_RECALL_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "FALSE_POSITIVE_INCREASE",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 200,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "FALSE_POSITIVE_DELTA",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "SCANNER_FAILURE_RATE",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 200,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "FAILURE_RATE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "P95_LATENCY_REGRESSION",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 2000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "P95_REGRESSION",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "FAST_LANE_ABSOLUTE_P95",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 600000,
+      "unit": "MILLISECONDS",
+      "rationaleCode": "FAST_P95",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "DEEP_LANE_ABSOLUTE_P95",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "AT_MOST",
+      "thresholdValue": 2700000,
+      "unit": "MILLISECONDS",
+      "rationaleCode": "DEEP_P95",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "FINGERPRINT_CORRELATION",
+      "category": "CORRECTNESS",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "FINGERPRINT_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "EVIDENCE_PRIVACY",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "EVIDENCE_PRIVACY_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "CAPACITY_RESOURCE_LIMITS",
+      "category": "PERFORMANCE_RELIABILITY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 10000,
+      "unit": "BASIS_POINTS",
+      "rationaleCode": "CAPACITY_EXACT",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ZERO_CROSS_TENANT_LEAK",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ZERO_SECRET_LEAK",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ZERO_SANDBOX_ESCAPE",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ZERO_STALE_PUBLICATION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ZERO_UNAUTHORIZED_EGRESS",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ZERO_MISSING_DESTRUCTION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ZERO_EVIDENCE_POLICY_VIOLATION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ZERO_UNSIGNED_ARTIFACT_EXECUTION",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_ARTIFACT_DRILLS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 144,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_ALLOWLIST_DRILLS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_DATABASE_DRILLS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 6,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_SCHEMA_DRILLS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 3,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_ROLLBACK_PHASES",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 15,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_PRE_EXECUTION_REJECTIONS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 115,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_ARTIFACT_INVOCATIONS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 39,
+      "unit": "COUNT",
+      "rationaleCode": "T055_DENOMINATOR",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_CLEANUP_COMPLETION",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 169,
+      "unit": "COUNT",
+      "rationaleCode": "T055_CLEANUP",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_ZERO_NETWORK_EGRESS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "T055_ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_ZERO_PRODUCTION_MUTATION",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "T055_ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "T055_ZERO_FORBIDDEN_EFFECTS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "UPSTREAM_QUALIFICATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "T055_ZERO_TOLERANCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "REPOSITORY_CONTRACT_TESTS",
+      "category": "REPOSITORY_ASSURANCE",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "REPOSITORY_TESTS",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "REPOSITORY_STATIC_VALIDATION",
+      "category": "REPOSITORY_ASSURANCE",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "LINT_TYPECHECK_BUILD",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "REPOSITORY_DATABASE_VALIDATION",
+      "category": "REPOSITORY_ASSURANCE",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "SCHEMA_MIGRATION_PROBE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "NORMALIZATION_DATA_INTEGRITY",
+      "category": "REPOSITORY_ASSURANCE",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "DATA_INTEGRITY_TESTS",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "EVIDENCE_RETENTION_DELETION",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "RETENTION_TESTS",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "AI_ADVISORY_ZERO_AUTHORITY",
+      "category": "SECURITY_PRIVACY",
+      "evidenceKind": "REPOSITORY_VALIDATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "AI_ZERO_AUTHORITY",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "CANARY_SIX_STEP_REPLAY",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 6,
+      "unit": "COUNT",
+      "rationaleCode": "CANARY_STEPS",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "CANARY_SAMPLE_SUFFICIENCY",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "AT_LEAST",
+      "thresholdValue": 1000,
+      "unit": "COUNT",
+      "rationaleCode": "CANARY_MINIMUM_PER_ARM",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "CANARY_OBSERVATION_WINDOW",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "AT_LEAST",
+      "thresholdValue": 48,
+      "unit": "HOURS",
+      "rationaleCode": "CANARY_WINDOW",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "CANARY_TELEMETRY_COMPLETE",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "CANARY_TELEMETRY",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "CANARY_THRESHOLDS_ZERO_TOLERANCE",
+      "category": "CANARY",
+      "evidenceKind": "CANARY_TELEMETRY_REPLAY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "CANARY_THRESHOLDS",
+      "requiredSignatureRoles": [
+        "TELEMETRY_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "KILL_SWITCH_PROPAGATION_BOUNDARIES",
+      "category": "KILL_SWITCH",
+      "evidenceKind": "KILL_SWITCH_PROPAGATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 5,
+      "unit": "COUNT",
+      "rationaleCode": "KILL_SWITCH_BOUNDARIES",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "KILL_SWITCH_FAIL_CLOSED",
+      "category": "KILL_SWITCH",
+      "evidenceKind": "KILL_SWITCH_PROPAGATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "KILL_SWITCH_FAIL_CLOSED",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "KILL_SWITCH_DEACTIVATION_RECOVERY",
+      "category": "KILL_SWITCH",
+      "evidenceKind": "KILL_SWITCH_PROPAGATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "KILL_SWITCH_RECOVERY",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "KILL_SWITCH_FORBIDDEN_SIDE_EFFECTS",
+      "category": "KILL_SWITCH",
+      "evidenceKind": "KILL_SWITCH_PROPAGATION",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "KILL_SWITCH_ZERO_EFFECTS",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "QUALIFICATION_RUNTIME"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ROLLBACK_SIGNED_CHAIN",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "ROLLBACK_READINESS",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "ROLLBACK_CHAIN",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ROLLBACK_TARGET_DERIVED",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "ROLLBACK_READINESS",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "ROLLBACK_TARGET",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "ROLLBACK_POST_FENCE_INVOCATIONS",
+      "category": "SUPPLY_CHAIN_ROLLBACK",
+      "evidenceKind": "ROLLBACK_READINESS",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "ROLLBACK_FENCE",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY",
+        "SUPPLY_CHAIN_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "DEPLOYMENT_OPERATIONS_REFERENCE_ONLY",
+      "category": "DEPLOYMENT_BOUNDARY",
+      "evidenceKind": "DEPLOYMENT_HANDOFF_BOUNDARY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 1,
+      "unit": "BOOLEAN",
+      "rationaleCode": "005_REFERENCE_ONLY",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    },
+    {
+      "gateId": "KUBERNETES_EXECUTION_NOT_PERFORMED",
+      "category": "DEPLOYMENT_BOUNDARY",
+      "evidenceKind": "DEPLOYMENT_HANDOFF_BOUNDARY",
+      "thresholdOperator": "EXACT",
+      "thresholdValue": 0,
+      "unit": "COUNT",
+      "rationaleCode": "NO_KUBERNETES_EXECUTION",
+      "requiredSignatureRoles": [
+        "QUALIFICATION_AUTHORITY"
+      ],
+      "notApplicableAllowed": false
+    }
+  ],
+  "handoff": {
+    "deploymentOperationsContractRef": "repository-file://specs/005-production-deployment-operations/contracts/deployment-operations.md/sha256:8cb73cceceb1d43632082a19ae6838704f450e30fd1ad981a84221c563cdd9eb",
+    "deploymentOperationsContractDigest": "sha256:8cb73cceceb1d43632082a19ae6838704f450e30fd1ad981a84221c563cdd9eb",
+    "goAuthorizesOnly": "DEPLOYMENT_OPERATIONS_ENTRY",
+    "passingDoesNotExecuteKubernetes": true,
+    "passingDoesNotEstablishProductionReadiness": true
+  },
+  "prohibited": {
+    "customerContentAccepted": false,
+    "customerCodeExecutionAllowed": false,
+    "packageInstallAllowed": false,
+    "repositoryBuildAllowed": false,
+    "dynamicTestAllowed": false,
+    "publicInternetEgressAllowed": false,
+    "localProviderEvidenceAllowed": false,
+    "productionMutationAllowed": false,
+    "kubernetesExecutionAllowed": false
+  },
+  "authority": {
+    "findingAuthority": false,
+    "policyAuthority": false,
+    "publicationAuthority": false,
+    "scmMutationAuthority": false,
+    "aiAuthority": false,
+    "deploymentAuthority": false,
+    "kubernetesExecutionAuthority": false,
+    "productionMutationAuthority": false,
+    "productionReadinessAuthority": false,
+    "goAuthorizationOnly": "005_DEPLOYMENT_OPERATIONS_ENTRY"
+  },
+  "immutable": true
+}
