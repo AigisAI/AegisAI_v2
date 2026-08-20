@@ -178,7 +178,7 @@ test('deployment operation preflight contracts require explicit production execu
 
   assert.doesNotMatch(
     contract,
-    /PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_DIGEST\s*=\s*\n\s*'sha256:0{64}'/u
+    /PRODUCTION_DEPLOYMENT_OPERATIONS_CONTRACT_DIGEST\s*=\s*'sha256:0{64}'/u
   );
   assert.match(
     contract,

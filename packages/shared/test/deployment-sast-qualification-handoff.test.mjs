@@ -93,7 +93,7 @@ test('005 preflight accepts only a fresh Qualification Authority-signed T056 GO 
   }
 });
 
-test('005 deployment entry fails closed for non-GO, signature, freshness, and binding drift', () => {
+test('005 deployment entry fails closed for non-GO, signature, freshness, contract, commit, provider, adapter, rollback, and authority drift', () => {
   const qualification = getDeploymentQualification();
   const noGoBundle = createT056GoNoGoBundle({
     overrides: { CANARY_SAMPLE_SUFFICIENCY: 999 }
@@ -180,6 +180,33 @@ test('005 deployment entry fails closed for non-GO, signature, freshness, and bi
   );
 
   const preflight = createPreflight(qualification);
+  for (const sastQualification of [
+    {
+      ...preflight.sastQualification,
+      repositoryCommitSha: digest('detached-repository-commit')
+    },
+    {
+      ...preflight.sastQualification,
+      deploymentOperationsContractDigest: digest('detached-deployment-contract')
+    },
+    {
+      ...preflight.sastQualification,
+      rollbackTargetRef: ref('rollback', 'detached-qualification-target')
+    },
+    {
+      ...preflight.sastQualification,
+      deploymentAuthority: true
+    }
+  ]) {
+    assert.equal(
+      isDeploymentOperationPreflightReady(
+        { ...preflight, sastQualification },
+        qualification.evidence,
+        qualification.context
+      ),
+      false
+    );
+  }
   assert.equal(
     isDeploymentOperationPreflightReady(
       {
@@ -187,6 +214,20 @@ test('005 deployment entry fails closed for non-GO, signature, freshness, and bi
         clusterProvisioning: {
           ...preflight.clusterProvisioning,
           provider: ref('provider', 'cross-provider')
+        }
+      },
+      qualification.evidence,
+      qualification.context
+    ),
+    false
+  );
+  assert.equal(
+    isDeploymentOperationPreflightReady(
+      {
+        ...preflight,
+        microVmRollout: {
+          ...preflight.microVmRollout,
+          providerAdapterRef: ref('provider-adapter', 'detached-adapter')
         }
       },
       qualification.evidence,

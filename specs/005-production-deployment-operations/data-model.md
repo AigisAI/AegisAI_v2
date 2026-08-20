@@ -53,7 +53,8 @@
 
 ### DeploymentOperatorApprovalReference
 
-- exactly one production-change, security-boundary, or credential-handoff approval
+- exactly one approval of each kind in canonical order: production-change,
+  security-boundary, and credential-handoff
 - digest-bound approval reference
 - `subjectDigest` equal to the qualification binding digest
 - approval and validity instants; maximum validity is 24 hours

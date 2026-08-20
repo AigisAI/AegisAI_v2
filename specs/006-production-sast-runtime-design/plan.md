@@ -22,7 +22,8 @@ The T056 repository-side immutable go/no-go evidence contract is package-ready, 
 now accepts it only through a fresh Qualification Authority-signed, current-contract deployment-
 entry binding. The guarded next action remains real production-equivalent T053 microVM execution
 and destruction evidence; T054, T055, and T056 plan issuance remain cryptographically blocked
-behind their exact upstream passing results and T056 external evidence categories.
+by their exact upstream passing results. Incomplete valid T056 evidence or approvals remain
+`PENDING_FINAL_EVIDENCE` and cannot produce `GO`.
 
 ## Target Boundaries
 

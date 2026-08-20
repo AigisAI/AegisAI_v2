@@ -140,8 +140,9 @@ The non-deferred 005 contract milestone is complete. When revalidating it:
    rollback, unknown-field, and authority-widening drift all fail closed.
 10. Confirm live production Kubernetes cluster provisioning and provider-specific
    microVM platform rollout preserve the completed plane boundaries.
-11. Confirm repository validation grants no deployment, Kubernetes execution,
-    provider/production mutation, or production-readiness authority.
+11. Confirm repository validation grants only `deploymentOperationsEntryAuthorized`;
+    live deployment, Kubernetes execution, provider/production mutation, and
+    production-readiness authority remain forbidden.
 
 ## Validation Commands
 

@@ -3828,7 +3828,7 @@ test('completed deployment operations baseline hands SAST detail to 006', () => 
   assert.match(tasks, /Execute provider-specific microVM platform rollout/);
 });
 
-test('005 deployment preflight consumes only a fresh signed T056 GO binding', () => {
+test('005 deployment preflight is wired to executable signed T056 GO tests', () => {
   const shared = readNormalizedText(files.sharedDeploymentOperations);
   const sharedTest = readNormalizedText(files.sharedDeploymentOperationsTest);
   const contract = readNormalizedText(files.completedDeploymentContract);
@@ -3860,7 +3860,16 @@ test('005 deployment preflight consumes only a fresh signed T056 GO binding', ()
   assert.match(shared, /startsAt < qualificationExpiresAt/);
   assert.match(shared, /rollbackPlanRef === candidate\.preflight\.sastQualification\.rollbackTargetRef/);
   assert.match(sharedTest, /fresh Qualification Authority-signed T056 GO binding/);
-  assert.match(sharedTest, /fails closed for non-GO, signature, freshness, and binding drift/);
+  assert.match(
+    sharedTest,
+    /fails closed for non-GO, signature, freshness, contract, commit, provider, adapter, rollback, and authority drift/
+  );
+  assert.match(sharedTest, /isDeploymentOperationPreflightReady\(/);
+  assert.match(sharedTest, /repositoryCommitSha: digest\('detached-repository-commit'\)/);
+  assert.match(sharedTest, /deploymentOperationsContractDigest: digest\('detached-deployment-contract'\)/);
+  assert.match(sharedTest, /providerAdapterRef: ref\('provider-adapter', 'detached-adapter'\)/);
+  assert.match(sharedTest, /rollbackTargetRef: ref\('rollback', 'detached-qualification-target'\)/);
+  assert.match(sharedTest, /deploymentAuthority: true/);
 
   assert.match(contract, /Preflight validation has no evidence-free overload/);
   assert.match(spec, /T056 record MUST be valid `GO` with all 54 gates passed/);
