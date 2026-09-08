@@ -16,6 +16,12 @@ and separates Control, Scan, AI, and Data/Security planes.
 
 ## Start Here
 
+When resuming work, first reconcile the local checkout and GitHub using
+[`docs/resuming-development.md`](./docs/resuming-development.md). A completed task in an
+old worktree describes that checkout, not the latest integration branch.
+For the outstanding real-provider verification, use the
+[T053 external qualification handoff](./docs/operations/t053-qualification-handoff.md).
+
 For development or agent work, follow the canonical entry path before touching code:
 
 ```text
