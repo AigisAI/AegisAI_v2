@@ -14,6 +14,13 @@ Control, Scan, AI, and Data/Security plane boundaries.
 
 ## Canonical Use
 
+Before using the checkpoint below to resume work, follow
+[`docs/resuming-development.md`](../../docs/resuming-development.md) to verify the
+checkout against freshly fetched `origin/dev` and the linked GitHub issue/PR. The
+[T053 external qualification handoff](../../docs/operations/t053-qualification-handoff.md)
+collects provider prerequisites and the exact existing CLI entrypoints. It does not
+change this read order, the execution gates, or the pending status of T053-T056.
+
 - Agents should arrive here from [`AGENTS.md`](../../AGENTS.md).
 - This package is the active implementation target for production SAST runtime design.
 - T040 through T052 are complete. The T053 repository-side 123-cell provider handoff, T054

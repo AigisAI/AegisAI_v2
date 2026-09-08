@@ -12,6 +12,17 @@ This repository uses Git-flow with GitHub-based issue and PR operations.
 - `release/*`: release preparation
 - `hotfix/*`: urgent production fixes
 
+## Resuming Work and Updating Progress
+
+Follow [the checkout reconciliation procedure](./resuming-development.md) before choosing
+the next issue. A merged PR or an old branch must not be treated as an open implementation
+task. Preserve local changes and compare them with current `dev` before porting anything.
+
+Keep the issue checklist and PR description aligned with the actual final diff and
+validation on that branch. Distinguish local checks, CI checks, merge state, and live
+qualification evidence. Link a separate open operations issue when external execution
+remains pending; a merged contract PR does not close that operational requirement.
+
 ## Branch Naming
 
 Use the following format for working branches:
