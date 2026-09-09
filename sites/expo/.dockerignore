@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-standalone
+.git
+.openai
+.wrangler
+.vinext
+.next
+.env*
+*.tsbuildinfo
+*.log
