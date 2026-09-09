@@ -57,8 +57,8 @@ services:
       - ndots:0
     networks:
       - platform
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/api/health >/dev/null 2>&1 || exit 1"]
       interval: 10s
