@@ -10,7 +10,7 @@ try {
     assert.equal(response.status, 200, path);
     assert.match(response.headers.get('content-type'), /text\/html/);
     const html = await response.text();
-    const resources = [...html.matchAll(/(?:src|href)="(\/expo-assets\/[^\"]+)"/g)].map((match) => match[1]);
+    const resources = [...html.matchAll(/(?:src|href)="(\/expo-assets\/[^"]+)"/g)].map((match) => match[1]);
     assert.ok(resources.some((resource) => resource.endsWith('.js')));
     assert.ok(resources.some((resource) => resource.endsWith('.css')));
     for (const resource of resources) {
