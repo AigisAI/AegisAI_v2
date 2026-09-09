@@ -18,6 +18,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  verify-expo:
+    name: Verify Exhibition Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: sites/expo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm lint
+      - run: corepack pnpm exec tsc --noEmit
+      - run: corepack pnpm build:standalone
+      - run: corepack pnpm test
+      - run: node tests/standalone-smoke.mjs
+      - name: Verify exhibition container builds
+        run: docker build -f standalone/Dockerfile -t aegisai-expo-check .
+      - name: Verify nginx routing configuration
+        run: docker run --rm -v "${{ github.workspace }}/apps/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro" nginx:1.27-alpine nginx -t
+
   verify:
     name: Verify Workspace
     runs-on: ubuntu-latest

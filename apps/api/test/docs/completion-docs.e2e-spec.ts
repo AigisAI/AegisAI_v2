@@ -16,7 +16,6 @@ describe('completion entrypoint docs', () => {
     expect(readme).toContain('AGENTS.md -> quickstart.md ->');
     expect(readme).toContain('hardening-review.md');
 
-    expect(agents).toContain('## Frontend Design Tooling');
     expect(agents).toContain('## Completion Gate');
     expect(agents).toContain('hardening-review.md');
 

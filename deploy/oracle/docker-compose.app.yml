@@ -1,6 +1,26 @@
 name: aegisai-app
 
 services:
+  expo:
+    image: ghcr.io/${GHCR_OWNER}/aegisai-expo:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      EXPO_PUBLIC_ORIGIN: https://aegisai.tailaca7d2.ts.net
+      EXPO_DATA_PATH: /data/interest.sqlite
+      PORT: "3100"
+    volumes:
+      - expo-interest:/data
+    networks:
+      - platform
+    expose:
+      - "3100"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/expo-api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
   api:
     image: ghcr.io/${GHCR_OWNER}/aegisai-api:${IMAGE_TAG}
     restart: unless-stopped
@@ -31,6 +51,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      expo:
+        condition: service_healthy
     dns_opt:
       - ndots:0
     networks:
@@ -43,6 +65,9 @@ services:
       timeout: 5s
       retries: 12
       start_period: 15s
+
+volumes:
+  expo-interest:
 
 networks:
   platform:
