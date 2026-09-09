@@ -6,6 +6,7 @@ The user selected the existing GitHub CI/CD deployment, so this adapter runs the
 - Validate: `corepack pnpm lint`, `corepack pnpm exec tsc --noEmit`, `corepack pnpm test`, `node tests/standalone-smoke.mjs`
 - Container: `standalone/Dockerfile`, Node 24, non-root, port 3100; no public host port.
 - Routing: existing web nginx proxies only `/expo1`, `/expo2`, `/expo-assets/`, and `/expo-api/` to `expo:3100`. Existing `/` and `/api/` keep their current handlers.
+- The host already runs `front_proxy_caddy` on port 80. Caddy reaches `web:80` over `aegisai-platform`, and Tailscale Funnel reaches Caddy. The app web service must only expose its internal port; publishing host port 80 conflicts with this existing proxy.
 - Storage: `aegisai-app_expo-interest` Docker volume, `/data/interest.sqlite`, daily `expo_interest(day,count)` aggregate. No contact data or user identifiers; counts are expressions of interest, not unique visitors. Back up this volume if preserving exhibition totals is required.
 - Write protection: configured public origin, fixed JSON body, 64-byte bound, same-site HttpOnly cookie, 120 attempts/minute global limiter and 10,000 accepted interests/day. No public aggregate read API.
 - Health: `/expo-api/health`; deployment also checks both pages and the existing `/api/health`.

@@ -97,7 +97,8 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
   assert.match(appCompose, /api:\n[\s\S]*env_file:/m);
   assert.match(appCompose, /api:\n[\s\S]*dns_opt:\n[\s\S]*- ndots:0/m);
   assert.match(appCompose, /api:\n[\s\S]*healthcheck:\n[\s\S]*127\.0\.0\.1:3000\/api\/health/m);
-  assert.match(appCompose, /web:\n[\s\S]*ports:\n[\s\S]*- "80:80"/m);
+  assert.match(appCompose, /web:\n[\s\S]*expose:\n[\s\S]*- "80"/m);
+  assert.doesNotMatch(appCompose, /"80:80"/);
   assert.match(appCompose, /web:\n[\s\S]*dns_opt:\n[\s\S]*- ndots:0/m);
   assert.match(appCompose, /web:\n[\s\S]*depends_on:\n[\s\S]*api:\n[\s\S]*condition:\s*service_healthy/m);
   assert.match(appCompose, /web:\n[\s\S]*healthcheck:\n[\s\S]*127\.0\.0\.1\/api\/health/m);
