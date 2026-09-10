@@ -10,3 +10,5 @@ Development: `corepack pnpm dev`. Validation: `corepack pnpm lint`, `corepack pn
 
 This standalone Site uses its own package workspace and source repository so publishing never includes unrelated changes in the parent AegisAI checkout.
 
+
+`/expo3` is the third, independently designed exhibition experience: a three-question security quiz with explanations and a learning recap. Its source is `app/sense-experience.tsx`, with local Vinext routing and the same standalone deployment adapter. It shares the existing anonymous interest aggregate with the other variants.

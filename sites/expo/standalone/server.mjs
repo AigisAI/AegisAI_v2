@@ -49,7 +49,7 @@ export function createExpoServer({ dbPath, publicOrigin, staticDirectory = defau
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') return json(405, { ok: false });
       let relative;
-      if (/^\/expo[12]\/?$/.test(pathname)) relative = 'index.html';
+      if (/^\/expo[123]\/?$/.test(pathname)) relative = 'index.html';
       else if (pathname.startsWith('/expo-assets/')) relative = decodeURIComponent(pathname.slice('/expo-assets/'.length));
       else return json(404, { ok: false });
       const root = resolve(staticDirectory);
@@ -57,6 +57,12 @@ export function createExpoServer({ dbPath, publicOrigin, staticDirectory = defau
       if (!file.startsWith(`${root}${sep}`) || !mime[extname(file)]) return json(404, { ok: false });
       let content;
       try { content = await readFile(file); } catch { return json(404, { ok: false }); }
+      if (relative === 'index.html' && /^\/expo3\/?$/.test(pathname)) {
+        content = content.toString()
+          .replace(/<title>[^<]*<\/title>/, '<title>AegisAI · 내 보안 감각, 몇 점일까?</title>')
+          .replace(/name="description" content="[^"]*"/, 'name="description" content="세 가지 상황으로 알아보는 보안 감각. 답을 고르고 이유를 알아보세요. 가입 없이 즐기는 AegisAI 전시 퀴즈."')
+          .replace(/name="theme-color" content="[^"]*"/, 'name="theme-color" content="#fa5d32"');
+      }
       res.writeHead(200, {
         'Content-Type': mime[extname(file)],
         'Cache-Control': relative.startsWith('assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
