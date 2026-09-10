@@ -5,11 +5,12 @@ const server = createExpoServer({ dbPath: ':memory:', publicOrigin: 'https://aeg
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
 try {
-  for (const path of ['/expo1', '/expo1/', '/expo2', '/expo2/']) {
+  for (const path of ['/expo1', '/expo1/', '/expo2', '/expo2/', '/expo3', '/expo3/']) {
     const response = await fetch(base + path);
     assert.equal(response.status, 200, path);
     assert.match(response.headers.get('content-type'), /text\/html/);
     const html = await response.text();
+    if (path.startsWith('/expo3')) assert.match(html, /내 보안 감각, 몇 점일까/);
     const resources = [...html.matchAll(/(?:src|href)="(\/expo-assets\/[^"]+)"/g)].map((match) => match[1]);
     assert.ok(resources.some((resource) => resource.endsWith('.js')));
     assert.ok(resources.some((resource) => resource.endsWith('.css')));
@@ -22,10 +23,11 @@ try {
         assert.ok(js.includes('/expo-api/interest'));
         assert.ok(js.includes('출시해도 괜찮을까요'));
         assert.ok(js.includes('안전한 걸까요'));
+        assert.ok(js.includes('내 보안 감각'));
       }
     }
   }
-  console.log('Both production routes, styles, scripts, and same-origin interest path passed.');
+  console.log('All three production routes, metadata, styles, scripts, and same-origin interest path passed.');
 } finally {
   await new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); });
 }
