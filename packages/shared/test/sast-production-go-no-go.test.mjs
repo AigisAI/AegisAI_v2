@@ -12,6 +12,22 @@ import {
 } from '../dist/index.js';
 import { createT056GoNoGoBundle, digest } from './helpers/t056-go-no-go-fixture.mjs';
 
+test('T056 rebases the entire upstream chain across a year boundary', () => {
+  const bundle = createT056GoNoGoBundle({
+    upstreamStartedAt: '2034-12-31T23:30:00.000Z',
+    entryVerifiedAt: '2035-01-01T00:40:00.000Z',
+    evidenceObservedAtBase: '2035-01-01T00:45:00.000Z',
+    evidenceValidUntil: '2035-01-01T02:00:00.000Z',
+    decidedAt: '2035-01-01T01:00:00.000Z'
+  });
+  const record = evaluateSastProductionGoNoGoEvidence(bundle.evaluationInput, digest);
+  assert.equal(record?.status, 'GO');
+  assert.equal(
+    bundle.assets.manifest.manifestDigest,
+    createT056GoNoGoBundle().assets.manifest.manifestDigest
+  );
+});
+
 test('T056 manifest fixes one exact 54-gate catalog and zero production authority', () => {
   const bundle = createT056GoNoGoBundle();
   const { manifest, t054Manifest, t055Manifest } = bundle.assets;
