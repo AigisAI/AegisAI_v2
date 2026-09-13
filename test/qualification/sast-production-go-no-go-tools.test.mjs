@@ -64,13 +64,14 @@ test('T056 verifier remains blocked with exit code 2 and rejects clock spoofing'
 test('T056 tools pin an independent trust root and fail closed around signed GO', async (t) => {
   const temporaryRoot = await mkdtemp(join(tmpdir(), 'aegis-t056-tools-'));
   t.after(() => rm(temporaryRoot, { recursive: true, force: true }));
-  const trust = buildTrustBundle();
+  const now = Date.now();
+  const trust = buildTrustBundle(now);
   const signatureFactory = (role, payloadDigest, signedAt) =>
     createSignature(role, payloadDigest, signedAt, trust);
-  const now = Date.now();
   const bundle = createT056GoNoGoBundle({
     signatureFactory,
     trustPolicyText: trust.text,
+    upstreamStartedAt: new Date(now - 2 * 60 * 60_000).toISOString(),
     entryVerifiedAt: new Date(now - 10 * 60_000).toISOString(),
     evidenceObservedAtBase: new Date(now - 5 * 60_000).toISOString(),
     evidenceValidUntil: new Date(now + 2 * 60 * 60_000).toISOString(),
@@ -226,10 +227,10 @@ test('T056 tools pin an independent trust root and fail closed around signed GO'
   assert.equal(rejectedRecord.deploymentOperationsEntryAuthorized, false);
 });
 
-function buildTrustBundle() {
+function buildTrustBundle(now) {
   const privateKeys = new Map();
-  const validFrom = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
-  const validUntil = new Date(Date.now() + 24 * 60 * 60_000).toISOString();
+  const validFrom = new Date(now - 24 * 60 * 60_000).toISOString();
+  const validUntil = new Date(now + 24 * 60 * 60_000).toISOString();
   const keys = SAST_END_TO_END_QUALIFICATION_SIGNATURE_ROLES.map((role) => {
     const { publicKey, privateKey } = generateKeyPairSync('ed25519');
     const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' });

@@ -19,6 +19,31 @@ import {
 
 const bundle = createT055QualificationBundle();
 
+test('T055 rebased evidence passes in a future year but still expires', () => {
+  const rebased = createT055QualificationBundle({
+    startedAt: '2035-01-01T23:30:00.000Z'
+  });
+  const passed = evaluateSastSupplyChainRollbackQualificationEvidence(
+    rebased.evaluationInput,
+    digest
+  );
+  assert.equal(passed?.status, 'PASSED');
+  assert.equal(rebased.manifest.manifestDigest, bundle.manifest.manifestDigest);
+
+  const expired = evaluateSastSupplyChainRollbackQualificationEvidence(
+    {
+      ...rebased.evaluationInput,
+      trustedEvaluatedAt: new Date(
+        Date.parse(rebased.dependencySet.validUntil) + 1
+      ).toISOString()
+    },
+    digest
+  );
+  assert.equal(expired?.status, 'FAILED');
+  assert.ok(expired.failureReasons.includes('EVIDENCE_STALE'));
+  assert.equal(expired.t056EntryAuthorized, false);
+});
+
 test('T055 manifest pins the exact 169-cell supply-chain and rollback denominator', () => {
   assert.equal(
     isSastSupplyChainRollbackQualificationManifestValid(

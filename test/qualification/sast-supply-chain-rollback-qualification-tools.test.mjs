@@ -71,13 +71,15 @@ test('T055 tools pin an independent trust root and verify every Ed25519 authorit
   t.after(() => rm(temporaryRoot, { recursive: true, force: true }));
   const qualificationPackage =
     await loadAndValidateSupplyChainRollbackQualificationPackage();
-  const trust = buildTrustBundle();
+  const now = Date.now();
+  const trust = buildTrustBundle(now);
   const signatureFactory = (role, payloadDigest, signedAt) =>
     createSignature(role, payloadDigest, signedAt, trust);
   const bundle = createT055QualificationBundle({
     manifest: qualificationPackage.manifest,
     signatureFactory,
-    trustPolicyText: trust.text
+    trustPolicyText: trust.text,
+    startedAt: new Date(now - 2 * 60 * 60_000).toISOString()
   });
   const verifySignature = buildSupplyChainRollbackQualificationTrustVerifier({
     value: trust.value,
@@ -348,7 +350,7 @@ test('T055 tools pin an independent trust root and verify every Ed25519 authorit
   assert.equal(tamperedResult.t056EntryAuthorized, false);
 });
 
-function buildTrustBundle() {
+function buildTrustBundle(now) {
   const privateKeys = new Map();
   const keys = SAST_END_TO_END_QUALIFICATION_SIGNATURE_ROLES.map((role) => {
     const { publicKey, privateKey } = generateKeyPairSync('ed25519');
@@ -364,8 +366,8 @@ function buildTrustBundle() {
       role,
       algorithm: 'ED25519',
       publicKeyPem,
-      validFrom: '2026-08-19T00:00:00.000Z',
-      validUntil: '2026-08-22T00:00:00.000Z'
+      validFrom: new Date(now - 24 * 60 * 60_000).toISOString(),
+      validUntil: new Date(now + 24 * 60 * 60_000).toISOString()
     };
   });
   const value = {

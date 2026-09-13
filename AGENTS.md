@@ -5,6 +5,11 @@
 1. Open the canonical execution entry point: [`specs/006-production-sast-runtime-design/quickstart.md`](./specs/006-production-sast-runtime-design/quickstart.md)
 2. Follow the read order and execution flow defined there before touching code.
 3. Use [`specs/006-production-sast-runtime-design/`](./specs/006-production-sast-runtime-design/) as the default implementation target unless a narrower active feature replaces it.
+4. Before reporting project progress or selecting the next task, follow
+   [`docs/resuming-development.md`](./docs/resuming-development.md): compare the current
+   checkout with freshly fetched `origin/dev` and inspect the linked GitHub issue/PR.
+   Preserve uncommitted work and read the selected checkout's canonical entrypoint again
+   if its active feature differs.
 
 ## Core References
 

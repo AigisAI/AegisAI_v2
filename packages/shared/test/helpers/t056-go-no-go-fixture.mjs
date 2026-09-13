@@ -20,11 +20,13 @@ let defaultPrerequisite;
 
 export function createT056GoNoGoBundle(options = {}) {
   const signatureFactory = options.signatureFactory ?? signature;
-  const prerequisite = options.signatureFactory || options.trustPolicyText
+  const prerequisite = options.signatureFactory || options.trustPolicyText ||
+    options.upstreamStartedAt || options.entryVerifiedAt
     ? createPrerequisite(
         signatureFactory,
         options.trustPolicyText,
-        options.entryVerifiedAt
+        options.entryVerifiedAt,
+        options.upstreamStartedAt
       )
     : (defaultPrerequisite ??= createPrerequisite(signature, undefined, undefined));
   const { assets, t055, upstream, entryAttestation } = prerequisite;
@@ -162,12 +164,13 @@ export function createT056GoNoGoBundle(options = {}) {
   };
 }
 
-function createPrerequisite(signatureFactory, trustPolicyText, entryVerifiedAt) {
+function createPrerequisite(signatureFactory, trustPolicyText, entryVerifiedAt, upstreamStartedAt) {
   const assets = createProductionGoNoGoAssets();
   const t055 = createT055QualificationBundle({
     manifest: assets.t055Manifest,
     signatureFactory,
-    trustPolicyText
+    trustPolicyText,
+    startedAt: upstreamStartedAt
   });
   const t055Result = evaluateSastSupplyChainRollbackQualificationEvidence(
     t055.evaluationInput,
