@@ -9,7 +9,7 @@ import './sense.css';
 const questions = [
   {
     category: '비밀의 위치', title: '화면에 안 보이면, 비밀일까요?',
-    situation: '개발자가 서비스의 비밀 API 키를 웹사이트 코드 안에 넣었습니다. 화면에는 표시되지 않아요.',
+    situation: '서비스의 비밀번호 역할을 하는 비밀 키(API 키)를 웹사이트 코드에 넣었어요. 화면에는 보이지 않습니다.',
     clue: ['브라우저에 전달된 코드', '비밀 API 키 포함'],
     options: ['화면에 안 보이니 괜찮아요', '브라우저에 전달되면 노출될 수 있어요'], correct: 1,
     takeaway: '숨기는 것과 보호하는 것은 달라요.',
@@ -41,11 +41,15 @@ export default function SenseExperience({ interestEndpoint = '/api/interest' }: 
   const [answers, setAnswers] = useState<(number | null)[]>([null, null, null]);
   const [revealed, setRevealed] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [sampleOpen, setSampleOpen] = useState(false);
+  const [sampleFixed, setSampleFixed] = useState(false);
   const [interest, setInterest] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [shareMessage, setShareMessage] = useState('');
   const [manualUrl, setManualUrl] = useState('');
   const saving = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const answerHeading = useRef<HTMLHeadingElement>(null);
+  const sampleHeading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
   const question = questions[index];
   const selected = answers[index];
@@ -54,12 +58,28 @@ export default function SenseExperience({ interestEndpoint = '/api/interest' }: 
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
     heading.current?.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    const target = finished ? heading.current?.closest('section') : heading.current;
+    target?.scrollIntoView({ block: 'start', behavior: 'instant' });
   }, [index, finished]);
+
+  useEffect(() => {
+    if (revealed && !finished) {
+      answerHeading.current?.focus({ preventScroll: true });
+      answerHeading.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    }
+  }, [revealed, finished]);
+
+  useEffect(() => {
+    if (sampleOpen) {
+      sampleHeading.current?.focus({ preventScroll: true });
+      sampleHeading.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    }
+  }, [sampleOpen]);
 
   function reset() {
     setAnswers([null, null, null]); setIndex(0); setRevealed(false); setFinished(false);
     setShareMessage(''); setManualUrl('');
+    setSampleOpen(false); setSampleFixed(false);
   }
   function advance() {
     if (index === questions.length - 1) setFinished(true);
@@ -87,10 +107,10 @@ export default function SenseExperience({ interestEndpoint = '/api/interest' }: 
     catch { setManualUrl(url); setShareMessage('아래 주소를 길게 눌러 복사해 주세요.'); }
   }
 
-  return <div className="sense-page">
+  return <div className={`sense-page${finished ? ' sense-finished' : ' sense-playing'}`}>
     <a className="sense-skip" href="#sense-main">퀴즈로 바로가기</a>
     <div className="sense-shell">
-      <header className="sense-header"><a className="sense-brand" href="https://aegisai.tailaca7d2.ts.net/" aria-label="AegisAI 데모 홈페이지"><ShieldCheck size={23} strokeWidth={2.5} /><span>AegisAI<span className="sense-brand-star" aria-hidden="true">✳</span></span></a><span className="sense-edition">THE SECURITY QUIZ<br /><b>EXPO EDITION / 2026</b></span></header>
+      <header className="sense-header"><a className="sense-brand" href="https://aegisai.tailaca7d2.ts.net/" aria-label="AegisAI 제품 홈페이지"><ShieldCheck size={23} strokeWidth={2.5} /><span>AegisAI<span className="sense-brand-star" aria-hidden="true">✳</span></span></a><span className="sense-edition">THE SECURITY QUIZ<br /><b>EXPO EDITION / 2026</b></span></header>
       <main id="sense-main">
         <section className="sense-intro" aria-label="보안 감각 테스트">
           <div><p className="sense-eyebrow">생각보다 가까운 보안 이야기</p><h1>{finished ? <>이제, 위험이<br />조금 보이나요?</> : <>내 보안 감각,<br /><span>몇 점일까?</span></>}</h1><p className="sense-intro-copy">{finished ? '오늘 발견한 세 가지를 기억해 보세요.' : '세 가지 상황. 당신이라면 어떤 선택을 할까요?'}</p></div>
@@ -104,18 +124,29 @@ export default function SenseExperience({ interestEndpoint = '/api/interest' }: 
             <RadioGroup value={selected === null ? '' : String(selected)} onValueChange={(value) => { if (!revealed) setAnswers(answers.map((answer, i) => i === index ? Number(value) : answer)); }} disabled={revealed} aria-labelledby="sense-question" className="sense-options">
               {question.options.map((option, i) => <label key={option} className={`sense-option${selected === i ? ' selected' : ''}${revealed && i === question.correct ? ' correct' : ''}${revealed && selected === i && i !== question.correct ? ' missed' : ''}`}><RadioGroupItem value={String(i)} className="sense-radio" /><span className="sense-option-letter" aria-hidden="true">{i === 0 ? 'A' : 'B'}</span><span className="sense-option-text">{option}</span>{revealed && i === question.correct && <Check size={20} aria-label="정답" />}</label>)}
             </RadioGroup>
-            {revealed && <div className="sense-answer" aria-live="polite" aria-atomic="true"><span className="sense-answer-tag">{selected === question.correct ? '좋은 감각이에요!' : '이렇게 생각해 보세요'}</span><h3>{question.takeaway}</h3><p>{question.explanation}</p></div>}
+            {revealed && <div className="sense-answer"><h3 ref={answerHeading} tabIndex={-1}><span className="sense-answer-tag">{selected === question.correct ? '좋은 감각이에요!' : '이렇게 생각해 보세요'}</span>{question.takeaway}</h3><p>{question.explanation}</p></div>}
           </div>
-          <div className="sense-sheet-bottom"><p>{revealed ? '작은 차이가, 큰 위험을 만들 수 있어요.' : '정답을 몰라도 괜찮아요. 일단 골라보세요.'}</p><Button className="sense-primary" disabled={!revealed && selected === null} onClick={revealed ? advance : () => setRevealed(true)}>{revealed ? index === 2 ? '내 결과 보기' : '다음 상황으로' : '정답 확인'}<ArrowRight size={19} /></Button></div>
+          <div className="sense-sheet-bottom sense-progress-actions"><p>{revealed ? '이유를 읽고 다음으로 넘어가세요.' : selected === null ? '두 가지 답 중 하나를 골라주세요.' : '선택했어요. 정답을 확인해 보세요.'}</p><Button className="sense-primary" disabled={!revealed && selected === null} onClick={revealed ? advance : () => setRevealed(true)}>{revealed ? index === 2 ? '내 결과 보기' : '다음 상황으로' : '정답 확인'}<ArrowRight size={19} /></Button></div>
         </section> : <section className="sense-sheet sense-result" aria-labelledby="sense-result-heading">
           <div className="sense-sheet-top"><span>YOUR TAKEAWAYS</span><span className="sense-result-stamp"><CheckCheck size={17} />체험 완료</span></div>
-          <div className="sense-result-body"><div className="sense-result-lead"><p className="sense-score-label">3문제 중 <strong>{score}문제</strong>를 맞혔어요.</p><h2 id="sense-result-heading" ref={heading} tabIndex={-1}>{score === 3 ? '좋은 감각에, 근거를 더하세요.' : '점수보다 중요한 건, 다음 선택.'}</h2><p>코드 속 위험도 발견에서 끝나지 않아야 하니까요.<br />AegisAI가 만드는 발견과 수정 검토의 흐름을 만나보세요.</p></div>
-            <ol className="sense-takeaways">{questions.map((item, i) => <li key={item.category}><span>0{i + 1}</span><div><small>{item.category}</small><strong>{item.summary}</strong></div><Check size={21} aria-hidden="true" /></li>)}</ol>
+          <div className="sense-result-body"><div className="sense-result-lead"><p className="sense-score-label">3문제 중 <strong>{score}문제</strong>를 맞혔어요.</p><h2 id="sense-result-heading" ref={heading} tabIndex={-1}>이런 위험, 코드에서는 어떻게 찾을까요?</h2><p><strong>AegisAI</strong>는 보안 취약점 탐지부터 AI 수정 제안까지 돕는 코드 보안 플랫폼입니다.</p></div>
+            <div className="sense-product-flow" aria-label="AegisAI 사용 흐름"><span>위험 발견</span><ArrowRight size={16} aria-hidden="true" /><span>수정 제안</span><ArrowRight size={16} aria-hidden="true" /><span>개발자 검토</span></div>
+            <Button className="sense-primary sense-sample-toggle" aria-expanded={sampleOpen} aria-controls="sense-sample" onClick={() => setSampleOpen(!sampleOpen)}>{sampleOpen ? '샘플 접기' : '30초 샘플 보기'}<ArrowRight size={19} /></Button>
+            <p className="sense-sample-note">가입 없이 보는 설명용 예시 · 실제 분석 결과가 아닙니다.</p>
+            {sampleOpen && <section id="sense-sample" className="sense-sample" aria-labelledby="sense-sample-heading">
+              <p className="sense-eyebrow">세 번째 문제를 코드로 보면</p>
+              <h3 id="sense-sample-heading" ref={sampleHeading} tabIndex={-1}>검색어가 명령이 되지 않도록.</h3>
+              <div className="sense-sample-tabs" aria-label="샘플 코드 선택"><Button className="sense-secondary" aria-pressed={!sampleFixed} onClick={() => setSampleFixed(false)}>위험한 코드</Button><Button className="sense-secondary" aria-pressed={sampleFixed} onClick={() => setSampleFixed(true)}>수정 제안</Button></div>
+              <div aria-live="polite" aria-atomic="true"><p className="sense-code-label">JAVA · {sampleFixed ? '수정 방향 예시' : '문자열을 그대로 연결한 예시'}</p><pre className="sense-code"><code>{sampleFixed ? 'String sql =\n  "SELECT * FROM orders WHERE id = ?";\nvar query = db.prepareStatement(sql);\nquery.setString(1, input);' : 'String sql =\n  "SELECT * FROM orders WHERE id = "\n  + input;\ndb.createStatement().executeQuery(sql);'}</code></pre><p>{sampleFixed ? '명령의 빈칸(?)에 입력값을 따로 전달합니다. 입력을 명령으로 해석하지 않도록 분리하는 방식이에요.' : '입력값을 조회 명령에 그대로 붙이면, 누군가 명령의 뜻을 바꿀 수 있어요. 위의 ‘수정 제안’을 눌러 차이를 확인하세요.'}</p></div>
+              <p className="sense-review-note"><ShieldCheck size={18} aria-hidden="true" />AI 제안은 개발자가 검토합니다. 자동 수정이나 안전 보장을 의미하지 않습니다.</p>
+            </section>}
+            <aside className="sense-booth"><strong>실제 분석 화면이 궁금하다면?</strong><p>이 화면을 부스 스태프에게 보여주세요.<br />취약점 발견부터 수정 제안까지 안내해 드릴게요.</p></aside>
             <div className="sense-result-actions"><Button className="sense-primary" disabled={interest === 'saving' || interest === 'saved'} onClick={expressInterest}>{interest === 'saved' ? <Check size={18} /> : <Heart size={18} />}{interest === 'saved' ? '관심을 남겼어요' : interest === 'saving' ? '남기는 중…' : interest === 'error' ? '관심 표시 다시 시도' : 'AegisAI, 관심 있어요'}</Button><Button variant="outline" className="sense-secondary" onClick={share}><Share2 size={18} />친구에게 문제 내기</Button></div>
-            <p className="sense-interest-note" aria-live="polite" aria-atomic="true">{interest === 'saved' ? '고마워요. 개인정보 없이 관심 횟수만 기록했어요.' : interest === 'error' ? '관심 표시를 저장하지 못했어요. 다시 눌러 주세요.' : '개인정보 없이 관심만 남겨요. 신청이나 구독이 아닙니다.'}</p>
+            <p className="sense-interest-note" aria-live="polite" aria-atomic="true">{interest === 'saved' ? '고마워요. 이 브라우저의 관심 표시가 기록되어 있어요.' : interest === 'error' ? '연결을 확인하고 다시 눌러 주세요. 부스 스태프에게 직접 관심을 알려주셔도 좋아요.' : '개인정보 없이 같은 브라우저에서 한 번만 기록해요. 신청이나 구독이 아닙니다.'}</p>
             {shareMessage && <p className="sense-share-message" aria-live="polite" aria-atomic="true">{shareMessage}</p>}{manualUrl && <input className="sense-share-input" aria-label="공유할 체험 주소" readOnly value={manualUrl} onFocus={(event) => event.currentTarget.select()} />}
+            <details className="sense-recap"><summary>오늘 배운 세 가지 다시 보기</summary><ol className="sense-takeaways">{questions.map((item, i) => <li key={item.category}><span>0{i + 1}</span><div><small>{item.category}</small><strong>{item.summary}</strong></div><Check size={21} aria-hidden="true" /></li>)}</ol></details>
           </div>
-          <div className="sense-sheet-bottom"><Button variant="ghost" className="sense-restart" onClick={reset}><RotateCcw size={16} />다시 풀어보기</Button><a className="sense-demo" href="https://aegisai.tailaca7d2.ts.net/" target="_blank" rel="noopener noreferrer">AegisAI 데모 보기<ArrowUpRight size={19} /></a></div>
+          <div className="sense-sheet-bottom"><Button variant="ghost" className="sense-restart" onClick={reset}><RotateCcw size={16} />다시 풀어보기</Button><a className="sense-demo" href="https://aegisai.tailaca7d2.ts.net/" target="_blank" rel="noopener noreferrer">제품 홈페이지<ArrowUpRight size={19} /></a></div>
         </section>}
         <footer className="sense-footer"><span>작은 의심이,<br /><b>더 안전한 코드를 만듭니다.</b></span><p>학습을 위한 가상 상황입니다.<br />실제 보안 진단이나 역량 평가가 아닙니다.</p></footer>
       </main>

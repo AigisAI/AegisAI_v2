@@ -12,3 +12,5 @@ This standalone Site uses its own package workspace and source repository so pub
 
 
 `/expo3` is the third, independently designed exhibition experience: a three-question security quiz with explanations and a learning recap. Its source is `app/sense-experience.tsx`, with local Vinext routing and the same standalone deployment adapter. It shares the existing anonymous interest aggregate with the other variants.
+
+Expo3 includes fixed mobile progress controls, a product introduction, an illustrative Java remediation sample, and a booth staff handoff. See [BOOTH.md](./BOOTH.md) for shared-tablet limitations and opening checks. The product homepage is separate from the sample and should not be presented as a direct interactive demo.
