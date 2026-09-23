@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>당근 전국 매물 검색</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#151515;--muted:#69707a;--line:#e7e9ee;--accent:#ff6f0f;--accent2:#ff8a3d;--ok:#14804a;--bad:#d92d20;--shadow:0 10px 30px rgba(20,25,35,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:ui-sans-serif,system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:var(--text)}
+a{color:inherit}.wrap{max-width:1240px;margin:0 auto;padding:34px 22px 60px}.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:22px}.hero h1{font-size:32px;line-height:1.15;margin:0 0 9px}.hero p{margin:0;color:var(--muted);font-size:14px}.badge{padding:7px 10px;border:1px solid #ffd9c2;background:#fff8f3;color:#a34308;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}.search-grid{display:grid;grid-template-columns:minmax(260px,2.4fr) minmax(150px,1fr) minmax(120px,.8fr) minmax(120px,.8fr) minmax(120px,.8fr);gap:12px;align-items:end}.field label{display:block;font-size:12px;font-weight:800;color:#525964;margin:0 0 7px}.field input,.field select{width:100%;height:44px;border:1px solid #dfe2e7;border-radius:11px;padding:0 12px;background:#fff;color:#111;font-size:14px;outline:none}.field input:focus,.field select:focus{border-color:#ff9d61;box-shadow:0 0 0 3px #fff0e7}.actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}.btn{height:42px;border:0;border-radius:11px;padding:0 16px;font-weight:800;cursor:pointer}.btn.primary{background:var(--accent);color:#fff}.btn.primary:hover{background:var(--accent2)}.btn.secondary{background:#f0f2f5;color:#24272b}.btn.danger{background:#fff0ef;color:#b42318}.btn:disabled{opacity:.45;cursor:not-allowed}.hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.6}.hint strong{color:#333}
+.progress-wrap{margin-top:16px;display:none}.progress-head{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:#4d535c;margin-bottom:7px}.progress{height:9px;background:#eceef2;border-radius:999px;overflow:hidden}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#ff9f5f);transition:width .2s}.status-line{font-size:12px;color:var(--muted);margin-top:8px;min-height:18px}.status-line.err{color:var(--bad)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px}.stat .k{font-size:12px;color:var(--muted);font-weight:700}.stat .v{font-size:24px;font-weight:900;margin-top:3px}.stat .v.ok{color:var(--ok)}.stat .v.bad{color:var(--bad)}
+.results{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid var(--line);flex-wrap:wrap}.toolbar .left,.toolbar .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.toolbar input,.toolbar select{height:38px;border:1px solid #dfe2e7;border-radius:9px;padding:0 10px;background:#fff}.toolbar .mini{height:38px;border:0;border-radius:9px;padding:0 12px;font-weight:800;cursor:pointer;background:#f2f3f5}.table-wrap{overflow:auto;max-height:67vh}table{border-collapse:collapse;width:100%;min-width:870px}th{position:sticky;top:0;background:#fafafa;z-index:2;color:#656b75;font-size:12px;text-align:left;padding:11px 12px;border-bottom:1px solid var(--line)}td{font-size:13px;padding:12px;border-bottom:1px solid #eff0f3;vertical-align:middle}.title-cell{max-width:500px}.title-cell a{text-decoration:none;font-weight:750}.title-cell a:hover{color:var(--accent);text-decoration:underline}.price{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap}.muted{color:var(--muted)}.scope{font-size:12px;color:#7a8088}.empty{padding:55px 20px;text-align:center;color:var(--muted)}.pill{display:inline-block;padding:4px 7px;border-radius:999px;background:#f2f3f5;font-size:11px;color:#555;white-space:nowrap}.footer-note{margin-top:12px;font-size:11px;color:#8a9098;line-height:1.6}
+@media(max-width:900px){.search-grid{grid-template-columns:1fr 1fr}.hero{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr 1fr}}@media(max-width:560px){.wrap{padding:22px 12px 40px}.search-grid{grid-template-columns:1fr}.hero h1{font-size:27px}.stats{grid-template-columns:1fr 1fr}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div><h1>당근 전국 매물 검색</h1><p>지역별 공개 검색 결과를 순회해서 한 화면에 합칩니다. 같은 매물은 URL 기준으로 자동 중복 제거됩니다.</p></div>
+    <div class="badge">읽기 전용 · 로그인 불필요</div>
+  </div>
+
+  <section class="panel">
+    <div class="search-grid">
+      <div class="field"><label>검색어</label><input id="keyword" placeholder="예: 라이카 Q3, 맥북 M4, 아이폰 15 프로" autofocus></div>
+      <div class="field"><label>검색 범위</label><select id="province"><option value="">전국 전체</option></select></div>
+      <div class="field"><label>최소 가격</label><input id="minPrice" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label>최대 가격</label><input id="maxPrice" inputmode="numeric" placeholder="제한 없음"></div>
+      <div class="field"><label>지역 간 대기</label><select id="delay"><option value="1500">1.5초</option><option value="2500" selected>2.5초 권장</option><option value="4000">4초 안전</option></select></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="start">검색 시작</button>
+      <button class="btn secondary" id="sample">앞 5개 지역 테스트</button>
+      <button class="btn danger" id="stop" disabled>중단</button>
+    </div>
+    <div class="hint"><strong>전국 검색은 253개 행정구역을 차례로 조회</strong>하므로 시간이 걸립니다. 브라우저 탭을 열어두세요. 요청 제한(429/403/CAPTCHA)이 감지되면 우회하지 않고 자동 중단합니다.</div>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-head"><span id="progressText">준비</span><span id="progressPct">0%</span></div>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="status-line" id="status"></div>
+    </div>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><div class="k">중복 제거 매물</div><div class="v ok" id="count">0</div></div>
+    <div class="stat"><div class="k">검색 완료 지역</div><div class="v" id="scanned">0 / 0</div></div>
+    <div class="stat"><div class="k">실패 지역</div><div class="v bad" id="failed">0</div></div>
+    <div class="stat"><div class="k">경과 시간</div><div class="v" id="elapsed">0:00</div></div>
+  </div>
+
+  <section class="results">
+    <div class="toolbar">
+      <div class="left"><input id="within" placeholder="결과에서 찾기"><select id="sort"><option value="latest">최신순</option><option value="low">낮은 가격순</option><option value="high">높은 가격순</option><option value="title">제목순</option></select></div>
+      <div class="right"><button class="mini" id="csv">CSV 다운로드</button><button class="mini" id="clear">결과 지우기</button></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>매물</th><th>가격</th><th>판매 지역</th><th>검색 범위</th><th>상태</th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty">검색어를 입력하고 검색을 시작하세요.</div></div>
+  </section>
+  <div class="footer-note">이 도구는 당근의 공개 웹 검색 결과를 읽어 정리합니다. 검색 노출 정책·지역 범위·페이지네이션에 따라 당근에 존재하는 모든 매물이 100% 포함된다고 보장할 수는 없습니다.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const state={locations:[],items:new Map(),running:false,stop:false,total:0,done:0,failed:0,started:0,timer:null};
+const regionCache=JSON.parse(localStorage.getItem('daangn-region-cache-v1')||'{}');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function money(v){return Number.isFinite(Number(v))?Number(v).toLocaleString('ko-KR')+'원':'-'}
+function num(id){const s=$(id).value.replace(/[^0-9]/g,'');return s?Number(s):null}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function elapsed(){if(!state.started)return '0:00';const s=Math.floor((Date.now()-state.started)/1000),m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0')}
+async function loadLocations(){const t=await fetch('/locations.csv').then(r=>r.text());state.locations=t.trim().split(/\r?\n/).map(line=>{const [province,area]=line.replace(/^\uFEFF/,'').split(',');return{province:province.trim(),area:area.trim()}}).filter(x=>x.province&&x.area);const ps=[...new Set(state.locations.map(x=>x.province))];for(const p of ps)$('#province').insertAdjacentHTML('beforeend',`<option>${esc(p)}</option>`)}
+function selectedLocations(sample=false){const p=$('#province').value;let rows=p?state.locations.filter(x=>x.province===p):[...state.locations];return sample?rows.slice(0,5):rows}
+function updateStats(){ $('#count').textContent=state.items.size.toLocaleString(); $('#scanned').textContent=`${state.done} / ${state.total}`; $('#failed').textContent=state.failed; $('#elapsed').textContent=elapsed(); const pct=state.total?Math.round((state.done/state.total)*100):0; $('#bar').style.width=pct+'%'; $('#progressPct').textContent=pct+'%'; $('#progressText').textContent=state.running?'검색 중':'완료'; }
+function filteredItems(){let arr=[...state.items.values()];const q=$('#within').value.trim().toLowerCase();if(q)arr=arr.filter(x=>(x.title+' '+x.region+' '+x.sourceScope).toLowerCase().includes(q));const min=num('#minPrice'),max=num('#maxPrice');if(min!==null)arr=arr.filter(x=>x.price!==null&&x.price>=min);if(max!==null)arr=arr.filter(x=>x.price!==null&&x.price<=max);const sort=$('#sort').value;arr.sort((a,b)=>sort==='low'?(a.price??1e30)-(b.price??1e30):sort==='high'?(b.price??-1)-(a.price??-1):sort==='title'?a.title.localeCompare(b.title,'ko'):(b.createdAt||'').localeCompare(a.createdAt||''));return arr}
+function render(){const arr=filteredItems();$('#empty').style.display=arr.length?'none':'block';$('#tbody').innerHTML=arr.map(x=>`<tr><td class="title-cell"><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></td><td class="price">${esc(money(x.price))}</td><td>${esc(x.region||'-')}</td><td class="scope">${esc(x.sourceScope)}</td><td><span class="pill">${esc(x.status||'-')}</span></td></tr>`).join('');updateStats()}
+function cacheKey(r){return r.province+'|'+r.area}
+async function fetchRegion(keyword,r){const cached=regionCache[cacheKey(r)];const p=new URLSearchParams({keyword,province:r.province,area:r.area});if(cached&&cached.id){p.set('regionId',cached.id);p.set('depth',cached.depth||2)}const resp=await fetch('/api/search?'+p);let data={};try{data=await resp.json()}catch(_){data={error:'서버 응답 파싱 실패'}}if(!resp.ok)throw Object.assign(new Error(data.error||`HTTP ${resp.status}`),{status:resp.status});if(data.scope&&data.scope.id){regionCache[cacheKey(r)]={id:data.scope.id,depth:data.scope.depth||2};localStorage.setItem('daangn-region-cache-v1',JSON.stringify(regionCache))}return data}
+async function run(sample=false){if(state.running)return;const keyword=$('#keyword').value.trim();if(!keyword){$('#keyword').focus();return}const rows=selectedLocations(sample);state.running=true;state.stop=false;state.total=rows.length;state.done=0;state.failed=0;state.started=Date.now();$('#progressWrap').style.display='block';$('#start').disabled=true;$('#sample').disabled=true;$('#stop').disabled=false;$('#status').className='status-line';state.timer=setInterval(updateStats,500);updateStats();
+ for(let i=0;i<rows.length;i++){if(state.stop)break;const r=rows[i];$('#status').textContent=`${i+1}/${rows.length} · ${r.province} ${r.area} 조회 중`;try{const data=await fetchRegion(keyword,r);for(const item of data.items||[])if(item.url&&!state.items.has(item.url))state.items.set(item.url,item);state.done++;render()}catch(e){state.failed++;state.done++;$('#status').textContent=`${r.province} ${r.area}: ${e.message}`;render();if([403,429].includes(e.status)){state.stop=true;$('#status').className='status-line err';$('#status').textContent=`접근 제한이 감지되어 중단했습니다: ${e.message}`;break}}if(i<rows.length-1&&!state.stop){const base=Number($('#delay').value)||2500;await sleep(Math.max(900,base*(.85+Math.random()*.3)))}}
+ state.running=false;clearInterval(state.timer);$('#start').disabled=false;$('#sample').disabled=false;$('#stop').disabled=true;updateStats();if(!$('#status').classList.contains('err'))$('#status').textContent=state.stop?'사용자가 검색을 중단했습니다.':`검색 완료 · ${state.items.size.toLocaleString()}개 매물`;}
+function csv(){const arr=filteredItems();const cols=['title','price','region','status','sourceScope','createdAt','url'];const lines=[cols.join(',')].concat(arr.map(x=>cols.map(k=>'"'+String(x[k]??'').replace(/"/g,'""')+'"').join(',')));const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`daangn_${($('#keyword').value||'results').replace(/[\\/:*?"<>|]/g,'_')}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('#start').onclick=()=>run(false);$('#sample').onclick=()=>run(true);$('#stop').onclick=()=>state.stop=true;$('#clear').onclick=()=>{state.items.clear();render()};$('#csv').onclick=csv;$('#within').oninput=render;$('#sort').onchange=render;$('#minPrice').oninput=render;$('#maxPrice').oninput=render;$('#keyword').addEventListener('keydown',e=>{if(e.key==='Enter')run(false)});loadLocations().catch(e=>{$('#status').textContent='지역 목록 로드 실패: '+e.message;$('#progressWrap').style.display='block'});render();
+</script>
+</body></html>
