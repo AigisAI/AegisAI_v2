@@ -110,10 +110,10 @@ export default function SenseExperience({ interestEndpoint = '/api/interest' }: 
   return <div className={`sense-page${finished ? ' sense-finished' : ' sense-playing'}`}>
     <a className="sense-skip" href="#sense-main">퀴즈로 바로가기</a>
     <div className="sense-shell">
-      <header className="sense-header"><a className="sense-brand" href="https://aegisai.tailaca7d2.ts.net/" aria-label="AegisAI 제품 홈페이지"><ShieldCheck size={23} strokeWidth={2.5} /><span>AegisAI<span className="sense-brand-star" aria-hidden="true">✳</span></span></a><span className="sense-edition">THE SECURITY QUIZ<br /><b>EXPO EDITION / 2026</b></span></header>
+      <header className="sense-header"><a className="sense-brand" href="https://aegisai.tailaca7d2.ts.net/" aria-label="AegisAI 제품 홈페이지"><span>AegisAI</span></a><span className="sense-edition">THE SECURITY QUIZ<br /><b>EXPO EDITION / 2026</b></span></header>
       <main id="sense-main">
         <section className="sense-intro" aria-label="보안 감각 테스트">
-          <div><p className="sense-eyebrow">생각보다 가까운 보안 이야기</p><h1>{finished ? <>이제, 위험이<br />조금 보이나요?</> : <>내 보안 감각,<br /><span>몇 점일까?</span></>}</h1><p className="sense-intro-copy">{finished ? '오늘 발견한 세 가지를 기억해 보세요.' : '세 가지 상황. 당신이라면 어떤 선택을 할까요?'}</p></div>
+          <div><p className="sense-eyebrow">생각보다 가까운 보안 이야기</p><h1>{finished ? <>이제, 위험이<br /> 조금 보이나요?</> : <>내 보안 감각,<br /><span>몇 점일까?</span></>}</h1><p className="sense-intro-copy">{finished ? '오늘 발견한 세 가지를 기억해 보세요.' : '세 가지 상황. 당신이라면 어떤 선택을 할까요?'}</p></div>
           <div className="sense-count" aria-hidden="true"><span>{finished ? 'YOUR SCORE' : 'JUST'}</span><strong>{finished ? score : '03'}</strong><span>{finished ? 'OUT OF 3' : 'QUESTIONS'}</span></div>
         </section>
 
