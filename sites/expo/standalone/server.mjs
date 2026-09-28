@@ -61,7 +61,7 @@ export function createExpoServer({ dbPath, publicOrigin, staticDirectory = defau
         content = content.toString()
           .replace(/<title>[^<]*<\/title>/, '<title>AegisAI · 내 보안 감각, 몇 점일까?</title>')
           .replace(/name="description" content="[^"]*"/, 'name="description" content="세 가지 상황으로 알아보는 보안 감각. 답을 고르고 이유를 알아보세요. 가입 없이 즐기는 AegisAI 전시 퀴즈."')
-          .replace(/name="theme-color" content="[^"]*"/, 'name="theme-color" content="#fa5d32"');
+          .replace(/name="theme-color" content="[^"]*"/, 'name="theme-color" content="#fbf9f4"');
       }
       res.writeHead(200, {
         'Content-Type': mime[extname(file)],
