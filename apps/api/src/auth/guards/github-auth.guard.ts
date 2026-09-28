@@ -22,11 +22,9 @@ export class GithubAuthGuard extends AuthGuard('github') {
     return Boolean(activated);
   }
 
-  getAuthenticateOptions(context: ExecutionContext): Record<string, string> {
-    const request = context.switchToHttp().getRequest();
-
+  getAuthenticateOptions(): Record<string, string> {
     return {
-      callbackURL: buildProviderCallbackUrl(request, this.config.get('APP_URL'), 'github')
+      callbackURL: buildProviderCallbackUrl(this.config.get('APP_URL'), 'github')
     };
   }
 }

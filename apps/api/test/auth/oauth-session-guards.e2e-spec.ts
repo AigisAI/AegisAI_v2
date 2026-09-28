@@ -22,6 +22,20 @@ describe('OAuth session guards', () => {
   it.each([
     ['github', GithubAuthGuard],
     ['gitlab', GitlabAuthGuard]
+  ])('uses the configured HTTPS callback for %s behind an HTTP proxy', (provider, GuardClass) => {
+    const config = {
+      get: jest.fn().mockReturnValue('https://aegisai.tailaca7d2.ts.net')
+    } as unknown as ConfigService;
+    const guard = new GuardClass(config);
+
+    expect(guard.getAuthenticateOptions()).toEqual({
+      callbackURL: `https://aegisai.tailaca7d2.ts.net/api/auth/${provider}/callback`
+    });
+  });
+
+  it.each([
+    ['github', GithubAuthGuard],
+    ['gitlab', GitlabAuthGuard]
   ])(
     'logs the authenticated %s user into the session after callback authentication',
     async (_provider, GuardClass) => {
