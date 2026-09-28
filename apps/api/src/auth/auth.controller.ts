@@ -37,9 +37,9 @@ export class AuthController {
 
   @Get('github/callback')
   @UseGuards(GithubAuthGuard)
-  githubCallback(@Req() request: Request, @Res() response: Response): void {
-    this.issueCsrfCookie(request, response);
-    response.redirect(buildFrontendRedirectUrl(request, this.config.get('FRONTEND_URL'), '/dashboard'));
+  githubCallback(@Res() response: Response): void {
+    this.issueCsrfCookie(response);
+    response.redirect(buildFrontendRedirectUrl(this.config.get('FRONTEND_URL'), '/dashboard'));
   }
 
   @Get('gitlab')
@@ -48,19 +48,18 @@ export class AuthController {
 
   @Get('gitlab/callback')
   @UseGuards(GitlabAuthGuard)
-  gitlabCallback(@Req() request: Request, @Res() response: Response): void {
-    this.issueCsrfCookie(request, response);
-    response.redirect(buildFrontendRedirectUrl(request, this.config.get('FRONTEND_URL'), '/dashboard'));
+  gitlabCallback(@Res() response: Response): void {
+    this.issueCsrfCookie(response);
+    response.redirect(buildFrontendRedirectUrl(this.config.get('FRONTEND_URL'), '/dashboard'));
   }
 
   @Get('me')
   @UseGuards(SessionAuthGuard)
   getMe(
-    @Req() request: Request,
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) response: Response
   ): AuthMeResponse {
-    this.issueCsrfCookie(request, response);
+    this.issueCsrfCookie(response);
     return user;
   }
 
@@ -76,24 +75,24 @@ export class AuthController {
     response.clearCookie(this.config.get('SESSION_COOKIE_NAME'), {
       httpOnly: true,
       sameSite: 'lax',
-      secure: shouldUseSecureCookies(request, this.config.get('APP_URL')),
+      secure: shouldUseSecureCookies(this.config.get('APP_URL')),
       domain: this.config.getOptional('COOKIE_DOMAIN') || undefined
     });
     response.clearCookie(this.config.get('CSRF_COOKIE_NAME'), {
       httpOnly: false,
       sameSite: 'lax',
-      secure: shouldUseSecureCookies(request, this.config.get('APP_URL')),
+      secure: shouldUseSecureCookies(this.config.get('APP_URL')),
       domain: this.config.getOptional('COOKIE_DOMAIN') || undefined
     });
 
     response.status(200).json(null);
   }
 
-  private issueCsrfCookie(request: Request, response: Response): void {
+  private issueCsrfCookie(response: Response): void {
     response.cookie(this.config.get('CSRF_COOKIE_NAME'), this.authService.createCsrfToken(), {
       httpOnly: false,
       sameSite: 'lax',
-      secure: shouldUseSecureCookies(request, this.config.get('APP_URL')),
+      secure: shouldUseSecureCookies(this.config.get('APP_URL')),
       domain: this.config.getOptional('COOKIE_DOMAIN') || undefined
     });
   }

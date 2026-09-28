@@ -22,11 +22,9 @@ export class GitlabAuthGuard extends AuthGuard('gitlab') {
     return Boolean(activated);
   }
 
-  getAuthenticateOptions(context: ExecutionContext): Record<string, string> {
-    const request = context.switchToHttp().getRequest();
-
+  getAuthenticateOptions(): Record<string, string> {
     return {
-      callbackURL: buildProviderCallbackUrl(request, this.config.get('APP_URL'), 'gitlab')
+      callbackURL: buildProviderCallbackUrl(this.config.get('APP_URL'), 'gitlab')
     };
   }
 }
