@@ -8,5 +8,6 @@ RUN corepack pnpm --filter @aegisai/web build
 
 FROM nginx:1.27-alpine
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+RUN nginx -t
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 EXPOSE 80

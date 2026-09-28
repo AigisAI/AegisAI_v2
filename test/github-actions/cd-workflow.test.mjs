@@ -79,9 +79,12 @@ test('cd workflow and oracle deployment files describe the grafana cloud plus al
 
   assert.match(webDockerfile, /FROM nginx:1\.27-alpine/);
   assert.match(webDockerfile, /COPY --from=builder \/app\/apps\/web\/dist/);
+  assert.match(webDockerfile, /RUN nginx -t/);
   assert.match(webNginx, /resolver 127\.0\.0\.11 ipv6=off valid=10s;/);
   assert.match(webNginx, /set \$api_upstream api:3000;/);
   assert.match(webNginx, /proxy_pass http:\/\/\$api_upstream;/);
+  assert.match(webNginx, /map \$http_x_forwarded_proto \$aegisai_forwarded_proto \{\s*https https;\s*default \$scheme;\s*\}/);
+  assert.match(webNginx, /proxy_set_header X-Forwarded-Proto \$aegisai_forwarded_proto;/);
 
   assert.match(infraCompose, /postgres:16-alpine/);
   assert.match(infraCompose, /redis:7-alpine/);
