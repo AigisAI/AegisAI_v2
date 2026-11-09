@@ -22,6 +22,15 @@ class Session:
         self.deadline = time.monotonic() + 900
         self.done = False
         self.attempts = 0
+        previous = root/'setup-session.json'
+        if previous.exists():
+            saved = json.loads(previous.read_text())
+            remaining = saved['expiresAt'] - time.time()
+            prefix = ORIGIN + BASE + '/'
+            candidate = saved['url'][len(prefix):] if saved['url'].startswith(prefix) else ''
+            if 0 < remaining <= 900 and len(candidate) == 43 and all(c.isalnum() or c in '-_' for c in candidate):
+                self.nonce = candidate
+                self.deadline = time.monotonic() + remaining
 
 
 def handler_for(session):
@@ -61,7 +70,7 @@ def handler_for(session):
                 self.respond(200, '<h1>Slack 연결 완료</h1><p>Slack이 확인 알림을 수락했습니다. 지정한 채널에서 메시지를 확인해 주세요.</p>')
                 return
             manifest = {'display_information':{'name':'AegisAI Alerts'},
-                        'features':{'incoming_webhooks':{'enabled':True}},
+                        'settings':{'incoming_webhooks':{'incoming_webhooks_enabled':True}},
                         'oauth_config':{'scopes':{'bot':['incoming-webhook']}}}
             link = 'https://api.slack.com/apps?' + urllib.parse.urlencode({'new_app':'1','manifest_json':json.dumps(manifest)})
             self.respond(200, '<h1>Slack 운영 알림 연결</h1><p>기존 Incoming Webhook이 있으면 아래에 붙여 넣어 주세요.</p>'
@@ -111,7 +120,7 @@ def main():
     os.umask(0o077)
     ROOT.mkdir(mode=0o700, exist_ok=True)
     session = Session()
-    private_json(ROOT/'setup-session.json', {'url':ORIGIN+BASE+'/'+session.nonce,'expiresAt':int(time.time())+900})
+    private_json(ROOT/'setup-session.json', {'url':ORIGIN+BASE+'/'+session.nonce,'expiresAt':int(time.time() + session.deadline - time.monotonic())})
     server = HTTPServer(('127.0.0.1',8768), handler_for(session))
     server.timeout = 1
     try:

@@ -1,4 +1,5 @@
-import copy
+import html
+import re
 from http.server import HTTPServer
 import json
 from pathlib import Path
@@ -60,6 +61,12 @@ class AlertSafety(unittest.TestCase):
                 except urllib.error.HTTPError as error:
                     return error.code,error.read()
             try:
+                with urllib.request.urlopen(url, timeout=3) as response:
+                    page = response.read().decode()
+                link = html.unescape(re.search('href="([^"]+)"', page).group(1))
+                manifest = json.loads(urllib.parse.parse_qs(urllib.parse.urlparse(link).query)['manifest_json'][0])
+                self.assertTrue(manifest['settings']['incoming_webhooks']['incoming_webhooks_enabled'])
+                self.assertNotIn('features', manifest)
                 with patch('setup_portal.send', return_value=False) as send:
                     self.assertEqual(post(origin='https://other.example')[0],403)
                     self.assertEqual(post(csrf='invalid')[0],400)
