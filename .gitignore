@@ -19,3 +19,9 @@ packages/private-runtime-db/generated/
 # Python runtime caches
 __pycache__/
 *.py[cod]
+
+# Terraform private state and provider cache
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan

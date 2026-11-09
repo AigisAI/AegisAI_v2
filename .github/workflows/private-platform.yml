@@ -1,0 +1,46 @@
+name: Private Platform Safety
+
+on:
+  pull_request:
+    branches: [dev, main, feat/338-private-ec2-integration]
+    paths:
+      - deploy/aws-ec2/platform/**
+      - specs/008-private-platform-expansion/**
+      - .github/workflows/private-platform.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify adoption, mutation and secret-state guards
+        run: python3 deploy/aws-ec2/platform/test_platform_safety.py
+      - name: Install exact vendor-checksummed Terraform CLI
+        run: sudo python3 -E -s -B deploy/aws-ec2/platform/install_terraform.py
+      - name: Validate provider lock and configuration without AWS access
+        run: |
+          version=$(python3 -c 'import json;print(json.load(open("deploy/aws-ec2/platform/toolchain.json"))["terraformVersion"])')
+          terraform=/opt/aegisai/platform/tools/$version/terraform
+          sudo "$terraform" -chdir=deploy/aws-ec2/platform/terraform init -backend=false -input=false -lockfile=readonly
+          sudo "$terraform" -chdir=deploy/aws-ec2/platform/terraform fmt -check
+          sudo "$terraform" -chdir=deploy/aws-ec2/platform/terraform validate
+      - name: Reject tracked private state
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          names = subprocess.check_output(['git', 'ls-files'], text=True).splitlines()
+          assert not any('.tfstate' in name or name.endswith('.tfplan') or '/.terraform/' in name for name in names)
+          PY
+          git diff --check

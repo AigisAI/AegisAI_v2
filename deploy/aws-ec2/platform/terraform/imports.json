@@ -1,0 +1,14 @@
+{
+  "aws_security_group.control": "sg-06ec9c51d40fc980a",
+  "aws_iam_role.runtime": "aegisai-private-runtime",
+  "aws_iam_instance_profile.runtime": "aegisai-private-runtime",
+  "aws_iam_role_policy.runtime_0": "aegisai-private-runtime:AegisAIPrivateDataPlane",
+  "aws_instance.control": "i-0d24d0502cfc5a9c5",
+  "aws_s3_bucket.private": "aegisai-private-024139495514-apne2",
+  "aws_s3_bucket_policy.private": "aegisai-private-024139495514-apne2",
+  "aws_s3_bucket_public_access_block.private": "aegisai-private-024139495514-apne2",
+  "aws_s3_bucket_server_side_encryption_configuration.private": "aegisai-private-024139495514-apne2",
+  "aws_s3_bucket_ownership_controls.private": "aegisai-private-024139495514-apne2",
+  "aws_s3_bucket_lifecycle_configuration.private": "aegisai-private-024139495514-apne2",
+  "aws_s3_bucket_versioning.private": "aegisai-private-024139495514-apne2"
+}

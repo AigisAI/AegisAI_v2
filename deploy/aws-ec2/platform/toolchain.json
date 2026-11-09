@@ -1,0 +1,7 @@
+{
+  "terraformVersion": "1.17.1",
+  "terraformArchiveSha256": "4638628058e71a55212b1c563712eac03b902128f40740f3dc8174df12135061",
+  "awsProviderVersion": "6.72.0",
+  "platform": "linux_amd64",
+  "source": "https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_SHA256SUMS"
+}
