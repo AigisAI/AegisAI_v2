@@ -1,3 +1,4 @@
+import datetime
 import copy
 import hashlib
 import importlib.util
@@ -66,6 +67,18 @@ class CandidateChecks(unittest.TestCase):
         self.manifest['sourceCommit'] = 'b' * 40
         self.refresh()
         with self.assertRaises(AssertionError):checker.check(self.root, self.sha)
+
+    def test_target_snapshot_must_be_fresh_idle_and_complete(self):
+        rows = [{'migration_name': str(i), 'checksum': str(i) * 64, 'finished_at': 'fixture', 'rolled_back_at': None} for i in range(6)]
+        snapshot = {'readOnly': True, 'instanceId': 'i-0d24d0502cfc5a9c5',
+            'observedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            'migrations': rows, 'scannerReady': True, 'scannerBusy': False,
+            'workerSourceHashes': {}, 'diskFreeBytes': 100 * 1024 ** 3}
+        for change in [
+            {'scannerBusy': True}, {'instanceId': 'different-host'},
+            {'observedAt': '2000-01-01T00:00:00+00:00'}, {'workerSourceHashes': {}}
+        ]:
+            with self.assertRaises(AssertionError):checker.check(self.root, self.sha, snapshot={**snapshot, **change})
 
     def test_wrong_schema_and_incomplete_history_fail_before_target_mutations(self):
         rows = [{'migration_name': str(i), 'checksum': str(i) * 64, 'finished_at': 'fixture', 'rolled_back_at': None} for i in range(6)]

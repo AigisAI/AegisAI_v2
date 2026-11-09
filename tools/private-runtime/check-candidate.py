@@ -28,6 +28,9 @@ def validate_history(profile, rows):
         assert row['checksum'] in entry['acceptedAppliedChecksums'], 'TARGET_MIGRATION_DRIFT'
 
 
+WORKERS = ('runtime.py', 'supervisor.py', 'broker_client.py', 'github_fetch.py', 'source_gateway.py', 'normalize.py', 'runtime_catalog.py')
+
+
 def check(directory, expected_sha, target=False, snapshot=None):
     manifest_path = directory / 'candidate.json'
     assert not manifest_path.is_symlink() and digest(manifest_path) == expected_sha
@@ -73,6 +76,7 @@ def check(directory, expected_sha, target=False, snapshot=None):
         assert -5 <= age <= 900, 'TARGET_SNAPSHOT_EXPIRED'
         validate_history(profile, snapshot['migrations'])
         assert snapshot['scannerReady'] and not snapshot['scannerBusy']
+        assert set(snapshot['workerSourceHashes']) == set(WORKERS), 'INCOMPLETE_HOST_WORKER_SNAPSHOT'
         with tarfile.open(directory / manifest['sourceArchive'], 'r:gz') as source:
             for name, expected in snapshot['workerSourceHashes'].items():
                 assert pathlib.PurePosixPath(name).name == name
@@ -80,12 +84,16 @@ def check(directory, expected_sha, target=False, snapshot=None):
         required = sum(image['uncompressedBytes'] for image in manifest['images'].values()) * 2 + 3 * 1024 ** 3
         assert snapshot['diskFreeBytes'] >= required, 'INSUFFICIENT_DEPLOYMENT_HEADROOM'
     if target:
+        state = json.loads(pathlib.Path('/opt/aegisai/operator/data-plane-state.json').read_text())
+        assert state['existingInstanceId'] == 'i-0d24d0502cfc5a9c5'
+        catalog = json.loads(pathlib.Path('/opt/aegisai/scanner/catalog/current.json').read_text())
+        assert catalog['ready'] and not catalog['busy'], 'SCANNER_NOT_IDLE_READY'
         sql = 'SELECT coalesce(json_agg(t),\'[]\'::json) FROM (SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations") t;'
         rows = json.loads(subprocess.check_output(['docker', 'exec', 'aegisai-ec2-demo-postgres-1',
             'psql', '-U', 'aegisai', '-d', 'aegisai', '-Atc', sql], text=True))
         validate_history(profile, rows)
         with tarfile.open(directory / manifest['sourceArchive'], 'r:gz') as source:
-            for name in ('runtime.py', 'supervisor.py', 'broker_client.py', 'github_fetch.py', 'source_gateway.py', 'normalize.py', 'runtime_catalog.py'):
+            for name in WORKERS:
                 local = pathlib.Path('/opt/aegisai/scanner') / name
                 member = source.extractfile('apps/scanner/' + name)
                 assert local.is_file() and member, 'HOST_WORKER_MISSING'
