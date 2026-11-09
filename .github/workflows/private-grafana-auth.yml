@@ -1,0 +1,26 @@
+name: Private Grafana Proxy Authentication
+
+on:
+  pull_request:
+    branches: [dev, main, feat/342-private-observability]
+    paths:
+      - deploy/aws-ec2/observability/ingress.locations.conf
+      - deploy/aws-ec2/observability/test_ingress.py
+      - .github/workflows/private-grafana-auth.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proxy-authentication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify actual Nginx proxy security with disposable fixtures
+        run: python3 deploy/aws-ec2/observability/test_ingress.py
+      - run: git diff --check
