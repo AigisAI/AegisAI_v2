@@ -63,14 +63,16 @@ def main():
             path = Path(temporary)/'default.conf'
             path.write_text(config)
             subprocess.run(['docker','run','-d','--name',name,'--network',network,
-                '-p','127.0.0.1::80','--read-only','--cap-drop=ALL','--cap-add=NET_BIND_SERVICE',
+                '--read-only','--cap-drop=ALL','--cap-add=NET_BIND_SERVICE',
                 '--cap-add=SETUID','--cap-add=SETGID','--cap-add=CHOWN',
                 '--security-opt=no-new-privileges','--memory=64m','--pids-limit=32',
                 '--tmpfs','/var/cache/nginx','--tmpfs','/var/run',
                 '-v',str(path)+':/etc/nginx/conf.d/default.conf:ro',
                 '--entrypoint','/usr/sbin/nginx',IMAGE,'-g','daemon off;'],check=True,stdout=subprocess.DEVNULL)
-            address = subprocess.check_output(['docker','port',name,'80/tcp'],text=True).strip()
-            origin = 'http://' + address
+            running = json.loads(subprocess.check_output(['docker','inspect',name]))[0]
+            address = running['NetworkSettings']['Networks'][network]['IPAddress']
+            assert address, 'Fixture did not start'
+            origin = 'http://' + address + ':80'
             def request(route, headers=None):
                 try:
                     response = urllib.request.build_opener(NoRedirect()).open(urllib.request.Request(origin+route,headers=headers or {}),timeout=3)
@@ -98,6 +100,9 @@ def main():
             assert request('/api/runtime/observability-auth')[0] == 404
             assert request('/ops/aws-login/expired')[0] == 404
             print('NGINX_AUTH_REQUEST_FIXTURE_PASSED: deny, redirect, admitted viewer, header overwrite, credential stripping')
+    except Exception:
+        subprocess.run(['docker','logs','--tail=20',name],check=False)
+        raise
     finally:
         subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
         if server:
