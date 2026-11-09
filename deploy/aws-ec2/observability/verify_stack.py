@@ -46,10 +46,30 @@ def main():
     for headers in ({}, {'X-WEBAUTH-USER':'github-161540124', 'X-WEBAUTH-ROLE':'Admin'}):
         status, _ = request(roots['grafana'] + '/api/search', headers)
         assert status in (401, 403), 'Untrusted identity admitted'
-    status, body = request(roots['prometheus'] + '/api/v1/query?query=up%7Bjob%3D%22prometheus%22%7D')
-    assert status == 200 and json.loads(body)['data']['result'][0]['value'][1] == '1'
+    # Readiness precedes the first 30s scrape. Poll actual observations, not time alone.
+    self_scrape = host_scrape = host_logs = False
+    deadline = time.monotonic() + 65
+    import urllib.parse
+    while time.monotonic() < deadline:
+        for job in ('prometheus', 'aegisai-host'):
+            status, body = request(roots['prometheus'] + '/api/v1/query?' +
+                urllib.parse.urlencode({'query': 'up{job="' + job + '"}'}))
+            rows = json.loads(body).get('data', {}).get('result', []) if status == 200 else []
+            observed = bool(rows and rows[0]['value'][1] == '1')
+            if job == 'prometheus':
+                self_scrape = observed
+            else:
+                host_scrape = observed
+        status, body = request(roots['loki'] + '/loki/api/v1/query_range?' +
+            urllib.parse.urlencode({'query':'{job="aegisai-host"}', 'limit':'1'}))
+        rows = json.loads(body).get('data', {}).get('result', []) if status == 200 else []
+        host_logs = bool(rows and rows[0]['values'])
+        if self_scrape and host_scrape and host_logs:
+            break
+        time.sleep(2)
+    assert self_scrape and host_scrape and host_logs, 'Actual metric/log collection missing'
     print(json.dumps({'backendStartup':'passed', 'directIdentitySpoof':'denied',
-                      'prometheusSelfScrape':'passed', 'applicationTracingVerified':False,
+                      'prometheusSelfScrape':'passed', 'hostMetricAndLogCollection':'passed', 'applicationTracingVerified':False,
                       'ownerGrafanaAccessVerified':False, 'externalAlertsVerified':False}))
 
 
