@@ -21,6 +21,30 @@ def digest(path):
     return value.hexdigest()
 
 
+def image_id_binds_config(archive, image_id, config_digest):
+    # Legacy Docker IDs identify the config. The containerd store identifies
+    # the OCI manifest/index; verify its content-addressed chain to that config.
+    if image_id == config_digest:
+        return True
+    def walk(digest, depth):
+        if depth > 4 or not re.fullmatch(r'sha256:[a-f0-9]{64}', digest):
+            return False
+        try:
+            member = archive.getmember('blobs/sha256/' + digest.split(':')[1])
+        except KeyError:
+            return False
+        assert member.isfile() and member.size <= 1024 * 1024
+        content = archive.extractfile(member).read()
+        assert 'sha256:' + hashlib.sha256(content).hexdigest() == digest, 'OCI_DESCRIPTOR_DRIFT'
+        value = json.loads(content)
+        if value.get('config', {}).get('digest') == config_digest:
+            return True
+        children = value.get('manifests', [])
+        assert len(children) <= 16
+        return any(walk(child.get('digest', ''), depth + 1) for child in children)
+    return walk(image_id, 0)
+
+
 def validate_history(profile, rows):
     expected = {item['name']: item for item in profile['migrations']}
     assert profile['profile'] == 'private-single-host-v1' and profile['generalQualification'] == 'NOT_QUALIFIED'
@@ -65,8 +89,11 @@ def check(directory, expected_sha, target=False, snapshot=None):
             config_file = archive.getmember(entries[0]['Config'])
             assert config_file.isfile() and config_file.size <= 1024 * 1024
             content = archive.extractfile(config_file).read()
-            assert 'sha256:' + hashlib.sha256(content).hexdigest() == image['id']
-            config = json.loads(content)['config']
+            config_digest = 'sha256:' + hashlib.sha256(content).hexdigest()
+            assert image_id_binds_config(archive, image['id'], config_digest), 'IMAGE_ID_NOT_BOUND_TO_CONFIG'
+            configuration = json.loads(content)
+            assert configuration['os'] == 'linux' and configuration['architecture'] == 'amd64'
+            config = configuration['config']
             assert config['Labels']['org.aegisai.runtime-profile'] == manifest['profile']
             assert config['Labels']['org.opencontainers.image.revision'] == manifest['sourceCommit']
             keys = {value.split('=', 1)[0] for value in config.get('Env', [])}

@@ -28,7 +28,7 @@ class CandidateChecks(unittest.TestCase):
         self.images = {}
         for kind in ('api', 'web'):
             tag = 'aegisai-' + kind + ':fixture'
-            config = json.dumps({'config': {'Labels': {'org.aegisai.runtime-profile': self.profile['profile'],
+            config = json.dumps({'os': 'linux', 'architecture': 'amd64', 'config': {'Labels': {'org.aegisai.runtime-profile': self.profile['profile'],
                 'org.opencontainers.image.revision': self.commit}, 'Env': ['NODE_ENV=production']}}).encode()
             sha = hashlib.sha256(config).hexdigest()
             self.tar(kind + '.tar.gz', {sha + '.json': config,
@@ -67,6 +67,26 @@ class CandidateChecks(unittest.TestCase):
         self.manifest['sourceCommit'] = 'b' * 40
         self.refresh()
         with self.assertRaises(AssertionError):checker.check(self.root, self.sha)
+
+    def test_containerd_index_must_bind_the_exact_runtime_config(self):
+        image = self.manifest['images']['api']
+        with tarfile.open(self.root / image['archive'], 'r:gz') as archive:
+            entries = {item.name: archive.extractfile(item).read() for item in archive.getmembers()}
+        config_digest = image['id']
+        manifest = json.dumps({'config': {'digest': config_digest}}).encode()
+        manifest_digest = 'sha256:' + hashlib.sha256(manifest).hexdigest()
+        index = json.dumps({'manifests': [{'digest': manifest_digest}]}).encode()
+        index_digest = 'sha256:' + hashlib.sha256(index).hexdigest()
+        entries['blobs/sha256/' + manifest_digest.split(':')[1]] = manifest
+        entries['blobs/sha256/' + index_digest.split(':')[1]] = index
+        self.tar(image['archive'], entries)
+        image['id'] = index_digest
+        self.refresh()
+        self.assertEqual(checker.check(self.root, self.sha)['images']['api']['id'], index_digest)
+        image['id'] = 'sha256:' + 'f' * 64
+        self.refresh()
+        with self.assertRaisesRegex(AssertionError, 'IMAGE_ID_NOT_BOUND_TO_CONFIG'):
+            checker.check(self.root, self.sha)
 
     def test_target_snapshot_must_be_fresh_idle_and_complete(self):
         rows = [{'migration_name': str(i), 'checksum': str(i) * 64, 'finished_at': 'fixture', 'rolled_back_at': None} for i in range(6)]

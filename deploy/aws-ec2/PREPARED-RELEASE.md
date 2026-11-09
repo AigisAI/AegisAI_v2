@@ -54,3 +54,10 @@ A historical root restore proof does not certify rollback of this new candidate.
 This is single-host replacement with a maintenance window. Blue/green, canary,
 rolling zero-downtime and HPA are not implemented or claimed. General 006
 external qualification and Kubernetes rollout remain independently blocked.
+
+Image validation accepts either a legacy config ID or a containerd-store OCI
+index/manifest ID only when every traversed descriptor hash binds that exact
+linux/amd64 runtime config. CI and the existing target use the containerd image
+store. Config, manifest and index are distinct identities; see
+[Docker containerd image store](https://docs.docker.com/engine/storage/containerd/)
+and [containerd content flow](https://containerd.io/docs/2.4/content-flow/).
