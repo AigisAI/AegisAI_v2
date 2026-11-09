@@ -1,0 +1,11 @@
+[Unit]
+Description=Check AegisAI operational alerts every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=60s
+RandomizedDelaySec=5s
+Unit=aegisai-slack-alerts.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,26 @@
+[Unit]
+Description=AegisAI bounded Slack operational alerts
+After=docker.service aegisai-host-metrics.service
+ConditionPathExists=/opt/aegisai/alerts/webhook.json
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/python3 -E -s -B /opt/aegisai/alerts/code/slack_alerts.py
+TimeoutStartSec=45
+MemoryMax=64M
+CPUQuota=10%
+TasksMax=16
+UMask=0077
+NoNewPrivileges=true
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/opt/aegisai/alerts
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+

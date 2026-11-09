@@ -1,0 +1,28 @@
+name: Private Slack Alert Safety
+
+on:
+  pull_request:
+    branches: [dev, main, feat/342-private-observability]
+    paths:
+      - deploy/aws-ec2/alerts/**
+      - .github/workflows/private-alerts.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  alert-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify receiver, CSRF, secret handoff and notification deduplication
+        run: python3 deploy/aws-ec2/alerts/test_alerts.py
+      - name: Validate service definitions and file scope
+        run: |
+          systemd-analyze verify deploy/aws-ec2/alerts/aegisai-slack-alerts.service deploy/aws-ec2/alerts/aegisai-slack-alerts.timer
+          git diff --check
