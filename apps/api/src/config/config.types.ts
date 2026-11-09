@@ -11,6 +11,17 @@ export interface EnvironmentVariables {
   CSRF_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
+  GITHUB_LOGIN_KIND: 'oauth-app' | 'github-app';
+  GITHUB_APP_ID: string;
+  GITHUB_APP_SLUG: string;
+  GITHUB_APP_PRIVATE_KEY_PATH: string;
+  GITHUB_APP_PRIVATE_KEY_PEM: string;
+  AWS_REGION: string;
+  AWS_AUTH_SECRET_ARN: string;
+  AWS_SCM_SECRET_ARN: string;
+  EVIDENCE_BUCKET: string;
+  EVIDENCE_KMS_KEY_ARN: string;
+  ALLOWED_GITHUB_USER_IDS: string;
   GITLAB_CLIENT_ID: string;
   GITLAB_CLIENT_SECRET: string;
   APP_URL: string;
@@ -18,6 +29,10 @@ export interface EnvironmentVariables {
   SESSION_COOKIE_NAME: string;
   CSRF_COOKIE_NAME: string;
   COOKIE_DOMAIN: string;
+  COOKIE_SECURE: BooleanString;
+  SESSION_TTL_SECONDS: number;
+  THROTTLE_TTL_MS: number;
+  THROTTLE_LIMIT: number;
   TOKEN_ENCRYPTION_KEY: string;
   ANALYSIS_CLIENT_MODE: AnalysisClientMode;
   AI_SERVER_URL: string;

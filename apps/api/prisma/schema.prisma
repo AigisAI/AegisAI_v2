@@ -76,6 +76,28 @@ enum ArchitectureScanStatus {
   CANCELED
 }
 
+enum DispatchJobStatus {
+  PENDING
+  LEASED
+  SUCCEEDED
+  DEAD
+  CANCELED
+}
+
+enum DispatchFailureCode {
+  UPSTREAM_UNAVAILABLE
+  LEASE_EXPIRED
+  DISPATCH_REJECTED
+}
+
+enum FetchCapabilityStatus {
+  ISSUED
+  CONSUMING
+  CONSUMED
+  REVOKED
+  EXPIRED
+}
+
 enum IsolationClass {
   STANDARD
   HARDENED
@@ -125,6 +147,11 @@ enum SuppressionReason {
   POLICY
 }
 
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String?  @unique
@@ -133,19 +160,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  oauthTokens    OAuthToken[]
-  connectedRepos ConnectedRepo[]
-  reports        Report[]
+  oauthIdentities UserOAuthIdentity[]
+  connectedRepos  ConnectedRepo[]
+  reports         Report[]
 }
 
-model OAuthToken {
+model UserOAuthIdentity {
   id             String       @id @default(uuid())
   userId         String
   provider       RepoProvider
   providerUserId String
-  accessToken    String
-  refreshToken   String?
-  expiresAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -252,12 +276,12 @@ model Report {
 }
 
 model Tenant {
-  id        String   @id @default(uuid())
-  slug      String   @unique
+  id        String       @id @default(uuid())
+  slug      String       @unique
   name      String
-  status    String   @default("ACTIVE")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    TenantStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   integrations       ScmIntegration[]
   repositoryBindings RepositoryBinding[]
@@ -269,6 +293,8 @@ model Tenant {
   waivers            Waiver[]
   suppressions       Suppression[]
   auditEvents        AuditEvent[]
+  dispatchJobs       ScanDispatchJob[]
+  fetchCapabilities  ScanFetchCapability[]
 }
 
 model ScmIntegration {
@@ -292,19 +318,19 @@ model ScmIntegration {
 }
 
 model RepositoryBinding {
-  id               String       @id @default(uuid())
+  id               String   @id @default(uuid())
   tenantId         String
   scmIntegrationId String
   providerRepoId   String
   fullName         String
   defaultBranch    String
-  isPrivate        Boolean      @default(false)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  isPrivate        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration    ScmIntegration @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
-  scanRequests   ScanRequest[]
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration  ScmIntegration @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
+  scanRequests ScanRequest[]
 
   @@unique([tenantId, scmIntegrationId, providerRepoId])
   @@index([tenantId])
@@ -328,19 +354,78 @@ model ScanRequest {
   completedAt         DateTime?
   updatedAt           DateTime               @updatedAt
 
-  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  repositoryBinding RepositoryBinding  @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
+  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding   @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
   scannerRuns       ScannerRun[]
   findings          NormalizedFinding[]
   evidencePacks     EvidencePack[]
   policyDecisions   PolicyDecision[]
   suppressions      Suppression[]
   auditEvents       AuditEvent[]
+  dispatchJob       ScanDispatchJob?
+  fetchCapabilities ScanFetchCapability[]
 
+  @@unique([tenantId, id])
   @@index([tenantId])
   @@index([repositoryBindingId])
   @@index([status])
   @@index([createdAt(sort: Desc)])
+}
+
+model ScanDispatchJob {
+  id             String               @id @default(uuid())
+  tenantId       String
+  scanRequestId  String               @unique
+  status         DispatchJobStatus    @default(PENDING)
+  attempts       Int                  @default(0)
+  availableAt    DateTime             @default(now())
+  leaseToken     String?              @unique
+  leasedBy       String?
+  leaseExpiresAt DateTime?
+  lastErrorCode  DispatchFailureCode?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest @relation(fields: [tenantId, scanRequestId], references: [tenantId, id], onDelete: Cascade)
+  fetchCapabilities ScanFetchCapability[]
+
+  @@unique([tenantId, scanRequestId])
+  @@unique([tenantId, id, scanRequestId])
+  @@index([status, availableAt, createdAt])
+  @@index([tenantId, status])
+  @@index([status, leaseExpiresAt])
+}
+
+model ScanBrokerRuntime {
+  id        String   @id
+  epoch     String
+  updatedAt DateTime @updatedAt
+}
+
+model ScanFetchCapability {
+  id               String                @id @default(uuid())
+  tenantId         String
+  scanRequestId    String
+  dispatchJobId    String
+  issuerEpoch      String
+  fingerprint      String                @unique
+  leaseFingerprint String
+  claimFingerprint String?
+  status           FetchCapabilityStatus @default(ISSUED)
+  issuedAt         DateTime              @default(now())
+  expiresAt        DateTime
+  finishedAt       DateTime?
+  updatedAt        DateTime              @updatedAt
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest     @relation(fields: [tenantId, scanRequestId], references: [tenantId, id], onDelete: Cascade)
+  dispatchJob ScanDispatchJob @relation(fields: [tenantId, dispatchJobId, scanRequestId], references: [tenantId, id, scanRequestId], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@index([issuerEpoch, status])
+  @@index([dispatchJobId, status])
+  @@index([status, expiresAt])
 }
 
 model ScannerRun {
@@ -358,9 +443,9 @@ model ScannerRun {
   completedAt          DateTime?
   updatedAt            DateTime         @updatedAt
 
-  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  scanRequest  ScanRequest         @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
-  findings     NormalizedFinding[]
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest         @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  findings    NormalizedFinding[]
 
   @@index([tenantId])
   @@index([scanRequestId])
@@ -377,7 +462,7 @@ model NormalizedFinding {
   severity          Severity
   scannerProvenance ScannerKind
   filePath          String
-  lineStart         Int
+  lineStart         Int?
   lineEnd           Int?
   status            NormalizedFindingStatus @default(OPEN)
   metadata          Json?
@@ -406,6 +491,7 @@ model EvidencePack {
   expiresAt      DateTime
   byteSize       Int
   redacted       Boolean                @default(true)
+  deletedAt      DateTime?
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
@@ -445,15 +531,15 @@ model PolicyDecision {
 }
 
 model Waiver {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   tenantId       String
   owner          String
   reason         String
   scope          String
   expiresAt      DateTime
   lastReviewedAt DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 

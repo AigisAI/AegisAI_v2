@@ -12,3 +12,5 @@ apps/api/.env
 apps/web/.env
 apps/api/tmp/
 *.log
+/output/
+**/__pycache__/

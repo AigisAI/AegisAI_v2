@@ -1,4 +1,4 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
 
 import { AppService } from "./app.service";
 
@@ -9,5 +9,15 @@ export class AppController {
   @Get()
   getBootstrapState() {
     return this.appService.getBootstrapState();
+  }
+
+  @Get("health")
+  getHealth() {
+    const health = this.appService.getHealth();
+    if (health.status !== "ok") {
+      throw new ServiceUnavailableException(health);
+    }
+
+    return health;
   }
 }

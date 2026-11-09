@@ -1,0 +1,13 @@
+[Unit]
+Description=Create and verify AegisAI KMS-encrypted off-host database backup
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock --no-fork /run/aegisai-database-backup.lock /usr/bin/python3 -E -s -B /opt/aegisai/operator/backup-current-data.py
+TimeoutStartSec=10min
+UMask=0077
+LimitCORE=0
+MemoryMax=768M
+CPUQuota=25%

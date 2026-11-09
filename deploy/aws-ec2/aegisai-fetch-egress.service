@@ -1,0 +1,16 @@
+[Unit]
+Description=AegisAI dedicated fetch UID egress restrictions
+Wants=network-online.target
+After=network-online.target
+Before=aegisai-scan-supervisor.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 -B /opt/aegisai/operator/configure-fetch-egress.py
+TimeoutStartSec=45
+UMask=0077
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

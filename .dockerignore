@@ -11,7 +11,14 @@ coverage
 *.log
 .env
 .env.local
+**/.env
+**/.env.*
 apps/api/.env
 apps/web/.env
 deploy/oracle/.env
 docs/superpowers
+tmp
+output
+.playwright-cli
+*.pem
+*.key

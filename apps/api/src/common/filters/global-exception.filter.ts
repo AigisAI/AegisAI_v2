@@ -41,17 +41,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
 
     if (normalized.status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      const path = (request.originalUrl || request.url || "/").split(/[?#]/, 1)[0];
+      const sensitive = /^\/api\/(auth|token-broker)(\/|$)/.test(path);
       this.logger.error(
         JSON.stringify({
           marker: "runtime_error",
           status: normalized.status,
           errorCode: normalized.errorCode,
           method: request.method,
-          path: request.originalUrl || request.url || "/",
-          message: normalized.message,
+          path,
+          message: sensitive ? "Sensitive operation failed." : normalized.message,
           timestamp
         }),
-        exception instanceof Error ? exception.stack : undefined
+        !sensitive && exception instanceof Error ? exception.stack : undefined
       );
     }
 
@@ -118,6 +120,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         return "CONFLICT";
       case HttpStatus.TOO_MANY_REQUESTS:
         return "TOO_MANY_REQUESTS";
+      case HttpStatus.SERVICE_UNAVAILABLE:
+        return "SERVICE_UNAVAILABLE";
       default:
         return "INTERNAL_ERROR";
     }

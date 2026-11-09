@@ -7,14 +7,14 @@
     "node": ">=20.0.0 <23.0.0"
   },
   "scripts": {
-    "build": "corepack pnpm -r build",
-    "dev": "corepack pnpm --parallel --filter @aegisai/api --filter @aegisai/web dev",
-    "dev:api": "corepack pnpm --filter @aegisai/api dev",
-    "dev:web": "corepack pnpm --filter @aegisai/web dev",
+    "build": "corepack pnpm --filter @aegisai/shared build && corepack pnpm --filter @aegisai/api --filter @aegisai/web build",
+    "dev": "corepack pnpm --filter @aegisai/shared build && corepack pnpm --parallel --filter @aegisai/api --filter @aegisai/web dev",
+    "dev:api": "corepack pnpm --filter @aegisai/shared build && corepack pnpm --filter @aegisai/api dev",
+    "dev:web": "corepack pnpm --filter @aegisai/shared build && corepack pnpm --filter @aegisai/web dev",
     "lint": "corepack pnpm -r lint",
     "test": "corepack pnpm -r test && node --test test/github-actions/*.test.mjs",
     "test:ci-workflow": "node --test test/github-actions/*.test.mjs",
-    "typecheck": "corepack pnpm -r typecheck"
+    "typecheck": "corepack pnpm --filter @aegisai/shared build && corepack pnpm --filter @aegisai/api --filter @aegisai/web typecheck"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

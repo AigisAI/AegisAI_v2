@@ -19,6 +19,10 @@ test('ci workflow exists and runs the expected workspace verification commands',
   assert.match(workflow, /corepack pnpm install --frozen-lockfile/);
   assert.match(workflow, /corepack pnpm lint/);
   assert.match(workflow, /corepack pnpm test/);
+  assert.match(workflow, /postgres:16-alpine/);
+  assert.match(workflow, /corepack pnpm --filter @aegisai\/api prisma:validate/);
+  assert.match(workflow, /corepack pnpm --filter @aegisai\/api prisma:migrate:deploy/);
   assert.match(workflow, /corepack pnpm typecheck/);
   assert.match(workflow, /corepack pnpm build/);
+  assert.match(workflow, /node --test test\/runtime\/\*\.test\.mjs/);
 });

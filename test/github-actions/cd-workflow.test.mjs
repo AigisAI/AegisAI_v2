@@ -39,7 +39,7 @@ test('cd workflow and oracle deployment files exist and describe the GHCR deploy
   assert.match(workflow, /scp /);
   assert.match(workflow, /ssh /);
 
-  assert.match(apiDockerfile, /FROM node:20-alpine/);
+  assert.match(apiDockerfile, /FROM node:22-alpine/);
   assert.match(apiDockerfile, /corepack pnpm --filter @aegisai\/api build/);
   assert.match(apiDockerfile, /CMD \["node", "apps\/api\/dist\/main\.js"\]/);
 

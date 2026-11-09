@@ -7,6 +7,11 @@
 Represents an isolated customer boundary. Every long-lived production architecture entity
 is tenant-attributed.
 
+### UserOAuthIdentity
+
+Stores only user-to-provider identity metadata. OAuth access and refresh tokens are
+transient during login and are not persisted in this model.
+
 ### ScmIntegration
 
 Represents a GitHub App installation or GitLab Cloud integration. It records provider,
@@ -30,11 +35,19 @@ Represents one deterministic scanner execution attempt such as Opengrep, Trivy, 
 Raw artifacts are referenced by short-lived object keys, not stored as long-lived database
 content.
 
+The in-memory mock contract adds optional `planning` metadata for manifest-driven runs:
+scan profile, detected languages/surfaces, and Java advisory eligibility. No-manifest
+runs omit it. This increment does not add persistence columns or store repository paths.
+
 ### NormalizedFinding
 
 Represents a customer-visible finding after scanner output normalization and correlation.
 It records scanner provenance, severity, file path, line range, status, and optional policy
 decision relationship.
+
+Manifest-driven Java mock findings additionally carry `language: JAVA` and
+`scanProfile: JAVA_DETAILED`. Common-only runs emit no mock Java finding. The narrowed
+`JavaDetailedFinding` contract is the only finding type accepted by AI advisory types.
 
 ### EvidencePack
 
@@ -76,3 +89,5 @@ model version use.
 - Evidence object keys must include `tenantId` and `scanRequestId`.
 - AI advisory requests must not include SCM credentials or full repository payloads.
 - Token Broker requests must be scan-scoped and must not persist token values.
+- User-facing tenant filters must be derived from the authenticated session rather than
+  caller-provided tenant identifiers.

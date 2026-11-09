@@ -1,0 +1,25 @@
+[Unit]
+Description=AegisAI singleton private deterministic scan supervisor
+Requires=aegisai-private-broker.service aegisai-fetch-egress.service aegisai-scan-containerd.service
+After=aegisai-private-broker.service aegisai-fetch-egress.service aegisai-scan-containerd.service
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=root
+Group=aegisai-fetch
+UMask=0077
+ExecStartPre=/usr/bin/install -d -o root -g aegisai-fetch -m 0710 /run/aegisai-scan-jobs
+ExecStart=/usr/bin/python3 -E -s -B /opt/aegisai/scanner/supervisor.py
+Restart=on-failure
+RestartSec=10
+KillMode=control-group
+TimeoutStopSec=150
+LimitCORE=0
+MemoryMax=512M
+CPUQuota=50%
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

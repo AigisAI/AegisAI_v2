@@ -9,6 +9,7 @@ on:
     branches:
       - dev
       - main
+      - release/336-private-java-runtime
 
 permissions:
   contents: read
@@ -22,6 +23,23 @@ jobs:
     name: Verify Workspace
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: aegisai_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aegisai_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aegisai_ci
 
     steps:
       - name: Checkout repository
@@ -36,7 +54,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -46,14 +64,38 @@ jobs:
       - name: Install dependencies
         run: corepack pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client explicitly
+        run: corepack pnpm --filter @aegisai/api prisma:generate
+
       - name: Lint workspace
         run: corepack pnpm lint
 
       - name: Run tests
         run: corepack pnpm test
 
+      - name: Validate and apply Prisma migrations
+        run: |
+          corepack pnpm --filter @aegisai/api prisma:validate
+          corepack pnpm --filter @aegisai/api prisma:migrate:deploy
+
       - name: Typecheck workspace
         run: corepack pnpm typecheck
 
       - name: Build workspace
         run: corepack pnpm build
+
+      - name: Verify clean API runtime layout
+        run: node --test test/runtime/*.test.mjs
+
+      - name: Verify durable production boundaries against PostgreSQL
+        env:
+          PERSISTENCE_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aegisai_ci
+        run: node --test --test-concurrency=1 test/persistence/*.test.mjs
+
+      - name: Verify native private worker channel in Linux runtime image
+        run: |
+          docker build -f apps/api/Dockerfile -t aegisai-api:ci-worker .
+          docker run --rm --user 0 --network host --memory 768m --cpus 1 --pids-limit 128 \
+            -e PERSISTENCE_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/aegisai_ci \
+            -v "$PWD/test/worker-native:/app/test/worker-native:ro" \
+            aegisai-api:ci-worker node --test --test-concurrency=1 /app/test/worker-native/*.test.mjs

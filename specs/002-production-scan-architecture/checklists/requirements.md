@@ -14,3 +14,7 @@
 - [x] AI advisory-only guardrail is explicit
 - [x] Evidence TTL and tenant attribution are explicit
 - [x] Validation commands are listed
+- [x] Java detailed and common-only manifest classification is covered by shared and API tests
+- [x] No-manifest mock behavior is preserved without implicit AI eligibility
+- [x] Manifest path limits, forbidden content, immutable retries, and tenant isolation are tested
+- [x] AI request types require Java detailed findings and redacted evidence metadata

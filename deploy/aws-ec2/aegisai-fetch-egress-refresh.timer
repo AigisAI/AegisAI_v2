@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh AegisAI fetch egress addresses every six hours
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=6h
+RandomizedDelaySec=5min
+Persistent=true
+Unit=aegisai-fetch-egress-refresh.service
+
+[Install]
+WantedBy=timers.target

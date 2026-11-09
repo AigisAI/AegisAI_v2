@@ -6,6 +6,11 @@ import { GlobalExceptionFilter } from "../../src/common/filters/global-exception
 
 @Controller()
 class ThrowingController {
+  @Get("auth/boom")
+  throwSensitiveError() {
+    throw new Error("sensitive-code-must-not-log");
+  }
+
   @Get("boom")
   throwUnhandledError() {
     throw new Error("boom");
@@ -94,5 +99,15 @@ describe("GlobalExceptionFilter (e2e)", () => {
       });
 
     expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("excludes OAuth query credentials and sensitive exception stacks from logs", async () => {
+    await request(app.getHttpServer()).get("/api/auth/boom?code=oauth-code-must-not-log&state=state-value").expect(500);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    const output = JSON.stringify(errorSpy.mock.calls);
+    expect(output).toContain('/api/auth/boom');
+    for (const secret of ["oauth-code-must-not-log", "state-value", "sensitive-code-must-not-log"]) {
+      expect(output).not.toContain(secret);
+    }
   });
 });

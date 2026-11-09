@@ -30,4 +30,13 @@ export class ConfigService {
   isDevelopment(): boolean {
     return this.get('NODE_ENV') === 'development';
   }
+
+  isTest(): boolean {
+    return this.get('NODE_ENV') === 'test';
+  }
+
+  isGithubIdentityAllowed(providerUserId: string): boolean {
+    if (!this.isProduction()) return true;
+    return (this.getOptional('ALLOWED_GITHUB_USER_IDS') || '').split(',').includes(providerUserId);
+  }
 }

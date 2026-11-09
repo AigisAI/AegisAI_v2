@@ -48,6 +48,44 @@
 - [x] T026 Add tenant-scoped scanner run, finding, and evidence read endpoints
 - [x] T027 Add e2e coverage for Scan Plane mock pipeline behavior and leakage guardrails
 
+## Phase 7A: Pre-Phase-8 Architecture Hardening
+
+- [x] T037 Fix the shared-package boundary and enforce a clean `dist/main.js` API runtime layout
+- [x] T038 Add Redis-backed sessions, CSRF protection, throttling, security headers, and health checks
+- [x] T039 Derive tenant context from authenticated sessions and protect internal plane endpoints separately
+- [x] T040 Add DTO validation, collision-safe idempotency, immutable scan scope checks, and bounded token/evidence TTLs
+- [x] T041 Add deployable production-model migrations and remove long-lived OAuth token storage
+- [x] T042 Initialize frontend auth from a credentialed same-origin API session
+- [x] T043 Apply migrations and verify clean runtime output in CI; add deploy dependency health gates
+- [x] T044 Add negative e2e coverage for CSRF, authentication, tenant isolation, internal auth, and scope mismatch
+
+## Phase 8: Java-First Scan Planning Metadata
+
+- [x] T028 Add shared language, scan profile, repository manifest, and Java-only AI advisory eligibility contract types
+- [x] T029 Add deterministic repository manifest classification helpers for Java, common non-Java surfaces, and unknown files
+- [x] T030 Extend the mock Scan Plane run input with optional repository manifest metadata while preserving existing no-manifest behavior
+- [x] T031 Mark Java manifest runs as `JAVA_DETAILED` across Opengrep, Trivy, and Syft scanner metadata
+- [x] T032 Keep non-Java-only manifest runs on `COMMON` scanner metadata without Java normalized findings or AI advisory eligibility
+- [x] T033 Restrict AI advisory request contracts to Java detailed normalized findings plus reduced redacted evidence metadata
+- [x] T034 Add contract tests for Java profile classification, common-only classification, and AI request leakage guardrails
+- [x] T035 Add Scan Plane e2e coverage for legacy no-manifest behavior, Java detailed behavior, and non-Java common-only behavior
+- [x] T036 Re-run the quickstart validation path after the metadata slice is implemented
+
+### Validation checkpoint 2026-09-08
+
+- Lint, typecheck, and workspace build passed.
+- Full default test command passed: shared 8, API 41, web 61, workflow checks 3.
+- Runtime validation passed: 2 checks covering build layout and compiled API health.
+- Prisma schema validation passed with a command-local placeholder `DATABASE_URL`;
+  no database connection or migration application was performed locally. Clean database
+  migration application remains an additional CI gate.
+- The first focused API run timed out during setup. A diagnostic rerun passed, and the
+  final full run passed with default timeout settings and no test-runner changes.
+- Entrypoints still target this feature package, Oracle remains dev/demo only, and the
+  legacy MVP package is preserved.
+- T001-T044 are complete for this skeleton milestone. This is not production go-live;
+  deferred runtime work below requires a follow-on implementation package.
+
 ## Deferred
 
 - [ ] Implement GitHub App installation runtime
@@ -57,3 +95,4 @@
 - [ ] Implement evidence object storage and TTL deletion
 - [ ] Implement policy-as-code engine
 - [ ] Implement AI detector/planner inference
+- [ ] Implement language-specific SAST profiles beyond Java

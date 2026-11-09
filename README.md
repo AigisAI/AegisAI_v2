@@ -1,242 +1,85 @@
 # AegisAI
 
-AegisAI is a hosted security scan SaaS for GitHub Cloud and GitLab Cloud repositories.
-It is being re-baselined around a production architecture that treats customer
-repositories as untrusted input, keeps scanner output deterministic-first, and uses AI
-only as advisory metadata over reduced evidence.
+GitHub 저장소의 Java 코드와 선언된 의존성을 검사하는 보안 분석 서비스다.
+현재는 기존 AWS EC2 한 대에서 Tailscale을 통한 비공개 실배포로 운영하며,
+실제 Opengrep·Trivy·Syft 실행과 결과 저장을 확인했다. AI는 꺼져 있다.
 
-## What This Is
+[실배포 문서](./docs/production/README.md)에서 현재 구조, 검증 근거,
+운영·복구 절차와 남은 작업을 확인할 수 있다.
 
-AegisAI connects to customer repositories through GitHub App installations or GitLab
-Cloud integrations, plans security scans, normalizes scanner results, applies policy
-decisions, and exposes results through dashboards and PR/MR comments.
+## 현재 범위
 
-The product direction is defined by
-`C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`. That DOCX is the
-highest-priority product, platform, security, and operations baseline for the current
-production architecture work.
+- 허용된 GitHub 사용자와 선택된 조직 저장소만 접근한다.
+- 로그인 전용 App과 저장소 접근 App을 분리한다.
+- PostgreSQL 작업 큐, 임대·fencing, 제한된 재시도로 작업을 처리한다.
+- 별도 containerd/gVisor에서 네트워크 없이 고정 분석 도구를 실행한다.
+- 정규화 결과와 LIMITED coverage를 저장하고 S3/KMS 근거를 7일 보관한다.
+- Secrets Manager 기반 부팅, 실제 저장소 분석, 소스 정리, 백업 복원과 재시작을 확인했다.
 
-## Current Baseline
+실제 동시 분석은 한 건이며 단일 호스트 장애가 전체 서비스에 영향을 준다.
+Kubernetes·HPA·Blue/Green·Canary·AWS 자동 CD·일반 다중 테넌트·HA는 미적용이다.
+GitLab, 공개 웹훅, PR 댓글, PDF 및 AI 추론도 현재 운영 범위가 아니다.
+AI의 최종 목표는 자체 로컬 모델이며 임시 API 또는 AI 비활성 상태를 허용한다.
+미구현 기능이나 예시 데이터를 운영 기능으로 표시하지 않는다.
 
-The active implementation target is
-[`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/).
-Start from its
-[`quickstart.md`](./specs/002-production-scan-architecture/quickstart.md), not from
-`tasks.md` directly.
+## 문서와 실행 순서
 
-Current milestone scope:
+1. [AGENTS.md](./AGENTS.md)
+2. [002 canonical quickstart](./specs/002-production-scan-architecture/quickstart.md)
+3. [003 production runtime quickstart](./specs/003-production-runtime/quickstart.md)
+4. [실배포 아키텍처](./docs/production/architecture.md)
+5. [배포 검증 기록](./docs/production/release-evidence.md)
+6. [운영 절차](./deploy/aws-ec2/OPERATIONS.md)
+7. [남은 작업](./docs/production/remaining-work.md)
 
-- Repository entrypoints aligned to `002-production-scan-architecture`
-- Shared production scan architecture contracts in `packages/shared`
-- Tenant-attributed Prisma skeleton entities
-- Control Plane API skeletons for integrations, repository bindings, and scan requests
-- Token Broker and audit skeletons that avoid token persistence
-- Mock Scan Plane pipeline skeleton for deterministic scanner metadata, normalized
-  findings, and short-lived evidence metadata
+002는 아키텍처 기준과 진입점이며 실제 런타임 구현은 더 좁은 003이 담당한다.
+제품 기준 원본은 Desktop의 Security Scan SaaS Final Specification.docx다.
+[001](./specs/001-aegisai-mvp-foundation/)과 [spec 2.2](./spec%202.2.md)는
+역사적 MVP 참고 자료다. 우선순위와 보안 경계는 AGENTS.md를 따른다.
 
-Still deferred:
+## 저장소 구성
 
-- Real Opengrep, Trivy, and Syft execution
-- MicroVM, Kubernetes, or equivalent scan sandbox provisioning
-- Runtime policy engine implementation
-- Evidence object-storage TTL enforcement
-- Private model inference
-- Auto-fix PR/MR creation
-- Customer code execution, package installation, or repository builds
+| 위치 | 역할 |
+| --- | --- |
+| apps/api | NestJS API, Prisma, 인증·연동·작업·결과·데이터 보호 |
+| apps/web | React/Vite 화면, 실제 런타임과 개발 화면 분리 |
+| apps/scanner | 소스 게이트웨이, 감독 프로세스, 고정 분석 도구 실행 |
+| packages/shared | 공유 API 계약과 타입 |
+| deploy/aws-ec2 | 현재 AWS 운영·배포·복구 자산 |
+| deploy/oracle | 기존 Oracle dev/demo 경로, AWS 실배포와 별도 |
+| specs/002-production-scan-architecture | canonical 아키텍처 기준 |
+| specs/003-production-runtime | 실제 런타임 명세와 작업 현황 |
+| docs/production | 현재 운영 설명과 증거·후속 작업 |
+| docs/reports | 날짜별 구현 기록과 이전 설계 |
+| test | 전용 PostgreSQL·네이티브 권한·런타임·workflow 검증 |
 
-The next active slice is Java-first scan planning metadata: Java repositories receive the
-first detailed SAST profile, while non-Java repositories remain on common scanner coverage
-until separate language profiles are specified.
+## 개발과 검증
 
-## Architecture At A Glance
-
-Production is modeled as four explicit trust boundaries:
-
-- **Control Plane**: tenant lifecycle, auth, SCM integration registry, webhook intake,
-  scan planning, token broker, policy decisions, comment dispatch, and dashboard APIs
-- **Scan Plane**: scan-scoped repository fetch, scanner adapter execution, normalization,
-  correlation, evidence pack construction, and scanner-run lineage
-- **AI Plane**: advisory-only triage, explanation, prioritization, and remediation planning
-  over reduced, redacted, policy-classified evidence
-- **Data and Security Plane**: tenant-aware persistence, object storage with TTL, audit
-  logs, KMS, secrets manager, queues, and service identity boundaries
-
-The production topology assumes separated Control, Scan, AI, and Data/Security planes on
-Kubernetes or equivalent isolation. The current Oracle VPS path is dev/demo only.
-
-## Non-Negotiable Guardrails
-
-- Do not add direct source upload.
-- Do not execute customer code.
-- Do not install packages or build customer repositories.
-- Keep user authentication separate from SCM integration credentials.
-- Model GitHub Cloud repository access through GitHub App installation flows.
-- Model GitLab Cloud repository access through scoped integration and webhook flows.
-- Keep repo-read, comment-write, and integration-admin authority separated.
-- Do not give the Scan Plane comment-write or integration-admin credentials.
-- Do not send full repositories, raw unbounded scanner output, or SCM credentials to AI.
-- Do not let AI create authoritative findings, override scanner output, or override policy.
-- Keep shared API contracts in `packages/shared`.
-- Preserve sessions, CSRF protection, throttling, health checks, and critical integration
-  tests for user-facing API work.
-
-## Repository Map
-
-```text
-apps/api/       NestJS API, Prisma schema, Control Plane skeletons, e2e tests
-apps/web/       React/Vite frontend
-packages/shared/ Shared TypeScript contracts and helpers
-specs/002-production-scan-architecture/
-                Active production architecture package
-specs/001-aegisai-mvp-foundation/
-                Legacy MVP package retained for historical reference
-deploy/oracle/  Oracle VPS dev/demo deployment assets
-docs/           Workflow conventions, reports, and implementation support docs
-test/           Repository-level test support such as GitHub Actions workflow tests
-```
-
-## Start Here
-
-For development or agent work, use this path:
-
-```text
-AGENTS.md -> specs/002-production-scan-architecture/quickstart.md -> active feature docs
-```
-
-[`AGENTS.md`](./AGENTS.md) defines repository entry rules and guardrails.
-[`quickstart.md`](./specs/002-production-scan-architecture/quickstart.md) defines the
-canonical read order, execution flow, and completion validation path.
-
-When working on a GitHub-style branch, set the active Spec Kit feature if helper scripts
-need it:
+Node.js 요구 범위는 package.json을 따르며 운영 이미지는 Node.js 22다.
+Corepack/pnpm workspace를 사용한다. 환경 예시는 [.env.example](./.env.example),
+[API 예시](./apps/api/.env.example), [웹 예시](./apps/web/.env.example)에 있다.
 
 ```powershell
-$env:SPECIFY_FEATURE = "002-production-scan-architecture"
-```
-
-## Local Development
-
-Requirements:
-
-- Node.js `>=20.0.0 <23.0.0`
-- Corepack-enabled pnpm workspace, currently `pnpm@10.0.0`
-- PostgreSQL and Redis when exercising runtime paths that need them
-
-Install dependencies:
-
-```powershell
-corepack enable
 corepack pnpm install
-```
-
-Run both API and web development servers:
-
-```powershell
 corepack pnpm dev
 ```
 
-Run one app at a time:
+개발 서버가 운영 SCM 권한이나 운영 DB를 자동으로 사용한다고 가정하지 않는다.
+원문 업로드, 고객 코드 실행·빌드·패키지 설치는 금지한다.
+공유 계약은 packages/shared에 두고 세션·CSRF·throttling을 유지한다.
 
-```powershell
-corepack pnpm dev:api
-corepack pnpm dev:web
-```
+전체 코드 릴리스의 기본 검증은 002 quickstart의 여섯 명령이다.
+003의 SQL/native 추가 검증은 반드시 전용 검증 DB에서 수행한다.
+중간 화면 수정은 영향 범위 검증을 적용하고, 문서 수정은 링크·사실·변경 범위를
+확인한다. 운영 스캔이나 복원을 문서 변경 때문에 반복하지 않는다.
 
-Prisma helpers:
+현재 배포는 미커밋 변경을 포함한 소스 스냅샷이다. 로컬·대상 이미지 검증과
+GitHub hosted CI 성공은 다르다. 기존 GitHub Actions CD의 Oracle 대상 설정을
+AWS 자동 배포 성과로 소개하지 않는다.
 
-```powershell
-corepack pnpm --filter @aegisai/api prisma:generate
-corepack pnpm --filter @aegisai/api prisma:validate
-corepack pnpm --filter @aegisai/api prisma:migrate:dev
-```
+## GitHub 규칙
 
-Environment examples live in [`.env.example`](./.env.example),
-[`apps/web/.env.example`](./apps/web/.env.example), and
-[`deploy/oracle/.env.example`](./deploy/oracle/.env.example).
-
-## Validation
-
-The quickstart completion gate uses this validation path:
-
-```powershell
-corepack pnpm lint
-corepack pnpm test
-corepack pnpm typecheck
-corepack pnpm build
-corepack pnpm --filter @aegisai/api prisma:validate
-```
-
-Before claiming the production architecture milestone complete, also confirm:
-
-- `AGENTS.md`, `README.md`, and
-  [`docs/github-conventions.md`](./docs/github-conventions.md) point to
-  `002-production-scan-architecture`
-- Oracle VPS wording remains dev/demo only
-- [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) remains
-  available as the legacy MVP baseline
-
-## Deployment Position
-
-The Oracle Cloud VPS deployment path is retained for dev/demo operation and compatibility
-with existing workflow settings. It is not the production topology for the production scan
-architecture.
-
-Dev/demo CD summary:
-
-- Registry: `ghcr.io`
-- Trigger: `main` push or manual `workflow_dispatch`
-- Runtime: Docker Compose on the Oracle VPS
-- Application rollout: `api` and `web` containers
-- Observability collector: Grafana Alloy on the Oracle VPS
-- Observability surface: Grafana Cloud dashboards, Explore, and alerting
-
-Required GitHub secrets for dev/demo CD:
-
-- `ORACLE_VPS_HOST`
-- `ORACLE_VPS_USER`
-- `ORACLE_VPS_SSH_PRIVATE_KEY`
-- `ORACLE_VPS_KNOWN_HOSTS`
-- `ORACLE_DEPLOY_PATH`
-- `GHCR_USERNAME`
-- `GHCR_READ_TOKEN`
-- `TEAMS_WEBHOOK_URL`
-
-The deploy job may still target the `production` GitHub environment for compatibility
-with existing workflow settings, but architecturally this path is dev/demo. For the full
-operator flow, follow [`deploy/oracle/BOOTSTRAP.md`](./deploy/oracle/BOOTSTRAP.md).
-
-## GitHub Workflow
-
-The repository follows the convention in
-[`docs/github-conventions.md`](./docs/github-conventions.md):
-
-- `dev` is the default integration branch
-- `main` is the release-ready branch
-- Feature branches use `feat/<issue-number>-<short-feature>`
-- Related branch prefixes use the same issue-number pattern: `fix/`, `refactor/`,
-  `release/`, and `hotfix/`
-- Commit messages use `<type>: <description>`
-- Issue titles and PR titles should match
-
-## Documentation Precedence
-
-When documents disagree, resolve intent in this order:
-
-1. [`AGENTS.md`](./AGENTS.md)
-2. [`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md)
-3. `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`
-4. [`specs/002-production-scan-architecture/`](./specs/002-production-scan-architecture/)
-5. [`docs/github-conventions.md`](./docs/github-conventions.md)
-6. Legacy references:
-   [`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) and
-   [`spec 2.2.md`](./spec%202.2.md)
-
-If implementation-ready docs and baseline docs diverge on scope or acceptance, stop and
-resolve the mismatch before coding.
-
-## Legacy Baseline
-
-[`specs/001-aegisai-mvp-foundation/`](./specs/001-aegisai-mvp-foundation/) and
-[`spec 2.2.md`](./spec%202.2.md) remain available as the legacy MVP baseline. They are
-historical references, not the default implementation target while
-`002-production-scan-architecture` is active.
+[GitHub conventions](./docs/github-conventions.md)를 따른다.
+dev는 통합, main은 릴리스 준비 브랜치다. feat/fix/refactor/release/hotfix에
+이슈 번호를 붙이고 커밋은 type: description 형식으로 작성한다.
+이슈와 PR 제목은 동일하게 유지한다. 관련 없는 사용자 변경은 한꺼번에 커밋하지 않는다.

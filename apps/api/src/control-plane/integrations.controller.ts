@@ -1,35 +1,41 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/common";
 
+import { CurrentTenant } from "../common/security/current-tenant.decorator";
+import { SessionAuthGuard } from "../common/security/session-auth.guard";
+import { PendingRuntimeGuard } from "../common/security/pending-runtime.guard";
+import { InstallIntegrationDto, IntegrationIdParamDto } from "./control-plane.dto";
 import { ControlPlaneService } from "./control-plane.service";
-import type { InstallIntegrationInput } from "./control-plane.types";
 
 @Controller("integrations")
+@UseGuards(SessionAuthGuard)
 export class IntegrationsController {
   constructor(private readonly controlPlaneService: ControlPlaneService) {}
 
   @Post("github/install")
-  installGithub(@Body() body: InstallIntegrationInput) {
-    return this.controlPlaneService.installIntegration(body, {
+  @UseGuards(PendingRuntimeGuard)
+  installGithub(@CurrentTenant() tenantId: string, @Body() body: InstallIntegrationDto) {
+    return this.controlPlaneService.installIntegration({ ...body, tenantId }, {
       provider: "GITHUB",
       integrationType: "GITHUB_APP"
     });
   }
 
   @Post("gitlab/install")
-  installGitlab(@Body() body: InstallIntegrationInput) {
-    return this.controlPlaneService.installIntegration(body, {
+  @UseGuards(PendingRuntimeGuard)
+  installGitlab(@CurrentTenant() tenantId: string, @Body() body: InstallIntegrationDto) {
+    return this.controlPlaneService.installIntegration({ ...body, tenantId }, {
       provider: "GITLAB",
       integrationType: "GITLAB_CLOUD_INTEGRATION"
     });
   }
 
   @Get()
-  list(@Query("tenantId") tenantId: string) {
+  list(@CurrentTenant() tenantId: string) {
     return this.controlPlaneService.listIntegrations(tenantId);
   }
 
   @Delete(":integrationId")
-  remove(@Param("integrationId") integrationId: string) {
-    return this.controlPlaneService.removeIntegration(integrationId);
+  remove(@CurrentTenant() tenantId: string, @Param() params: IntegrationIdParamDto) {
+    return this.controlPlaneService.removeIntegration(tenantId, params.integrationId);
   }
 }

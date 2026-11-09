@@ -2,6 +2,11 @@
 
 ## Goal
 
+Production implementation now continues in the narrower
+[`003-production-runtime`](../003-production-runtime/quickstart.md) package,
+authorized on 2026-11-07. Read this baseline first, then follow that package for
+runtime changes. Its release gates supersede this skeleton milestone's completion.
+
 Use this feature package as the canonical implementation entry point for the
 production-grade Security Scan SaaS architecture. The source product and platform baseline
 is `C:\Users\권태욱\Desktop\Security Scan SaaS Final Specification.docx`.
@@ -60,15 +65,22 @@ Production is modeled as four separated trust boundaries:
    scanner runs, findings, evidence, policy decisions, waivers, suppressions, and audits.
 4. Add interface-level backend tests for Token Broker, Scan Plane, AI advisory, evidence,
    and policy boundaries.
-5. Keep real Opengrep/Trivy/Syft execution, microVM/Kubernetes provisioning, and model
+5. Harden the skeleton with session-derived tenant context, CSRF and throttling, internal
+   service authentication, bounded TTLs, deployable migrations, and clean-build smoke tests.
+6. Add bounded repository path metadata classification for Java detailed and common-only
+   mock scan profiles, preserving requests without a manifest and narrowing AI contracts
+   to Java detailed findings with redacted evidence metadata.
+7. Keep real Opengrep/Trivy/Syft execution, microVM/Kubernetes provisioning, and model
    inference for later implementation packages.
 
 ## Deployment Position
 
-Oracle VPS and Docker Compose deployment files remain supported for dev/demo operation.
-They are not the production target for this architecture. Production readiness is defined
-around separated Control, Scan, AI, and Data/Security planes on Kubernetes or equivalent
-isolation.
+Oracle VPS and its legacy Docker Compose deployment remain dev/demo only.
+The baseline production target separates Control, Scan, AI and Data/Security planes
+on Kubernetes or equivalent isolation. The narrower 003 package records the user's
+explicit single-EC2 private deployment deviation; it uses app Compose plus independent
+containerd/gVisor and does not certify separate-node/general-service compliance.
+Current facts and evidence are indexed in [production docs](../../docs/production/README.md).
 
 ## Spec Kit Compatibility
 
@@ -96,4 +108,12 @@ corepack pnpm test
 corepack pnpm typecheck
 corepack pnpm build
 corepack pnpm --filter @aegisai/api prisma:validate
+node --test test/runtime/*.test.mjs
 ```
+
+CI additionally applies every Prisma migration to a clean PostgreSQL 16 service before the
+build is accepted.
+
+For documentation-only maintenance, validate links, factual claims against existing
+evidence and the changed-file scope. Do not repeat code suites or live scans/restores
+when implementation has not changed. This exception does not relax code release gates.

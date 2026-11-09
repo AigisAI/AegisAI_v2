@@ -1,5 +1,13 @@
 # AegisAI Agent Start Guide
 
+Production runtime continuation: after the canonical 002 entrypoint, follow
+[`003-production-runtime/quickstart.md`](./specs/003-production-runtime/quickstart.md)
+for the user-authorized narrower runtime feature. Preserve all product guardrails.
+
+Current deployment documentation: [docs/production/README.md](./docs/production/README.md).
+Use it for operating facts and acceptance evidence after following the mandatory
+entry path; dated reports may describe earlier incomplete slices.
+
 ## Mandatory Start Path
 
 1. Open the canonical execution entry point: [`specs/002-production-scan-architecture/quickstart.md`](./specs/002-production-scan-architecture/quickstart.md)
@@ -70,13 +78,6 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 - AI is advisory-only and must not create authoritative findings or override policy.
 - Shared API contracts belong in `packages/shared`.
 - Sessions, CSRF protection, throttling, health checks, and critical integration tests are required.
-
-## Frontend Design Tooling
-
-- When frontend design work is needed, use Stitch as the default design tool instead of designing screens manually inside the coding workflow.
-- When using Stitch for frontend design generation, default supported model selection to `GEMINI_3_1_PRO`.
-- Treat `GEMINI_3_FLASH` as opt-in only when the user explicitly asks for a faster draft-first pass.
-- This rule applies to Stitch MCP or SDK flows that expose a `modelId` or equivalent model selector.
 
 ## Completion Gate
 

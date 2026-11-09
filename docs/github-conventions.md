@@ -1,5 +1,13 @@
 # GitHub Conventions
 
+After entering through 002, production runtime changes follow the narrower
+[`003-production-runtime`](../specs/003-production-runtime/quickstart.md) package.
+
+Current deployment provenance and uncompleted release hygiene are tracked in
+[production documentation](./production/README.md). A dirty deployed snapshot is
+not the same as a reviewed commit or successful hosted CI run. Do not stage unrelated
+user changes together merely to produce a clean release label.
+
 ## Workflow
 
 This repository uses Git-flow with GitHub-based issue and PR operations.

@@ -8,7 +8,8 @@
 
 - **Delivery Class**: Production architecture re-baseline, first implementation milestone
 - **In Scope**: Documentation entrypoint migration, shared contracts, Prisma skeleton
-  entities, and interface-level boundaries for Control, Scan, AI, and Data/Security planes
+  entities, interface-level boundaries for Control, Scan, AI, and Data/Security planes,
+  and Java-first mock scan planning from bounded repository path metadata
 - **Out of Scope**: Real Opengrep/Trivy/Syft runtime execution, microVM/Kubernetes
   provisioning, private model inference, auto-fix PR/MR creation, customer code execution,
   package install/build, dynamic testing, GitHub Enterprise Server, self-managed GitLab,
@@ -56,12 +57,19 @@ decision, waiver, suppression, and audit event.
   principals.
 - **FR-007**: Scan identity MUST include tenant, repository binding, scan lane, target ref,
   fixed commit SHA, policy version, and scanner-set version.
-- **FR-008**: The Scan Plane MUST be represented as deterministic scanner-first and scanner-first.
+- **FR-008**: The Scan Plane MUST be represented as deterministic scanner-first.
 - **FR-009**: AI MUST be advisory-only and MUST NOT create authoritative findings, access
   SCM credentials, receive full repository input, or override policy decisions.
 - **FR-010**: Evidence metadata MUST be tenant and scan scoped with explicit TTL.
 - **FR-011**: Oracle VPS/Docker Compose deployment MUST be documented as dev/demo, not the
   production topology.
+- **FR-012**: Optional repository manifest metadata MUST contain bounded relative paths
+  only. Java signals select `JAVA_DETAILED`; non-Java, unknown, and empty manifests select
+  `COMMON` without Java findings or AI eligibility. Omitted manifests preserve legacy
+  mock output without asserting a discovered language or AI eligibility.
+- **FR-013**: AI advisory contracts MUST accept only Java detailed normalized findings
+  and redacted evidence metadata. Planning eligibility is not permission for inference
+  and does not override tenant, repository, or evidence policy.
 
 ## Guardrails
 

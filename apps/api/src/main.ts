@@ -1,15 +1,18 @@
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 
-import { AppModule } from "./app.module";
-import { GlobalExceptionFilter } from "./common/filters/global-exception.filter";
+import { loadRuntimeSecrets } from "./data-security/runtime-secrets";
+import { configureApplication } from "./bootstrap/configure-application";
+import { ConfigService } from "./config/config.service";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  await loadRuntimeSecrets("api");
+  const {AppModule}=await import("./app.module");
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.setGlobalPrefix("api");
-  app.useGlobalFilters(app.get(GlobalExceptionFilter));
+  await configureApplication(app);
 
-  await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
+  await app.listen(app.get(ConfigService).get("PORT"));
 }
 
-void bootstrap();
+void bootstrap().catch(()=>{process.stderr.write("RUNTIME_START_FAILED\n");process.exit(1);});

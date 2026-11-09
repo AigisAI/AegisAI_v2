@@ -1,5 +1,21 @@
 export const sharedPackageName = "@aegisai/shared";
 
+import type { RepositoryLanguage, ScanProfile, ScanPlanningMetadata } from "./types/scan-planning";
+export * from "./types/scan-planning";
+export * from "./types/github-installation";
+export * from "./types/scan-dispatch";
+export * from "./types/fetch-capability";
+export * from "./types/private-worker";
+export * from "./types/runtime-results";
+
+export * from "./types/common";
+export * from "./types/auth";
+export * from "./types/repo";
+export * from "./types/scan";
+export * from "./types/vulnerability";
+export * from "./types/dashboard";
+export * from "./types/report";
+
 export const PRODUCTION_SCAN_ARCHITECTURE_FEATURE_ID = "002-production-scan-architecture";
 
 export const SCAN_LANES = ["FAST", "DEEP"] as const;
@@ -28,6 +44,9 @@ export type DataClassification = (typeof DATA_CLASSIFICATIONS)[number];
 
 export const POLICY_ACTIONS = ["DASHBOARD_ONLY", "COMMENT", "WARN", "TICKET", "BLOCK"] as const;
 export type PolicyAction = (typeof POLICY_ACTIONS)[number];
+
+export const MAX_SCAN_CREDENTIAL_TTL_SECONDS = 600;
+export const MAX_EVIDENCE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface Tenant {
   id: string;
@@ -92,6 +111,7 @@ export interface ScannerRun {
   scannerVersion: string;
   status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "TIMED_OUT" | "SKIPPED";
   rawArtifactObjectKey?: string;
+  planning?: ScanPlanningMetadata;
 }
 
 export interface NormalizedFinding {
@@ -107,6 +127,14 @@ export interface NormalizedFinding {
   lineEnd?: number;
   status: FindingStatus;
   policyDecisionId?: string;
+  language?: RepositoryLanguage;
+  scanProfile?: ScanProfile;
+}
+
+export interface JavaDetailedFinding extends NormalizedFinding {
+  language: "JAVA";
+  scanProfile: "JAVA_DETAILED";
+  scannerProvenance: Exclude<ScannerKind, "MOCK">;
 }
 
 export interface EvidencePack {
@@ -179,8 +207,8 @@ export interface AiAdvisoryRequest {
   tenantId: string;
   scanRequestId: string;
   findingId: string;
-  normalizedFinding: NormalizedFinding;
-  evidence: EvidencePack;
+  normalizedFinding: JavaDetailedFinding;
+  evidence: EvidencePack & { redacted: true };
   modelVersion: string;
 }
 
@@ -204,7 +232,7 @@ export interface EvidencePackMetadataInput {
 }
 
 export function buildCanonicalScanKey(input: CanonicalScanKeyInput): CanonicalScanKey {
-  return [
+  const components = [
     input.tenantId,
     input.repositoryBindingId,
     input.lane,
@@ -212,7 +240,9 @@ export function buildCanonicalScanKey(input: CanonicalScanKeyInput): CanonicalSc
     input.commitSha,
     input.policyVersion,
     input.scannerSetVersion
-  ].join(":");
+  ];
+
+  return `v1:${components.map((component) => encodeURIComponent(component)).join(":")}`;
 }
 
 export function shouldEscalateIsolation(input: IsolationEscalationInput): boolean {
@@ -228,12 +258,21 @@ export function shouldEscalateIsolation(input: IsolationEscalationInput): boolea
 }
 
 export function createEvidencePackMetadata(input: EvidencePackMetadataInput): EvidencePack {
+  const now = Date.now();
+  const expiry = Date.parse(input.expiresAt);
+
+  if (!Number.isFinite(expiry) || expiry <= now || expiry - now > MAX_EVIDENCE_TTL_MS) {
+    throw new RangeError("Evidence expiry must be within the next seven days.");
+  }
+
   return {
     id: input.id,
     tenantId: input.tenantId,
     scanRequestId: input.scanRequestId,
     classification: "SHORT_LIVED_EVIDENCE",
-    objectKey: `${input.tenantId}/${input.scanRequestId}/evidence/${input.id}.json`,
+    objectKey: [input.tenantId, input.scanRequestId, "evidence", `${input.id}.json`]
+      .map((component) => encodeURIComponent(component))
+      .join("/"),
     expiresAt: input.expiresAt,
     byteSize: input.byteSize,
     redacted: input.redacted

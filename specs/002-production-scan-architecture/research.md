@@ -41,3 +41,16 @@
 - **Rationale**: Production requires separated Control, Scan, AI, and Data/Security planes
   with stronger-than-pod scan isolation.
 - **Rejected**: Treating the current Docker Compose path as production v1.
+
+## Decision 6: Add Java-first detailed scan planning before broader language profiles
+
+- **Decision**: The next scan planning increment should add Java as the first detailed
+  SAST profile while keeping other detected languages on common scanner coverage only.
+- **Rationale**: The legacy MVP baseline is Java-first, and the DOCX v1 scanner set is
+  Opengrep, Trivy, and Syft. Java-first planning provides a narrow production-aligned
+  path without adding unapproved scanners or customer build execution.
+- **Rejected**: Sending Java code to the AI Plane. AI receives only normalized findings,
+  reduced redacted evidence, language metadata, and scan profile metadata.
+- **Rejected**: Adding language-specific SAST routing for every detected language in the
+  first increment. Non-Java languages should be detected for future expansion but should
+  remain common-only until their own profiles are specified.

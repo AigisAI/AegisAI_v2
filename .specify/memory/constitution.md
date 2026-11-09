@@ -10,6 +10,17 @@ Sync Impact Report
 
 # AegisAI Constitution
 
+## Application context for the production continuation
+
+The original MVP text below is retained as a historical guardrail reference.
+Current entry order and document precedence are defined by AGENTS.md and the 002
+quickstart, followed by the authorized 003 runtime scope and highest-priority DOCX
+product baseline. Legacy mock/default-stack language below is not permission to
+select mock behavior in production or claim a technology absent from the deployed
+runtime. Current scope and explicit deviations are in docs/production/README.md
+and specs/003-production-runtime/single-instance-decision.md. This context note
+does not certify the broader baseline or silently replace its security requirements.
+
 ## Core Principles
 
 ### I. MVP Scope Discipline
@@ -27,6 +38,9 @@ by the NestJS backend through GitHub or GitLab APIs and passed to analysis via
 optional integration path, and the default Phase 1 behavior MUST remain compatible
 with `MockAnalysisApiClient`. Language support MUST start with Java only and expand
 through `ILanguageHandler` implementations rather than hard-coded language branches.
+Any non-mock analysis path MUST keep rule-based SAST execution, AI refinement, and
+remediation generation behind the same interface boundary, and raw tool output MUST
+stay internal until it is normalized into the platform finding schema.
 
 ### III. Typed Monorepo Contracts
 `apps/api`, `apps/web`, and `packages/shared` MUST use TypeScript, with shared API

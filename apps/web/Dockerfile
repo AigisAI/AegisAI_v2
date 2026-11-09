@@ -1,4 +1,6 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
+ARG VITE_PRODUCTION_RUNTIME=false
+ENV VITE_PRODUCTION_RUNTIME=${VITE_PRODUCTION_RUNTIME}
 RUN corepack enable
 WORKDIR /app
 COPY . .
