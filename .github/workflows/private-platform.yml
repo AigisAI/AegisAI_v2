@@ -33,9 +33,9 @@ jobs:
         run: |
           version=$(python3 -c 'import json;print(json.load(open("deploy/aws-ec2/platform/toolchain.json"))["terraformVersion"])')
           terraform=/opt/aegisai/platform/tools/$version/terraform
-          "$terraform" -chdir=deploy/aws-ec2/platform/terraform init -backend=false -input=false -lockfile=readonly
-          "$terraform" -chdir=deploy/aws-ec2/platform/terraform fmt -check
-          "$terraform" -chdir=deploy/aws-ec2/platform/terraform validate
+          sudo "$terraform" -chdir=deploy/aws-ec2/platform/terraform init -backend=false -input=false -lockfile=readonly
+          sudo "$terraform" -chdir=deploy/aws-ec2/platform/terraform fmt -check
+          sudo "$terraform" -chdir=deploy/aws-ec2/platform/terraform validate
       - name: Reject tracked private state
         run: |
           python3 - <<'PY'
