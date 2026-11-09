@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash } from 'node:crypto';
 
 import {
@@ -36,7 +37,16 @@ import { createEndToEndQualificationAssets } from '../../../../tools/sast-qualif
 const SIGNATURE_BYTES = Buffer.alloc(64).toString('base64');
 const T054_MANIFEST = createEndToEndQualificationAssets().manifest;
 
+// Fixed-clock unit fixtures remain deterministic. CLI fixtures can construct a
+// fresh signed chain without changing the real verifier's wall clock or limits.
+const fixtureClock = new AsyncLocalStorage();
+function fixtureInstant(value) {
+  return new Date(Date.parse(value) + (fixtureClock.getStore() ?? 0)).toISOString();
+}
 export function createT055QualificationBundle(options = {}) {
+  return fixtureClock.run(options.timeOffsetMs ?? 0, () => buildT055QualificationBundle(options));
+}
+function buildT055QualificationBundle(options) {
   const signatureFactory = options.signatureFactory ?? signature;
   const t054 = createT054Prerequisite(
     signatureFactory,
@@ -45,7 +55,7 @@ export function createT055QualificationBundle(options = {}) {
   const manifest = options.manifest ?? buildSastSupplyChainRollbackQualificationManifest(
     {
       revision: '1.0.0',
-      publishedAt: '2026-08-19T20:00:40.000Z',
+      publishedAt: fixtureInstant('2026-08-19T20:00:40.000Z'),
       ownerRef: digestRef(
         'qualification-owner://aegisai/t055/supply-chain-platform',
         't055-owner'
@@ -74,7 +84,7 @@ export function createT055QualificationBundle(options = {}) {
       t054.artifactVerificationSet.verificationSetDigest,
     t054PlanId: t054.plan.planId,
     t054PlanDigest: t054.plan.planDigest,
-    verifiedAt: '2026-08-19T20:01:00.000Z',
+    verifiedAt: fixtureInstant('2026-08-19T20:01:00.000Z'),
     verifierRef: digestRef(
       'qualification-verifier://aegisai/t055-entry',
       't055-entry-verifier'
@@ -122,7 +132,7 @@ export function createT055QualificationBundle(options = {}) {
       t054Plan: t054.plan,
       entryAttestation,
       rollbackLedgerHeadAttestations,
-      plannedAt: '2026-08-19T20:01:30.000Z',
+      plannedAt: fixtureInstant('2026-08-19T20:01:30.000Z'),
       verifySignature: () => true
     },
     digest
@@ -130,7 +140,7 @@ export function createT055QualificationBundle(options = {}) {
   assert.ok(plan);
 
   const approvals = SAST_END_TO_END_QUALIFICATION_APPROVAL_ROLES.map((role) =>
-    signatureFactory(role, plan.planDigest, '2026-08-19T20:02:00.000Z', 't055')
+    signatureFactory(role, plan.planDigest, fixtureInstant('2026-08-19T20:02:00.000Z'), 't055')
   );
   const signedReceipts = manifest.cells.map((cell, index) =>
     signedT055Receipt(
@@ -154,7 +164,7 @@ export function createT055QualificationBundle(options = {}) {
     plan,
     approvals,
     signedReceipts,
-    trustedEvaluatedAt: '2026-08-19T21:00:00.000Z',
+    trustedEvaluatedAt: fixtureInstant('2026-08-19T21:00:00.000Z'),
     verifySignature: () => true
   };
   return {
@@ -194,7 +204,7 @@ function createRollbackLedgerHeadAttestations(
       ledgerHeadSequence: 100 + index,
       ledgerHeadRef:
         `rollback-ledger-head://aegisai/t055/${profileId.toLowerCase()}/${ledgerHeadDigest}`,
-      observedAt: '2026-08-19T20:01:10.000Z'
+      observedAt: fixtureInstant('2026-08-19T20:01:10.000Z')
     };
     const attestationDigest = digest(
       stableJson({
@@ -237,7 +247,7 @@ function createT054Prerequisite(signatureFactory, trustPolicyText) {
     t053ResultId: t053.result.resultId,
     t053ResultDigest: t053.result.resultDigest,
     t053DependencySetDigest: t053.result.dependencySetDigest,
-    verifiedAt: '2026-08-19T20:00:05.000Z',
+    verifiedAt: fixtureInstant('2026-08-19T20:00:05.000Z'),
     verifierRef: digestRef(
       'qualification-verifier://aegisai/t054-entry',
       't054-entry-verifier'
@@ -270,7 +280,7 @@ function createT054Prerequisite(signatureFactory, trustPolicyText) {
   const verificationInput = {
     dependencySet,
     verifications,
-    verifiedAt: '2026-08-19T20:00:10.000Z',
+    verifiedAt: fixtureInstant('2026-08-19T20:00:10.000Z'),
     verifierRef: digestRef(
       'supply-chain-verifier://aegisai/t054',
       't054-artifact-verifier'
@@ -311,7 +321,7 @@ function createT054Prerequisite(signatureFactory, trustPolicyText) {
       artifactVerificationSet,
       t053Result: t053.result,
       entryAttestation,
-      plannedAt: '2026-08-19T20:00:20.000Z',
+      plannedAt: fixtureInstant('2026-08-19T20:00:20.000Z'),
       verifySignature: () => true
     },
     digest
@@ -332,8 +342,8 @@ function createT053Pass() {
       revision: '1.0.0',
       providerId,
       providerAdapterRef,
-      validFrom: '2026-08-19T20:00:00.000Z',
-      validUntil: '2026-08-20T20:00:00.000Z',
+      validFrom: fixtureInstant('2026-08-19T20:00:00.000Z'),
+      validUntil: fixtureInstant('2026-08-20T20:00:00.000Z'),
       artifacts: SAST_ISOLATED_QUALIFICATION_ARTIFACT_KINDS.map((kind) => {
         const artifactDigest = digest(`t053-artifact:${kind}`);
         return {
@@ -369,7 +379,7 @@ function createT053Pass() {
     missingCellCount: 0,
     missingCellSetDigest: digest('[]'),
     failureReasons: [],
-    evaluatedAt: '2026-08-19T20:00:00.000Z',
+    evaluatedAt: fixtureInstant('2026-08-19T20:00:00.000Z'),
     t053Complete: true,
     t054EntryAuthorized: true,
     findingAuthority: false,
@@ -417,7 +427,7 @@ function createT054DependencySet(
       const artifactSignature = signatureFactory(
         'SUPPLY_CHAIN_AUTHORITY',
         artifactDigest,
-        '2026-08-19T20:00:01.000Z',
+        fixtureInstant('2026-08-19T20:00:01.000Z'),
         't054'
       );
       const signatureEnvelopeDigest = digest(stableJson(artifactSignature));
@@ -434,7 +444,7 @@ function createT054DependencySet(
           `source-snapshot://aegisai/t054/${artifactKey.toLowerCase()}/${sourceDigest}`,
         sourceDigest,
         materialsDigest: digest(`materials:${artifactKey}`),
-        generatedAt: '2026-08-19T20:00:02.000Z'
+        generatedAt: fixtureInstant('2026-08-19T20:00:02.000Z')
       };
       const provenanceDigest = digest(
         stableJson({
@@ -485,8 +495,8 @@ function createT054DependencySet(
       revision: '1.0.0',
       providerId: t053DependencySet.providerId,
       providerAdapterRef: t053DependencySet.providerAdapterRef,
-      validFrom: '2026-08-19T20:00:00.000Z',
-      validUntil: '2026-08-20T20:00:00.000Z',
+      validFrom: fixtureInstant('2026-08-19T20:00:00.000Z'),
+      validUntil: fixtureInstant('2026-08-20T20:00:00.000Z'),
       candidateScannerSetDigest,
       baselineScannerSetDigest,
       performanceHardwareClassRef: performanceCell.hardwareClassRef,
@@ -568,7 +578,7 @@ function createT054PassedResult(t053Result, dependencySet, plan) {
     validReceiptCount: 3_462,
     measurements,
     failureReasons: [],
-    evaluatedAt: '2026-08-19T20:00:30.000Z',
+    evaluatedAt: fixtureInstant('2026-08-19T20:00:30.000Z'),
     t055EntryAuthorized: true,
     findingAuthority: false,
     policyAuthority: false,
@@ -928,9 +938,9 @@ function applyRollbackObservation(input, cell, dependencySet, plan) {
 function receiptTimes(cell) {
   if (!cell.drillKind.startsWith('ROLLBACK_')) {
     return {
-      startedAt: '2026-08-19T20:03:00.000Z',
-      completedAt: '2026-08-19T20:03:01.000Z',
-      cleanupCompletedAt: '2026-08-19T20:03:02.000Z'
+      startedAt: fixtureInstant('2026-08-19T20:03:00.000Z'),
+      completedAt: fixtureInstant('2026-08-19T20:03:01.000Z'),
+      cleanupCompletedAt: fixtureInstant('2026-08-19T20:03:02.000Z')
     };
   }
   const profiles = ['JAVA_FAST_V1', 'JAVA_DEEP_V1', 'COMMON_DEEP_V1'];
@@ -945,7 +955,7 @@ function receiptTimes(cell) {
   const phaseIndex = sequence.indexOf(cell.drillKind);
   assert.notEqual(profileIndex, -1);
   assert.notEqual(phaseIndex, -1);
-  const startedAtMs = Date.parse('2026-08-19T20:05:00.000Z') +
+  const startedAtMs = Date.parse(fixtureInstant('2026-08-19T20:05:00.000Z')) +
     profileIndex * 30_000 + phaseIndex * 4_000;
   return {
     startedAt: new Date(startedAtMs).toISOString(),
