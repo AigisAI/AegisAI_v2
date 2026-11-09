@@ -1,0 +1,36 @@
+logging {
+  level = "warn"
+}
+otelcol.receiver.otlp "private" {
+  http { endpoint = "0.0.0.0:4318" }
+  output {
+    traces = [otelcol.processor.batch.private.input]
+    logs = [otelcol.processor.batch.private.input]
+  }
+}
+otelcol.processor.batch "private" {
+  timeout = "2s"
+  send_batch_size = 32
+  send_batch_max_size = 64
+  output {
+    traces = [otelcol.exporter.otlphttp.tempo.input]
+    logs = [otelcol.exporter.otlphttp.loki.input]
+  }
+}
+otelcol.exporter.otlphttp "tempo" {
+  client { endpoint = "http://tempo:4318" }
+  sending_queue { queue_size = 64 }
+  retry_on_failure { max_elapsed_time = "10s" }
+}
+otelcol.exporter.otlphttp "loki" {
+  client { endpoint = "http://loki:3100/otlp" }
+  sending_queue { queue_size = 64 }
+  retry_on_failure { max_elapsed_time = "10s" }
+}
+loki.source.file "host" {
+  targets = [{ __path__ = "/host-logs/status.jsonl", job = "aegisai-host" }]
+  forward_to = [loki.write.private.receiver]
+}
+loki.write "private" {
+  endpoint { url = "http://loki:3100/loki/api/v1/push" }
+}

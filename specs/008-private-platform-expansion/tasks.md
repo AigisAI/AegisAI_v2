@@ -29,3 +29,14 @@ isolated restored-state no-op plan passed. Runtime IAM state-object read is deni
 No app deployment, new compute or cloud configuration mutation occurred.
 H1 remains partial: full reconstruction, remaining resources and snapshot
 retention automation are not verified/complete. G/H requirements remain open.
+
+## H4 delivery checkpoint, 2026-11-09
+
+Owner approved existing root volume 30->50GiB, without another instance. The
+scoped Terraform plan rejected unrelated attributes, applied only that size
+change (plus the provider's null->false userdata-replacement default), and its
+confirmation was NO_CHANGES. ext4 was expanded online; no reboot or app stop.
+Pinned hidden Grafana/Loki/Prometheus/Alloy/Tempo startup, direct identity-spoof
+rejection and actual Prometheus self-scrape passed. API session-derived Viewer
+auth and bounded telemetry tests passed locally. No primary app replacement,
+Grafana ingress, real app trace correlation or external alert proof yet.

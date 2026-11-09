@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { OBSERVABILITY_PROXY_HEADERS } from "@aegisai/shared/private-runtime";
+import { Body, Controller, Get, Param, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import type { Response } from "express";
 import { EvidenceAccessService } from "../data-security/evidence-access.service";
 import { Throttle } from "@nestjs/throttler";
@@ -20,6 +21,15 @@ export class CreateRuntimeScanDto {
 @UseGuards(SessionAuthGuard)
 export class RuntimeController {
   constructor(private readonly runtime:RuntimeApiService,private readonly catalog:RuntimeCatalogService,private readonly control:ControlPlaneService,private readonly evidence:EvidenceAccessService) {}
+  @Get("observability-auth")
+  @Throttle({default:{limit:300,ttl:60_000}})
+  observabilityIdentity(@Req() request:AuthenticatedRequest,@Res() response:Response):void {
+    const id=request.auth!.providerUserId;
+    if(!/^[0-9]{1,20}$/.test(id)) throw new UnauthorizedException();
+    response.setHeader(OBSERVABILITY_PROXY_HEADERS.user,'github-'+id);
+    response.setHeader(OBSERVABILITY_PROXY_HEADERS.role,'Viewer');
+    response.status(204).send();
+  }
   @Get("status") status() {return this.catalog.read();}
   @Get("repositories") repositories(@CurrentTenant() tenantId:string) {return this.control.listRepositoryBindings(tenantId);}
   @Get("scans") list(@CurrentTenant() tenantId:string) {return this.runtime.list(tenantId);}

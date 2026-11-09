@@ -1,0 +1,32 @@
+[Unit]
+Description=AegisAI bounded private host metrics
+After=docker.service
+Requires=docker.service
+ConditionPathExists=/opt/aegisai/observability/config/compose.json
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 -E -s -B /opt/aegisai/observability/host_exporter.py
+Restart=on-failure
+RestartSec=10
+MemoryMax=64M
+CPUQuota=10%
+TasksMax=16
+UMask=0022
+NoNewPrivileges=true
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/opt/aegisai/observability/logs
+RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
+IPAddressDeny=any
+IPAddressAllow=172.29.240.0/24
+
+[Install]
+WantedBy=multi-user.target

@@ -26,7 +26,16 @@ export RELEASE_ID="$release" RUNTIME_ENV_FILE="$root/shared/runtime-public.env"
 set -a
 . "$RUNTIME_ENV_FILE"
 set +a
-docker compose -f deploy/aws-ec2/compose.yaml config --quiet
+# Observability is opt-in; validate the external bridge before disrupting services.
+compose() {
+  if [ -f "$root/shared/observability.override.yaml" ]; then
+    docker network inspect aegisai-observability >/dev/null
+    docker compose -f deploy/aws-ec2/compose.yaml -f "$root/shared/observability.override.yaml" "$@"
+  else
+    docker compose -f deploy/aws-ec2/compose.yaml "$@"
+  fi
+}
+compose config --quiet
 if [ "$validation" = prebuilt ]; then
   python3 - "${4:?verified candidate manifest required}" "$release" <<'PYVERIFY'
 import json,subprocess,sys
@@ -39,7 +48,7 @@ for key in ('api','web'):
     assert actual['Config']['Labels']['org.opencontainers.image.revision']==manifest['sourceCommit']
 PYVERIFY
 else
-docker compose -f deploy/aws-ec2/compose.yaml build api web
+compose build api web
 
 if [ "$validation" = runtime-app ]; then
   docker run --rm -e NODE_ENV=test "aegisai-api:$release" \
@@ -102,11 +111,11 @@ gzip "$backup"
 docker exec aegisai-ec2-demo-postgres-1 psql -U aegisai -d aegisai -Atc \
   'SELECT count(*) FROM "_prisma_migrations" WHERE finished_at IS NOT NULL' \
   > "$root/backups/pre-$release.migrations"
-docker compose -f deploy/aws-ec2/compose.yaml run --rm api node apps/api/dist/data-security/migrate-main.js
-docker compose -f deploy/aws-ec2/compose.yaml up -d --no-deps --wait --wait-timeout 180 api web
+compose run --rm api node apps/api/dist/data-security/migrate-main.js
+compose up -d --no-deps --wait --wait-timeout 180 api web
 curl --fail --silent --show-error http://127.0.0.1:8080/healthz
 curl --fail --silent --show-error http://127.0.0.1:8080/api/health
-docker compose -f deploy/aws-ec2/compose.yaml ps
+compose ps
 # A successful full replacement supersedes any separately released frontend.
 rm -f "$root/shared/web-release.override.yaml" "$root/operator/web-release.json"
 printf '%s\n' "$release" > "$root/shared/candidate-release"

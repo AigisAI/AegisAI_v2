@@ -1,0 +1,38 @@
+name: Private Observability Configuration
+
+on:
+  pull_request:
+    branches: [dev, main, feat/338-private-ec2-integration, feat/340-private-platform-expansion]
+    paths:
+      - deploy/aws-ec2/observability/**
+      - .github/workflows/private-observability.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-observability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vendor-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate exact vendor images and syntax
+        run: sudo python3 -E -s -B deploy/aws-ec2/observability/prepare.py prepare
+      - name: Verify isolated backend startup and auth denial
+        run: |
+          sudo python3 -E -s -B deploy/aws-ec2/observability/prepare.py start
+          sudo python3 -E -s -B deploy/aws-ec2/observability/verify_stack.py
+      - name: Backend failure detail
+        if: failure()
+        run: sudo docker compose -f /opt/aegisai/observability/config/compose.json logs --tail=30 || true
+      - name: Clean up disposable backends
+        if: always()
+        run: sudo docker compose -f /opt/aegisai/observability/config/compose.json down || true

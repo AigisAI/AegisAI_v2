@@ -1,0 +1,46 @@
+auth_enabled: false
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+common:
+  path_prefix: /data
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+schema_config:
+  configs:
+    - from: '2026-01-01'
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+storage_config:
+  filesystem:
+    directory: /data/chunks
+compactor:
+  working_directory: /data/compactor
+  retention_enabled: true
+  retention_delete_delay: 10m
+  delete_request_store: filesystem
+limits_config:
+  retention_period: 24h
+  ingestion_rate_mb: 1
+  ingestion_burst_size_mb: 2
+  max_global_streams_per_user: 100
+  max_line_size: 16384
+  max_query_parallelism: 2
+  split_queries_by_interval: 1h
+  query_timeout: 10s
+chunk_store_config:
+  chunk_cache_config:
+    embedded_cache:
+      enabled: true
+      max_size_mb: 16
+query_range:
+  cache_results: false
+analytics:
+  reporting_enabled: false
