@@ -23,4 +23,3 @@ ProtectKernelModules=true
 ProtectControlGroups=true
 ReadWritePaths=/opt/aegisai/alerts
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
-
