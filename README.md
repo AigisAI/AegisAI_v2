@@ -268,3 +268,12 @@ When documents disagree, resolve intent in this order:
 
 If implementation-ready docs and baseline docs diverge on scope or acceptance, stop and
 resolve the mismatch before coding.
+
+### Private existing-EC2 profile
+
+The user-authorized [007 integration](specs/007-private-ec2-integration/quickstart.md)
+keeps the existing private Java runtime in `apps/private-api`, `apps/private-web`,
+`packages/private-runtime-db` and `packages/shared/private-runtime`. Explicit
+`deploy/aws-ec2` targets use this profile; the canonical API/schema and 006
+qualification gates remain independent. Hosted CI builds immutable candidates
+without deployment. Production continues to run its previous release.

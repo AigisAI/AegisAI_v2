@@ -1,0 +1,60 @@
+{
+  "profile": "private-single-host-v1",
+  "generalQualification": "NOT_QUALIFIED",
+  "ai": "DISABLED",
+  "additionalCompute": false,
+  "admittedGithubUserIds": [
+    "161540124"
+  ],
+  "organizationId": "241095585",
+  "databasePackage": "@aegisai/private-runtime-db",
+  "devBaseline": "3154e31505417e95e1a05c50a5d020e8dba4121d",
+  "sourceCapture": "feb7628b76720a6bb43b4a597431484a6205ce8e",
+  "migrations": [
+    {
+      "name": "20260315215651_init",
+      "sqlSha256": "aecf5f95e3cafde6ed750e4584f5ec0b13a697287443e38d78d3041ebfa821ed",
+      "acceptedAppliedChecksums": [
+        "55828e0925d0800a8684f558d8589c5c8c7ec60a2d6dc5e735046404947a105b",
+        "aecf5f95e3cafde6ed750e4584f5ec0b13a697287443e38d78d3041ebfa821ed"
+      ]
+    },
+    {
+      "name": "20260720000000_production_architecture_hardening",
+      "sqlSha256": "9e0eb7fc84274b57bfac05186e7d37477c6fb7480e9e643575a598ec21de279e",
+      "acceptedAppliedChecksums": [
+        "9e0eb7fc84274b57bfac05186e7d37477c6fb7480e9e643575a598ec21de279e"
+      ]
+    },
+    {
+      "name": "20261107040000_durable_scan_dispatch",
+      "sqlSha256": "d8bedf02a0942e7ab3eb79ce814ef55eee85d43f807efa9da4d15c13114fb0ba",
+      "acceptedAppliedChecksums": [
+        "047176ae11325af4e3f0b4d2b82f9196287ef48117c642f96e9e7ebddb890886",
+        "d8bedf02a0942e7ab3eb79ce814ef55eee85d43f807efa9da4d15c13114fb0ba"
+      ]
+    },
+    {
+      "name": "20261108050000_scan_fetch_capabilities",
+      "sqlSha256": "84afa400a6c9e7e175622c63a7120b33ea8cb4268c9debc4f2dec3a841a1864d",
+      "acceptedAppliedChecksums": [
+        "84afa400a6c9e7e175622c63a7120b33ea8cb4268c9debc4f2dec3a841a1864d",
+        "95a8c4cbad8fd6f820434a4828cc51fd475ecbd8ba679994458b161412c9b065"
+      ]
+    },
+    {
+      "name": "20261108060000_runtime_result_locations",
+      "sqlSha256": "65cf822b05dc2aacf1867b9accbfdef0cff4d185a8fe0f6ee9976aa2d597ef37",
+      "acceptedAppliedChecksums": [
+        "65cf822b05dc2aacf1867b9accbfdef0cff4d185a8fe0f6ee9976aa2d597ef37"
+      ]
+    },
+    {
+      "name": "20261108120000_evidence_expiry_enforcement",
+      "sqlSha256": "38c82d52cc9eea314d06839b6ced2fe3a1b11748a56c675ef3485cb9ec5ea26d",
+      "acceptedAppliedChecksums": [
+        "38c82d52cc9eea314d06839b6ced2fe3a1b11748a56c675ef3485cb9ec5ea26d"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1539 @@
+{
+  "schemaVersion": 1,
+  "purpose": "source capture, not a new deployment",
+  "baseCommit": "a8e51eb26d082fefe420cb150b43815f09fbbcf7",
+  "remoteDevAtReview": "3154e31505417e95e1a05c50a5d020e8dba4121d",
+  "branch": "release/336-private-java-runtime",
+  "issue": 336,
+  "textCheckout": "LF",
+  "liveDeploymentChanged": false,
+  "components": [
+    {
+      "component": "api",
+      "archive": "ec2-runtime-20261108-122119.tar.gz",
+      "archiveSha256": "66e0c49897d81797fcd77d605dd98897dfa8c5f35518d69b59d53614c1c3732e",
+      "files": [
+        {
+          "path": "apps/api/Dockerfile",
+          "archiveMember": "apps/api/Dockerfile",
+          "archiveMemberSha256": "41f9640e66b3e91b1592da430386f9a407a84658f4273b289fdd04e1975bd6ce",
+          "capturedRawSha256": "41f9640e66b3e91b1592da430386f9a407a84658f4273b289fdd04e1975bd6ce",
+          "canonicalLfSha256": "9a496297d8f5f1527b24f7314c586e01c92e7658605d98d79902c0232ce41937",
+          "gitBlobSha1": "cd08fdc9bdf43b6ed5067f3e21165fbd0fac41ec"
+        },
+        {
+          "path": "apps/api/nest-cli.json",
+          "archiveMember": "apps/api/nest-cli.json",
+          "archiveMemberSha256": "6b11a42ddc4dc7efe80dc64fdc8abc2d930e1fe54a058001d2d150bb261dfe7e",
+          "capturedRawSha256": "6b11a42ddc4dc7efe80dc64fdc8abc2d930e1fe54a058001d2d150bb261dfe7e",
+          "canonicalLfSha256": "923a037ebaf2bc590c7ae65359551c6476e30ab79f854a03c29704b7f0817f5c",
+          "gitBlobSha1": "d7214eb5254fcd5bf04e61b906c310a00e9dde0c"
+        },
+        {
+          "path": "apps/api/package.json",
+          "archiveMember": "apps/api/package.json",
+          "archiveMemberSha256": "e35601548f6dc55b9d7198fd766c12da94cdea7baeb6699882ea0340af5aa8af",
+          "capturedRawSha256": "e35601548f6dc55b9d7198fd766c12da94cdea7baeb6699882ea0340af5aa8af",
+          "canonicalLfSha256": "e35601548f6dc55b9d7198fd766c12da94cdea7baeb6699882ea0340af5aa8af",
+          "gitBlobSha1": "33d28eda625ba562480711fb3ed5efb5464ecb31"
+        },
+        {
+          "path": "apps/api/prisma/migrations/20260315215651_init/migration.sql",
+          "archiveMember": "apps/api/prisma/migrations/20260315215651_init/migration.sql",
+          "archiveMemberSha256": "55828e0925d0800a8684f558d8589c5c8c7ec60a2d6dc5e735046404947a105b",
+          "capturedRawSha256": "55828e0925d0800a8684f558d8589c5c8c7ec60a2d6dc5e735046404947a105b",
+          "canonicalLfSha256": "aecf5f95e3cafde6ed750e4584f5ec0b13a697287443e38d78d3041ebfa821ed",
+          "gitBlobSha1": "d4d3e1d42acccee6f543dbe4387368d03f3ea3f7"
+        },
+        {
+          "path": "apps/api/prisma/migrations/20260720000000_production_architecture_hardening/migration.sql",
+          "archiveMember": "apps/api/prisma/migrations/20260720000000_production_architecture_hardening/migration.sql",
+          "archiveMemberSha256": "9e0eb7fc84274b57bfac05186e7d37477c6fb7480e9e643575a598ec21de279e",
+          "capturedRawSha256": "9e0eb7fc84274b57bfac05186e7d37477c6fb7480e9e643575a598ec21de279e",
+          "canonicalLfSha256": "9e0eb7fc84274b57bfac05186e7d37477c6fb7480e9e643575a598ec21de279e",
+          "gitBlobSha1": "bc5963da6db86794e9c0647e35f0326ebf6bbfed"
+        },
+        {
+          "path": "apps/api/prisma/migrations/20261107040000_durable_scan_dispatch/migration.sql",
+          "archiveMember": "apps/api/prisma/migrations/20261107040000_durable_scan_dispatch/migration.sql",
+          "archiveMemberSha256": "047176ae11325af4e3f0b4d2b82f9196287ef48117c642f96e9e7ebddb890886",
+          "capturedRawSha256": "047176ae11325af4e3f0b4d2b82f9196287ef48117c642f96e9e7ebddb890886",
+          "canonicalLfSha256": "d8bedf02a0942e7ab3eb79ce814ef55eee85d43f807efa9da4d15c13114fb0ba",
+          "gitBlobSha1": "6d305fe11b29d221ee137d040290504d3b207bd0"
+        },
+        {
+          "path": "apps/api/prisma/migrations/20261108050000_scan_fetch_capabilities/migration.sql",
+          "archiveMember": "apps/api/prisma/migrations/20261108050000_scan_fetch_capabilities/migration.sql",
+          "archiveMemberSha256": "95a8c4cbad8fd6f820434a4828cc51fd475ecbd8ba679994458b161412c9b065",
+          "capturedRawSha256": "95a8c4cbad8fd6f820434a4828cc51fd475ecbd8ba679994458b161412c9b065",
+          "canonicalLfSha256": "84afa400a6c9e7e175622c63a7120b33ea8cb4268c9debc4f2dec3a841a1864d",
+          "gitBlobSha1": "dd2490cf509a4b11f340a9b81546edb9f1ad54ba"
+        },
+        {
+          "path": "apps/api/prisma/migrations/20261108060000_runtime_result_locations/migration.sql",
+          "archiveMember": "apps/api/prisma/migrations/20261108060000_runtime_result_locations/migration.sql",
+          "archiveMemberSha256": "65cf822b05dc2aacf1867b9accbfdef0cff4d185a8fe0f6ee9976aa2d597ef37",
+          "capturedRawSha256": "65cf822b05dc2aacf1867b9accbfdef0cff4d185a8fe0f6ee9976aa2d597ef37",
+          "canonicalLfSha256": "65cf822b05dc2aacf1867b9accbfdef0cff4d185a8fe0f6ee9976aa2d597ef37",
+          "gitBlobSha1": "a9424501640569ca91ae14cc7d22c3335447dc2e"
+        },
+        {
+          "path": "apps/api/prisma/migrations/20261108120000_evidence_expiry_enforcement/migration.sql",
+          "archiveMember": "apps/api/prisma/migrations/20261108120000_evidence_expiry_enforcement/migration.sql",
+          "archiveMemberSha256": "38c82d52cc9eea314d06839b6ced2fe3a1b11748a56c675ef3485cb9ec5ea26d",
+          "capturedRawSha256": "38c82d52cc9eea314d06839b6ced2fe3a1b11748a56c675ef3485cb9ec5ea26d",
+          "canonicalLfSha256": "38c82d52cc9eea314d06839b6ced2fe3a1b11748a56c675ef3485cb9ec5ea26d",
+          "gitBlobSha1": "11e9c3c1ecf705d6522abaf873dbdfc5c9687db2"
+        },
+        {
+          "path": "apps/api/prisma/migrations/migration_lock.toml",
+          "archiveMember": "apps/api/prisma/migrations/migration_lock.toml",
+          "archiveMemberSha256": "75a48951388ef69ff7e8c9b35239eadf7dc0d14d4fda8c6bde6268dfa0f26d6f",
+          "capturedRawSha256": "75a48951388ef69ff7e8c9b35239eadf7dc0d14d4fda8c6bde6268dfa0f26d6f",
+          "canonicalLfSha256": "02c926acc956ad3eadf33e934c61cc50f498d5e724da0c131d9ec120eb5a44b3",
+          "gitBlobSha1": "85c16b422446f6c47e13e2d0bd04fe461b766e6d"
+        },
+        {
+          "path": "apps/api/prisma/schema.prisma",
+          "archiveMember": "apps/api/prisma/schema.prisma",
+          "archiveMemberSha256": "5167dad26583a044c95b1475e21e958a7291cf18e3e6bbe3f693a134fac22e20",
+          "capturedRawSha256": "5167dad26583a044c95b1475e21e958a7291cf18e3e6bbe3f693a134fac22e20",
+          "canonicalLfSha256": "5167dad26583a044c95b1475e21e958a7291cf18e3e6bbe3f693a134fac22e20",
+          "gitBlobSha1": "8b7995ad51a194b7bcade66501b3505c12ec541b"
+        },
+        {
+          "path": "apps/api/src/app.controller.ts",
+          "archiveMember": "apps/api/src/app.controller.ts",
+          "archiveMemberSha256": "6a777978ddc590cb3ef9ad2f5e30efdc8c1fe742bfe5a71bd7d711bcf954ffdc",
+          "capturedRawSha256": "6a777978ddc590cb3ef9ad2f5e30efdc8c1fe742bfe5a71bd7d711bcf954ffdc",
+          "canonicalLfSha256": "c036e008d0ac7af21a63c8091d370b82c87d59c25d424f87676ae7cd1551eb6d",
+          "gitBlobSha1": "f138318585d88192f4c091aefe82a2033a3e96b3"
+        },
+        {
+          "path": "apps/api/src/app.module.ts",
+          "archiveMember": "apps/api/src/app.module.ts",
+          "archiveMemberSha256": "c05a77585ce6104f567c6e1863d808d96e7ffbbdddc187aeb28be94a605c0fe2",
+          "capturedRawSha256": "c05a77585ce6104f567c6e1863d808d96e7ffbbdddc187aeb28be94a605c0fe2",
+          "canonicalLfSha256": "c05a77585ce6104f567c6e1863d808d96e7ffbbdddc187aeb28be94a605c0fe2",
+          "gitBlobSha1": "e625c09bc92b3ccbb73617cdf9a69c004a4aa3bf"
+        },
+        {
+          "path": "apps/api/src/app.service.ts",
+          "archiveMember": "apps/api/src/app.service.ts",
+          "archiveMemberSha256": "d3f3b7b5292464722b51d4757f0a8f91aa4009b71212a7d34146b80f78a18e53",
+          "capturedRawSha256": "d3f3b7b5292464722b51d4757f0a8f91aa4009b71212a7d34146b80f78a18e53",
+          "canonicalLfSha256": "d3f3b7b5292464722b51d4757f0a8f91aa4009b71212a7d34146b80f78a18e53",
+          "gitBlobSha1": "022d554804d5cb734c6df514c8c422a5a05c67a0"
+        },
+        {
+          "path": "apps/api/src/auth/auth.controller.ts",
+          "archiveMember": "apps/api/src/auth/auth.controller.ts",
+          "archiveMemberSha256": "4fe4ef5ee1c114b6e9a71c9b83347c7a91f937173394dfa2dde6227ddefc19da",
+          "capturedRawSha256": "4fe4ef5ee1c114b6e9a71c9b83347c7a91f937173394dfa2dde6227ddefc19da",
+          "canonicalLfSha256": "4fe4ef5ee1c114b6e9a71c9b83347c7a91f937173394dfa2dde6227ddefc19da",
+          "gitBlobSha1": "c37f982101045ff9c658e69fad7be9c1afd7aedf"
+        },
+        {
+          "path": "apps/api/src/auth/auth.module.ts",
+          "archiveMember": "apps/api/src/auth/auth.module.ts",
+          "archiveMemberSha256": "69a7724cfbdee4860bf86cc818795fb471cd5cd86f112592dcf0b237ba75249b",
+          "capturedRawSha256": "69a7724cfbdee4860bf86cc818795fb471cd5cd86f112592dcf0b237ba75249b",
+          "canonicalLfSha256": "69a7724cfbdee4860bf86cc818795fb471cd5cd86f112592dcf0b237ba75249b",
+          "gitBlobSha1": "27b7d429eb6f5330ce9f0e490dc39d6d10f29daa"
+        },
+        {
+          "path": "apps/api/src/auth/auth.service.ts",
+          "archiveMember": "apps/api/src/auth/auth.service.ts",
+          "archiveMemberSha256": "f43ea4502803e2259ad70e87b09037f3307a2d4bee06e9783bc7b1c868067e35",
+          "capturedRawSha256": "f43ea4502803e2259ad70e87b09037f3307a2d4bee06e9783bc7b1c868067e35",
+          "canonicalLfSha256": "f43ea4502803e2259ad70e87b09037f3307a2d4bee06e9783bc7b1c868067e35",
+          "gitBlobSha1": "a32d6f1f554e5c7a03e48ad39ba98130c0072bb3"
+        },
+        {
+          "path": "apps/api/src/auth/auth.types.ts",
+          "archiveMember": "apps/api/src/auth/auth.types.ts",
+          "archiveMemberSha256": "d755386a2bd5bb01c3fc760be9cbe612fe8753e826379eb322326f39d6d1176a",
+          "capturedRawSha256": "d755386a2bd5bb01c3fc760be9cbe612fe8753e826379eb322326f39d6d1176a",
+          "canonicalLfSha256": "d755386a2bd5bb01c3fc760be9cbe612fe8753e826379eb322326f39d6d1176a",
+          "gitBlobSha1": "8ee68ebf0d9f2b048a0b899691f3d8cb54a926a9"
+        },
+        {
+          "path": "apps/api/src/auth/github-callback-query.dto.ts",
+          "archiveMember": "apps/api/src/auth/github-callback-query.dto.ts",
+          "archiveMemberSha256": "95f0c04916259ef0186905457f4fd9fd8ed1d6e01efae9f26ee03ea3fbcfabce",
+          "capturedRawSha256": "95f0c04916259ef0186905457f4fd9fd8ed1d6e01efae9f26ee03ea3fbcfabce",
+          "canonicalLfSha256": "95f0c04916259ef0186905457f4fd9fd8ed1d6e01efae9f26ee03ea3fbcfabce",
+          "gitBlobSha1": "fc2d7b7dad77f8ddb6a966a8c7cf7c481dff921a"
+        },
+        {
+          "path": "apps/api/src/auth/identity-store.service.ts",
+          "archiveMember": "apps/api/src/auth/identity-store.service.ts",
+          "archiveMemberSha256": "fef7928388f148ad0dd38a15c860cf8a6bf0298384848d3485e6f13e92d8eed1",
+          "capturedRawSha256": "fef7928388f148ad0dd38a15c860cf8a6bf0298384848d3485e6f13e92d8eed1",
+          "canonicalLfSha256": "fef7928388f148ad0dd38a15c860cf8a6bf0298384848d3485e6f13e92d8eed1",
+          "gitBlobSha1": "662451955c7f6a2d451c10cf2fb98bf023389559"
+        },
+        {
+          "path": "apps/api/src/bootstrap/configure-application.ts",
+          "archiveMember": "apps/api/src/bootstrap/configure-application.ts",
+          "archiveMemberSha256": "09c3ad542bf422944f61ee904e5f2a0b2efdf9e75a613f498cb47274492eb8b7",
+          "capturedRawSha256": "09c3ad542bf422944f61ee904e5f2a0b2efdf9e75a613f498cb47274492eb8b7",
+          "canonicalLfSha256": "09c3ad542bf422944f61ee904e5f2a0b2efdf9e75a613f498cb47274492eb8b7",
+          "gitBlobSha1": "cd8bc7bd99239bb88f0d2d0e1db2b2a932298b69"
+        },
+        {
+          "path": "apps/api/src/common/filters/global-exception.filter.ts",
+          "archiveMember": "apps/api/src/common/filters/global-exception.filter.ts",
+          "archiveMemberSha256": "e941baa93a2966c3af1c53eda1fb1a609341e7857fa971ad43afe6886b3641f4",
+          "capturedRawSha256": "e941baa93a2966c3af1c53eda1fb1a609341e7857fa971ad43afe6886b3641f4",
+          "canonicalLfSha256": "e941baa93a2966c3af1c53eda1fb1a609341e7857fa971ad43afe6886b3641f4",
+          "gitBlobSha1": "d25f83b7ccae0c142ea0f6610c72d60ea773c499"
+        },
+        {
+          "path": "apps/api/src/common/security/csrf.ts",
+          "archiveMember": "apps/api/src/common/security/csrf.ts",
+          "archiveMemberSha256": "3b6447774837f6f035695b6d0a285b0becd80eed5367f1a418879156a6699374",
+          "capturedRawSha256": "3b6447774837f6f035695b6d0a285b0becd80eed5367f1a418879156a6699374",
+          "canonicalLfSha256": "3b6447774837f6f035695b6d0a285b0becd80eed5367f1a418879156a6699374",
+          "gitBlobSha1": "099bfd646d638a5b5bc495d4133870b735a82180"
+        },
+        {
+          "path": "apps/api/src/common/security/current-tenant.decorator.ts",
+          "archiveMember": "apps/api/src/common/security/current-tenant.decorator.ts",
+          "archiveMemberSha256": "1974dc44d102cdd0d1d12b349d9eccb7d894c0b5c89b0ee68b69b1d1b2b5cef9",
+          "capturedRawSha256": "1974dc44d102cdd0d1d12b349d9eccb7d894c0b5c89b0ee68b69b1d1b2b5cef9",
+          "canonicalLfSha256": "1974dc44d102cdd0d1d12b349d9eccb7d894c0b5c89b0ee68b69b1d1b2b5cef9",
+          "gitBlobSha1": "7e869befbdf425e41e9d34b6841036e3625eba5a"
+        },
+        {
+          "path": "apps/api/src/common/security/internal-service.guard.ts",
+          "archiveMember": "apps/api/src/common/security/internal-service.guard.ts",
+          "archiveMemberSha256": "899f05554e08452f7d69f4cfe35eb0785e5b72d569d1f7c95fa8cea5a7f1f1e6",
+          "capturedRawSha256": "899f05554e08452f7d69f4cfe35eb0785e5b72d569d1f7c95fa8cea5a7f1f1e6",
+          "canonicalLfSha256": "899f05554e08452f7d69f4cfe35eb0785e5b72d569d1f7c95fa8cea5a7f1f1e6",
+          "gitBlobSha1": "b54f1401267072e6c454e383f74361f8797c28bc"
+        },
+        {
+          "path": "apps/api/src/common/security/pending-runtime.guard.ts",
+          "archiveMember": "apps/api/src/common/security/pending-runtime.guard.ts",
+          "archiveMemberSha256": "60aeeb99043f0f3abb9df4648159ab83b9ac4135144232c7c02a850e34de67f5",
+          "capturedRawSha256": "60aeeb99043f0f3abb9df4648159ab83b9ac4135144232c7c02a850e34de67f5",
+          "canonicalLfSha256": "60aeeb99043f0f3abb9df4648159ab83b9ac4135144232c7c02a850e34de67f5",
+          "gitBlobSha1": "67c8e278044db32c5b1db72c6c796e489bee17fd"
+        },
+        {
+          "path": "apps/api/src/common/security/security.module.ts",
+          "archiveMember": "apps/api/src/common/security/security.module.ts",
+          "archiveMemberSha256": "0ff6a116e2b063b0de532d4edea17dc672b10660bb874844bd3152d7b0474282",
+          "capturedRawSha256": "0ff6a116e2b063b0de532d4edea17dc672b10660bb874844bd3152d7b0474282",
+          "canonicalLfSha256": "0ff6a116e2b063b0de532d4edea17dc672b10660bb874844bd3152d7b0474282",
+          "gitBlobSha1": "542ce1dfcf8ec002e2c4b586fd3ec7464d307ba8"
+        },
+        {
+          "path": "apps/api/src/common/security/session-auth.guard.ts",
+          "archiveMember": "apps/api/src/common/security/session-auth.guard.ts",
+          "archiveMemberSha256": "0312b527d7ba5718b36c273871c4441e1d52b4cbf840f02612ddae5a1fcaf4df",
+          "capturedRawSha256": "0312b527d7ba5718b36c273871c4441e1d52b4cbf840f02612ddae5a1fcaf4df",
+          "canonicalLfSha256": "0312b527d7ba5718b36c273871c4441e1d52b4cbf840f02612ddae5a1fcaf4df",
+          "gitBlobSha1": "3c02f031871be7f5d6cb75006eeee6f47f1a0792"
+        },
+        {
+          "path": "apps/api/src/config/config.module.ts",
+          "archiveMember": "apps/api/src/config/config.module.ts",
+          "archiveMemberSha256": "83d1d324047a1c5ada012df2f0b7141cde9accc486cad56bf85ea74b24e83765",
+          "capturedRawSha256": "83d1d324047a1c5ada012df2f0b7141cde9accc486cad56bf85ea74b24e83765",
+          "canonicalLfSha256": "83d1d324047a1c5ada012df2f0b7141cde9accc486cad56bf85ea74b24e83765",
+          "gitBlobSha1": "c939c051272f17e1f4fbe3ee852dcfec21dcac65"
+        },
+        {
+          "path": "apps/api/src/config/config.paths.ts",
+          "archiveMember": "apps/api/src/config/config.paths.ts",
+          "archiveMemberSha256": "d12b165d25700e37561da1ce3e8cbf2665036a2c4870ec9f5a2761565f14d97a",
+          "capturedRawSha256": "d12b165d25700e37561da1ce3e8cbf2665036a2c4870ec9f5a2761565f14d97a",
+          "canonicalLfSha256": "1848980b0a9ad2b462324e9aa3872ff681e8fa8212fa316a78dd5390c1c54047",
+          "gitBlobSha1": "101396c5f4f8e379d6c0657ff99add42019779e4"
+        },
+        {
+          "path": "apps/api/src/config/config.service.ts",
+          "archiveMember": "apps/api/src/config/config.service.ts",
+          "archiveMemberSha256": "16345859573879e88710fdd5b34b1aab711254736a2e6d2f1cc046e77caf9821",
+          "capturedRawSha256": "16345859573879e88710fdd5b34b1aab711254736a2e6d2f1cc046e77caf9821",
+          "canonicalLfSha256": "3a73fdba312dad63ed57eb2659446e31806548864eff48e876ce221de0296f63",
+          "gitBlobSha1": "a8f6ee20074121bc9e8435906912c0df7cb03083"
+        },
+        {
+          "path": "apps/api/src/config/config.types.ts",
+          "archiveMember": "apps/api/src/config/config.types.ts",
+          "archiveMemberSha256": "cb79d5631b6a6cfecc2e7c0df1d3c4d22f12e4de7c81d8829567b14579638fa6",
+          "capturedRawSha256": "cb79d5631b6a6cfecc2e7c0df1d3c4d22f12e4de7c81d8829567b14579638fa6",
+          "canonicalLfSha256": "1b4b87b64651887f27d73c74664039bf68724f4eac20c25cdd143b7dcc2c6657",
+          "gitBlobSha1": "c94cbc79a89f59b6cf51f56ed08e3b9e84440a80"
+        },
+        {
+          "path": "apps/api/src/control-plane/control-plane.dto.ts",
+          "archiveMember": "apps/api/src/control-plane/control-plane.dto.ts",
+          "archiveMemberSha256": "7a3aa6e07324ee9c7d21185f7c289337574c467fd5f1de2f0f3c6bb710d2c1ef",
+          "capturedRawSha256": "7a3aa6e07324ee9c7d21185f7c289337574c467fd5f1de2f0f3c6bb710d2c1ef",
+          "canonicalLfSha256": "7a3aa6e07324ee9c7d21185f7c289337574c467fd5f1de2f0f3c6bb710d2c1ef",
+          "gitBlobSha1": "1081cf31be5ceb75c53ce0996312b4fb04e8a884"
+        },
+        {
+          "path": "apps/api/src/control-plane/control-plane.module.ts",
+          "archiveMember": "apps/api/src/control-plane/control-plane.module.ts",
+          "archiveMemberSha256": "ae72e71c291a09b52b970c1cdd872890d4291bff102909a282af7f196bef73e7",
+          "capturedRawSha256": "ae72e71c291a09b52b970c1cdd872890d4291bff102909a282af7f196bef73e7",
+          "canonicalLfSha256": "ae72e71c291a09b52b970c1cdd872890d4291bff102909a282af7f196bef73e7",
+          "gitBlobSha1": "9a451466729f4c53ec689a1bd3258be76ce1afe9"
+        },
+        {
+          "path": "apps/api/src/control-plane/control-plane.service.ts",
+          "archiveMember": "apps/api/src/control-plane/control-plane.service.ts",
+          "archiveMemberSha256": "bdc82354a79c1fe19b89dd6c1b1765868782d9033410432cc70ba29361842288",
+          "capturedRawSha256": "bdc82354a79c1fe19b89dd6c1b1765868782d9033410432cc70ba29361842288",
+          "canonicalLfSha256": "bdc82354a79c1fe19b89dd6c1b1765868782d9033410432cc70ba29361842288",
+          "gitBlobSha1": "d23eec2301fcc63814d2020127df06f3827371c9"
+        },
+        {
+          "path": "apps/api/src/control-plane/control-plane.types.ts",
+          "archiveMember": "apps/api/src/control-plane/control-plane.types.ts",
+          "archiveMemberSha256": "b8b6c43ad0dba6a159722f5ec5702e64a10db1ce02c5ace1b934ab99da282f6c",
+          "capturedRawSha256": "b8b6c43ad0dba6a159722f5ec5702e64a10db1ce02c5ace1b934ab99da282f6c",
+          "canonicalLfSha256": "b8b6c43ad0dba6a159722f5ec5702e64a10db1ce02c5ace1b934ab99da282f6c",
+          "gitBlobSha1": "73a35c7e9afe057271bab99fbe0c610ac4341731"
+        },
+        {
+          "path": "apps/api/src/control-plane/github-app.client.ts",
+          "archiveMember": "apps/api/src/control-plane/github-app.client.ts",
+          "archiveMemberSha256": "4c7941f9f72a96e9edfbe5b890e0f6fe77702da91e0fc0d1d34391acd97c6ddf",
+          "capturedRawSha256": "4c7941f9f72a96e9edfbe5b890e0f6fe77702da91e0fc0d1d34391acd97c6ddf",
+          "canonicalLfSha256": "4c7941f9f72a96e9edfbe5b890e0f6fe77702da91e0fc0d1d34391acd97c6ddf",
+          "gitBlobSha1": "bdf12e6c2ff55d173feaea5e66b9d5bfa37566a0"
+        },
+        {
+          "path": "apps/api/src/control-plane/github-installation.controller.ts",
+          "archiveMember": "apps/api/src/control-plane/github-installation.controller.ts",
+          "archiveMemberSha256": "c949da97a0a8edc1e3d3589646b1dc9308d69295307e92ca8c7d42d81974f198",
+          "capturedRawSha256": "c949da97a0a8edc1e3d3589646b1dc9308d69295307e92ca8c7d42d81974f198",
+          "canonicalLfSha256": "c949da97a0a8edc1e3d3589646b1dc9308d69295307e92ca8c7d42d81974f198",
+          "gitBlobSha1": "9842482696928fee8248532a738827da9b465178"
+        },
+        {
+          "path": "apps/api/src/control-plane/github-installation.dto.ts",
+          "archiveMember": "apps/api/src/control-plane/github-installation.dto.ts",
+          "archiveMemberSha256": "d80b4d6ff3bbfea205291763ae3b277fafb01276abfe0237be7d25acc00f3f97",
+          "capturedRawSha256": "d80b4d6ff3bbfea205291763ae3b277fafb01276abfe0237be7d25acc00f3f97",
+          "canonicalLfSha256": "d80b4d6ff3bbfea205291763ae3b277fafb01276abfe0237be7d25acc00f3f97",
+          "gitBlobSha1": "6762bbb2a6f5d96c8882bdfdce4904bcccabb8f1"
+        },
+        {
+          "path": "apps/api/src/control-plane/github-installation.service.ts",
+          "archiveMember": "apps/api/src/control-plane/github-installation.service.ts",
+          "archiveMemberSha256": "ad28c5aef81fb0edbfd6372345e4614c4d7f19e2bf83fd51ef47d0b813e93e65",
+          "capturedRawSha256": "ad28c5aef81fb0edbfd6372345e4614c4d7f19e2bf83fd51ef47d0b813e93e65",
+          "canonicalLfSha256": "ad28c5aef81fb0edbfd6372345e4614c4d7f19e2bf83fd51ef47d0b813e93e65",
+          "gitBlobSha1": "3c8278ea3f72f7abaa6651ab948dd310cbfc7768"
+        },
+        {
+          "path": "apps/api/src/control-plane/github-read-session.ts",
+          "archiveMember": "apps/api/src/control-plane/github-read-session.ts",
+          "archiveMemberSha256": "20bf7734f217e556bd81a585c9818d2c29b31636585d02d281e59ee859051628",
+          "capturedRawSha256": "20bf7734f217e556bd81a585c9818d2c29b31636585d02d281e59ee859051628",
+          "canonicalLfSha256": "20bf7734f217e556bd81a585c9818d2c29b31636585d02d281e59ee859051628",
+          "gitBlobSha1": "20792941239f99583503aa0f288305a5e80fa64a"
+        },
+        {
+          "path": "apps/api/src/control-plane/integrations.controller.ts",
+          "archiveMember": "apps/api/src/control-plane/integrations.controller.ts",
+          "archiveMemberSha256": "5229466582500c2b56056c439105deea9d04481f2450deac4d43f3fdf3f7c9f0",
+          "capturedRawSha256": "5229466582500c2b56056c439105deea9d04481f2450deac4d43f3fdf3f7c9f0",
+          "canonicalLfSha256": "5229466582500c2b56056c439105deea9d04481f2450deac4d43f3fdf3f7c9f0",
+          "gitBlobSha1": "adff57a55a13778e0adf52f189383f0edda28dc8"
+        },
+        {
+          "path": "apps/api/src/control-plane/repository-bindings.controller.ts",
+          "archiveMember": "apps/api/src/control-plane/repository-bindings.controller.ts",
+          "archiveMemberSha256": "a3b390344b69273205eb70e3d21521b3c5b01713916fcfe5f8067615d393519a",
+          "capturedRawSha256": "a3b390344b69273205eb70e3d21521b3c5b01713916fcfe5f8067615d393519a",
+          "canonicalLfSha256": "a3b390344b69273205eb70e3d21521b3c5b01713916fcfe5f8067615d393519a",
+          "gitBlobSha1": "915bad52dc3c1621e1d927b3dc04d5d05a66dfd4"
+        },
+        {
+          "path": "apps/api/src/control-plane/scan-requests.controller.ts",
+          "archiveMember": "apps/api/src/control-plane/scan-requests.controller.ts",
+          "archiveMemberSha256": "6ebbf86e6b8d88bae772b48636f1510ccf3c7d99ed4c0fcdd732121952341322",
+          "capturedRawSha256": "6ebbf86e6b8d88bae772b48636f1510ccf3c7d99ed4c0fcdd732121952341322",
+          "canonicalLfSha256": "6ebbf86e6b8d88bae772b48636f1510ccf3c7d99ed4c0fcdd732121952341322",
+          "gitBlobSha1": "81e4c5d7f6300288ed090ac21b194e0dc8c0f08d"
+        },
+        {
+          "path": "apps/api/src/data-security/evidence-access.service.ts",
+          "archiveMember": "apps/api/src/data-security/evidence-access.service.ts",
+          "archiveMemberSha256": "60d7b78e83964a4f9e522eeb97769bb25b54b63acc05033449abae5f56502c5c",
+          "capturedRawSha256": "60d7b78e83964a4f9e522eeb97769bb25b54b63acc05033449abae5f56502c5c",
+          "canonicalLfSha256": "60d7b78e83964a4f9e522eeb97769bb25b54b63acc05033449abae5f56502c5c",
+          "gitBlobSha1": "17abafdb20dc01a1989cb9edd2da3b228f4c7aa3"
+        },
+        {
+          "path": "apps/api/src/data-security/evidence-maintenance.ts",
+          "archiveMember": "apps/api/src/data-security/evidence-maintenance.ts",
+          "archiveMemberSha256": "af289d5af7d587322909c1b646fb54ed3bda16de3bc30ef9ea4105f6fc382a4f",
+          "capturedRawSha256": "af289d5af7d587322909c1b646fb54ed3bda16de3bc30ef9ea4105f6fc382a4f",
+          "canonicalLfSha256": "af289d5af7d587322909c1b646fb54ed3bda16de3bc30ef9ea4105f6fc382a4f",
+          "gitBlobSha1": "412e6f4753be40d0168755044f50415dc9db62dc"
+        },
+        {
+          "path": "apps/api/src/data-security/evidence-store.ts",
+          "archiveMember": "apps/api/src/data-security/evidence-store.ts",
+          "archiveMemberSha256": "f855866e590bd200542d96acd3832972c1c831dd98824173d90c7220891fab9d",
+          "capturedRawSha256": "f855866e590bd200542d96acd3832972c1c831dd98824173d90c7220891fab9d",
+          "canonicalLfSha256": "f855866e590bd200542d96acd3832972c1c831dd98824173d90c7220891fab9d",
+          "gitBlobSha1": "a85e492fc14cf05a27eb3888a47ca6a4d2eb07c5"
+        },
+        {
+          "path": "apps/api/src/data-security/maintenance-main.ts",
+          "archiveMember": "apps/api/src/data-security/maintenance-main.ts",
+          "archiveMemberSha256": "38bdd12d32f2f112a386f7ab09e7bdfaa8cbf39143c04770222affe39c6ea4d6",
+          "capturedRawSha256": "38bdd12d32f2f112a386f7ab09e7bdfaa8cbf39143c04770222affe39c6ea4d6",
+          "canonicalLfSha256": "38bdd12d32f2f112a386f7ab09e7bdfaa8cbf39143c04770222affe39c6ea4d6",
+          "gitBlobSha1": "256a098819f1f0800b4b9414c552f29ac2748dc9"
+        },
+        {
+          "path": "apps/api/src/data-security/migrate-main.ts",
+          "archiveMember": "apps/api/src/data-security/migrate-main.ts",
+          "archiveMemberSha256": "313191f7b3328b6f576d5f1ea9b1a5de2e69250b716bbb3c96514d07394e8d1d",
+          "capturedRawSha256": "313191f7b3328b6f576d5f1ea9b1a5de2e69250b716bbb3c96514d07394e8d1d",
+          "canonicalLfSha256": "313191f7b3328b6f576d5f1ea9b1a5de2e69250b716bbb3c96514d07394e8d1d",
+          "gitBlobSha1": "123c73479643fb3a9dc4dc0ce0331344ae7f4c28"
+        },
+        {
+          "path": "apps/api/src/data-security/runtime-secrets.ts",
+          "archiveMember": "apps/api/src/data-security/runtime-secrets.ts",
+          "archiveMemberSha256": "f2032241d20cef5d642772b1823b07ca9440b89dd7644ade247c14b589e3de77",
+          "capturedRawSha256": "f2032241d20cef5d642772b1823b07ca9440b89dd7644ade247c14b589e3de77",
+          "canonicalLfSha256": "f2032241d20cef5d642772b1823b07ca9440b89dd7644ade247c14b589e3de77",
+          "gitBlobSha1": "e911abc2f5a369b72913fcacc8bff24c5dd8f648"
+        },
+        {
+          "path": "apps/api/src/data-security/storage-probe-main.ts",
+          "archiveMember": "apps/api/src/data-security/storage-probe-main.ts",
+          "archiveMemberSha256": "e35eeed1564a9b19d587be2b9f99c64f4f110b1581442304064f43da5577fd3c",
+          "capturedRawSha256": "e35eeed1564a9b19d587be2b9f99c64f4f110b1581442304064f43da5577fd3c",
+          "canonicalLfSha256": "e35eeed1564a9b19d587be2b9f99c64f4f110b1581442304064f43da5577fd3c",
+          "gitBlobSha1": "52470fc121ec1370ba56e92c1671323a1048d982"
+        },
+        {
+          "path": "apps/api/src/dispatch/dispatch.module.ts",
+          "archiveMember": "apps/api/src/dispatch/dispatch.module.ts",
+          "archiveMemberSha256": "412be31019d860a4c17fa1e897c1c015df169bd19b0f41ef5a2c9579f37f54a8",
+          "capturedRawSha256": "412be31019d860a4c17fa1e897c1c015df169bd19b0f41ef5a2c9579f37f54a8",
+          "canonicalLfSha256": "412be31019d860a4c17fa1e897c1c015df169bd19b0f41ef5a2c9579f37f54a8",
+          "gitBlobSha1": "84d4a53418bfc578aad9c1978394764726827cbb"
+        },
+        {
+          "path": "apps/api/src/dispatch/scan-dispatch.service.ts",
+          "archiveMember": "apps/api/src/dispatch/scan-dispatch.service.ts",
+          "archiveMemberSha256": "4e63e24ac0306e09a672340c91b5f2ee7e1e7552d0fa40783f7c58c0395119d8",
+          "capturedRawSha256": "4e63e24ac0306e09a672340c91b5f2ee7e1e7552d0fa40783f7c58c0395119d8",
+          "canonicalLfSha256": "4e63e24ac0306e09a672340c91b5f2ee7e1e7552d0fa40783f7c58c0395119d8",
+          "gitBlobSha1": "0cba3bfeca587566c1fd40c94033b6f5ea03d66e"
+        },
+        {
+          "path": "apps/api/src/main.ts",
+          "archiveMember": "apps/api/src/main.ts",
+          "archiveMemberSha256": "f50e5adef27c35167d312b974be799139db6202fc6242ba347ce8d9802725b36",
+          "capturedRawSha256": "f50e5adef27c35167d312b974be799139db6202fc6242ba347ce8d9802725b36",
+          "canonicalLfSha256": "582a0bced3f0a9f9d70b32b4cfb160c1015faa3af2e42eea405e7f487cf81ccd",
+          "gitBlobSha1": "0f1862af76b456761437be35c3782be86fd7aec4"
+        },
+        {
+          "path": "apps/api/src/prisma/prisma.module.ts",
+          "archiveMember": "apps/api/src/prisma/prisma.module.ts",
+          "archiveMemberSha256": "712ded9cc1bb888ca045fb96a3d877a7e037ca46407266540240edced5c2a9bb",
+          "capturedRawSha256": "712ded9cc1bb888ca045fb96a3d877a7e037ca46407266540240edced5c2a9bb",
+          "canonicalLfSha256": "ce88f5d8ebec1b4338311703b52c1a55027f0096155e51efc81c244cba5c232e",
+          "gitBlobSha1": "29a066ef8cc4acb176a5acae336aeadc01d86c92"
+        },
+        {
+          "path": "apps/api/src/prisma/prisma.service.ts",
+          "archiveMember": "apps/api/src/prisma/prisma.service.ts",
+          "archiveMemberSha256": "46c34db2a099e2a55143a1ce7d021a942021b352a60c56ebcfc41aa10a84f562",
+          "capturedRawSha256": "46c34db2a099e2a55143a1ce7d021a942021b352a60c56ebcfc41aa10a84f562",
+          "canonicalLfSha256": "fa932a1232b350c60cd6d0703c759ebd2329878ef2ba5751e1afed1c0ba1d007",
+          "gitBlobSha1": "2bda110fc418a498fe95e6165a7292b7156f526f"
+        },
+        {
+          "path": "apps/api/src/prisma/transaction.ts",
+          "archiveMember": "apps/api/src/prisma/transaction.ts",
+          "archiveMemberSha256": "c9a3eb8a5c9b655be2e4d0a08d3cde6b0e945e98a830abff84b16c6027a4362a",
+          "capturedRawSha256": "c9a3eb8a5c9b655be2e4d0a08d3cde6b0e945e98a830abff84b16c6027a4362a",
+          "canonicalLfSha256": "c9a3eb8a5c9b655be2e4d0a08d3cde6b0e945e98a830abff84b16c6027a4362a",
+          "gitBlobSha1": "9432d1baa4ea43a27cd93fcd32cc991be7adc1ff"
+        },
+        {
+          "path": "apps/api/src/runtime/runtime-api.service.ts",
+          "archiveMember": "apps/api/src/runtime/runtime-api.service.ts",
+          "archiveMemberSha256": "3534b5551dcc0992596f2468a000b85de7d90208ec855abc5b0c9944c35e64af",
+          "capturedRawSha256": "3534b5551dcc0992596f2468a000b85de7d90208ec855abc5b0c9944c35e64af",
+          "canonicalLfSha256": "3534b5551dcc0992596f2468a000b85de7d90208ec855abc5b0c9944c35e64af",
+          "gitBlobSha1": "2a02488b3fc3eb592760adf2122bd6af971bc8df"
+        },
+        {
+          "path": "apps/api/src/runtime/runtime-catalog.service.ts",
+          "archiveMember": "apps/api/src/runtime/runtime-catalog.service.ts",
+          "archiveMemberSha256": "fc487ab6e2da5259f62bbd197a3d2d8cf6746eadd9a4d4de8f1ef72c9bbeb7e0",
+          "capturedRawSha256": "fc487ab6e2da5259f62bbd197a3d2d8cf6746eadd9a4d4de8f1ef72c9bbeb7e0",
+          "canonicalLfSha256": "fc487ab6e2da5259f62bbd197a3d2d8cf6746eadd9a4d4de8f1ef72c9bbeb7e0",
+          "gitBlobSha1": "cec2ebaa2d388b7f41d29d488196a29964d25601"
+        },
+        {
+          "path": "apps/api/src/runtime/runtime-resources.service.ts",
+          "archiveMember": "apps/api/src/runtime/runtime-resources.service.ts",
+          "archiveMemberSha256": "d346b58885eea664cc6b8578a32dc9c02ee3299617aedf6dfe58539f65c357a0",
+          "capturedRawSha256": "d346b58885eea664cc6b8578a32dc9c02ee3299617aedf6dfe58539f65c357a0",
+          "canonicalLfSha256": "d346b58885eea664cc6b8578a32dc9c02ee3299617aedf6dfe58539f65c357a0",
+          "gitBlobSha1": "e8c90e062648a00daac927876018d63ac1b9f450"
+        },
+        {
+          "path": "apps/api/src/runtime/runtime.controller.ts",
+          "archiveMember": "apps/api/src/runtime/runtime.controller.ts",
+          "archiveMemberSha256": "e18cba26e3fcdd43dcecca15892a1823eb61c15fd6fa63e877fc52584b2f0232",
+          "capturedRawSha256": "e18cba26e3fcdd43dcecca15892a1823eb61c15fd6fa63e877fc52584b2f0232",
+          "canonicalLfSha256": "e18cba26e3fcdd43dcecca15892a1823eb61c15fd6fa63e877fc52584b2f0232",
+          "gitBlobSha1": "825bb3d39ec0b0e9344181915b4a6c18ac133601"
+        },
+        {
+          "path": "apps/api/src/runtime/runtime.module.ts",
+          "archiveMember": "apps/api/src/runtime/runtime.module.ts",
+          "archiveMemberSha256": "9187ec4460f38c10caaaf10665ab0b0fc62d6effcb4c9dcc9c4a0b06cd00d108",
+          "capturedRawSha256": "9187ec4460f38c10caaaf10665ab0b0fc62d6effcb4c9dcc9c4a0b06cd00d108",
+          "canonicalLfSha256": "9187ec4460f38c10caaaf10665ab0b0fc62d6effcb4c9dcc9c4a0b06cd00d108",
+          "gitBlobSha1": "b4a055b76b172e745f50f93e50fa1d2d54a0a269"
+        },
+        {
+          "path": "apps/api/src/scan-plane/evidence.controller.ts",
+          "archiveMember": "apps/api/src/scan-plane/evidence.controller.ts",
+          "archiveMemberSha256": "8a947c0066acb1b365c30fe7433816371500b728964c72a32cc96dc4962bfd9a",
+          "capturedRawSha256": "8a947c0066acb1b365c30fe7433816371500b728964c72a32cc96dc4962bfd9a",
+          "canonicalLfSha256": "8a947c0066acb1b365c30fe7433816371500b728964c72a32cc96dc4962bfd9a",
+          "gitBlobSha1": "9754d4a13205c6ac03bf7ecb61a7c9a5f3f6098c"
+        },
+        {
+          "path": "apps/api/src/scan-plane/findings.controller.ts",
+          "archiveMember": "apps/api/src/scan-plane/findings.controller.ts",
+          "archiveMemberSha256": "90502d68ccf8c97dd6a57fdeedfcca35903c704f8c03c33eccca9e5f393bc605",
+          "capturedRawSha256": "90502d68ccf8c97dd6a57fdeedfcca35903c704f8c03c33eccca9e5f393bc605",
+          "canonicalLfSha256": "90502d68ccf8c97dd6a57fdeedfcca35903c704f8c03c33eccca9e5f393bc605",
+          "gitBlobSha1": "728fa524b635f659e59e5567384f5ea0580201ee"
+        },
+        {
+          "path": "apps/api/src/scan-plane/scan-plane.controller.ts",
+          "archiveMember": "apps/api/src/scan-plane/scan-plane.controller.ts",
+          "archiveMemberSha256": "7ab137ecb9bd423329f7da293e7c04d42e4d8d9bf05f9a483481d26102df1851",
+          "capturedRawSha256": "7ab137ecb9bd423329f7da293e7c04d42e4d8d9bf05f9a483481d26102df1851",
+          "canonicalLfSha256": "7ab137ecb9bd423329f7da293e7c04d42e4d8d9bf05f9a483481d26102df1851",
+          "gitBlobSha1": "d2bde140452ae87194346428a4502bb9b157d722"
+        },
+        {
+          "path": "apps/api/src/scan-plane/scan-plane.dto.ts",
+          "archiveMember": "apps/api/src/scan-plane/scan-plane.dto.ts",
+          "archiveMemberSha256": "3a5aeeb1b6ea0ae09392d1ceb3498e8933879d32648ea2259f9a3048dda08c19",
+          "capturedRawSha256": "3a5aeeb1b6ea0ae09392d1ceb3498e8933879d32648ea2259f9a3048dda08c19",
+          "canonicalLfSha256": "3a5aeeb1b6ea0ae09392d1ceb3498e8933879d32648ea2259f9a3048dda08c19",
+          "gitBlobSha1": "218e574e11a843a678bbba429f13e82ba1adf3fd"
+        },
+        {
+          "path": "apps/api/src/scan-plane/scan-plane.module.ts",
+          "archiveMember": "apps/api/src/scan-plane/scan-plane.module.ts",
+          "archiveMemberSha256": "4a3a525d22b5cbe970f7b8842addad9113e6d939d92786e06ae4d9240313b10d",
+          "capturedRawSha256": "4a3a525d22b5cbe970f7b8842addad9113e6d939d92786e06ae4d9240313b10d",
+          "canonicalLfSha256": "4a3a525d22b5cbe970f7b8842addad9113e6d939d92786e06ae4d9240313b10d",
+          "gitBlobSha1": "c764c6449dbfa05aae0c0b59d169cf73f275645e"
+        },
+        {
+          "path": "apps/api/src/scan-plane/scan-plane.service.ts",
+          "archiveMember": "apps/api/src/scan-plane/scan-plane.service.ts",
+          "archiveMemberSha256": "50efc7570222321acb2f58841a1631e1a19a9e723a7dc88c6ce436968af27583",
+          "capturedRawSha256": "50efc7570222321acb2f58841a1631e1a19a9e723a7dc88c6ce436968af27583",
+          "canonicalLfSha256": "50efc7570222321acb2f58841a1631e1a19a9e723a7dc88c6ce436968af27583",
+          "gitBlobSha1": "fda7c62e08e2cfe64cc57a67077f1a82402f461a"
+        },
+        {
+          "path": "apps/api/src/scan-plane/scan-plane.types.ts",
+          "archiveMember": "apps/api/src/scan-plane/scan-plane.types.ts",
+          "archiveMemberSha256": "3b32e581ac162b76379a0193c3a6b3aeb3b07b6962001a735727676a85c00bba",
+          "capturedRawSha256": "3b32e581ac162b76379a0193c3a6b3aeb3b07b6962001a735727676a85c00bba",
+          "canonicalLfSha256": "3b32e581ac162b76379a0193c3a6b3aeb3b07b6962001a735727676a85c00bba",
+          "gitBlobSha1": "8f73549764ef7fe34885781836323ef30f11e951"
+        },
+        {
+          "path": "apps/api/src/token-broker/audit-events.controller.ts",
+          "archiveMember": "apps/api/src/token-broker/audit-events.controller.ts",
+          "archiveMemberSha256": "2b12f3a56cf7ad3a22e984f45945c8ba9c2f6912bfed86abfa90b3321c4ad27d",
+          "capturedRawSha256": "2b12f3a56cf7ad3a22e984f45945c8ba9c2f6912bfed86abfa90b3321c4ad27d",
+          "canonicalLfSha256": "2b12f3a56cf7ad3a22e984f45945c8ba9c2f6912bfed86abfa90b3321c4ad27d",
+          "gitBlobSha1": "d723140b13b3669274331fb6da6559aaf025ff79"
+        },
+        {
+          "path": "apps/api/src/token-broker/fetch-capability.service.ts",
+          "archiveMember": "apps/api/src/token-broker/fetch-capability.service.ts",
+          "archiveMemberSha256": "ff0032e92e40f298f8432cf4336da8cb8a30a50976d37f10a9e996d2f3a46f4a",
+          "capturedRawSha256": "ff0032e92e40f298f8432cf4336da8cb8a30a50976d37f10a9e996d2f3a46f4a",
+          "canonicalLfSha256": "ff0032e92e40f298f8432cf4336da8cb8a30a50976d37f10a9e996d2f3a46f4a",
+          "gitBlobSha1": "e8c2cfcda95476fe2c5d760338821b7c7330e4c1"
+        },
+        {
+          "path": "apps/api/src/token-broker/token-broker.controller.ts",
+          "archiveMember": "apps/api/src/token-broker/token-broker.controller.ts",
+          "archiveMemberSha256": "255d7a7c39653436c9f1ccfbabf6a42128aa952fc5af80ef19200e492c67034a",
+          "capturedRawSha256": "255d7a7c39653436c9f1ccfbabf6a42128aa952fc5af80ef19200e492c67034a",
+          "canonicalLfSha256": "255d7a7c39653436c9f1ccfbabf6a42128aa952fc5af80ef19200e492c67034a",
+          "gitBlobSha1": "c962f72ee39aa45935c1426bc29d6772b3ea3b1e"
+        },
+        {
+          "path": "apps/api/src/token-broker/token-broker.dto.ts",
+          "archiveMember": "apps/api/src/token-broker/token-broker.dto.ts",
+          "archiveMemberSha256": "a6a999bfea171f33e9a55ae8f7bb1f6a57249b87b62aed1456f0024687b4dce0",
+          "capturedRawSha256": "a6a999bfea171f33e9a55ae8f7bb1f6a57249b87b62aed1456f0024687b4dce0",
+          "canonicalLfSha256": "a6a999bfea171f33e9a55ae8f7bb1f6a57249b87b62aed1456f0024687b4dce0",
+          "gitBlobSha1": "3cf6eb13a861ec52836f5a46d1412575ef9a9d24"
+        },
+        {
+          "path": "apps/api/src/token-broker/token-broker.module.ts",
+          "archiveMember": "apps/api/src/token-broker/token-broker.module.ts",
+          "archiveMemberSha256": "6a2dc5307448240d5bdbcc3b622e521d364a3a4140c9b15bbe4ee6025342b076",
+          "capturedRawSha256": "6a2dc5307448240d5bdbcc3b622e521d364a3a4140c9b15bbe4ee6025342b076",
+          "canonicalLfSha256": "6a2dc5307448240d5bdbcc3b622e521d364a3a4140c9b15bbe4ee6025342b076",
+          "gitBlobSha1": "99236f74d233237f29a8963cff61888619440840"
+        },
+        {
+          "path": "apps/api/src/token-broker/token-broker.service.ts",
+          "archiveMember": "apps/api/src/token-broker/token-broker.service.ts",
+          "archiveMemberSha256": "2df2adb468d4443eb38e6b3b7a308a8d23c7b5beda085440a182284ca2682553",
+          "capturedRawSha256": "2df2adb468d4443eb38e6b3b7a308a8d23c7b5beda085440a182284ca2682553",
+          "canonicalLfSha256": "2df2adb468d4443eb38e6b3b7a308a8d23c7b5beda085440a182284ca2682553",
+          "gitBlobSha1": "00db691780f75d0c417e6af0e91c9b01f404aa3c"
+        },
+        {
+          "path": "apps/api/src/token-broker/token-broker.types.ts",
+          "archiveMember": "apps/api/src/token-broker/token-broker.types.ts",
+          "archiveMemberSha256": "28d7178012fdb49d6576996918a2b747c8aca8aacf3a47eb6bfb191eb658f939",
+          "capturedRawSha256": "28d7178012fdb49d6576996918a2b747c8aca8aacf3a47eb6bfb191eb658f939",
+          "canonicalLfSha256": "28d7178012fdb49d6576996918a2b747c8aca8aacf3a47eb6bfb191eb658f939",
+          "gitBlobSha1": "aec75e2cde1ef514406baa30743d745c321c2984"
+        },
+        {
+          "path": "apps/api/src/worker/private-worker-broker.ts",
+          "archiveMember": "apps/api/src/worker/private-worker-broker.ts",
+          "archiveMemberSha256": "6090ca69e56b4e2c799030c0c4703258e3e163c67d9abb4eb1134e482ea4a67e",
+          "capturedRawSha256": "6090ca69e56b4e2c799030c0c4703258e3e163c67d9abb4eb1134e482ea4a67e",
+          "canonicalLfSha256": "6090ca69e56b4e2c799030c0c4703258e3e163c67d9abb4eb1134e482ea4a67e",
+          "gitBlobSha1": "823994a24af744777672d5121dd5d3e222b24388"
+        },
+        {
+          "path": "apps/api/src/worker/private-worker-main.ts",
+          "archiveMember": "apps/api/src/worker/private-worker-main.ts",
+          "archiveMemberSha256": "0d3ef7d99a4ddfe19e1f501f607f587e771cb5eafe9168f1215e657580439847",
+          "capturedRawSha256": "0d3ef7d99a4ddfe19e1f501f607f587e771cb5eafe9168f1215e657580439847",
+          "canonicalLfSha256": "0d3ef7d99a4ddfe19e1f501f607f587e771cb5eafe9168f1215e657580439847",
+          "gitBlobSha1": "4d42d51a4e77d0e131d7ad34ebd59772b9a44171"
+        },
+        {
+          "path": "apps/api/src/worker/runtime-results.service.ts",
+          "archiveMember": "apps/api/src/worker/runtime-results.service.ts",
+          "archiveMemberSha256": "93dda44e80e6484c5ad3a84c8ccee835504faddec668667f2458e84975add718",
+          "capturedRawSha256": "93dda44e80e6484c5ad3a84c8ccee835504faddec668667f2458e84975add718",
+          "canonicalLfSha256": "93dda44e80e6484c5ad3a84c8ccee835504faddec668667f2458e84975add718",
+          "gitBlobSha1": "c092c27ea143d33a2afdd1c20973de26ed30e5ef"
+        },
+        {
+          "path": "apps/api/test/app.e2e-spec.ts",
+          "archiveMember": "apps/api/test/app.e2e-spec.ts",
+          "archiveMemberSha256": "99eee513252a5f2537753740e07aee8319054751d6b4be2310cd5ecc59d7acbe",
+          "capturedRawSha256": "99eee513252a5f2537753740e07aee8319054751d6b4be2310cd5ecc59d7acbe",
+          "canonicalLfSha256": "99eee513252a5f2537753740e07aee8319054751d6b4be2310cd5ecc59d7acbe",
+          "gitBlobSha1": "c576c4c4148afd1adeb8c313ab2657d59c15a165"
+        },
+        {
+          "path": "apps/api/test/architecture/production-architecture-contracts.e2e-spec.ts",
+          "archiveMember": "apps/api/test/architecture/production-architecture-contracts.e2e-spec.ts",
+          "archiveMemberSha256": "c342315704d0c2ebdcaa564c1c223afa32f67fa03e3e99857a9c548ca966ceab",
+          "capturedRawSha256": "c342315704d0c2ebdcaa564c1c223afa32f67fa03e3e99857a9c548ca966ceab",
+          "canonicalLfSha256": "c342315704d0c2ebdcaa564c1c223afa32f67fa03e3e99857a9c548ca966ceab",
+          "gitBlobSha1": "ade4793e293508a4f8c592194df2fed4b2583c02"
+        },
+        {
+          "path": "apps/api/test/architecture/production-runtime-gates.e2e-spec.ts",
+          "archiveMember": "apps/api/test/architecture/production-runtime-gates.e2e-spec.ts",
+          "archiveMemberSha256": "6a24ca844e30cd886f76f7702ef6e7c602e64f458ef9542b9e1755e58065dc11",
+          "capturedRawSha256": "6a24ca844e30cd886f76f7702ef6e7c602e64f458ef9542b9e1755e58065dc11",
+          "canonicalLfSha256": "6a24ca844e30cd886f76f7702ef6e7c602e64f458ef9542b9e1755e58065dc11",
+          "gitBlobSha1": "47fd32c93ecdba51f8275d9402c394a58cae037b"
+        },
+        {
+          "path": "apps/api/test/auth/auth.e2e-spec.ts",
+          "archiveMember": "apps/api/test/auth/auth.e2e-spec.ts",
+          "archiveMemberSha256": "5f1d366ae69999def175b72b9135637f302e454f2ecb4d0ae91c94d2cbc73a14",
+          "capturedRawSha256": "5f1d366ae69999def175b72b9135637f302e454f2ecb4d0ae91c94d2cbc73a14",
+          "canonicalLfSha256": "5f1d366ae69999def175b72b9135637f302e454f2ecb4d0ae91c94d2cbc73a14",
+          "gitBlobSha1": "b203cbd2c6f2dd24df3abf8c6d43e3351d85248b"
+        },
+        {
+          "path": "apps/api/test/common/global-exception.filter.e2e-spec.ts",
+          "archiveMember": "apps/api/test/common/global-exception.filter.e2e-spec.ts",
+          "archiveMemberSha256": "64699503a0c0ab7d3ee671df459d91ea87d3160775bdde96628fecd8e298fc38",
+          "capturedRawSha256": "64699503a0c0ab7d3ee671df459d91ea87d3160775bdde96628fecd8e298fc38",
+          "canonicalLfSha256": "64699503a0c0ab7d3ee671df459d91ea87d3160775bdde96628fecd8e298fc38",
+          "gitBlobSha1": "4c36e7e26175937d80c43fb6bb12df3e8f7ddcf9"
+        },
+        {
+          "path": "apps/api/test/config/config.env-files.e2e-spec.ts",
+          "archiveMember": "apps/api/test/config/config.env-files.e2e-spec.ts",
+          "archiveMemberSha256": "8ab1d634199d7c22decdcc8515ce10a6ea960937135318cb06b01ac6ce9151c7",
+          "capturedRawSha256": "8ab1d634199d7c22decdcc8515ce10a6ea960937135318cb06b01ac6ce9151c7",
+          "canonicalLfSha256": "5ea5413b97fca583465886eb97755593d6cc164d3a76670f89a33aac6379b8f4",
+          "gitBlobSha1": "aebf06af765e248d7e24c3ededec9e39bd568623"
+        },
+        {
+          "path": "apps/api/test/config/config.service.e2e-spec.ts",
+          "archiveMember": "apps/api/test/config/config.service.e2e-spec.ts",
+          "archiveMemberSha256": "43f46bc99fb4d22f1e91dad1ae5139010697306dd4ce315ee3682dd524635ae2",
+          "capturedRawSha256": "43f46bc99fb4d22f1e91dad1ae5139010697306dd4ce315ee3682dd524635ae2",
+          "canonicalLfSha256": "194e25fcfbb219ab4fe37765b3f2693a0b8789bf042d1869231dfe6b7637d54f",
+          "gitBlobSha1": "fc5c96593e3b504d5bae6eedb29bbda54d9608a2"
+        },
+        {
+          "path": "apps/api/test/config/config.service.typecheck.ts",
+          "archiveMember": "apps/api/test/config/config.service.typecheck.ts",
+          "archiveMemberSha256": "6b3e99b40aabe565608d7063121ccbe9a83b9bf094bbad91d3d0ca4120aac4ea",
+          "capturedRawSha256": "6b3e99b40aabe565608d7063121ccbe9a83b9bf094bbad91d3d0ca4120aac4ea",
+          "canonicalLfSha256": "9c2712315f720ddb3bc8971bcc567b9f40497db1809e4baf6d420584e5dc1e5a",
+          "gitBlobSha1": "c3bed58d925aa6ebf6bc337ced7ce4172d8e80ec"
+        },
+        {
+          "path": "apps/api/test/control-plane/control-plane.e2e-spec.ts",
+          "archiveMember": "apps/api/test/control-plane/control-plane.e2e-spec.ts",
+          "archiveMemberSha256": "16e168e4b8f5616f6bdfff5137fb75d30e1a92a30fa783538521943793947ee4",
+          "capturedRawSha256": "16e168e4b8f5616f6bdfff5137fb75d30e1a92a30fa783538521943793947ee4",
+          "canonicalLfSha256": "16e168e4b8f5616f6bdfff5137fb75d30e1a92a30fa783538521943793947ee4",
+          "gitBlobSha1": "274311122fe0b3a4ade70cfe220d3ea3fa32ea10"
+        },
+        {
+          "path": "apps/api/test/control-plane/github-app.e2e-spec.ts",
+          "archiveMember": "apps/api/test/control-plane/github-app.e2e-spec.ts",
+          "archiveMemberSha256": "fe2d756f3a47979c11f806d55c48d272974abb773020af6b53efd5686ee03dda",
+          "capturedRawSha256": "fe2d756f3a47979c11f806d55c48d272974abb773020af6b53efd5686ee03dda",
+          "canonicalLfSha256": "fe2d756f3a47979c11f806d55c48d272974abb773020af6b53efd5686ee03dda",
+          "gitBlobSha1": "f0f9c05d78103574fd916a50f74000e764d19e25"
+        },
+        {
+          "path": "apps/api/test/control-plane/github-read-session.e2e-spec.ts",
+          "archiveMember": "apps/api/test/control-plane/github-read-session.e2e-spec.ts",
+          "archiveMemberSha256": "e1d254697e63f85141769c6470d14ca1324039514ecd3e831c923ac42e47a9aa",
+          "capturedRawSha256": "e1d254697e63f85141769c6470d14ca1324039514ecd3e831c923ac42e47a9aa",
+          "canonicalLfSha256": "e1d254697e63f85141769c6470d14ca1324039514ecd3e831c923ac42e47a9aa",
+          "gitBlobSha1": "2678e9ed951c58943d60ed32800b0fc93e8ed4f5"
+        },
+        {
+          "path": "apps/api/test/jest-e2e.json",
+          "archiveMember": "apps/api/test/jest-e2e.json",
+          "archiveMemberSha256": "e6ae3e9349f1e7c043886230ac66150bffe329a952f866bc753b529c83a945c9",
+          "capturedRawSha256": "e6ae3e9349f1e7c043886230ac66150bffe329a952f866bc753b529c83a945c9",
+          "canonicalLfSha256": "323a0b7be6886d1b7ad5fbe8b2d36fe32d8fb84f405c40985ba0f71767e844f0",
+          "gitBlobSha1": "ff4d6014ec973ea8692f2d4b9914f41c6d51f736"
+        },
+        {
+          "path": "apps/api/test/prisma/prisma.service.e2e-spec.ts",
+          "archiveMember": "apps/api/test/prisma/prisma.service.e2e-spec.ts",
+          "archiveMemberSha256": "954be45da6c5f668c9bcfb508db91e71b80ccd1c7f374ebdecad43b63619915e",
+          "capturedRawSha256": "954be45da6c5f668c9bcfb508db91e71b80ccd1c7f374ebdecad43b63619915e",
+          "canonicalLfSha256": "e697405961673964c007440d1ca2db42e5802013f2954c976f824602be522cf9",
+          "gitBlobSha1": "8eff4e0009a83b4216ac8092f655e5bec550a495"
+        },
+        {
+          "path": "apps/api/test/prisma/schema-default-branch.e2e-spec.ts",
+          "archiveMember": "apps/api/test/prisma/schema-default-branch.e2e-spec.ts",
+          "archiveMemberSha256": "1cee3bedd25b9e977e2c03df70029d3e2d080f27a37daf7c30a31eab4fea096d",
+          "capturedRawSha256": "1cee3bedd25b9e977e2c03df70029d3e2d080f27a37daf7c30a31eab4fea096d",
+          "canonicalLfSha256": "318f743118f9b999a3551294f8d49b0418221c7030f5341f43d742b3b55991fb",
+          "gitBlobSha1": "38a74ed176bcb8d8e1bf04aba5b3a638828122c1"
+        },
+        {
+          "path": "apps/api/test/runtime/runtime-api.e2e-spec.ts",
+          "archiveMember": "apps/api/test/runtime/runtime-api.e2e-spec.ts",
+          "archiveMemberSha256": "837b1e8ad821ea2d7e546b451074cae4081a01659669b71e6b3832b9327e5366",
+          "capturedRawSha256": "837b1e8ad821ea2d7e546b451074cae4081a01659669b71e6b3832b9327e5366",
+          "canonicalLfSha256": "837b1e8ad821ea2d7e546b451074cae4081a01659669b71e6b3832b9327e5366",
+          "gitBlobSha1": "8b87ddbb7bb4dee3456c5554cb8cbec16128edac"
+        },
+        {
+          "path": "apps/api/test/scan-plane/scan-plane.e2e-spec.ts",
+          "archiveMember": "apps/api/test/scan-plane/scan-plane.e2e-spec.ts",
+          "archiveMemberSha256": "7890792ec82e361a1e38b5ef5d189642c1944e84e1e7dc54e110f538a2373470",
+          "capturedRawSha256": "7890792ec82e361a1e38b5ef5d189642c1944e84e1e7dc54e110f538a2373470",
+          "canonicalLfSha256": "7890792ec82e361a1e38b5ef5d189642c1944e84e1e7dc54e110f538a2373470",
+          "gitBlobSha1": "d52f58c210c6450c871ce2ff49f74ccc933cbfa1"
+        },
+        {
+          "path": "apps/api/test/support/memory-control-plane.ts",
+          "archiveMember": "apps/api/test/support/memory-control-plane.ts",
+          "archiveMemberSha256": "febc3f019d20b405acf41b9a64b580ea76e28245b96b581d6b923219a98f90f1",
+          "capturedRawSha256": "febc3f019d20b405acf41b9a64b580ea76e28245b96b581d6b923219a98f90f1",
+          "canonicalLfSha256": "febc3f019d20b405acf41b9a64b580ea76e28245b96b581d6b923219a98f90f1",
+          "gitBlobSha1": "a1998f6d564fae31446ad0342d4d3f713cbee912"
+        },
+        {
+          "path": "apps/api/test/support/memory-evidence.mjs",
+          "archiveMember": "apps/api/test/support/memory-evidence.mjs",
+          "archiveMemberSha256": "8cc9d97f57ef91553df76dad2d45475ca9a412045f29317d2fa527291dfa22dc",
+          "capturedRawSha256": "8cc9d97f57ef91553df76dad2d45475ca9a412045f29317d2fa527291dfa22dc",
+          "canonicalLfSha256": "8cc9d97f57ef91553df76dad2d45475ca9a412045f29317d2fa527291dfa22dc",
+          "gitBlobSha1": "c51c3e18edd57c679febba5fabb072895d30b8f5"
+        },
+        {
+          "path": "apps/api/test/support/test-app.ts",
+          "archiveMember": "apps/api/test/support/test-app.ts",
+          "archiveMemberSha256": "ed6c4f382aab4a436f7acc0598b109255c786d1d94d4b3e0cd781c248fb6e5d2",
+          "capturedRawSha256": "ed6c4f382aab4a436f7acc0598b109255c786d1d94d4b3e0cd781c248fb6e5d2",
+          "canonicalLfSha256": "ed6c4f382aab4a436f7acc0598b109255c786d1d94d4b3e0cd781c248fb6e5d2",
+          "gitBlobSha1": "1364a9e3d0cc79a930a339c05fcabb7eee84c606"
+        },
+        {
+          "path": "apps/api/test/support/test-environment.ts",
+          "archiveMember": "apps/api/test/support/test-environment.ts",
+          "archiveMemberSha256": "3dd17063256ea55b821d650737f68bebeb44840feeac9c200c1868b902c91070",
+          "capturedRawSha256": "3dd17063256ea55b821d650737f68bebeb44840feeac9c200c1868b902c91070",
+          "canonicalLfSha256": "3dd17063256ea55b821d650737f68bebeb44840feeac9c200c1868b902c91070",
+          "gitBlobSha1": "41b4c32508468295feac3eba6e5bb6ee85dc6b26"
+        },
+        {
+          "path": "apps/api/test/token-broker/token-broker.e2e-spec.ts",
+          "archiveMember": "apps/api/test/token-broker/token-broker.e2e-spec.ts",
+          "archiveMemberSha256": "7adde7b75f15c26c0492d7df1215ad7d297b328c35e947336fc852c874f63a43",
+          "capturedRawSha256": "7adde7b75f15c26c0492d7df1215ad7d297b328c35e947336fc852c874f63a43",
+          "canonicalLfSha256": "7adde7b75f15c26c0492d7df1215ad7d297b328c35e947336fc852c874f63a43",
+          "gitBlobSha1": "28423bf35dcb48b8eaa51059bb0c0225e8b66368"
+        },
+        {
+          "path": "apps/api/tsconfig.build.json",
+          "archiveMember": "apps/api/tsconfig.build.json",
+          "archiveMemberSha256": "6327b5397bf43b83358708cb54a1eb256ec306909bee82056ec856941f08edb2",
+          "capturedRawSha256": "6327b5397bf43b83358708cb54a1eb256ec306909bee82056ec856941f08edb2",
+          "canonicalLfSha256": "6327b5397bf43b83358708cb54a1eb256ec306909bee82056ec856941f08edb2",
+          "gitBlobSha1": "030ba07d34dc0ebd1de187d34de452b8f9528322"
+        },
+        {
+          "path": "apps/api/tsconfig.json",
+          "archiveMember": "apps/api/tsconfig.json",
+          "archiveMemberSha256": "ca5fbf9e266984fcfa7857cd2d52a29864a30b79b908adc98532eece91c0e47c",
+          "capturedRawSha256": "ca5fbf9e266984fcfa7857cd2d52a29864a30b79b908adc98532eece91c0e47c",
+          "canonicalLfSha256": "1cb925fa4759b1ebf23ce33c64d823cff75c5734f31f7e7d135174f365440c6c",
+          "gitBlobSha1": "4d9fc41b126f2409cd3cf627d24ed89620449eaa"
+        },
+        {
+          "path": "packages/shared/package.json",
+          "archiveMember": "packages/shared/package.json",
+          "archiveMemberSha256": "973d719f95efc4b6a9779b85d6baaed61d33416801fd838c19496f37a07bc95c",
+          "capturedRawSha256": "973d719f95efc4b6a9779b85d6baaed61d33416801fd838c19496f37a07bc95c",
+          "canonicalLfSha256": "0db2ba3f8c5d3ed9300a882d95ffca1cf57623b0bced530931f9922574dbcc9d",
+          "gitBlobSha1": "f0f3e992f9e6692c71c847ce5a41757d254054d7"
+        },
+        {
+          "path": "packages/shared/src/index.ts",
+          "archiveMember": "packages/shared/src/index.ts",
+          "archiveMemberSha256": "20c3a209e2135881b414648e649deb3a73ed20dad7e83d670299f962ad970851",
+          "capturedRawSha256": "20c3a209e2135881b414648e649deb3a73ed20dad7e83d670299f962ad970851",
+          "canonicalLfSha256": "20c3a209e2135881b414648e649deb3a73ed20dad7e83d670299f962ad970851",
+          "gitBlobSha1": "d504ea0b0832865d360ad356d23c6bc83c9ead45"
+        },
+        {
+          "path": "packages/shared/src/types/auth.ts",
+          "archiveMember": "packages/shared/src/types/auth.ts",
+          "archiveMemberSha256": "1a7f4fa7d01bb6cbe08e6a0eee6f5c6972bd3e5020deb3b2925799e729ac737c",
+          "capturedRawSha256": "1a7f4fa7d01bb6cbe08e6a0eee6f5c6972bd3e5020deb3b2925799e729ac737c",
+          "canonicalLfSha256": "1a7f4fa7d01bb6cbe08e6a0eee6f5c6972bd3e5020deb3b2925799e729ac737c",
+          "gitBlobSha1": "c70d64305331483906e30fb0eab4f563e130e5a4"
+        },
+        {
+          "path": "packages/shared/src/types/common.ts",
+          "archiveMember": "packages/shared/src/types/common.ts",
+          "archiveMemberSha256": "a2d424f317ea00bde57ecacbb4d895eb26bf2e47c681b507d79f61972e2bd84e",
+          "capturedRawSha256": "a2d424f317ea00bde57ecacbb4d895eb26bf2e47c681b507d79f61972e2bd84e",
+          "canonicalLfSha256": "a2d424f317ea00bde57ecacbb4d895eb26bf2e47c681b507d79f61972e2bd84e",
+          "gitBlobSha1": "79be85df880a03e14f2c98a5c8f6b106aa44f380"
+        },
+        {
+          "path": "packages/shared/src/types/dashboard.ts",
+          "archiveMember": "packages/shared/src/types/dashboard.ts",
+          "archiveMemberSha256": "4b5d00709049823e1d619223ba46534385a94fd4f45600913276b3f904e16a46",
+          "capturedRawSha256": "4b5d00709049823e1d619223ba46534385a94fd4f45600913276b3f904e16a46",
+          "canonicalLfSha256": "4b5d00709049823e1d619223ba46534385a94fd4f45600913276b3f904e16a46",
+          "gitBlobSha1": "556a40e4dd85036def8b46b1a78471acb5aaf192"
+        },
+        {
+          "path": "packages/shared/src/types/fetch-capability.ts",
+          "archiveMember": "packages/shared/src/types/fetch-capability.ts",
+          "archiveMemberSha256": "f665b6097c981f0e8e551c127a290b827dad4fa336f44b3fc01bbb502cacf282",
+          "capturedRawSha256": "f665b6097c981f0e8e551c127a290b827dad4fa336f44b3fc01bbb502cacf282",
+          "canonicalLfSha256": "f665b6097c981f0e8e551c127a290b827dad4fa336f44b3fc01bbb502cacf282",
+          "gitBlobSha1": "60134180d3336a71b5827084821046395ab67e4e"
+        },
+        {
+          "path": "packages/shared/src/types/github-installation.ts",
+          "archiveMember": "packages/shared/src/types/github-installation.ts",
+          "archiveMemberSha256": "a98c94be6c9cd99abaa52913ad9b1cddda026f255b96e4d38bee68540ee008e2",
+          "capturedRawSha256": "a98c94be6c9cd99abaa52913ad9b1cddda026f255b96e4d38bee68540ee008e2",
+          "canonicalLfSha256": "a98c94be6c9cd99abaa52913ad9b1cddda026f255b96e4d38bee68540ee008e2",
+          "gitBlobSha1": "b85723c80da130d26e683447129a08da45850966"
+        },
+        {
+          "path": "packages/shared/src/types/private-worker.ts",
+          "archiveMember": "packages/shared/src/types/private-worker.ts",
+          "archiveMemberSha256": "3af0cff5698a04f8e5f846253388c719cc3c6ca35ccb4d91f7dfe5c597180f9e",
+          "capturedRawSha256": "3af0cff5698a04f8e5f846253388c719cc3c6ca35ccb4d91f7dfe5c597180f9e",
+          "canonicalLfSha256": "3af0cff5698a04f8e5f846253388c719cc3c6ca35ccb4d91f7dfe5c597180f9e",
+          "gitBlobSha1": "90fe7b5534f771973c1cfaa8d6431a5b1b9d4efa"
+        },
+        {
+          "path": "packages/shared/src/types/repo.ts",
+          "archiveMember": "packages/shared/src/types/repo.ts",
+          "archiveMemberSha256": "4e1c808183643c1bdfafad2a4f8348757d255016a59d8cc5a0adcd0f5b45d05a",
+          "capturedRawSha256": "4e1c808183643c1bdfafad2a4f8348757d255016a59d8cc5a0adcd0f5b45d05a",
+          "canonicalLfSha256": "4e1c808183643c1bdfafad2a4f8348757d255016a59d8cc5a0adcd0f5b45d05a",
+          "gitBlobSha1": "ad3bbfdcd72f661774e29d4d77dda0cf83c83dfe"
+        },
+        {
+          "path": "packages/shared/src/types/report.ts",
+          "archiveMember": "packages/shared/src/types/report.ts",
+          "archiveMemberSha256": "e89817cce7358ca20a98894d697a238456715bff7952402466fa49f06f068340",
+          "capturedRawSha256": "e89817cce7358ca20a98894d697a238456715bff7952402466fa49f06f068340",
+          "canonicalLfSha256": "e89817cce7358ca20a98894d697a238456715bff7952402466fa49f06f068340",
+          "gitBlobSha1": "53e143a385001d275801786f58c401eadf2bb862"
+        },
+        {
+          "path": "packages/shared/src/types/runtime-results.ts",
+          "archiveMember": "packages/shared/src/types/runtime-results.ts",
+          "archiveMemberSha256": "962b0438ba9be8b59344955cdfa06c0a073e7e14dff5fc4af765d1b58c0ffe26",
+          "capturedRawSha256": "962b0438ba9be8b59344955cdfa06c0a073e7e14dff5fc4af765d1b58c0ffe26",
+          "canonicalLfSha256": "962b0438ba9be8b59344955cdfa06c0a073e7e14dff5fc4af765d1b58c0ffe26",
+          "gitBlobSha1": "3cd8ff54d5fd92ddcbcc500a2fd436c16499cec5"
+        },
+        {
+          "path": "packages/shared/src/types/scan-dispatch.ts",
+          "archiveMember": "packages/shared/src/types/scan-dispatch.ts",
+          "archiveMemberSha256": "cd22c13be36917ea405d7c7ad74f3e71bf7c0533248debe08251e734f0fb8191",
+          "capturedRawSha256": "cd22c13be36917ea405d7c7ad74f3e71bf7c0533248debe08251e734f0fb8191",
+          "canonicalLfSha256": "cd22c13be36917ea405d7c7ad74f3e71bf7c0533248debe08251e734f0fb8191",
+          "gitBlobSha1": "523b1f75f782ba85b2b1fe76ecd3e82a7a5f7232"
+        },
+        {
+          "path": "packages/shared/src/types/scan-planning.ts",
+          "archiveMember": "packages/shared/src/types/scan-planning.ts",
+          "archiveMemberSha256": "154d67bf1f3915a6cce1a35e53857fb25b3917785255cc87a82ea0d0e7872467",
+          "capturedRawSha256": "154d67bf1f3915a6cce1a35e53857fb25b3917785255cc87a82ea0d0e7872467",
+          "canonicalLfSha256": "154d67bf1f3915a6cce1a35e53857fb25b3917785255cc87a82ea0d0e7872467",
+          "gitBlobSha1": "56e8054cb98c0347ab8aee935779b9d000e1c19f"
+        },
+        {
+          "path": "packages/shared/src/types/scan.ts",
+          "archiveMember": "packages/shared/src/types/scan.ts",
+          "archiveMemberSha256": "e60b70390140a20f83b1dbdf726af622cce3b3b26b3d32fc0bf4f5f4076bde29",
+          "capturedRawSha256": "e60b70390140a20f83b1dbdf726af622cce3b3b26b3d32fc0bf4f5f4076bde29",
+          "canonicalLfSha256": "e60b70390140a20f83b1dbdf726af622cce3b3b26b3d32fc0bf4f5f4076bde29",
+          "gitBlobSha1": "8d886119050fb8dca0bac3ec479ad63be36cdbd1"
+        },
+        {
+          "path": "packages/shared/src/types/vulnerability.ts",
+          "archiveMember": "packages/shared/src/types/vulnerability.ts",
+          "archiveMemberSha256": "15cb67ab63b3db2f0c6ef38d22eda46c7695f923873d9f965692712cdcf6e0eb",
+          "capturedRawSha256": "15cb67ab63b3db2f0c6ef38d22eda46c7695f923873d9f965692712cdcf6e0eb",
+          "canonicalLfSha256": "15cb67ab63b3db2f0c6ef38d22eda46c7695f923873d9f965692712cdcf6e0eb",
+          "gitBlobSha1": "55bdd45d4d70bd6a0bc6717d7c5d5ecf181d8936"
+        },
+        {
+          "path": "packages/shared/test/architecture-contracts.test.mjs",
+          "archiveMember": "packages/shared/test/architecture-contracts.test.mjs",
+          "archiveMemberSha256": "c4b6d25c3cf577d106cc1f6c4bebe8ba89a8946389a09375410cd76232f16363",
+          "capturedRawSha256": "c4b6d25c3cf577d106cc1f6c4bebe8ba89a8946389a09375410cd76232f16363",
+          "canonicalLfSha256": "c4b6d25c3cf577d106cc1f6c4bebe8ba89a8946389a09375410cd76232f16363",
+          "gitBlobSha1": "68bd086f797db5e9f4565f0eb40f1c703de055a8"
+        },
+        {
+          "path": "packages/shared/test/scan-planning.test.mjs",
+          "archiveMember": "packages/shared/test/scan-planning.test.mjs",
+          "archiveMemberSha256": "8347acaad255479e0209150c156744e3d7f8b55943e80a648fcad3fde0f2fd82",
+          "capturedRawSha256": "8347acaad255479e0209150c156744e3d7f8b55943e80a648fcad3fde0f2fd82",
+          "canonicalLfSha256": "8347acaad255479e0209150c156744e3d7f8b55943e80a648fcad3fde0f2fd82",
+          "gitBlobSha1": "4ce0d8c381e5e88038cb8bbdcf24debede065db4"
+        },
+        {
+          "path": "packages/shared/tsconfig.json",
+          "archiveMember": "packages/shared/tsconfig.json",
+          "archiveMemberSha256": "7d7c3e97641f126419658c9985deb5d605463b3efc6b06c2cabf04401ca64863",
+          "capturedRawSha256": "7d7c3e97641f126419658c9985deb5d605463b3efc6b06c2cabf04401ca64863",
+          "canonicalLfSha256": "26542772d4265b89565d83fa6a180b00d2ed6755fbede4190f1f26fa12fdaabe",
+          "gitBlobSha1": "ff1bd359f25088f9d6b558d8f821727536676f11"
+        }
+      ]
+    },
+    {
+      "component": "web",
+      "archive": "ec2-runtime-20261108-124735.tar.gz",
+      "archiveSha256": "8d49489993a3b2252dab758be5d144ab05a8b1c4d006ece80a7a3075ff40a69d",
+      "files": [
+        {
+          "path": "apps/web/Dockerfile",
+          "archiveMember": "apps/web/Dockerfile",
+          "archiveMemberSha256": "bf1a1d326c58ca45f6b7c188cafea241a8209c19e9eb19b3269cd927716c9482",
+          "capturedRawSha256": "bf1a1d326c58ca45f6b7c188cafea241a8209c19e9eb19b3269cd927716c9482",
+          "canonicalLfSha256": "323da89d0a53e2ae688cbbb04d974c469df3e8190cc8fcfff11f16a536054712",
+          "gitBlobSha1": "d2e6d36ed5b8aafe20732a7d44e3c7d35f4e07dd"
+        },
+        {
+          "path": "apps/web/index.html",
+          "archiveMember": "apps/web/index.html",
+          "archiveMemberSha256": "08c758c201f9b12d17b1d9b52342c1b1a82afd371075115b1a09fec4398036c7",
+          "capturedRawSha256": "08c758c201f9b12d17b1d9b52342c1b1a82afd371075115b1a09fec4398036c7",
+          "canonicalLfSha256": "2180bbdae5d6bb0b781da27f25fa3b78c2bc3722f5f7d7657841083aea7a4ba4",
+          "gitBlobSha1": "d6c0167fbe9adc7b9b273e1b787e6b60679e366e"
+        },
+        {
+          "path": "apps/web/nginx.conf",
+          "archiveMember": "apps/web/nginx.conf",
+          "archiveMemberSha256": "b47e55ac73db0c4b8227ab851afe846565f5b0cf7afaddd86001e0255127dd4e",
+          "capturedRawSha256": "b47e55ac73db0c4b8227ab851afe846565f5b0cf7afaddd86001e0255127dd4e",
+          "canonicalLfSha256": "e56f79ac2b1243017fec4c391c29ed75ada87a7d9ff31b2ba8f3a7504001aebd",
+          "gitBlobSha1": "e8cb2cb3fcce81e41a3cd884e971c51d6291785c"
+        },
+        {
+          "path": "apps/web/package.json",
+          "archiveMember": "apps/web/package.json",
+          "archiveMemberSha256": "2c311d5db57843b2182359de1fa2c486bf680df2c30ad66d1d0da6f0c669aada",
+          "capturedRawSha256": "2c311d5db57843b2182359de1fa2c486bf680df2c30ad66d1d0da6f0c669aada",
+          "canonicalLfSha256": "0cef5967f24e5c39b28e2cf6d8b704a012a9bfe7d656a9ac6f2b7d38e7254ddf",
+          "gitBlobSha1": "537e38a7f36bae4f5ac1a5716490fde574e5ae2c"
+        },
+        {
+          "path": "apps/web/src/App.test.tsx",
+          "archiveMember": "apps/web/src/App.test.tsx",
+          "archiveMemberSha256": "d8e36072321d60a66f6e589b5da609ff1694a469e964b6500c3cfba2fbafdec6",
+          "capturedRawSha256": "d8e36072321d60a66f6e589b5da609ff1694a469e964b6500c3cfba2fbafdec6",
+          "canonicalLfSha256": "d8e36072321d60a66f6e589b5da609ff1694a469e964b6500c3cfba2fbafdec6",
+          "gitBlobSha1": "cd8fddb788b245a581c36f4cd561e9d59f2c1de1"
+        },
+        {
+          "path": "apps/web/src/App.tsx",
+          "archiveMember": "apps/web/src/App.tsx",
+          "archiveMemberSha256": "a91416fc761ee9d0628673c111d6ce1fd7c049eea69b41c38568af12e57a682e",
+          "capturedRawSha256": "a91416fc761ee9d0628673c111d6ce1fd7c049eea69b41c38568af12e57a682e",
+          "canonicalLfSha256": "a91416fc761ee9d0628673c111d6ce1fd7c049eea69b41c38568af12e57a682e",
+          "gitBlobSha1": "e9801ad73c80d241f023597512d24c0e5becb920"
+        },
+        {
+          "path": "apps/web/src/api/auth.ts",
+          "archiveMember": "apps/web/src/api/auth.ts",
+          "archiveMemberSha256": "80feb80102384c14270df7cf52c034689d7b9074710e10a02cacf2dc09bf8b3f",
+          "capturedRawSha256": "80feb80102384c14270df7cf52c034689d7b9074710e10a02cacf2dc09bf8b3f",
+          "canonicalLfSha256": "80feb80102384c14270df7cf52c034689d7b9074710e10a02cacf2dc09bf8b3f",
+          "gitBlobSha1": "c397b59542ae2f6f0de3045921e00c30a8a85739"
+        },
+        {
+          "path": "apps/web/src/api/client.test.ts",
+          "archiveMember": "apps/web/src/api/client.test.ts",
+          "archiveMemberSha256": "8355522aa643a0164654b78509ea633e4b826cf54ca46a9da403c8d9071e0701",
+          "capturedRawSha256": "8355522aa643a0164654b78509ea633e4b826cf54ca46a9da403c8d9071e0701",
+          "canonicalLfSha256": "8355522aa643a0164654b78509ea633e4b826cf54ca46a9da403c8d9071e0701",
+          "gitBlobSha1": "694720b668b0672faa0044abc760a0f397fc758f"
+        },
+        {
+          "path": "apps/web/src/api/client.ts",
+          "archiveMember": "apps/web/src/api/client.ts",
+          "archiveMemberSha256": "7c4ee3a8b4b21982321aa7d356a26b927988e8618769f1ca12923c1a7ace8cca",
+          "capturedRawSha256": "7c4ee3a8b4b21982321aa7d356a26b927988e8618769f1ca12923c1a7ace8cca",
+          "canonicalLfSha256": "7c4ee3a8b4b21982321aa7d356a26b927988e8618769f1ca12923c1a7ace8cca",
+          "gitBlobSha1": "e8e74252231ed1869af6419093ce883970689bd4"
+        },
+        {
+          "path": "apps/web/src/api/dashboard.test.ts",
+          "archiveMember": "apps/web/src/api/dashboard.test.ts",
+          "archiveMemberSha256": "94331654e072346be1c126348d958d32dfb2b9be52a7a4facd3929c3861554bf",
+          "capturedRawSha256": "94331654e072346be1c126348d958d32dfb2b9be52a7a4facd3929c3861554bf",
+          "canonicalLfSha256": "94331654e072346be1c126348d958d32dfb2b9be52a7a4facd3929c3861554bf",
+          "gitBlobSha1": "13c4b148667795f4235b22c9161ba7ca1ea7b6b4"
+        },
+        {
+          "path": "apps/web/src/api/dashboard.ts",
+          "archiveMember": "apps/web/src/api/dashboard.ts",
+          "archiveMemberSha256": "5b763c1141c9cf89b5785c06bc7eabbfba31c3d7c558086d13086bac4f0f2d97",
+          "capturedRawSha256": "5b763c1141c9cf89b5785c06bc7eabbfba31c3d7c558086d13086bac4f0f2d97",
+          "canonicalLfSha256": "5b763c1141c9cf89b5785c06bc7eabbfba31c3d7c558086d13086bac4f0f2d97",
+          "gitBlobSha1": "b6f22f6fd75707b1046a4d1aa3adc0beceb69971"
+        },
+        {
+          "path": "apps/web/src/api/reports.ts",
+          "archiveMember": "apps/web/src/api/reports.ts",
+          "archiveMemberSha256": "ef926df8a5076490c0eb64a388069c95bda7a235f02974b6f99c87c8c9ed0df4",
+          "capturedRawSha256": "ef926df8a5076490c0eb64a388069c95bda7a235f02974b6f99c87c8c9ed0df4",
+          "canonicalLfSha256": "ef926df8a5076490c0eb64a388069c95bda7a235f02974b6f99c87c8c9ed0df4",
+          "gitBlobSha1": "c1d6fac23deba9c9d1257b61976e80f0810a35b7"
+        },
+        {
+          "path": "apps/web/src/api/repos.test.ts",
+          "archiveMember": "apps/web/src/api/repos.test.ts",
+          "archiveMemberSha256": "a3dfd574d03c8947a290110237a54dbe82788b306f2c1839fb20904b61e87cad",
+          "capturedRawSha256": "a3dfd574d03c8947a290110237a54dbe82788b306f2c1839fb20904b61e87cad",
+          "canonicalLfSha256": "a3dfd574d03c8947a290110237a54dbe82788b306f2c1839fb20904b61e87cad",
+          "gitBlobSha1": "ff86438ecc2e28bac7f1e0829181dfe39e094877"
+        },
+        {
+          "path": "apps/web/src/api/repos.ts",
+          "archiveMember": "apps/web/src/api/repos.ts",
+          "archiveMemberSha256": "c781f53dcbeef338899b5ce5cb551b06602d15ffad3cea9dd277b97eb5e70852",
+          "capturedRawSha256": "c781f53dcbeef338899b5ce5cb551b06602d15ffad3cea9dd277b97eb5e70852",
+          "canonicalLfSha256": "c781f53dcbeef338899b5ce5cb551b06602d15ffad3cea9dd277b97eb5e70852",
+          "gitBlobSha1": "636f867e30a23e454d262d8582c76faf1eb9554e"
+        },
+        {
+          "path": "apps/web/src/api/scans.ts",
+          "archiveMember": "apps/web/src/api/scans.ts",
+          "archiveMemberSha256": "777653494b082a9d7535788ff5931783ef75b8dca715335d9351266bc87e86a9",
+          "capturedRawSha256": "777653494b082a9d7535788ff5931783ef75b8dca715335d9351266bc87e86a9",
+          "canonicalLfSha256": "777653494b082a9d7535788ff5931783ef75b8dca715335d9351266bc87e86a9",
+          "gitBlobSha1": "3a939d5c8401fa69858dfc7d48779c425e06d9f9"
+        },
+        {
+          "path": "apps/web/src/api/vulnerabilities.ts",
+          "archiveMember": "apps/web/src/api/vulnerabilities.ts",
+          "archiveMemberSha256": "7430151bb1a8655717eda264dc898f1556123bbf763bfadf913928d42a41cae2",
+          "capturedRawSha256": "7430151bb1a8655717eda264dc898f1556123bbf763bfadf913928d42a41cae2",
+          "canonicalLfSha256": "7430151bb1a8655717eda264dc898f1556123bbf763bfadf913928d42a41cae2",
+          "gitBlobSha1": "6caa0d07c75e46631a0827508159df17fcf88ccd"
+        },
+        {
+          "path": "apps/web/src/components/ai/AiAdvisoryPanel.test.tsx",
+          "archiveMember": "apps/web/src/components/ai/AiAdvisoryPanel.test.tsx",
+          "archiveMemberSha256": "5827840fe66ec9c71b607622066bf693dc0493faff757c206afac9902f79ef96",
+          "capturedRawSha256": "5827840fe66ec9c71b607622066bf693dc0493faff757c206afac9902f79ef96",
+          "canonicalLfSha256": "5827840fe66ec9c71b607622066bf693dc0493faff757c206afac9902f79ef96",
+          "gitBlobSha1": "2d9f3e32d87e1928d59fbb64dba4a97c7094881d"
+        },
+        {
+          "path": "apps/web/src/components/ai/AiAdvisoryPanel.tsx",
+          "archiveMember": "apps/web/src/components/ai/AiAdvisoryPanel.tsx",
+          "archiveMemberSha256": "62a4e77f9716cbd5e575cf5d5ee1f540d3d8bdccac76e751819027a054c32c3a",
+          "capturedRawSha256": "62a4e77f9716cbd5e575cf5d5ee1f540d3d8bdccac76e751819027a054c32c3a",
+          "canonicalLfSha256": "62a4e77f9716cbd5e575cf5d5ee1f540d3d8bdccac76e751819027a054c32c3a",
+          "gitBlobSha1": "b787c7f6ce86c505f01cfede7032b6ea438f410c"
+        },
+        {
+          "path": "apps/web/src/components/auth/LocalDemoAuthRedirect.test.tsx",
+          "archiveMember": "apps/web/src/components/auth/LocalDemoAuthRedirect.test.tsx",
+          "archiveMemberSha256": "86f9f1e23cfd6b937493cc6799f85680f933831353c711cdc6ff707241c9457c",
+          "capturedRawSha256": "86f9f1e23cfd6b937493cc6799f85680f933831353c711cdc6ff707241c9457c",
+          "canonicalLfSha256": "86f9f1e23cfd6b937493cc6799f85680f933831353c711cdc6ff707241c9457c",
+          "gitBlobSha1": "939aef7ef5382c36b98840ab2613de11d5b3b584"
+        },
+        {
+          "path": "apps/web/src/components/auth/LocalDemoAuthRedirect.tsx",
+          "archiveMember": "apps/web/src/components/auth/LocalDemoAuthRedirect.tsx",
+          "archiveMemberSha256": "c00ddfd218efa109b567b287ad4a4429be454f981be140ba0bb76a727cf91ec5",
+          "capturedRawSha256": "c00ddfd218efa109b567b287ad4a4429be454f981be140ba0bb76a727cf91ec5",
+          "canonicalLfSha256": "c00ddfd218efa109b567b287ad4a4429be454f981be140ba0bb76a727cf91ec5",
+          "gitBlobSha1": "fea39aef0ba22d69a466b9f209b16f198b2bed50"
+        },
+        {
+          "path": "apps/web/src/components/common/AppErrorBoundary.tsx",
+          "archiveMember": "apps/web/src/components/common/AppErrorBoundary.tsx",
+          "archiveMemberSha256": "6a75e957fd0a59083de926e6a43b0ed0a5df19f18c26607c3bb57ede696aacc7",
+          "capturedRawSha256": "6a75e957fd0a59083de926e6a43b0ed0a5df19f18c26607c3bb57ede696aacc7",
+          "canonicalLfSha256": "6a75e957fd0a59083de926e6a43b0ed0a5df19f18c26607c3bb57ede696aacc7",
+          "gitBlobSha1": "0b3f7f325741b05b225b1feb5657efb1204f5a47"
+        },
+        {
+          "path": "apps/web/src/components/layout/AppShell.test.tsx",
+          "archiveMember": "apps/web/src/components/layout/AppShell.test.tsx",
+          "archiveMemberSha256": "8554e2f6bd47a291f7b55c870e1fa9cb230a108d1d088f22c48f52d3ae46f68d",
+          "capturedRawSha256": "8554e2f6bd47a291f7b55c870e1fa9cb230a108d1d088f22c48f52d3ae46f68d",
+          "canonicalLfSha256": "8554e2f6bd47a291f7b55c870e1fa9cb230a108d1d088f22c48f52d3ae46f68d",
+          "gitBlobSha1": "315c0c28fbd577ce5a85b22941355a02657e14b0"
+        },
+        {
+          "path": "apps/web/src/components/layout/AppShell.tsx",
+          "archiveMember": "apps/web/src/components/layout/AppShell.tsx",
+          "archiveMemberSha256": "d1fdae442aed82c7d2faffab07680a8725bf0483e6b09ab47aac115f393140de",
+          "capturedRawSha256": "d1fdae442aed82c7d2faffab07680a8725bf0483e6b09ab47aac115f393140de",
+          "canonicalLfSha256": "d1fdae442aed82c7d2faffab07680a8725bf0483e6b09ab47aac115f393140de",
+          "gitBlobSha1": "86fdf1476d7be4678e16ce518c6ed0a902427fd6"
+        },
+        {
+          "path": "apps/web/src/components/layout/ProtectedRoute.test.tsx",
+          "archiveMember": "apps/web/src/components/layout/ProtectedRoute.test.tsx",
+          "archiveMemberSha256": "45d9767230b440e87c9fb778f80157903f57a80f3481b3e8b46e567b6cdbdac2",
+          "capturedRawSha256": "45d9767230b440e87c9fb778f80157903f57a80f3481b3e8b46e567b6cdbdac2",
+          "canonicalLfSha256": "45d9767230b440e87c9fb778f80157903f57a80f3481b3e8b46e567b6cdbdac2",
+          "gitBlobSha1": "a098a627a89e67cc173bbc213db31d794963ae3b"
+        },
+        {
+          "path": "apps/web/src/components/layout/ProtectedRoute.tsx",
+          "archiveMember": "apps/web/src/components/layout/ProtectedRoute.tsx",
+          "archiveMemberSha256": "b4784eff2048dce119d2a3656429fd980158c5a270ffae02752faad40c1d6804",
+          "capturedRawSha256": "b4784eff2048dce119d2a3656429fd980158c5a270ffae02752faad40c1d6804",
+          "canonicalLfSha256": "b4784eff2048dce119d2a3656429fd980158c5a270ffae02752faad40c1d6804",
+          "gitBlobSha1": "5b3c9d834169da612c678274304988554aec3d2d"
+        },
+        {
+          "path": "apps/web/src/demo/demoData.ts",
+          "archiveMember": "apps/web/src/demo/demoData.ts",
+          "archiveMemberSha256": "9402c4dba9744238b3aee7df2dfc46cd62b0c563e909a841294739f74d05e5dc",
+          "capturedRawSha256": "9402c4dba9744238b3aee7df2dfc46cd62b0c563e909a841294739f74d05e5dc",
+          "canonicalLfSha256": "9402c4dba9744238b3aee7df2dfc46cd62b0c563e909a841294739f74d05e5dc",
+          "gitBlobSha1": "a59621e901d1a2d47b6f98fe9e80a36c0770f187"
+        },
+        {
+          "path": "apps/web/src/demo/demoMode.test.ts",
+          "archiveMember": "apps/web/src/demo/demoMode.test.ts",
+          "archiveMemberSha256": "9254f7f054ac8a4c0ba82ce03baf500ded464d9577a92e8b9a4f3688622b4d12",
+          "capturedRawSha256": "9254f7f054ac8a4c0ba82ce03baf500ded464d9577a92e8b9a4f3688622b4d12",
+          "canonicalLfSha256": "9254f7f054ac8a4c0ba82ce03baf500ded464d9577a92e8b9a4f3688622b4d12",
+          "gitBlobSha1": "98952bb3cd86551ed8c283bc3f0097f1f6baa2ea"
+        },
+        {
+          "path": "apps/web/src/demo/demoMode.ts",
+          "archiveMember": "apps/web/src/demo/demoMode.ts",
+          "archiveMemberSha256": "9fb56a3f6447eb59683976365843cab575eb435ade8a89b41e00e76048a065d4",
+          "capturedRawSha256": "9fb56a3f6447eb59683976365843cab575eb435ade8a89b41e00e76048a065d4",
+          "canonicalLfSha256": "9fb56a3f6447eb59683976365843cab575eb435ade8a89b41e00e76048a065d4",
+          "gitBlobSha1": "8d4a89f27d3be12ddce4c5f4ee116ddd679e8ad1"
+        },
+        {
+          "path": "apps/web/src/hooks/useAuth.test.tsx",
+          "archiveMember": "apps/web/src/hooks/useAuth.test.tsx",
+          "archiveMemberSha256": "a85d88b950cf2fda7a6507106d3c2a403c3cd52481a2b41e6c41446e9751a924",
+          "capturedRawSha256": "a85d88b950cf2fda7a6507106d3c2a403c3cd52481a2b41e6c41446e9751a924",
+          "canonicalLfSha256": "a85d88b950cf2fda7a6507106d3c2a403c3cd52481a2b41e6c41446e9751a924",
+          "gitBlobSha1": "fa0cc1662a2077bee5f3bae67c37d509152faaaa"
+        },
+        {
+          "path": "apps/web/src/hooks/useAuth.ts",
+          "archiveMember": "apps/web/src/hooks/useAuth.ts",
+          "archiveMemberSha256": "b54c90d65b48d356c5ae671100c3639387797e15a2edac9e97fa43749dd58b78",
+          "capturedRawSha256": "b54c90d65b48d356c5ae671100c3639387797e15a2edac9e97fa43749dd58b78",
+          "canonicalLfSha256": "b54c90d65b48d356c5ae671100c3639387797e15a2edac9e97fa43749dd58b78",
+          "gitBlobSha1": "2eee3f810ef72bccebe1d7fa9cc6a716a8ac7bec"
+        },
+        {
+          "path": "apps/web/src/main.tsx",
+          "archiveMember": "apps/web/src/main.tsx",
+          "archiveMemberSha256": "c2ccde8774cdfba957630e68b7547fad60e54ffc0b370e7ccdea112c9adde87d",
+          "capturedRawSha256": "c2ccde8774cdfba957630e68b7547fad60e54ffc0b370e7ccdea112c9adde87d",
+          "canonicalLfSha256": "c2ccde8774cdfba957630e68b7547fad60e54ffc0b370e7ccdea112c9adde87d",
+          "gitBlobSha1": "2d145e10e584da5d3e96dccd079b7c0aeccfa55c"
+        },
+        {
+          "path": "apps/web/src/pages/DashboardPage.test.tsx",
+          "archiveMember": "apps/web/src/pages/DashboardPage.test.tsx",
+          "archiveMemberSha256": "326066e0796b27e0a2b9e8030ba62f74da6922d0f82779e001905d2aa7cfe373",
+          "capturedRawSha256": "326066e0796b27e0a2b9e8030ba62f74da6922d0f82779e001905d2aa7cfe373",
+          "canonicalLfSha256": "326066e0796b27e0a2b9e8030ba62f74da6922d0f82779e001905d2aa7cfe373",
+          "gitBlobSha1": "6ae8ec3cdd4f4496cffd64bf1facfa56b5bfbf96"
+        },
+        {
+          "path": "apps/web/src/pages/DashboardPage.tsx",
+          "archiveMember": "apps/web/src/pages/DashboardPage.tsx",
+          "archiveMemberSha256": "c1b75a4e06267f905059a3870e57d2e586ea97fb8ef87ad66b62b1bac7ac887f",
+          "capturedRawSha256": "c1b75a4e06267f905059a3870e57d2e586ea97fb8ef87ad66b62b1bac7ac887f",
+          "canonicalLfSha256": "c1b75a4e06267f905059a3870e57d2e586ea97fb8ef87ad66b62b1bac7ac887f",
+          "gitBlobSha1": "ff2f9194249333a2c370d17e86aebae62d6d24c0"
+        },
+        {
+          "path": "apps/web/src/pages/LandingPage.test.tsx",
+          "archiveMember": "apps/web/src/pages/LandingPage.test.tsx",
+          "archiveMemberSha256": "ea164ada09d424de19901f543cc269ebfc21f32fb4401e99f01d29d31a32b1d7",
+          "capturedRawSha256": "ea164ada09d424de19901f543cc269ebfc21f32fb4401e99f01d29d31a32b1d7",
+          "canonicalLfSha256": "ea164ada09d424de19901f543cc269ebfc21f32fb4401e99f01d29d31a32b1d7",
+          "gitBlobSha1": "c32a244a02c3556e799e56cf476a58c439d5a3c6"
+        },
+        {
+          "path": "apps/web/src/pages/LandingPage.tsx",
+          "archiveMember": "apps/web/src/pages/LandingPage.tsx",
+          "archiveMemberSha256": "0279ad4f77c46d4554d326af4607a54310076b17e066e8a3f147cc55723da590",
+          "capturedRawSha256": "0279ad4f77c46d4554d326af4607a54310076b17e066e8a3f147cc55723da590",
+          "canonicalLfSha256": "0279ad4f77c46d4554d326af4607a54310076b17e066e8a3f147cc55723da590",
+          "gitBlobSha1": "425d4a6db856af03ef7be5f412deda79993b33ea"
+        },
+        {
+          "path": "apps/web/src/pages/LoginPage.test.tsx",
+          "archiveMember": "apps/web/src/pages/LoginPage.test.tsx",
+          "archiveMemberSha256": "75daf4fabd8ca939f5b246d0cca987de5c977cf0c14f23e67056e9a3b698b3e5",
+          "capturedRawSha256": "75daf4fabd8ca939f5b246d0cca987de5c977cf0c14f23e67056e9a3b698b3e5",
+          "canonicalLfSha256": "75daf4fabd8ca939f5b246d0cca987de5c977cf0c14f23e67056e9a3b698b3e5",
+          "gitBlobSha1": "8e53fe55f4ec9760879ace97804a08330f58842b"
+        },
+        {
+          "path": "apps/web/src/pages/LoginPage.tsx",
+          "archiveMember": "apps/web/src/pages/LoginPage.tsx",
+          "archiveMemberSha256": "fb5e3206ff5bca95d498bf3c0a5f6d628cf4f045a6c6de44d68fdc7c08348b85",
+          "capturedRawSha256": "fb5e3206ff5bca95d498bf3c0a5f6d628cf4f045a6c6de44d68fdc7c08348b85",
+          "canonicalLfSha256": "fb5e3206ff5bca95d498bf3c0a5f6d628cf4f045a6c6de44d68fdc7c08348b85",
+          "gitBlobSha1": "17cea434b959a51e61d9c9090ea9b3257d772596"
+        },
+        {
+          "path": "apps/web/src/pages/PricingPage.css",
+          "archiveMember": "apps/web/src/pages/PricingPage.css",
+          "archiveMemberSha256": "50085ae52105d9f6fb6ca8ae24114dcfe343fa1111b382877460d249e6393d27",
+          "capturedRawSha256": "50085ae52105d9f6fb6ca8ae24114dcfe343fa1111b382877460d249e6393d27",
+          "canonicalLfSha256": "1a42f5b5e9855184599498a35cc5acb0e821685d695768732269f2f11031397f",
+          "gitBlobSha1": "6987556123e3a7d37f4a259e6d41e06859ca11e5"
+        },
+        {
+          "path": "apps/web/src/pages/PricingPage.test.tsx",
+          "archiveMember": "apps/web/src/pages/PricingPage.test.tsx",
+          "archiveMemberSha256": "54d57819cca9055bb03395f4cc2c3ff491f4f77a8f7f09fcddf619ae8b1ef3a9",
+          "capturedRawSha256": "54d57819cca9055bb03395f4cc2c3ff491f4f77a8f7f09fcddf619ae8b1ef3a9",
+          "canonicalLfSha256": "54d57819cca9055bb03395f4cc2c3ff491f4f77a8f7f09fcddf619ae8b1ef3a9",
+          "gitBlobSha1": "90c69c9edea1ca5815ca699ec0433b2fddd0526f"
+        },
+        {
+          "path": "apps/web/src/pages/PricingPage.tsx",
+          "archiveMember": "apps/web/src/pages/PricingPage.tsx",
+          "archiveMemberSha256": "4672f5296b3892c7987e2d5751873249a6c59a3cd63322461c751aa9fc6ae456",
+          "capturedRawSha256": "4672f5296b3892c7987e2d5751873249a6c59a3cd63322461c751aa9fc6ae456",
+          "canonicalLfSha256": "4672f5296b3892c7987e2d5751873249a6c59a3cd63322461c751aa9fc6ae456",
+          "gitBlobSha1": "d3fab8f2097f638974582dde64bd65379858119b"
+        },
+        {
+          "path": "apps/web/src/pages/ReportPage.test.tsx",
+          "archiveMember": "apps/web/src/pages/ReportPage.test.tsx",
+          "archiveMemberSha256": "afeb9d6c313f1db3f3fc0b47e8e744ba0bf162291fc81074c5abad8dd68b8e0e",
+          "capturedRawSha256": "afeb9d6c313f1db3f3fc0b47e8e744ba0bf162291fc81074c5abad8dd68b8e0e",
+          "canonicalLfSha256": "afeb9d6c313f1db3f3fc0b47e8e744ba0bf162291fc81074c5abad8dd68b8e0e",
+          "gitBlobSha1": "b022f91672ee4900c7444eafaa6c036ea2b2a8a1"
+        },
+        {
+          "path": "apps/web/src/pages/ReportPage.tsx",
+          "archiveMember": "apps/web/src/pages/ReportPage.tsx",
+          "archiveMemberSha256": "cf6d37a04fa3664166e3e4a443ea08cb24ef486373bec0884af2632018b2d92c",
+          "capturedRawSha256": "cf6d37a04fa3664166e3e4a443ea08cb24ef486373bec0884af2632018b2d92c",
+          "canonicalLfSha256": "cf6d37a04fa3664166e3e4a443ea08cb24ef486373bec0884af2632018b2d92c",
+          "gitBlobSha1": "5409c02e3f3bf17179447b51aa043d26a63b885e"
+        },
+        {
+          "path": "apps/web/src/pages/ReposPage.test.tsx",
+          "archiveMember": "apps/web/src/pages/ReposPage.test.tsx",
+          "archiveMemberSha256": "eec7bd27243d70cfea00abb717f818c8ae8a634d6ee8b9ed3e2cb61934613e2d",
+          "capturedRawSha256": "eec7bd27243d70cfea00abb717f818c8ae8a634d6ee8b9ed3e2cb61934613e2d",
+          "canonicalLfSha256": "eec7bd27243d70cfea00abb717f818c8ae8a634d6ee8b9ed3e2cb61934613e2d",
+          "gitBlobSha1": "cae36b6072469e2be93a8661d022cf8ba406b1c5"
+        },
+        {
+          "path": "apps/web/src/pages/ReposPage.tsx",
+          "archiveMember": "apps/web/src/pages/ReposPage.tsx",
+          "archiveMemberSha256": "c017452f31bff46771cb3712a1458d25df6163fcd3147d2981887915cfad984e",
+          "capturedRawSha256": "c017452f31bff46771cb3712a1458d25df6163fcd3147d2981887915cfad984e",
+          "canonicalLfSha256": "c017452f31bff46771cb3712a1458d25df6163fcd3147d2981887915cfad984e",
+          "gitBlobSha1": "c887db49af7a298d2220e4aa97c3997a2b72e217"
+        },
+        {
+          "path": "apps/web/src/pages/ScanPage.test.tsx",
+          "archiveMember": "apps/web/src/pages/ScanPage.test.tsx",
+          "archiveMemberSha256": "87ad257c85d04e94d279201efc87931c9a73369010fb21504c7c8e5bc49a5572",
+          "capturedRawSha256": "87ad257c85d04e94d279201efc87931c9a73369010fb21504c7c8e5bc49a5572",
+          "canonicalLfSha256": "87ad257c85d04e94d279201efc87931c9a73369010fb21504c7c8e5bc49a5572",
+          "gitBlobSha1": "a8023a07c1b2aef9b94dad71e4fb0e7bcd5aa1e0"
+        },
+        {
+          "path": "apps/web/src/pages/ScanPage.tsx",
+          "archiveMember": "apps/web/src/pages/ScanPage.tsx",
+          "archiveMemberSha256": "43c3297aaba34fd7ded79cc35d66bd64019e1bf56f094b153b5c0543bdc8608e",
+          "capturedRawSha256": "43c3297aaba34fd7ded79cc35d66bd64019e1bf56f094b153b5c0543bdc8608e",
+          "canonicalLfSha256": "43c3297aaba34fd7ded79cc35d66bd64019e1bf56f094b153b5c0543bdc8608e",
+          "gitBlobSha1": "9543c559da132b81ad2d1ea6061ddfb80e9648ff"
+        },
+        {
+          "path": "apps/web/src/pages/VulnerabilityReviewPage.test.tsx",
+          "archiveMember": "apps/web/src/pages/VulnerabilityReviewPage.test.tsx",
+          "archiveMemberSha256": "47bc944503e83cf075f2c2081be1ecb01a8c3aea7d67e2f8a7702992c98c2030",
+          "capturedRawSha256": "47bc944503e83cf075f2c2081be1ecb01a8c3aea7d67e2f8a7702992c98c2030",
+          "canonicalLfSha256": "47bc944503e83cf075f2c2081be1ecb01a8c3aea7d67e2f8a7702992c98c2030",
+          "gitBlobSha1": "80d44090eee61a76bb0ed90cfe4105d4f10feb9c"
+        },
+        {
+          "path": "apps/web/src/pages/VulnerabilityReviewPage.tsx",
+          "archiveMember": "apps/web/src/pages/VulnerabilityReviewPage.tsx",
+          "archiveMemberSha256": "4ae4cf9e4aaf08649e6a8514b6a679de25ac03bdc67bd32ed9714b40bae16658",
+          "capturedRawSha256": "4ae4cf9e4aaf08649e6a8514b6a679de25ac03bdc67bd32ed9714b40bae16658",
+          "canonicalLfSha256": "4ae4cf9e4aaf08649e6a8514b6a679de25ac03bdc67bd32ed9714b40bae16658",
+          "gitBlobSha1": "82cb6ccb4a3cf8259acb22c7e33f5e620dfb4ba6"
+        },
+        {
+          "path": "apps/web/src/query-client.ts",
+          "archiveMember": "apps/web/src/query-client.ts",
+          "archiveMemberSha256": "dbf8b7f1d686101f35ba0992b535da4122622fbdcd5edb79c2f29efd53490dab",
+          "capturedRawSha256": "dbf8b7f1d686101f35ba0992b535da4122622fbdcd5edb79c2f29efd53490dab",
+          "canonicalLfSha256": "dbf8b7f1d686101f35ba0992b535da4122622fbdcd5edb79c2f29efd53490dab",
+          "gitBlobSha1": "ee2eaf0d75bdee4199c824bdb1db9c829ac05dc9"
+        },
+        {
+          "path": "apps/web/src/router.test.tsx",
+          "archiveMember": "apps/web/src/router.test.tsx",
+          "archiveMemberSha256": "95b02a4ee675585ab892cfda6db13f87b227746c5770e229fcf0037a0d329742",
+          "capturedRawSha256": "95b02a4ee675585ab892cfda6db13f87b227746c5770e229fcf0037a0d329742",
+          "canonicalLfSha256": "95b02a4ee675585ab892cfda6db13f87b227746c5770e229fcf0037a0d329742",
+          "gitBlobSha1": "4acbf2fd2da5707b50cb3698db81847324a07d9a"
+        },
+        {
+          "path": "apps/web/src/router.tsx",
+          "archiveMember": "apps/web/src/router.tsx",
+          "archiveMemberSha256": "96ac83fe9792ecdf33a19c5aefbdac59a4976eac1823fd056983a6bacd78f68c",
+          "capturedRawSha256": "96ac83fe9792ecdf33a19c5aefbdac59a4976eac1823fd056983a6bacd78f68c",
+          "canonicalLfSha256": "96ac83fe9792ecdf33a19c5aefbdac59a4976eac1823fd056983a6bacd78f68c",
+          "gitBlobSha1": "b7202ecc2b4ce2094bb9c482c6ab2baf03834d68"
+        },
+        {
+          "path": "apps/web/src/runtime/RuntimeApp.test.tsx",
+          "archiveMember": "apps/web/src/runtime/RuntimeApp.test.tsx",
+          "archiveMemberSha256": "bb78b2eb813a67327424e99363d82314f2ef7038537c0bb4cc07e96ae779c588",
+          "capturedRawSha256": "bb78b2eb813a67327424e99363d82314f2ef7038537c0bb4cc07e96ae779c588",
+          "canonicalLfSha256": "b403ef67836b86e5101c035791558068b89f7549210f30c7c6605947d86ead59",
+          "gitBlobSha1": "c44ad84d04cefb185606845299095bff87ae0299"
+        },
+        {
+          "path": "apps/web/src/runtime/RuntimeApp.tsx",
+          "archiveMember": "apps/web/src/runtime/RuntimeApp.tsx",
+          "archiveMemberSha256": "a5f08e62556890f47c3431b03eb81f4c1bc17d187fb61a7ddd54ca9dbc10aa8d",
+          "capturedRawSha256": "a5f08e62556890f47c3431b03eb81f4c1bc17d187fb61a7ddd54ca9dbc10aa8d",
+          "canonicalLfSha256": "8f1081ed7ff880037ca229bece721a3d59123595a79b1adf4230ff9248081def",
+          "gitBlobSha1": "42ab66d3c10eacf06942a6c203401ede363878ec"
+        },
+        {
+          "path": "apps/web/src/runtime/runtime.css",
+          "archiveMember": "apps/web/src/runtime/runtime.css",
+          "archiveMemberSha256": "9983a5ff6da356053cf4fedd4cdfe40a430131b245541b31dc23a33b6d155401",
+          "capturedRawSha256": "9983a5ff6da356053cf4fedd4cdfe40a430131b245541b31dc23a33b6d155401",
+          "canonicalLfSha256": "9442cc9a6fc2f31114c1e9db21c983f627d0e11fd2d591933c535f8765fce6e7",
+          "gitBlobSha1": "3990c138bfef607df8b3b9856a3918a5406c35f0"
+        },
+        {
+          "path": "apps/web/src/store/auth.store.ts",
+          "archiveMember": "apps/web/src/store/auth.store.ts",
+          "archiveMemberSha256": "a95220e156046c6e5f6ba17d5b2b85404ac597b55516f40f50cd038a842e5079",
+          "capturedRawSha256": "a95220e156046c6e5f6ba17d5b2b85404ac597b55516f40f50cd038a842e5079",
+          "canonicalLfSha256": "a95220e156046c6e5f6ba17d5b2b85404ac597b55516f40f50cd038a842e5079",
+          "gitBlobSha1": "b49d32b7cc02660c1894304bbc322ca3b2467eaa"
+        },
+        {
+          "path": "apps/web/src/styles.css",
+          "archiveMember": "apps/web/src/styles.css",
+          "archiveMemberSha256": "6d7e64e755dae72a713fa697a7aaabeb64658e92f523d6d6210616e97aa0b9bb",
+          "capturedRawSha256": "6d7e64e755dae72a713fa697a7aaabeb64658e92f523d6d6210616e97aa0b9bb",
+          "canonicalLfSha256": "6d7e64e755dae72a713fa697a7aaabeb64658e92f523d6d6210616e97aa0b9bb",
+          "gitBlobSha1": "cee5028d125168688dd68e09367a499323a862ef"
+        },
+        {
+          "path": "apps/web/src/test/setup.ts",
+          "archiveMember": "apps/web/src/test/setup.ts",
+          "archiveMemberSha256": "3973cd9f302c7491772461f7ce9af9b133c23add612f531e11e9131618c52c3f",
+          "capturedRawSha256": "3973cd9f302c7491772461f7ce9af9b133c23add612f531e11e9131618c52c3f",
+          "canonicalLfSha256": "3973cd9f302c7491772461f7ce9af9b133c23add612f531e11e9131618c52c3f",
+          "gitBlobSha1": "3e4934636463afb52fbe56d4ea64e102b2a6fd08"
+        },
+        {
+          "path": "apps/web/tsconfig.json",
+          "archiveMember": "apps/web/tsconfig.json",
+          "archiveMemberSha256": "12ccd2a2b4ef7b557029d1c3f777a3a489eee6458977cdaadbda6e9ec8882397",
+          "capturedRawSha256": "12ccd2a2b4ef7b557029d1c3f777a3a489eee6458977cdaadbda6e9ec8882397",
+          "canonicalLfSha256": "3d4d294d23c349b5d9619eb7027b7e0394ac3d5ed6caa6a52ca5d489b607e257",
+          "gitBlobSha1": "df1e6632bc538fe44b7442c20af80e3d378b477c"
+        },
+        {
+          "path": "apps/web/tsconfig.node.json",
+          "archiveMember": "apps/web/tsconfig.node.json",
+          "archiveMemberSha256": "3d6b078ec22768d92e9544042ae59c2cd5d526cc8269804ad256a5236e34634c",
+          "capturedRawSha256": "3d6b078ec22768d92e9544042ae59c2cd5d526cc8269804ad256a5236e34634c",
+          "canonicalLfSha256": "be0b3e4a2ee0bed65d5991536b6feb8590af02f93f2738ae92d904cd105a653b",
+          "gitBlobSha1": "c643eb579ea6b8d7c6fd7826d2a5f9fcee0cac7a"
+        },
+        {
+          "path": "apps/web/vite.config.ts",
+          "archiveMember": "apps/web/vite.config.ts",
+          "archiveMemberSha256": "f0064981bb732209795669c4fb42b1971caa31409c912a3f58d615a402c47b12",
+          "capturedRawSha256": "f0064981bb732209795669c4fb42b1971caa31409c912a3f58d615a402c47b12",
+          "canonicalLfSha256": "16abfd7057bf571b024cfab95adf9c72dba5a969c257e0387236e94c74d94f60",
+          "gitBlobSha1": "d08eca3f783c4ad78c38cd7618cbde8c112ee56b"
+        }
+      ]
+    },
+    {
+      "component": "host",
+      "archive": "host-worker-20261108-122846.tar.gz",
+      "archiveSha256": "024d980e856dff855cc3ddf6a90720fee76454f113ffa95f79f556cbd460a3c4",
+      "files": [
+        {
+          "path": "apps/scanner/runtime.py",
+          "archiveMember": "runtime.py",
+          "archiveMemberSha256": "14bab531c30bb42ef4f58c6e976fd0797c2f88e25269fac6e7e72fcde9e24e2d",
+          "capturedRawSha256": "14bab531c30bb42ef4f58c6e976fd0797c2f88e25269fac6e7e72fcde9e24e2d",
+          "canonicalLfSha256": "14bab531c30bb42ef4f58c6e976fd0797c2f88e25269fac6e7e72fcde9e24e2d",
+          "gitBlobSha1": "b8ba24b2d6a3f61c42d40395757b221282aa1d7e"
+        },
+        {
+          "path": "apps/scanner/runtime_catalog.py",
+          "archiveMember": "runtime_catalog.py",
+          "archiveMemberSha256": "5dd4474853b2a1e02fcd6030ac1d2ed73b6013946497a9e0f2b98cd9cf4e286b",
+          "capturedRawSha256": "5dd4474853b2a1e02fcd6030ac1d2ed73b6013946497a9e0f2b98cd9cf4e286b",
+          "canonicalLfSha256": "5dd4474853b2a1e02fcd6030ac1d2ed73b6013946497a9e0f2b98cd9cf4e286b",
+          "gitBlobSha1": "c687f44c890e006cac50a8f758ae5436f1fe4abb"
+        },
+        {
+          "path": "apps/scanner/supervisor.py",
+          "archiveMember": "supervisor.py",
+          "archiveMemberSha256": "17247900d013698adcf026193dbdea35dbeafba42a3ec64ceac190eabab76d6e",
+          "capturedRawSha256": "17247900d013698adcf026193dbdea35dbeafba42a3ec64ceac190eabab76d6e",
+          "canonicalLfSha256": "17247900d013698adcf026193dbdea35dbeafba42a3ec64ceac190eabab76d6e",
+          "gitBlobSha1": "a7b608d9457b773f14d1966b845ee38c48123bf4"
+        },
+        {
+          "path": "apps/scanner/normalize.py",
+          "archiveMember": "normalize.py",
+          "archiveMemberSha256": "dca65616dee45af41a3a975d6aaba4a4a32691e206ee1e81b8a59b1761c8eede",
+          "capturedRawSha256": "dca65616dee45af41a3a975d6aaba4a4a32691e206ee1e81b8a59b1761c8eede",
+          "canonicalLfSha256": "dca65616dee45af41a3a975d6aaba4a4a32691e206ee1e81b8a59b1761c8eede",
+          "gitBlobSha1": "2fd341bac874885aaee6d3100e6eba11e87f841a"
+        },
+        {
+          "path": "apps/scanner/github_fetch.py",
+          "archiveMember": "github_fetch.py",
+          "archiveMemberSha256": "7611bf184c430166bc5ff5ff5f690cd54d188d04cd4a50974094af8d07458445",
+          "capturedRawSha256": "7611bf184c430166bc5ff5ff5f690cd54d188d04cd4a50974094af8d07458445",
+          "canonicalLfSha256": "7611bf184c430166bc5ff5ff5f690cd54d188d04cd4a50974094af8d07458445",
+          "gitBlobSha1": "2d208a75b3f2dfb655950c688653656bfaa341f2"
+        },
+        {
+          "path": "apps/scanner/broker_client.py",
+          "archiveMember": "broker_client.py",
+          "archiveMemberSha256": "024b86d17fe293b48d1c08d5e5ffdf408f7b3560c0f1a6c7d9452c3e1c520e3c",
+          "capturedRawSha256": "024b86d17fe293b48d1c08d5e5ffdf408f7b3560c0f1a6c7d9452c3e1c520e3c",
+          "canonicalLfSha256": "024b86d17fe293b48d1c08d5e5ffdf408f7b3560c0f1a6c7d9452c3e1c520e3c",
+          "gitBlobSha1": "8477e3f38473403213cb0f35c05e39d11a318def"
+        },
+        {
+          "path": "apps/scanner/source_gateway.py",
+          "archiveMember": "source_gateway.py",
+          "archiveMemberSha256": "65ef2884a508d713a745dba7f35cbe8435a1f8ff76c7d394a6bf0aa6131166a1",
+          "capturedRawSha256": "65ef2884a508d713a745dba7f35cbe8435a1f8ff76c7d394a6bf0aa6131166a1",
+          "canonicalLfSha256": "65ef2884a508d713a745dba7f35cbe8435a1f8ff76c7d394a6bf0aa6131166a1",
+          "gitBlobSha1": "95080790b58d0b7b66df45813750cf80312bb810"
+        },
+        {
+          "path": "deploy/aws-ec2/aegisai-scan-supervisor.service",
+          "archiveMember": "aegisai-scan-supervisor.service",
+          "archiveMemberSha256": "19b1ded64fc71c7f0552860309781be5e5a2d78101ce9bb50aff4b55f12ac98c",
+          "capturedRawSha256": "19b1ded64fc71c7f0552860309781be5e5a2d78101ce9bb50aff4b55f12ac98c",
+          "canonicalLfSha256": "19b1ded64fc71c7f0552860309781be5e5a2d78101ce9bb50aff4b55f12ac98c",
+          "gitBlobSha1": "5f33a03c483fdc43f8eea50ff2835e168fe003fe"
+        }
+      ]
+    }
+  ],
+  "hostedCiStatusAtCapture": "pending",
+  "preservedWhitespace": "Existing final blank lines retained; Git checkout normalizes line endings only."
+}

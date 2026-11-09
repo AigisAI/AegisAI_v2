@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh AegisAI vendor vulnerability database every six hours
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=6h
+RandomizedDelaySec=5min
+Persistent=true
+Unit=aegisai-vuln-db-refresh.service
+
+[Install]
+WantedBy=timers.target

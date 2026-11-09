@@ -1,0 +1,26 @@
+[Unit]
+Description=AegisAI private worker credential and result broker
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+Group=aegisai-fetch
+UMask=0077
+RuntimeDirectory=aegisai-source-broker
+RuntimeDirectoryMode=2750
+RuntimeDirectoryPreserve=restart
+ExecStart=/usr/bin/flock --no-fork /run/aegisai-source-broker/instance.lock /opt/aegisai/operator/run-private-broker.sh
+ExecStop=/usr/bin/docker stop --time 30 aegisai-private-broker
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=45
+LimitCORE=0
+MemoryMax=128M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

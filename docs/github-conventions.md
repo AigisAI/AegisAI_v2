@@ -74,3 +74,5 @@ When you are working on a GitHub-style branch such as `feat/4-github-setup`, use
 ```powershell
 $env:SPECIFY_FEATURE = "006-production-sast-runtime-design"
 ```
+
+Private EC2 integration preparation follows [007](../specs/007-private-ec2-integration/quickstart.md); it does not authorize a production deployment or bypass 006 qualification.

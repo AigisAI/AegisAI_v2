@@ -1,0 +1,13 @@
+[Unit]
+Description=Enforce AegisAI evidence expiry every fifteen minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+RandomizedDelaySec=30s
+AccuracySec=30s
+Persistent=true
+Unit=aegisai-evidence-retention.service
+
+[Install]
+WantedBy=timers.target

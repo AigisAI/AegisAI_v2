@@ -1,0 +1,24 @@
+{
+  "name": "@aegisai/private-runtime-db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "generated/client/index.js",
+  "types": "generated/client/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./generated/client/index.d.ts",
+      "default": "./generated/client/index.js"
+    }
+  },
+  "scripts": {
+    "generate": "prisma generate --schema prisma/schema.prisma",
+    "build": "corepack pnpm generate",
+    "typecheck": "corepack pnpm generate"
+  },
+  "dependencies": {
+    "@prisma/client": "5"
+  },
+  "devDependencies": {
+    "prisma": "5"
+  }
+}

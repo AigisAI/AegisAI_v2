@@ -12,3 +12,6 @@ apps/api/.env
 apps/web/.env
 apps/api/tmp/
 *.log
+
+/output/
+packages/private-runtime-db/generated/

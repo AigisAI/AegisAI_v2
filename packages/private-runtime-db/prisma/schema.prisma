@@ -1,0 +1,587 @@
+generator client {
+  provider = "prisma-client-js"
+  output = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RepoProvider {
+  GITHUB
+  GITLAB
+}
+
+enum ScanStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum VulnStatus {
+  OPEN
+  FIXED
+  ACCEPTED
+  REJECTED
+}
+
+enum UserFeedback {
+  ACCEPTED
+  REJECTED
+}
+
+enum ReportStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
+enum ScmIntegrationType {
+  GITHUB_APP
+  GITLAB_CLOUD_INTEGRATION
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  REVOKED
+  SUSPENDED
+}
+
+enum IntegrationPrincipal {
+  REPO_READ
+  COMMENT_WRITE
+  INTEGRATION_ADMIN
+}
+
+enum ScanLane {
+  FAST
+  DEEP
+}
+
+enum ArchitectureScanStatus {
+  QUEUED
+  PLANNING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum DispatchJobStatus {
+  PENDING
+  LEASED
+  SUCCEEDED
+  DEAD
+  CANCELED
+}
+
+enum DispatchFailureCode {
+  UPSTREAM_UNAVAILABLE
+  LEASE_EXPIRED
+  DISPATCH_REJECTED
+}
+
+enum FetchCapabilityStatus {
+  ISSUED
+  CONSUMING
+  CONSUMED
+  REVOKED
+  EXPIRED
+}
+
+enum IsolationClass {
+  STANDARD
+  HARDENED
+  RESTRICTED
+}
+
+enum ScannerKind {
+  OPENGREP
+  TRIVY
+  SYFT
+  MOCK
+}
+
+enum ScannerRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMED_OUT
+  SKIPPED
+}
+
+enum NormalizedFindingStatus {
+  OPEN
+  ACCEPTED
+  REJECTED
+  WAIVED
+  SUPPRESSED
+  FIXED
+}
+
+enum EvidenceClassification {
+  SHORT_LIVED_EVIDENCE
+}
+
+enum PolicyAction {
+  DASHBOARD_ONLY
+  COMMENT
+  WARN
+  TICKET
+  BLOCK
+}
+
+enum SuppressionReason {
+  STALE_RESULT
+  DUPLICATE
+  POLICY
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  name      String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  oauthIdentities UserOAuthIdentity[]
+  connectedRepos  ConnectedRepo[]
+  reports         Report[]
+}
+
+model UserOAuthIdentity {
+  id             String       @id @default(uuid())
+  userId         String
+  provider       RepoProvider
+  providerUserId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@unique([provider, providerUserId])
+}
+
+model ConnectedRepo {
+  id             String       @id @default(uuid())
+  userId         String
+  provider       RepoProvider
+  providerRepoId String
+  fullName       String
+  cloneUrl       String
+  defaultBranch  String
+  isPrivate      Boolean      @default(false)
+  connectedAt    DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scans Scan[]
+
+  @@unique([userId, provider, providerRepoId])
+}
+
+model Scan {
+  id              String     @id @default(uuid())
+  connectedRepoId String
+  branch          String
+  commitSha       String?
+  status          ScanStatus @default(PENDING)
+  language        String     @default("java")
+  totalFiles      Int?
+  totalLines      Int?
+  vulnCritical    Int        @default(0)
+  vulnHigh        Int        @default(0)
+  vulnMedium      Int        @default(0)
+  vulnLow         Int        @default(0)
+  vulnInfo        Int        @default(0)
+  errorMessage    String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  connectedRepo   ConnectedRepo   @relation(fields: [connectedRepoId], references: [id], onDelete: Cascade)
+  vulnerabilities Vulnerability[]
+  reports         Report[]
+
+  @@index([connectedRepoId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Vulnerability {
+  id             String        @id @default(uuid())
+  scanId         String
+  title          String
+  description    String
+  severity       Severity
+  filePath       String
+  lineStart      Int
+  lineEnd        Int?
+  codeSnippet    String?
+  fixSuggestion  String?
+  fixExplanation String?
+  cweId          String?
+  cveId          String?
+  owaspCategory  String?
+  referenceLinks Json?
+  consensusScore Float?
+  modelResults   Json?
+  status         VulnStatus    @default(OPEN)
+  userFeedback   UserFeedback?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  scan Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+  @@index([severity])
+  @@index([status])
+}
+
+model Report {
+  id           String       @id @default(uuid())
+  scanId       String
+  userId       String
+  status       ReportStatus @default(GENERATING)
+  filePath     String?
+  downloadUrl  String?
+  expiresAt    DateTime?
+  errorMessage String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  scan Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+  @@index([userId])
+}
+
+model Tenant {
+  id        String       @id @default(uuid())
+  slug      String       @unique
+  name      String
+  status    TenantStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  integrations       ScmIntegration[]
+  repositoryBindings RepositoryBinding[]
+  scanRequests       ScanRequest[]
+  scannerRuns        ScannerRun[]
+  normalizedFindings NormalizedFinding[]
+  evidencePacks      EvidencePack[]
+  policyDecisions    PolicyDecision[]
+  waivers            Waiver[]
+  suppressions       Suppression[]
+  auditEvents        AuditEvent[]
+  dispatchJobs       ScanDispatchJob[]
+  fetchCapabilities  ScanFetchCapability[]
+}
+
+model ScmIntegration {
+  id                          String             @id @default(uuid())
+  tenantId                    String
+  provider                    RepoProvider
+  integrationType             ScmIntegrationType
+  externalInstallationId      String
+  repoReadPrincipalId         String
+  commentWritePrincipalId     String?
+  integrationAdminPrincipalId String?
+  status                      IntegrationStatus  @default(ACTIVE)
+  createdAt                   DateTime           @default(now())
+  updatedAt                   DateTime           @updatedAt
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBindings RepositoryBinding[]
+
+  @@unique([tenantId, provider, externalInstallationId])
+  @@index([tenantId])
+}
+
+model RepositoryBinding {
+  id               String   @id @default(uuid())
+  tenantId         String
+  scmIntegrationId String
+  providerRepoId   String
+  fullName         String
+  defaultBranch    String
+  isPrivate        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration  ScmIntegration @relation(fields: [scmIntegrationId], references: [id], onDelete: Cascade)
+  scanRequests ScanRequest[]
+
+  @@unique([tenantId, scmIntegrationId, providerRepoId])
+  @@index([tenantId])
+  @@index([scmIntegrationId])
+}
+
+model ScanRequest {
+  id                  String                 @id @default(uuid())
+  tenantId            String
+  repositoryBindingId String
+  lane                ScanLane
+  targetRef           String
+  commitSha           String
+  policyVersion       String
+  scannerSetVersion   String
+  canonicalKey        String                 @unique
+  status              ArchitectureScanStatus @default(QUEUED)
+  isolationClass      IsolationClass         @default(STANDARD)
+  createdAt           DateTime               @default(now())
+  startedAt           DateTime?
+  completedAt         DateTime?
+  updatedAt           DateTime               @updatedAt
+
+  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repositoryBinding RepositoryBinding   @relation(fields: [repositoryBindingId], references: [id], onDelete: Cascade)
+  scannerRuns       ScannerRun[]
+  findings          NormalizedFinding[]
+  evidencePacks     EvidencePack[]
+  policyDecisions   PolicyDecision[]
+  suppressions      Suppression[]
+  auditEvents       AuditEvent[]
+  dispatchJob       ScanDispatchJob?
+  fetchCapabilities ScanFetchCapability[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId])
+  @@index([repositoryBindingId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
+model ScanDispatchJob {
+  id             String               @id @default(uuid())
+  tenantId       String
+  scanRequestId  String               @unique
+  status         DispatchJobStatus    @default(PENDING)
+  attempts       Int                  @default(0)
+  availableAt    DateTime             @default(now())
+  leaseToken     String?              @unique
+  leasedBy       String?
+  leaseExpiresAt DateTime?
+  lastErrorCode  DispatchFailureCode?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest @relation(fields: [tenantId, scanRequestId], references: [tenantId, id], onDelete: Cascade)
+  fetchCapabilities ScanFetchCapability[]
+
+  @@unique([tenantId, scanRequestId])
+  @@unique([tenantId, id, scanRequestId])
+  @@index([status, availableAt, createdAt])
+  @@index([tenantId, status])
+  @@index([status, leaseExpiresAt])
+}
+
+model ScanBrokerRuntime {
+  id        String   @id
+  epoch     String
+  updatedAt DateTime @updatedAt
+}
+
+model ScanFetchCapability {
+  id               String                @id @default(uuid())
+  tenantId         String
+  scanRequestId    String
+  dispatchJobId    String
+  issuerEpoch      String
+  fingerprint      String                @unique
+  leaseFingerprint String
+  claimFingerprint String?
+  status           FetchCapabilityStatus @default(ISSUED)
+  issuedAt         DateTime              @default(now())
+  expiresAt        DateTime
+  finishedAt       DateTime?
+  updatedAt        DateTime              @updatedAt
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest     @relation(fields: [tenantId, scanRequestId], references: [tenantId, id], onDelete: Cascade)
+  dispatchJob ScanDispatchJob @relation(fields: [tenantId, dispatchJobId, scanRequestId], references: [tenantId, id, scanRequestId], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@index([issuerEpoch, status])
+  @@index([dispatchJobId, status])
+  @@index([status, expiresAt])
+}
+
+model ScannerRun {
+  id                   String           @id @default(uuid())
+  tenantId             String
+  scanRequestId        String
+  scanner              ScannerKind
+  scannerVersion       String
+  status               ScannerRunStatus @default(QUEUED)
+  rawArtifactObjectKey String?
+  coverageState        Json?
+  errorMessage         String?
+  createdAt            DateTime         @default(now())
+  startedAt            DateTime?
+  completedAt          DateTime?
+  updatedAt            DateTime         @updatedAt
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest         @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  findings    NormalizedFinding[]
+
+  @@index([tenantId])
+  @@index([scanRequestId])
+  @@index([scanner])
+  @@index([status])
+}
+
+model NormalizedFinding {
+  id                String                  @id @default(uuid())
+  tenantId          String
+  scanRequestId     String
+  scannerRunId      String
+  title             String
+  severity          Severity
+  scannerProvenance ScannerKind
+  filePath          String
+  lineStart         Int?
+  lineEnd           Int?
+  status            NormalizedFindingStatus @default(OPEN)
+  metadata          Json?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest     ScanRequest      @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  scannerRun      ScannerRun       @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
+  policyDecisions PolicyDecision[]
+  suppressions    Suppression[]
+
+  @@index([tenantId])
+  @@index([scanRequestId])
+  @@index([scannerRunId])
+  @@index([severity])
+  @@index([status])
+}
+
+model EvidencePack {
+  id             String                 @id @default(uuid())
+  tenantId       String
+  scanRequestId  String
+  classification EvidenceClassification @default(SHORT_LIVED_EVIDENCE)
+  objectKey      String
+  expiresAt      DateTime
+  byteSize       Int
+  redacted       Boolean                @default(true)
+  deletedAt      DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([scanRequestId])
+  @@index([expiresAt])
+}
+
+model PolicyDecision {
+  id                String       @id @default(uuid())
+  tenantId          String
+  scanRequestId     String
+  findingId         String?
+  enforcementAction PolicyAction
+  commentAllowed    Boolean      @default(false)
+  dashboardVisible  Boolean      @default(true)
+  ticketRequested   Boolean      @default(false)
+  blockRequested    Boolean      @default(false)
+  reasonCodes       Json
+  requiredCoverage  Json
+  waiverApplied     Boolean      @default(false)
+  staleSuppressed   Boolean      @default(false)
+  aiAdvisoryVisible Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest        @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  finding     NormalizedFinding? @relation(fields: [findingId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([scanRequestId])
+  @@index([findingId])
+}
+
+model Waiver {
+  id             String    @id @default(uuid())
+  tenantId       String
+  owner          String
+  reason         String
+  scope          String
+  expiresAt      DateTime
+  lastReviewedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([expiresAt])
+}
+
+model Suppression {
+  id            String            @id @default(uuid())
+  tenantId      String
+  scanRequestId String
+  findingId     String?
+  reason        SuppressionReason
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest        @relation(fields: [scanRequestId], references: [id], onDelete: Cascade)
+  finding     NormalizedFinding? @relation(fields: [findingId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([scanRequestId])
+  @@index([findingId])
+}
+
+model AuditEvent {
+  id            String   @id @default(uuid())
+  tenantId      String
+  scanRequestId String?
+  eventType     String
+  actor         String
+  targetType    String
+  targetId      String
+  metadata      Json?
+  occurredAt    DateTime @default(now())
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scanRequest ScanRequest? @relation(fields: [scanRequestId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([scanRequestId])
+  @@index([eventType])
+  @@index([occurredAt])
+}

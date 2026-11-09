@@ -1,0 +1,40 @@
+rules:
+  - id: aegisai.java.request-to-process
+    languages: [java]
+    mode: taint
+    severity: ERROR
+    message: HTTP request input reaches a process execution API; verify that untrusted input cannot select commands or arguments.
+    metadata:
+      cwe: CWE-78
+      coverage: initial-java-dataflow
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: Runtime.getRuntime().exec(...)
+          - pattern: new ProcessBuilder(...)
+  - id: aegisai.java.request-to-statement
+    languages: [java]
+    mode: taint
+    severity: ERROR
+    message: HTTP request input reaches a SQL statement API; use parameterized queries and verify input boundaries.
+    metadata:
+      cwe: CWE-89
+      coverage: initial-java-dataflow
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $STMT.executeQuery($SQL)
+          - pattern: $STMT.executeUpdate($SQL)
+          - pattern: $STMT.execute($SQL)
+  - id: aegisai.java.weak-des-cipher
+    languages: [java]
+    severity: WARNING
+    message: DES provides inadequate cryptographic strength; migrate using a reviewed modern encryption design.
+    metadata:
+      cwe: CWE-327
+      coverage: initial-java-crypto
+    pattern-either:
+      - pattern: Cipher.getInstance("DES")
+      - pattern: Cipher.getInstance("DES/ECB/PKCS5Padding")

@@ -1,0 +1,4 @@
+packages:
+  - "apps/private-api"
+  - "packages/shared"
+  - "packages/private-runtime-db"

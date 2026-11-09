@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily encrypted AegisAI database backup
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 Asia/Seoul
+RandomizedDelaySec=5min
+Persistent=true
+Unit=aegisai-database-backup.service
+
+[Install]
+WantedBy=timers.target

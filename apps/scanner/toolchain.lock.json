@@ -1,0 +1,9 @@
+{
+  "platform": "linux/amd64",
+  "baseImage": "alpine:3.22@sha256:bfe7ceb9f09ec0566c48fb93356e45a47a00be5a1dd14fa5b909e7709c66b034",
+  "opengrep": {"version": "1.33.1", "distribution": "static-core-linux-x86", "sha256": "1a78593c369cd58a8545a1dfb2ce548139f028a1af4ea7d08bc5ce8385cde243"},
+  "trivy": {"version": "0.76.2", "sha256": "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf"},
+  "syft": {"version": "1.57.0", "sha256": "9c077a7d43029b3b13e98a8db720661e700c4d58db6352153a06395ae4a2a704"},
+  "ruleset": "aegisai-java-initial-v1",
+  "coverage": "Initial explicit Java rules and declared dependency SBOM; offline SCA requires a ready database. Not comprehensive vulnerability coverage."
+}
