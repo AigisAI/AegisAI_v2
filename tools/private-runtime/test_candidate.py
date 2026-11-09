@@ -73,10 +73,16 @@ class CandidateChecks(unittest.TestCase):
         snapshot = {'readOnly': True, 'instanceId': 'i-0d24d0502cfc5a9c5',
             'observedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
             'migrations': rows, 'scannerReady': True, 'scannerBusy': False,
-            'workerSourceHashes': {}, 'diskFreeBytes': 100 * 1024 ** 3}
+            'workerSourceHashes': {name: hashlib.sha256(name.encode()).hexdigest() for name in checker.WORKERS},
+            'diskFreeBytes': 100 * 1024 ** 3}
+        entries = {'deploy/aws-ec2/runtime-profile.json': (self.root / 'runtime-profile.json').read_bytes()}
+        entries.update({'apps/scanner/' + name: name.encode() for name in checker.WORKERS})
+        self.tar(self.manifest['sourceArchive'], entries)
+        self.refresh()
+        self.assertEqual(checker.check(self.root, self.sha, snapshot=snapshot)['sourceCommit'], self.commit)
         for change in [
             {'scannerBusy': True}, {'instanceId': 'different-host'},
-            {'observedAt': '2000-01-01T00:00:00+00:00'}, {'workerSourceHashes': {}}
+            {'observedAt': '2000-01-01T00:00:00+00:00'}, {'workerSourceHashes': {}}, {'diskFreeBytes': 0}
         ]:
             with self.assertRaises(AssertionError):checker.check(self.root, self.sha, snapshot={**snapshot, **change})
 

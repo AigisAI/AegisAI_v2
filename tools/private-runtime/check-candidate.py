@@ -9,6 +9,9 @@ import shutil
 import subprocess
 import tarfile
 
+if not __debug__:
+    raise RuntimeError("CANDIDATE_VALIDATOR_REQUIRES_ASSERTIONS")
+
 
 def digest(path):
     value = hashlib.sha256()
