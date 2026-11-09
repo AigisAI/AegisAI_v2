@@ -15,7 +15,7 @@ def install():
     config = json.loads(pathlib.Path(__file__).with_name('toolchain.json').read_text())
     base = pathlib.Path('/opt/aegisai/platform')
     assert not base.is_symlink()
-    base.mkdir(mode=0o700, exist_ok=True)
+    base.mkdir(mode=0o700, parents=True, exist_ok=True)
     assert base.stat().st_uid == 0 and base.stat().st_mode & 0o077 == 0
     target = base / 'tools' / config['terraformVersion']
     binary = target / 'terraform'
