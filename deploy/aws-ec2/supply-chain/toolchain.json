@@ -1,0 +1,37 @@
+{
+  "trivy": {
+    "version": "0.76.2",
+    "url": "https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz",
+    "sha256": "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf",
+    "member": "trivy"
+  },
+  "gh": {
+    "version": "2.103.3",
+    "url": "https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz",
+    "sha256": "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d",
+    "member": "gh_2.103.3_linux_amd64/bin/gh"
+  },
+  "attestAction": "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6",
+  "actions": {
+    "actions/checkout": {
+      "version": "v4",
+      "commit": "11d5960a326750d5838078e36cf38b85af677262"
+    },
+    "pnpm/action-setup": {
+      "version": "v4",
+      "commit": "b906affcce14559ad1aafd4ab0e942779e9f58b1"
+    },
+    "actions/setup-node": {
+      "version": "v4",
+      "commit": "49933ea5288caeca8642d1e84afbd3f7d6820020"
+    },
+    "actions/setup-python": {
+      "version": "v5",
+      "commit": "a26af69be951a213d495a4c3e4e4022e16d87065"
+    },
+    "actions/upload-artifact": {
+      "version": "v4",
+      "commit": "ea165f8d65b6e75b540449e92b4886f43607fa02"
+    }
+  }
+}

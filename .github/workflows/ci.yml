@@ -6,6 +6,7 @@ on:
       - dev
       - main
       - feat/340-private-platform-expansion
+      - fix/346-private-grafana-auth
   push:
     branches:
       - dev
@@ -44,23 +45,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
-          version: 10.0.0
+          version: 10.34.9
           run_install: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.12"
           cache: pip
@@ -122,6 +123,11 @@ jobs:
   private-profile:
     name: Verify and prepare private EC2 candidate
     needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
@@ -140,16 +146,16 @@ jobs:
       DATABASE_URL: postgresql://verify:verify-only-local@localhost:5432/aegisai_verify
       PERSISTENCE_TEST_DATABASE_URL: postgresql://verify:verify-only-local@localhost:5432/aegisai_verify
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
-          version: 10.0.0
+          version: 10.34.9
           run_install: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: pnpm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
       - run: corepack enable && corepack pnpm install --frozen-lockfile
@@ -179,6 +185,11 @@ jobs:
             -e PERSISTENCE_TEST_DATABASE_URL=postgresql://verify:verify-only-local@127.0.0.1:5432/aegisai_verify \
             -v "$PWD/test/private-worker-native:/app/test/private-worker-native:ro" \
             aegisai-private-verify:ci node --test --test-concurrency=1 /app/test/private-worker-native/*.test.mjs
+      - name: Verify image policy and install checksum-pinned security tools
+        run: |
+          python3 deploy/aws-ec2/supply-chain/test_policy.py
+          sudo python3 -E -s -B deploy/aws-ec2/supply-chain/install_tools.py --ci
+          python3 -c "import sys;sys.path.insert(0,'deploy/aws-ec2/supply-chain');from verify_candidate import gh_binary;gh_binary();print('TRUSTED_TOOL_PERMISSIONS_PASSED')"
       - name: Build immutable private runtime images
         run: |
           docker build -f apps/private-api/Dockerfile --label org.opencontainers.image.revision=$GITHUB_SHA -t aegisai-private-api:ci .
@@ -190,8 +201,58 @@ jobs:
             aegisai-private-api:ci corepack pnpm --filter @aegisai/private-api prisma:migrate:deploy
       - name: Package validated candidate without deployment
         run: python3 tools/private-runtime/build-candidate.py "$RUNNER_TEMP/private-ec2-candidate"
+      - name: Attest candidate and image build provenance
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: |
+            ${{ runner.temp }}/private-ec2-candidate/candidate.json
+            ${{ runner.temp }}/private-ec2-candidate/api-image.tar.gz
+            ${{ runner.temp }}/private-ec2-candidate/web-image.tar.gz
+      - name: Attest API image SBOM
+        id: api-sbom
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/private-ec2-candidate/api-image.tar.gz
+          sbom-path: ${{ runner.temp }}/private-ec2-candidate/api-sbom.cdx.json
+      - name: Attest web image SBOM
+        id: web-sbom
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/private-ec2-candidate/web-image.tar.gz
+          sbom-path: ${{ runner.temp }}/private-ec2-candidate/web-sbom.cdx.json
+      - name: Verify real signatures and reject invalid candidates without deployment
+        run: |
+          cp '${{ steps.provenance.outputs.bundle-path }}' "$RUNNER_TEMP/private-ec2-candidate/provenance.sigstore.json"
+          cp '${{ steps.api-sbom.outputs.bundle-path }}' "$RUNNER_TEMP/private-ec2-candidate/api-sbom.sigstore.json"
+          cp '${{ steps.web-sbom.outputs.bundle-path }}' "$RUNNER_TEMP/private-ec2-candidate/web-sbom.sigstore.json"
+          python3 deploy/aws-ec2/supply-chain/test_signed_candidate.py "$RUNNER_TEMP/private-ec2-candidate"
+      - name: Signature failure detail
+        if: failure()
+        run: cat "$RUNNER_TEMP/verification-cache/last-verification-error.txt" 2>/dev/null || true
+      - name: Preserve rejected image reports
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blocked-image-reports-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/private-ec2-candidate/*-vuln.json
+            ${{ runner.temp }}/private-ec2-candidate/*-sbom.cdx.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Preserve signed security evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: private-image-security-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/private-ec2-candidate/candidate.json
+            ${{ runner.temp }}/private-ec2-candidate/security.json
+            ${{ runner.temp }}/private-ec2-candidate/*-vuln.json
+            ${{ runner.temp }}/private-ec2-candidate/*-sbom.cdx.json
+            ${{ runner.temp }}/private-ec2-candidate/*.sigstore.json
+          retention-days: 90
       - name: Preserve prepared artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: private-ec2-candidate-${{ github.sha }}
           path: ${{ runner.temp }}/private-ec2-candidate

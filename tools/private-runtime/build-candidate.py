@@ -8,6 +8,7 @@ import os
 import pathlib
 import shutil
 import subprocess
+import sys
 
 import importlib.util
 
@@ -22,7 +23,7 @@ assert not subprocess.check_output(['git', 'status', '--porcelain', '--untracked
 commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
 assert commit == os.environ['GITHUB_SHA']
 epoch = int(subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD'], text=True).strip())
-release = 'ec2-runtime-' + datetime.datetime.fromtimestamp(epoch, datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')
+release = 'ec2-runtime-' + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')
 output = options.output
 output.mkdir(parents=True, exist_ok=False)
 source = output / (release + '.tar.gz')
@@ -38,10 +39,14 @@ for kind in ('api', 'web'):
         shutil.copyfileobj(process.stdout, compressed, 1024 * 1024)
     assert process.wait(timeout=120) == 0
     images[kind] = {'tag': tag, 'id': info['Id'], 'archive': archive.name, 'uncompressedBytes': info['Size']}
+security_source = pathlib.Path('deploy/aws-ec2/supply-chain').resolve()
+sys.path.insert(0,str(security_source))
+from scan_images import scan
+scan(output,images,commit,os.environ['GITHUB_RUN_ID'])
 shutil.copyfile('deploy/aws-ec2/runtime-profile.json', output / 'runtime-profile.json')
 shutil.copyfile(pathlib.Path(__file__).with_name('check-candidate.py'), output / 'check-candidate.py')
 shutil.copyfile(pathlib.Path(__file__).with_name('deploy-prepared.sh'), output / 'deploy-prepared.sh')
-manifest = {'version': 1, 'profile': 'private-single-host-v1', 'generalQualification': 'NOT_QUALIFIED',
+manifest = {'version': 2, 'profile': 'private-single-host-v1', 'generalQualification': 'NOT_QUALIFIED',
     'sourceCommit': commit, 'releaseId': release, 'sourceArchive': source.name, 'images': images,
     'ciRunId': os.environ['GITHUB_RUN_ID'], 'deploymentPerformed': False,
     'files': [{'name': path.name, 'sha256': checker.digest(path)} for path in sorted(output.iterdir())]}

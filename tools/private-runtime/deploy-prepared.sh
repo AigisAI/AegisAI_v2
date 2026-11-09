@@ -6,6 +6,9 @@ directory=${1:?candidate directory required}
 manifest_sha=${2:?trusted candidate.json SHA-256 required}
 mode=${3:---check}
 case "$mode" in --check|--apply) ;; *) exit 2 ;; esac
+if [ -f /opt/aegisai/operator/supply-chain-required.json ]; then
+  python3 /opt/aegisai/operator/supply-chain/current/deploy/aws-ec2/supply-chain/receipt_guard.py "$directory" "$manifest_sha"
+fi
 python3 "$directory/check-candidate.py" "$directory" --manifest-sha256 "$manifest_sha" --target
 if [ "$mode" = --check ]; then exit 0; fi
 
