@@ -22,9 +22,9 @@ RUN corepack pnpm --filter @aegisai/private-api exec prisma generate --schema ..
 
 FROM node:22-alpine AS runner
 RUN apk add --no-cache openssl
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@10.0.0 --activate
 WORKDIR /app
-ENV NODE_ENV=production
+ENV NODE_ENV=production COREPACK_ENABLE_NETWORK=0
 LABEL org.aegisai.runtime-profile="private-single-host-v1"
 COPY --from=runtime-dependencies /app/package.json ./package.json
 COPY deploy/aws-ec2/container-workspace.yaml ./pnpm-workspace.yaml

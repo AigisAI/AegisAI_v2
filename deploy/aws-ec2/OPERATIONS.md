@@ -185,3 +185,7 @@ verify-runtime-candidate.py가 담당하며 백업 복원 시험을 자동 반�
 제거 범위 밖이다. 원래 미암호화 EBS 디스크·스냅샷도 사용자 지시대로 보존했다.
 모든 과거 비밀 사본을 제거했다고 표현하지 않는다. 비밀 회전 후에는 활성
 프로세스 재로딩, 실제 로그인·SCM 접근과 복구 경로를 확인해야 한다.
+
+## 통합 후보 배포 전 준비
+
+007 후보는 [PREPARED-RELEASE.md](./PREPARED-RELEASE.md)를 따른다. 이 프로필에서는 기존 full/runtime-results/runtime-app 서버 빌드 경로를 사용하지 않고 검증된 prebuilt 아티팩트를 사용한다. 현재 작업은 조회와 파일 준비까지이며 운영 교체는 하지 않는다.
