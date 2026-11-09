@@ -25,10 +25,13 @@ def main():
     pins = json.loads(Path(__file__).with_name('toolchain.json').read_text())
     root.mkdir(mode=0o755 if args.ci else 0o700, parents=True, exist_ok=True)
     assert not root.is_symlink() and root.stat().st_uid == 0
+    root.chmod(0o755 if args.ci else 0o700)
     for name in ('trivy','gh'):
         pin = pins[name]
         directory = root/name/pin['version']
         directory.mkdir(mode=0o755 if args.ci else 0o700, parents=True, exist_ok=True)
+        directory.parent.chmod(0o755 if args.ci else 0o700)
+        directory.chmod(0o755 if args.ci else 0o700)
         binary = directory/name
         proof = directory/'verified-install.json'
         if binary.exists():
@@ -58,6 +61,9 @@ def main():
                 os.replace(stage,binary)
             proof.write_text(json.dumps({'name':name,'version':pin['version'],
                 'archiveSha256':pin['sha256'],'binarySha256':hashlib.sha256(binary.read_bytes()).hexdigest()},indent=2))
+            os.chown(proof,0,0)
+            proof.chmod(0o644 if args.ci else 0o600)
+            assert proof.stat().st_uid == 0 and proof.stat().st_mode & 0o022 == 0
         print(json.dumps({'verifiedOperatorTool':name,'version':pin['version'],'applicationChanged':False}))
 
 

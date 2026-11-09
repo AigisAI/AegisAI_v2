@@ -189,6 +189,7 @@ jobs:
         run: |
           python3 deploy/aws-ec2/supply-chain/test_policy.py
           sudo python3 -E -s -B deploy/aws-ec2/supply-chain/install_tools.py --ci
+          python3 -c "import sys;sys.path.insert(0,'deploy/aws-ec2/supply-chain');from verify_candidate import gh_binary;gh_binary();print('TRUSTED_TOOL_PERMISSIONS_PASSED')"
       - name: Build immutable private runtime images
         run: |
           docker build -f apps/private-api/Dockerfile --label org.opencontainers.image.revision=$GITHUB_SHA -t aegisai-private-api:ci .
