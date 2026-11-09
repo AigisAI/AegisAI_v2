@@ -119,7 +119,7 @@
         "root_block_device": {
           "delete_on_termination": false,
           "encrypted": true,
-          "volume_size": 30,
+          "volume_size": 50,
           "volume_type": "gp3",
           "iops": 3000,
           "throughput": 125,

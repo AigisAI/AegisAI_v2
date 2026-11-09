@@ -10,11 +10,19 @@ set -a
 . "$RUNTIME_ENV_FILE"
 set +a
 cd "$root/releases/$release"
-if [ -f "$root/shared/web-release.override.yaml" ]; then
-  docker compose -f deploy/aws-ec2/compose.yaml -f "$root/shared/web-release.override.yaml" up -d --wait --wait-timeout 180
-else
-  docker compose -f deploy/aws-ec2/compose.yaml up -d --wait --wait-timeout 180
+set -- -f deploy/aws-ec2/compose.yaml
+if [ -f "$root/shared/observability.override.yaml" ]; then
+  if docker network inspect aegisai-observability >/dev/null 2>&1; then
+    set -- "$@" -f "$root/shared/observability.override.yaml"
+  else
+    printf '%s\n' 'OBSERVABILITY_RECOVERY_PENDING: primary app starts without optional telemetry'
+  fi
 fi
+if [ -f "$root/shared/web-release.override.yaml" ]; then
+  set -- "$@" -f "$root/shared/web-release.override.yaml"
+fi
+docker compose "$@" up -d --wait --wait-timeout 180
+
 docker start aegisai-ingress
 curl --fail --silent --show-error http://127.0.0.1:8080/api/health
 # Remove only this workflow's resume marker after successful recovery.

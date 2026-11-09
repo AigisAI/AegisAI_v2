@@ -2,7 +2,7 @@ name: Private Platform Safety
 
 on:
   pull_request:
-    branches: [dev, main, feat/338-private-ec2-integration]
+    branches: [dev, main, feat/338-private-ec2-integration, feat/340-private-platform-expansion]
     paths:
       - deploy/aws-ec2/platform/**
       - specs/008-private-platform-expansion/**

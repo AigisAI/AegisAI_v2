@@ -111,3 +111,5 @@ Phase 1 imports existing cloud resources without changing live apps or cloud
 configuration. Preserve all general 005/006 gates and one-existing-EC2 constraints.
 The old 007 preparation-only stop is historical; it is not authority to block
 this newly authorized phase or to bypass later Kubernetes admission requirements.
+
+For the dependent H4 delivery in issue #342, follow the same 008 entrypoint and observability.md; preserve the exact scanner/data plane and general qualification gates.

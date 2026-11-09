@@ -6,6 +6,10 @@ interface RedisShutdownClient {
 
 @Injectable()
 export class RuntimeResourcesService implements OnApplicationShutdown {
+  private readonly callbacks:Array<()=>Promise<void>>=[];
+
+  registerShutdownCallback(callback:()=>Promise<void>):void { this.callbacks.push(callback); }
+
   private redisClient?: RedisShutdownClient;
 
   registerRedisClient(client: RedisShutdownClient): void {
@@ -17,8 +21,10 @@ export class RuntimeResourcesService implements OnApplicationShutdown {
   }
 
   async onApplicationShutdown(): Promise<void> {
-    if (this.redisClient?.isOpen) {
-      await this.redisClient.quit();
+    try {
+      if (this.redisClient?.isOpen) await this.redisClient.quit();
+    } finally {
+      await Promise.allSettled(this.callbacks.map(callback=>callback()));
     }
   }
 }

@@ -1,3 +1,4 @@
+import type { RuntimeTelemetry } from "../runtime/observability";
 import { ValidationPipe } from "@nestjs/common";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { RedisStore } from "connect-redis";
@@ -59,7 +60,7 @@ function shouldSkipCsrf(request: Request, config: ConfigService): boolean {
   return config.isTest() && request.path.startsWith("/api/_test/");
 }
 
-export async function configureApplication(app: NestExpressApplication): Promise<void> {
+export async function configureApplication(app: NestExpressApplication, telemetry?: RuntimeTelemetry): Promise<void> {
   const config = app.get(ConfigService);
   const resources = app.get(RuntimeResourcesService);
   const sessionStore = await createSessionStore(config, resources);
@@ -106,6 +107,7 @@ export async function configureApplication(app: NestExpressApplication): Promise
 
     csrfProtectionMiddleware(request, response, next);
   });
+  if (telemetry) { app.use(telemetry.middleware); resources.registerShutdownCallback(() => telemetry.shutdown()); }
   app.setGlobalPrefix("api");
   app.useGlobalPipes(
     new ValidationPipe({

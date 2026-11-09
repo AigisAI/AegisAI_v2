@@ -1,0 +1,212 @@
+{
+  "name": "aegisai-observability",
+  "services": {
+    "grafana": {
+      "image": "grafana/grafana@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205",
+      "user": "472:472",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "mem_limit": "384m",
+      "cpus": 0.5,
+      "pids_limit": 128,
+      "environment": {
+        "GF_PATHS_DATA": "/data",
+        "GF_PATHS_PROVISIONING": "/etc/grafana/provisioning"
+      },
+      "networks": [
+        "observability"
+      ],
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "2m",
+          "max-file": "2"
+        }
+      },
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=32m"
+      ],
+      "volumes": [
+        "/opt/aegisai/observability/data/grafana:/data",
+        "/opt/aegisai/observability/config/grafana.ini:/etc/grafana/grafana.ini:ro",
+        "/opt/aegisai/observability/grafana-secret:/run/grafana-secret:ro",
+        "/opt/aegisai/observability/config/datasources.yaml:/etc/grafana/provisioning/datasources/aegisai.yaml:ro",
+        "/opt/aegisai/observability/config/dashboards.yaml:/etc/grafana/provisioning/dashboards/aegisai.yaml:ro",
+        "/opt/aegisai/observability/config/dashboard.json:/etc/grafana/dashboards/aegisai.json:ro"
+      ]
+    },
+    "loki": {
+      "image": "grafana/loki@sha256:0db216b630ae1f348a1584c67f3cead8b4c1fc839169a39501db664744158e28",
+      "user": "10001:10001",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "mem_limit": "256m",
+      "cpus": 0.5,
+      "pids_limit": 128,
+      "environment": {
+        "GOMEMLIMIT": "208MiB"
+      },
+      "networks": [
+        "observability"
+      ],
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "2m",
+          "max-file": "2"
+        }
+      },
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=32m"
+      ],
+      "volumes": [
+        "/opt/aegisai/observability/data/loki:/data",
+        "/opt/aegisai/observability/config/loki.yaml:/etc/aegisai/loki.yaml:ro"
+      ],
+      "command": [
+        "-config.file=/etc/aegisai/loki.yaml",
+        "-target=all"
+      ]
+    },
+    "prometheus": {
+      "image": "prom/prometheus@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06",
+      "user": "65534:65534",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "mem_limit": "256m",
+      "cpus": 0.5,
+      "pids_limit": 128,
+      "environment": {
+        "GOMEMLIMIT": "208MiB"
+      },
+      "networks": [
+        "observability"
+      ],
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "2m",
+          "max-file": "2"
+        }
+      },
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=32m"
+      ],
+      "volumes": [
+        "/opt/aegisai/observability/data/prometheus:/data",
+        "/opt/aegisai/observability/config/prometheus.yaml:/etc/aegisai/prometheus.yaml:ro"
+      ],
+      "command": [
+        "--config.file=/etc/aegisai/prometheus.yaml",
+        "--storage.tsdb.path=/data",
+        "--storage.tsdb.retention.time=24h",
+        "--storage.tsdb.retention.size=256MB"
+      ]
+    },
+    "alloy": {
+      "image": "grafana/alloy@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4",
+      "user": "473:473",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "mem_limit": "192m",
+      "cpus": 0.5,
+      "pids_limit": 128,
+      "environment": {
+        "GOMEMLIMIT": "144MiB"
+      },
+      "networks": [
+        "observability"
+      ],
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "2m",
+          "max-file": "2"
+        }
+      },
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=32m"
+      ],
+      "volumes": [
+        "/opt/aegisai/observability/data/alloy:/data",
+        "/opt/aegisai/observability/config/config.alloy:/etc/aegisai/config.alloy:ro",
+        "/opt/aegisai/observability/logs:/host-logs:ro"
+      ],
+      "command": [
+        "run",
+        "--storage.path=/data",
+        "--server.http.listen-addr=0.0.0.0:12345",
+        "/etc/aegisai/config.alloy"
+      ]
+    },
+    "tempo": {
+      "image": "grafana/tempo@sha256:64e2fbd56d9c2b3412a4b430a58ea59e91a670b1e75f920a0c702213ad145044",
+      "user": "10001:10001",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "mem_limit": "256m",
+      "cpus": 0.5,
+      "pids_limit": 128,
+      "environment": {
+        "GOMEMLIMIT": "208MiB"
+      },
+      "networks": [
+        "observability"
+      ],
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "2m",
+          "max-file": "2"
+        }
+      },
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=32m"
+      ],
+      "volumes": [
+        "/opt/aegisai/observability/data/tempo:/var/tempo",
+        "/opt/aegisai/observability/config/tempo.yaml:/etc/aegisai/tempo.yaml:ro"
+      ],
+      "command": [
+        "-config.file=/etc/aegisai/tempo.yaml",
+        "-target=all"
+      ]
+    }
+  },
+  "networks": {
+    "observability": {
+      "external": true,
+      "name": "aegisai-observability"
+    }
+  }
+}

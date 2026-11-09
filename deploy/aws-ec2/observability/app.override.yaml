@@ -1,0 +1,11 @@
+services:
+  api:
+    environment:
+      RUNTIME_TELEMETRY_ENABLED: "true"
+    networks:
+      default: {}
+      observability: {}
+networks:
+  observability:
+    external: true
+    name: aegisai-observability

@@ -1,0 +1,32 @@
+{
+  "grafana": {
+    "repository": "grafana/grafana",
+    "tag": "13.3.0",
+    "image": "grafana/grafana@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205",
+    "linuxAmd64CompressedBytes": 503100069
+  },
+  "loki": {
+    "repository": "grafana/loki",
+    "tag": "3.7.9",
+    "image": "grafana/loki@sha256:0db216b630ae1f348a1584c67f3cead8b4c1fc839169a39501db664744158e28",
+    "linuxAmd64CompressedBytes": 48089770
+  },
+  "prometheus": {
+    "repository": "prom/prometheus",
+    "tag": "v3.16.0",
+    "image": "prom/prometheus@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06",
+    "linuxAmd64CompressedBytes": 116078268
+  },
+  "alloy": {
+    "repository": "grafana/alloy",
+    "tag": "v1.21.3",
+    "image": "grafana/alloy@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4",
+    "linuxAmd64CompressedBytes": 223638984
+  },
+  "tempo": {
+    "repository": "grafana/tempo",
+    "tag": "3.1.1",
+    "image": "grafana/tempo@sha256:64e2fbd56d9c2b3412a4b430a58ea59e91a670b1e75f920a0c702213ad145044",
+    "linuxAmd64CompressedBytes": 40896622
+  }
+}

@@ -278,3 +278,5 @@ export function createEvidencePackMetadata(input: EvidencePackMetadataInput): Ev
     redacted: input.redacted
   };
 }
+
+export { OBSERVABILITY_PROXY_HEADERS } from "./types/observability";

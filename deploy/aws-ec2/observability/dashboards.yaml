@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+  - name: aegisai
+    orgId: 1
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /etc/grafana/dashboards
