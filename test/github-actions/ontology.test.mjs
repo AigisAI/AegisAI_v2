@@ -95,7 +95,7 @@ test('CI installs and exercises the ontology importer', () => {
   const workflow = read(files.workflow);
   const requirements = read(files.requirements);
 
-  assert.match(workflow, /actions\/setup-python@v5/);
+  assert.match(workflow, /actions\/setup-python@[a-f0-9]{40}\b/);
   assert.match(
     workflow,
     /python -m pip install .*--requirement ontology\/requirements\.txt/

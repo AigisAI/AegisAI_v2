@@ -13,9 +13,9 @@ test('ci workflow exists and runs the expected workspace verification commands',
   assert.match(workflow, /^on:\s*$/m);
   assert.match(workflow, /pull_request:\s*[\s\S]*branches:\s*[\s\S]*- dev[\s\S]*- main/m);
   assert.match(workflow, /push:\s*[\s\S]*branches:\s*[\s\S]*- dev[\s\S]*- main/m);
-  assert.match(workflow, /actions\/checkout@v4/);
-  assert.match(workflow, /pnpm\/action-setup@v4/);
-  assert.match(workflow, /actions\/setup-node@v4/);
+  assert.match(workflow, /actions\/checkout@[a-f0-9]{40}\b/);
+  assert.match(workflow, /pnpm\/action-setup@[a-f0-9]{40}\b/);
+  assert.match(workflow, /actions\/setup-node@[a-f0-9]{40}\b/);
   assert.match(workflow, /corepack pnpm install --frozen-lockfile/);
   assert.match(workflow, /corepack pnpm lint/);
   assert.match(workflow, /corepack pnpm test/);

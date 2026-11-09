@@ -1,4 +1,4 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS builder
 RUN apk add --no-cache openssl
 RUN corepack enable
 WORKDIR /app
@@ -7,7 +7,7 @@ RUN corepack pnpm install --frozen-lockfile
 RUN corepack pnpm --filter @aegisai/shared build
 RUN corepack pnpm --filter @aegisai/private-api build
 
-FROM node:22-alpine AS runtime-dependencies
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS runtime-dependencies
 RUN apk add --no-cache openssl
 RUN corepack enable
 WORKDIR /app
@@ -20,9 +20,10 @@ COPY packages/private-runtime-db/prisma ./packages/private-runtime-db/prisma
 RUN corepack pnpm install --prod --frozen-lockfile --ignore-scripts
 RUN corepack pnpm --filter @aegisai/private-api exec prisma generate --schema ../../packages/private-runtime-db/prisma/schema.prisma
 
-FROM node:22-alpine AS runner
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS runner
 RUN apk add --no-cache openssl
-RUN corepack enable && corepack prepare pnpm@10.0.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.34.9 --activate \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 WORKDIR /app
 ENV NODE_ENV=production COREPACK_ENABLE_NETWORK=0
 LABEL org.aegisai.runtime-profile="private-single-host-v1"
