@@ -1,5 +1,10 @@
 # Quickstart: Production SAST Runtime Design
 
+Private continuation: after this baseline and008, the owner's2026-11-09 approval
+authorizes [009](../009-private-single-host-kubernetes/quickstart.md) on the single
+existing private EC2. This does not pass or alter the general qualification chain
+below, and does not move scanners into ordinary Kubernetes pods.
+
 ## Goal
 
 Use this feature package as the canonical implementation entry point for the production

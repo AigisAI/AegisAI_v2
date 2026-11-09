@@ -30,3 +30,9 @@ changes. All eight G/H acceptance criteria remain mandatory and independently tr
 For issue #342 H4 implementation, read [observability.md](./observability.md) before code or installation. The current user authorizes this bounded diagnostic phase; private Kubernetes rollout and full G/H completion retain their independent gates.
 
 For issue #348 H3, read [supply-chain.md](./supply-chain.md) before tool installation or delivery-policy changes.
+
+On2026-11-09 the owner approved the concrete private one-host scope proposal
+("계속. 한 대로 진행해"). Continue through
+[009](../009-private-single-host-kubernetes/quickstart.md) for that narrower
+Kubernetes installation/migration. The installation hold above is superseded for
+this named private scope only; general T053-T056 remain unchanged/unqualified.

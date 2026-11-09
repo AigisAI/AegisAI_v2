@@ -1,5 +1,9 @@
 # GitHub Conventions
 
+Private Kubernetes continuation: after canonical006/008, follow
+[009 quickstart](../specs/009-private-single-host-kubernetes/quickstart.md) for the
+owner-approved single-existing-EC2 scope. General qualification remains separate.
+
 ## Workflow
 
 This repository uses Git-flow with GitHub-based issue and PR operations.

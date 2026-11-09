@@ -1,0 +1,36 @@
+name: Private Kubernetes Bootstrap Safety
+on:
+  pull_request:
+    branches: [dev, main, feat/348-private-image-supply-chain]
+    paths:
+      - deploy/aws-ec2/kubernetes/**
+      - specs/009-private-single-host-kubernetes/**
+      - .github/workflows/private-kubernetes.yml
+      - AGENTS.md
+permissions:
+  contents: read
+jobs:
+  bootstrap-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - run: python3 -m unittest discover -s deploy/aws-ec2/kubernetes -p 'test_*.py' -v
+      - name: Check pinned vendor binary on native Linux
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess,tempfile,urllib.request
+          p=json.load(open('deploy/aws-ec2/kubernetes/toolchain.json'))['k3s']
+          with tempfile.TemporaryDirectory() as directory:
+            binary=pathlib.Path(directory)/'k3s'
+            urllib.request.urlretrieve(p['releaseBase']+p['binary']['name'],binary)
+            assert binary.stat().st_size==p['binary']['bytes']
+            with binary.open('rb') as stream:
+              assert hashlib.file_digest(stream,'sha256').hexdigest()==p['binary']['sha256']
+            binary.chmod(0o700)
+            subprocess.run([str(binary),'--version'],check=True,timeout=15)
+          PY
+      - run: git diff --check

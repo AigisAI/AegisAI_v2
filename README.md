@@ -16,6 +16,11 @@ and separates Control, Scan, AI, and Data/Security planes.
 
 ## Start Here
 
+The owner-approved private one-host Kubernetes continuation is
+[009 quickstart](./specs/009-private-single-host-kubernetes/quickstart.md), entered
+after canonical006/008. It preserves the general qualification gates and scanner
+boundary; control-plane bootstrap alone does not complete rollout/scaling.
+
 For development or agent work, follow the canonical entry path before touching code:
 
 ```text
