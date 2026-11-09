@@ -277,3 +277,5 @@ keeps the existing private Java runtime in `apps/private-api`, `apps/private-web
 `deploy/aws-ec2` targets use this profile; the canonical API/schema and 006
 qualification gates remain independent. Hosted CI builds immutable candidates
 without deployment. Production continues to run its previous release.
+
+Private platform continuation: [008 quickstart](specs/008-private-platform-expansion/quickstart.md), with [Terraform adoption](deploy/aws-ec2/platform/README.md). The existing private app release remains deployed; all eight expanded platform requirements retain their independent acceptance gates.

@@ -101,3 +101,13 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 After the canonical 006 entrypoint, follow specs/007-private-ec2-integration/quickstart.md
 for issue #338 only. Its existing single-EC2 private profile is not 006 qualification
 evidence. Stop before deployment; do not modify live services or production data.
+
+## Active private platform continuation (issue #340)
+
+After the canonical 006 entrypoint, follow
+[008 quickstart](./specs/008-private-platform-expansion/quickstart.md).
+The user authorized starting the mandatory G/H implementation on 2026-11-09.
+Phase 1 imports existing cloud resources without changing live apps or cloud
+configuration. Preserve all general 005/006 gates and one-existing-EC2 constraints.
+The old 007 preparation-only stop is historical; it is not authority to block
+this newly authorized phase or to bypass later Kubernetes admission requirements.

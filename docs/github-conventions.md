@@ -76,3 +76,5 @@ $env:SPECIFY_FEATURE = "006-production-sast-runtime-design"
 ```
 
 Private EC2 integration preparation follows [007](../specs/007-private-ec2-integration/quickstart.md); it does not authorize a production deployment or bypass 006 qualification.
+
+Issue #340 continues private platform work from the deployed source in a dependent branch. Until #339 merges, target its integration branch to review only the new platform diff; use the dedicated private-platform CI without repeating unrelated app/scanner checks.

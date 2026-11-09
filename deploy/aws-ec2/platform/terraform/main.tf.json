@@ -1,0 +1,250 @@
+{
+  "terraform": {
+    "required_version": "= 1.17.1",
+    "required_providers": {
+      "aws": {
+        "source": "hashicorp/aws",
+        "version": "= 6.72.0"
+      }
+    },
+    "backend": {
+      "local": {
+        "path": "state/terraform.tfstate"
+      }
+    }
+  },
+  "provider": {
+    "aws": {
+      "region": "ap-northeast-2",
+      "allowed_account_ids": [
+        "024139495514"
+      ]
+    }
+  },
+  "resource": {
+    "aws_security_group": {
+      "control": {
+        "name": "aegisai-control-tailnet",
+        "description": "AegisAI control host: tailnet access only, no public ingress",
+        "vpc_id": "vpc-017291900e2d9467a",
+        "tags": {
+          "Role": "control-plane",
+          "ManagedBy": "AegisAI-deployment",
+          "Project": "AegisAI"
+        },
+        "ingress": [],
+        "egress": [
+          {
+            "protocol": "-1",
+            "from_port": 0,
+            "to_port": 0,
+            "description": "",
+            "cidr_blocks": [
+              "0.0.0.0/0"
+            ],
+            "ipv6_cidr_blocks": [],
+            "prefix_list_ids": [],
+            "security_groups": [],
+            "self": false
+          }
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_iam_role": {
+      "runtime": {
+        "name": "aegisai-private-runtime",
+        "path": "/",
+        "assume_role_policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Principal\": {\"Service\": \"ec2.amazonaws.com\"}, \"Action\": \"sts:AssumeRole\"}]}",
+        "max_session_duration": 3600,
+        "tags": {
+          "Project": "AegisAI",
+          "ManagedBy": "aegisai-v2"
+        },
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_iam_instance_profile": {
+      "runtime": {
+        "name": "aegisai-private-runtime",
+        "path": "/",
+        "role": "${aws_iam_role.runtime.name}",
+        "tags": {
+          "Project": "AegisAI",
+          "ManagedBy": "aegisai-v2"
+        },
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_iam_role_policy": {
+      "runtime_0": {
+        "name": "AegisAIPrivateDataPlane",
+        "role": "${aws_iam_role.runtime.id}",
+        "policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Action\": [\"secretsmanager:GetSecretValue\"], \"Resource\": [\"arn:aws:secretsmanager:ap-northeast-2:024139495514:secret:aegisai/private-runtime/auth-1ZVg0A\", \"arn:aws:secretsmanager:ap-northeast-2:024139495514:secret:aegisai/private-runtime/scm-UfGnEt\"]}, {\"Effect\": \"Allow\", \"Action\": [\"s3:ListBucket\"], \"Resource\": \"arn:aws:s3:::aegisai-private-024139495514-apne2\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\", \"s3:DeleteObject\"], \"Resource\": \"arn:aws:s3:::aegisai-private-024139495514-apne2/evidence/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\", \"s3:PutObject\"], \"Resource\": \"arn:aws:s3:::aegisai-private-024139495514-apne2/backups/*\"}, {\"Effect\": \"Allow\", \"Action\": [\"kms:GenerateDataKey\", \"kms:Decrypt\"], \"Resource\": \"arn:aws:kms:ap-northeast-2:024139495514:key/41ee8813-40ba-4555-853c-70feed76ec15\", \"Condition\": {\"StringEquals\": {\"kms:ViaService\": \"s3.ap-northeast-2.amazonaws.com\", \"kms:CallerAccount\": \"024139495514\"}, \"StringLike\": {\"kms:EncryptionContext:aws:s3:arn\": [\"arn:aws:s3:::aegisai-private-024139495514-apne2/evidence/*\", \"arn:aws:s3:::aegisai-private-024139495514-apne2/backups/*\"]}}}]}",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_instance": {
+      "control": {
+        "ami": "ami-0e1eeb87102d64f40",
+        "instance_type": "m7i-flex.large",
+        "subnet_id": "subnet-083c2e089c0109c5d",
+        "availability_zone": "ap-northeast-2d",
+        "private_ip": "172.31.55.151",
+        "key_name": "AegisAI_KEY",
+        "associate_public_ip_address": true,
+        "vpc_security_group_ids": [
+          "${aws_security_group.control.id}"
+        ],
+        "iam_instance_profile": "${aws_iam_instance_profile.runtime.name}",
+        "monitoring": false,
+        "ebs_optimized": true,
+        "source_dest_check": true,
+        "disable_api_termination": false,
+        "metadata_options": {
+          "http_endpoint": "enabled",
+          "http_tokens": "required",
+          "http_put_response_hop_limit": 2,
+          "http_protocol_ipv6": "disabled",
+          "instance_metadata_tags": "disabled"
+        },
+        "root_block_device": {
+          "delete_on_termination": false,
+          "encrypted": true,
+          "volume_size": 30,
+          "volume_type": "gp3",
+          "iops": 3000,
+          "throughput": 125,
+          "kms_key_id": "arn:aws:kms:ap-northeast-2:024139495514:key/95b83d89-0d7f-4bf6-8379-8bcf2a44e90e",
+          "tags": {
+            "Purpose": "encrypted-root-migration-20261107",
+            "Project": "AegisAI"
+          }
+        },
+        "tags": {
+          "Name": "AegisAI"
+        },
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket": {
+      "private": {
+        "bucket": "aegisai-private-024139495514-apne2",
+        "force_destroy": false,
+        "tags": {
+          "Project": "AegisAI",
+          "ManagedBy": "aegisai-v2"
+        },
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_policy": {
+      "private": {
+        "bucket": "${aws_s3_bucket.private.id}",
+        "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyPlainTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::aegisai-private-024139495514-apne2\",\"arn:aws:s3:::aegisai-private-024139495514-apne2/*\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}},{\"Sid\":\"RequireKmsForWrites\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::aegisai-private-024139495514-apne2/*\",\"Condition\":{\"StringNotEquals\":{\"s3:x-amz-server-side-encryption\":\"aws:kms\"}}},{\"Sid\":\"RequireCreateOnlyWrites\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::aegisai-private-024139495514-apne2/*\",\"Condition\":{\"Null\":{\"s3:if-none-match\":\"true\"}}}]}",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_public_access_block": {
+      "private": {
+        "bucket": "${aws_s3_bucket.private.id}",
+        "block_public_acls": true,
+        "block_public_policy": true,
+        "ignore_public_acls": true,
+        "restrict_public_buckets": true,
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_server_side_encryption_configuration": {
+      "private": {
+        "bucket": "${aws_s3_bucket.private.id}",
+        "rule": [
+          {
+            "apply_server_side_encryption_by_default": {
+              "sse_algorithm": "aws:kms"
+            },
+            "bucket_key_enabled": false
+          }
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_ownership_controls": {
+      "private": {
+        "bucket": "${aws_s3_bucket.private.id}",
+        "rule": {
+          "object_ownership": "BucketOwnerEnforced"
+        },
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_lifecycle_configuration": {
+      "private": {
+        "bucket": "${aws_s3_bucket.private.id}",
+        "transition_default_minimum_object_size": "all_storage_classes_128K",
+        "rule": [
+          {
+            "id": "evidence-defense-in-depth",
+            "status": "Enabled",
+            "filter": {
+              "prefix": "evidence/"
+            },
+            "expiration": {
+              "days": 7
+            },
+            "abort_incomplete_multipart_upload": {
+              "days_after_initiation": 1
+            }
+          },
+          {
+            "id": "backup-retention",
+            "status": "Enabled",
+            "filter": {
+              "prefix": "backups/"
+            },
+            "expiration": {
+              "days": 14
+            },
+            "abort_incomplete_multipart_upload": {
+              "days_after_initiation": 1
+            }
+          }
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_versioning": {
+      "private": {
+        "bucket": "${aws_s3_bucket.private.id}",
+        "versioning_configuration": {
+          "status": "Disabled"
+        },
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    }
+  }
+}
