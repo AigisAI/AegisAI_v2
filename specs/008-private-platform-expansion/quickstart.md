@@ -28,3 +28,8 @@ bypass T053-T056. Later phases require a concrete scoped design before code/live
 changes. All eight G/H acceptance criteria remain mandatory and independently tracked.
 
 For issue #342 H4 implementation, read [observability.md](./observability.md) before code or installation. The current user authorizes this bounded diagnostic phase; private Kubernetes rollout and full G/H completion retain their independent gates.
+
+For issue #344, the owner selected Slack for actual operational alerts. Follow
+[the bounded operator-only handoff and notifier](../../deploy/aws-ec2/alerts/README.md).
+No secret may enter chat/Git/logs; the receiver is selected by the owner and
+notification delivery must be observed rather than inferred from configuration.
