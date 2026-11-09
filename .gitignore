@@ -15,3 +15,7 @@ apps/api/tmp/
 
 /output/
 packages/private-runtime-db/generated/
+
+# Python runtime caches
+__pycache__/
+*.py[cod]
