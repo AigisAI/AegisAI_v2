@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 ROOT = Path('/opt/aegisai/observability')
@@ -49,7 +50,6 @@ def main():
     # Readiness precedes the first 30s scrape. Poll actual observations, not time alone.
     self_scrape = host_scrape = host_logs = False
     deadline = time.monotonic() + 65
-    import urllib.parse
     while time.monotonic() < deadline:
         for job in ('prometheus', 'aegisai-host'):
             status, body = request(roots['prometheus'] + '/api/v1/query?' +
