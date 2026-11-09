@@ -71,6 +71,7 @@ test('T056 tools pin an independent trust root and fail closed around signed GO'
   const bundle = createT056GoNoGoBundle({
     signatureFactory,
     trustPolicyText: trust.text,
+    timeOffsetMs: now - 2 * 60 * 60_000 - Date.parse('2026-08-19T20:00:00.000Z'),
     entryVerifiedAt: new Date(now - 10 * 60_000).toISOString(),
     evidenceObservedAtBase: new Date(now - 5 * 60_000).toISOString(),
     evidenceValidUntil: new Date(now + 2 * 60 * 60_000).toISOString(),

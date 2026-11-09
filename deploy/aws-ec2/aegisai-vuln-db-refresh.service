@@ -1,0 +1,21 @@
+[Unit]
+Description=Refresh bounded verified AegisAI vendor vulnerability database
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -B /opt/aegisai/operator/refresh-vulnerability-db.py
+TimeoutStartSec=15min
+UMask=0077
+LimitCORE=0
+MemoryMax=256M
+CPUQuota=25%
+TasksMax=32
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/opt/aegisai/scanner/databases /run/aegisai-scanner-maintenance.lock
+InaccessiblePaths=-/opt/aegisai/shared -/opt/aegisai/operator/aws -/run/aegisai-source-broker -/run/aegisai-scan -/run/docker.sock
+

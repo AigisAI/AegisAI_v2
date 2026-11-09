@@ -924,3 +924,12 @@ try {
 node --test test/runtime/*.test.mjs
 git diff --check
 ```
+
+## User-authorized private integration boundary
+
+The 2026-11-09 request authorizes the narrower
+[007 private EC2 integration](../007-private-ec2-integration/quickstart.md)
+profile alongside the canonical 006 implementation. Its distinct API, schema and
+images preserve the existing one-owner single-host service. Preparation stops
+before deployment. This exception does not qualify T053-T056, permit Kubernetes
+rollout, or weaken the general-service evidence chain and guardrails above.

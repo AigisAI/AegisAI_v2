@@ -117,3 +117,81 @@ jobs:
 
       - name: Check whitespace
         run: git diff --check
+
+  private-profile:
+    name: Verify and prepare private EC2 candidate
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: aegisai_verify
+          POSTGRES_USER: verify
+          POSTGRES_PASSWORD: verify-only-local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U verify -d aegisai_verify"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://verify:verify-only-local@localhost:5432/aegisai_verify
+      PERSISTENCE_TEST_DATABASE_URL: postgresql://verify:verify-only-local@localhost:5432/aegisai_verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: corepack enable && corepack pnpm install --frozen-lockfile
+      - name: Generate both isolated clients and build private API
+        run: |
+          corepack pnpm --filter @aegisai/api prisma:generate
+          corepack pnpm --filter @aegisai/shared build
+          corepack pnpm --filter @aegisai/private-api build
+      - name: Verify namespace and profile startup guards
+        run: node --test test/private-runtime/*.test.mjs
+      - name: Apply only private migrations to private verification DB
+        run: corepack pnpm --filter @aegisai/private-api prisma:migrate:deploy
+      - name: Verify private SQL lifecycle and result boundaries
+        run: node --test --test-concurrency=1 test/private-persistence/*.test.mjs
+      - name: Verify operator maintenance safety
+        run: |
+          sudo python3 -E -s -B deploy/aws-ec2/test_managed_runtime.py
+          python3 tools/private-runtime/test_candidate.py
+          sh -n tools/private-runtime/deploy-prepared.sh
+          sh -n deploy/aws-ec2/deploy-candidate.sh
+      - name: Build trusted native verification image
+        run: docker build --target builder -f apps/private-api/Dockerfile -t aegisai-private-verify:ci .
+      - name: Verify native channel roles without runtime secrets
+        run: |
+          docker run --rm --user 0 --network host --memory 768m --cpus 1 --pids-limit 128 \
+            -e NODE_ENV=production \
+            -e PERSISTENCE_TEST_DATABASE_URL=postgresql://verify:verify-only-local@127.0.0.1:5432/aegisai_verify \
+            -v "$PWD/test/private-worker-native:/app/test/private-worker-native:ro" \
+            aegisai-private-verify:ci node --test --test-concurrency=1 /app/test/private-worker-native/*.test.mjs
+      - name: Build immutable private runtime images
+        run: |
+          docker build -f apps/private-api/Dockerfile --label org.opencontainers.image.revision=$GITHUB_SHA -t aegisai-private-api:ci .
+          docker build -f apps/private-web/Dockerfile --label org.opencontainers.image.revision=$GITHUB_SHA -t aegisai-private-web:ci .
+      - name: Verify production image private database CLI
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL=postgresql://verify:verify-only-local@127.0.0.1:5432/aegisai_verify \
+            aegisai-private-api:ci corepack pnpm --filter @aegisai/private-api prisma:migrate:deploy
+      - name: Package validated candidate without deployment
+        run: python3 tools/private-runtime/build-candidate.py "$RUNNER_TEMP/private-ec2-candidate"
+      - name: Preserve prepared artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-ec2-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/private-ec2-candidate
+          retention-days: 3

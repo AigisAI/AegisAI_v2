@@ -77,7 +77,8 @@ test('T055 tools pin an independent trust root and verify every Ed25519 authorit
   const bundle = createT055QualificationBundle({
     manifest: qualificationPackage.manifest,
     signatureFactory,
-    trustPolicyText: trust.text
+    trustPolicyText: trust.text,
+    timeOffsetMs: Date.now() - 2 * 60 * 60_000 - Date.parse('2026-08-19T20:00:00.000Z')
   });
   const verifySignature = buildSupplyChainRollbackQualificationTrustVerifier({
     value: trust.value,
@@ -364,8 +365,8 @@ function buildTrustBundle() {
       role,
       algorithm: 'ED25519',
       publicKeyPem,
-      validFrom: '2026-08-19T00:00:00.000Z',
-      validUntil: '2026-08-22T00:00:00.000Z'
+      validFrom: new Date(Date.now() - 24 * 60 * 60_000).toISOString(),
+      validUntil: new Date(Date.now() + 24 * 60 * 60_000).toISOString()
     };
   });
   const value = {

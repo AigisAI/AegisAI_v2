@@ -15,3 +15,13 @@ apps/api/.env
 apps/web/.env
 deploy/oracle/.env
 docs/superpowers
+
+output
+tmp
+.playwright-cli
+*.pem
+*.key
+**/.env
+**/.env.*
+
+packages/private-runtime-db/generated

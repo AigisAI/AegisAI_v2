@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh AegisAI GitHub API fetch egress addresses
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -B /opt/aegisai/operator/configure-fetch-egress.py
+TimeoutStartSec=45
+UMask=0077
+LimitCORE=0

@@ -9,15 +9,26 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./private-runtime": {
+      "types": "./dist/private-runtime/index.d.ts",
+      "default": "./dist/private-runtime/index.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\"",
-    "test": "corepack pnpm build && node --test test/*.test.mjs",
+    "test": "corepack pnpm build && node --test test/*.test.mjs test/private-runtime/*.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "typescript": "^5.8.2"
+  },
+  "typesVersions": {
+    "*": {
+      "private-runtime": [
+        "dist/private-runtime/index.d.ts"
+      ]
+    }
   }
 }

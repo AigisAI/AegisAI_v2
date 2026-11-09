@@ -1,0 +1,15 @@
+[Unit]
+Description=Restore AegisAI workloads after verified root volume replacement
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+ConditionPathExists=/opt/aegisai/shared/root-encryption.resume
+
+[Service]
+Type=oneshot
+ExecStart=/opt/aegisai/operator/restore-after-root-replacement.sh
+TimeoutStartSec=300
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

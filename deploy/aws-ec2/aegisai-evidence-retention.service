@@ -1,0 +1,12 @@
+[Unit]
+Description=Enforce AegisAI encrypted evidence expiry and orphan cleanup
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/aegisai/operator/run-evidence-retention.sh
+TimeoutStartSec=10min
+UMask=0077
+LimitCORE=0
+MemoryMax=128M

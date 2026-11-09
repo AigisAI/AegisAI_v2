@@ -95,3 +95,9 @@ working on GitHub-style branches such as `feat/<issue-number>-<short-feature>`.
 - Re-check [`specs/001-aegisai-mvp-foundation/hardening-review.md`](./specs/001-aegisai-mvp-foundation/hardening-review.md) only when legacy MVP hardening or release-readiness is explicitly part of the task.
 - Keep entrypoint docs synchronized whenever execution guidance changes.
 
+
+## User-authorized private integration profile
+
+After the canonical 006 entrypoint, follow specs/007-private-ec2-integration/quickstart.md
+for issue #338 only. Its existing single-EC2 private profile is not 006 qualification
+evidence. Stop before deployment; do not modify live services or production data.

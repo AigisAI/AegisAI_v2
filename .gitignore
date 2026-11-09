@@ -12,3 +12,10 @@ apps/api/.env
 apps/web/.env
 apps/api/tmp/
 *.log
+
+/output/
+packages/private-runtime-db/generated/
+
+# Python runtime caches
+__pycache__/
+*.py[cod]
