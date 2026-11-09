@@ -1,14 +1,12 @@
 """Explicit 2026-11-09 owner approval: existing root volume 30 -> 50 GiB only."""
 import copy
 import datetime
-import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
 
-from manage_terraform import ROOT, WORK, execution_environment
 from plan_guard import assert_no_secret_values, validate_no_changes
 
 
@@ -33,6 +31,8 @@ def validate_expansion(plan):
 
 
 def main():
+    import fcntl
+    from manage_terraform import ROOT, WORK, execution_environment
     assert os.geteuid() == 0 and __debug__
     os.umask(0o077)
     toolchain = json.loads(Path(__file__).with_name('toolchain.json').read_text())
