@@ -23,11 +23,12 @@ try:
         time.sleep(0.2)
     else:raise RuntimeError('DISPOSABLE_REDIS_NOT_READY')
     source=Path('test/private-throttle-native').resolve()
-    subprocess.run(['docker','run','--rm','--network',network,'--read-only','--cap-drop','ALL',
+    result=subprocess.run(['docker','run','--rm','--network',network,'--read-only','--cap-drop','ALL',
         '--security-opt','no-new-privileges','--memory','384m','--cpus','1','--pids-limit','64',
         '-e','AEGISAI_DISPOSABLE_THROTTLE_REDIS=1','-e','REDIS_URL=redis://:'+password+'@throttle-redis:6379/15',
         '-v',str(source)+':/app/test/private-throttle-native:ro','aegisai-private-verify:ci',
-        'node','--test','/app/test/private-throttle-native/shared-storage.test.mjs'],check=True,timeout=45)
+        'node','--test','/app/test/private-throttle-native/shared-storage.test.mjs'],timeout=45)
+    assert result.returncode==0,'DISPOSABLE_SHARED_THROTTLE_VERIFICATION_FAILED'
     print(json.dumps({'nativeSharedThrottle':'passed','realRedisImage':image,'productionNetworkUsed':False}))
 finally:
     if started:subprocess.run(['docker','rm','-f',container],capture_output=True,timeout=15)
