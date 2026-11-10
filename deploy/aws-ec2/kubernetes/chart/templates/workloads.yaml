@@ -84,7 +84,7 @@ spec:
             failureThreshold: 40
           readinessProbe:
             httpGet:
-              path: {{ if eq $component "api" }}/api/health{{ else }}/healthz{{ end }}
+              path: {{ if eq $component "api" }}{{ $.Values.apiReadinessPath | default "/api/health" }}{{ else }}/healthz{{ end }}
               port: http
             periodSeconds: 5
             timeoutSeconds: 3

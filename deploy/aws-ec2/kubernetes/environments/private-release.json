@@ -1,0 +1,9 @@
+{
+  "images": {
+    "api": "docker.io/library/aegisai-api@sha256:36fc2d0ed91d023bba1b777c3b04b8c5bb029c247bfee613b6c8e662f89261f6",
+    "web": "docker.io/library/aegisai-web@sha256:12dd3cd57b56657ca3cba4f892030be8cd9d1326045712434f83f5f94c896dda"
+  },
+  "revision": "f340a441f366638bcdd602667db9b0d666090385",
+  "apiReplicas": 1,
+  "frontendIngressCidrs": ["172.18.0.3/32", "172.29.240.2/32"]
+}
