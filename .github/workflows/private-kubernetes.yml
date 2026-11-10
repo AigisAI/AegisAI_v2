@@ -1,7 +1,7 @@
 name: Private Kubernetes Bootstrap Safety
 on:
   pull_request:
-    branches: [dev, main, feat/348-private-image-supply-chain, feat/350-private-single-host-kubernetes, feat/352-private-kubernetes-admission, feat/354-private-catalog-projection]
+    branches: [dev, main, feat/348-private-image-supply-chain, feat/350-private-single-host-kubernetes, feat/352-private-kubernetes-admission, feat/354-private-catalog-projection, feat/356-private-kubernetes-standby]
     paths:
       - deploy/aws-ec2/kubernetes/**
       - specs/009-private-single-host-kubernetes/**
