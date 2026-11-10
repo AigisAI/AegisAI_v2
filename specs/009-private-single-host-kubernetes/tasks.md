@@ -37,3 +37,5 @@ repo metadata/token boundaries passed, harmless drift restored in3.631s, and
 immutable Git forward/back/forward passed without further Pod replacement. Image
 promotion/CD integration and future HPA/Rollouts field ownership remain; H2 is
 partial. See gitops.md. All four G requirements and deep-H4/H1 recovery remain.
+
+Issue361: actual API1->2->1, missing metrics retention and collector recovery passed. Existing real owner session/data/evidence also passed afterward. Complete shared atomic request throttling across replicas before closing full G4 security acceptance; see scaling.md.

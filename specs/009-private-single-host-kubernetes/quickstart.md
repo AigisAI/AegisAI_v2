@@ -43,3 +43,5 @@ traffic state; legacy shared candidate-release describes only the retained Docke
 fallback. Continue GitOps/strategies/HPA without replaying unchanged scans/restores.
 
 For issue359, read gitops.md before constrained core GitOps installation or adoption. Root retains exact Git/image promotion and all runtime/endpoint ownership.
+
+For issue361 read scaling.md. Actual1->2->1 and metric-loss behavior passed; retain HPA replica ownership and complete shared throttling before final scaling acceptance.
