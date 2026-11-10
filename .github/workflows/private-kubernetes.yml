@@ -1,7 +1,7 @@
 name: Private Kubernetes Bootstrap Safety
 on:
   pull_request:
-    branches: [dev, main, feat/348-private-image-supply-chain]
+    branches: [dev, main, feat/348-private-image-supply-chain, feat/350-private-single-host-kubernetes]
     paths:
       - deploy/aws-ec2/kubernetes/**
       - specs/009-private-single-host-kubernetes/**
@@ -19,6 +19,7 @@ jobs:
         with:
           python-version: '3.13'
       - run: python3 -m unittest discover -s deploy/aws-ec2/kubernetes -p 'test_*.py' -v
+      - run: python3 -m compileall -q deploy/aws-ec2/kubernetes
       - name: Check pinned vendor binary on native Linux
         run: |
           python3 - <<'PY'
