@@ -1,10 +1,18 @@
 from pathlib import Path
 import tempfile
 import unittest
-from standby import public_environment
+from standby import public_environment, validate_managed_settings
 
 
 class PublicConfiguration(unittest.TestCase):
+    def test_managed_only_settings_are_checked_without_exporting_secrets(self):
+        values={'APP_URL':'https://aegisai-aws.tailaca7d2.ts.net','FRONTEND_URL':'https://aegisai-aws.tailaca7d2.ts.net',
+                'USE_INTERNAL_AI':'false','COOKIE_SECURE':'true','ALLOWED_GITHUB_USER_IDS':'161540124',
+                'GITHUB_LOGIN_KIND':'github-app','SESSION_SECRET':'fixture-secret-not-published'}
+        self.assertIsNone(validate_managed_settings(values))
+        for key,value in (('COOKIE_SECURE','false'),('USE_INTERNAL_AI','true'),('ALLOWED_GITHUB_USER_IDS','99')):
+            with self.assertRaises(AssertionError):validate_managed_settings({**values,key:value})
+
     def test_secret_values_are_never_copied_into_public_configmap(self):
         environment={'NODE_ENV':'production','PORT':'3000','AWS_REGION':'ap-northeast-2',
             'AWS_AUTH_SECRET_ARN':'arn:aws:secretsmanager:ap-northeast-2:024139495514:secret:aegisai/private-runtime/auth-fixture',
@@ -19,6 +27,11 @@ class PublicConfiguration(unittest.TestCase):
             result=public_environment(path)
             self.assertNotIn('UNKNOWN_SETTING',result)
             self.assertEqual(result['RUNTIME_CATALOG_MODE'],'projected')
+            managed_only={key:value for key,value in environment.items() if key not in ('APP_URL','FRONTEND_URL','COOKIE_SECURE','USE_INTERNAL_AI')}
+            path.write_text('\n'.join(key+'='+value for key,value in managed_only.items()))
+            result=public_environment(path)
+            self.assertNotIn('APP_URL',result)
+            self.assertNotIn('COOKIE_SECURE',result)
             path.write_text(text+'\nSESSION_SECRET=fixture-do-not-copy\n')
             with self.assertRaises(AssertionError):public_environment(path)
             path.write_text(text.replace('auth-fixture','wrong-secret-path'))

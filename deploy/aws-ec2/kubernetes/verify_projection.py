@@ -29,6 +29,15 @@ def main():
         kube('wait','--for=jsonpath={.status.phase}=Succeeded','pod/'+name,'-n','aegisai-private','--timeout=80s')
         proof=json.loads(kube('logs',name,'-n','aegisai-private'))
         assert proof['projectedCatalogReadable'] and proof['actualRotationObserved']
+    except Exception:
+        # This trusted probe has no app/SCM/DB credentials. Keep its bounded fixed
+        # failure output before deleting the exact Pod so diagnosis is possible.
+        failure=json.loads(kube('get','pod',name,'-n','aegisai-private','-o','json'))
+        try:logs=kube('logs',name,'-n','aegisai-private')[:2048]
+        except Exception:logs='probe logs unavailable'
+        (ROOT/'catalog-projection-failure.json').write_text(json.dumps({
+            'phase':failure['status'].get('phase'),'probeLog':logs,'verifiedAt':now()},indent=2))
+        raise
     finally:
         assert json.loads(kube('get','pod',name,'-n','aegisai-private','-o','json'))['metadata']['uid']==uid
         kube('delete','pod',name,'-n','aegisai-private','--wait=true','--timeout=30s')
