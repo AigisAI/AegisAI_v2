@@ -76,7 +76,7 @@ def resources(vendor):
             if name==ACCOUNT:pod['containers'][0]['args']+=['--status-processors','2','--operation-processors','1','--kubectl-parallelism-limit','1']
         if name=='argocd-cm':value['data']={'timeout.reconciliation':'60s','timeout.reconciliation.jitter':'10s',
              'resource.trackingMethod':'annotation','application.resourceTrackingMethod':'annotation',
-             'resource.inclusions':'- apiGroups: ["", "apps", "networking.k8s.io", "autoscaling", "argoproj.io"]\n  kinds: [ConfigMap, Service, ServiceAccount, Pod, Deployment, ReplicaSet, NetworkPolicy, HorizontalPodAutoscaler, Rollout, AnalysisRun, AnalysisTemplate]\n  clusters: ["*"]\n'}
+             'resource.inclusions':'- apiGroups: ["", "apps", "networking.k8s.io"]\n  kinds: [ConfigMap, Service, ServiceAccount, Pod, Deployment, ReplicaSet, NetworkPolicy]\n  clusters: ["*"]\n'}
         if name=='argocd-cmd-params-cm':value['data']={'reposerver.parallelism.limit':'1','reposerver.log.level':'warn','controller.log.level':'warn','controller.resource.health.persist':'false'}
         docs.append(value)
     assert sum(d['kind'] in ('Deployment','StatefulSet') for d in docs)==3
