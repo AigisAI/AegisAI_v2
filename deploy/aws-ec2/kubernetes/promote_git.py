@@ -45,7 +45,7 @@ def wait_ready(revision,images,timeout,samples):
     while time.monotonic()<deadline:
         state=app();pods=pod_state();status=http_health()
         samples.append({'at':now(),'httpHealth':status,'pods':pods})
-        assert status==200,'PRIVATE_HEALTH_FAILED'
+        assert status==200,'PRIVATE_HEALTH_FAILED_'+str(status)
         assert sum(p['component']=='api' for p in pods)<=3 and sum(p['component']=='web' for p in pods)<=2
         active=[p for p in pods if not p['terminating']]
         if (state.get('status',{}).get('sync',{}).get('revision')==revision
@@ -100,7 +100,7 @@ def main():
             'helm':{'releaseName':'aegisai-private','valueFiles':['../environments/private-release.json']}}
     before=pod_state();samples=[];started=time.monotonic()
     kube('patch','application','aegisai-private','-n','argocd','--type=json','-p',json.dumps([{'op':'replace','path':'/spec/source','value':target}]))
-    accepted=False
+    accepted=False;failure=None
     try:
         accepted=wait_ready(args.git_revision,expected,50 if args.expect_rejection else 180,samples)
         if args.expect_rejection:
@@ -110,11 +110,18 @@ def main():
                        for sample in samples for p in sample['pods']),'NON_READY_CANDIDATE_POD_NOT_OBSERVED'
             assert all(any(p['uid'] in old_ready and p['ready'] for p in sample['pods']) for sample in samples),'OLD_READY_REPLICA_NOT_PRESERVED'
         else:assert accepted,'NEW_RELEASE_NOT_READY'
+    except BaseException as error:
+        failure=type(error).__name__+': '+str(error)[:300]
+        raise
     finally:
         if not accepted or args.expect_rejection:
             kube('patch','application','aegisai-private','-n','argocd','--type=json','-p',json.dumps([{'op':'replace','path':'/spec/source','value':previous_source}]))
             previous_images={kind:item['reference'] for kind,item in traffic['images'].items()}
             assert wait_ready(previous_source['targetRevision'],previous_images,180,samples),'AUTOMATIC_GIT_RECOVERY_FAILED'
+        if failure:
+            (ROOT/'gitops'/('failed-promotion-'+args.git_revision[:12]+'.json')).write_text(json.dumps({
+                'failure':failure,'gitRevision':args.git_revision,'actualSamples':samples,
+                'restoredGitRevision':previous_source['targetRevision'],'verifiedAt':now()},indent=2))
     if accepted and not args.expect_rejection:
         traffic.update(approvedSource=release['approvedSource'],images=release['images'],gitRevision=args.git_revision,
             manifestSha256=release['manifestSha256'],gitValueFile=VALUE_FILE,changedAt=now())

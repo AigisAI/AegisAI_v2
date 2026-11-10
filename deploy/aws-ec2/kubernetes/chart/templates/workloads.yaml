@@ -13,6 +13,7 @@ metadata:
 spec:
   replicas: {{ if eq $component "api" }}{{ $.Values.apiReplicas }}{{ else }}1{{ end }}
   revisionHistoryLimit: 3
+  minReadySeconds: 5
   progressDeadlineSeconds: 180
   strategy:
     type: RollingUpdate
@@ -50,6 +51,9 @@ spec:
         - name: {{ $component }}
           image: {{ index $.Values.images $component | quote }}
           imagePullPolicy: Never
+          lifecycle:
+            preStop:
+              sleep: {seconds: 5}
           {{- if eq $component "api" }}
           envFrom:
             - configMapRef:
