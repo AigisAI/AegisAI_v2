@@ -14,6 +14,7 @@ import urllib.request
 
 from bootstrap import ROOT, SOURCE, now
 from foundation import kube
+from image_retention import require_pinned
 
 OPERATOR=Path('/opt/aegisai/operator')
 REPO='https://github.com/AigisAI/AegisAI_v2.git'
@@ -86,6 +87,8 @@ def main():
     assert len(directories)==1
     receipt=verify(directories[0],release['manifestSha256'],release['approvedSource'],target=True)
     assert receipt['signedCandidateVerification']=='passed'
+    # Refuse before changing Git if the offline rollback/promotion cache is absent.
+    require_pinned(release['images'])
     current=app();previous_source=current['spec']['source']
     assert previous_source['repoURL']==REPO and previous_source['path']=='deploy/aws-ec2/kubernetes/chart'
     assert 'RespectIgnoreDifferences=true' in current['spec']['syncPolicy']['syncOptions']

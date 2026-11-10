@@ -11,6 +11,7 @@ import sys
 
 from bootstrap import BINARY, ROOT, PIN, digest, now, snapshot
 from foundation import kube
+from image_retention import pin, require_pinned, trim_owned_pins
 
 
 def image_policy(images, previous=None):
@@ -108,7 +109,17 @@ def main():
         subprocess.run([str(BINARY),'ctr','-n','k8s.io','images','tag','--force',canonical,reference],
                        check=True,timeout=15,stdout=subprocess.DEVNULL)
         images[kind]={'reference':reference,'candidateImageId':image['id'],'importedTargetDigest':matches[0]}
+        pin(canonical,reference)
+    # Native CRI state, not labels alone, must confirm kubelet GC retention.
+    import time
+    for attempt in range(20):
+        try:
+            require_pinned(images);break
+        except AssertionError:
+            if attempt==19:raise
+            time.sleep(0.5)
     policy=image_policy(images,previous['images'] if previous else None)
+    if previous:require_pinned(previous['images'])
     kube('apply','--server-side','--field-manager=aegisai-operator-admission','-f','-',value=policy)
     binding={'apiVersion':'admissionregistration.k8s.io/v1','kind':'ValidatingAdmissionPolicyBinding',
         'metadata':{'name':'aegisai-approved-private-images'},'spec':{
@@ -132,6 +143,7 @@ def main():
     current={key:ledger[key] for key in ('approvedSource','manifestSha256','verification','images')}
     ledger['approvedReleases']=[current]+([previous] if previous and previous['approvedSource']!=args.approved_source else [])
     (ROOT/'approved-app-images.json').write_text(json.dumps(ledger,indent=2))
+    trim_owned_pins(ledger['approvedReleases'])
     print(json.dumps(ledger))
 
 
