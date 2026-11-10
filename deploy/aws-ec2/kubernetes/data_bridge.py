@@ -82,6 +82,7 @@ def main():
     directory=Path('/opt/aegisai/observability/discovery')
     directory.mkdir(mode=0o755,exist_ok=True)
     assert directory.resolve()==directory and directory.stat().st_uid==0 and not directory.stat().st_mode&0o022
+    directory.chmod(0o755)  # public metric targets; readable by the non-root scraper
     path=directory/'private-api-targets.json';assert not path.is_symlink()
     pending=directory/'private-api-targets.pending';assert not pending.is_symlink()
     pending.write_text(json.dumps(targets));pending.chmod(0o644);pending.replace(path)
