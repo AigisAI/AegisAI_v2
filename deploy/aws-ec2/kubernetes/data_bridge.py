@@ -52,6 +52,12 @@ def main():
             'policyTypes':['Egress'],'egress':routes}})
     prometheus,ready=endpoint('aegisai-observability-prometheus-1','observability')
     assert ready
+    # The observability bridge intentionally has no default route. Grant only
+    # the private Pod CIDR; app NetworkPolicies still admit metrics port9465 only.
+    inspection=json.loads(subprocess.check_output(['docker','inspect','aegisai-observability-prometheus-1'],text=True,timeout=5))[0]
+    pid=inspection['State']['Pid'];assert isinstance(pid,int) and pid>1
+    subprocess.run(['nsenter','-t',str(pid),'-n','ip','route','replace','10.44.0.0/16',
+                    'via','172.29.240.1','dev','eth0'],check=True,timeout=5,capture_output=True)
     call('apply','--server-side','--field-manager=aegisai-host-bridge','-f','-',value={
         'apiVersion':'networking.k8s.io/v1','kind':'NetworkPolicy','metadata':{
             'name':'api-private-metrics','namespace':'aegisai-private'},'spec':{
@@ -73,9 +79,12 @@ def main():
         assert image==ledger['images']['api']['reference']
         targets.append({'targets':[address+':9465'],'labels':{
             'runtime':'kubernetes','approved_source':ledger['approvedSource'][:12]}})
-    path=Path('/opt/aegisai/observability/config/private-api-targets.json')
-    assert not path.is_symlink()
-    path.write_text(json.dumps(targets));path.chmod(0o644)
+    directory=Path('/opt/aegisai/observability/discovery')
+    directory.mkdir(mode=0o755,exist_ok=True)
+    assert directory.resolve()==directory and directory.stat().st_uid==0 and not directory.stat().st_mode&0o022
+    path=directory/'private-api-targets.json';assert not path.is_symlink()
+    pending=directory/'private-api-targets.pending';assert not pending.is_symlink()
+    pending.write_text(json.dumps(targets));pending.chmod(0o644);pending.replace(path)
 
 
 if __name__=='__main__':main()
