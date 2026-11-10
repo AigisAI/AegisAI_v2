@@ -1,0 +1,6 @@
+{
+  "version": "v3.7.17",
+  "image": "docker.io/library/traefik@sha256:e15b8921020b4fd81de5746b170dfceec221d2450711449f6427e4692881511a",
+  "crdUrl": "https://raw.githubusercontent.com/traefik/traefik/v3.7.17/docs/content/reference/dynamic-configuration/traefik.io_traefikservices.yaml",
+  "crdSha256": "520e36b6ffb4c5f1056393accbb8a9d6ad68a0d7e17960179041115db69ded3f"
+}
