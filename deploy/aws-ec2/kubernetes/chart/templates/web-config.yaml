@@ -4,4 +4,4 @@ metadata:
   name: web-nginx
 data:
   nginx.conf: |
-{{ .Files.Get "files/nginx.conf" | indent 4 }}
+{{ .Files.Get "files/nginx.conf" | replace "\r\n" "\n" | indent 4 }}
