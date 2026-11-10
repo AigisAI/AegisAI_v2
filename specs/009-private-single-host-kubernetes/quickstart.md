@@ -41,3 +41,5 @@ Read standby.md and traffic.py for actual upstream ownership, protected Compose
 fallback, control-state backup and measured rollback. Preserve the separate root
 traffic state; legacy shared candidate-release describes only the retained Docker
 fallback. Continue GitOps/strategies/HPA without replaying unchanged scans/restores.
+
+For issue359, read gitops.md before constrained core GitOps installation or adoption. Root retains exact Git/image promotion and all runtime/endpoint ownership.
