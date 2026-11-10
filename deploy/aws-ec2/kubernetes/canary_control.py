@@ -14,10 +14,10 @@ APP = 'aegisai-private'
 
 
 def analysis(prometheus):
-    total = '(sum(traefik_service_requests_total{job="aegisai-canary-router",service="canary@file"}) or vector(0))'
-    failed = '(sum(traefik_service_requests_total{job="aegisai-canary-router",service="canary@file",code=~"5.."}) or vector(0))'
+    total = '(sum(traefik_service_requests_total{job="aegisai-canary-router",instance="{{args.router-instance}}",service="canary@file"}) or vector(0))'
+    failed = '(sum(traefik_service_requests_total{job="aegisai-canary-router",instance="{{args.router-instance}}",service="canary@file",code=~"5.."}) or vector(0))'
     query = '('+failed+' - {{args.start-errors}}) / clamp_min(('+total+' - {{args.start-requests}}), 1)'
-    latency = 'histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{job="aegisai-canary-router",service="canary@file"}[1m])))'
+    latency = 'histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{job="aegisai-canary-router",instance="{{args.router-instance}}",service="canary@file"}[1m])))'
     metrics = []
     for name, expression, success, failure in (
         ('actual-candidate-requests', total+' - {{args.start-requests}}', 'result[0] >= 3', 'result[0] < 3'),
@@ -27,7 +27,7 @@ def analysis(prometheus):
             'successCondition': success, 'failureCondition': failure,
             'provider': {'prometheus': {'address': 'http://'+prometheus+':9090', 'query': expression}}})
     return object('AnalysisTemplate', 'private-canary-health', namespace=APP, api='argoproj.io/v1alpha1', spec={
-        'args': [{'name': 'start-requests'}, {'name': 'start-errors'}], 'metrics': metrics})
+        'args': [{'name': 'start-requests'}, {'name': 'start-errors'}, {'name': 'router-instance'}], 'metrics': metrics})
 
 
 def main():
