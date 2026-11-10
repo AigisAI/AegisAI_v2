@@ -29,7 +29,7 @@ def main():
         target=time.monotonic()
         try:
             while not stop.is_set() and time.monotonic()<deadline:
-                target+=1/45
+                target=time.monotonic()+1/45
                 try:
                     connection.request('GET','/api/health',headers={'Host':'aegisai-aws.tailaca7d2.ts.net'})
                     response=connection.getresponse();response.read(65536);code=str(response.status)
