@@ -24,3 +24,18 @@ can verify bad-candidate exclusion. It must keep the old Ready replica serving,
 and the promotion verifier must automatically restore the prior Git revision on
 failure. Observe actual rollout, health, replicas and Git/image recovery. Do not
 count this as Blue/Green/Canary or general qualification.
+
+Actual2026-11-10: normal rollout16.988s, non-ready candidate exclusion and automatic
+Git recovery55.125s. First old-image recovery exposed kubelet GC removing unused
+approved images; the promoter restored the working version. image_retention.py
+restores missing archives only after fresh trusted H3 verification and pins the
+current/previous pairs with io.cri-containerd.pinned plus a separate operator label.
+It intentionally does not use K3s vendor-owned pin labels (K3s clears those on boot).
+Native CRI must return pinned=true; labels alone are insufficient. Admission
+retains at most two approved release pairs; only older operator-owned pins may
+be removed, without deleting image data or changing vendor/scanner images.
+Promotion checks actual presence/pinning before Git mutation. After this repair,
+actual previous-image rollback10.074s and current-image promotion10.023s passed,
+all observed health200. Existing owner session, data/evidence and original HTML
+were verified on the final3ed source. G3 closes only for this approved scope.
+Reference: https://github.com/k3s-io/k3s/blob/v1.37.2%2Bk3s1/pkg/agent/containerd/containerd.go

@@ -17,3 +17,7 @@ parallel atomic limit, expiry/block consistency, route isolation and outage
 failure behavior. Never point the test at production Redis or create a user
 session/scan. The compiled API candidate retains full canonical/private SQL/native
 CI, vulnerability/SBOM/signature gates before actual RollingUpdate deployment.
+
+FullCI42807277712 passed. Source3edc8c72a69b is deployed; actual existing owner
+sessions on both API replicas consumed one shared auth/me budget19->18->17->16.
+Restoredmin1/Ready1. See the2026-11-10 production checkpoint.
