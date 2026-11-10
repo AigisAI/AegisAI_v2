@@ -6,6 +6,7 @@ import { ENV_FILE_PATHS } from "./config.paths";
 import { ConfigService } from "./config.service";
 
 export const ENVIRONMENT_VALIDATION_SCHEMA = Joi.object({
+  RUNTIME_CATALOG_MODE: Joi.string().valid('regular','projected').default('regular'),
   GITHUB_APP_PRIVATE_KEY_PEM: Joi.string().allow("").optional(),
   AWS_REGION: Joi.string().allow("").optional(),
   AWS_AUTH_SECRET_ARN: Joi.string().allow("").optional(),

@@ -19,6 +19,7 @@ export interface EnvironmentVariables {
   AWS_REGION: string;
   AWS_AUTH_SECRET_ARN: string;
   AWS_SCM_SECRET_ARN: string;
+  RUNTIME_CATALOG_MODE: 'regular' | 'projected';
   EVIDENCE_BUCKET: string;
   EVIDENCE_KMS_KEY_ARN: string;
   ALLOWED_GITHUB_USER_IDS: string;

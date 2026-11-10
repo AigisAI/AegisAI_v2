@@ -28,3 +28,7 @@ entrypoint and parent continuations synchronized.
 For issue352's local signed-image import/admission, read admission.md. This keeps
 PodSecurity restricted and application traffic unchanged; migration exceptions
 are a later separately reviewed implementation step within this approved scope.
+
+For issue354, read catalog-projection.md before the opt-in API catalog reader and
+root publisher change. Keep restricted PodSecurity; do not add a catalog hostPath
+exception. The scanner/authoritative source and default regular-file mode remain.
