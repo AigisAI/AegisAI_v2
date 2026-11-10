@@ -33,11 +33,8 @@ def read_reply(stream):
     raise RuntimeError('PRIVATE_SESSION_STORE_UNAVAILABLE')
 
 
-def main():
-    assert os.geteuid()==0 and __debug__;os.umask(0o077)
-    root=Path('/opt/aegisai/operator');lock=(root/'signed-deployment.lock').open('a')
-    import fcntl
-    fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+def owner_cookie():
+    root=Path('/opt/aegisai/operator')
     trusted=root/'supply-chain/current/deploy/aws-ec2'
     assert trusted.resolve().is_relative_to(root/'supply-chain/releases')
     sys.path.insert(0,str(trusted));import managed_runtime
@@ -72,6 +69,15 @@ def main():
     assert session_id,'UNEXPIRED_OWNER_SESSION_NOT_AVAILABLE'
     signature=base64.b64encode(hmac.new(auth['SESSION_SECRET'].encode(),session_id.encode(),hashlib.sha256).digest()).decode().rstrip('=')
     cookie=auth.get('SESSION_COOKIE_NAME','connect.sid')+'='+quote('s:'+session_id+'.'+signature,safe='')
+    return cookie
+
+
+def main():
+    assert os.geteuid()==0 and __debug__;os.umask(0o077)
+    root=Path('/opt/aegisai/operator');lock=(root/'signed-deployment.lock').open('a')
+    import fcntl
+    fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    cookie=owner_cookie()
     original=json.loads(kube('get','hpa','api','-n','aegisai-private','-o','json'))['spec']['minReplicas'];assert original==1
     ledger=json.loads((ROOT/'approved-app-images.json').read_text());rows=[]
     restore='aegisai-hpa-min-restore-'+str(int(time.time()))

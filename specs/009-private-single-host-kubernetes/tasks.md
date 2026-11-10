@@ -8,7 +8,7 @@
 - [x] Migrate API/web with existing auth/session/SCM/data/telemetry preserved.
 - [ ] H2 actual GitOps/CD, field ownership, drift and Git/app recovery.
 - [x] G3 actual Deployment RollingUpdate and bad-candidate recovery.
-- [ ] G1 actual Blue/Green switch/back with data/session preservation.
+- [x] G1 actual private API Blue/Green switch/back with data/session preservation.
 - [ ] G2 actual measured Canary and automatic abort/recovery.
 - [x] G4 actual bounded API HPA1->2->1 and metric-failure behavior.
 - [ ] H4 actual scan/queue/broker/worker trace correlation.
@@ -48,3 +48,11 @@ pinning plus pre-promotion presence checks; actual image rollback then passed.
 Existing real owner session/data/evidence, HPA1->2->1 and shared atomic Redis limits
 across both replicas passed. G3/G4 close for the approved private scope only;
 G1/G2, fullH1/H2/deepH4 remain. See the latest production checkpoint.
+
+Issue367: pinned bounded namespaced Rollouts is Ready, native RBAC/admission
+boundaries passed. Actual active/preview version switch/back0.404/0.407s, real
+owner sessions and final data/evidence/original HTML passed. Initial synchronization
+race and terminating-Pod drain were fixed before acceptance. Existing Deployment
+Git35fd0fd/3ed source is normal again; HPA1..2 restored, strategy workloads0.
+G1 closes for private API versions with unchanged original signed frontend.
+G2, fullH1/H2/deepH4 remain; see the2026-11-10 Blue/Green checkpoint.

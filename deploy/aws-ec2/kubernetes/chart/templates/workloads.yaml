@@ -13,6 +13,7 @@ metadata:
 spec:
   replicas: {{ if eq $component "api" }}{{ $.Values.apiReplicas }}{{ else }}1{{ end }}
   revisionHistoryLimit: 3
+  minReadySeconds: 5
   progressDeadlineSeconds: 180
   strategy:
     type: RollingUpdate
@@ -29,6 +30,7 @@ spec:
         app.kubernetes.io/name: aegisai-private
         app.kubernetes.io/component: {{ $component }}
         app.kubernetes.io/version: {{ $.Values.revision | quote }}
+        aegisai.io/delivery: deployment
       {{- if eq $component "web" }}
       annotations:
         checksum/web-config: {{ $.Files.Get "files/nginx.conf" | replace "\r\n" "\n" | sha256sum }}
@@ -49,6 +51,9 @@ spec:
         - name: {{ $component }}
           image: {{ index $.Values.images $component | quote }}
           imagePullPolicy: Never
+          lifecycle:
+            preStop:
+              sleep: {seconds: 5}
           {{- if eq $component "api" }}
           envFrom:
             - configMapRef:

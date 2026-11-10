@@ -1,5 +1,7 @@
 # 배포 소스와 Git 릴리스 연결
 
+후속 실제 Blue/Green 전환·복귀와 최신 Git 식별자는 [Blue/Green 운영 기록](./2026-11-10-blue-green-checkpoint.md)을 따른다. 이전 단계의 값은 당시 근거로 보존한다.
+
 현재 실행본과 Git/image 식별자는 [2026-11-10 운영 기록](./2026-11-10-rollout-scaling-checkpoint.md)을 우선한다. 아래 날짜별 내용은 이전 단계의 기록이다.
 
 2026년 11월 9일, 실제 배포 소스를 재현 가능한 Git 기록으로 보존하는 작업을 진행한다. 추적 이슈는 [#336](https://github.com/AigisAI/AegisAI_v2/issues/336)이며, 원래 작업 폴더와 별도의 worktree에 `release/336-private-java-runtime` 후보를 구성한다. 이 작업은 운영 재배포·DB 변경·비밀 회전·추가 컴퓨팅 생성을 포함하지 않는다.

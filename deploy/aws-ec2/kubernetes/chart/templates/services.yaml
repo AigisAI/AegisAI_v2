@@ -8,6 +8,7 @@ spec:
   selector:
     app.kubernetes.io/name: aegisai-private
     app.kubernetes.io/component: api
+    aegisai.io/delivery: deployment
   ports:
     - {name: http, port: 3000, targetPort: http}
     - {name: metrics, port: 9465, targetPort: metrics}
@@ -22,6 +23,7 @@ spec:
   selector:
     app.kubernetes.io/name: aegisai-private
     app.kubernetes.io/component: web
+    aegisai.io/delivery: deployment
   ports:
     - {name: http, port: 80, targetPort: http}
 {{- range $external := list (dict "name" "postgres" "ip" "10.45.0.41" "port" 5432) (dict "name" "redis" "ip" "10.45.0.42" "port" 6379) (dict "name" "alloy" "ip" "10.45.0.43" "port" 4318) }}

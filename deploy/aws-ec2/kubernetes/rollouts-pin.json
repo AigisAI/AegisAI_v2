@@ -1,0 +1,12 @@
+{
+  "version": "v1.10.2",
+  "image": "quay.io/argoproj/argo-rollouts@sha256:68d033e796cbd685f70b0d2e4b638b0b987d451012ef921a6532c316f4321307",
+  "base": "https://raw.githubusercontent.com/argoproj/argo-rollouts/v1.10.2/manifests/",
+  "files": {
+    "namespace-install.yaml": "e7836e21612034c1ae9ec175616c919b8295f29731f0767d5d608f2a0d727ef9",
+    "crds/rollout-crd.yaml": "1562decc7b3720c31cbe382eeb62b6fbfd236f8e81a1f98644a9774d1e7d7933",
+    "crds/analysis-run-crd.yaml": "bd5fc4bdabe5fb4e7655bdd5e670244bad5d1757aa52f729a193a5fa6e6a729a",
+    "crds/analysis-template-crd.yaml": "bb41aa62329355c5ffb38031822b4515cc2f60c5a94fcae5df6099ddbf8c5a08",
+    "crds/experiment-crd.yaml": "a5dcd79b08bcfdd0c134cf8ca2ccd2e347a13864256c3e3a4748407ac0ad4b4d"
+  }
+}
