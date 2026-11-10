@@ -39,7 +39,10 @@ def main():
         p=pod('admission-reject-'+stamp+'-'+name,image)
         if name=='unsigned-digest':p['spec']['containers'][0]['image']='docker.io/library/aegisai-api@sha256:'+'0'*64
         elif name=='mutable-tag':p['spec']['containers'][0]['image']='aegisai-api:ec2-runtime-20261109-135802'
-        elif name=='privileged':p['spec']['containers'][0]['securityContext']['privileged']=True
+        elif name=='privileged':
+            # Keep the request schema-valid so real PodSecurity, rather than
+            # incompatible-field validation, supplies the rejection evidence.
+            p['spec']['containers'][0]['securityContext'].update(privileged=True,allowPrivilegeEscalation=True)
         else:
             p['spec']['volumes']=[{'name':'host-socket','hostPath':{'path':'/var/run/docker.sock','type':'Socket'}}]
             p['spec']['containers'][0]['volumeMounts']=[{'name':'host-socket','mountPath':'/host.sock'}]
