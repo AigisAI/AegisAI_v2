@@ -41,3 +41,33 @@ Pinned-tool references checked2026-11-10:
 - https://github.com/helm/helm/releases/tag/v4.3.1
 - https://get.helm.sh/helm-v4.3.1-linux-amd64.tar.gz.sha256sum
 - https://argo-cd.readthedocs.io/en/stable/user-guide/helm/
+
+Actual migration, 2026-11-10: CI42738078198 signed source
+f340a441f366638bcdd602667db9b0d666090385, release
+ec2-runtime-20261110-020253, is now the live private Kubernetes API/web.
+The native projected-catalog read and actual timestamp rotation passed. Both
+restricted Pods became Ready; existing database/session-store health, five
+repositories, one completed scan and encrypted evidence reads passed. Original
+HTML bytes match exactly. No new scan or migration ran. No current unexpired
+owner session was found; the existing shared managed keys/callback/Redis settings
+are preserved, and no synthetic session or repeated OAuth was introduced.
+
+Prometheus retains the old job and actually scrapes aegisai-api-kubernetes with
+bounded source labels. The non-root scraper reads an atomic, public-only target
+file through a read-only directory mount; its network gains only the Pod CIDR,
+not an internet/default/metadata route. Root bridge refreshes routes after restarts.
+
+traffic.py checks signed receipts, actual readiness/projection/metrics before
+changing only the existing upstream address. It preserves the bind-mounted inode,
+backs up the live control SQLite database with quick_check, token/config/encryption
+settings root-only on the encrypted disk, and keeps the old Docker release/data.
+Root-owned separate traffic state is authoritative; shared candidate-release still
+identifies the retained Docker fallback. All three old Compose deploy/ingress
+entrypoints reject while Kubernetes owns traffic. Actual activate, rollback and
+reactivate all passed health/closed-route/original-HTML checks; private HTTPS200.
+This migration rollback is not G1 Blue/Green, G3 RollingUpdate or H2 GitOps proof.
+
+Evidence: operator/acceptance/kubernetes356-result.json, Kubernetes
+catalog-projection-result.json, standby-result.json, traffic-activate-result.json,
+traffic-rollback-result.json and observability/standby-metrics-result.json on the
+existing encrypted host. General qualification remains NOT_QUALIFIED.
