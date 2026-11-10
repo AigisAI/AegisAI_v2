@@ -132,6 +132,7 @@ def configuration():
                 'audit-log-path=' + str(ROOT / 'audit.log'), 'audit-log-maxage=7',
                 'audit-log-maxbackup=2', 'audit-log-maxsize=5'],
             'kubelet-arg': ['address=' + NODE_IP, 'read-only-port=0', 'anonymous-auth=false',
+                'sync-frequency=10s',
                 'authorization-mode=Webhook', 'pod-max-pids=128', 'max-pods=24',
                 'system-reserved=cpu=400m,memory=4096Mi', 'kube-reserved=cpu=200m,memory=1024Mi',
                 'eviction-hard=memory.available<512Mi,nodefs.available<10%,imagefs.available<10%',
