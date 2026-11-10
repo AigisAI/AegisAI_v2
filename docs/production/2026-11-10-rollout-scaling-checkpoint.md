@@ -1,5 +1,7 @@
 # 2026-11-10 실제 RollingUpdate·HPA 운영 기록
 
+후속 실제 Canary·자동 복귀 및 최신 전체 상태는 [Canary 운영 기록](./2026-11-10-canary-checkpoint.md)을 따른다. 아래 값은 각 단계의 근거다.
+
 후속 실제 Blue/Green 전환·복귀와 최신 Git 식별자는 [Blue/Green 운영 기록](./2026-11-10-blue-green-checkpoint.md)을 따른다. 이전 단계의 값은 당시 근거로 보존한다.
 
 최신 확인: 2026-11-10 21:36 KST. 기존 EC2 한 대의 비공개 실운영 범위다.

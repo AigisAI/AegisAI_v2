@@ -9,7 +9,7 @@
 - [ ] H2 actual GitOps/CD, field ownership, drift and Git/app recovery.
 - [x] G3 actual Deployment RollingUpdate and bad-candidate recovery.
 - [x] G1 actual private API Blue/Green switch/back with data/session preservation.
-- [ ] G2 actual measured Canary and automatic abort/recovery.
+- [x] G2 actual measured private API Canary and automatic abort/recovery.
 - [x] G4 actual bounded API HPA1->2->1 and metric-failure behavior.
 - [ ] H4 actual scan/queue/broker/worker trace correlation.
 - [ ] H1 remaining resource/reconstruction and bounded final recovery/cost proof.
@@ -56,3 +56,12 @@ race and terminating-Pod drain were fixed before acceptance. Existing Deployment
 Git35fd0fd/3ed source is normal again; HPA1..2 restored, strategy workloads0.
 G1 closes for private API versions with unchanged original signed frontend.
 G2, fullH1/H2/deepH4 remain; see the2026-11-10 Blue/Green checkpoint.
+
+Issue369 actual2026-11-10: signed API versions received exactly6/60,30/60,60/60
+candidate requests at10/50/100%,180HTTP200 and3successful native Prometheus
+AnalysisRuns. Closed-port fault produced54HTTP200/6actual502; native error ratio1
+failed analysis and automatically aborted/loaded100-0 in17.235s. Next10 requests
+all stable200. Actual owner session verified, final existing data/evidence/HTML
+passed, original ingress/HPA1..2 restored and strategy Pods0. No new scan/schema.
+AllG1-G4 close only for the approved private scope; fullH1/H2/deepH4 remain.
+Latest local control backup checked SQLite integrity, not full restore/DR.

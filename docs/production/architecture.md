@@ -123,6 +123,8 @@ S3는 공개 접근을 차단하고 TLS, KMS 암호화 및 신규 객체 조건�
 
 현재 private 접속은 서명 소스 3edc8c72a69b의 Kubernetes API·웹으로 처리한다. 기존 Docker 운영 버전은 실제 복귀 대상으로 보존했고 전환·복귀·재전환을 확인했다. 단일 호스트 장애와 무중단을 해결했다고 주장하지 않는다. 화면만 바꿀 때는 API·공유 계약·의존성이 동일한지 먼저 비교한다. 데이터베이스를 되돌리는 대신 접근 차단, 호환성 검토와 forward repair를 우선한다.
 
-제한된 GitOps 동기화·drift 복구·객체 재생성·Git/이미지 복귀와 실제 정상 RollingUpdate·불량 후보 제외/자동 복구를 확인했다. HPA의 실제 API1→2→1, 지표 유실 시 복제 수 유지, Redis 공유 원자적 요청 제한 및 실제 기존 세션/데이터 보존도 통과했다. 현재·직전 승인 이미지 쌍은 CRI 삭제 방지 상태로 보존한다. 별도 active/preview Service와 제한된 Rollouts로 실제 API Blue/Green 전환·복귀도 확인했다. 정상 Deployment 경로와 HPA1~2로 복원했고 검증 profile은0개로 보존한다. Canary, 깊은 큐/브로커/스캐너 추적과 전체 IaC/CD 재현은 남아 있다. [최신 운영 기록](./2026-11-10-rollout-scaling-checkpoint.md)과 [남은 작업](./remaining-work.md)을 따른다.
+제한된 GitOps 동기화·drift 복구·객체 재생성·Git/이미지 복귀와 실제 정상 RollingUpdate·불량 후보 제외/자동 복구를 확인했다. HPA의 실제 API1→2→1, 지표 유실 시 복제 수 유지, Redis 공유 원자적 요청 제한 및 실제 기존 세션/데이터 보존도 통과했다. 현재·직전 승인 이미지 쌍은 CRI 삭제 방지 상태로 보존한다. 별도 active/preview Service와 제한된 Rollouts로 실제 API Blue/Green 전환·복귀도 확인했다. 정상 Deployment 경로와 HPA1~2로 복원했고 검증 profile은0개로 보존한다. 실제10%→50%→100% Canary와 Prometheus 오류 판정에 따른 native 자동 중단/복귀도 통과했다. 깊은 큐/브로커/스캐너 추적과 전체 IaC/CD 재현은 남아 있다. [최신 운영 기록](./2026-11-10-rollout-scaling-checkpoint.md)과 [남은 작업](./remaining-work.md)을 따른다.
 
 최신 선택자/종료 유예와 Blue/Green 운영 근거는 [11월10일 후속 기록](./2026-11-10-blue-green-checkpoint.md)을 따른다.
+
+실제 가중치·라우터/분석 권한·자동 복귀는 [Canary 운영 기록](./2026-11-10-canary-checkpoint.md)을 따른다. Tokenless 라우터는 root가 검증해 투영한 두 고정 목적지만 사용하며, 원래 운영 경로는 Deployment다.
