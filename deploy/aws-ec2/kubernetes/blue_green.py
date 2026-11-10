@@ -172,9 +172,17 @@ def main():
     try:
         kube('patch', 'hpa', 'api', '-n', APP, '--type=merge', '-p', json.dumps({'spec': {'maxReplicas': 1}}))
         wait(lambda: get('deployment', 'api')['status'].get('replicas') == 1)
-        for item in docs: kube('apply', '--server-side', '--field-manager=aegisai-blue-green', '-f', '-', value=item)
-        kube('apply', '--server-side', '--field-manager=aegisai-blue-green', '-f', '-', value=rollout)
-        wait(lambda: active_is(current))
+        for item in docs: kube('apply', '--server-side', '--force-conflicts', '--field-manager=aegisai-blue-green', '-f', '-', value=item)
+        kube('apply', '--server-side', '--force-conflicts', '--field-manager=aegisai-blue-green', '-f', '-', value=rollout)
+        def initialized():
+            if not active_is(current): return False
+            service = get('service', 'api-bg-active'); ro = get('rollout', 'api-blue-green')
+            hashed = service['spec']['selector'].get('rollouts-pod-template-hash')
+            return (hashed and ro['status'].get('phase') == 'Healthy'
+                and ro['status'].get('stableRS') == hashed
+                and ro['status'].get('blueGreen', {}).get('activeSelector') == hashed
+                and str(ro['status'].get('observedGeneration')) == str(ro['metadata']['generation']))
+        wait(initialized)
         kube('rollout', 'status', 'deployment/web-bg', '-n', APP, '--timeout=90s')
         initial = selected('api-bg-active'); session('10.45.0.61', 3000)
         # Argo CD must still serve the original Deployment through its narrow selector.
