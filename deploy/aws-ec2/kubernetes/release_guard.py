@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+import time
 
 from bootstrap import BINARY, ROOT, now
 from foundation import kube
@@ -25,8 +26,13 @@ def main():
     command=[str(BINARY),'kubectl','--kubeconfig',str(ROOT/'kubeconfig.yaml'),'--as='+CONTROLLER,
         'patch','application','aegisai-private','-n','argocd','--type=merge','--dry-run=server','-p',
         json.dumps({'spec':{'source':{'targetRevision':'operator-guard-negative-probe'}}})]
-    result=subprocess.run(command,capture_output=True,text=True,timeout=20)
-    assert result.returncode!=0 and 'Only the operator may change' in result.stderr
+    for _ in range(20):
+        result=subprocess.run(command,capture_output=True,text=True,timeout=20)
+        if result.returncode!=0 and 'Only the operator may change' in result.stderr:break
+        time.sleep(0.5)  # admission policy/binding informer propagation
+    else:raise AssertionError('PINNED_SPEC_POLICY_NOT_ACTIVE')
+    positive=command[:-1]+[json.dumps({'metadata':{'annotations':{'aegisai.io/guard-dry-run':'allowed'}}})]
+    assert subprocess.run(positive,capture_output=True,text=True,timeout=20).returncode==0
     assert json.loads(kube('get','application','aegisai-private','-n','argocd','-o','json'))['spec']==before
     report={'pinnedGitSpecGuard':'enforced','nativeUnauthorizedSpecMutationRejected':True,
             'applicationSpecUnchanged':True,'verifiedAt':now()}
