@@ -24,3 +24,7 @@ network exposure, unchanged-container and HTTP checks. Do not repeat unchanged
 workspace/SQL/scanner suites. API/schema/worker changes retain full affected CI
 and signed-candidate gates. Record scoped evidence and open tasks. Keep this
 entrypoint and parent continuations synchronized.
+
+For issue352's local signed-image import/admission, read admission.md. This keeps
+PodSecurity restricted and application traffic unchanged; migration exceptions
+are a later separately reviewed implementation step within this approved scope.
