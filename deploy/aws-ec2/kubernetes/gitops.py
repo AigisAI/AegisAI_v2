@@ -20,6 +20,18 @@ ACCOUNT='argocd-application-controller'
 REPO='https://github.com/AigisAI/AegisAI_v2.git'
 
 
+def parse_vendor_output(text):
+    assert len(text)<16*1024**2
+    decoder=json.JSONDecoder();values=[];text=text.lstrip()
+    # kubectl create emits consecutive JSON documents for multi-document YAML.
+    while text:
+        value,end=decoder.raw_decode(text)
+        values.extend(value['items'] if value.get('kind')=='List' else [value])
+        text=text[end:].lstrip()
+    assert values and all(isinstance(v,dict) and 'kind' in v for v in values)
+    return values
+
+
 def object(kind,name,spec=None,namespace='argocd',api='v1',**extra):
     value={'apiVersion':api,'kind':kind,'metadata':{'name':name,'namespace':namespace},**extra}
     if spec is not None:value['spec']=spec
@@ -120,7 +132,7 @@ def main():
     with urllib.request.urlopen(VENDOR_URL,timeout=30) as response:content=response.read(8*1024**2+1)
     assert len(content)<8*1024**2 and hashlib.sha256(content).hexdigest()==VENDOR_SHA
     path=directory/'vendor-core-install.yaml';path.write_bytes(content)
-    vendor=json.loads(kube('create','--dry-run=client','--validate=false','-f',str(path),'-o','json'))['items']
+    vendor=parse_vendor_output(kube('create','--dry-run=client','--validate=false','-f',str(path),'-o','json'))
     docs=resources(vendor)
     if not args.apply:print(json.dumps({'gitopsCorePlan':'ready','resources':len(docs),'clusterAdminGranted':False}));return
     for image in (ARGO,REDIS):subprocess.run([str(BINARY),'ctr','-n','k8s.io','images','pull',image],check=True,timeout=240,stdout=subprocess.DEVNULL)
