@@ -4,6 +4,23 @@ import { lstat, open, readlink } from "node:fs/promises";
 import type { RuntimeStatus } from "@aegisai/shared/private-runtime";
 import { ConfigService } from "../config/config.service";
 
+async function readOnlyCatalogMount(root:string):Promise<boolean> {
+  const handle=await open('/proc/self/mountinfo',constants.O_RDONLY|constants.O_NOFOLLOW);
+  try {
+    const raw=Buffer.alloc(65537);
+    let used=0;
+    while(used<raw.length) {
+      const {bytesRead}=await handle.read(raw,used,raw.length-used,null);
+      if(bytesRead===0) break;
+      used+=bytesRead;
+    }
+    if(used>65536) return false;
+    const matches=raw.subarray(0,used).toString().split('\n').map(line=>line.trim().split(/\s+/))
+      .filter(fields=>fields.length>=10 && fields[4]===root);
+    return matches.length===1 && matches[0][5].split(',').includes('ro') && !matches[0][5].split(',').includes('rw');
+  } finally {await handle.close();}
+}
+
 @Injectable()
 export class RuntimeCatalogService {
   constructor(private readonly config:ConfigService) {}
@@ -16,7 +33,9 @@ export class RuntimeCatalogService {
       if(info.isSymbolicLink()) {
         if(this.config.getOptional('RUNTIME_CATALOG_MODE')!=='projected' || info.uid!==0) throw new Error();
         const parent=await lstat(root);
-        if(!parent.isDirectory() || parent.isSymbolicLink() || parent.uid!==0 || (parent.mode&0o022)!==0) throw new Error();
+        // Kubelet creates a 0777 volume root. Its actual per-mount read-only
+        // flag, not the directory mode alone, prevents Pod-side replacement.
+        if(!parent.isDirectory() || parent.isSymbolicLink() || parent.uid!==0 || !await readOnlyCatalogMount(root)) throw new Error();
         if(await readlink(path)!=='..data/current.json') throw new Error();
         const pointer=await lstat(root+'/..data');
         if(!pointer.isSymbolicLink() || pointer.uid!==0) throw new Error();

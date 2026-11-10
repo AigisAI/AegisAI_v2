@@ -12,7 +12,7 @@ function reader(mode){return new RuntimeCatalogService({getOptional:()=>mode});}
 function status(){return {ready:true,busy:false,ai:'DISABLED',updatedAt:new Date().toISOString(),
   scannerSetVersion:'java-v1:'+'a'.repeat(16)+':'+'b'.repeat(64),policyVersion:'private-java-v1'};}
 
-test('contained root-owned projected catalog preserves freshness and default symlink denial',async()=>{
+test('regular catalog baseline remains fail-closed and projected mode rejects a writable mount',async()=>{
   // Refuse an existing mount/directory before creating or cleaning anything.
   await assert.rejects(lstat(root),{code:'ENOENT'});
   let created=false;
@@ -23,7 +23,7 @@ test('contained root-owned projected catalog preserves freshness and default sym
     await writeFile(leaf,JSON.stringify(status()),{mode:0o444});
     await symlink(stamp,root+'/..data');
     await symlink('..data/current.json',root+'/current.json');
-    assert.equal((await reader('projected').read()).ready,true);
+    assert.equal((await reader('projected').read()).ready,false);
     assert.equal((await reader('regular').read()).ready,false);
     await unlink(root+'/..data');await symlink('/etc',root+'/..data');
     assert.equal((await reader('projected').read()).ready,false);
@@ -34,11 +34,14 @@ test('contained root-owned projected catalog preserves freshness and default sym
     await chown(leaf,0,0);await chmod(leaf,0o644);
     await writeFile(leaf,JSON.stringify({...status(),updatedAt:new Date(Date.now()-61000).toISOString()}));
     assert.equal((await reader('projected').read()).ready,false);
-    // A new valid atomic-writer target is accepted without restarting the reader.
+    // A fresh target still cannot authorize an ordinary writable mount.
     const next='..2026_11_10_01_16_30.987654321';
     await mkdir(root+'/'+next,{mode:0o755});await writeFile(root+'/'+next+'/current.json',JSON.stringify(status()),{mode:0o444});
     await unlink(root+'/..data');await symlink(next,root+'/..data');
-    assert.equal((await reader('projected').read()).ready,true);
+    assert.equal((await reader('projected').read()).ready,false);
+    await unlink(root+'/current.json');
+    await writeFile(root+'/current.json',JSON.stringify(status()),{mode:0o444});
+    assert.equal((await reader('regular').read()).ready,true);
   } finally {
     if(created) await rm(root,{recursive:true,force:true});
   }

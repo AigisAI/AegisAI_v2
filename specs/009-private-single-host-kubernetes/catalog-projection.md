@@ -8,6 +8,14 @@ root-owned non-writable parent/directory/file checks and O_NOFOLLOW/fstat on the
 final regular file. Regular mode continues to reject all symlinks. Preserve the
 4096-byte,60-second freshness, schema and fail-closed scanner-ready checks.
 
+Actual kubelet volume roots are mode0777 even when read-only. For projected mode,
+require a unique exact /run/aegisai-runtime read-only per-mount entry in bounded
+/proc/self/mountinfo; directory mode alone cannot prove write authority. Root
+ownership, contained pointers, non-writable timestamp directory/final regular file
+and no-follow/fstat remain required. Verify both actual ro and rw mounts as UID1000
+in CI, not only a root-owned ordinary-directory fixture. Kernel mount format:
+https://www.kernel.org/doc/html/latest/filesystems/proc.html
+
 A root-only bounded publisher reads only the existing root-authored catalog,
 selects non-secret status fields and preserves its original timestamp. It updates
 one named ConfigMap; it cannot turn stale source into fresh/ready data. Pods get
