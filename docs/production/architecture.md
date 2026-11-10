@@ -1,6 +1,6 @@
 # 현재 배포 아키텍처
 
-현재 배포는 사용자가 승인한 단일 EC2 비공개 운영 범위다. 앱용 Docker와 스캔용 containerd/gVisor를 분리했지만 호스트 자체는 공유한다. 이는 제품 명세의 별도 노드 구성을 충족하는 것으로 간주하지 않는다.
+현재 배포는 사용자가 승인한 단일 EC2 비공개 운영 범위다. API·웹의 별도 K3s와 독립 스캔용 containerd/gVisor를 사용하지만 호스트 자체는 공유한다. PostgreSQL·Redis·브로커와 원래 Docker API·웹 복귀본은 Kubernetes 밖에 유지한다. 이는 제품 명세의 별도 노드 구성을 충족하는 것으로 간주하지 않는다.
 
 ## 구성과 신뢰 경계
 
@@ -9,20 +9,30 @@ flowchart TB
     User[허용된 사용자와 Tailscale] --> Serve[Tailscale Serve HTTPS]
     subgraph EC2[기존 EC2 한 대]
       Serve --> Ingress[비공개 Nginx 진입점]
-      subgraph App[앱 Docker 영역]
-        Ingress --> Web[React 정적 화면과 Nginx]
-        Web --> API[NestJS API]
-        API --> PG[(PostgreSQL 데이터와 작업 큐)]
-        API --> Redis[(Redis 세션)]
+      subgraph Kube[별도 K3s 앱·관리 영역]
+        Ingress --> Web[원래 React 화면과 Nginx]
+        Web --> API[NestJS API 1~2개]
+        Git[고정 Git 버전] --> Argo[제한된 Argo CD core]
+        Argo --> Web
+        Argo --> API
+        Metrics[TLS 자원 지표] --> HPA[API 전용 HPA]
+        HPA --> API
+      end
+      subgraph Data[기존 Docker 데이터·브로커]
+        PG[(PostgreSQL 데이터와 작업 큐)]
+        Redis[(공유 Redis 세션)]
         Broker[별도 비밀·결과 브로커] --> PG
       end
+      API --> PG
+      API --> Redis
       Supervisor[호스트 감독 프로세스] -->|root 전용 Unix 채널| Broker
       Gateway[전용 UID 소스 가져오기] -->|별도 Unix 채널| Broker
       Gateway --> RAM[작업별 제한된 tmpfs]
-      Supervisor --> Sandbox[별도 containerd와 gVisor 분석 환경]
+      Supervisor --> Sandbox[독립 containerd와 gVisor]
       RAM -->|읽기 전용 입력| Sandbox
       Sandbox -->|제한된 결과| Supervisor
       Supervisor -->|현재 작업 권한으로 결과 제출| Broker
+      Fallback[보존된 원래 Docker API·웹 복귀본]
     end
     Gateway -->|제한된 GitHub API HTTPS| GH[GitHub 조직 저장소]
     API -->|권한과 커밋 메타데이터| GH
@@ -111,6 +121,9 @@ S3는 공개 접근을 차단하고 TLS, KMS 암호화 및 신규 객체 조건�
 
 ## 배포 방식
 
-현재 방식은 기존 Compose 컨테이너를 교체하는 단일 호스트 배포다. API·화면의 짧은 중단 가능성이 있으며 무중단을 보장하지 않는다. 화면만 바꿀 때는 API·공유 계약·의존성이 동일한지 먼저 비교한다. 데이터베이스를 되돌리는 대신 접근 차단, 호환성 검토와 forward repair를 우선한다.
+현재 private 접속은 서명 소스 f340a441f366의 Kubernetes API·웹으로 처리한다. 기존 Docker 운영 버전은 실제 복귀 대상으로 보존했고 전환·복귀·재전환을 확인했다. 단일 호스트 장애와 무중단을 해결했다고 주장하지 않는다. 화면만 바꿀 때는 API·공유 계약·의존성이 동일한지 먼저 비교한다. 데이터베이스를 되돌리는 대신 접근 차단, 호환성 검토와 forward repair를 우선한다.
 
-Blue/Green, Canary, Kubernetes RollingUpdate, HPA는 현재 적용하지 않았다. 관련 목표와 적용 조건은 [남은 작업](./remaining-work.md)을 따른다.
+제한된 GitOps 동기화·설정 drift와 객체 재생성·Git 복귀를 실제 확인했다. HPA의 실제 API1→2→1 및 지표 유실 시 복제 수 유지도 통과했다. API별 요청 제한을 공유하도록 보완 중이며, Blue/Green·Canary·새 서명 버전의 실제 RollingUpdate 검증은 아직 완료 전이다. 관련 목표와 적용 조건은 [남은 작업](./remaining-work.md)을 따른다.
+
+
+2026-11-10 운영 기록: HPA 요청 제한은 현재 기존 API별 계산이며, 그림의 공유 요청 제한은 issue363의 배포 대기 변경이다. 기존 세션은 Redis 공유로 실제 확인했다. 정책·자격·trace의 남은 범위는 최신 remaining-work 및 플랫폼 확장 기록을 따른다.

@@ -46,8 +46,9 @@ def main():
     assert rejected.returncode!=0 and 'GitOps may recreate only named' in rejected.stderr
     positive={**negative,'metadata':{'name':'aegisai-release','namespace':'aegisai-private'}}
     # This marker is intentionally not created by the verifier; GitOps creates it.
-    assert subprocess.run(binary+['--as='+CONTROLLER,'create','--dry-run=server','-f','-'],
-        input=json.dumps(positive),capture_output=True,text=True,timeout=15).returncode==0
+    result=subprocess.run(binary+['--as='+CONTROLLER,'create','--dry-run=server','-f','-'],
+        input=json.dumps(positive),capture_output=True,text=True,timeout=15)
+    assert result.returncode==0 or 'configmaps "aegisai-release" already exists' in result.stderr
     report={'namedGitOpsRecovery':'enabled','operatorDataCreationDenied':True,'knownMarkerCreationAllowed':True,'verifiedAt':now()}
     (ROOT/'gitops/named-creation-result.json').write_text(json.dumps(report,indent=2));print(json.dumps(report))
 
