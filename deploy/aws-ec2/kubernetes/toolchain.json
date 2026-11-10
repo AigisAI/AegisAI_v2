@@ -1,0 +1,8 @@
+{
+  "k3s": {
+    "version": "v1.37.2+k3s1",
+    "releaseBase": "https://github.com/k3s-io/k3s/releases/download/v1.37.2%2Bk3s1/",
+    "binary": {"name":"k3s","bytes":81678498,"sha256":"265b3ee6a3198ef14033c63ef46cbb32370d83795199fb6d1b01f21575eddbda"},
+    "images": {"name":"k3s-airgap-images-amd64.tar.zst","bytes":198293778,"sha256":"35a5af1e69b57b8b627a4f6b1c29ea104209b661067b8c97fd40dc3f860bfcd2"}
+  }
+}

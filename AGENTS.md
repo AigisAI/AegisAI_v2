@@ -113,3 +113,12 @@ The old 007 preparation-only stop is historical; it is not authority to block
 this newly authorized phase or to bypass later Kubernetes admission requirements.
 
 For the dependent H4 delivery in issue #342, follow the same 008 entrypoint and observability.md; preserve the exact scanner/data plane and general qualification gates.
+
+## Owner-approved one-host Kubernetes continuation (issue #350)
+
+After canonical006/008, follow
+[009 quickstart](./specs/009-private-single-host-kubernetes/quickstart.md).
+The owner explicitly approved the separately proposed private one-host operating
+scope on2026-11-09. This supersedes the 008 Kubernetes installation hold only
+for this private scope; general005/006 T053-T056 remain NOT_QUALIFIED. Preserve
+all product/scanner/data guards, one existing EC2 and no runtime IAM expansion.
