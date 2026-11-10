@@ -32,3 +32,6 @@ are a later separately reviewed implementation step within this approved scope.
 For issue354, read catalog-projection.md before the opt-in API catalog reader and
 root publisher change. Keep restricted PodSecurity; do not add a catalog hostPath
 exception. The scanner/authoritative source and default regular-file mode remain.
+
+For issue356, read standby.md. Install only standby API/web after signed354
+images pass; preserve current ingress and data until native standby acceptance.
