@@ -28,3 +28,19 @@ References checked2026-11-10:
 - https://github.com/k3s-io/k3s/tree/v1.37.2%2Bk3s1/manifests/metrics-server
 - https://github.com/kubernetes-sigs/metrics-server/tree/v0.9.0/manifests/base
 - https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/
+
+Actual2026-11-10: native TLS metrics became Ready within64MiB. Real CPU rose
+from1m to48m (32% of150m request), and the HPA25% target produced1->2 Ready
+replicas in29.37s. Four clients issued5195 read-only requests (240HTTP200,
+4955HTTP429); this is actual CPU/throttling traffic, not a successful-traffic
+capacity benchmark. Collector interruption produced FailedGetResourceMetric and
+kept2 replicas; restoring metrics and removing load returned exactly1 replica.
+GitOps remained Synced and respected HPA ownership. No extra compute/scan/SQL.
+Existing owner session, five repositories, existing result/encrypted evidence and
+completed-job non-replay were verified afterward, without a synthetic session.
+Evidence: resource-metrics/hpa-acceptance-result.json and output/deploy/hpa361-result.json.
+
+The observed240 successful requests expose the old in-memory throttle's
+per-replica accounting. Preserve the original effective limit across replicas
+with shared atomic throttling before closing the full scaling security acceptance;
+record this separately from the already measured autoscaler behavior.
