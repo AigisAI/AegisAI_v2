@@ -14,6 +14,11 @@ apply. Root installs CRDs; the controller never receives CRD privileges.
 
 The separate API Rollout api-blue-green uses the same restricted Pod template,
 catalog projection, signed images, managed credentials and backend policies.
+Before creating any Rollout Pod, label the existing Ready Deployment Pods with
+delivery=deployment, then adopt the reviewed Git chart adding that label to the
+Deployment template and api Service selector. This prevents the existing broad
+Service selector from accidentally routing to preview Pods. Verify all selected
+endpoints belong to the fallback Deployment before creating the new workload.
 Use a distinct delivery label in its selector so its ReplicaSets cannot be
 adopted by the fallback Deployment. Existing component labels retain source-aware
 metrics and policy. Blue/Green Services api-bg-active/preview belong to Rollouts;

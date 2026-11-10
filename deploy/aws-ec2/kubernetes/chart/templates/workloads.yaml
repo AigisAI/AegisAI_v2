@@ -29,6 +29,9 @@ spec:
         app.kubernetes.io/name: aegisai-private
         app.kubernetes.io/component: {{ $component }}
         app.kubernetes.io/version: {{ $.Values.revision | quote }}
+        {{- if eq $component "api" }}
+        aegisai.io/delivery: deployment
+        {{- end }}
       {{- if eq $component "web" }}
       annotations:
         checksum/web-config: {{ $.Files.Get "files/nginx.conf" | replace "\r\n" "\n" | sha256sum }}

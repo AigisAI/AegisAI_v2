@@ -8,6 +8,7 @@ spec:
   selector:
     app.kubernetes.io/name: aegisai-private
     app.kubernetes.io/component: api
+    aegisai.io/delivery: deployment
   ports:
     - {name: http, port: 3000, targetPort: http}
     - {name: metrics, port: 9465, targetPort: metrics}
