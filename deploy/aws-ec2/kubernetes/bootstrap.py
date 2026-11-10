@@ -139,6 +139,22 @@ def configuration():
                 'image-gc-high-threshold=75', 'image-gc-low-threshold=65']}
 
 
+def wait_ready(timeout=120):
+    # systemd READY means the API is serving, not that kubelet registered yet.
+    deadline = time.monotonic() + timeout
+    command = [str(BINARY), 'kubectl', '--kubeconfig', str(ROOT / 'kubeconfig.yaml')]
+    while time.monotonic() < deadline:
+        value = subprocess.run([*command, 'get', 'node/aegisai-private', '-o', 'json'],
+                               capture_output=True, text=True, timeout=10)
+        if value.returncode == 0:
+            node = json.loads(value.stdout)
+            if any(c['type'] == 'Ready' and c['status'] == 'True'
+                   for c in node.get('status', {}).get('conditions', [])):
+                return node
+        time.sleep(2)
+    raise TimeoutError('NODE_NOT_READY_WITHIN_BOUND')
+
+
 def main():
     assert os.geteuid() == 0 and __debug__
     os.umask(0o077)
@@ -180,8 +196,7 @@ def main():
     Path('/etc/systemd/system/aegisai-k3s.service').write_text(unit)
     run('systemctl', 'daemon-reload')
     run('systemctl', 'enable', '--now', 'aegisai-k3s.service', timeout=260)
-    run(str(BINARY), 'kubectl', '--kubeconfig', str(ROOT / 'kubeconfig.yaml'),
-        'wait', '--for=condition=Ready', 'node/aegisai-private', '--timeout=120s', timeout=130)
+    wait_ready()
     assert snapshot() == before, 'EXISTING_APPLICATION_CHANGED'
     with urllib.request.urlopen('http://127.0.0.1:8081/api/health', timeout=10) as response:
         assert response.status == 200
