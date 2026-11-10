@@ -133,7 +133,8 @@ def resources(current, previous, instance, run):
 
 def main():
     assert os.geteuid() == 0 and __debug__; os.umask(0o077)
-    parser = argparse.ArgumentParser(); parser.add_argument('mode', choices=['normal', 'fault', 'restore']); parser.add_argument('directory', nargs='?', type=Path); args = parser.parse_args()
+    parser = argparse.ArgumentParser(); parser.add_argument('mode', choices=['normal', 'fault', 'restore']); parser.add_argument('directory', nargs='?', type=Path)
+    parser.add_argument('--routing-only-without-session', action='store_true'); args = parser.parse_args()
     if args.mode == 'restore': restore(args.directory); return
     lock = (OPERATOR/'signed-deployment.lock').open('a'); fcntl.flock(lock, fcntl.LOCK_EX|fcntl.LOCK_NB)
     traffic_raw = STATE.read_text(); traffic = json.loads(traffic_raw); assert traffic['backend'] == 'kubernetes'
@@ -146,7 +147,12 @@ def main():
     from verify_candidate import verify
     for release in releases:
         require_pinned(release['images']); verify(candidate_directory(release), release['manifestSha256'], release['approvedSource'], target=True)
-    cookie = owner_cookie(); before = snapshot(); hpa = get('hpa', 'api')['spec']; assert hpa['minReplicas'] == 1 and hpa['maxReplicas'] == 2
+    def available_owner_cookie():
+        try: return owner_cookie()
+        except AssertionError as error:
+            if str(error) != 'UNEXPIRED_OWNER_SESSION_NOT_AVAILABLE' or not args.routing_only_without_session: raise
+            return None
+    cookie = available_owner_cookie(); before = snapshot(); hpa = get('hpa', 'api')['spec']; assert hpa['minReplicas'] == 1 and hpa['maxReplicas'] == 2
     directory = ROOT/'canary'/('run-'+str(int(time.time()))+'-'+args.mode); directory.mkdir(mode=0o700)
     saved = {'ingress': INGRESS.read_text(), 'traffic': traffic_raw, 'hpa': hpa}; (directory/'saved.json').write_text(json.dumps(saved))
     timer = 'aegisai-canary-restore-'+directory.name
@@ -200,7 +206,8 @@ def main():
         kube('rollout', 'status', 'deployment/web-canary', '-n', APP, '--timeout=60s')
         guard(); traffic.update(deliveryProfile='canary', strategyState=str(directory), activeStableSource=current['approvedSource'], candidateSource=previous['approvedSource'])
         STATE.write_text(json.dumps(traffic, indent=2)); reload(saved['ingress'].replace(NORMAL, CANARY)); checks(traffic['originalHtmlSha256'])
-        body, _ = request('127.0.0.1', 8081, '/api/auth/me', cookie); assert json.loads(body)['authenticated'] is True
+        if cookie:
+            body, _ = request('127.0.0.1', 8081, '/api/auth/me', cookie); assert json.loads(body)['authenticated'] is True
         template = copy.deepcopy(rollout['spec']['template']); template['metadata']['labels']['app.kubernetes.io/version'] = previous['approvedSource']
         template['spec']['containers'][0]['image'] = previous['images']['api']['reference']
         kube('patch', 'rollout', 'api-canary', '-n', APP, '--type=merge', '-p', json.dumps({'spec': {'template': template}}))
@@ -246,11 +253,14 @@ def main():
         else:
             wait(lambda: get('rollout', 'api-canary')['status'].get('phase') == 'Healthy' and get('rollout', 'api-canary')['status'].get('stableRS') == get('rollout', 'api-canary')['status'].get('currentPodHash'))
             recovery = None
-            body, _ = request('127.0.0.1', 8081, '/api/auth/me', cookie); assert json.loads(body)['authenticated'] is True
+            cookie = available_owner_cookie()
+            if cookie:
+                body, _ = request('127.0.0.1', 8081, '/api/auth/me', cookie); assert json.loads(body)['authenticated'] is True
         assert snapshot() == before
         rps = json.loads(kube('get', 'pods', '-n', 'aegisai-system', '-l', 'app.kubernetes.io/name=private-canary-router', '-o', 'json'))['items']
         assert len(rps) == 1 and rps[0]['metadata']['uid'] == router_uid and rps[0]['status']['containerStatuses'][0]['restartCount'] == 0
         report = {'actualPrivateCanary': 'passed', 'scenario': args.mode, 'routerInstance': instance, 'phases': phases,
+            'existingOwnerSessionVerified': bool(cookie), 'routingOnlyIfNoOwnerSession': not bool(cookie),
             'automaticRecovery': recovery, 'newScanExecuted': False, 'newMigrationsApplied': False, 'verifiedAt': now()}
         (directory/'acceptance-result.json').write_text(json.dumps(report, indent=2)); (ROOT/'canary'/('acceptance-'+args.mode+'.json')).write_text(json.dumps(report, indent=2))
         passed = True; print(json.dumps(report))
