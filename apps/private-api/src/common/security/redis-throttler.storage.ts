@@ -47,20 +47,27 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
   constructor(private readonly client: Client) {}
 
   async increment(key: string, ttl: number, limit: number, blockDuration: number, throttlerName: string): Promise<Record> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       if (!this.client.isReady || key.length > 4096 || throttlerName.length > 128 ||
           ![ttl, limit, blockDuration].every(Number.isSafeInteger) || ttl < 1 || ttl > 3_600_000 ||
           limit < 1 || limit > 10_000 || blockDuration < 1 || blockDuration > 3_600_000) throw unavailable();
       const hash = createHash('sha256').update(throttlerName + ':' + key).digest('hex');
       const base = 'aegisai:throttle:v1:{' + hash + '}';
-      const reply = await this.client.sendCommand(['EVAL', INCREMENT, '2', base + ':hits', base + ':state',
-        String(ttl), String(limit), String(blockDuration)], { timeout: 1500 });
+      // The client's queue timeout ends when bytes are written; separately bound
+      // the entire reply wait. Its128-command queue also bounds late operations.
+      const reply = await Promise.race([
+        this.client.sendCommand(['EVAL', INCREMENT, '2', base + ':hits', base + ':state',
+          String(ttl), String(limit), String(blockDuration)], { timeout: 1500 }),
+        new Promise<never>((_, reject) => { timer = setTimeout(() => reject(unavailable()), 1500); })
+      ]);
       if (!Array.isArray(reply) || reply.length !== 4) throw unavailable();
       const values = reply.map(Number);
       if (!values.every(value => Number.isSafeInteger(value) && value >= 0) ||
           values[0] > limit + 1 || ![0, 1].includes(values[2])) throw unavailable();
       return { totalHits: values[0], timeToExpire: values[1], isBlocked: values[2] === 1, timeToBlockExpire: values[3] };
     } catch { throw unavailable(); }
+    finally { if (timer) clearTimeout(timer); }
   }
 }
 
