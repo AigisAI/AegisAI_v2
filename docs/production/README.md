@@ -38,7 +38,7 @@
 | 비공개 접속 | Tailscale Serve HTTPS | 비공개 서비스 진입점 |
 | API | Node.js 22, TypeScript, NestJS, Prisma | 인증, 저장소 권한, 요청·결과 API |
 | 저장 | PostgreSQL 16, Redis 7 | 영속 데이터·작업 큐, 공유 세션·원자적 요청 제한 |
-| GitOps·확장 | Argo CD, Helm, Kubernetes HPA | 검증된 digest 선언 상태 동기화·drift 복구·API1~2 자동 조절 |
+| GitOps·확장 | Argo CD, Argo Rollouts, Helm, Kubernetes HPA | 검증된 digest 선언 상태 동기화·drift 복구·API1~2 자동 조절 |
 | 관측·알림 | Grafana, Loki, Prometheus, Alloy, Tempo, Slack | 실제 지표·로그·HTTP 추적 및 장애/복구 알림; 깊은 비동기 추적은 후속 |
 | 화면 | React 18, Vite, TanStack Query | 실제 API 기반 Dashboard·Repositories·Scan |
 | 저장소 연동 | 로그인 전용 GitHub App, 조직 저장소 GitHub App | 사용자 인증과 SCM 접근 권한 분리 |
@@ -55,7 +55,7 @@
 
 실제 동시 분석은 한 건이다. 화면·API·DB·스캐너가 같은 EC2에 있으므로 호스트 장애가 전체 서비스에 영향을 준다. Grafana·Loki·Prometheus·Tempo와 Slack 장애/복구 알림은 실제 확인했다. 정량 SLO·부하 벤치마크·전체 GitOps/CD·네 가지 배포/확장 전략과 깊은 비동기 추적은 아직 전체 완료하지 않았다. 이전의 미암호화 복구 사본과 비활성 로컬 비밀 사본도 예외로 남아 있다.
 
-현재 API/web은 [전체 CI42807277712](https://github.com/AigisAI/AegisAI_v2/actions/runs/42807277712)를 통과한 서명 소스 `3edc8c72a69b1927fedad5fccb558f94f7bd824f`로 실행된다. Helm/Argo CD의 Git 커밋 `c33a9cfe60883f281bfb619bd4dee273760ba252`가 Synced/Healthy다. 실제 RollingUpdate·불량 후보 제외/자동 복구·이전 이미지 복귀/재전환과 HPA1→2→1·공유 요청 제한을 검증했다. 기존 실제 로그인 세션·화면·데이터와 독립 gVisor 경계를 보존했다. 최신 근거와 한계는 [11월10일 운영 기록](./2026-11-10-rollout-scaling-checkpoint.md)을 따른다. G1/G2·H1/H2/H4 전체 완료와 일반 서비스 자격은 남아 있다.
+현재 API/web은 [전체 CI42807277712](https://github.com/AigisAI/AegisAI_v2/actions/runs/42807277712)를 통과한 서명 소스 `3edc8c72a69b1927fedad5fccb558f94f7bd824f`로 실행된다. Helm/Argo CD의 Git 커밋 `35fd0fd87c77bf0281e004edeed92a5b1b682ff1`가 Synced/Healthy다. 실제 RollingUpdate·불량 후보 제외/자동 복구·이전 이미지 복귀/재전환과 HPA1→2→1·공유 요청 제한을 검증했다. 기존 실제 로그인 세션·화면·데이터와 독립 gVisor 경계를 보존했다. 최신 근거와 한계는 [11월10일 운영 기록](./2026-11-10-rollout-scaling-checkpoint.md)을 따른다. 추가로 [실제 API Blue/Green 전환·복귀](./2026-11-10-blue-green-checkpoint.md)와 기존 세션/화면/데이터 보존을 확인했다. G2·H1/H2/H4 전체 완료와 일반 서비스 자격은 남아 있다.
 
 ## 비용 범위
 
@@ -67,4 +67,4 @@ EC2 외에도 S3 저장·요청, Secrets Manager와 KMS 요청, 보존 중인 EB
 
 ## 2026-11-09 배포 이후 필수 범위 변경
 
-`ec2-runtime-20261109-054314`의 커밋 기반 실배포는 완료됐다. 최신 상태와 남은 작업은 [남은 작업](./remaining-work.md)과 [기존 실행 계획](../reports/2026-11-07-production-deployment-plan.md) 9절을 따른다. 사용자 지시로 Blue/Green·Canary·Kubernetes RollingUpdate·HPA가 모두 실제 구현·검증 필수가 됐다. 현재 승인된 private 범위의 G3·G4는 실제 검증했으며 G1·G2는 남아 있다. 전체 확장 완료와 구분한다.
+`ec2-runtime-20261109-054314`의 커밋 기반 실배포는 완료됐다. 최신 상태와 남은 작업은 [남은 작업](./remaining-work.md)과 [기존 실행 계획](../reports/2026-11-07-production-deployment-plan.md) 9절을 따른다. 사용자 지시로 Blue/Green·Canary·Kubernetes RollingUpdate·HPA가 모두 실제 구현·검증 필수가 됐다. 현재 승인된 private 범위의 G1·G3·G4는 실제 검증했으며 G2는 남아 있다. 전체 확장 완료와 구분한다.

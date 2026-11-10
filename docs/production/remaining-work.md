@@ -1,15 +1,15 @@
 # 남은 작업과 적용 범위
 
-최종 갱신: 2026-11-10 21:36 KST. 실제 운영 근거는
-[RollingUpdate·HPA 운영 기록](./2026-11-10-rollout-scaling-checkpoint.md)을 우선한다.
+최종 갱신: 2026-11-10 22:13 KST. 실제 운영 근거는
+[Blue/Green 운영 기록](./2026-11-10-blue-green-checkpoint.md)을 우선한다.
 사용자가 필수 지정한 G1~G4·H1~H4는 계속 완료 조건이다. 현재 승인된 private 범위에서
-G3·G4·H3를 실제 검증했으며, 나머지 다섯 항목은 전체 완료 전이다.
+G1·G3·G4·H3를 실제 검증했으며, 나머지 네 항목은 전체 완료 전이다.
 
 ## 현재 운영 상태
 
 - 기존 EC2 한 대·암호화50GiB·Tailscale 비공개 접속이다. 추가 컴퓨팅·공개 ingress·runtime IAM 확대는 하지 않는다.
 - 소스 `3edc8c72a69b1927fedad5fccb558f94f7bd824f`, 릴리스 `ec2-runtime-20261110-114154`가 실제 API/web을 실행한다. [전체 CI42807277712](https://github.com/AigisAI/AegisAI_v2/actions/runs/42807277712)가 통과했다.
-- Helm/Argo Git 선언 커밋은 `c33a9cfe60883f281bfb619bd4dee273760ba252`이며 Synced/Healthy다. API/web 각1 Ready, API HPA min1/max2다. PR 자체의 dev/main 병합은 별개다.
+- Helm/Argo Git 선언 커밋은 `35fd0fd87c77bf0281e004edeed92a5b1b682ff1`이며 Synced/Healthy다. API/web 각1 Ready, API HPA min1/max2다. PR 자체의 dev/main 병합은 별개다.
 - 사용자1·연동1·저장소5·스캔1·도구 실행3·근거1을 유지했다. 최신 버전에서 기존 실제 세션·저장소·완료 결과·암호화 근거 조회와 비인증/타 테넌트 거부를 확인했다.
 - 원래 화면 HTML은 동일하다. 데이터6개 마이그레이션·독립 containerd/gVisor·무거운 스캔1건을 보존했다. 새 스캔·SQL·운영 DB 복원·대화형 OAuth는 반복하지 않았다.
 - AI는 DISABLED로 서비스가 동작한다. 자체 로컬 모델이 목표이며 API 임시 대체·미연결을 허용한다. AI는 advisory-only다.
@@ -19,7 +19,7 @@ G3·G4·H3를 실제 검증했으며, 나머지 다섯 항목은 전체 완료 �
 
 | ID | 상태 | 실제 근거와 남은 일 |
 | --- | --- | --- |
-| G1 Blue/Green | 미완료 | 두 서명 버전·준비 상태/세션 호환성 기반은 있음. Rollouts로 실제 비공개 전환·복귀와 버전별 응답/시간을 측정해야 함 |
+| G1 Blue/Green | private API 범위 검증 완료 | Argo Rollouts·별도 active/preview·실제 비공개 경로 전환/복귀0.404/0.407초·양 버전의 기존 로그인 응답·원래 화면/데이터 및 HPA 복구 확인. UI 변경 배포와 일반 자격은 별도 |
 | G2 Canary | 미완료 | 실제 가중치 라우팅·버전별 요청 수·오류/p95 기준·자동 중단/기존 버전 복귀 필요. 설정이나 준비 실패 Pod만으로 완료하지 않음 |
 | G3 Kubernetes RollingUpdate | private 범위 검증 완료 | 실제 정상 교체16.988초·불량 준비 후보 제외/자동 Git 복구55.125초·이전 이미지 복귀10.074초·재전환10.023초. 관측 health 모두200 |
 | G4 HPA | private API 범위 검증 완료 | 실제 CPU에 따른1→2→1·수집기 유실 시2 유지·최대2·실제 기존 세션 및 데이터 보존. 공유 Redis 요청 제한19→18→17→16이 두 API에 걸쳐 적용됨 |
@@ -30,12 +30,13 @@ G3·G4·H3를 실제 검증했으며, 나머지 다섯 항목은 전체 완료 �
 
 실행 기준은 [기존 계획](../reports/2026-11-07-production-deployment-plan.md) 4/G·4/H·8·9절이다.
 그 계획의 날짜별 상태 문장은 당시 기록이며, 최신 완료 여부는 위 표를 따른다.
-G1→G2와 Rollouts 관리 책임을 진행한 뒤 H4 비동기 추적·H1 복구/재현·허용된 H2 AWS 연동 및
+G2 실제 가중치/자동 중단과 Rollouts의 최종 GitOps 관리 책임을 진행한 뒤 H4 비동기 추적·H1 복구/재현·허용된 H2 AWS 연동 및
 통합 복구/비용 근거를 닫는다. 권한이 필요한 잔여 사항을 이미 승인된 runtime IAM 확대처럼 해석하지 않는다.
 
 ## 운영 보완과 최종 확인
 
 - 운영 승격은 서명·출처·검사 신선도를 재검증한다. 검사24시간/DB48시간 만료 후보를 예외 승격하지 않는다.
+- Blue/Green 검증 profile은0개로 보존했고 기존 API/web 정상 경로·HPA1~2를 복원했다. 일반 Service의 delivery 선택자가 preview를 제외한다.
 - 실제 복귀 중 드러난 미사용 이미지 GC 문제를 수정했다. 현재·직전 승인 이미지 쌍을 실제 CRI pinned로 보존하고, 이미지 부재 시 Git 변경 전에 거부한다. 복구 뒤 실제 이전/최신 이미지 전환을 통과했다.
 - Kubernetes 재시작 시 기본 DNS 자원 제한 재적용, 최신 control-state 백업과 제한된 복구 절차를 최종 점검한다. 과거 부팅/DB 복구 근거만으로 최신 전체 복구를 완료하지 않는다.
 - 바깥 Nginx의 이전 이미지와 잔여 보안/보관 예외는 별도 검토 대상이다. 현재 공급망 검증 완료를 모든 구성 요소의 취약점 부재로 표현하지 않는다.

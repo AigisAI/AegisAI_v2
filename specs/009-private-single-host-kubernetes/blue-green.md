@@ -61,3 +61,10 @@ Primary references reviewed2026-11-10:
 - https://raw.githubusercontent.com/argoproj/argo-rollouts/v1.10.2/cmd/rollouts-controller/main.go
 - https://raw.githubusercontent.com/argoproj/argo-rollouts/v1.10.2/utils/defaults/defaults.go
 - https://github.com/argoproj/argo-rollouts/tree/v1.10.2/manifests
+
+Actual acceptance2026-11-10T13:10:37Z: preview12.597s, active promotion0.404s,
+actual version rollback0.407s with existing owner session on both versions and
+all observed health200. Initial active hash and observed generation must converge
+before staging the next version; Ready Pod alone could still be initial deployment.
+Private ingress/HPA recovered and strategy workloads scaled0. Final existing
+session/data/evidence/original HTML passed13:11:44Z. See production checkpoint.
