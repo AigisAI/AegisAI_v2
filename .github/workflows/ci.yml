@@ -8,6 +8,7 @@ on:
       - feat/340-private-platform-expansion
       - fix/346-private-grafana-auth
       - feat/352-private-kubernetes-admission
+      - feat/361-private-api-horizontal-scaling
   push:
     branches:
       - dev
@@ -188,6 +189,8 @@ jobs:
             aegisai-private-verify:ci node --test --test-concurrency=1 /app/test/private-worker-native/*.test.mjs
       - name: Verify actual non-root read-only catalog mounts
         run: sudo --preserve-env=GITHUB_ACTIONS python3 tools/private-runtime/test_readonly_catalog.py
+      - name: Verify actual shared throttle, expiry and store failure across two HTTP apps
+        run: sudo --preserve-env=GITHUB_ACTIONS python3 tools/private-runtime/test_distributed_throttle.py
       - name: Verify image policy and install checksum-pinned security tools
         run: |
           python3 deploy/aws-ec2/supply-chain/test_policy.py

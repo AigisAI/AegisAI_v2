@@ -15,6 +15,8 @@ import { TokenBrokerModule } from "./token-broker/token-broker.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RuntimeModule } from "./runtime/runtime.module";
 import { DispatchModule } from "./dispatch/dispatch.module";
+import { createRuntimeThrottleStorage } from "./common/security/redis-throttler.storage";
+import { RuntimeResourcesService } from "./runtime/runtime-resources.service";
 
 @Module({
   imports: [
@@ -24,14 +26,17 @@ import { DispatchModule } from "./dispatch/dispatch.module";
     PrismaModule,
     SecurityModule,
     ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
+      imports: [ConfigModule, RuntimeModule],
+      inject: [ConfigService, RuntimeResourcesService],
+      useFactory: async (config: ConfigService, resources: RuntimeResourcesService) => ({
+        storage: await createRuntimeThrottleStorage(config, resources),
+        throttlers: [
         {
           ttl: config.get("THROTTLE_TTL_MS"),
           limit: config.get("THROTTLE_LIMIT")
         }
-      ]
+        ]
+      })
     }),
     AuthModule,
     ControlPlaneModule,
