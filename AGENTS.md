@@ -122,3 +122,10 @@ The owner explicitly approved the separately proposed private one-host operating
 scope on2026-11-09. This supersedes the 008 Kubernetes installation hold only
 for this private scope; general005/006 T053-T056 remain NOT_QUALIFIED. Preserve
 all product/scanner/data guards, one existing EC2 and no runtime IAM expansion.
+
+For the existing owner-authorized private runtime, additionally read the
+[002 entrypoint](./specs/002-production-scan-architecture/quickstart.md) and
+[private003 continuation](./specs/003-production-runtime/quickstart.md) before009.
+This private003 package is distinct from003-production-ai-inference-runtime.
+Retain canonical006/008 and their general qualification gates. Current operating
+facts are in docs/production/README.md and the2026-11-10 checkpoint.
