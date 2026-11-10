@@ -31,3 +31,9 @@ Activate->original Docker rollback->reactivate passed. Legacy Compose mutation
 entrypoints now reject while Kubernetes owns traffic. General qualification and
 all G1-G4/H2/deep-H4 requirements remain open. Current owner session acceptance
 was not available (no unexpired session); no synthetic session or OAuth repetition.
+
+Issue359: bounded Argo core is live and actually Synced/Healthy. Native RBAC and
+repo metadata/token boundaries passed, harmless drift restored in3.631s, and
+immutable Git forward/back/forward passed without further Pod replacement. Image
+promotion/CD integration and future HPA/Rollouts field ownership remain; H2 is
+partial. See gitops.md. All four G requirements and deep-H4/H1 recovery remain.
