@@ -8,6 +8,5 @@
   "frontendIngressCidrs": [
     "172.18.0.3/32",
     "172.29.240.2/32"
-  ],
-  "apiReadinessPath": "/api/health-unavailable"
+  ]
 }
