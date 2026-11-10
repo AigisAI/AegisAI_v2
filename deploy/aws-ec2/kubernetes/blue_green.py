@@ -39,8 +39,12 @@ def selected(service):
     pods = [p for p in ready_pods() if all(p['metadata']['labels'].get(k) == v for k, v in selector.items())]
     assert len(pods) == 1, 'ONE_READY_VERSION_ENDPOINT_REQUIRED'
     p = pods[0]
+    slices = json.loads(kube('get', 'endpointslices', '-n', APP, '-l', 'kubernetes.io/service-name=' + service, '-o', 'json'))['items']
+    endpoints = [e for item in slices for e in item.get('endpoints', []) if e.get('conditions', {}).get('ready') is True]
+    assert {e.get('targetRef', {}).get('uid') for e in endpoints} == {p['metadata']['uid']}, 'SERVICE_ENDPOINTS_NOT_CONVERGED'
     return {'pod': p['metadata']['name'], 'uid': p['metadata']['uid'], 'image': p['spec']['containers'][0]['image'],
-        'source': p['metadata']['labels']['app.kubernetes.io/version'], 'selector': selector}
+        'source': p['metadata']['labels']['app.kubernetes.io/version'], 'selector': selector,
+        'endpointAddresses': [address for e in endpoints for address in e['addresses']]}
 
 
 def request(host, port, path, cookie=None):
@@ -83,7 +87,7 @@ def resources(current):
     selector = {k: api['metadata']['labels'][k] for k in ('app.kubernetes.io/name', 'app.kubernetes.io/component', 'aegisai.io/delivery')}
     rollout = {'apiVersion': 'argoproj.io/v1alpha1', 'kind': 'Rollout',
         'metadata': {'name': 'api-blue-green', 'namespace': APP}, 'spec': {
-            'replicas': 1, 'revisionHistoryLimit': 2, 'progressDeadlineSeconds': 120, 'progressDeadlineAbort': True,
+            'replicas': 1, 'minReadySeconds': 5, 'revisionHistoryLimit': 2, 'progressDeadlineSeconds': 120, 'progressDeadlineAbort': True,
             'rollbackWindow': {'revisions': 2}, 'selector': {'matchLabels': selector}, 'template': api,
             'strategy': {'blueGreen': {'activeService': 'api-bg-active', 'previewService': 'api-bg-preview',
                 'autoPromotionEnabled': False, 'scaleDownDelaySeconds': 60, 'scaleDownDelayRevisionLimit': 1}}}}
