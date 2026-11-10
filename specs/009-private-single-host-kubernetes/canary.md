@@ -54,3 +54,9 @@ Primary references reviewed2026-11-10:
 - https://doc.traefik.io/traefik/reference/install-configuration/providers/others/file/
 - https://doc.traefik.io/traefik/reference/routing-configuration/http/load-balancing/service/
 - https://github.com/docker-library/official-images/blob/master/library/traefik
+
+Actual2026-11-10 acceptance passed: normal6/60->30/60->60/60, all180HTTP200;
+3native analysesSuccessful. Fault54stable200/6candidate502, native failed error
+ratio1 and automatic100/0 recovery17.235s; next10allstable200. Genuine owner
+session, final original HTML/data/evidence and recovery passed. See production
+2026-11-10-canary-checkpoint.md for scoped evidence and remainingH1/H2/H4.
