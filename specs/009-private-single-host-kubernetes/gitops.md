@@ -32,3 +32,20 @@ References checked2026-11-10:
 - https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-management/
 - https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/
 - https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/
+
+Actual 2026-11-10 evidence: three Ready core Pods; native namespace checks allow
+only the intended app mutations and deny app secrets, operator ConfigMaps,
+EndpointSlices, RBAC and nodes. Repo has no Kubernetes token and its actual
+metadata TCP connection is refused. Git source0cb7fa420e9856adb82fc8733cfa183ef70a1af1
+adoption reached Synced/Healthy. API Pod stayed unchanged; web rolled once solely
+because Windows CRLF versus Git LF changed the config checksum. No image changed.
+The chart now normalizes line endings; subsequent forward/back changed no Pods.
+
+An actual API revisionHistoryLimit drift2->1 was automatically restored in3.631s.
+Git e1dd6fe8808521793600f70d68f814d3c258d804 applied history3, original0cb7fa4
+restored history2, then e1dd6fe reapplied3, each actually Synced/Healthy with same
+API/web Pods and signed images. H3 sourcef340a441f366 remains active. No scan,
+SQL migration, OAuth or DB restore was repeated. Native/Helm policy CI42800785635
+passed. Protected evidence is kubernetes/gitops/acceptance-result.json; local copy
+output/deploy/gitops359-result.json. Further signed image promotion/CD integration,
+future field ownership and G1-G4 are not closed by this adoption acceptance.
