@@ -11,11 +11,17 @@ import sys
 
 from bootstrap import BINARY, ROOT, PIN, digest, now, snapshot
 from foundation import kube
+from image_retention import pin, require_pinned, trim_owned_pins
 
 
-def image_policy(images):
-    allowed = [value['reference'] for value in images.values()]
-    assert len(allowed) == 2 and all(re.fullmatch(
+def image_policy(images, previous=None):
+    for release in (images,previous or {}):
+        if not release:continue
+        assert set(release)=={'api','web'}
+        for kind,value in release.items():
+            assert re.fullmatch(r'docker.io/library/aegisai-'+kind+r'@sha256:[a-f0-9]{64}',value['reference'])
+    allowed = sorted({value['reference'] for release in (images, previous or {}) for value in release.values()})
+    assert 2 <= len(allowed) <= 4 and all(re.fullmatch(
         r'docker.io/library/aegisai-(api|web)@sha256:[a-f0-9]{64}', value) for value in allowed)
     expression = 'c.image in ' + json.dumps(allowed)
     return {'apiVersion':'admissionregistration.k8s.io/v1','kind':'ValidatingAdmissionPolicy',
@@ -33,9 +39,26 @@ def image_policy(images):
                  'message':'Application Pods cannot mount Kubernetes API credentials'}]}}
 
 
+def retained_release(previous, active_source):
+    records=previous.get('approvedReleases',[previous])
+    assert 1<=len(records)<=2
+    selected=[value for value in records if value['approvedSource']==active_source]
+    assert len(selected)==1,'ACTIVE_RELEASE_NOT_PREVIOUSLY_ADMITTED'
+    value=selected[0]
+    assert value['verification']['signedCandidateVerification']=='passed'
+    assert value['verification']['sourceCommit']==active_source
+    assert value['verification']['manifestSha256']==value['manifestSha256']
+    assert set(value['images'])=={'api','web'}
+    image_policy(value['images'])
+    return {key:value[key] for key in ('approvedSource','manifestSha256','verification','images')}
+
+
 def main():
+    import fcntl
     assert os.geteuid() == 0 and __debug__
     os.umask(0o077)
+    lock=Path('/opt/aegisai/operator/signed-deployment.lock').open('a')
+    fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     parser=argparse.ArgumentParser()
     parser.add_argument('directory',type=Path)
     parser.add_argument('--manifest-sha256',required=True)
@@ -53,6 +76,14 @@ def main():
     assert approval.stat().st_uid == 0 and not approval.stat().st_mode & 0o077
     assert args.approved_source in strict_json(approval)['approvedSources'], 'SOURCE_NOT_OPERATOR_APPROVED'
     before=snapshot()
+    previous=None;ledger_path=ROOT/'approved-app-images.json'
+    if ledger_path.exists():
+        assert not ledger_path.is_symlink() and ledger_path.stat().st_uid==0 and not ledger_path.stat().st_mode&0o077
+        existing=strict_json(ledger_path,65536)
+        traffic=Path('/opt/aegisai/operator/application-traffic.json')
+        source=strict_json(traffic)['approvedSource'] if traffic.exists() else existing['approvedSource']
+        previous=retained_release(existing,source)
+        assert source in strict_json(approval)['approvedSources']
     # No candidate code is executed. Same trusted H3 crypto/source/scan checks
     # run before any containerd image import or Kubernetes admission mutation.
     verification=verify(args.directory,args.manifest_sha256,args.approved_source,target=True)
@@ -78,7 +109,17 @@ def main():
         subprocess.run([str(BINARY),'ctr','-n','k8s.io','images','tag','--force',canonical,reference],
                        check=True,timeout=15,stdout=subprocess.DEVNULL)
         images[kind]={'reference':reference,'candidateImageId':image['id'],'importedTargetDigest':matches[0]}
-    policy=image_policy(images)
+        pin(canonical,reference)
+    # Native CRI state, not labels alone, must confirm kubelet GC retention.
+    import time
+    for attempt in range(20):
+        try:
+            require_pinned(images);break
+        except AssertionError:
+            if attempt==19:raise
+            time.sleep(0.5)
+    policy=image_policy(images,previous['images'] if previous else None)
+    if previous:require_pinned(previous['images'])
     kube('apply','--server-side','--field-manager=aegisai-operator-admission','-f','-',value=policy)
     binding={'apiVersion':'admissionregistration.k8s.io/v1','kind':'ValidatingAdmissionPolicyBinding',
         'metadata':{'name':'aegisai-approved-private-images'},'spec':{
@@ -99,7 +140,10 @@ def main():
         'manifestSha256':args.manifest_sha256,'verification':verification,'images':images,
         'privateNamespaceRestricted':True,'applicationUnchanged':True,'trafficMoved':False,
         'verifiedAt':now()}
+    current={key:ledger[key] for key in ('approvedSource','manifestSha256','verification','images')}
+    ledger['approvedReleases']=[current]+([previous] if previous and previous['approvedSource']!=args.approved_source else [])
     (ROOT/'approved-app-images.json').write_text(json.dumps(ledger,indent=2))
+    trim_owned_pins(ledger['approvedReleases'])
     print(json.dumps(ledger))
 
 

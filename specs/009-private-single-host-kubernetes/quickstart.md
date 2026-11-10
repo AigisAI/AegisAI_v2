@@ -47,3 +47,10 @@ For issue359, read gitops.md before constrained core GitOps installation or adop
 For issue361 read scaling.md. Actual1->2->1 and metric-loss behavior passed; retain HPA replica ownership and complete shared throttling before final scaling acceptance.
 
 For issue363, read distributed-throttling.md. Preserve route policy through shared atomic counters before marking scaling security complete; require actual disposable Redis/two-HTTP-instance acceptance and the signed API candidate gate.
+
+For issue365, read rolling.md. Retain the active admitted image pair before a fresh import, pin Application desired spec to operator authority, move non-secret release values into immutable Git and preserve HPA ownership.
+
+2026-11-10 continuation: actual signed3ed source now serves private API/web.
+Read rolling.md, scaling.md and the latest production checkpoint for completed
+private G3/G4 acceptance, shared limits and protected image retention. Continue
+actual G1/G2 and remainingH1/H2/deepH4 without replaying unchanged SQL/scans.

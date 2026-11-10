@@ -17,7 +17,7 @@
 | [남은 작업과 적용 범위](./remaining-work.md) | 후속 우선순위, 미적용 기술, 포트폴리오 표현 기준 |
 | [상세 작업 이력](../reports/2026-11-08-runtime-supervisor-checkpoint.md) | 시간순 구현 기록과 이전 단계의 검증 |
 
-개발·수정은 [AGENTS.md](../../AGENTS.md) → [002 quickstart](../../specs/002-production-scan-architecture/quickstart.md) → [007 private integration](../../specs/007-private-ec2-integration/quickstart.md) 순서로 시작한다. 이 문서는 운영 현황을 설명하며 해당 실행 순서를 대체하지 않는다.
+개발·수정은 [AGENTS.md](../../AGENTS.md) → [002 quickstart](../../specs/002-production-scan-architecture/quickstart.md) → [003 quickstart](../../specs/003-production-runtime/quickstart.md) 순서로 시작한다. 이 문서는 운영 현황을 설명하며 해당 실행 순서를 대체하지 않는다.
 
 ## 사용 가능한 기능
 
@@ -37,7 +37,9 @@
 | 앱 실행 | K3s, Helm, Nginx, systemd; 기존 Docker 복귀본 | 제한된 API/web Pod 실행과 비공개 접속, 원래 운영 버전 복귀 |
 | 비공개 접속 | Tailscale Serve HTTPS | 비공개 서비스 진입점 |
 | API | Node.js 22, TypeScript, NestJS, Prisma | 인증, 저장소 권한, 요청·결과 API |
-| 저장 | PostgreSQL 16, Redis 7 | 영속 데이터·작업 큐, 세션 저장 |
+| 저장 | PostgreSQL 16, Redis 7 | 영속 데이터·작업 큐, 공유 세션·원자적 요청 제한 |
+| GitOps·확장 | Argo CD, Helm, Kubernetes HPA | 검증된 digest 선언 상태 동기화·drift 복구·API1~2 자동 조절 |
+| 관측·알림 | Grafana, Loki, Prometheus, Alloy, Tempo, Slack | 실제 지표·로그·HTTP 추적 및 장애/복구 알림; 깊은 비동기 추적은 후속 |
 | 화면 | React 18, Vite, TanStack Query | 실제 API 기반 Dashboard·Repositories·Scan |
 | 저장소 연동 | 로그인 전용 GitHub App, 조직 저장소 GitHub App | 사용자 인증과 SCM 접근 권한 분리 |
 | 분석 실행 | 별도 containerd 2.2.1, gVisor, 호스트 Python 감독 프로세스 | 비신뢰 소스 분석과 실행 수명 관리 |
@@ -51,9 +53,9 @@
 
 실제 저장소 스캔, 소스 정리, 암호화 근거 접근, 백업 복원, 서버 재시작 복구 및 비공개 접근 차단·복원은 확인했다. 사용자는 휴대폰에서 실제 저장소 목록과 완료된 스캔을 확인했다.
 
-실제 동시 분석은 한 건이다. 화면·API·DB·스캐너가 같은 EC2에 있으므로 호스트 장애가 전체 서비스에 영향을 준다. Grafana·Loki·Prometheus·Tempo와 Slack 장애/복구 알림은 실제 확인했다. 정량 SLO·부하 벤치마크·전체 GitOps/CD·네 가지 배포/확장 전략과 깊은 비동기 추적은 아직 전체 완료하지 않았다. 이전의 미암호화 디스크·스냅샷은 사용자 결정에 따라 보존한다. 비활성 로컬 비밀 사본 3건은 관리형 비밀과 일치 확인 후 제거했다.
+실제 동시 분석은 한 건이다. 화면·API·DB·스캐너가 같은 EC2에 있으므로 호스트 장애가 전체 서비스에 영향을 준다. Grafana·Loki·Prometheus·Tempo와 Slack 장애/복구 알림은 실제 확인했다. 정량 SLO·부하 벤치마크·전체 GitOps/CD·네 가지 배포/확장 전략과 깊은 비동기 추적은 아직 전체 완료하지 않았다. 이전의 미암호화 복구 사본과 비활성 로컬 비밀 사본도 예외로 남아 있다.
 
-2026년 11월 9일 별도 소스 후보를 커밋하고 hosted CI를 통과시켰다. 운영 코드는 여전히 이전 배포 아카이브에서 실행되며, 최신 dev 기반 통합 후보는 [PR #339](https://github.com/AigisAI/AegisAI_v2/pull/339)에서 별도로 검증하며 아직 재배포하지 않았다. 자세한 출처는 위 Git 연결 문서를 따른다.
+현재 API/web은 [전체 CI42807277712](https://github.com/AigisAI/AegisAI_v2/actions/runs/42807277712)를 통과한 서명 소스 `3edc8c72a69b1927fedad5fccb558f94f7bd824f`로 실행된다. Helm/Argo CD의 Git 커밋 `c33a9cfe60883f281bfb619bd4dee273760ba252`가 Synced/Healthy다. 실제 RollingUpdate·불량 후보 제외/자동 복구·이전 이미지 복귀/재전환과 HPA1→2→1·공유 요청 제한을 검증했다. 기존 실제 로그인 세션·화면·데이터와 독립 gVisor 경계를 보존했다. 최신 근거와 한계는 [11월10일 운영 기록](./2026-11-10-rollout-scaling-checkpoint.md)을 따른다. G1/G2·H1/H2/H4 전체 완료와 일반 서비스 자격은 남아 있다.
 
 ## 비용 범위
 
@@ -61,8 +63,8 @@ EC2 외에도 S3 저장·요청, Secrets Manager와 KMS 요청, 보존 중인 EB
 
 ## 문서 유지 기준
 
-설계 의도는 007 명세, 현재 운영 사실은 이 문서 묶음, 과거 단계는 날짜가 붙은 체크포인트로 구분한다. 코드나 배포가 바뀌면 배포 기록과 운영 절차를 함께 갱신한다. 문서에 비밀번호, 개인 키, OAuth 비밀 값, AWS 로그인 코드, 저장소 원문을 넣지 않는다. 과거 로그의 성공을 새 릴리스의 성공으로 대신 기록하지 않는다.
+설계 의도는 003 명세, 현재 운영 사실은 이 문서 묶음, 과거 단계는 날짜가 붙은 체크포인트로 구분한다. 코드나 배포가 바뀌면 배포 기록과 운영 절차를 함께 갱신한다. 문서에 비밀번호, 개인 키, OAuth 비밀 값, AWS 로그인 코드, 저장소 원문을 넣지 않는다. 과거 로그의 성공을 새 릴리스의 성공으로 대신 기록하지 않는다.
 
-007 통합 후보는 배포 전 준비 단계다. 기존 운영 증거는 새 후보의 배포 성공을 뜻하지 않는다. 비활성 로컬 비밀 사본 3건은 2026-11-09 관리형 비밀 확인 후 제거했으며, 이전 디스크·스냅샷은 유지했다.
+## 2026-11-09 배포 이후 필수 범위 변경
 
-최신 dev 기반 통합 후보의 검증·배포 경계는 [후보 준비 절차](../../deploy/aws-ec2/PREPARED-RELEASE.md)를 따른다. 기존 운영 배포는 유지된다.
+`ec2-runtime-20261109-054314`의 커밋 기반 실배포는 완료됐다. 최신 상태와 남은 작업은 [남은 작업](./remaining-work.md)과 [기존 실행 계획](../reports/2026-11-07-production-deployment-plan.md) 9절을 따른다. 사용자 지시로 Blue/Green·Canary·Kubernetes RollingUpdate·HPA가 모두 실제 구현·검증 필수가 됐다. 현재 승인된 private 범위의 G3·G4는 실제 검증했으며 G1·G2는 남아 있다. 전체 확장 완료와 구분한다.

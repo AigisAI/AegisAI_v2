@@ -4,6 +4,7 @@
   "additionalProperties":false,
   "required":["images","revision","apiReplicas","frontendIngressCidrs"],
   "properties":{
+    "apiReadinessPath":{"type":"string","enum":["/api/health","/api/health-unavailable"]},
     "images":{"type":"object","additionalProperties":false,"required":["api","web"],"properties":{
       "api":{"type":"string","pattern":"^docker.io/library/aegisai-api@sha256:[a-f0-9]{64}$"},
       "web":{"type":"string","pattern":"^docker.io/library/aegisai-web@sha256:[a-f0-9]{64}$"}}},

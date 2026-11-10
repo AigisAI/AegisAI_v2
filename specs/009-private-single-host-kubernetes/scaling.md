@@ -40,7 +40,11 @@ Existing owner session, five repositories, existing result/encrypted evidence an
 completed-job non-replay were verified afterward, without a synthetic session.
 Evidence: resource-metrics/hpa-acceptance-result.json and output/deploy/hpa361-result.json.
 
-The observed240 successful requests expose the old in-memory throttle's
-per-replica accounting. Preserve the original effective limit across replicas
-with shared atomic throttling before closing the full scaling security acceptance;
-record this separately from the already measured autoscaler behavior.
+The observed240 successful requests exposed the previous per-replica throttle.
+Issue363 fixed this with atomic Redis storage, bounded whole-response timeouts
+and fail-closed503. FullCI42807277712 passed actual two-app Redis acceptance.
+The signed3ed source is deployed; existing real owner sessions worked on both
+API Pods and alternating auth/me requests consumed one shared budget19->18->17->16.
+Temporary min2 was restored to min1 and exactly1 Ready. No new scan/schema/restore.
+This closes private G4 safety acceptance along with the measured autoscaler;
+see docs/production/2026-11-10-rollout-scaling-checkpoint.md for exact evidence.

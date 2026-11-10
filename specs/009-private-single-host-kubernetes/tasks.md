@@ -4,13 +4,13 @@
 - [x] Review exact host/capacity/network/scanner boundaries and bootstrap recovery.
 - [x] Test fail-closed native preflight and pin/check vendor bytes.
 - [x] Install bounded private K3s alongside unchanged app; capture actual readiness.
-- [ ] Enforce signed-image admission and least-privilege app/control networking.
-- [ ] Migrate API/web with existing auth/session/SCM/data/telemetry preserved.
+- [x] Enforce signed-image admission and least-privilege app/control networking.
+- [x] Migrate API/web with existing auth/session/SCM/data/telemetry preserved.
 - [ ] H2 actual GitOps/CD, field ownership, drift and Git/app recovery.
-- [ ] G3 actual Deployment RollingUpdate and bad-candidate recovery.
+- [x] G3 actual Deployment RollingUpdate and bad-candidate recovery.
 - [ ] G1 actual Blue/Green switch/back with data/session preservation.
 - [ ] G2 actual measured Canary and automatic abort/recovery.
-- [ ] G4 actual bounded API HPA1->2->1 and metric-failure behavior.
+- [x] G4 actual bounded API HPA1->2->1 and metric-failure behavior.
 - [ ] H4 actual scan/queue/broker/worker trace correlation.
 - [ ] H1 remaining resource/reconstruction and bounded final recovery/cost proof.
 
@@ -39,3 +39,12 @@ promotion/CD integration and future HPA/Rollouts field ownership remain; H2 is
 partial. See gitops.md. All four G requirements and deep-H4/H1 recovery remain.
 
 Issue361: actual API1->2->1, missing metrics retention and collector recovery passed. Existing real owner session/data/evidence also passed afterward. Complete shared atomic request throttling across replicas before closing full G4 security acceptance; see scaling.md.
+
+2026-11-10 12:36UTC supersedes the earlier f340/pending-session/throttle status:
+source3edc8c72a69b is live, Gitc33a9cfe6088 Synced/Healthy. Actual normal rollout,
+non-ready candidate exclusion/automatic recovery and previous/current signed image
+rollback passed. The observed GC cache loss was fixed with bounded native CRI
+pinning plus pre-promotion presence checks; actual image rollback then passed.
+Existing real owner session/data/evidence, HPA1->2->1 and shared atomic Redis limits
+across both replicas passed. G3/G4 close for the approved private scope only;
+G1/G2, fullH1/H2/deepH4 remain. See the latest production checkpoint.

@@ -67,6 +67,8 @@ def main():
     # File discovery is prepared only; Prometheus keeps its original target until
     # the separately accepted traffic/telemetry migration. No private env is read.
     ledger=json.loads(Path('/opt/aegisai/kubernetes/approved-app-images.json').read_text())
+    releases=ledger.get('approvedReleases',[ledger]);assert 1<=len(releases)<=2
+    api_sources={release['images']['api']['reference']:release['approvedSource'] for release in releases}
     pods=json.loads(call('get','pods','-n','aegisai-private','-l',
         'app.kubernetes.io/name=aegisai-private,app.kubernetes.io/component=api','-o','json'))['items']
     assert len(pods)<=3
@@ -76,9 +78,9 @@ def main():
         address=pod['status'].get('podIP')
         assert ipaddress.ip_address(address) in ipaddress.ip_network('10.44.0.0/16')
         image=pod['spec']['containers'][0]['image']
-        assert image==ledger['images']['api']['reference']
+        assert image in api_sources
         targets.append({'targets':[address+':9465'],'labels':{
-            'runtime':'kubernetes','approved_source':ledger['approvedSource'][:12]}})
+            'runtime':'kubernetes','approved_source':api_sources[image][:12]}})
     directory=Path('/opt/aegisai/observability/discovery')
     directory.mkdir(mode=0o755,exist_ok=True)
     assert directory.resolve()==directory and directory.stat().st_uid==0 and not directory.stat().st_mode&0o022
