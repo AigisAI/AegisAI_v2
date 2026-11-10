@@ -10,6 +10,7 @@ class PublicConfiguration(unittest.TestCase):
                 'USE_INTERNAL_AI':'false','COOKIE_SECURE':'true','ALLOWED_GITHUB_USER_IDS':'161540124',
                 'GITHUB_LOGIN_KIND':'github-app','SESSION_SECRET':'fixture-secret-not-published'}
         self.assertIsNone(validate_managed_settings(values))
+        self.assertIsNone(validate_managed_settings({**values,'FRONTEND_URL':values['FRONTEND_URL']+'/'}))
         for key,value in (('COOKIE_SECURE','false'),('USE_INTERNAL_AI','true'),('ALLOWED_GITHUB_USER_IDS','99')):
             with self.assertRaises(AssertionError):validate_managed_settings({**values,key:value})
 

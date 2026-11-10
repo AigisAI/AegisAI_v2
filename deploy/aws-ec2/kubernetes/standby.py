@@ -19,7 +19,8 @@ PUBLIC={'NODE_ENV','PORT','APP_URL','FRONTEND_URL','COOKIE_SECURE','ANALYSIS_CLI
 
 
 def validate_managed_settings(values):
-    assert values['APP_URL']==values['FRONTEND_URL']=='https://aegisai-aws.tailaca7d2.ts.net'
+    for key in ('APP_URL','FRONTEND_URL'):
+        assert values[key] in ('https://aegisai-aws.tailaca7d2.ts.net','https://aegisai-aws.tailaca7d2.ts.net/')
     assert values['USE_INTERNAL_AI']=='false' and values['COOKIE_SECURE']=='true'
     assert values['ALLOWED_GITHUB_USER_IDS']=='161540124' and values['GITHUB_LOGIN_KIND']=='github-app'
 
@@ -38,7 +39,7 @@ def public_environment(path):
     for scope in ('AUTH','SCM'):
         assert re.fullmatch(r'arn:aws:secretsmanager:ap-northeast-2:024139495514:secret:aegisai/private-runtime/'+scope.lower()+r'-[A-Za-z0-9]+',result['AWS_'+scope+'_SECRET_ARN'])
     for key in ('APP_URL','FRONTEND_URL'):
-        if key in result:assert result[key]=='https://aegisai-aws.tailaca7d2.ts.net'
+        if key in result:assert result[key] in ('https://aegisai-aws.tailaca7d2.ts.net','https://aegisai-aws.tailaca7d2.ts.net/')
     assert result['EVIDENCE_BUCKET']=='aegisai-private-024139495514-apne2'
     assert re.fullmatch(r'arn:aws:kms:ap-northeast-2:024139495514:key/[a-f0-9-]{36}',result['EVIDENCE_KMS_KEY_ARN'])
     for key,expected in (('USE_INTERNAL_AI','false'),('COOKIE_SECURE','true'),
