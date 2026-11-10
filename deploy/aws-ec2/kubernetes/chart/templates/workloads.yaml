@@ -1,0 +1,124 @@
+{{- range $component := list "api" "web" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aegisai-{{ $component }}
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $component }}
+spec:
+  replicas: {{ if eq $component "api" }}{{ $.Values.apiReplicas }}{{ else }}1{{ end }}
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 180
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aegisai-private
+      app.kubernetes.io/component: {{ $component }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aegisai-private
+        app.kubernetes.io/component: {{ $component }}
+        app.kubernetes.io/version: {{ $.Values.revision | quote }}
+      {{- if eq $component "web" }}
+      annotations:
+        checksum/web-config: {{ $.Files.Get "files/nginx.conf" | sha256sum }}
+      {{- end }}
+    spec:
+      serviceAccountName: aegisai-{{ $component }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 20
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ if eq $component "api" }}1000{{ else }}101{{ end }}
+        runAsGroup: {{ if eq $component "api" }}1000{{ else }}101{{ end }}
+        fsGroup: {{ if eq $component "api" }}1000{{ else }}101{{ end }}
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ $component }}
+          image: {{ index $.Values.images $component | quote }}
+          imagePullPolicy: Never
+          {{- if eq $component "api" }}
+          envFrom:
+            - configMapRef:
+                name: api-public
+          {{- else }}
+          command: ["nginx"]
+          args: ["-g", "daemon off;", "-c", "/etc/aegisai/nginx.conf"]
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ if eq $component "api" }}3000{{ else }}8080{{ end }}
+            {{- if eq $component "api" }}
+            - name: metrics
+              containerPort: 9465
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: {{ if eq $component "api" }}150m{{ else }}50m{{ end }}
+              memory: {{ if eq $component "api" }}128Mi{{ else }}32Mi{{ end }}
+            limits:
+              cpu: {{ if eq $component "api" }}500m{{ else }}200m{{ end }}
+              memory: {{ if eq $component "api" }}320Mi{{ else }}64Mi{{ end }}
+          startupProbe:
+            httpGet:
+              path: {{ if eq $component "api" }}/api/health{{ else }}/healthz{{ end }}
+              port: http
+            periodSeconds: 3
+            failureThreshold: 40
+          readinessProbe:
+            httpGet:
+              path: {{ if eq $component "api" }}/api/health{{ else }}/healthz{{ end }}
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+          volumeMounts:
+            - name: temp
+              mountPath: /tmp
+            {{- if eq $component "api" }}
+            - name: runtime-catalog
+              mountPath: /run/aegisai-runtime
+              readOnly: true
+            {{- else }}
+            - name: web-config
+              mountPath: /etc/aegisai
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: temp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+        {{- if eq $component "api" }}
+        - name: runtime-catalog
+          configMap:
+            name: runtime-catalog
+            defaultMode: 0444
+        {{- else }}
+        - name: web-config
+          configMap:
+            name: web-nginx
+            defaultMode: 0444
+        {{- end }}
+{{- end }}

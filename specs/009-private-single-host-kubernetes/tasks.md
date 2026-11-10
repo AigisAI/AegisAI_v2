@@ -23,3 +23,11 @@ CI42731876689 passed; one actual Ready node v1.37.2+k3s1, root-only kubeconfig,
 private control listeners, encrypted control Secrets, restricted empty application
 namespaces/default-deny and ready DNS. Docker application IDs/images/release
 remain unchanged. No real scan, restore, traffic migration, GitOps or G1-G4 proof.
+
+2026-11-10 migration update: exact signed f340a441f366 source now serves private
+traffic through one Ready API and web. Native catalog rotation, managed secret
+loading/data/authorization/original HTML and actual per-Pod metrics passed.
+Activate->original Docker rollback->reactivate passed. Legacy Compose mutation
+entrypoints now reject while Kubernetes owns traffic. General qualification and
+all G1-G4/H2/deep-H4 requirements remain open. Current owner session acceptance
+was not available (no unexpired session); no synthetic session or OAuth repetition.

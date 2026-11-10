@@ -32,3 +32,12 @@ are a later separately reviewed implementation step within this approved scope.
 For issue354, read catalog-projection.md before the opt-in API catalog reader and
 root publisher change. Keep restricted PodSecurity; do not add a catalog hostPath
 exception. The scanner/authoritative source and default regular-file mode remain.
+
+For issue356, read standby.md. Install only standby API/web after signed354
+images pass; preserve current ingress and data until native standby acceptance.
+
+The issue356 standby has now passed native acceptance and traffic migration.
+Read standby.md and traffic.py for actual upstream ownership, protected Compose
+fallback, control-state backup and measured rollback. Preserve the separate root
+traffic state; legacy shared candidate-release describes only the retained Docker
+fallback. Continue GitOps/strategies/HPA without replaying unchanged scans/restores.

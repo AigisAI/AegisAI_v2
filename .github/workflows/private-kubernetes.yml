@@ -1,7 +1,7 @@
 name: Private Kubernetes Bootstrap Safety
 on:
   pull_request:
-    branches: [dev, main, feat/348-private-image-supply-chain, feat/350-private-single-host-kubernetes, feat/352-private-kubernetes-admission]
+    branches: [dev, main, feat/348-private-image-supply-chain, feat/350-private-single-host-kubernetes, feat/352-private-kubernetes-admission, feat/354-private-catalog-projection]
     paths:
       - deploy/aws-ec2/kubernetes/**
       - specs/009-private-single-host-kubernetes/**
@@ -20,6 +20,10 @@ jobs:
           python-version: '3.13'
       - run: python3 -m unittest discover -s deploy/aws-ec2/kubernetes -p 'test_*.py' -v
       - run: python3 -m compileall -q deploy/aws-ec2/kubernetes
+      - name: Verify exact Helm and actual schema rejections
+        run: |
+          sudo python3 deploy/aws-ec2/kubernetes/install_helm.py /opt/aegisai-ci-helm/helm
+          python3 deploy/aws-ec2/kubernetes/test_chart.py /opt/aegisai-ci-helm/helm
       - name: Check pinned vendor binary on native Linux
         run: |
           python3 - <<'PY'

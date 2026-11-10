@@ -1,0 +1,6 @@
+images:
+  api: ""
+  web: ""
+revision: ""
+apiReplicas: 1
+frontendIngressCidrs: []

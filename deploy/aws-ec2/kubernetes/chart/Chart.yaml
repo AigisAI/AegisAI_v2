@@ -1,0 +1,6 @@
+apiVersion: v2
+name: aegisai-private
+description: Restricted API/web on the existing private single host
+type: application
+version: 0.1.0
+appVersion: private-single-host-v1
