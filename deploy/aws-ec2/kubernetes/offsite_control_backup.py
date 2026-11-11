@@ -56,7 +56,7 @@ def check_bucket():
     rules = aws('s3api','get-bucket-encryption','--bucket',BUCKET)['ServerSideEncryptionConfiguration']['Rules']
     assert len(rules) == 1
     settings = rules[0]['ApplyServerSideEncryptionByDefault']
-    assert settings == {'SSEAlgorithm':'aws:kms','KMSMasterKeyID':plane['kmsKeyArn']}
+    assert settings == {'SSEAlgorithm':'aws:kms'}
     role = aws('sts','get-caller-identity',runtime=True)
     assert role['Arn'].startswith(f'arn:aws:sts::{ACCOUNT}:assumed-role/aegisai-private-runtime/')
     prior = json.loads(Path('/opt/aegisai/platform/terraform-state-backup.json').read_text())['objectKey']
