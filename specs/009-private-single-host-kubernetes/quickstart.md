@@ -60,3 +60,5 @@ For issue367 read blue-green.md before controller installation or traffic change
 For issue369 read canary.md before weighted router installation, analysis delegation or traffic changes. Use actual per-version requests and native automatic abort; retain root recovery.
 
 For issue371, read [control recovery](./control-recovery.md) before rehearsing backup recovery or reconciling CoreDNS.
+
+For issue373, see [the operating scan trace release](../../docs/production/scan-tracing-release.md). For issue375, see [off-host recovery and AWS delivery identity](../../docs/production/aws-control-backup-delivery-gate.md).

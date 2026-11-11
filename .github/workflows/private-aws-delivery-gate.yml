@@ -1,0 +1,40 @@
+name: Private AWS delivery gate
+
+on:
+  push:
+    branches: [release/375-private-aws-gate]
+
+permissions: {}
+
+jobs:
+  aws:
+    if: vars.AEGISAI_DELIVERY_OIDC_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd
+        with:
+          aws-region: ap-northeast-2
+          role-to-assume: arn:aws:iam::024139495514:role/aegisai-private-github-delivery-gate
+          role-duration-seconds: 900
+          allowed-account-ids: '024139495514'
+      - name: Verify the private deployment destination
+        shell: bash
+        env:
+          AWS_PAGER: ''
+          BUCKET: aegisai-private-024139495514-apne2
+        run: |
+          set -euo pipefail
+          aws sts get-caller-identity | jq -e '.Account == "024139495514" and (.Arn | startswith("arn:aws:sts::024139495514:assumed-role/aegisai-private-github-delivery-gate/"))' >/dev/null
+          aws s3api get-bucket-location --bucket "$BUCKET" | jq -e '.LocationConstraint == "ap-northeast-2"' >/dev/null
+          aws s3api get-bucket-policy-status --bucket "$BUCKET" | jq -e '.PolicyStatus.IsPublic == false' >/dev/null
+          aws s3api get-public-access-block --bucket "$BUCKET" | jq -e '.PublicAccessBlockConfiguration | .BlockPublicAcls and .IgnorePublicAcls and .BlockPublicPolicy and .RestrictPublicBuckets' >/dev/null
+          aws s3api get-bucket-encryption --bucket "$BUCKET" | jq -e '.ServerSideEncryptionConfiguration.Rules | length == 1 and .[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm == "aws:kms"' >/dev/null
+          if aws s3api list-objects-v2 --bucket "$BUCKET" --max-items 1 > /dev/null 2> "$RUNNER_TEMP/expected-denial"; then
+            exit 1
+          fi
+          grep -q 'AccessDenied' "$RUNNER_TEMP/expected-denial"
+          printf 'Private AWS destination verified for %s\n' "$GITHUB_SHA"

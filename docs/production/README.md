@@ -54,9 +54,9 @@
 
 실제 저장소 스캔, 소스 정리, 암호화 근거 접근, 백업 복원, 서버 재시작 복구 및 비공개 접근 차단·복원은 확인했다. 사용자는 휴대폰에서 실제 저장소 목록과 완료된 스캔을 확인했다.
 
-실제 동시 분석은 한 건이다. 화면·API·DB·스캐너가 같은 EC2에 있으므로 호스트 장애가 전체 서비스에 영향을 준다. Grafana·Loki·Prometheus·Tempo와 Slack 장애/복구 알림은 실제 확인했다. 정량 SLO·부하 벤치마크·전체 GitOps/CD·네 가지 배포/확장 전략과 깊은 비동기 추적은 아직 전체 완료하지 않았다. 이전의 미암호화 복구 사본과 비활성 로컬 비밀 사본도 예외로 남아 있다.
+실제 동시 분석은 한 건이다. 화면·API·DB·스캐너가 같은 EC2에 있으므로 호스트 장애가 전체 서비스에 영향을 준다. Grafana·Loki·Prometheus·Tempo와 Slack 장애/복구 알림은 실제 확인했다. 정량 SLO·성공 처리량 기준 부하 검증과 전체 호스트 재현은 남아 있다. 이전의 미암호화 복구 사본과 비활성 로컬 비밀 사본도 예외로 남아 있다.
 
-현재 API/web은 [전체 CI42807277712](https://github.com/AigisAI/AegisAI_v2/actions/runs/42807277712)를 통과한 서명 소스 `3edc8c72a69b1927fedad5fccb558f94f7bd824f`로 실행된다. Helm/Argo CD의 Git 커밋 `35fd0fd87c77bf0281e004edeed92a5b1b682ff1`가 Synced/Healthy다. 실제 RollingUpdate·불량 후보 제외/자동 복구·이전 이미지 복귀/재전환과 HPA1→2→1·공유 요청 제한을 검증했다. 기존 실제 로그인 세션·화면·데이터와 독립 gVisor 경계를 보존했다. 최신 근거와 한계는 [11월10일 운영 기록](./2026-11-10-rollout-scaling-checkpoint.md)을 따른다. 추가로 [실제 API Blue/Green 전환·복귀](./2026-11-10-blue-green-checkpoint.md)와 기존 세션/화면/데이터 보존을 확인했다. [실제 Canary 분배·자동 중단/복귀](./2026-11-10-canary-checkpoint.md)도 통과했다. H1/H2/H4 전체 완료와 일반 서비스 자격은 남아 있다.
+현재 서명된 릴리스는 `ec2-runtime-20261111-073640`이다. 새 Git 커밋의 AWS OIDC 검증을 통과한 뒤 Helm/Argo CD로 승격했으며, 전환 중 헬스 응답은 모두 HTTP 200이었다. 실제 Blue/Green·Canary·RollingUpdate·HPA와 정상/실패 스캔 추적을 단일 EC2에서 검증했다. [스캔 추적](./scan-tracing-release.md) · [외부 복구와 배포 인증](./aws-control-backup-delivery-gate.md) · [남은 작업](./remaining-work.md)
 
 ## 비용 범위
 
