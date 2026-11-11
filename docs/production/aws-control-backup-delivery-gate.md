@@ -20,8 +20,9 @@
 
 - 기존 버킷에 새 제어 영역 백업 1개를 저장했다. 다운로드 SHA-256과 명시한 KMS 키가 일치했고, 앱의 EC2 역할로 백업 조회는 거부됐다. 내려받은 파일로 격리된 K3s API를 7.548초에 기동해 Git 리비전, 승인 이미지 참조, 암호화된 Secret과 비활성 프로필 두 개를 확인했다. 운영 Pod와 Docker 컨테이너는 그대로 유지됐다.
 - 별도 Terraform 상태로 GitHub OIDC 공급자·CI 역할·읽기 정책 3개를 추가했다. 기존 AWS 자원 수정 및 삭제는 0건이었다. GitHub Actions 실행 42979294896에서 실제 역할 전환, 지정 버킷의 보안 설정 조회, 객체 목록 조회 거부를 확인했다.
+- 운영 릴리스 Git 리비전 `62176ad54e02bb1c76c39646e427c60f4438d014`에서 동일 커밋의 OIDC 검증 실행 42981647016을 요구했다. 이 검증이 통과한 뒤 서명된 API와 웹을 Argo CD로 승격했다. 전환은 26.584초였고 관측한 헬스 응답은 모두 HTTP 200이었다. HPA 1~2와 기존 화면을 유지했다. [운영 릴리스 OIDC 실행](https://github.com/AigisAI/AegisAI_v2/actions/runs/42981647016)
 - Windows의 기존 운영자 인증 도구가 다시 연결됐고, 로그인할 때 시작하는 자동 갱신 작업을 재등록했다. 이 방식은 해당 Windows 계정 세션과 네트워크 연결이 필요하다.
-- 이 복구는 별도 디렉터리와 로컬 포트에서 실행한 제어 영역 복구다. 전체 EC2 재구성과 AWS 게이트를 통과한 새 운영 릴리스의 실제 전환 검증은 별도로 남아 있다.
+- 이 복구는 별도 디렉터리와 로컬 포트에서 실행한 제어 영역 복구다. 전체 EC2 재구성은 별도로 남아 있다.
 
 
 ## 서울 리전 운영 비용 기준
@@ -38,3 +39,13 @@
 | 합계 | 할인·세금 적용 전 추정 | **$95.94** |
 
 보존한 이전 볼륨과 스냅샷, S3 저장·요청, KMS·Secrets Manager 요청, 데이터 전송은 사용량에 따라 추가된다. 운영자 계정은 AWS 비용 태그 조회를 거부받아 프로젝트별 실청구액은 확인하지 못했다. [EBS 요금](https://aws.amazon.com/ebs/pricing/) · [IPv4 요금](https://aws.amazon.com/vpc/pricing/) · [Secrets Manager 요금](https://aws.amazon.com/secrets-manager/pricing/) · [KMS 요금](https://aws.amazon.com/kms/pricing/)
+
+
+## 운영 배포 구성 요소의 책임
+
+| 구성 요소 | 쓰기 범위 | 운영 확인 |
+| --- | --- | --- |
+| Terraform | 기존 AWS 자원과 별도 CI 역할 | 기존 12개 자원의 변경 없는 계획 및 OIDC 전용 계획 확인 |
+| Helm·Argo CD | 서명 이미지 digest를 포함한 기본 API·웹 선언 | 새 커밋 Synced/Healthy, 기본 API·웹 Service 동기화 |
+| Argo Rollouts | Blue/Green active·preview, Canary stable·candidate Service 선택자와 트래픽 전환 | Rollouts Service 4개와 Argo CD 관리 Service 이름이 겹치지 않음을 실제 리소스로 확인. 기존 정상 분배와 자동 복귀 기록 보존 |
+| HPA | 기본 API Deployment의 scale 하위 리소스 | 실제 replicas 관리 필드 확인. Argo CD가 API replicas를 제외하고 동기화하는 설정과 운영 범위 1~2 확인 |
