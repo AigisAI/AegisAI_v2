@@ -58,3 +58,5 @@ actual G1/G2 and remainingH1/H2/deepH4 without replaying unchanged SQL/scans.
 For issue367 read blue-green.md before controller installation or traffic changes. Keep the existing Deployment/GitOps/HPA path as ready fallback and enforce API total3/web total2.
 
 For issue369 read canary.md before weighted router installation, analysis delegation or traffic changes. Use actual per-version requests and native automatic abort; retain root recovery.
+
+For issue371, read [control recovery](./control-recovery.md) before rehearsing backup recovery or reconciling CoreDNS.

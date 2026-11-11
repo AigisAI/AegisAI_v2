@@ -12,7 +12,7 @@ import sys
 import tempfile
 import time
 
-from bootstrap import BINARY, PIN, ROOT, digest, inventory, now, snapshot
+from bootstrap import BINARY, PIN, ROOT, digest, now, snapshot
 from foundation import kube
 from traffic import STATE, request
 
@@ -41,7 +41,11 @@ def production():
 
 def rehearse(backup):
     assert digest(BINARY) == PIN['binary']['sha256']
-    inventory()
+    memory = dict(line.split(':', 1) for line in Path('/proc/meminfo').read_text().splitlines())
+    assert int(memory['MemAvailable'].split()[0]) >= 4096 * 1024
+    assert shutil.disk_usage(ROOT).free >= 6 * 1024**3
+    catalog = json.loads(Path('/opt/aegisai/scanner/catalog/current.json').read_text())
+    assert catalog['ready'] and not catalog['busy']
     assert backup.resolve() == backup and backup.parent == ROOT/'control-backups'
     assert backup.stat().st_uid == 0 and not backup.stat().st_mode & 0o077
     state, pod_ids = production()
@@ -123,7 +127,7 @@ def rehearse(backup):
         report = {'isolatedControlApiRestore': 'passed', 'backup': backup.name, 'gitRevision': state['gitRevision'],
             'approvedApiAndWebImagesRecovered': True, 'inactiveRolloutProfilesRecovered': 2,
             'encryptedSecretReadableByApi': True, 'liveApplicationPodsUnchanged': True,
-            'scannerAndDataContainersPreserved': True, 'seconds': round(time.monotonic()-started, 3), 'verifiedAt': now()}
+            'composeContainersPreserved': True, 'seconds': round(time.monotonic()-started, 3), 'verifiedAt': now()}
     finally:
         subprocess.run(['systemctl', 'stop', unit], capture_output=True, timeout=20)
         status = subprocess.run(['systemctl', 'show', unit, '-p', 'MainPID', '--value'], capture_output=True, text=True, timeout=5)
