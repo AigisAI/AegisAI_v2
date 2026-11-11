@@ -6,7 +6,7 @@ RUN corepack pnpm install --frozen-lockfile
 RUN corepack pnpm --filter @aegisai/shared build
 RUN corepack pnpm --filter @aegisai/private-web build
 
-FROM nginx:stable-alpine@sha256:583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548bdee1fa8c619c311
+FROM nginx:stable-alpine3.24-slim@sha256:e2355aa95529a7999dad94ddcb45a8768abf6fb0b204c93b1a3ffce477d7b893
 LABEL org.aegisai.runtime-profile="private-single-host-v1"
 COPY apps/private-web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/apps/private-web/dist /usr/share/nginx/html
