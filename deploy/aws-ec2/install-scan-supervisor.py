@@ -31,8 +31,10 @@ names={'runtime.py','runtime_catalog.py','supervisor.py','normalize.py','github_
 files={}
 with tarfile.open(archive,'r:gz') as stream:
     for entry in stream:
-        assert entry.name in names and entry.name not in files and entry.isfile() and not entry.issym() and not entry.islnk() and 0<entry.size<131072
+        assert entry.name in names | {'runtime_telemetry.py'} and entry.name not in files and entry.isfile() and not entry.issym() and not entry.islnk() and 0<entry.size<131072
         files[entry.name]=stream.extractfile(entry).read()
+if b'from runtime_telemetry import ScanTrace' in files.get('supervisor.py', b''):
+    names.add('runtime_telemetry.py')
 assert set(files)==names
 scanner=pathlib.Path('/opt/aegisai/scanner')
 gateway=pathlib.Path('/usr/local/lib/aegisai-source-gateway')

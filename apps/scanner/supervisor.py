@@ -14,6 +14,7 @@ from broker_client import BrokerClient
 from normalize import normalized_findings
 from runtime import CLI, JOBS, JobStorage, RuntimeFailure, SandboxRunner, job_key, remove_sandbox
 from runtime_catalog import check_fetch_egress, local_runtime, write_catalog
+from runtime_telemetry import ScanTrace
 
 STOP = threading.Event()
 CODE = '/usr/local/lib/aegisai-source-gateway/source_gateway.py'
@@ -129,7 +130,7 @@ def reconcile():
         JobStorage(directory.name).cleanup()
 
 
-def execute(broker,assignment):
+def execute(broker,assignment,telemetry,worker_span):
     lease,execution = assignment['lease'],assignment['execution']
     key = job_key(lease['tenantId'],lease['scanRequestId'])
     storage = JobStorage(key)
@@ -144,12 +145,13 @@ def execute(broker,assignment):
             raise RuntimeFailure('RUNTIME_SCOPE_UNSUPPORTED')
         root = storage.prepare()
         storage.grant_gateway_writer()
-        issued = broker.request('/worker/capability',{'lease':lease})
-        receipt = run_gateway(key,{'lease':lease,'capability':issued['capability']},heartbeat.cancelled)
-        if receipt['credentialId']!=issued['credentialId'] or receipt['commitSha']!=execution['commitSha']:
-            raise RuntimeFailure('INVALID_GATEWAY_RECEIPT')
-        storage.seal()
-        broker.request('/worker/start',{'lease':lease,'credentialId':receipt['credentialId']})
+        with telemetry.stage('scan.source.handoff'):
+            issued = broker.request('/worker/capability',{'lease':lease})
+            receipt = run_gateway(key,{'lease':lease,'capability':issued['capability']},heartbeat.cancelled)
+            if receipt['credentialId']!=issued['credentialId'] or receipt['commitSha']!=execution['commitSha']:
+                raise RuntimeFailure('INVALID_GATEWAY_RECEIPT')
+            storage.seal()
+            broker.request('/worker/start',{'lease':lease,'credentialId':receipt['credentialId']})
         runner = SandboxRunner(key,cancelled=heartbeat.cancelled,database_digest=local['vulnerabilityDatabaseDigest'])
         runs,findings = [],[]
         for scanner in ('OPENGREP','TRIVY','SYFT'):
@@ -157,11 +159,12 @@ def execute(broker,assignment):
             started = time.monotonic()
             status = 'COMPLETED'
             try:
-                output = runner.run(scanner)
-                reduced = normalized_findings(output,root/'source')
-                if len(findings)+len(reduced)>1000: raise RuntimeFailure('SCANNER_OUTPUT_LIMIT')
-                findings.extend(reduced)
-                del output
+                with telemetry.stage('scan.tool.'+scanner.lower()):
+                    output = runner.run(scanner)
+                    reduced = normalized_findings(output,root/'source')
+                    if len(findings)+len(reduced)>1000: raise RuntimeFailure('SCANNER_OUTPUT_LIMIT')
+                    findings.extend(reduced)
+                    del output
             except RuntimeFailure as error:
                 if str(error) in ('SANDBOX_CLEANUP_UNCONFIRMED','SCANNER_LEASE_LOST'): raise
                 status = 'TIMED_OUT' if str(error)=='SCANNER_TIMEOUT' else 'FAILED'
@@ -169,26 +172,34 @@ def execute(broker,assignment):
         payload = {'scannerSetVersion':local['scannerSetVersion'],'vulnerabilityDatabaseDigest':local['vulnerabilityDatabaseDigest'],
                    'runs':runs,'findings':findings}
     except Exception as error:
+        worker_span['failed'] = True
         failure = str(error) if isinstance(error,RuntimeFailure) and str(error) in {
             'UNSUPPORTED_SCAN_PROFILE','SOURCE_LIMIT_EXCEEDED','SOURCE_ENTRY_UNSUPPORTED','RUNTIME_SCOPE_UNSUPPORTED'} else 'UPSTREAM_UNAVAILABLE'
     finally:
         # Never publish or reschedule before both process and source destruction
         # are confirmed. A cleanup exception exits the worker and blocks new work.
         try:
-            stop_gateway(key)
-            storage.cleanup()
+            with telemetry.stage('scan.cleanup'):
+                stop_gateway(key)
+                storage.cleanup()
         finally:
             if payload is None or heartbeat.cancelled(): heartbeat.close()
     if not failure and not heartbeat.cancelled():
         try:
-            result = broker.request('/worker/publish',{'lease':lease,'credentialId':receipt['credentialId'],'result':payload})
+            with telemetry.stage('scan.result.publish') as publish_span:
+                result = broker.request('/worker/publish',{'lease':lease,'credentialId':receipt['credentialId'],'result':payload})
+                publish_span['failed'] = result['status'] != 'COMPLETED'
+                worker_span['failed'] = publish_span['failed']
             print(json.dumps({'event':'SCAN_RESULT_PUBLISHED','status':result['status'],'findingCount':result['findingCount'],'ai':'DISABLED'}),flush=True)
         finally: heartbeat.close()
     elif not heartbeat.cancelled():
         try:
-            if failure!='UPSTREAM_UNAVAILABLE': broker.request('/worker/reject',{'lease':lease,'reason':failure})
-            else: broker.request('/worker/fail',{'lease':lease,'code':'UPSTREAM_UNAVAILABLE'})
+            with telemetry.stage('scan.result.reject'):
+                if failure!='UPSTREAM_UNAVAILABLE': broker.request('/worker/reject',{'lease':lease,'reason':failure})
+                else: broker.request('/worker/fail',{'lease':lease,'code':'UPSTREAM_UNAVAILABLE'})
         finally: heartbeat.close()
+    else:
+        worker_span['failed'] = True
 
 
 def main():
@@ -212,13 +223,20 @@ def main():
                     write_catalog(False); STOP.wait(10); continue
                 try:
                     broker = broker or BrokerClient('control')
+                    claimed_from = time.time_ns()
                     assignment = broker.request('/worker/claim',{'workerId':'private-single-host-v1'})
                 except Exception:
                     # Cloud storage/database startup and transient outages do
                     # not consume scan attempts or require a manual restart.
                     broker = None
                     write_catalog(False); STOP.wait(10); continue
-                if assignment: execute(broker,assignment)
+                if assignment:
+                    telemetry = ScanTrace(assignment.get('trace'),claimed_from)
+                    try:
+                        with telemetry.stage('scan.worker') as worker_span:
+                            execute(broker,assignment,telemetry,worker_span)
+                    finally:
+                        telemetry.export()
                 else: STOP.wait(3)
             finally: fcntl.flock(maintenance,fcntl.LOCK_UN)
     finally: write_catalog(False)

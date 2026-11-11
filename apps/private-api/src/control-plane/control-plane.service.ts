@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { isSpanContextValid, TraceFlags, trace } from "@opentelemetry/api";
 
 import { ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { buildCanonicalScanKey, shouldEscalateIsolation } from "@aegisai/shared/private-runtime";
@@ -122,6 +123,9 @@ export class ControlPlaneService {
   }
 
   async createScanRequest(input: CreateScanRequestInput, pendingLimit?: number): Promise<ControlPlaneScanRequest> {
+    const span = trace.getActiveSpan()?.spanContext();
+    const traceParent = span && isSpanContextValid(span) && (span.traceFlags & TraceFlags.SAMPLED)
+      ? { traceId: span.traceId, parentSpanId: span.spanId } : undefined;
     return serializable(this.prisma, async (tx) => {
       const repository = await tx.repositoryBinding.findFirst({
         where: {
@@ -148,11 +152,18 @@ export class ControlPlaneService {
         }, update: {}, select: scanSelect
       });
       if (["QUEUED", "PLANNING"].includes(scan.status)) {
-        await tx.scanDispatchJob.upsert({
+        const jobId = `dispatch_job_${randomUUID()}`;
+        const job = await tx.scanDispatchJob.upsert({
           where: { scanRequestId: scan.id },
-          create: { id: `dispatch_job_${randomUUID()}`, tenantId: input.tenantId, scanRequestId: scan.id },
-          update: {}
+          create: { id: jobId, tenantId: input.tenantId, scanRequestId: scan.id },
+          update: {}, select: { id: true }
         });
+        if (traceParent && job.id === jobId) {
+          await tx.auditEvent.create({ data: {
+            tenantId: input.tenantId, scanRequestId: scan.id, eventType: "scan.dispatch.enqueued",
+            actor: "control-plane", targetType: "scan_dispatch_job", targetId: jobId, metadata: traceParent
+          } });
+        }
       }
       return scan;
     });
