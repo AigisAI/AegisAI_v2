@@ -13,6 +13,7 @@ import time
 import urllib.request
 
 from bootstrap import ROOT, SOURCE, now
+from delivery_gate import require_aws_delivery_gate
 from foundation import kube
 from image_retention import require_pinned
 
@@ -64,6 +65,7 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('git_revision');parser.add_argument('--apply',action='store_true')
     parser.add_argument('--expect-rejection',action='store_true');args=parser.parse_args()
     assert re.fullmatch('[a-f0-9]{40}',args.git_revision)
+    delivery_run = require_aws_delivery_gate(args.git_revision)
     lock=(OPERATOR/'signed-deployment.lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     url='https://raw.githubusercontent.com/AigisAI/AegisAI_v2/'+args.git_revision+'/'+VALUE_FILE
     with urllib.request.urlopen(url,timeout=20) as response:raw=response.read(65537)
@@ -95,7 +97,7 @@ def main():
     assert any(v.get('name')=='api' and '/spec/replicas' in v.get('jsonPointers',[]) for v in current['spec']['ignoreDifferences'])
     traffic_path=OPERATOR/'application-traffic.json';traffic=json.loads(traffic_path.read_text())
     assert traffic['backend']=='kubernetes' and http_health()==200
-    if not args.apply:print(json.dumps({'gitPromotionPlan':'ready','source':values['revision'],'gitRevision':args.git_revision,'freshSignatureVerification':'passed'}));return
+    if not args.apply:print(json.dumps({'gitPromotionPlan':'ready','source':values['revision'],'gitRevision':args.git_revision,'awsDeliveryGateRun':delivery_run,'freshSignatureVerification':'passed'}));return
     target={**previous_source,'targetRevision':args.git_revision,
             'helm':{'releaseName':'aegisai-private','valueFiles':['../environments/private-release.json']}}
     before=pod_state();samples=[];started=time.monotonic()
@@ -127,7 +129,7 @@ def main():
             manifestSha256=release['manifestSha256'],gitValueFile=VALUE_FILE,changedAt=now())
         traffic_path.write_text(json.dumps(traffic,indent=2))
     report={'gitReleasePromotion':'rejected-and-recovered' if args.expect_rejection else 'passed',
-            'gitRevision':args.git_revision,'applicationSource':values['revision'],'beforePods':before,
+            'gitRevision':args.git_revision,'applicationSource':values['revision'],'awsDeliveryGateRun':delivery_run,'beforePods':before,
             'actualSamples':samples,'allHealthSamples200':all(v['httpHealth']==200 for v in samples),
             'freshSignatureVerification':'passed','hpaOwnershipPreserved':True,'newScanExecuted':False,
             'newMigrationsApplied':False,'seconds':round(time.monotonic()-started,3),'verifiedAt':now()}
