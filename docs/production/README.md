@@ -69,3 +69,5 @@ EC2 외에도 S3 저장·요청, Secrets Manager와 KMS 요청, 보존 중인 EB
 ## 2026-11-09 배포 이후 필수 범위 변경
 
 `ec2-runtime-20261109-054314`의 커밋 기반 실배포는 완료됐다. 최신 상태와 남은 작업은 [남은 작업](./remaining-work.md)과 [기존 실행 계획](../reports/2026-11-07-production-deployment-plan.md) 9절을 따른다. 사용자 지시로 Blue/Green·Canary·Kubernetes RollingUpdate·HPA가 모두 실제 구현·검증 필수가 됐다. 현재 승인된 private 범위의 G1~G4는 실제 검증했다. 전체 확장 완료와 구분한다.
+
+11월 11일에 제어 상태 백업을 복구하고 운영 CoreDNS의 한도와 DNS 조회를 확인했다. [복구 운영 기록](./2026-11-11-control-recovery-checkpoint.md)
