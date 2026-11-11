@@ -196,7 +196,17 @@ export class PrivateWorkerBroker {
         if(!owned) {reply(response,200,{ok:true,data:null});return;}
         const scan=await this.control.getScanRequest(owned.tenantId,owned.scanRequestId);
         const {id,tenantId,repositoryBindingId,commitSha,targetRef,policyVersion,scannerSetVersion,isolationClass}=scan;
-        reply(response,200,{ok:true,data:{lease:owned,execution:{id,tenantId,repositoryBindingId,commitSha,targetRef,policyVersion,scannerSetVersion,isolationClass}}});return;
+        const queued = await this.prisma.auditEvent.findFirst({
+          where: { tenantId, scanRequestId: id, targetId: owned.jobId, eventType: "scan.dispatch.enqueued" },
+          select: { metadata: true, occurredAt: true }
+        }).catch(() => null);
+        const metadata = queued?.metadata;
+        const traceParent = queued && metadata && typeof metadata === "object" && !Array.isArray(metadata)
+          && typeof metadata.traceId === "string" && /^[a-f0-9]{32}$/.test(metadata.traceId)
+          && typeof metadata.parentSpanId === "string" && /^[a-f0-9]{16}$/.test(metadata.parentSpanId)
+          ? { traceId: metadata.traceId, parentSpanId: metadata.parentSpanId, queuedAt: queued.occurredAt.toISOString() }
+          : undefined;
+        reply(response,200,{ok:true,data:{lease:owned,trace:traceParent,execution:{id,tenantId,repositoryBindingId,commitSha,targetRef,policyVersion,scannerSetVersion,isolationClass}}});return;
       }
       if(path==="/worker/capability" || path==="/worker/heartbeat") {
         keys(data,["lease"]);const owned=lease(data.lease);

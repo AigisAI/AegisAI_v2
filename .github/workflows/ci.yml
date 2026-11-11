@@ -9,6 +9,7 @@ on:
       - fix/346-private-grafana-auth
       - feat/352-private-kubernetes-admission
       - feat/361-private-api-horizontal-scaling
+      - feat/371-private-control-recovery
   push:
     branches:
       - dev

@@ -5,6 +5,7 @@ import type { ScanDispatchLease } from './scan-dispatch';
 export type PrivateBrokerResponse<T> = { ok: true; data: T } | { ok: false; errorCode: string };
 export interface PrivateWorkerAssignment {
   lease: ScanDispatchLease;
+  trace?: { traceId: string; parentSpanId: string; queuedAt: string };
   execution: {
     id: string; tenantId: string; repositoryBindingId: string; commitSha: string;
     targetRef: string; policyVersion: string; scannerSetVersion: string; isolationClass: string;
