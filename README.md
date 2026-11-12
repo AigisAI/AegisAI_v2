@@ -11,8 +11,28 @@ and separates Control, Scan, AI, and Data/Security planes.
 | Active milestone | [`006-production-sast-runtime-design`](./specs/006-production-sast-runtime-design/) |
 | Canonical start | [`AGENTS.md`](./AGENTS.md) -> [`quickstart.md`](./specs/006-production-sast-runtime-design/quickstart.md) |
 | Product baseline | Security Scan SaaS final specification (private product baseline) |
-| Runtime posture | Detailed SAST runtime and rule governance before live Kubernetes rollout; Oracle VPS remains dev/demo only |
+| Runtime posture | Private single-host EC2/K3s operation documented below. Oracle VPS remains dev/demo only. |
 | Validation source | [`quickstart.md`](./specs/006-production-sast-runtime-design/quickstart.md) and [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) |
+
+## Private AWS deployment
+
+AegisAI runs a private Java scanning service on one existing AWS EC2 instance.
+Tailscale provides private HTTPS access, K3s runs the web and API workloads, and a
+separate containerd/gVisor runtime isolates the scanners.
+
+The default API uses **Kubernetes RollingUpdate with an HPA of 1–2 replicas**.
+RollingUpdate controls how a release replaces Pods. The HPA adjusts the API replica
+count based on load.
+
+| Mode | How AegisAI used it | Evidence |
+| --- | --- | --- |
+| **RollingUpdate** | Default deployment strategy. Readiness kept an unhealthy candidate out of traffic, and rollback to the previous image was verified. | [RollingUpdate and HPA](https://github.com/AigisAI/AegisAI_v2/blob/f4aef9ee6755f6ef738b4723398267b7d4d18726/docs/production/2026-11-10-rollout-scaling-checkpoint.md) |
+| **HPA** | Default API autoscaling. CPU load drove the API from one replica to two and back to one. | [RollingUpdate and HPA](https://github.com/AigisAI/AegisAI_v2/blob/f4aef9ee6755f6ef738b4723398267b7d4d18726/docs/production/2026-11-10-rollout-scaling-checkpoint.md) |
+| **Blue/Green** | Verified separately on the private API with Argo Rollouts. Switched traffic between the active and preview versions and verified the return to the original version. | [Blue/Green verification](https://github.com/AigisAI/AegisAI_v2/blob/f4aef9ee6755f6ef738b4723398267b7d4d18726/docs/production/2026-11-10-blue-green-checkpoint.md) |
+| **Canary** | Verified separately on the private API with Argo Rollouts. Prometheus detected candidate errors, and traffic returned to the stable version **17.2 seconds after the failure decision**. | [Canary verification](https://github.com/AigisAI/AegisAI_v2/blob/f4aef9ee6755f6ef738b4723398267b7d4d18726/docs/production/2026-11-10-canary-checkpoint.md) |
+
+After each Blue/Green and Canary exercise, the service returned to the default
+RollingUpdate path and the API HPA returned to its 1–2 replica range.
 
 ## Start Here
 
@@ -74,8 +94,8 @@ reduced evidence, and measurable rule/runtime gates.
 The current boundary is the real T053 production-equivalent provider run: repository CI can
 validate the exact manifest, dual-signature verifier, and fail-closed pending state, but cannot
 self-certify the required 123 fresh microVM executions or destruction evidence.
-The 005 baseline still governs the later live Kubernetes and provider-specific microVM
-rollout; production credentials and live provider execution remain deferred.
+The 005 baseline governs the broader production Kubernetes and provider-specific
+microVM qualification. The private AWS deployment above has a separate, single-host scope.
 
 ## Architecture
 
